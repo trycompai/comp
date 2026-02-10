@@ -1,14 +1,49 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Badge,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+  HStack,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Spinner,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Text,
+} from '@trycompai/design-system';
+import {
+  Edit,
+  OverflowMenuVertical,
+  Search,
+  TrashCan,
+  View,
+  ViewOff,
+} from '@trycompai/design-system/icons';
+import { Copy } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
-import { apiClient } from '@/lib/api-client';
-import { format } from 'date-fns';
-import { Copy, Edit, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { Secret } from '../../hooks/useSecrets';
 import { useSecrets } from '../../hooks/useSecrets';
@@ -18,17 +53,40 @@ interface SecretsTableProps {
   initialSecrets: Secret[];
 }
 
+const CATEGORY_MAP: Record<string, string> = {
+  api_keys: 'API Keys',
+  database: 'Database',
+  authentication: 'Authentication',
+  integration: 'Integration',
+  other: 'Other',
+};
+
+function formatDate(date: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(date));
+}
+
 export function SecretsTable({ initialSecrets }: SecretsTableProps) {
   const { secrets, deleteSecret } = useSecrets({ initialData: initialSecrets });
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('organization', 'update');
+
   const [revealedSecrets, setRevealedSecrets] = useState<Record<string, string>>({});
   const [loadingSecrets, setLoadingSecrets] = useState<Record<string, boolean>>({});
   const [editingSecret, setEditingSecret] = useState<Secret | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [secretToDelete, setSecretToDelete] = useState<Secret | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
+  const pageSizeOptions = [10, 25, 50, 100];
 
   const handleRevealSecret = async (secretId: string) => {
     if (revealedSecrets[secretId]) {
-      // Hide the secret
       setRevealedSecrets((prev) => {
         const next = { ...prev };
         delete next[secretId];
@@ -37,16 +95,19 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
       return;
     }
 
-    // Reveal the secret
     setLoadingSecrets((prev) => ({ ...prev, [secretId]: true }));
 
     try {
-      const response = await apiClient.get<{ value: string }>(`/v1/secrets/${secretId}`);
-      if (response.error) {
-        throw new Error(response.error);
+      const pathSegments = window.location.pathname.split('/');
+      const orgId = pathSegments[1];
+
+      const response = await fetch(`/api/secrets/${secretId}?organizationId=${orgId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch secret');
       }
 
-      setRevealedSecrets((prev) => ({ ...prev, [secretId]: response.data!.value }));
+      const data = await response.json();
+      setRevealedSecrets((prev) => ({ ...prev, [secretId]: data.value }));
     } catch (error) {
       toast.error('Failed to reveal secret');
       console.error('Error revealing secret:', error);
@@ -55,219 +116,239 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
     }
   };
 
-  const handleDeleteSecret = async (secretId: string) => {
-    if (!confirm('Are you sure you want to delete this secret? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      await deleteSecret(secretId);
-      toast.success('Secret deleted successfully');
-    } catch (error) {
-      toast.error('Failed to delete secret');
-      console.error('Error deleting secret:', error);
+  const handleCopySecret = (secretId: string) => {
+    const value = revealedSecrets[secretId];
+    if (value) {
+      navigator.clipboard.writeText(value);
+      toast.success('Secret copied to clipboard');
     }
   };
 
+  const handleDeleteClick = (secret: Secret) => {
+    setSecretToDelete(secret);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!secretToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteSecret(secretToDelete.id);
+      toast.success('Secret deleted successfully');
+      setDeleteDialogOpen(false);
+      setSecretToDelete(null);
+    } catch (error) {
+      toast.error('Failed to delete secret');
+      console.error('Error deleting secret:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const filteredSecrets = useMemo(() => {
+    if (!searchQuery) return secrets;
+    const query = searchQuery.toLowerCase();
+    return secrets.filter(
+      (secret) =>
+        secret.name.toLowerCase().includes(query) ||
+        secret.description?.toLowerCase().includes(query),
+    );
+  }, [secrets, searchQuery]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredSecrets.length / perPage));
+  const paginatedSecrets = filteredSecrets.slice((page - 1) * perPage, page * perPage);
+
+  const isEmpty = secrets.length === 0;
+  const isSearchEmpty = filteredSecrets.length === 0 && searchQuery;
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <Stack gap="4">
+      {/* Search Bar */}
+      <div className="w-full md:max-w-[300px]">
+        <InputGroup>
+          <InputGroupAddon>
+            <Search size={16} />
+          </InputGroupAddon>
+          <InputGroupInput
+            placeholder="Search secrets..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1);
+            }}
+          />
+        </InputGroup>
+      </div>
+
       {/* Table */}
-      <div className="rounded-md border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden">
-        <Table>
+      {isEmpty || isSearchEmpty ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>
+              {searchQuery ? 'No secrets found' : 'No secrets yet'}
+            </EmptyTitle>
+            <EmptyDescription>
+              {searchQuery
+                ? 'Try adjusting your search.'
+                : 'Create your first secret to enable AI automations.'}
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        <Table
+          variant="bordered"
+          pagination={{
+            page,
+            pageCount,
+            onPageChange: setPage,
+            pageSize: perPage,
+            pageSizeOptions,
+            onPageSizeChange: (size) => {
+              setPerPage(size);
+              setPage(1);
+            },
+          }}
+        >
           <TableHeader>
-            <TableRow className="hover:bg-transparent border-b border-border/50">
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground pl-6">
-                Name
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
-                Value
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
-                Category
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
-                Description
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
-                Last Used
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
-                Created
-              </TableHead>
-              <TableHead className="text-right font-medium text-xs uppercase tracking-wider text-muted-foreground pr-6">
-                Actions
-              </TableHead>
+            <TableRow>
+              <TableHead>NAME</TableHead>
+              <TableHead>VALUE</TableHead>
+              <TableHead>CATEGORY</TableHead>
+              <TableHead>LAST USED</TableHead>
+              <TableHead>CREATED</TableHead>
+              <TableHead>ACTIONS</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {secrets.length === 0 ? (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={7} className="text-center py-16">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
-                      <Eye className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">No secrets yet</p>
-                      <p className="text-xs text-muted-foreground">
-                        Create your first secret to enable AI automations
-                      </p>
-                    </div>
+            {paginatedSecrets.map((secret) => (
+              <TableRow key={secret.id}>
+                <TableCell>
+                  <span className="font-mono text-sm font-medium">{secret.name}</span>
+                </TableCell>
+                <TableCell>
+                  <HStack gap="2" align="center">
+                    {loadingSecrets[secret.id] ? (
+                      <HStack gap="2" align="center">
+                        <Spinner />
+                        <Text variant="muted" size="sm">
+                          Loading...
+                        </Text>
+                      </HStack>
+                    ) : revealedSecrets[secret.id] ? (
+                      <button
+                        type="button"
+                        onClick={() => handleCopySecret(secret.id)}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1 font-mono text-sm transition-colors hover:bg-muted/80"
+                      >
+                        <span className="max-w-[200px] truncate">
+                          {revealedSecrets[secret.id]}
+                        </span>
+                        <Copy className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      </button>
+                    ) : (
+                      <span className="font-mono text-sm text-muted-foreground">
+                        ••••••••••••
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRevealSecret(secret.id)}
+                      disabled={loadingSecrets[secret.id]}
+                      className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                    >
+                      {revealedSecrets[secret.id] ? (
+                        <ViewOff size={16} />
+                      ) : (
+                        <View size={16} />
+                      )}
+                    </button>
+                  </HStack>
+                </TableCell>
+                <TableCell>
+                  {secret.category ? (
+                    <Badge variant="secondary">
+                      {CATEGORY_MAP[secret.category] || secret.category.replace('_', ' ')}
+                    </Badge>
+                  ) : (
+                    <Text variant="muted" size="sm">
+                      —
+                    </Text>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Text variant="muted" size="sm">
+                    {secret.lastUsedAt ? formatDate(secret.lastUsedAt) : 'Never'}
+                  </Text>
+                </TableCell>
+                <TableCell>
+                  <Text variant="muted" size="sm">
+                    {formatDate(secret.createdAt)}
+                  </Text>
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-center">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        variant="ellipsis"
+                        onClick={(e) => e.stopPropagation()}
+                        disabled={!canUpdate}
+                      >
+                        <OverflowMenuVertical />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingSecret(secret);
+                          }}
+                        >
+                          <Edit size={16} />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(secret);
+                          }}
+                        >
+                          <TrashCan size={16} />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </TableCell>
               </TableRow>
-            ) : (
-              secrets.map((secret) => (
-                <TableRow key={secret.id} className="hover:bg-muted/30 transition-colors">
-                  <TableCell className="font-mono text-sm font-medium pl-6">
-                    {secret.name}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {loadingSecrets[secret.id] ? (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-sm text-muted-foreground">Loading...</span>
-                        </div>
-                      ) : revealedSecrets[secret.id] ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(revealedSecrets[secret.id]);
-                                  toast.success('Secret copied to clipboard');
-                                }}
-                                className="inline-flex items-center gap-1.5 text-sm bg-primary/10 px-3 py-1.5 rounded-md font-mono hover:bg-primary/20 transition-all max-w-[240px] group border border-primary/20"
-                              >
-                                <span className="truncate text-primary">
-                                  {revealedSecrets[secret.id]}
-                                </span>
-                                <Copy className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0 text-primary" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Click to copy</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <span className="font-mono text-sm text-muted-foreground/70">
-                          ••••••••••••
-                        </span>
-                      )}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 hover:bg-primary/10"
-                              onClick={() => handleRevealSecret(secret.id)}
-                              disabled={loadingSecrets[secret.id]}
-                            >
-                              {revealedSecrets[secret.id] ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{revealedSecrets[secret.id] ? 'Hide' : 'Reveal'} secret</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {secret.category ? (
-                      <Badge
-                        variant="outline"
-                        className="text-xs font-normal border-border/50 bg-muted/30"
-                      >
-                        {secret.category.replace('_', ' ')}
-                      </Badge>
-                    ) : (
-                      <span className="text-sm text-muted-foreground/50">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {secret.description ? (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="text-sm max-w-xs truncate block text-muted-foreground cursor-help">
-                              {secret.description}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-md">
-                            <p className="text-sm whitespace-pre-wrap">{secret.description}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-muted-foreground">
-                      {secret.lastUsedAt
-                        ? format(new Date(secret.lastUsedAt), 'MMM d, yyyy')
-                        : 'Never'}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-muted-foreground">
-                      {format(new Date(secret.createdAt), 'MMM d, yyyy')}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right pr-6">
-                    <div className="flex items-center justify-end gap-1">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all"
-                              onClick={() => setEditingSecret(secret)}
-                              disabled={!canUpdate}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Edit secret</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-all"
-                              onClick={() => handleDeleteSecret(secret.id)}
-                              disabled={!canUpdate}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Delete secret</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
-      </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Secret</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{secretToDelete?.name}&quot;? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Edit Secret Dialog */}
       {editingSecret && (
@@ -277,6 +358,6 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
           onOpenChange={(open) => !open && setEditingSecret(null)}
         />
       )}
-    </div>
+    </Stack>
   );
 }

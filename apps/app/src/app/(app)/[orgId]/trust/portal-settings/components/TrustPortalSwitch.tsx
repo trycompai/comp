@@ -112,15 +112,7 @@ type TrustCustomLink = {
 };
 
 type ComplianceBadge = {
-  type:
-    | 'soc2'
-    | 'iso27001'
-    | 'iso42001'
-    | 'gdpr'
-    | 'hipaa'
-    | 'pci_dss'
-    | 'nen7510'
-    | 'iso9001';
+  type: 'soc2' | 'iso27001' | 'iso42001' | 'gdpr' | 'hipaa' | 'pci_dss' | 'nen7510' | 'iso9001';
   verified: boolean;
 };
 
@@ -457,10 +449,10 @@ export function TrustPortalSwitch({
   return (
     <Form {...form}>
       <form>
-        <Tabs defaultValue="content">
+        <Tabs defaultValue="frameworks">
           <TabsList variant="underline">
-            <TabsTrigger value="content">Mission</TabsTrigger>
             <TabsTrigger value="frameworks">Frameworks</TabsTrigger>
+            <TabsTrigger value="content">Mission</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
             <TabsTrigger value="links">Links</TabsTrigger>
@@ -783,10 +775,7 @@ export function TrustPortalSwitch({
           <TabsContent value="branding">
             <div className="pt-6 space-y-6">
               <UpdateTrustFavicon currentFaviconUrl={faviconUrl ?? null} />
-              <BrandSettings
-                orgId={orgId}
-                primaryColor={primaryColor ?? null}
-              />
+              <BrandSettings orgId={orgId} primaryColor={primaryColor ?? null} />
             </div>
           </TabsContent>
 

@@ -37,7 +37,7 @@ interface ModernSingleStatusTaskListProps {
   })[];
   members: (Member & { user: User })[];
   handleTaskClick: (taskId: string) => void;
-  mutateTasks: () => Promise<unknown>;
+  evidenceApprovalEnabled?: boolean;
 }
 
 export function ModernSingleStatusTaskList({
@@ -45,7 +45,7 @@ export function ModernSingleStatusTaskList({
   tasks,
   members,
   handleTaskClick,
-  mutateTasks,
+  evidenceApprovalEnabled = false,
 }: ModernSingleStatusTaskListProps) {
   const { hasPermission } = usePermissions();
   const [selectable, setSelectable] = useState(false);
@@ -170,7 +170,8 @@ export function ModernSingleStatusTaskList({
               open={openBulkStatus}
               onOpenChange={setOpenBulkStatus}
               onSuccess={handleBulkActionSuccess}
-              mutateTasks={mutateTasks}
+              evidenceApprovalEnabled={evidenceApprovalEnabled}
+              members={members}
             />
             <BulkTaskAssigneeChangeModal
               selectedTaskIds={selectedTaskIds}
@@ -178,14 +179,12 @@ export function ModernSingleStatusTaskList({
               open={openBulkAssignee}
               onOpenChange={setOpenBulkAssignee}
               onSuccess={handleBulkActionSuccess}
-              mutateTasks={mutateTasks}
             />
             <BulkTaskDeleteModal
               selectedTaskIds={selectedTaskIds}
               open={openBulkDelete}
               onOpenChange={setOpenBulkDelete}
               onSuccess={handleBulkActionSuccess}
-              mutateTasks={mutateTasks}
             />
           </div>
         ) : null}

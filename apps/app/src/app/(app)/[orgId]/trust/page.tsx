@@ -81,7 +81,7 @@ export default async function TrustPage({
         <PageHeader
           title="Trust Portal"
           actions={
-            <Button iconRight={<Launch />}>
+            <Button iconRight={<Launch className="size-3" />}>
               <Link href={portalUrl} target="_blank" rel="noopener noreferrer">
                 Visit Trust Portal
               </Link>

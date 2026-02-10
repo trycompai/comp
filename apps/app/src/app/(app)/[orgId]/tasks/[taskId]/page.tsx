@@ -25,12 +25,15 @@ export default async function TaskPage({
 }) {
   const { taskId, orgId } = await params;
 
-  const [taskRes, automationsRes, membersRes] = await Promise.all([
+  const [taskRes, automationsRes, membersRes, optionsRes] = await Promise.all([
     serverApi.get<TaskWithControls>(`/v1/tasks/${taskId}`),
     serverApi.get<{ success: boolean; automations: AutomationWithRuns[] }>(
       `/v1/tasks/${taskId}/automations`,
     ),
     serverApi.get<{ data: (Member & { user: User })[] }>('/v1/people'),
+    serverApi.get<{
+      evidenceApprovalEnabled: boolean;
+    }>('/v1/tasks/options'),
   ]);
 
   const task = taskRes.data;
@@ -40,6 +43,7 @@ export default async function TaskPage({
 
   const automations = automationsRes.data?.automations ?? [];
   const members = membersRes.data?.data ?? [];
+  const evidenceApprovalEnabled = optionsRes.data?.evidenceApprovalEnabled ?? false;
 
   // Feature flags and platform admin check
   let isWebAutomationsEnabled = false;
@@ -69,6 +73,7 @@ export default async function TaskPage({
       initialAutomations={automations}
       isWebAutomationsEnabled={isWebAutomationsEnabled}
       isPlatformAdmin={isPlatformAdmin}
+      evidenceApprovalEnabled={evidenceApprovalEnabled}
     />
   );
 }

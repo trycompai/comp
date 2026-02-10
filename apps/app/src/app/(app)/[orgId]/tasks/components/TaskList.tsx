@@ -1,6 +1,7 @@
 'use client';
 
 import { updateTaskViewPreference } from '@/actions/tasks';
+import type { ReactNode } from 'react';
 import type { Member, Task, User } from '@db';
 import {
   Avatar,
@@ -35,6 +36,7 @@ import { TasksByCategory } from './TasksByCategory';
 const statuses = [
   { id: 'todo', label: 'Todo', icon: Circle, color: 'text-slate-400' },
   { id: 'in_progress', label: 'In Progress', icon: Circle, color: 'text-blue-400' },
+  { id: 'in_review', label: 'In Review', icon: Circle, color: 'text-orange-400' },
   { id: 'done', label: 'Done', icon: Check, color: 'text-emerald-400' },
   { id: 'failed', label: 'Failed', icon: XCircle, color: 'text-red-400' },
   { id: 'not_relevant', label: 'Not Relevant', icon: Circle, color: 'text-slate-500' },
@@ -45,8 +47,11 @@ export function TaskList({
   members,
   frameworkInstances,
   activeTab,
-  mutateTasks,
+  evidenceApprovalEnabled = false,
+  afterAnalytics,
+  showFiltersAndList = true,
 }: {
+  evidenceApprovalEnabled?: boolean;
   tasks: (Task & {
     controls: { id: string; name: string }[];
     evidenceAutomations?: Array<{
@@ -66,7 +71,8 @@ export function TaskList({
   members: (Member & { user: User })[];
   frameworkInstances: FrameworkInstanceForTasks[];
   activeTab: 'categories' | 'list';
-  mutateTasks: () => Promise<unknown>;
+  afterAnalytics?: ReactNode;
+  showFiltersAndList?: boolean;
 }) {
   const params = useParams();
   const orgId = params.orgId as string;
@@ -157,6 +163,7 @@ export function TaskList({
       (t) => t.status === 'done' || t.status === 'not_relevant',
     ).length;
     const inProgress = initialTasks.filter((t) => t.status === 'in_progress').length;
+    const inReview = initialTasks.filter((t) => t.status === 'in_review').length;
     const todo = initialTasks.filter((t) => t.status === 'todo').length;
     const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
 
@@ -289,6 +296,7 @@ export function TaskList({
       total,
       done,
       inProgress,
+      inReview,
       todo,
       completionRate,
       tasksWithAutomation,
@@ -339,7 +347,7 @@ export function TaskList({
             </div>
 
             {/* Status Breakdown */}
-            <div className="lg:col-span-6 grid grid-cols-3 gap-3 lg:pl-3 xl:pl-4">
+            <div className="lg:col-span-6 grid grid-cols-4 gap-3 lg:pl-3 xl:pl-4">
               {/* Completed */}
               <div className="border-l-2 border-l-primary bg-card/50 px-3 py-2">
                 <div className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-wider">
@@ -367,6 +375,22 @@ export function TaskList({
                 <div className="text-muted-foreground text-[10px] tabular-nums">
                   {overallStats.total > 0
                     ? Math.round((overallStats.inProgress / overallStats.total) * 100)
+                    : 0}
+                  %
+                </div>
+              </div>
+
+              {/* In Review */}
+              <div className="border-l-2 border-l-orange-400 bg-card/50 px-3 py-2">
+                <div className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-wider">
+                  In Review
+                </div>
+                <div className="text-foreground text-xl font-semibold tabular-nums mb-0.5">
+                  {overallStats.inReview}
+                </div>
+                <div className="text-muted-foreground text-[10px] tabular-nums">
+                  {overallStats.total > 0
+                    ? Math.round((overallStats.inReview / overallStats.total) * 100)
                     : 0}
                   %
                 </div>
@@ -544,10 +568,10 @@ export function TaskList({
         </div>
       </div>
 
-      {/* Separator after Analytics */}
-      <Separator />
+      {afterAnalytics}
 
       {/* Unified Control Module */}
+      {showFiltersAndList && (
       <Tabs value={currentTab} onValueChange={handleTabChange}>
         <Stack gap="lg">
           <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
@@ -705,7 +729,7 @@ export function TaskList({
 
             {/* Tabs - visible on all screens */}
             <div className="flex w-full justify-start lg:w-auto lg:shrink-0">
-              <TabsList>
+              <TabsList variant="default">
                 <TabsTrigger value="categories">
                   <FolderTree className="h-2.5 w-2.5" />
                   Categories
@@ -726,11 +750,12 @@ export function TaskList({
               />
             </TabsContent>
             <TabsContent value="list">
-              <ModernTaskList tasks={filteredTasks} members={members} statusFilter={statusFilter} mutateTasks={mutateTasks} />
+              <ModernTaskList tasks={filteredTasks} members={members} statusFilter={statusFilter} evidenceApprovalEnabled={evidenceApprovalEnabled} />
             </TabsContent>
           </div>
         </Stack>
       </Tabs>
+      )}
     </Stack>
   );
 }

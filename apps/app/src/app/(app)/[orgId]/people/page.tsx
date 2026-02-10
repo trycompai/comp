@@ -70,6 +70,9 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
         </>
       }
       showEmployeeTasks={showEmployeeTasks}
+      canInviteUsers={canInviteUsers}
+      canManageMembers={canManageMembers}
+      organizationId={orgId}
     />
   );
 }

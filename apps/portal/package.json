@@ -30,7 +30,7 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-email": "^4.0.15",
-    "react-hook-form": "^7.68.0",
+    "react-hook-form": "^7.71.1",
     "sonner": "^2.0.5",
     "zod": "3"
   },

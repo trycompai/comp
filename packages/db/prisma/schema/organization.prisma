@@ -9,7 +9,8 @@ model Organization {
   website             String?
   onboardingCompleted Boolean     @default(false)
   hasAccess           Boolean     @default(false)
-  advancedModeEnabled Boolean     @default(false)
+  advancedModeEnabled     Boolean     @default(false)
+  evidenceApprovalEnabled Boolean     @default(false)
 
   // FleetDM
   fleetDmLabelId        Int?

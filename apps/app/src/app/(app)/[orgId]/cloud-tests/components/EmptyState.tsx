@@ -2,13 +2,13 @@
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { useApi } from '@/hooks/use-api';
-import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import MultipleSelector from '@comp/ui/multiple-selector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { ArrowLeft, CheckCircle2, Cloud, ExternalLink, Loader2 } from 'lucide-react';
+import { Button, PageHeader, PageLayout, Spinner } from '@trycompai/design-system';
+import { ArrowLeft, CheckmarkFilled, Launch } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -308,13 +308,15 @@ export function EmptyState({
   // AWS Step 2.5: Region Selection (after credential validation)
   if (step === 'validate-aws' && provider && selectedProvider === 'aws') {
     return (
-      <div className="mx-auto max-w-7xl flex min-h-[600px] w-full flex-col gap-6 py-4 md:py-6 lg:py-8">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setStep('connect')}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-        </div>
+      <PageLayout padding="default">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setStep('connect')}
+          iconLeft={<ArrowLeft size={16} />}
+        >
+          Back
+        </Button>
 
         <div className="mx-auto w-full max-w-xl">
           <Card className="rounded-xl border-2 shadow-lg">
@@ -378,36 +380,39 @@ export function EmptyState({
                 </p>
               </div>
 
-              <Button
-                onClick={handleConnect}
-                disabled={
-                  isConnecting ||
-                  !Array.isArray(credentials.regions) ||
-                  credentials.regions.length === 0
-                }
-                className="mt-6 h-11 w-full rounded-lg text-base font-medium"
-                size="lg"
-              >
-                {isConnecting ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>Complete Setup</>
-                )}
-              </Button>
+              <div className="mt-6">
+                <Button
+                  onClick={handleConnect}
+                  disabled={!Array.isArray(credentials.regions) || credentials.regions.length === 0}
+                  loading={isConnecting}
+                  width="full"
+                  size="lg"
+                >
+                  {isConnecting ? 'Connecting...' : 'Complete Setup'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   // Step 1: Choose Provider
   if (step === 'choose') {
     return (
-      <div className="container mx-auto flex min-h-[600px] w-full flex-col items-center justify-center gap-8 p-4 md:p-6 lg:p-8">
+      <PageLayout
+        header={
+          <>
+            {onBack && (
+              <Button variant="ghost" size="sm" onClick={onBack} iconLeft={<ArrowLeft size={16} />}>
+                Back to Results
+              </Button>
+            )}
+            <PageHeader title={onBack ? 'Add Another Cloud' : 'Cloud Tests'} />
+          </>
+        }
+      >
         {showConnectDialog && (
           <ConnectIntegrationDialog
             open={showConnectDialog}
@@ -421,39 +426,8 @@ export function EmptyState({
             }}
           />
         )}
-        {onBack && (
-          <div className="w-full max-w-4xl">
-            <Button variant="ghost" size="sm" onClick={onBack}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Results
-            </Button>
-          </div>
-        )}
-        <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-full" />
-            <div className="relative rounded-2xl p-4">
-              <Cloud className="text-primary h-16 w-16" />
-            </div>
-          </div>
-          <div className="space-y-4">
-            <h1 className="text-4xl font-bold tracking-tight">
-              {onBack ? 'Add Another Cloud' : 'Continuous Cloud Scanning'}
-            </h1>
-            <div className="space-y-3">
-              <p className="text-muted-foreground mx-auto max-w-lg text-lg leading-relaxed">
-                Automatically monitor your cloud infrastructure for security vulnerabilities and
-                compliance issues.
-              </p>
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2">
-                <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-                <span className="text-primary text-xs font-medium">Always-on monitoring</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div className="grid w-full max-w-4xl gap-4 md:grid-cols-3">
+        <div className="grid w-full gap-4 md:grid-cols-3">
           {CLOUD_PROVIDERS.filter(
             (cp) => cp.id === 'aws' || !connectedProviders.includes(cp.id),
           ).map((cloudProvider) => (
@@ -485,7 +459,7 @@ export function EmptyState({
             </Card>
           ))}
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
@@ -494,13 +468,10 @@ export function EmptyState({
     const fields = PROVIDER_FIELDS[provider.id];
 
     return (
-      <div className="mx-auto flex min-h-[600px] w-full max-w-7xl flex-col gap-6 py-4 md:py-6 lg:py-8">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-        </div>
+      <PageLayout padding="default">
+        <Button variant="ghost" size="sm" onClick={handleBack} iconLeft={<ArrowLeft size={16} />}>
+          Back
+        </Button>
 
         <div className="mx-auto w-full max-w-xl">
           <Card className="rounded-xl border-2 shadow-lg">
@@ -532,7 +503,7 @@ export function EmptyState({
                 rel="noopener noreferrer"
                 className="text-primary hover:text-primary/80 flex w-fit items-center gap-1.5 text-sm font-medium transition-colors"
               >
-                <ExternalLink className="h-3.5 w-3.5" />
+                <Launch size={14} />
                 Setup guide
               </a>
             </CardHeader>
@@ -607,35 +578,36 @@ export function EmptyState({
                 );
               })}
 
-              <Button
-                onClick={selectedProvider === 'aws' ? handleValidateAws : handleConnect}
-                disabled={isConnecting}
-                className="mt-6 h-11 w-full rounded-lg text-base font-medium"
-                size="lg"
-              >
-                {isConnecting ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    {selectedProvider === 'aws' ? 'Validating credentials...' : 'Connecting...'}
-                  </>
-                ) : (
-                  <>{selectedProvider === 'aws' ? 'Continue' : `Connect ${provider.shortName}`}</>
-                )}
-              </Button>
+              <div className="mt-6">
+                <Button
+                  onClick={selectedProvider === 'aws' ? handleValidateAws : handleConnect}
+                  loading={isConnecting}
+                  width="full"
+                  size="lg"
+                >
+                  {isConnecting
+                    ? selectedProvider === 'aws'
+                      ? 'Validating credentials...'
+                      : 'Connecting...'
+                    : selectedProvider === 'aws'
+                      ? 'Continue'
+                      : `Connect ${provider.shortName}`}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   // Step 3: Success
   if (step === 'success' && provider) {
     return (
-      <div className="container mx-auto flex min-h-[600px] w-full flex-col items-center justify-center gap-8 p-4 md:p-6 lg:p-8">
+      <PageLayout variant="center" fillHeight padding="default" maxWidth="xl">
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="rounded-full bg-primary/10 p-6">
-            <CheckCircle2 className="text-primary h-16 w-16" />
+            <CheckmarkFilled size={64} className="text-primary" />
           </div>
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tight">Successfully Connected!</h1>
@@ -645,14 +617,14 @@ export function EmptyState({
           </div>
           <div className="bg-muted/50 mt-4 rounded-lg border p-6">
             <div className="flex items-center gap-3">
-              <Loader2 className="text-primary h-5 w-5 animate-spin" />
+              <Spinner size={20} />
               <p className="text-muted-foreground text-sm">
                 This usually takes 1-2 minutes. We'll show results as soon as they're ready.
               </p>
             </div>
           </div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 

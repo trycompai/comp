@@ -1,5 +1,4 @@
 import { requireRoutePermission } from '@/lib/permissions.server';
-import { PageHeader, PageLayout } from '@trycompai/design-system';
 
 export default async function Layout({
   children,
@@ -11,9 +10,5 @@ export default async function Layout({
   const { orgId } = await params;
   await requireRoutePermission('frameworks', orgId);
 
-  return (
-    <PageLayout header={<PageHeader title="Overview" />} padding="default">
-      {children}
-    </PageLayout>
-  );
+  return children;
 }

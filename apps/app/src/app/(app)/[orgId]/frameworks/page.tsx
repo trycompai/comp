@@ -1,4 +1,5 @@
 import { serverApi } from '@/lib/api-server';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { redirect } from 'next/navigation';
 import { Overview } from './components/Overview';
 
@@ -53,30 +54,32 @@ export default async function DashboardPage({
   }));
 
   return (
-    <Overview
-      frameworksWithControls={frameworksWithControls}
-      frameworksWithCompliance={frameworksWithCompliance}
-      allFrameworks={allFrameworks}
-      organizationId={organizationId}
-      publishedPoliciesScore={{
-        totalPolicies: scores.policies.total,
-        publishedPolicies: scores.policies.published,
-        draftPolicies: scores.policies.draftPolicies,
-        policiesInReview: scores.policies.policiesInReview,
-        unpublishedPolicies: scores.policies.unpublishedPolicies,
-      }}
-      doneTasksScore={{
-        totalTasks: scores.tasks.total,
-        doneTasks: scores.tasks.done,
-        incompleteTasks: scores.tasks.incompleteTasks,
-      }}
-      peopleScore={{
-        totalMembers: scores.people.total,
-        completedMembers: scores.people.completed,
-      }}
-      currentMember={scores.currentMember}
-      onboardingTriggerJobId={scores.onboardingTriggerJobId}
-      findings={findings}
-    />
+    <PageLayout header={<PageHeader title="Overview" />}>
+      <Overview
+        frameworksWithControls={frameworksWithControls}
+        frameworksWithCompliance={frameworksWithCompliance}
+        allFrameworks={allFrameworks}
+        organizationId={organizationId}
+        publishedPoliciesScore={{
+          totalPolicies: scores.policies.total,
+          publishedPolicies: scores.policies.published,
+          draftPolicies: scores.policies.draftPolicies,
+          policiesInReview: scores.policies.policiesInReview,
+          unpublishedPolicies: scores.policies.unpublishedPolicies,
+        }}
+        doneTasksScore={{
+          totalTasks: scores.tasks.total,
+          doneTasks: scores.tasks.done,
+          incompleteTasks: scores.tasks.incompleteTasks,
+        }}
+        peopleScore={{
+          totalMembers: scores.people.total,
+          completedMembers: scores.people.completed,
+        }}
+        currentMember={scores.currentMember}
+        onboardingTriggerJobId={scores.onboardingTriggerJobId}
+        findings={findings}
+      />
+    </PageLayout>
   );
 }

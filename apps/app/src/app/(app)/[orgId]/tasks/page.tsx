@@ -51,6 +51,7 @@ export default async function TasksPage({
       frameworkInstances: FrameworkInstanceForTasks[];
       organizationName: string | null;
       hasEvidenceExportAccess: boolean;
+      evidenceApprovalEnabled: boolean;
     }>('/v1/tasks/options'),
   ]);
 
@@ -61,6 +62,7 @@ export default async function TasksPage({
     frameworkInstances: [],
     organizationName: null,
     hasEvidenceExportAccess: false,
+    evidenceApprovalEnabled: false,
   };
 
   // Filter members: exclude employee, auditor, contractor roles
@@ -91,6 +93,7 @@ export default async function TasksPage({
       orgId={orgId}
       organizationName={options.organizationName}
       hasEvidenceExportAccess={options.hasEvidenceExportAccess}
+      evidenceApprovalEnabled={options.evidenceApprovalEnabled}
     />
   );
 }
