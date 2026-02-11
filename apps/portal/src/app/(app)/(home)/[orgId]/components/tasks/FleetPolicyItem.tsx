@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
-import { CheckCircle2, HelpCircle, Image, MoreVertical, Upload, XCircle } from 'lucide-react';
+import { CheckCircle2, HelpCircle, Image, MoreVertical, Trash, Upload, XCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,15 +15,18 @@ import {
 import type { FleetPolicy } from '../../types';
 import { PolicyImageUploadModal } from './PolicyImageUploadModal';
 import { PolicyImagePreviewModal } from './PolicyImagePreviewModal';
+import { PolicyImageResetModal } from './PolicyImageResetModal';
 
 interface FleetPolicyItemProps {
   policy: FleetPolicy;
+  organizationId: string;
   onRefresh: () => void;
 }
 
-export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
+export function FleetPolicyItem({ policy, organizationId, onRefresh }: FleetPolicyItemProps) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isRemoveOpen, setIsRemoveOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const actions = useMemo(() => {
@@ -34,6 +37,11 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
             label: 'Preview images',
             renderIcon: () => <Image className="mr-2 h-4 w-4" />,
             onClick: () => setIsPreviewOpen(true),
+          },
+          {
+            label: 'Remove images',
+            renderIcon: () => <Trash className="mr-2 h-4 w-4" />,
+            onClick: () => setIsRemoveOpen(true),
           },
         ];
       }
@@ -131,6 +139,7 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
       </div>
       <PolicyImageUploadModal
         policy={policy}
+        organizationId={organizationId}
         open={isUploadOpen}
         onOpenChange={setIsUploadOpen}
         onRefresh={onRefresh}
@@ -139,6 +148,13 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
         images={policy?.attachments || []}
         open={isPreviewOpen}
         onOpenChange={setIsPreviewOpen}
+      />
+      <PolicyImageResetModal
+        open={isRemoveOpen}
+        organizationId={organizationId}
+        policyId={policy.id}
+        onOpenChange={setIsRemoveOpen}
+        onRefresh={onRefresh}
       />
     </>
   );
