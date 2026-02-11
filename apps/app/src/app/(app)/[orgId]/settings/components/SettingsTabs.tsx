@@ -26,6 +26,7 @@ export function SettingsTabs({ orgId, children }: SettingsTabsProps) {
   const title = (() => {
     if (pathname === `/${orgId}/settings`) return 'General Settings';
     if (pathname.startsWith(`/${orgId}/settings/context-hub`)) return 'Context';
+    if (pathname.startsWith(`/${orgId}/settings/portal`)) return 'Employee Portal';
     if (pathname.startsWith(`/${orgId}/settings/api-keys`)) return 'API Keys';
     if (pathname.startsWith(`/${orgId}/settings/secrets`)) return 'Secrets';
     if (pathname.startsWith(`/${orgId}/settings/roles`)) return 'Roles';

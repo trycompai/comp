@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@trycompai/design-system';
-import { ExternalLink, Search } from 'lucide-react';
+import { ClipboardList, ExternalLink, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import type { CSSProperties } from 'react';
@@ -21,6 +21,7 @@ interface EmployeeCompletionChartProps {
     metadata: TrainingVideo;
   })[];
   showAll?: boolean;
+  securityTrainingStepEnabled?: boolean;
 }
 
 // Define colors for the chart using DS semantic colors
@@ -48,6 +49,7 @@ export function EmployeeCompletionChart({
   policies,
   trainingVideos,
   showAll = false,
+  securityTrainingStepEnabled = true,
 }: EmployeeCompletionChartProps) {
   const params = useParams();
   const orgId = params.orgId as string;
@@ -67,22 +69,28 @@ export function EmployeeCompletionChart({
         ? Math.round((policiesCompletedCount / policies.length) * 100)
         : 0;
 
-      // Count training videos completed by this employee
-      const employeeTrainingVideos = trainingVideos.filter(
-        (video) => video.memberId === employee.id && video.completedAt !== null,
-      );
-      const trainingsCompletedCount = employeeTrainingVideos.length;
+      let trainingsCompletedCount = 0;
+      let trainingVideosTotal = 0;
+      let trainingCompletionPercentage = 0;
 
-      // Get the total unique training videos available
-      const uniqueTrainingVideosIds = [
-        ...new Set(trainingVideos.map((video) => video.metadata.id)),
-      ];
-      const trainingVideosTotal = uniqueTrainingVideosIds.length;
+      if (securityTrainingStepEnabled) {
+        // Count training videos completed by this employee
+        const employeeTrainingVideos = trainingVideos.filter(
+          (video) => video.memberId === employee.id && video.completedAt !== null,
+        );
+        trainingsCompletedCount = employeeTrainingVideos.length;
 
-      // Calculate training completion percentage
-      const trainingCompletionPercentage = trainingVideosTotal
-        ? Math.round((trainingsCompletedCount / trainingVideosTotal) * 100)
-        : 0;
+        // Get the total unique training videos available
+        const uniqueTrainingVideosIds = [
+          ...new Set(trainingVideos.map((video) => video.metadata.id)),
+        ];
+        trainingVideosTotal = uniqueTrainingVideosIds.length;
+
+        // Calculate training completion percentage
+        trainingCompletionPercentage = trainingVideosTotal
+          ? Math.round((trainingsCompletedCount / trainingVideosTotal) * 100)
+          : 0;
+      }
 
       // Calculate total completion percentage
       const totalItems = policies.length + trainingVideosTotal;
@@ -106,7 +114,7 @@ export function EmployeeCompletionChart({
         overallPercentage,
       };
     });
-  }, [employees, policies, trainingVideos]);
+  }, [employees, policies, trainingVideos, securityTrainingStepEnabled]);
 
   // Filter employees based on search term
   const filteredStats = React.useMemo(() => {
@@ -153,6 +161,8 @@ export function EmployeeCompletionChart({
     return () => window.removeEventListener('scroll', handleScroll);
   }, [loadMore, showAll]);
 
+  const hasTasks = employeeStats.some((stat) => stat.totalTasks > 0);
+
   // Check for empty data scenarios
   if (!employees.length) {
     return (
@@ -169,17 +179,30 @@ export function EmployeeCompletionChart({
     );
   }
 
-  // Check if there are any tasks to complete
-  if (policies.length === 0 && !trainingVideos.length) {
+  if (!hasTasks) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>{'Employee Task Completion'}</CardTitle>
         </CardHeader>
-        <CardContent className="flex h-[300px] items-center justify-center">
-          <p className="text-muted-foreground text-center text-sm">
-            {'No tasks available to complete'}
-          </p>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-4">
+              <ClipboardList className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="font-medium mb-1">No employee tasks to track yet</p>
+            <p className="text-muted-foreground text-sm max-w-sm mb-4">
+              Get started by reviewing and publishing your policies. Once published, employees will
+              be asked to sign them and their progress will be tracked here.
+            </p>
+            <Link
+              href={`/${orgId}/policies`}
+              className="text-primary hover:text-primary/80 text-sm font-medium inline-flex items-center gap-1 underline-offset-4 hover:underline"
+            >
+              Go to Policies
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
         </CardContent>
       </Card>
     );
@@ -233,13 +256,10 @@ export function EmployeeCompletionChart({
                       <p className="text-muted-foreground text-xs">{stat.email}</p>
                     </div>
                     <div className="text-muted-foreground text-right text-xs">
-                      <div>
-                        {stat.policiesCompleted + stat.trainingsCompleted} / {stat.totalTasks} tasks
-                      </div>
-                      <div className="text-xs">
-                        {stat.policiesCompleted}/{stat.policiesTotal} policies •{' '}
-                        {stat.trainingsCompleted}/{stat.trainingsTotal} training
-                      </div>
+                      {stat.policiesCompleted}/{stat.policiesTotal} policies signed
+                      {securityTrainingStepEnabled && (
+                        <> • {stat.trainingsCompleted}/{stat.trainingsTotal} training</>
+                      )}
                     </div>
                   </div>
 

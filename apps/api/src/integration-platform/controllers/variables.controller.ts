@@ -233,6 +233,10 @@ export class VariablesController {
       return { options: variable.options || [] };
     }
 
+    this.logger.log(
+      `Fetching options for variable ${variableId} (provider ${provider.slug}, connection ${connectionId})`,
+    );
+
     // Get credentials to make authenticated requests
     const credentials =
       await this.credentialVaultService.getDecryptedCredentials(connectionId);
@@ -352,11 +356,21 @@ export class VariablesController {
     };
 
     try {
-      this.logger.log(`Fetching options for variable ${variableId}`);
       const options = await variable.fetchOptions(fetchContext);
+      if (options.length === 0) {
+        this.logger.warn(
+          `No options returned for variable ${variableId} (provider ${provider.slug}, connection ${connectionId})`,
+        );
+      } else {
+        this.logger.log(
+          `Fetched ${options.length} options for variable ${variableId} (provider ${provider.slug}, connection ${connectionId})`,
+        );
+      }
       return { options };
     } catch (error) {
-      this.logger.error(`Failed to fetch options: ${error}`);
+      this.logger.error(
+        `Failed to fetch options for variable ${variableId} (provider ${provider.slug}, connection ${connectionId}): ${error}`,
+      );
       throw new HttpException(
         `Failed to fetch options: ${error instanceof Error ? error.message : String(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR,

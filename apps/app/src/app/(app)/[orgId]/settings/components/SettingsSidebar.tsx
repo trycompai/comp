@@ -22,9 +22,10 @@ export function SettingsSidebar({ orgId, showBrowserTab, permissions }: Settings
   const pathname = usePathname() ?? '';
 
   const items: SettingsNavItem[] = [
-    { id: 'general', label: 'General', path: `/${orgId}/settings`, hidden: !canAccessRoute(permissions, 'settings') },
+    { id: 'general', label: 'General', path: `/${orgId}/settings` },
     { id: 'context', label: 'Context', path: `/${orgId}/settings/context-hub`, hidden: !canAccessRoute(permissions, 'settings/context-hub') },
     { id: 'api', label: 'API Keys', path: `/${orgId}/settings/api-keys`, hidden: !canAccessRoute(permissions, 'settings/api-keys') },
+    { id: 'portal', label: 'Portal', path: `/${orgId}/settings/portal` },
     { id: 'secrets', label: 'Secrets', path: `/${orgId}/settings/secrets`, hidden: !canAccessRoute(permissions, 'settings/secrets') },
     { id: 'roles', label: 'Roles', path: `/${orgId}/settings/roles`, hidden: !canAccessRoute(permissions, 'settings/roles') },
     { id: 'notifications', label: 'Notifications', path: `/${orgId}/settings/notifications`, hidden: !canAccessRoute(permissions, 'settings/notifications') },
