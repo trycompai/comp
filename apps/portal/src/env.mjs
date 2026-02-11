@@ -49,5 +49,31 @@ export const env = createEnv({
     INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN,
   },
 
+  createFinalSchema: (shape, isServer) => {
+    const schema = z.object(shape);
+    if (!isServer) {
+      return schema;
+    }
+
+    return schema.superRefine((data, ctx) => {
+      if (data.RESEND_API_KEY) {
+        return;
+      }
+
+      const relayKeys = ['RELAY_SMTP_HOST', 'RELAY_SMTP_PORT', 'RELAY_SMTP_USER', 'RELAY_SMTP_PASS'];
+      const missingRelayKeys = relayKeys.filter((key) => !data[key]);
+
+      if (missingRelayKeys.length === 0) {
+        return;
+      }
+
+      ctx.addIssue({
+        code: 'mail-config',
+        message: 'Set RESEND_API_KEY or all RELAY_SMTP_* values.',
+        path: ['RESEND_API_KEY', ...relayKeys],
+      });
+    });
+  },
+
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,
 });
