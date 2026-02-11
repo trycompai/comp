@@ -13,7 +13,7 @@ import {
   TabsTrigger,
   Text,
 } from '@trycompai/design-system';
-import { AlertCircle, Award, CheckCircle2, Download } from 'lucide-react';
+import { AlertCircle, Award, CheckCircle2, Download, Info } from 'lucide-react';
 import type { FleetPolicy, Host } from '../../devices/types';
 import { PolicyItem } from '../../devices/components/PolicyItem';
 import { downloadTrainingCertificate } from '../actions/download-training-certificate';
@@ -120,102 +120,126 @@ export const EmployeeTasks = ({
           </TabsContent>
 
           <TabsContent value="training">
-            <Stack gap="md">
-              {/* Training Completion Summary */}
-              {trainingVideos.length > 0 && (
-                <div
-                  className={cn(
-                    'flex items-center justify-between rounded-lg border p-4',
-                    allTrainingComplete
-                      ? 'border-primary/20 bg-primary/5'
-                      : 'border-muted bg-muted/30',
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        'flex h-10 w-10 items-center justify-center rounded-full',
-                        allTrainingComplete ? 'bg-primary/10' : 'bg-muted',
-                      )}
-                    >
-                      <Award
-                        className={cn(
-                          'h-5 w-5',
-                          allTrainingComplete ? 'text-primary' : 'text-muted-foreground',
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <Text weight="medium">
-                        {allTrainingComplete
-                          ? 'All Training Complete'
-                          : `${completedVideos.length}/${trainingVideos.length} Videos Completed`}
-                      </Text>
-                      {trainingCompletionDate && (
-                        <Text size="sm" variant="muted">
-                          Completed on{' '}
-                          {new Date(trainingCompletionDate).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </Text>
-                      )}
-                    </div>
-                  </div>
-                  {allTrainingComplete && (
-                    <button
-                      onClick={handleDownloadCertificate}
-                      className="inline-flex items-center gap-2 rounded-lg border border-primary bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-all duration-200 hover:bg-primary/90 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-1 cursor-pointer"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      Certificate
-                    </button>
-                  )}
+            {!organization.securityTrainingStepEnabled ? (
+              <div className="flex items-center gap-3 rounded-lg border border-muted bg-muted/30 p-4">
+                <Info className="h-5 w-5 shrink-0 text-muted-foreground" />
+                <div>
+                  <Text weight="medium">Security training is managed outside of Comp AI</Text>
+                  <Text size="sm" variant="muted">
+                    Evidence for security training completion can be logged in the Security Awareness
+                    Training evidence task.
+                  </Text>
                 </div>
-              )}
-
-              <Stack gap="sm">
-                {trainingVideos.length === 0 ? (
-                  <div className="py-6 text-center">
-                    <Text variant="muted">No training videos required to watch.</Text>
-                  </div>
-                ) : (
-                  trainingVideos.map((video) => {
-                    const isCompleted = video.completedAt !== null;
-
-                    return (
+              </div>
+            ) : (
+              <Stack gap="md">
+                {/* Training Completion Summary */}
+                {trainingVideos.length > 0 && (
+                  <div
+                    className={cn(
+                      'flex items-center justify-between rounded-lg border p-4',
+                      allTrainingComplete
+                        ? 'border-primary/20 bg-primary/5'
+                        : 'border-muted bg-muted/30',
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
                       <div
-                        key={video.id}
-                        className="flex items-center justify-between gap-2 rounded-md border p-3"
+                        className={cn(
+                          'flex h-10 w-10 items-center justify-center rounded-full',
+                          allTrainingComplete ? 'bg-primary/10' : 'bg-muted',
+                        )}
                       >
-                        <Stack gap="xs">
-                          <div className="flex items-center gap-2">
-                            {isCompleted ? (
-                              <CheckCircle2 className="h-4 w-4 text-primary" />
-                            ) : (
-                              <AlertCircle className="h-4 w-4 text-destructive" />
-                            )}
-                            <Text>{video.metadata.title}</Text>
-                          </div>
-                          {isCompleted && (
-                            <Text size="xs" variant="muted">
-                              Completed -{' '}
-                              {video.completedAt &&
-                                new Date(video.completedAt).toLocaleDateString()}
-                            </Text>
+                        <Award
+                          className={cn(
+                            'h-5 w-5',
+                            allTrainingComplete ? 'text-primary' : 'text-muted-foreground',
                           )}
-                        </Stack>
+                        />
                       </div>
-                    );
-                  })
+                      <div>
+                        <Text weight="medium">
+                          {allTrainingComplete
+                            ? 'All Training Complete'
+                            : `${completedVideos.length}/${trainingVideos.length} Videos Completed`}
+                        </Text>
+                        {trainingCompletionDate && (
+                          <Text size="sm" variant="muted">
+                            Completed on{' '}
+                            {new Date(trainingCompletionDate).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                          </Text>
+                        )}
+                      </div>
+                    </div>
+                    {allTrainingComplete && (
+                      <button
+                        onClick={handleDownloadCertificate}
+                        className="inline-flex items-center gap-2 rounded-lg border border-primary bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-all duration-200 hover:bg-primary/90 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-1 cursor-pointer"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Certificate
+                      </button>
+                    )}
+                  </div>
                 )}
+
+                <Stack gap="sm">
+                  {trainingVideos.length === 0 ? (
+                    <div className="py-6 text-center">
+                      <Text variant="muted">No training videos required to watch.</Text>
+                    </div>
+                  ) : (
+                    trainingVideos.map((video) => {
+                      const isCompleted = video.completedAt !== null;
+
+                      return (
+                        <div
+                          key={video.id}
+                          className="flex items-center justify-between gap-2 rounded-md border p-3"
+                        >
+                          <Stack gap="xs">
+                            <div className="flex items-center gap-2">
+                              {isCompleted ? (
+                                <CheckCircle2 className="h-4 w-4 text-primary" />
+                              ) : (
+                                <AlertCircle className="h-4 w-4 text-destructive" />
+                              )}
+                              <Text>{video.metadata.title}</Text>
+                            </div>
+                            {isCompleted && (
+                              <Text size="xs" variant="muted">
+                                Completed -{' '}
+                                {video.completedAt &&
+                                  new Date(video.completedAt).toLocaleDateString()}
+                              </Text>
+                            )}
+                          </Stack>
+                        </div>
+                      );
+                    })
+                  )}
+                </Stack>
               </Stack>
-            </Stack>
+            )}
           </TabsContent>
 
           <TabsContent value="device">
-            {host ? (
+            {!organization.deviceAgentStepEnabled ? (
+              <div className="flex items-center gap-3 rounded-lg border border-muted bg-muted/30 p-4">
+                <Info className="h-5 w-5 shrink-0 text-muted-foreground" />
+                <div>
+                  <Text weight="medium">Device agent is managed outside of Comp AI</Text>
+                  <Text size="sm" variant="muted">
+                    Evidence for device compliance can be logged in the Secure Device and Device List
+                    evidence tasks.
+                  </Text>
+                </div>
+              </div>
+            ) : host ? (
               <Card>
                 <CardHeader>
                   <CardTitle>{host.computer_name}&apos;s Policies</CardTitle>
