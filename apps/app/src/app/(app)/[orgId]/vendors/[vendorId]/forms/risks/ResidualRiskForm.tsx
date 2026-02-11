@@ -115,7 +115,7 @@ export function ResidualRiskForm({
           />
 
           <div className="flex justify-end pt-4">
-            <Button type="submit" disabled={isSubmitting || !hasPermission('vendor', 'assess')}>Save</Button>
+            <Button type="submit" disabled={isSubmitting || !hasPermission('vendor', 'update')}>Save</Button>
           </div>
         </Stack>
       </form>

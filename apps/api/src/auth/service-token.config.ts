@@ -36,7 +36,7 @@ export const SERVICE_DEFINITIONS: Record<string, ServiceDefinition> = {
       'trust:read',
       'organization:read',
       'questionnaire:read',
-      'questionnaire:respond',
+      'questionnaire:update',
     ],
   },
 };

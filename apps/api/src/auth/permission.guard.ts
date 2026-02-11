@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { RESTRICTED_ROLES, PRIVILEGED_ROLES } from '@comp/auth';
 import { auth } from './auth.server';
 import { resolveServiceByName } from './service-token.config';
 import { AuthenticatedRequest } from './types';
@@ -22,16 +23,6 @@ export interface RequiredPermission {
  * Metadata key for storing required permissions on route handlers
  */
 export const PERMISSIONS_KEY = 'required_permissions';
-
-/**
- * Roles that require assignment-based filtering for resources
- */
-const RESTRICTED_ROLES = ['employee', 'contractor'];
-
-/**
- * Roles that have full access without assignment filtering
- */
-const PRIVILEGED_ROLES = ['owner', 'admin', 'auditor'];
 
 /**
  * PermissionGuard - Validates user permissions using better-auth's SDK
@@ -196,14 +187,16 @@ export class PermissionGuard implements CanActivate {
     }
 
     // If user has any privileged role, they're not restricted
+    const privileged: readonly string[] = PRIVILEGED_ROLES;
+    const restricted: readonly string[] = RESTRICTED_ROLES;
     const hasPrivilegedRole = roles.some((role) =>
-      PRIVILEGED_ROLES.includes(role),
+      privileged.includes(role),
     );
     if (hasPrivilegedRole) {
       return false;
     }
 
     // Check if all roles are restricted
-    return roles.every((role) => RESTRICTED_ROLES.includes(role));
+    return roles.every((role) => restricted.includes(role));
   }
 }

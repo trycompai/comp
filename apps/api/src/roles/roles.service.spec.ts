@@ -2,6 +2,69 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { RolesService } from './roles.service';
 
+// Mock @comp/auth to avoid ESM import issues with better-auth in Jest
+jest.mock('@comp/auth', () => {
+  const statement = {
+    organization: ['read', 'update', 'delete'],
+    member: ['create', 'read', 'update', 'delete'],
+    invitation: ['create', 'read', 'delete'],
+    team: ['create', 'read', 'update', 'delete'],
+    ac: ['create', 'read', 'update', 'delete'],
+    control: ['create', 'read', 'update', 'delete'],
+    evidence: ['create', 'read', 'update', 'delete'],
+    policy: ['create', 'read', 'update', 'delete'],
+    risk: ['create', 'read', 'update', 'delete'],
+    vendor: ['create', 'read', 'update', 'delete'],
+    task: ['create', 'read', 'update', 'delete'],
+    framework: ['create', 'read', 'update', 'delete'],
+    audit: ['create', 'read', 'update'],
+    finding: ['create', 'read', 'update', 'delete'],
+    questionnaire: ['create', 'read', 'update', 'delete'],
+    integration: ['create', 'read', 'update', 'delete'],
+    apiKey: ['create', 'read', 'delete'],
+    app: ['read'],
+    trust: ['read', 'update'],
+  };
+
+  const BUILT_IN_ROLE_PERMISSIONS: Record<string, Record<string, string[]>> = {
+    owner: { ...Object.fromEntries(Object.entries(statement).map(([k, v]) => [k, [...v]])) },
+    admin: {
+      ...Object.fromEntries(Object.entries(statement).map(([k, v]) => [k, [...v]])),
+      organization: ['read', 'update'],
+    },
+    auditor: {
+      organization: ['read'],
+      member: ['create', 'read'],
+      invitation: ['create', 'read'],
+      control: ['read'],
+      evidence: ['read'],
+      policy: ['read'],
+      risk: ['read'],
+      vendor: ['read'],
+      task: ['read'],
+      framework: ['read'],
+      audit: ['read'],
+      finding: ['create', 'read', 'update'],
+      questionnaire: ['read'],
+      integration: ['read'],
+      app: ['read'],
+      trust: ['read'],
+    },
+    employee: { policy: ['read'] },
+    contractor: { policy: ['read'] },
+  };
+
+  const allRoles = {
+    owner: { statements: BUILT_IN_ROLE_PERMISSIONS.owner },
+    admin: { statements: BUILT_IN_ROLE_PERMISSIONS.admin },
+    auditor: { statements: BUILT_IN_ROLE_PERMISSIONS.auditor },
+    employee: { statements: BUILT_IN_ROLE_PERMISSIONS.employee },
+    contractor: { statements: BUILT_IN_ROLE_PERMISSIONS.contractor },
+  };
+
+  return { statement, allRoles, BUILT_IN_ROLE_PERMISSIONS };
+});
+
 // Mock the database
 jest.mock('@trycompai/db', () => ({
   db: {
@@ -191,13 +254,13 @@ describe('RolesService', () => {
 
     it('should combine permissions from multiple roles for privilege check', async () => {
       // User has both employee and auditor roles
-      // Employee has: task, evidence, policy, questionnaire, portal
-      // Auditor has: organization, member, invitation, control, evidence, policy, risk, vendor, task, framework, audit, finding, questionnaire, integration, app, portal
+      // Employee has: policy (read)
+      // Auditor has: organization, member, invitation, control, evidence, policy, risk, vendor, task, framework, audit, finding, questionnaire, integration, app
       const dto = {
         name: 'combined-role',
         permissions: {
           finding: ['create', 'read'], // Auditor has this, employee doesn't
-          task: ['read', 'complete'], // Employee has this
+          policy: ['read'], // Both have this
         },
       };
 

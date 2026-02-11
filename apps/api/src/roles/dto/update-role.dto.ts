@@ -22,8 +22,8 @@ export class UpdateRoleDto {
     description: 'Updated permissions for the role. Keys are resource names, values are arrays of allowed actions.',
     example: {
       control: ['read', 'update', 'delete'],
-      policy: ['read', 'update', 'publish', 'approve'],
-      risk: ['read', 'assess'],
+      policy: ['read', 'update', 'delete'],
+      risk: ['read', 'update'],
     },
     required: false,
   })

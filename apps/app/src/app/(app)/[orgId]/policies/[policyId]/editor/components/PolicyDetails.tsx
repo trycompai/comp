@@ -179,7 +179,7 @@ export function PolicyContentManager({
 
   const { hasPermission } = usePermissions();
   const canUpdatePolicy = hasPermission('policy', 'update');
-  const canPublishPolicy = hasPermission('policy', 'publish');
+  const canPublishPolicy = hasPermission('policy', 'update');
   const canDeletePolicy = hasPermission('policy', 'delete');
 
   const [showAiAssistant, setShowAiAssistant] = useState(false);

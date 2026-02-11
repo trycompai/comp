@@ -140,7 +140,7 @@ export function ModernSingleStatusTaskList({
                   <span>Status</span>
                 </Button>
               )}
-              {hasPermission('task', 'assign') && (
+              {hasPermission('task', 'update') && (
                 <Button
                   variant="outline"
                   size="sm"

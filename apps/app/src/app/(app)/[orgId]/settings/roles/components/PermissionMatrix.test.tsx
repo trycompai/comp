@@ -43,8 +43,8 @@ describe('PermissionMatrix', () => {
       render(
         <PermissionMatrix
           value={{
-            control: ['read', 'export'], // view level
-            risk: ['create', 'read', 'update', 'delete', 'assess', 'export'], // edit level
+            control: ['read'], // view level
+            risk: ['create', 'read', 'update', 'delete'], // edit level
           }}
           onChange={mockOnChange}
         />
@@ -71,7 +71,7 @@ describe('PermissionMatrix', () => {
       }
 
       expect(mockOnChange).toHaveBeenCalledWith({
-        control: ['read', 'export'],
+        control: ['read'],
       });
     });
 
@@ -89,7 +89,7 @@ describe('PermissionMatrix', () => {
       }
 
       expect(mockOnChange).toHaveBeenCalledWith({
-        control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
+        control: ['create', 'read', 'update', 'delete'],
       });
     });
 
@@ -97,7 +97,7 @@ describe('PermissionMatrix', () => {
       const mockOnChange = vi.fn();
       render(
         <PermissionMatrix
-          value={{ control: ['read', 'export'] }}
+          value={{ control: ['read'] }}
           onChange={mockOnChange}
         />
       );
@@ -119,7 +119,7 @@ describe('PermissionMatrix', () => {
       render(
         <PermissionMatrix
           value={{
-            control: ['read', 'export'],
+            control: ['read'],
             policy: ['read'],
           }}
           onChange={mockOnChange}
@@ -136,9 +136,9 @@ describe('PermissionMatrix', () => {
       }
 
       expect(mockOnChange).toHaveBeenCalledWith({
-        control: ['read', 'export'],
+        control: ['read'],
         policy: ['read'],
-        risk: ['read', 'export'],
+        risk: ['read'],
       });
     });
   });
@@ -181,14 +181,14 @@ describe('PermissionMatrix', () => {
 
       expect(mockOnChange).toHaveBeenCalledWith(
         expect.objectContaining({
-          control: ['read', 'export'],
-          evidence: ['read', 'export'],
+          control: ['read'],
+          evidence: ['read'],
           policy: ['read'],
-          risk: ['read', 'export'],
+          risk: ['read'],
           vendor: ['read'],
           task: ['read'],
           framework: ['read'],
-          audit: ['read', 'export'],
+          audit: ['read'],
           finding: ['read'],
           questionnaire: ['read'],
           integration: ['read'],
@@ -222,7 +222,7 @@ describe('PermissionMatrix', () => {
       render(
         <PermissionMatrix
           value={{
-            control: ['read', 'export'],
+            control: ['read'],
             policy: ['read'],
           }}
           onChange={mockOnChange}
@@ -246,20 +246,8 @@ describe('PermissionMatrix', () => {
       // Set all resources to view level
       const allReadPermissions: Record<string, string[]> = {};
       for (const resource of RESOURCES) {
-        allReadPermissions[resource.key] = resource.key === 'policy' ? ['read'] : ['read', 'export'];
+        allReadPermissions[resource.key] = ['read'];
       }
-      // Only include resources that have export in view
-      allReadPermissions.control = ['read', 'export'];
-      allReadPermissions.evidence = ['read', 'export'];
-      allReadPermissions.policy = ['read'];
-      allReadPermissions.risk = ['read', 'export'];
-      allReadPermissions.vendor = ['read'];
-      allReadPermissions.task = ['read'];
-      allReadPermissions.framework = ['read'];
-      allReadPermissions.audit = ['read', 'export'];
-      allReadPermissions.finding = ['read'];
-      allReadPermissions.questionnaire = ['read'];
-      allReadPermissions.integration = ['read'];
 
       render(<PermissionMatrix value={allReadPermissions} onChange={mockOnChange} />);
 
@@ -283,7 +271,6 @@ describe('Utility Functions', () => {
 
     it('returns "view" for read-only permissions', () => {
       expect(getAccessLevel('control', ['read'])).toBe('view');
-      expect(getAccessLevel('control', ['read', 'export'])).toBe('view');
     });
 
     it('returns "edit" for permissions that include create/update/delete', () => {
@@ -299,13 +286,13 @@ describe('Utility Functions', () => {
     });
 
     it('returns correct view permissions', () => {
-      expect(accessLevelToPermissions('control', 'view')).toEqual(['read', 'export']);
+      expect(accessLevelToPermissions('control', 'view')).toEqual(['read']);
       expect(accessLevelToPermissions('policy', 'view')).toEqual(['read']);
     });
 
     it('returns correct edit permissions', () => {
       expect(accessLevelToPermissions('control', 'edit')).toEqual([
-        'create', 'read', 'update', 'delete', 'assign', 'export',
+        'create', 'read', 'update', 'delete',
       ]);
     });
   });

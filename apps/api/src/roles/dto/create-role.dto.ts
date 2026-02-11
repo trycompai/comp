@@ -21,7 +21,7 @@ export class CreateRoleDto {
     description: 'Permissions for the role. Keys are resource names, values are arrays of allowed actions.',
     example: {
       control: ['read', 'update'],
-      policy: ['read', 'update', 'publish'],
+      policy: ['read', 'update'],
       risk: ['read'],
     },
   })

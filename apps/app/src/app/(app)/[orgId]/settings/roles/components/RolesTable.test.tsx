@@ -36,7 +36,7 @@ const mockRoles: CustomRole[] = [
     name: 'compliance-lead',
     permissions: {
       control: ['read', 'update'],
-      policy: ['read', 'update', 'publish'],
+      policy: ['read', 'update'],
     },
     isBuiltIn: false,
     createdAt: '2024-01-15T10:00:00.000Z',
@@ -47,7 +47,7 @@ const mockRoles: CustomRole[] = [
     id: 'role-2',
     name: 'risk-manager',
     permissions: {
-      risk: ['create', 'read', 'update', 'delete', 'assess', 'export'],
+      risk: ['create', 'read', 'update', 'delete'],
     },
     isBuiltIn: false,
     createdAt: '2024-02-01T10:00:00.000Z',

@@ -147,7 +147,7 @@ export class QuestionnaireController {
   }
 
   @Post('answer-single')
-  @RequirePermission('questionnaire', 'respond')
+  @RequirePermission('questionnaire', 'update')
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Generated single answer result',
@@ -183,7 +183,7 @@ export class QuestionnaireController {
   }
 
   @Post('save-answer')
-  @RequirePermission('questionnaire', 'respond')
+  @RequirePermission('questionnaire', 'update')
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Save manual or generated answer',
@@ -581,7 +581,7 @@ export class QuestionnaireController {
   }
 
   @Post('auto-answer')
-  @RequirePermission('questionnaire', 'respond')
+  @RequirePermission('questionnaire', 'update')
   @ApiConsumes('application/json')
   @ApiProduces('text/event-stream')
   async autoAnswer(

@@ -193,20 +193,12 @@ export function buildDescription(
   switch (action) {
     case 'create':
       return `Created ${resource}`;
+    case 'read':
+      return `Viewed ${resource}`;
     case 'update':
       return `Updated ${resource}`;
     case 'delete':
       return `Deleted ${resource}`;
-    case 'publish':
-      return `Published ${resource}`;
-    case 'approve':
-      return `Approved ${resource}`;
-    case 'assign':
-      return `Assigned ${resource}`;
-    case 'upload':
-      return `Uploaded to ${resource}`;
-    case 'export':
-      return `Exported ${resource}`;
     default: {
       const capitalizedAction =
         action.charAt(0).toUpperCase() + action.slice(1);

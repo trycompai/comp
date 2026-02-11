@@ -11,28 +11,28 @@ import {
  * Default resources from better-auth:
  * - organization: ['update', 'delete']
  * - member: ['create', 'update', 'delete']
- * - invitation: ['create', 'cancel']
+ * - invitation: ['create', 'delete']
  * - team: ['create', 'update', 'delete']
  * - ac: ['create', 'read', 'update', 'delete'] (for role management)
  */
-const statement = {
+export const statement = {
   ...defaultStatements,
   // Override better-auth defaults to add 'read' action
   organization: ['read', 'update', 'delete'],
   member: ['create', 'read', 'update', 'delete'],
-  invitation: ['create', 'read', 'cancel'],
+  invitation: ['create', 'read', 'delete'],
   team: ['create', 'read', 'update', 'delete'],
-  // GRC Resources
-  control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
-  evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],
-  policy: ['create', 'read', 'update', 'delete', 'publish', 'approve'],
-  risk: ['create', 'read', 'update', 'delete', 'assess', 'export'],
-  vendor: ['create', 'read', 'update', 'delete', 'assess'],
-  task: ['create', 'read', 'update', 'delete', 'assign', 'complete'],
+  // GRC Resources — CRUD only
+  control: ['create', 'read', 'update', 'delete'],
+  evidence: ['create', 'read', 'update', 'delete'],
+  policy: ['create', 'read', 'update', 'delete'],
+  risk: ['create', 'read', 'update', 'delete'],
+  vendor: ['create', 'read', 'update', 'delete'],
+  task: ['create', 'read', 'update', 'delete'],
   framework: ['create', 'read', 'update', 'delete'],
-  audit: ['create', 'read', 'update', 'export'],
+  audit: ['create', 'read', 'update'],
   finding: ['create', 'read', 'update', 'delete'],
-  questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
+  questionnaire: ['create', 'read', 'update', 'delete'],
   integration: ['create', 'read', 'update', 'delete'],
   apiKey: ['create', 'read', 'delete'],
   // App access resources
@@ -50,20 +50,20 @@ export const owner = ac.newRole({
   ...ownerAc.statements,
   organization: ['read', 'update', 'delete'],
   member: ['create', 'read', 'update', 'delete'],
-  invitation: ['create', 'read', 'cancel'],
+  invitation: ['create', 'read', 'delete'],
   team: ['create', 'read', 'update', 'delete'],
   ac: ['create', 'read', 'update', 'delete'],
   // Full GRC access
-  control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
-  evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],
-  policy: ['create', 'read', 'update', 'delete', 'publish', 'approve'],
-  risk: ['create', 'read', 'update', 'delete', 'assess', 'export'],
-  vendor: ['create', 'read', 'update', 'delete', 'assess'],
-  task: ['create', 'read', 'update', 'delete', 'assign', 'complete'],
+  control: ['create', 'read', 'update', 'delete'],
+  evidence: ['create', 'read', 'update', 'delete'],
+  policy: ['create', 'read', 'update', 'delete'],
+  risk: ['create', 'read', 'update', 'delete'],
+  vendor: ['create', 'read', 'update', 'delete'],
+  task: ['create', 'read', 'update', 'delete'],
   framework: ['create', 'read', 'update', 'delete'],
-  audit: ['create', 'read', 'update', 'export'],
+  audit: ['create', 'read', 'update'],
   finding: ['create', 'read', 'update', 'delete'],
-  questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
+  questionnaire: ['create', 'read', 'update', 'delete'],
   integration: ['create', 'read', 'update', 'delete'],
   apiKey: ['create', 'read', 'delete'],
   // App access
@@ -79,20 +79,20 @@ export const admin = ac.newRole({
   ...adminAc.statements,
   organization: ['read', 'update'], // No delete
   member: ['create', 'read', 'update', 'delete'],
-  invitation: ['create', 'read', 'cancel'],
+  invitation: ['create', 'read', 'delete'],
   team: ['create', 'read', 'update', 'delete'],
   ac: ['create', 'read', 'update', 'delete'],
   // Full GRC access
-  control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
-  evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],
-  policy: ['create', 'read', 'update', 'delete', 'publish', 'approve'],
-  risk: ['create', 'read', 'update', 'delete', 'assess', 'export'],
-  vendor: ['create', 'read', 'update', 'delete', 'assess'],
-  task: ['create', 'read', 'update', 'delete', 'assign', 'complete'],
+  control: ['create', 'read', 'update', 'delete'],
+  evidence: ['create', 'read', 'update', 'delete'],
+  policy: ['create', 'read', 'update', 'delete'],
+  risk: ['create', 'read', 'update', 'delete'],
+  vendor: ['create', 'read', 'update', 'delete'],
+  task: ['create', 'read', 'update', 'delete'],
   framework: ['create', 'read', 'update', 'delete'],
-  audit: ['create', 'read', 'update', 'export'],
+  audit: ['create', 'read', 'update'],
   finding: ['create', 'read', 'update', 'delete'],
-  questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
+  questionnaire: ['create', 'read', 'update', 'delete'],
   integration: ['create', 'read', 'update', 'delete'],
   apiKey: ['create', 'read', 'delete'],
   // App access
@@ -108,15 +108,15 @@ export const auditor = ac.newRole({
   organization: ['read'],
   member: ['create', 'read'], // Can invite other auditors + view people for audit context
   invitation: ['create', 'read'],
-  // Read + export access to GRC resources
-  control: ['read', 'export'],
-  evidence: ['read', 'export'],
+  // Read access to GRC resources (export maps to read)
+  control: ['read'],
+  evidence: ['read'],
   policy: ['read'],
-  risk: ['read', 'export'],
+  risk: ['read'],
   vendor: ['read'],
   task: ['read'],
   framework: ['read'],
-  audit: ['read', 'export'],
+  audit: ['read'],
   finding: ['create', 'read', 'update'], // Can create/update findings
   questionnaire: ['read'],
   integration: ['read'],
@@ -131,13 +131,8 @@ export const auditor = ac.newRole({
  * Does NOT have app access - portal only
  */
 export const employee = ac.newRole({
-  // Assignment-filtered access (filtering handled by API layer)
-  task: ['read', 'complete'],
-  evidence: ['read', 'upload'],
+  // Portal access only — can read policies to sign them
   policy: ['read'],
-  questionnaire: ['read', 'respond'],
-  // Portal access only - no app access
-  trust: ['read', 'update'],
 });
 
 /**
@@ -146,12 +141,8 @@ export const employee = ac.newRole({
  * Does NOT have app access - portal only
  */
 export const contractor = ac.newRole({
-  // Assignment-filtered access (filtering handled by API layer)
-  task: ['read', 'complete'],
-  evidence: ['read', 'upload'],
+  // Portal access only — can read policies to sign them
   policy: ['read'],
-  // Portal access only - no app access
-  trust: ['read', 'update'],
 });
 
 /**
@@ -191,3 +182,20 @@ export const PRIVILEGED_ROLES = ['owner', 'admin', 'auditor'] as const;
  * Type for role names
  */
 export type RoleName = keyof typeof allRoles;
+
+/**
+ * Built-in role permissions derived from the role definitions above.
+ * Single source of truth — consumers should import this instead of hardcoding.
+ */
+export const BUILT_IN_ROLE_PERMISSIONS: Record<string, Record<string, string[]>> =
+  Object.fromEntries(
+    Object.entries(allRoles).map(([name, role]) => [
+      name,
+      Object.fromEntries(
+        Object.entries(role.statements).map(([res, actions]) => [
+          res,
+          [...actions],
+        ]),
+      ),
+    ]),
+  );

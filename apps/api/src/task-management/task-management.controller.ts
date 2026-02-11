@@ -42,7 +42,7 @@ import { TaskItemAuditService } from './task-item-audit.service';
 @ApiTags('Task Management')
 @Controller({ path: 'task-management', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
-@RequirePermission('task', ['create', 'read', 'update', 'delete', 'assign'])
+@RequirePermission('task', ['create', 'read', 'update', 'delete'])
 @ApiSecurity('apikey')
 export class TaskManagementController {
   constructor(

@@ -9,7 +9,7 @@ vi.mock('./PermissionMatrix', () => ({
       <button
         type="button"
         data-testid="mock-set-permissions"
-        onClick={() => onChange({ control: ['read', 'export'] })}
+        onClick={() => onChange({ control: ['read'] })}
         disabled={disabled}
       >
         Set Permissions
@@ -49,14 +49,14 @@ describe('RoleForm', () => {
     it('renders with default values', () => {
       const defaultValues: Partial<RoleFormValues> = {
         name: 'compliance-lead',
-        permissions: { control: ['read', 'export'] },
+        permissions: { control: ['read'] },
       };
 
       render(<RoleForm {...defaultProps} defaultValues={defaultValues} />);
 
       expect(screen.getByDisplayValue('compliance-lead')).toBeInTheDocument();
       expect(screen.getByTestId('current-permissions')).toHaveTextContent(
-        JSON.stringify({ control: ['read', 'export'] })
+        JSON.stringify({ control: ['read'] })
       );
     });
   });
@@ -113,7 +113,7 @@ describe('RoleForm', () => {
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith({
           name: 'Compliance Lead',
-          permissions: { control: ['read', 'export'] },
+          permissions: { control: ['read'] },
         });
       });
     });
@@ -154,7 +154,7 @@ describe('RoleForm', () => {
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith({
           name: 'compliance-lead',
-          permissions: { control: ['read', 'export'] },
+          permissions: { control: ['read'] },
         });
       });
     });

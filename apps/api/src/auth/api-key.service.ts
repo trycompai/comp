@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
+import { statement } from '@comp/auth';
 import { createHash, randomBytes } from 'node:crypto';
 
 /** Result from validating an API key */
@@ -223,29 +224,8 @@ export class ApiKeyService {
    * Returns all valid `resource:action` scope pairs derived from the permission statement.
    */
   getAvailableScopes(): string[] {
-    // Import is dynamic-like but we use a hard-coded map matching the permission statement.
-    // This is kept in sync with packages/auth/src/permissions.ts
-    const resources: Record<string, readonly string[]> = {
-      organization: ['read', 'update', 'delete'],
-      member: ['create', 'read', 'update', 'delete'],
-      invitation: ['create', 'read', 'cancel'],
-      team: ['create', 'read', 'update', 'delete'],
-      control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
-      evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],
-      policy: ['create', 'read', 'update', 'delete', 'publish', 'approve'],
-      risk: ['create', 'read', 'update', 'delete', 'assess', 'export'],
-      vendor: ['create', 'read', 'update', 'delete', 'assess'],
-      task: ['create', 'read', 'update', 'delete', 'assign', 'complete'],
-      framework: ['create', 'read', 'update', 'delete'],
-      audit: ['create', 'read', 'update', 'export'],
-      finding: ['create', 'read', 'update', 'delete'],
-      questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
-      integration: ['create', 'read', 'update', 'delete'],
-      apiKey: ['create', 'read', 'delete'],
-    };
-
     const scopes: string[] = [];
-    for (const [resource, actions] of Object.entries(resources)) {
+    for (const [resource, actions] of Object.entries(statement)) {
       for (const action of actions) {
         scopes.push(`${resource}:${action}`);
       }

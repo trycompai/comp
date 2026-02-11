@@ -5,104 +5,63 @@ import {
   RadioGroupItem,
   Text,
 } from '@trycompai/design-system';
+import { statement } from '@comp/auth';
+
+/** UI labels for permission resources. Keys kept in display order. */
+const RESOURCE_LABELS: Record<string, { label: string; description: string }> = {
+  organization: { label: 'Organization', description: 'Manage organization settings' },
+  member: { label: 'Members', description: 'Manage team members and roles' },
+  control: { label: 'Controls', description: 'Manage security controls' },
+  evidence: { label: 'Evidence', description: 'Manage compliance evidence' },
+  policy: { label: 'Policies', description: 'Manage organizational policies' },
+  risk: { label: 'Risks', description: 'Manage risk assessments' },
+  vendor: { label: 'Vendors', description: 'Manage vendor relationships' },
+  task: { label: 'Tasks', description: 'Manage compliance tasks' },
+  framework: { label: 'Frameworks', description: 'Manage compliance frameworks' },
+  audit: { label: 'Audits', description: 'Manage audit activities' },
+  finding: { label: 'Findings', description: 'Manage audit findings' },
+  questionnaire: { label: 'Questionnaires', description: 'Manage security questionnaires' },
+  integration: { label: 'Integrations', description: 'Manage third-party integrations' },
+  apiKey: { label: 'API Keys', description: 'Manage API keys for programmatic access' },
+  trust: { label: 'Trust Center', description: 'Manage trust portal and access requests' },
+};
 
 /**
- * Resources available for permission assignment.
- * These map to the permission resources defined in @auth/permissions.ts
+ * Resources available for permission assignment — derived from @comp/auth statement.
+ * Only includes resources that have a UI label (excludes internal ones like 'ac', 'team', 'app').
  */
-const RESOURCES = [
-  { key: 'organization', label: 'Organization', description: 'Manage organization settings' },
-  { key: 'member', label: 'Members', description: 'Manage team members and roles' },
-  { key: 'control', label: 'Controls', description: 'Manage security controls' },
-  { key: 'evidence', label: 'Evidence', description: 'Manage compliance evidence' },
-  { key: 'policy', label: 'Policies', description: 'Manage organizational policies' },
-  { key: 'risk', label: 'Risks', description: 'Manage risk assessments' },
-  { key: 'vendor', label: 'Vendors', description: 'Manage vendor relationships' },
-  { key: 'task', label: 'Tasks', description: 'Manage compliance tasks' },
-  { key: 'framework', label: 'Frameworks', description: 'Manage compliance frameworks' },
-  { key: 'audit', label: 'Audits', description: 'Manage audit activities' },
-  { key: 'finding', label: 'Findings', description: 'Manage audit findings' },
-  { key: 'questionnaire', label: 'Questionnaires', description: 'Manage security questionnaires' },
-  { key: 'integration', label: 'Integrations', description: 'Manage third-party integrations' },
-  { key: 'apiKey', label: 'API Keys', description: 'Manage API keys for programmatic access' },
-  { key: 'trust', label: 'Trust Center', description: 'Manage trust portal and access requests' },
-] as const;
+const RESOURCES = Object.keys(RESOURCE_LABELS)
+  .filter((key) => key in statement)
+  .map((key) => ({ key, ...RESOURCE_LABELS[key] }));
 
-type ResourceKey = (typeof RESOURCES)[number]['key'];
+type ResourceKey = string;
 
 /**
  * Access levels for the simplified permission model:
  * - none: No access to the resource
- * - view: Read-only access (includes 'read' and 'export' where applicable)
- * - edit: Full access (includes 'create', 'read', 'update', 'delete' and resource-specific actions)
+ * - view: Read-only access ('read')
+ * - edit: Full access (all actions the resource supports)
  */
 type AccessLevel = 'none' | 'view' | 'edit';
 
 /**
- * Maps access levels to the actual permission actions for each resource
+ * Maps access levels to the actual permission actions for each resource.
+ * Derived from the @comp/auth statement (single source of truth).
+ * - view = ['read']
+ * - edit = all actions the resource supports
  */
-const ACCESS_LEVEL_MAPPING: Record<ResourceKey, Record<Exclude<AccessLevel, 'none'>, string[]>> = {
-  organization: {
-    view: ['read'],
-    edit: ['read', 'update'],
-  },
-  member: {
-    view: ['read'],
-    edit: ['create', 'read', 'update', 'delete'],
-  },
-  control: {
-    view: ['read', 'export'],
-    edit: ['create', 'read', 'update', 'delete', 'assign', 'export'],
-  },
-  evidence: {
-    view: ['read', 'export'],
-    edit: ['create', 'read', 'update', 'delete', 'upload', 'export'],
-  },
-  policy: {
-    view: ['read'],
-    edit: ['create', 'read', 'update', 'delete', 'publish', 'approve'],
-  },
-  risk: {
-    view: ['read', 'export'],
-    edit: ['create', 'read', 'update', 'delete', 'assess', 'export'],
-  },
-  vendor: {
-    view: ['read'],
-    edit: ['create', 'read', 'update', 'delete', 'assess'],
-  },
-  task: {
-    view: ['read'],
-    edit: ['create', 'read', 'update', 'delete', 'assign', 'complete'],
-  },
-  framework: {
-    view: ['read'],
-    edit: ['create', 'read', 'update', 'delete'],
-  },
-  audit: {
-    view: ['read', 'export'],
-    edit: ['create', 'read', 'update', 'export'],
-  },
-  finding: {
-    view: ['read'],
-    edit: ['create', 'read', 'update', 'delete'],
-  },
-  questionnaire: {
-    view: ['read'],
-    edit: ['create', 'read', 'update', 'delete', 'respond'],
-  },
-  integration: {
-    view: ['read'],
-    edit: ['create', 'read', 'update', 'delete'],
-  },
-  apiKey: {
-    view: ['read'],
-    edit: ['create', 'read', 'delete'],
-  },
-  trust: {
-    view: ['read'],
-    edit: ['read', 'update'],
-  },
-};
+const ACCESS_LEVEL_MAPPING: Record<string, Record<Exclude<AccessLevel, 'none'>, string[]>> =
+  Object.fromEntries(
+    Object.entries(statement)
+      .filter(([key]) => key in RESOURCE_LABELS)
+      .map(([key, actions]) => [
+        key,
+        {
+          view: ['read'],
+          edit: [...actions],
+        },
+      ]),
+  );
 
 interface PermissionMatrixProps {
   value: Record<string, string[]>;

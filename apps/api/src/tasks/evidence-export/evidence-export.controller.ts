@@ -75,7 +75,7 @@ export class EvidenceExportController {
    * Export a single automation's evidence as PDF
    */
   @Get(':taskId/evidence/automation/:automationId/pdf')
-  @RequirePermission('evidence', 'export')
+  @RequirePermission('evidence', 'read')
   @AuditRead()
   @ApiOperation({
     summary: 'Export automation evidence as PDF',
@@ -132,7 +132,7 @@ export class EvidenceExportController {
    * Export all evidence for a task as ZIP
    */
   @Get(':taskId/evidence/export')
-  @RequirePermission('evidence', 'export')
+  @RequirePermission('evidence', 'read')
   @AuditRead()
   @ApiOperation({
     summary: 'Export task evidence as ZIP',
@@ -204,7 +204,7 @@ export class AuditorEvidenceExportController {
    * Export all evidence for the organization (auditor only)
    */
   @Get('all')
-  @RequirePermission('evidence', 'export')
+  @RequirePermission('evidence', 'read')
   @AuditRead()
   @ApiOperation({
     summary: 'Export all organization evidence as ZIP (Auditor only)',

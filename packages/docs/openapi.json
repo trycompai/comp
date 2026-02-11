@@ -17103,8 +17103,7 @@
               ],
               "policy": [
                 "read",
-                "update",
-                "publish"
+                "update"
               ],
               "risk": [
                 "read"
@@ -17139,12 +17138,11 @@
               "policy": [
                 "read",
                 "update",
-                "publish",
-                "approve"
+                "delete"
               ],
               "risk": [
                 "read",
-                "assess"
+                "update"
               ]
             }
           }

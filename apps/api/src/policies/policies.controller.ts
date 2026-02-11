@@ -159,7 +159,7 @@ export class PoliciesController {
 
   @Post('publish-all')
   @UseGuards(PermissionGuard)
-  @RequirePermission('policy', 'publish')
+  @RequirePermission('policy', 'update')
   @ApiOperation({ summary: 'Publish all draft/needs_review policies' })
   async publishAll(
     @OrganizationId() organizationId: string,
@@ -472,7 +472,7 @@ export class PoliciesController {
 
   @Post(':id/versions/publish')
   @UseGuards(PermissionGuard)
-  @RequirePermission('policy', 'publish')
+  @RequirePermission('policy', 'update')
   @ApiOperation(VERSION_OPERATIONS.publishPolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiBody(VERSION_BODIES.publishVersion)
@@ -507,7 +507,7 @@ export class PoliciesController {
 
   @Post(':id/versions/:versionId/activate')
   @UseGuards(PermissionGuard)
-  @RequirePermission('policy', 'publish')
+  @RequirePermission('policy', 'update')
   @ApiOperation(VERSION_OPERATIONS.setActivePolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -541,7 +541,7 @@ export class PoliciesController {
 
   @Post(':id/versions/:versionId/submit-for-approval')
   @UseGuards(PermissionGuard)
-  @RequirePermission('policy', 'approve')
+  @RequirePermission('policy', 'update')
   @ApiOperation(VERSION_OPERATIONS.submitVersionForApproval)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -667,7 +667,7 @@ Keep responses helpful and focused on the policy editing task.`;
 
   @Post(':id/deny-changes')
   @UseGuards(PermissionGuard)
-  @RequirePermission('policy', 'approve')
+  @RequirePermission('policy', 'update')
   @ApiOperation({ summary: 'Deny requested policy changes' })
   @ApiParam(POLICY_PARAMS.policyId)
   async denyPolicyChanges(
@@ -687,7 +687,7 @@ Keep responses helpful and focused on the policy editing task.`;
 
   @Post(':id/accept-changes')
   @UseGuards(PermissionGuard)
-  @RequirePermission('policy', 'approve')
+  @RequirePermission('policy', 'update')
   @ApiOperation({ summary: 'Accept requested policy changes and publish' })
   @ApiParam(POLICY_PARAMS.policyId)
   async acceptPolicyChanges(

@@ -55,7 +55,7 @@ export class KnowledgeBaseController {
   }
 
   @Post('manual-answers')
-  @RequirePermission('questionnaire', 'respond')
+  @RequirePermission('questionnaire', 'update')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Save or update a manual answer' })
   @ApiConsumes('application/json')

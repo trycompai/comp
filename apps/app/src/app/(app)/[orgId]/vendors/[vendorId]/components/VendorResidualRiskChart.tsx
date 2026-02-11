@@ -21,7 +21,7 @@ export function VendorResidualRiskChart({ vendor }: ResidualRiskChartProps) {
       riskId={vendor.id}
       activeLikelihood={vendor.residualProbability}
       activeImpact={vendor.residualImpact}
-      readOnly={!hasPermission('vendor', 'assess')}
+      readOnly={!hasPermission('vendor', 'update')}
       saveAction={async ({ id, probability, impact }) => {
         await updateVendor(id, {
           residualProbability: probability,

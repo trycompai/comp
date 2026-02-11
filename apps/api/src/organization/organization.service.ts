@@ -6,6 +6,7 @@ import {
   ForbiddenException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { allRoles } from '@comp/auth';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db, Role } from '@trycompai/db';
@@ -316,13 +317,7 @@ export class OrganizationService {
   }
 
   async getRoleNotificationSettings(organizationId: string) {
-    const BUILT_IN_ROLES = [
-      'owner',
-      'admin',
-      'auditor',
-      'employee',
-      'contractor',
-    ] as const;
+    const BUILT_IN_ROLES = Object.keys(allRoles);
 
     const BUILT_IN_DEFAULTS: Record<
       string,

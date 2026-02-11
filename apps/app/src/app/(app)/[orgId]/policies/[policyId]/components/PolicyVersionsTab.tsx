@@ -80,7 +80,7 @@ export function PolicyVersionsTab({
     organizationId: orgId,
   });
   const { hasPermission } = usePermissions();
-  const canPublishPolicy = hasPermission('policy', 'publish');
+  const canPublishPolicy = hasPermission('policy', 'update');
   const canDeletePolicy = hasPermission('policy', 'delete');
   const canUpdatePolicy = hasPermission('policy', 'update');
 

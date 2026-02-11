@@ -21,7 +21,7 @@ export function VendorInherentRiskChart({ vendor }: InherentRiskChartProps) {
       riskId={vendor.id}
       activeLikelihood={vendor.inherentProbability}
       activeImpact={vendor.inherentImpact}
-      readOnly={!hasPermission('vendor', 'assess')}
+      readOnly={!hasPermission('vendor', 'update')}
       saveAction={async ({ id, probability, impact }) => {
         await updateVendor(id, {
           inherentProbability: probability,

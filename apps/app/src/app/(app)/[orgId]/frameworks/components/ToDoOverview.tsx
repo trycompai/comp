@@ -73,7 +73,7 @@ export function ToDoOverview({
     return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  const canPublishPolicies = hasPermission('policy', 'publish');
+  const canPublishPolicies = hasPermission('policy', 'update');
 
   const handleConfirmAction = async () => {
     setIsLoading(true);

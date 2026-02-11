@@ -43,9 +43,9 @@ vi.mock('../hooks/use-task', () => ({
   }),
 }));
 
-// Mock useAssignableMembers
+// Mock useOrganizationMembers
 vi.mock('@/hooks/use-organization-members', () => ({
-  useAssignableMembers: () => ({
+  useOrganizationMembers: () => ({
     members: [
       {
         id: 'member_1',
@@ -139,7 +139,7 @@ describe('TaskPropertiesSidebar permission gating', () => {
     propertySelectorCalls.length = 0;
   });
 
-  it('enables all PropertySelectors when user has task:update and task:assign', () => {
+  it('enables all PropertySelectors when user has task:update', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
 
     render(<TaskPropertiesSidebar {...defaultProps} />);
@@ -148,66 +148,39 @@ describe('TaskPropertiesSidebar permission gating', () => {
     // Status, Assignee, Frequency, Department = 4 selectors
     expect(selectors.length).toBe(4);
 
-    // Status selector should be enabled (canUpdate = true)
+    // All selectors should be enabled (canUpdate = true)
     expect(selectors[0]).toHaveAttribute('data-disabled', 'false');
-    // Assignee selector should be enabled (canAssign = true)
     expect(selectors[1]).toHaveAttribute('data-disabled', 'false');
-    // Frequency selector should be enabled (canUpdate = true)
     expect(selectors[2]).toHaveAttribute('data-disabled', 'false');
-    // Department selector should be enabled (canUpdate = true)
     expect(selectors[3]).toHaveAttribute('data-disabled', 'false');
   });
 
-  it('disables status, frequency, and department selectors when user lacks task:update', () => {
+  it('disables all selectors when user lacks task:update', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
 
     render(<TaskPropertiesSidebar {...defaultProps} />);
 
     const selectors = screen.getAllByTestId('property-selector');
 
-    // Status selector disabled (no task:update)
+    // All selectors disabled (no task:update)
     expect(selectors[0]).toHaveAttribute('data-disabled', 'true');
-    // Assignee selector disabled (no task:assign)
     expect(selectors[1]).toHaveAttribute('data-disabled', 'true');
-    // Frequency selector disabled (no task:update)
     expect(selectors[2]).toHaveAttribute('data-disabled', 'true');
-    // Department selector disabled (no task:update)
     expect(selectors[3]).toHaveAttribute('data-disabled', 'true');
   });
 
-  it('disables assignee selector specifically when user lacks task:assign', () => {
-    // Has task:update but NOT task:assign
+  it('enables all selectors when user has task:update (assign is part of update)', () => {
     setMockPermissions({ task: ['read', 'update'] });
 
     render(<TaskPropertiesSidebar {...defaultProps} />);
 
     const selectors = screen.getAllByTestId('property-selector');
 
-    // Status selector should be enabled (has task:update)
+    // All selectors enabled — assign is now part of update
     expect(selectors[0]).toHaveAttribute('data-disabled', 'false');
-    // Assignee selector should be disabled (no task:assign)
-    expect(selectors[1]).toHaveAttribute('data-disabled', 'true');
-    // Frequency selector should be enabled (has task:update)
-    expect(selectors[2]).toHaveAttribute('data-disabled', 'false');
-    // Department selector should be enabled (has task:update)
-    expect(selectors[3]).toHaveAttribute('data-disabled', 'false');
-  });
-
-  it('enables assignee but disables others when user has task:assign but not task:update', () => {
-    setMockPermissions({ task: ['read', 'assign'] });
-
-    render(<TaskPropertiesSidebar {...defaultProps} />);
-
-    const selectors = screen.getAllByTestId('property-selector');
-
-    // Status selector disabled (no task:update)
-    expect(selectors[0]).toHaveAttribute('data-disabled', 'true');
-    // Assignee selector enabled (has task:assign)
     expect(selectors[1]).toHaveAttribute('data-disabled', 'false');
-    // Frequency selector disabled (no task:update)
-    expect(selectors[2]).toHaveAttribute('data-disabled', 'true');
-    // Department selector disabled (no task:update)
-    expect(selectors[3]).toHaveAttribute('data-disabled', 'true');
+    expect(selectors[2]).toHaveAttribute('data-disabled', 'false');
+    expect(selectors[3]).toHaveAttribute('data-disabled', 'false');
   });
 
   it('renders Properties heading regardless of permissions', () => {

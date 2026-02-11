@@ -1,31 +1,16 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { db } from '@trycompai/db';
+import { statement, allRoles, BUILT_IN_ROLE_PERMISSIONS } from '@comp/auth';
 import type { CreateRoleDto } from './dto/create-role.dto';
 import type { UpdateRoleDto } from './dto/update-role.dto';
 
-// Valid resources and their actions based on our permission system
-const VALID_RESOURCES: Record<string, string[]> = {
-  organization: ['read', 'update', 'delete'],
-  member: ['create', 'read', 'update', 'delete'],
-  invitation: ['create', 'cancel'],
-  control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
-  evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],
-  policy: ['create', 'read', 'update', 'delete', 'publish', 'approve'],
-  risk: ['create', 'read', 'update', 'delete', 'assess', 'export'],
-  vendor: ['create', 'read', 'update', 'delete', 'assess'],
-  task: ['create', 'read', 'update', 'delete', 'assign', 'complete'],
-  framework: ['create', 'read', 'update', 'delete'],
-  audit: ['create', 'read', 'update', 'export'],
-  finding: ['create', 'read', 'update', 'delete'],
-  questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
-  integration: ['create', 'read', 'update', 'delete'],
-  apiKey: ['create', 'read', 'delete'],
-  app: ['read'],
-  trust: ['read', 'update'],
-};
+// Derive valid resources from the single source of truth
+const VALID_RESOURCES: Record<string, string[]> = Object.fromEntries(
+  Object.entries(statement).map(([k, v]) => [k, [...v]]),
+);
 
 // Built-in roles that cannot be modified or deleted
-const BUILT_IN_ROLES = ['owner', 'admin', 'auditor', 'employee', 'contractor'];
+const BUILT_IN_ROLES = Object.keys(allRoles);
 
 @Injectable()
 export class RolesService {
@@ -120,46 +105,7 @@ export class RolesService {
   ): Promise<Record<string, string[]>> {
     // Check if it's a built-in role
     if (BUILT_IN_ROLES.includes(roleName)) {
-      // Return the built-in role permissions (simplified - in reality would check the ac definitions)
-      const builtInPermissions: Record<string, Record<string, string[]>> = {
-        owner: { ...VALID_RESOURCES }, // Owner has all permissions
-        admin: {
-          ...VALID_RESOURCES,
-          organization: ['read', 'update'], // Admin can't delete org
-        },
-        auditor: {
-          organization: ['read'],
-          member: ['create', 'read'],
-          invitation: ['create'],
-          control: ['read', 'export'],
-          evidence: ['read', 'export'],
-          policy: ['read'],
-          risk: ['read', 'export'],
-          vendor: ['read'],
-          task: ['read'],
-          framework: ['read'],
-          audit: ['read', 'export'],
-          finding: ['create', 'read', 'update'],
-          questionnaire: ['read'],
-          integration: ['read'],
-          app: ['read'],
-          trust: ['read'],
-        },
-        employee: {
-          task: ['read', 'complete'],
-          evidence: ['read', 'upload'],
-          policy: ['read'],
-          questionnaire: ['read', 'respond'],
-          trust: ['read', 'update'],
-        },
-        contractor: {
-          task: ['read', 'complete'],
-          evidence: ['read', 'upload'],
-          policy: ['read'],
-          trust: ['read', 'update'],
-        },
-      };
-      return builtInPermissions[roleName] || {};
+      return BUILT_IN_ROLE_PERMISSIONS[roleName] || {};
     }
 
     // For custom roles, look up in database

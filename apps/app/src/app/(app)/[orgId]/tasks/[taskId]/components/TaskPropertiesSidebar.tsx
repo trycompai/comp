@@ -32,7 +32,7 @@ export function TaskPropertiesSidebar({
   const { members } = useOrganizationMembers();
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('task', 'update');
-  const canAssign = hasPermission('task', 'assign');
+  const canAssign = hasPermission('task', 'update');
 
   const assignedMember =
     !task?.assigneeId || !members ? null : members.find((m) => m.id === task.assigneeId);

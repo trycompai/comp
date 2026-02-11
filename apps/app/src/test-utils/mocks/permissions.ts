@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import { BUILT_IN_ROLE_PERMISSIONS } from '@comp/auth';
 import type { UserPermissions } from '@/lib/permissions';
 
 /**
@@ -70,58 +71,20 @@ export function setMockPermissions(permissions: UserPermissions): void {
 /**
  * Preset: admin permissions (full access to everything)
  */
-export const ADMIN_PERMISSIONS: UserPermissions = {
-  organization: ['read', 'update'],
-  member: ['create', 'read', 'update', 'delete'],
-  invitation: ['create', 'read', 'cancel'],
-  control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
-  evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],
-  policy: ['create', 'read', 'update', 'delete', 'publish', 'approve'],
-  risk: ['create', 'read', 'update', 'delete', 'assess', 'export'],
-  vendor: ['create', 'read', 'update', 'delete', 'assess'],
-  task: ['create', 'read', 'update', 'delete', 'assign', 'complete'],
-  framework: ['create', 'read', 'update', 'delete'],
-  audit: ['create', 'read', 'update', 'export'],
-  finding: ['create', 'read', 'update', 'delete'],
-  questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
-  integration: ['create', 'read', 'update', 'delete'],
-  apiKey: ['create', 'read', 'delete'],
-  app: ['read'],
-  trust: ['read', 'update'],
-};
+export const ADMIN_PERMISSIONS: UserPermissions =
+  BUILT_IN_ROLE_PERMISSIONS.admin;
 
 /**
  * Preset: auditor permissions (read-only + export + findings)
  */
-export const AUDITOR_PERMISSIONS: UserPermissions = {
-  organization: ['read'],
-  member: ['create', 'read'],
-  invitation: ['create'],
-  control: ['read', 'export'],
-  evidence: ['read', 'export'],
-  policy: ['read'],
-  risk: ['read', 'export'],
-  vendor: ['read'],
-  task: ['read'],
-  framework: ['read'],
-  audit: ['read', 'export'],
-  finding: ['create', 'read', 'update'],
-  questionnaire: ['read'],
-  integration: ['read'],
-  app: ['read'],
-  trust: ['read'],
-};
+export const AUDITOR_PERMISSIONS: UserPermissions =
+  BUILT_IN_ROLE_PERMISSIONS.auditor;
 
 /**
  * Preset: employee permissions (minimal access)
  */
-export const EMPLOYEE_PERMISSIONS: UserPermissions = {
-  task: ['read', 'complete'],
-  evidence: ['read', 'upload'],
-  policy: ['read'],
-  questionnaire: ['read', 'respond'],
-  trust: ['read', 'update'],
-};
+export const EMPLOYEE_PERMISSIONS: UserPermissions =
+  BUILT_IN_ROLE_PERMISSIONS.employee;
 
 /**
  * Preset: no permissions at all

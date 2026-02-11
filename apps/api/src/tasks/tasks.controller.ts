@@ -294,7 +294,7 @@ export class TasksController {
 
   @Patch('bulk/assignee')
   @UseGuards(PermissionGuard)
-  @RequirePermission('task', 'assign')
+  @RequirePermission('task', 'update')
   @ApiOperation({
     summary: 'Update assignee for multiple tasks',
     description: 'Bulk update the assignee of multiple tasks',
@@ -1004,7 +1004,7 @@ export class TasksController {
 
   @Post(':taskId/attachments')
   @UseGuards(PermissionGuard)
-  @RequirePermission('evidence', 'upload')
+  @RequirePermission('evidence', 'create')
   @ApiOperation({
     summary: 'Upload attachment to task',
     description: 'Upload a file attachment to a specific task',

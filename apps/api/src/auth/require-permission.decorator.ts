@@ -19,7 +19,7 @@ import { PERMISSIONS_KEY, RequiredPermission } from './permission.guard';
  * @example
  * // Use with guards
  * @UseGuards(HybridAuthGuard, PermissionGuard)
- * @RequirePermission('policy', 'publish')
+ * @RequirePermission('policy', 'update')
  * @Post(':id/publish')
  * async publishPolicy(@Param('id') id: string) { ... }
  */
@@ -41,7 +41,7 @@ export const RequirePermission = (
  * // Require permissions on multiple resources
  * @RequirePermissions([
  *   { resource: 'control', actions: ['read'] },
- *   { resource: 'evidence', actions: ['upload'] },
+ *   { resource: 'evidence', actions: ['create'] },
  * ])
  */
 export const RequirePermissions = (permissions: RequiredPermission[]) =>
@@ -72,18 +72,6 @@ export type GRCResource =
   | 'trust';
 
 /**
- * Action types available for GRC resources
+ * Action types available for GRC resources — CRUD only
  */
-export type GRCAction =
-  | 'create'
-  | 'read'
-  | 'update'
-  | 'delete'
-  | 'assign'
-  | 'export'
-  | 'upload'
-  | 'publish'
-  | 'approve'
-  | 'assess'
-  | 'complete'
-  | 'respond';
+export type GRCAction = 'create' | 'read' | 'update' | 'delete';
