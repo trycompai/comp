@@ -2,7 +2,6 @@ import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { DeleteOrganization } from '@/components/forms/organization/delete-organization';
 import { TransferOwnership } from '@/components/forms/organization/transfer-ownership';
 import { UpdateOrganizationAdvancedMode } from '@/components/forms/organization/update-organization-advanced-mode';
-
 import { UpdateOrganizationLogo } from '@/components/forms/organization/update-organization-logo';
 import { UpdateOrganizationName } from '@/components/forms/organization/update-organization-name';
 import { UpdateOrganizationWebsite } from '@/components/forms/organization/update-organization-website';

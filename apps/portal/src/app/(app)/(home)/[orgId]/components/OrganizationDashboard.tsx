@@ -85,6 +85,8 @@ export async function OrganizationDashboard({
       member={member} // Pass the member object down
       fleetPolicies={fleetPolicies}
       host={host}
+      deviceAgentStepEnabled={org.deviceAgentStepEnabled}
+      securityTrainingStepEnabled={org.securityTrainingStepEnabled}
     />
   );
 }
