@@ -1,3 +1,10 @@
+## [1.82.2](https://github.com/trycompai/comp/compare/v1.82.1...v1.82.2) (2026-02-11)
+
+
+### Bug Fixes
+
+* **api:** add email package build process and extension integration ([#2122](https://github.com/trycompai/comp/issues/2122)) ([fdbfc74](https://github.com/trycompai/comp/commit/fdbfc7408ff03b2aa0a7d09975d40bf9fdc22c93))
+
 ## [1.82.1](https://github.com/trycompai/comp/compare/v1.82.0...v1.82.1) (2026-02-05)
 
 

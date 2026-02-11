@@ -69,6 +69,14 @@ export const organizationEvidenceApprovalSchema = z.object({
   evidenceApprovalEnabled: z.boolean(),
 });
 
+export const organizationDeviceAgentStepSchema = z.object({
+  deviceAgentStepEnabled: z.boolean(),
+});
+
+export const organizationSecurityTrainingStepSchema = z.object({
+  securityTrainingStepEnabled: z.boolean(),
+});
+
 // Risks
 export const createRiskSchema = z.object({
   title: z
