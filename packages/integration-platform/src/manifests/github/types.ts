@@ -15,7 +15,7 @@ export interface GitHubRepo {
   html_url: string;
   private: boolean;
   default_branch: string;
-  owner: { login: string };
+  owner: { login: string; type?: 'User' | 'Organization' };
   security_and_analysis?: {
     advanced_security?: { status: 'enabled' | 'disabled' };
     dependabot_security_updates?: { status: 'enabled' | 'disabled' };
