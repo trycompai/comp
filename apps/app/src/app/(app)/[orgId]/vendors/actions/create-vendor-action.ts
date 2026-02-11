@@ -3,7 +3,7 @@
 import type { ActionResponse } from '@/types/actions';
 import { auth } from '@/utils/auth';
 import { extractDomain, normalizeWebsite } from '@/utils/normalize-website';
-import { db, type Vendor, VendorCategory, VendorStatus } from '@db';
+import { db, type Vendor, VendorCategory, VendorStatus } from '@db/server';
 import axios from 'axios';
 import { createSafeActionClient } from 'next-safe-action';
 import { revalidatePath } from 'next/cache';

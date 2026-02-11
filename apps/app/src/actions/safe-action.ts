@@ -3,7 +3,7 @@ import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { logger } from '@/utils/logger';
 import { client } from '@comp/kv';
-import { AuditLogEntityType, db } from '@db';
+import { AuditLogEntityType, db } from '@db/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { DEFAULT_SERVER_ERROR_MESSAGE, createSafeActionClient } from 'next-safe-action';
 import { revalidatePath } from 'next/cache';

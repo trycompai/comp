@@ -2,7 +2,7 @@ import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 
-import { db } from '@db';
+import { db } from '@db/server';
 import type { Metadata } from 'next';
 import { ApiKeysTable } from './components/table/ApiKeysTable';
 

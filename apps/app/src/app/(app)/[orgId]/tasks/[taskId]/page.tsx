@@ -1,6 +1,6 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { SingleTask } from './components/SingleTask';

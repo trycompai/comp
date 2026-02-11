@@ -1,6 +1,6 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { Injectable, Logger } from '@nestjs/common';
-import { TaskStatus } from '@db';
+import { TaskStatus } from '@db/server';
 import { isUserUnsubscribed } from '@trycompai/email';
 import { sendEmail } from '../email/resend';
 import { TaskBulkStatusChangedEmail } from '../email/templates/task-bulk-status-changed';

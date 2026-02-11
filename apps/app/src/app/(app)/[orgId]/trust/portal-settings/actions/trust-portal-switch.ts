@@ -1,8 +1,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@db';
-import { Prisma } from '@prisma/client';
+import { db, Prisma } from '@db/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 

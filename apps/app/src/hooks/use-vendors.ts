@@ -9,8 +9,10 @@ import type {
   VendorStatus,
   Likelihood,
   Impact,
+  Prisma,
 } from '@db';
-import type { JsonValue } from '@prisma/client/runtime/library';
+
+type JsonValue = Prisma.JsonValue;
 
 // Default polling interval for real-time updates (5 seconds)
 const DEFAULT_POLLING_INTERVAL = 5000;

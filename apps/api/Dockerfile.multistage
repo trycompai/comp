@@ -46,12 +46,10 @@ RUN cd packages/db && bun run build && cd ../..
 RUN cd packages/integration-platform && bun run build && cd ../..
 RUN cd packages/email && bun run build && cd ../..
 
-# Generate Prisma client for API (copy schema and generate)
-RUN cd packages/db && node scripts/combine-schemas.js && cd ../..
-RUN cp packages/db/dist/schema.prisma apps/api/prisma/schema.prisma
-RUN cd apps/api && bunx prisma generate
+# Generate Prisma client in packages/db (shared across all apps)
+RUN cd packages/db && node scripts/combine-schemas.js && bunx prisma generate
 
-# Build NestJS application (skip prebuild since we already generated Prisma)
+# Build NestJS application
 RUN cd apps/api && bunx nest build
 
 # =============================================================================
@@ -66,9 +64,6 @@ RUN apk add --no-cache wget libc6-compat openssl
 
 # Copy built NestJS app
 COPY --from=builder /app/apps/api/dist ./dist
-
-# Copy prisma files
-COPY --from=builder /app/apps/api/prisma ./prisma
 
 # Copy package.json (for any runtime needs)
 COPY --from=builder /app/apps/api/package.json ./package.json
@@ -86,10 +81,6 @@ COPY --from=builder /app/node_modules ./node_modules
 # Set production environment
 ENV NODE_ENV=production
 ENV PORT=3333
-
-# Install Prisma CLI and regenerate client in production stage
-RUN npm install -g prisma@6.13.0 && \
-    prisma generate --schema=./prisma/schema.prisma
 
 # Create non-root user
 RUN addgroup --system nestjs && adduser --system --ingroup nestjs nestjs \

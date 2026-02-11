@@ -1,6 +1,6 @@
 'use server';
 
-import { db, type Prisma } from '@db';
+import { db, type Prisma } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';

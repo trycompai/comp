@@ -2,8 +2,8 @@
 
 'use server';
 
-import type { TaskStatus } from '@db';
-import { db } from '@db';
+import type { TaskStatus } from '@db/server';
+import { db } from '@db/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../../safe-action';
 import { updateTaskSchema } from '../../schema';

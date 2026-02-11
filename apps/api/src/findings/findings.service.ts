@@ -5,7 +5,7 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { db, FindingStatus, FindingType } from '@trycompai/db';
+import { db, FindingStatus, FindingType } from '@trycompai/db/server';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { FindingAuditService } from './finding-audit.service';

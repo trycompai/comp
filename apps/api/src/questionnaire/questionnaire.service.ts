@@ -12,7 +12,7 @@ import { SaveAnswerDto } from './dto/save-answer.dto';
 import { DeleteAnswerDto } from './dto/delete-answer.dto';
 import { UploadAndParseDto } from './dto/upload-and-parse.dto';
 import { ExportByIdDto } from './dto/export-by-id.dto';
-import { db, Prisma } from '@db';
+import { db, Prisma } from '@db/server';
 import {
   syncManualAnswerToVector,
   syncOrganizationEmbeddings,

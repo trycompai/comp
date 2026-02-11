@@ -2,7 +2,7 @@ import { getFeatureFlags } from '@/app/posthog';
 import { AppOnboarding } from '@/components/app-onboarding';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { QuestionnaireParser } from '../components/QuestionnaireParser';

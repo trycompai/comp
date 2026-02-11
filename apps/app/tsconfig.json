@@ -27,7 +27,10 @@
         "./src/*"
       ],
       "@db": [
-        "./prisma"
+        "../../packages/db/src"
+      ],
+      "@db/*": [
+        "../../packages/db/src/*"
       ],
       "@/trigger": [
         "./src/trigger"

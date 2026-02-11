@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 
 export async function getOrganizations() {

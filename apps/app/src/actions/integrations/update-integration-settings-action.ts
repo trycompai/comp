@@ -1,7 +1,7 @@
 'use server';
 
 import { encrypt } from '@/lib/encryption';
-import { db } from '@db';
+import { db } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';

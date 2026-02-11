@@ -1,4 +1,3 @@
-import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin';
 import { withBotId } from 'botid/next/config';
 import type { NextConfig } from 'next';
 import path from 'path';
@@ -21,12 +20,7 @@ const config: NextConfig = {
     },
   },
 
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      // Very important, DO NOT REMOVE, it's needed for Prisma to work in the server bundle
-      config.plugins = [...config.plugins, new PrismaPlugin()];
-    }
-
+  webpack: (config) => {
     // Enable importing .md files as raw strings during webpack builds
     config.module = config.module || { rules: [] };
     config.module.rules = config.module.rules || [];
@@ -45,7 +39,6 @@ const config: NextConfig = {
   reactStrictMode: false,
   transpilePackages: [
     '@trycompai/db',
-    '@prisma/client',
     '@trycompai/design-system',
     '@carbon/icons-react',
   ],

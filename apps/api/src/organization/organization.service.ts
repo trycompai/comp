@@ -5,7 +5,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
-import { db, Role } from '@trycompai/db';
+import { db, Role } from '@trycompai/db/server';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 import type { TransferOwnershipResponseDto } from './dto/transfer-ownership.dto';
 

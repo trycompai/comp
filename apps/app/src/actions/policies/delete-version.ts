@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { db } from '@db';
+import { db } from '@db/server';
 import { authActionClient } from '../safe-action';
 import { BUCKET_NAME, s3Client } from '@/app/s3';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';

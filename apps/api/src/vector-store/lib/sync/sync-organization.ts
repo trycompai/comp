@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { vectorIndex } from '../core/client';
 import {
   findAllOrganizationEmbeddings,

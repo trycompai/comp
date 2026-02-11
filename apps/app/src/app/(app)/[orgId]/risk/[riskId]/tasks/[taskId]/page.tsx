@@ -1,7 +1,7 @@
 import { TaskOverview } from '@/components/risks/tasks/task-overview';
 import { getUsers } from '@/hooks/use-users';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';

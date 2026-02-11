@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { db, PolicyStatus, Prisma } from '@trycompai/db';
+import { db, PolicyStatus, Prisma } from '@trycompai/db/server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';

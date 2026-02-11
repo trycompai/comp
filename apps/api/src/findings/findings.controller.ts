@@ -23,7 +23,7 @@ import {
   ApiHeader,
   ApiSecurity,
 } from '@nestjs/swagger';
-import { FindingStatus } from '@trycompai/db';
+import { FindingStatus } from '@trycompai/db/server';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { RequireRoles } from '../auth/role-validator.guard';
 import { AuthContext } from '../auth/auth-context.decorator';
@@ -32,7 +32,7 @@ import { FindingsService } from './findings.service';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { ValidateFindingIdPipe } from './pipes/validate-finding-id.pipe';
-import { db } from '@trycompai/db';
+import { db } from '@trycompai/db/server';
 
 @ApiTags('Findings')
 @Controller({ path: 'findings', version: '1' })

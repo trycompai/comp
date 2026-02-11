@@ -3,7 +3,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@db';
+import { db } from '@db/server';
 import { Vercel } from '@vercel/sdk';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { env } from 'node:process';

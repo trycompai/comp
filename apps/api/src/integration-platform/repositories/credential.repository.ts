@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { db } from '@db';
-import type { IntegrationCredentialVersion } from '@prisma/client';
+import { db } from '@db/server';
+import type { IntegrationCredentialVersion } from '@db/server';
 
 export interface CreateCredentialVersionDto {
   connectionId: string;

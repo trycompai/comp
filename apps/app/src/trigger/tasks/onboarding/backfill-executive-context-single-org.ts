@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 

@@ -1,7 +1,7 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
 import { getValidFilters } from '@/lib/data-table';
-import { db } from '@db';
+import { db } from '@db/server';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { cache } from 'react';

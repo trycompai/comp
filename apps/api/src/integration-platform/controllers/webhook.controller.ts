@@ -15,7 +15,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import { getManifest } from '@comp/integration-platform';
 import type { WebhookConfig } from '@comp/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
-import { db, Prisma } from '@db';
+import { db, Prisma } from '@db/server';
 
 type WebhookPayload = Record<string, unknown>;
 

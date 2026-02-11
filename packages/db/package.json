@@ -3,26 +3,47 @@
   "description": "Database package with Prisma client and schema for Comp AI",
   "version": "1.3.22",
   "dependencies": {
-    "@prisma/client": "6.18.0",
+    "@prisma/adapter-pg": "^7.0.0",
+    "@prisma/client": "^7.0.0",
     "dotenv": "^16.4.5",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^24.2.0",
-    "prisma": "6.18.0",
-    "ts-node": "^10.9.2",
+    "prisma": "^7.0.0",
+    "tsx": "^4.19.0",
     "typescript": "^5.9.2"
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
       "types": "./src/index.ts",
-      "default": "./dist/index.js"
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./server": {
+      "types": "./src/server.ts",
+      "import": "./src/server.ts",
+      "default": "./src/server.ts"
     },
     "./postinstall": {
       "import": "./dist/postinstall.js",
       "types": "./src/postinstall.ts",
       "default": "./dist/postinstall.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./postinstall": {
+        "import": "./dist/postinstall.js",
+        "types": "./dist/postinstall.d.ts",
+        "default": "./dist/postinstall.js"
+      }
     }
   },
   "bin": {
@@ -33,18 +54,15 @@
     "README.md",
     "INTEGRATION_GUIDE.md"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/trycompai/comp.git",
     "directory": "packages/db"
   },
   "scripts": {
-    "build": "rm -rf dist && rm -rf ./prisma/generated && node scripts/combine-schemas.js && prisma generate --schema=dist/schema.prisma && tsc",
+    "build": "rm -rf dist && rm -rf ./src/generated && node scripts/combine-schemas.js && prisma generate && tsc",
     "check-types": "tsc --noEmit",
-    "db:generate": "node scripts/combine-schemas.js && prisma generate --schema=dist/schema.prisma",
+    "db:generate": "node scripts/combine-schemas.js && prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:reset": "prisma migrate reset",
     "db:push": "prisma db push",

@@ -1,5 +1,5 @@
-import { db } from '@db';
-import { TaskItemEntityType, TaskItemStatus, TaskItemPriority } from '@db';
+import { db } from '@db/server';
+import { TaskItemEntityType, TaskItemStatus, TaskItemPriority } from '@db/server';
 
 import {
   BadRequestException,

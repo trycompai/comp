@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { db, Prisma, type User } from '@db';
+import { db, Prisma, type User } from '@db/server';
 import type { GetRiskSchema } from './validations';
 
 export type GetRisksInput = {

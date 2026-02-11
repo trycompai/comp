@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { PageHeader, PageLayout, Stack } from '@trycompai/design-system';
 import { PlatformIntegrations } from './components/PlatformIntegrations';
 

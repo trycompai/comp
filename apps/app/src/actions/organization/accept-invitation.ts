@@ -1,7 +1,7 @@
 'use server';
 
 import { createTrainingVideoEntries } from '@/lib/db/employee';
-import { db } from '@db';
+import { db } from '@db/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authActionClientWithoutOrg } from '../safe-action';

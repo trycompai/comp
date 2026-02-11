@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { db } from '@db';
+import { db, Prisma, TrustFramework } from '@db/server';
 import { randomBytes } from 'crypto';
 import {
   ApproveAccessRequestDto,
@@ -20,7 +20,6 @@ import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
-import { Prisma, TrustFramework } from '@prisma/client';
 import archiver from 'archiver';
 import { PassThrough, Readable } from 'stream';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';

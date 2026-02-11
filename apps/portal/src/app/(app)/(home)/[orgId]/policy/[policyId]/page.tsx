@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@comp/ui/card';
-import { db } from '@db';
+import { db } from '@db/server';
 import { ArrowLeft, Check } from 'lucide-react';
 import { headers } from 'next/headers';
 import Link from 'next/link';

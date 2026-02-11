@@ -4,7 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { db, TaskStatus } from '@trycompai/db';
+import { db, TaskStatus } from '@trycompai/db/server';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
 

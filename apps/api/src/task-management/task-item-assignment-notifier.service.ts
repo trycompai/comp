@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { Injectable, Logger } from '@nestjs/common';
 import { isUserUnsubscribed } from '@trycompai/email';
 import { sendEmail } from '../email/resend';

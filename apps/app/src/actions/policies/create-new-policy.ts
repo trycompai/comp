@@ -1,6 +1,6 @@
 'use server';
 
-import { db, Departments, Frequency, PolicyStatus, type Prisma } from '@db';
+import { db, Departments, Frequency, PolicyStatus, type Prisma } from '@db/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { createPolicySchema } from '../schema';

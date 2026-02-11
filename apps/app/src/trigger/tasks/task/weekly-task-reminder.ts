@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { sendWeeklyTaskDigestEmailTask } from '../email/weekly-task-digest-email';
 

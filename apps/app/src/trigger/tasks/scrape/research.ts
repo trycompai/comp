@@ -1,5 +1,5 @@
 import { researchJobCore } from '@/trigger/lib/research';
-import { db } from '@db';
+import { db } from '@db/server';
 import { schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 

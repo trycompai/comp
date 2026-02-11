@@ -2,8 +2,8 @@
 
 import { auth } from '@/app/lib/auth';
 import { getFleetInstance } from '@/utils/fleet';
-import type { FleetPolicyResult, Member } from '@db';
-import { db } from '@db';
+import type { FleetPolicyResult, Member } from '@db/server';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { OrganizationDashboard } from './components/OrganizationDashboard';

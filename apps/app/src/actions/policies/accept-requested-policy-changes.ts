@@ -1,7 +1,7 @@
 'use server';
 
 import { sendNewPolicyEmail } from '@/trigger/tasks/email/new-policy-email';
-import { db, PolicyStatus, type Prisma } from '@db';
+import { db, PolicyStatus, type Prisma } from '@db/server';
 import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';

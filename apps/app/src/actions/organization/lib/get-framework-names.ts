@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@db/server';
 
 /**
  * Fetch framework names by IDs and convert them to lowercase with no spaces

@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { extractTextFromPolicy } from '../utils/extract-policy-text';
 import { logger } from '../../logger';
 import type { ExistingEmbedding } from '../core/find-existing-embeddings';

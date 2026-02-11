@@ -2,7 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { appErrors, policyDetailsInputSchema } from '../types';
 

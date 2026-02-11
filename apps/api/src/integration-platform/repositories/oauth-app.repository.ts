@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { db } from '@db';
-import type { IntegrationOAuthApp, Prisma } from '@prisma/client';
+import { db, type IntegrationOAuthApp, type Prisma } from '@db/server';
 
 export interface CreateOAuthAppDto {
   providerSlug: string;

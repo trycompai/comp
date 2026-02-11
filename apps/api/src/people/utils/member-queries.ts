@@ -1,4 +1,4 @@
-import { db } from '@trycompai/db';
+import { db } from '@trycompai/db/server';
 import type { PeopleResponseDto } from '../dto/people-responses.dto';
 import type { CreatePeopleDto } from '../dto/create-people.dto';
 import type { UpdatePeopleDto } from '../dto/update-people.dto';

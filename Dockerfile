@@ -23,7 +23,7 @@ COPY apps/app/package.json ./apps/app/
 COPY apps/portal/package.json ./apps/portal/
 
 # Install all dependencies
-RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install --ignore-scripts
+RUN bun install --ignore-scripts
 
 # =============================================================================
 # STAGE 2: Ultra-Minimal Migrator - Only Prisma
@@ -32,22 +32,20 @@ FROM oven/bun:1.2.8 AS migrator
 
 WORKDIR /app
 
-# Copy local Prisma schema and migrations from workspace
+# Copy local Prisma schema, migrations, and config from workspace
 COPY packages/db/prisma ./packages/db/prisma
+COPY packages/db/scripts ./packages/db/scripts
+COPY packages/db/prisma.config.ts ./packages/db/prisma.config.ts
 
 # Create minimal package.json for Prisma runtime (also used by seeder)
-RUN echo '{"name":"migrator","type":"module","dependencies":{"prisma":"^6.14.0","@prisma/client":"^6.14.0","@trycompai/db":"^1.3.4","zod":"^3.25.7"}}' > package.json
+RUN echo '{"name":"migrator","type":"module","dependencies":{"prisma":"^7.0.0","@prisma/client":"^7.0.0","@prisma/adapter-pg":"^7.0.0","dotenv":"^16.4.5","zod":"^4.1.12"}}' > package.json
 
 # Install ONLY Prisma dependencies
 RUN bun install
 
-# Ensure Prisma can find migrations relative to the published schema path
-# We copy the local migrations into the published package's dist directory
-RUN cp -R packages/db/prisma/migrations node_modules/@trycompai/db/dist/
-
-# Run migrations against the combined schema published by @trycompai/db
-RUN echo "Running migrations against @trycompai/db combined schema"
-CMD ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
+# Combine schemas and run migrations
+RUN cd packages/db && node scripts/combine-schemas.js
+CMD ["bunx", "prisma", "migrate", "deploy", "--config=packages/db/prisma.config.ts"]
 
 # =============================================================================
 # STAGE 3: App Builder
@@ -63,9 +61,8 @@ COPY apps/app ./apps/app
 # Bring in node_modules for build and prisma prebuild
 COPY --from=deps /app/node_modules ./node_modules
 
-# Pre-combine schemas for app build
-RUN cd packages/db && node scripts/combine-schemas.js
-RUN cp packages/db/dist/schema.prisma apps/app/prisma/schema.prisma
+# Generate Prisma client in packages/db (shared across all apps)
+RUN cd packages/db && node scripts/combine-schemas.js && bunx prisma generate
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
@@ -124,9 +121,8 @@ COPY apps/portal ./apps/portal
 # Bring in node_modules for build and prisma prebuild
 COPY --from=deps /app/node_modules ./node_modules
 
-# Pre-combine schemas for portal build
-RUN cd packages/db && node scripts/combine-schemas.js
-RUN cp packages/db/dist/schema.prisma apps/portal/prisma/schema.prisma
+# Generate Prisma client in packages/db (shared across all apps)
+RUN cd packages/db && node scripts/combine-schemas.js && bunx prisma generate
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL

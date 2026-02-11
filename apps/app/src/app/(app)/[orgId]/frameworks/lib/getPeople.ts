@@ -1,5 +1,5 @@
 import { trainingVideos } from '@/lib/data/training-videos';
-import { db } from '@db';
+import { db } from '@db/server';
 
 export async function getPeopleScore(organizationId: string) {
   // Get all active members (employees and contractors)

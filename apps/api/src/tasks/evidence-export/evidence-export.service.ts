@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@trycompai/db/server';
 import AdmZip from 'adm-zip';
 import { format } from 'date-fns';
 import { configure as configureStringify } from 'safe-stable-stringify';

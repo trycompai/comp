@@ -1,6 +1,6 @@
 import { auth } from '@/utils/auth';
 import { extractDomain } from '@/utils/normalize-website';
-import { db } from '@db';
+import { db } from '@db/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';

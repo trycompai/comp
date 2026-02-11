@@ -31,7 +31,7 @@ import {
   ReclaimAccessDto,
   RevokeGrantDto,
 } from './dto/trust-access.dto';
-import { TrustFramework } from '@prisma/client';
+import { TrustFramework } from '@db';
 import { SignNdaDto } from './dto/nda.dto';
 import { TrustAccessService } from './trust-access.service';
 

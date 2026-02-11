@@ -2,7 +2,7 @@ import { auth } from '@/app/lib/auth';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/utils/s3';
 import { validateMemberAndOrg } from '@/app/api/download-agent/utils';
 import { DeleteObjectsCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { db } from '@db';
+import { db } from '@db/server';
 import { Buffer } from 'node:buffer';
 import { type NextRequest, NextResponse } from 'next/server';
 

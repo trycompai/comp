@@ -22,8 +22,7 @@ import { CheckRunRepository } from '../repositories/check-run.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { getStringValue, toStringCredentials } from '../utils/credential-utils';
-import { db } from '@db';
-import type { Prisma } from '@prisma/client';
+import { db, type Prisma } from '@db/server';
 
 interface TaskIntegrationCheck {
   integrationId: string;

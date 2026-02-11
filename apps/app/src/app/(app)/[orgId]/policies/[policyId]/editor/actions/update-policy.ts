@@ -3,7 +3,7 @@
 import { authActionClient } from '@/actions/safe-action';
 import type { ActionResponse } from '@/actions/types';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { appErrors, updatePolicySchema } from '../types';
 

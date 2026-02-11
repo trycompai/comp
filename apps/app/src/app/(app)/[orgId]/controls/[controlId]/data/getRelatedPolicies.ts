@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@/utils/auth';
-import { db, Policy } from '@db';
+import { db, Policy } from '@db/server';
 import { headers } from 'next/headers';
 
 interface GetRelatedPoliciesParams {

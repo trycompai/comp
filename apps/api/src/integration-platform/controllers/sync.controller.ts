@@ -8,7 +8,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { db } from '@db';
+import { db } from '@db/server';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';

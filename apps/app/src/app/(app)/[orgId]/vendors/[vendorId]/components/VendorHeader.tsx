@@ -11,8 +11,7 @@ import { filterCertifications } from '@/components/vendor-risk-assessment/filter
 import { parseVendorRiskAssessmentDescription } from '@/components/vendor-risk-assessment/parse-vendor-risk-assessment-description';
 import type { VendorRiskAssessmentCertification } from '@/components/vendor-risk-assessment/vendor-risk-assessment-types';
 import { cn } from '@/lib/utils';
-import type { Vendor } from '@db';
-import type { Prisma } from '@prisma/client';
+import type { Vendor, Prisma } from '@db';
 import { Button } from '@trycompai/design-system';
 import { Launch } from '@trycompai/design-system/icons';
 import Link from 'next/link';

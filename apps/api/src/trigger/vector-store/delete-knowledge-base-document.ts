@@ -1,7 +1,7 @@
 import { logger, task } from '@trigger.dev/sdk';
 import { findEmbeddingsForSource } from '@/vector-store/lib/core/find-existing-embeddings';
 import { vectorIndex } from '@/vector-store/lib/core/client';
-import { db } from '@db';
+import { db } from '@db/server';
 
 /**
  * Task to delete all embeddings for a Knowledge Base document from vector database

@@ -1,4 +1,4 @@
-import { db, Prisma } from '@db';
+import { db, Prisma } from '@db/server';
 import {
   s3Client,
   APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET,

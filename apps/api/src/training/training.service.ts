@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { db } from '@db';
+import { db } from '@db/server';
 import { TrainingEmailService } from './training-email.service';
 import { TrainingCertificatePdfService } from './training-certificate-pdf.service';
 

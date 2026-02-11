@@ -67,10 +67,10 @@
   "tasks": {
     "db:generate": {
       "cache": false,
-      "outputs": ["prisma/schema.prisma", "node_modules/.prisma/**"]
+      "outputs": ["src/generated/**"]
     },
     "build": {
-      "dependsOn": ["^build", "db:generate"],
+      "dependsOn": ["^build", "^db:generate"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts", "dist/**"]
     },

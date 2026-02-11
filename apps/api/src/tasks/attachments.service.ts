@@ -11,7 +11,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@trycompai/db/server';
 import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from './dto/task-responses.dto';
 import { UploadAttachmentDto } from './dto/upload-attachment.dto';

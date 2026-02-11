@@ -1,6 +1,6 @@
 import { getValidFilters } from '@/lib/data-table';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { PageHeader, PageLayout, Stack } from '@trycompai/design-system';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';

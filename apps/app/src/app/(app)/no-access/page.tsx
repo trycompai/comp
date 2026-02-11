@@ -1,7 +1,7 @@
 import { Header } from '@/components/header';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';

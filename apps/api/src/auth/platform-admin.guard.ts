@@ -6,7 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { db } from '@trycompai/db';
+import { db } from '@trycompai/db/server';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { BetterAuthConfig } from '../config/better-auth.config';
 

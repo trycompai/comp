@@ -2,13 +2,13 @@ import {
   db,
   Impact,
   Likelihood,
+  type Prisma,
   TaskItemPriority,
   TaskItemStatus,
   VendorStatus,
   type TaskItemEntityType,
-} from '@db';
+} from '@db/server';
 import { openai } from '@ai-sdk/openai';
-import type { Prisma } from '@prisma/client';
 import type { Task } from '@trigger.dev/sdk';
 import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { generateObject } from 'ai';

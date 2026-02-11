@@ -8,17 +8,19 @@ alwaysApply: false
 
 ## Migration Workflow
 
-**Schema changes happen in `packages/db`, then regenerate types in each app.**
+**Schema changes happen in `packages/db`. The Prisma client is generated once and shared across all apps.**
 
 ### Step 1: Edit Schema
 
 ```bash
 # Schema files are in packages/db/prisma/schema/
 packages/db/prisma/schema/
-├── schema.prisma      # Main schema with datasource
 ├── user.prisma        # User models
 ├── task.prisma        # Task models
 └── ...
+
+# Generator and datasource config:
+packages/db/prisma/schema.prisma
 ```
 
 ### Step 2: Create Migration
@@ -29,39 +31,36 @@ cd packages/db
 bunx prisma migrate dev --name your_migration_name
 ```
 
-### Step 3: Regenerate Types in Apps
+### Step 3: Regenerate Shared Client
 
 ```bash
-# Each app needs to regenerate Prisma client types
-bun run -F apps/app db:generate
-bun run -F apps/api db:generate
-bun run -F apps/portal db:generate
+# From root - generates once in packages/db, shared by all apps
+bun run db:generate
 
-# Or from root (if configured)
-bun run prisma:generate
+# Or from packages/db directly
+cd packages/db && bun run db:generate
 ```
 
 ### ✅ Always Do This
 
 ```bash
-# 1. Make schema changes in packages/db
+# 1. Make schema changes in packages/db/prisma/schema/
 # 2. Create migration
 cd packages/db && bunx prisma migrate dev --name add_user_role
 
-# 3. Regenerate types in ALL apps that use the db
-bun run -F apps/app db:generate
-bun run -F apps/api db:generate
+# 3. Regenerate shared client (one command)
+bun run db:generate
 ```
 
 ### ❌ Never Do This
 
 ```bash
-# Don't edit schema in app directories
+# Don't create prisma schema files in app directories
 apps/app/prisma/schema.prisma  # ❌ Wrong location
 
-# Don't forget to regenerate types
-bunx prisma migrate dev  # ✅ Created migration
-# ... forgot to run db:generate in apps  # ❌ Types out of sync
+# Don't import from @prisma/client directly
+import { Prisma } from '@prisma/client'  # ❌ Use @db instead
+import { Prisma } from '@db'             # ✅ Correct
 ```
 
 ## Core Rule
@@ -138,7 +137,5 @@ After schema changes:
 
 - [ ] Schema edited in `packages/db/prisma/schema/`
 - [ ] Migration created with `bunx prisma migrate dev`
-- [ ] Types regenerated in `apps/app` with `db:generate`
-- [ ] Types regenerated in `apps/api` with `db:generate`
-- [ ] Types regenerated in `apps/portal` with `db:generate`
+- [ ] Shared client regenerated with `bun run db:generate`
 - [ ] New models use prefixed CUID IDs

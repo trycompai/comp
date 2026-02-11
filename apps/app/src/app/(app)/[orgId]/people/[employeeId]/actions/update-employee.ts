@@ -1,8 +1,8 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import type { Departments } from '@db';
-import { db, Prisma } from '@db';
+import type { Departments } from '@db/server';
+import { db, Prisma } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { appErrors } from '../types';

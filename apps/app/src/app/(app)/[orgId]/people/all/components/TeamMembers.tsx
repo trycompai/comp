@@ -1,8 +1,8 @@
 'use server';
 
 import { auth } from '@/utils/auth';
-import type { Invitation, Member, User } from '@db';
-import { db } from '@db';
+import type { Invitation, Member, User } from '@db/server';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { removeMember } from '../actions/removeMember';
 import { revokeInvitation } from '../actions/revokeInvitation';

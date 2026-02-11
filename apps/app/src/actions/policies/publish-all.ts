@@ -1,7 +1,7 @@
 'use server';
 
 import { sendPublishAllPoliciesEmail } from '@/trigger/tasks/email/publish-all-policies-email';
-import { db, PolicyStatus, Role, type Prisma } from '@db';
+import { db, PolicyStatus, Role, type Prisma } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';

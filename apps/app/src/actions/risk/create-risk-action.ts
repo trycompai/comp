@@ -2,7 +2,7 @@
 
 'use server';
 
-import { db, Impact, Likelihood } from '@db';
+import { db, Impact, Likelihood } from '@db/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { createRiskSchema } from '../schema';

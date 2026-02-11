@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@db/server';
 import { verifyUnsubscribeToken } from '@/lib/unsubscribe';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';

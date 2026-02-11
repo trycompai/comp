@@ -1,5 +1,5 @@
 import { logger, metadata, task } from '@trigger.dev/sdk';
-import { db } from '@db';
+import { db } from '@db/server';
 import { deleteManualAnswerTask } from './delete-manual-answer';
 
 const BATCH_SIZE = 50; // Process 50 deletions at a time in parallel

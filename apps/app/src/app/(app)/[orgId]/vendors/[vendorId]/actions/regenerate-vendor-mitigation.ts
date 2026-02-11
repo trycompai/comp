@@ -6,7 +6,7 @@ import {
   findCommentAuthor,
   type PolicyContext,
 } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
-import { db } from '@db';
+import { db } from '@db/server';
 import { tasks } from '@trigger.dev/sdk';
 import { z } from 'zod';
 
@@ -45,10 +45,12 @@ export const regenerateVendorMitigationAction = authActionClient
       throw new Error('No eligible author found to regenerate the mitigation');
     }
 
-    const policies: PolicyContext[] = policyRows.map((policy) => ({
-      name: policy.name,
-      description: policy.description,
-    }));
+    const policies: PolicyContext[] = policyRows.map(
+      (policy: { name: string; description: string | null }) => ({
+        name: policy.name,
+        description: policy.description,
+      }),
+    );
 
     await tasks.trigger<typeof generateVendorMitigation>('generate-vendor-mitigation', {
       organizationId,

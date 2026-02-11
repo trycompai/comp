@@ -2,7 +2,7 @@
 
 import { auth } from '@/utils/auth';
 import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 
 export const sendInvitationEmailToExistingMember = async ({

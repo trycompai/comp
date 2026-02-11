@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { db } from '@db';
-import type { IntegrationProvider } from '@prisma/client';
+import { db, type IntegrationProvider } from '@db/server';
 
 export interface CreateProviderDto {
   slug: string;

@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { db } from '@db';
+import { db } from '@db/server';
 import { authActionClient } from '../safe-action';
 
 const getPolicyVersionsSchema = z.object({

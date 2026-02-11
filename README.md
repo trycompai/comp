@@ -75,7 +75,7 @@ To get a local copy up and running, please follow these simple steps.
 
 Here is what you need to be able to run Comp AI.
 
-- Node.js (Version: >=20.x)
+- Node.js (Version: >=20.19.0)
 - Bun (Version: >=1.1.36)
 - Postgres (Version: >=15.x)
 
@@ -121,14 +121,9 @@ bun run docker:up # Spin up docker container
 bun run db:migrate # Run migrations
 ```
 
-5. Generate Prisma Types for each app
+5. Generate Prisma Client (shared across all apps)
 
 ```sh
-cd apps/app
-bun run db:generate
-cd ../portal
-bun run db:generate
-cd ../api
 bun run db:generate
 ```
 
@@ -158,22 +153,6 @@ cp apps/portal/.env.example apps/portal/.env
 cp packages/db/.env.example packages/db/.env
 ```
 
-### Windows (Command Prompt)
-
-```cmd
-copy apps\app\.env.example apps\app\.env
-copy apps\portal\.env.example apps\portal\.env
-copy packages\db\.env.example packages\db\.env
-```
-
-### Windows (PowerShell)
-
-```powershell
-Copy-Item apps\app\.env.example -Destination apps\app\.env
-Copy-Item apps\portal\.env.example -Destination apps\portal\.env
-Copy-Item packages\db\.env.example -Destination packages\db\.env
-```
-
 Additionally, ensure the following required environment variables are added to `.env` in `comp/apps/app/.env`:
 
 ```env
@@ -183,11 +162,6 @@ RESEND_API_KEY="" # Resend (https://resend.com/api-keys) - Resend Dashboard -> A
 NEXT_PUBLIC_PORTAL_URL="http://localhost:3002"
 REVALIDATION_SECRET=""         # Use `openssl rand -base64 32` to generate
 ```
-
-> ✅ Make sure you have all of these variables in your `.env` file.
-> If you're copying from `.env.example`, it might be missing the last two (`NEXT_PUBLIC_PORTAL_URL` and `REVALIDATION_SECRET`), so be sure to add them manually.
-
-Some environment variables may not load correctly from `.env` — in such cases, **hard-code** the values directly in the relevant files (see Hardcoding section below).
 
 ---
 

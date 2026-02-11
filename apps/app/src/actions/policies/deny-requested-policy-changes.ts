@@ -1,6 +1,6 @@
 'use server';
 
-import { db, PolicyStatus } from '@db';
+import { db, PolicyStatus } from '@db/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';

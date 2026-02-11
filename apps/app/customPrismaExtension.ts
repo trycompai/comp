@@ -34,14 +34,16 @@ export class PrismaExtension implements BuildExtension {
     this.moduleExternals = [
       '@prisma/client',
       '@prisma/engines',
-      '@trycompai/db', // Add the published package to externals
+      '.prisma/client',
     ];
   }
 
   externalsForTarget(target: any) {
-    if (target === 'dev') {
-      return [];
-    }
+    // Always externalize Prisma packages — in Prisma 7 with a custom output path,
+    // @prisma/client references .prisma/client internally which doesn't exist.
+    // These must be external in both dev and deploy targets.
+    // Note: @trycompai/db is NOT externalized — esbuild bundles it from source
+    // so Node.js doesn't need to resolve its TypeScript imports at runtime.
     return this.moduleExternals;
   }
 
@@ -172,7 +174,6 @@ export class PrismaExtension implements BuildExtension {
       commands,
       dependencies: {
         prisma: version,
-        '@trycompai/db': this.options.dbPackageVersion || 'latest',
       },
       build: {
         env,

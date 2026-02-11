@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@db/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 // Adjust safe-action import for colocalized structure

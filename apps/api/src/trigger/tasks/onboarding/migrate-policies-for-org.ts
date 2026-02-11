@@ -1,4 +1,4 @@
-import { db, PolicyStatus, type Prisma } from '@db';
+import { db, PolicyStatus, type Prisma } from '@db/server';
 import { logger, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 

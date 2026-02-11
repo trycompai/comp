@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@trycompai/db/server';
 import { FleetService } from '../lib/fleet.service';
 import type { DeviceResponseDto } from './dto/device-responses.dto';
 import type { MemberResponseDto } from './dto/member-responses.dto';

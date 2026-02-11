@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { vendorRiskAssessmentTask } from './vendor-risk-assessment-task';
 

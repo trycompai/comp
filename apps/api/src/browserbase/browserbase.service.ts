@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Browserbase from '@browserbasehq/sdk';
 import { Stagehand } from '@browserbasehq/stagehand';
-import { db } from '@trycompai/db';
+import { db } from '@trycompai/db/server';
 import { z } from 'zod';
 import {
   GetObjectCommand,

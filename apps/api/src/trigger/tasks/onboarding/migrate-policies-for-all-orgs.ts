@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { logger, task } from '@trigger.dev/sdk';
 import { migratePoliciesForOrg } from './migrate-policies-for-org';
 

@@ -2,7 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import type { ActionResponse } from '@/actions/types';
-import { db } from '@db';
+import { db } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 

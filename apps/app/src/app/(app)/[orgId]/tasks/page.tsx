@@ -1,5 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db, Role } from '@db';
+import { db, Role } from '@db/server';
 import { Metadata } from 'next';
 import { cookies, headers } from 'next/headers';
 import { TasksPageClient } from './components/TasksPageClient';

@@ -2,7 +2,7 @@ import 'server-only';
 
 import { upsertEmbedding } from '../core/upsert-embedding';
 import { vectorIndex } from '../core/client';
-import { db } from '@db';
+import { db } from '@db/server';
 import { logger } from '@/utils/logger';
 
 /**

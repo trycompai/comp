@@ -33,7 +33,7 @@ files.forEach((filePath) => {
       return match; // Don't change mixed imports, they'll be handled separately
     }
     hasChanges = true;
-    return `import type { ${types} } from '@prisma/client';`;
+    return `import type { ${types} } from '@db';`;
   });
 
   // Pattern 3: Handle mixed imports (db + types)
@@ -48,7 +48,7 @@ files.forEach((filePath) => {
       replacement += "import { db } from '@/lib/db';\n";
     }
     if (typeImports.length > 0) {
-      replacement += `import type { ${typeImports.join(', ')} } from '@prisma/client';`;
+      replacement += `import type { ${typeImports.join(', ')} } from '@db';`;
     }
 
     hasChanges = true;

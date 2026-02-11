@@ -1,5 +1,5 @@
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@trycompai/db/server';
 
 export class MemberValidator {
   /**

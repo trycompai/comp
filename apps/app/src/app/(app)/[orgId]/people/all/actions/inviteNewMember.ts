@@ -2,8 +2,8 @@
 
 import { maskEmailForLogs } from '@/lib/mask-email';
 import { auth } from '@/utils/auth';
-import type { Role } from '@db';
-import { db } from '@db';
+import type { Role } from '@db/server';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 
 export const inviteNewMember = async ({

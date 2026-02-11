@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { db } from '@db';
+import { db } from '@db/server';
 import { tasks, auth } from '@trigger.dev/sdk';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { DeleteDocumentDto } from './dto/delete-document.dto';

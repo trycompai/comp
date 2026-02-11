@@ -1,6 +1,6 @@
 import { auth } from '@/utils/auth';
 import { openai } from '@ai-sdk/openai';
-import { db } from '@db';
+import { db } from '@db/server';
 import { convertToModelMessages, streamText, type UIMessage } from 'ai';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';

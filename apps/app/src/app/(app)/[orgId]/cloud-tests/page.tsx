@@ -1,6 +1,6 @@
 import { auth as betterAuth } from '@/utils/auth';
 import { getManifest } from '@comp/integration-platform';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { TestsLayout } from './components/TestsLayout';

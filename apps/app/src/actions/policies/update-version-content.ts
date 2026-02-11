@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { db, PolicyStatus } from '@db';
-import type { Prisma } from '@db';
+import { db, PolicyStatus } from '@db/server';
+import type { Prisma } from '@db/server';
 import { authActionClient } from '../safe-action';
 
 interface ContentNode {

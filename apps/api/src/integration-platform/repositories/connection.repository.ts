@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { db } from '@db';
-import type {
-  IntegrationConnection,
-  IntegrationConnectionStatus,
-} from '@prisma/client';
+import {
+  db,
+  type IntegrationConnection,
+  type IntegrationConnectionStatus,
+} from '@db/server';
 
 export interface CreateConnectionDto {
   providerId: string;

@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { db } from '@db';
-import type { Prisma } from '@db';
+import { db } from '@db/server';
+import type { Prisma } from '@db/server';
 import { authActionClient } from '../safe-action';
 
 const setActiveVersionSchema = z.object({

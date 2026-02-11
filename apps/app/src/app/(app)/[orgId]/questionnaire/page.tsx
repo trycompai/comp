@@ -1,7 +1,7 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { QuestionnaireTabs } from './components/QuestionnaireTabs';

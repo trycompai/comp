@@ -2,7 +2,7 @@
 
 'use server';
 
-import { db } from '@db';
+import { db } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { deleteIntegrationConnectionSchema } from '../schema';

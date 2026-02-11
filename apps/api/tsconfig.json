@@ -16,6 +16,7 @@
     "baseUrl": ".",
     "incremental": true,
     "skipLibCheck": true,
+    "types": ["node", "jest", "multer"],
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
@@ -23,7 +24,8 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@/*": ["./src/*"],
-      "@db": ["./prisma/index"],
+      "@db": ["./src/db"],
+      "@db/*": ["./src/db/*"],
       "@comp/email": ["../../packages/email/index.ts"],
       "@comp/email/*": ["../../packages/email/*"]
     },

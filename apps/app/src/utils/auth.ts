@@ -3,7 +3,7 @@ import { maskEmailForLogs } from '@/lib/mask-email';
 import { MagicLinkEmail, OTPVerificationEmail } from '@comp/email';
 import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
 import { sendEmail } from '@comp/email/lib/resend';
-import { db } from '@db';
+import { db } from '@db/server';
 import { dubAnalytics } from '@dub/better-auth';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';

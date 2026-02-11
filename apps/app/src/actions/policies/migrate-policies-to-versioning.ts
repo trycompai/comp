@@ -1,6 +1,6 @@
 'use server';
 
-import { db, PolicyStatus, type Prisma } from '@db';
+import { db, PolicyStatus, type Prisma } from '@db/server';
 import { authActionClient } from '../safe-action';
 
 /**

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { db } from '@db';
+import { db } from '@db/server';
 import { isUserUnsubscribed } from '@trycompai/email';
 import { sendEmail } from '../email/resend';
 import { CommentMentionedEmail } from '../email/templates/comment-mentioned';
@@ -28,7 +28,7 @@ function extractMentionedUserIds(content: string | null): string[] {
     return [];
   }
 }
-import { CommentEntityType } from '@db';
+import { CommentEntityType } from '@db/server';
 
 function getAppBaseUrl(): string {
   return (

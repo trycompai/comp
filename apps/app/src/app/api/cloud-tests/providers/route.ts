@@ -1,7 +1,7 @@
 import { CLOUD_PROVIDER_CATEGORY } from '@/app/(app)/[orgId]/cloud-tests/constants';
 import { auth } from '@/utils/auth';
 import { getManifest } from '@comp/integration-platform';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 

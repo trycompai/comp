@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@trycompai/db/server';
 import { CreateContextDto } from './dto/create-context.dto';
 import { UpdateContextDto } from './dto/update-context.dto';
 

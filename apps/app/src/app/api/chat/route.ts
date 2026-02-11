@@ -2,7 +2,7 @@ import { tools } from '@/data/tools';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { openai } from '@ai-sdk/openai';
-import { db } from '@db';
+import { db } from '@db/server';
 import { type UIMessage, convertToModelMessages, streamText } from 'ai';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';

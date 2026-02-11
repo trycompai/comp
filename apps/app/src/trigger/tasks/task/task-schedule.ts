@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { Novu } from '@novu/api';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { isUserUnsubscribed, sendEmail, TaskStatusNotificationEmail } from '@trycompai/email';

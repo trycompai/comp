@@ -2,8 +2,7 @@
 
 import { encrypt } from '@/lib/encryption';
 import { getIntegrationHandler } from '@comp/integrations';
-import { db } from '@db';
-import { Prisma } from '@prisma/client';
+import { db, Prisma } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';

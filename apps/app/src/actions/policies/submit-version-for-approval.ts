@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { db, PolicyStatus } from '@db';
+import { db, PolicyStatus } from '@db/server';
 import { authActionClient } from '../safe-action';
 
 const submitVersionForApprovalSchema = z.object({

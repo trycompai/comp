@@ -1,5 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db, Role } from '@db';
+import { db, Role } from '@db/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 

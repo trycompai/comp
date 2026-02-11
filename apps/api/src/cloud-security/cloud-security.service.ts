@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { db } from '@db';
+import { db } from '@db/server';
 import { getManifest } from '@comp/integration-platform';
 import { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import { OAuthCredentialsService } from '../integration-platform/services/oauth-credentials.service';

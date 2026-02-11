@@ -1,7 +1,7 @@
 'use server';
 
 import { addFrameworksSchema } from '@/actions/schema';
-import { db, Prisma } from '@db';
+import { db, Prisma } from '@db/server';
 import { authWithOrgAccessClient } from '../safe-action';
 import { _upsertOrgFrameworkStructureCore } from './lib/initialize-organization';
 

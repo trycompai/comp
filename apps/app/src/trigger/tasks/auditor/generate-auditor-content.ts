@@ -1,6 +1,6 @@
 import { getOrganizationContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { openai } from '@ai-sdk/openai';
-import { db } from '@db';
+import { db } from '@db/server';
 import { logger, metadata, schemaTask } from '@trigger.dev/sdk';
 import { generateText } from 'ai';
 import { z } from 'zod';

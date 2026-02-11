@@ -1,5 +1,5 @@
 import { getManifest } from '@comp/integration-platform';
-import { db } from '@db';
+import { db } from '@db/server';
 import { logger, schedules } from '@trigger.dev/sdk';
 
 const API_BASE_URL = process.env.BASE_URL || 'http://localhost:3333';

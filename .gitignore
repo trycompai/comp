@@ -82,6 +82,7 @@ packages/*/dist
 
 # Generated Prisma Client
 **/src/db/generated/
+packages/db/src/generated/
 
 # Release script
 scripts/sync-release-branch.sh

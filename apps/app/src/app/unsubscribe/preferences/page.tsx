@@ -1,5 +1,5 @@
 import { verifyUnsubscribeToken } from '@/lib/unsubscribe';
-import { db } from '@db';
+import { db } from '@db/server';
 import { UnsubscribePreferencesClient, type EmailPreferences } from './client';
 
 interface PageProps {

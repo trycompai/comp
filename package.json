@@ -10,7 +10,6 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@hookform/resolvers": "^5.2.2",
     "@number-flow/react": "^0.5.11",
-    "@prisma/adapter-pg": "6.10.1",
     "@react-email/components": "^0.0.41",
     "@react-email/render": "^1.4.0",
     "@semantic-release/changelog": "^6.0.3",
@@ -51,7 +50,7 @@
     "use-debounce": "^10.1.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.19.0"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,md}": "prettier --write"
@@ -71,7 +70,7 @@
     "deps:update": "syncpack update",
     "deps:upgrade": "syncpack update && bun install",
     "dev": "turbo dev --parallel",
-    "db:generate": "turbo run db:generate --filter=@comp/app --filter=@comp/portal --filter=@comp/api",
+    "db:generate": "turbo run db:generate --filter=@trycompai/db",
     "docker:clean": "bun run -F @comp/db docker:clean",
     "docker:down": "bun run -F @comp/db docker:down",
     "docker:up": "bun run -F @comp/db docker:up",

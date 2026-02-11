@@ -6,7 +6,7 @@ import {
   EncryptedData,
 } from './credential-vault.service';
 import { getManifest, type OAuthConfig } from '@comp/integration-platform';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@db';
 
 export interface OAuthCredentials {
   clientId: string;

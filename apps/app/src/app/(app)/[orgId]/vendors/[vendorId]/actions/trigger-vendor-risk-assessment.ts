@@ -2,7 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { normalizeWebsite } from '@/utils/normalize-website';
-import { db, VendorStatus } from '@db';
+import { db, VendorStatus } from '@db/server';
 import axios from 'axios';
 import { z } from 'zod';
 

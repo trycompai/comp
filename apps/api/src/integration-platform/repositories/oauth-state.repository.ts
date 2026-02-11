@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { db } from '@db';
-import type { IntegrationOAuthState } from '@prisma/client';
+import { db, type IntegrationOAuthState } from '@db/server';
 import { randomBytes } from 'crypto';
 
 export interface CreateOAuthStateDto {

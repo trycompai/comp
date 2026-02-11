@@ -10,10 +10,9 @@ import {
   db,
   Member,
   Organization,
-  PolicyStatus,
   User,
   type Prisma,
-} from '@db';
+} from '@db/server';
 import { headers } from 'next/headers';
 
 // Define the type for AuditLog with its relations

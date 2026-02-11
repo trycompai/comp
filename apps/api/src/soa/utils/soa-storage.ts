@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import type { SOAQuestion, SOAQuestionResult } from './soa-answer-parser';
 
 export interface SOAStorageLogger {

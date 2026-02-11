@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@trycompai/db/server';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 
 @Injectable()

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { db } from '@db';
+import { db } from '@db/server';
 import { SaveSOAAnswerDto } from './dto/save-soa-answer.dto';
 import { CreateSOADocumentDto } from './dto/create-soa-document.dto';
 import { EnsureSOASetupDto } from './dto/ensure-soa-setup.dto';

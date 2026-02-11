@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { db } from '@db';
-import type { Prisma } from '@db';
+import { db } from '@db/server';
+import type { Prisma } from '@db/server';
 import { authActionClient } from '../safe-action';
 import { BUCKET_NAME, s3Client } from '@/app/s3';
 import { CopyObjectCommand } from '@aws-sdk/client-s3';

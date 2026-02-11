@@ -1,6 +1,6 @@
 import { extractS3KeyFromUrl } from '@/app/s3';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { db } from '@db';
+import { db } from '@db/server';
 import { logger, task } from '@trigger.dev/sdk';
 
 // Import shared utilities

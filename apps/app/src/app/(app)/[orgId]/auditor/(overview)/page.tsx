@@ -3,7 +3,7 @@ import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { db, Role } from '@db';
+import { db, Role } from '@db/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';

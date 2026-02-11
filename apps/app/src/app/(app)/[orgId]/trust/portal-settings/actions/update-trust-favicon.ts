@@ -4,7 +4,7 @@ import { authActionClient } from '@/actions/safe-action';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { db } from '@db';
+import { db } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 

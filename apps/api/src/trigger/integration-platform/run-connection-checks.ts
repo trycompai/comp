@@ -1,5 +1,5 @@
 import { getManifest, runAllChecks } from '@comp/integration-platform';
-import { db } from '@db';
+import { db } from '@db/server';
 import { logger, task } from '@trigger.dev/sdk';
 
 /**

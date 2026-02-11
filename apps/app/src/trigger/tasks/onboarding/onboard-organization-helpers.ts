@@ -1,7 +1,6 @@
 import { openai } from '@ai-sdk/openai';
 import {
   CommentEntityType,
-  db,
   Departments,
   FrameworkEditorFramework,
   Impact,
@@ -12,7 +11,8 @@ import {
   RiskTreatmentType,
   VendorCategory,
   VendorStatus,
-} from '@db';
+  db,
+} from '@db/server';
 import { logger, metadata, tasks } from '@trigger.dev/sdk';
 import { generateObject, generateText, jsonSchema } from 'ai';
 import axios from 'axios';
@@ -192,11 +192,9 @@ type CustomVendorEntry = {
  * Parses all selected vendors from context
  * Returns the full list of all vendors (from software field) and custom vendor URL map
  */
-function parseAllSelectedVendors(
-  questionsAndAnswers: ContextItem[],
-): { 
-  allVendorNames: string[]; 
-  customVendors: CustomVendorEntry[]; 
+function parseAllSelectedVendors(questionsAndAnswers: ContextItem[]): {
+  allVendorNames: string[];
+  customVendors: CustomVendorEntry[];
   urlMap: Map<string, string>;
 } {
   const allVendorNames: string[] = [];
@@ -210,7 +208,10 @@ function parseAllSelectedVendors(
 
   if (softwareEntry && softwareEntry.answer) {
     // Parse comma-separated vendor names
-    const names = softwareEntry.answer.split(',').map((n) => n.trim()).filter(Boolean);
+    const names = softwareEntry.answer
+      .split(',')
+      .map((n) => n.trim())
+      .filter(Boolean);
     allVendorNames.push(...names);
   }
 
@@ -250,7 +251,11 @@ export async function extractVendorsFromContext(
   questionsAndAnswers: ContextItem[],
 ): Promise<VendorData[]> {
   // Parse all selected vendors from context
-  const { allVendorNames, customVendors, urlMap: customVendorUrls } = parseAllSelectedVendors(questionsAndAnswers);
+  const {
+    allVendorNames,
+    customVendors,
+    urlMap: customVendorUrls,
+  } = parseAllSelectedVendors(questionsAndAnswers);
 
   // Create a set of custom vendor names for quick lookup
   const customVendorNameSet = new Set(customVendors.map((v) => v.name.toLowerCase()));
@@ -314,14 +319,14 @@ export async function extractVendorsFromContext(
     if (!extractedVendorNames.has(vendorName.toLowerCase())) {
       const isCustom = customVendorNameSet.has(vendorName.toLowerCase());
       const customUrl = customVendorUrls.get(vendorName.toLowerCase());
-      
+
       logger.info(`Adding vendor not extracted by AI: ${vendorName} (custom: ${isCustom})`);
-      
+
       // Create a vendor entry with default risk values
       vendors.push({
         vendor_name: vendorName,
         vendor_website: customUrl || '',
-        vendor_description: isCustom 
+        vendor_description: isCustom
           ? `Custom vendor added during onboarding`
           : `Vendor selected during onboarding`,
         category: VendorCategory.other,
@@ -330,7 +335,7 @@ export async function extractVendorsFromContext(
         residual_probability: Likelihood.possible,
         residual_impact: Impact.moderate,
       });
-      
+
       // Add to extracted set to avoid duplicates
       extractedVendorNames.add(vendorName.toLowerCase());
     }
@@ -441,9 +446,11 @@ export async function createVendorsFromData(
         },
         select: { website: true },
       });
-      
+
       if (globalVendor?.website) {
-        logger.info(`Enriched vendor ${vendor.vendor_name} with website from GlobalVendors: ${globalVendor.website}`);
+        logger.info(
+          `Enriched vendor ${vendor.vendor_name} with website from GlobalVendors: ${globalVendor.website}`,
+        );
         websiteToUse = globalVendor.website;
       }
     }
@@ -480,10 +487,13 @@ export async function createVendorsFromData(
       website: vendor.website ?? null,
     }));
 
-  logger.info(`Created ${newlyCreatedVendors.length} new vendors out of ${createdVendors.length} total`, {
-    newlyCreated: newlyCreatedVendors.map((v) => v.name),
-    existing: createdVendors.filter((v) => existingVendorIds.has(v.id)).map((v) => v.name),
-  });
+  logger.info(
+    `Created ${newlyCreatedVendors.length} new vendors out of ${createdVendors.length} total`,
+    {
+      newlyCreated: newlyCreatedVendors.map((v) => v.name),
+      existing: createdVendors.filter((v) => existingVendorIds.has(v.id)).map((v) => v.name),
+    },
+  );
 
   // Update metadata with all real IDs and mark as created (will be marked as assessing after all are created)
   createdVendors.forEach((vendor) => {
@@ -554,8 +564,8 @@ async function triggerVendorRiskAssessmentsViaApi(params: {
         vendors: vendors.map((v) => {
           const sanitized = sanitizeWebsite(v.website, v.name);
           return {
-          vendorId: v.id,
-          vendorName: v.name,
+            vendorId: v.id,
+            vendorName: v.name,
             // Only include vendorWebsite if it's a valid URL (undefined triggers @IsOptional)
             ...(sanitized && { vendorWebsite: sanitized }),
           };

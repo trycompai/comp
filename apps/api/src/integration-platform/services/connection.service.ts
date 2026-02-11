@@ -10,7 +10,7 @@ import { ConnectionAuthTeardownService } from './connection-auth-teardown.servic
 import type {
   IntegrationConnection,
   IntegrationConnectionStatus,
-} from '@prisma/client';
+} from '@db';
 
 export interface CreateConnectionInput {
   providerSlug: string;

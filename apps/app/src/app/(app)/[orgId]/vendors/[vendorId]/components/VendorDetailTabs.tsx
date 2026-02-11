@@ -5,8 +5,7 @@ import { VendorRiskAssessmentSkeleton } from '@/components/vendor-risk-assessmen
 import { VendorRiskAssessmentView } from '@/components/vendor-risk-assessment/VendorRiskAssessmentView';
 import { useTaskItems } from '@/hooks/use-task-items';
 import { useVendor, type VendorResponse } from '@/hooks/use-vendors';
-import type { Member, User, Vendor } from '@db';
-import type { Prisma } from '@prisma/client';
+import type { Member, User, Vendor, Prisma } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import {
   PageHeader,

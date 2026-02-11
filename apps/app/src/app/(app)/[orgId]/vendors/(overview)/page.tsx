@@ -1,6 +1,6 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import type { SearchParams } from '@/types';
-import { db } from '@db';
+import { db } from '@db/server';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';
 import { VendorsTable } from './components/VendorsTable';

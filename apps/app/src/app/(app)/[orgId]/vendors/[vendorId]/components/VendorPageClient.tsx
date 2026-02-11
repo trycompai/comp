@@ -3,9 +3,8 @@
 import { Comments } from '@/components/comments/Comments';
 import { TaskItems } from '@/components/task-items/TaskItems';
 import { useVendor, type VendorResponse } from '@/hooks/use-vendors';
-import type { Member, User, Vendor } from '@db';
+import type { Member, User, Vendor, Prisma } from '@db';
 import { CommentEntityType } from '@db';
-import type { Prisma } from '@prisma/client';
 import { useMemo } from 'react';
 import { SecondaryFields } from './secondary-fields/secondary-fields';
 import { VendorHeader } from './VendorHeader';

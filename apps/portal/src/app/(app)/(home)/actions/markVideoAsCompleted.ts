@@ -4,7 +4,7 @@ import { authActionClient } from '@/actions/safe-action';
 import { env } from '@/env.mjs';
 import { trainingVideos } from '@/lib/data/training-videos';
 import { logger } from '@/utils/logger';
-import { db } from '@db';
+import { db } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
