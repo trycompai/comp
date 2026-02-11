@@ -350,7 +350,7 @@ export function InviteMembersModal({
             }
 
             // Validate role(s) - split by pipe for multiple roles
-            const roles = roleValue.split('|').map((r) => r.trim());
+            const roles = roleValue.split('|').map((r) => r.trim().toLowerCase());
             const validRoles = roles.filter((role) => isInviteRole(role, normalizedAllowedRoles));
 
             if (validRoles.length === 0) {
