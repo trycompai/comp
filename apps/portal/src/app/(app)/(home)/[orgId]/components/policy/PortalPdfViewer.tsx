@@ -1,7 +1,8 @@
 'use client';
 
 import { Card, CardContent } from '@comp/ui/card';
-import { FileText, Loader2 } from 'lucide-react';
+import { Spinner } from '@trycompai/design-system';
+import { Document } from '@trycompai/design-system/icons';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -42,7 +43,7 @@ export function PortalPdfViewer({ policyId, s3Key, versionId }: PortalPdfViewerP
   if (isLoading) {
     return (
       <div className="flex h-[500px] w-full items-center justify-center rounded-md border">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Spinner />
       </div>
     );
   }
@@ -62,7 +63,7 @@ export function PortalPdfViewer({ policyId, s3Key, versionId }: PortalPdfViewerP
   return (
     <Card className="flex h-[500px] w-full flex-col items-center justify-center">
       <CardContent className="text-center">
-        <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+        <Document size={48} className="mx-auto text-muted-foreground" />
         <p className="mt-4 font-semibold">PDF Document Not Available</p>
         <p className="text-sm text-muted-foreground">
           This policy is stored as a PDF, but it could not be loaded.

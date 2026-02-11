@@ -19,8 +19,8 @@ const AdvancedEditor = ({ initialContent }: AdvancedEditorProps) => {
       showSaveStatus={false}
       showWordCount={false}
       showToolbar={false}
-      minHeight="500px"
-      className="max-w-screen-lg mx-auto sm:mb-[calc(20vh)]"
+      minHeight="200px"
+      className="max-w-none"
     />
   );
 };

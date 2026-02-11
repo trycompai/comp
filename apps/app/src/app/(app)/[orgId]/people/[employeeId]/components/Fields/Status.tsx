@@ -1,7 +1,14 @@
 import type { EmployeeStatusType } from '@/components/tables/people/employee-status';
-import { cn } from '@comp/ui/cn';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
+import {
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Stack,
+} from '@trycompai/design-system';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
 
@@ -28,38 +35,49 @@ export const Status = ({
       control={control}
       name="status"
       render={({ field }) => (
-        <FormItem className="flex flex-col">
-          <FormLabel className="text-muted-foreground text-xs font-medium uppercase">
-            Status
-          </FormLabel>
-          <Select
-            onValueChange={field.onChange}
-            defaultValue={field.value}
-            value={field.value}
-            disabled={disabled}
-          >
+        <FormItem>
+          <Stack gap="sm">
+            <Label htmlFor="status">Status</Label>
             <FormControl>
-              <SelectTrigger className="h-10">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+                value={field.value}
+                disabled={disabled}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="size-2.5"
+                        style={{
+                          backgroundColor:
+                            EMPLOYEE_STATUS_HEX_COLORS[field.value as EmployeeStatusType] ?? '',
+                        }}
+                      />
+                      {STATUS_OPTIONS.find((o) => o.value === field.value)?.label ?? field.value}
+                    </div>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="size-2.5"
+                          style={{
+                            backgroundColor: EMPLOYEE_STATUS_HEX_COLORS[option.value] ?? '',
+                          }}
+                        />
+                        {option.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </FormControl>
-            <SelectContent>
-              {STATUS_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  <div className={cn('flex items-center gap-2')}>
-                    <div
-                      className={cn('size-2.5')}
-                      style={{
-                        backgroundColor: EMPLOYEE_STATUS_HEX_COLORS[option.value] ?? '',
-                      }}
-                    />
-                    {option.label}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormMessage />
+            <FormMessage />
+          </Stack>
         </FormItem>
       )}
     />

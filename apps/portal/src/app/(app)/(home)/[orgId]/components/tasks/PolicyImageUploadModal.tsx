@@ -2,15 +2,9 @@
 
 import { useRef, useState } from 'react';
 
-import { Button } from '@comp/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@comp/ui/dialog';
-import { ImagePlus, Trash2, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@comp/ui/dialog';
+import { Button } from '@trycompai/design-system';
+import { Add, TrashCan } from '@trycompai/design-system/icons';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -23,7 +17,12 @@ interface PolicyImageUploadModalProps {
   onRefresh: () => void;
 }
 
-export function PolicyImageUploadModal({ open, policy, onOpenChange, onRefresh }: PolicyImageUploadModalProps) {
+export function PolicyImageUploadModal({
+  open,
+  policy,
+  onOpenChange,
+  onRefresh,
+}: PolicyImageUploadModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<Array<{ file: File; previewUrl: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -122,14 +121,13 @@ export function PolicyImageUploadModal({ open, policy, onOpenChange, onRefresh }
           />
           {files.length === 0 && (
             <div className="flex items-center justify-center w-full h-48">
-              <Button
+              <button
                 type="button"
-                variant="outline"
-                className="w-24 h-24 text-muted-foreground/50"
+                className="flex items-center justify-center w-24 h-24 rounded-md border border-dashed text-muted-foreground/50 hover:text-muted-foreground hover:border-muted-foreground transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <ImagePlus className="h-8 w-8" />
-              </Button>
+                <Add size={32} />
+              </button>
             </div>
           )}
 
@@ -158,11 +156,10 @@ export function PolicyImageUploadModal({ open, policy, onOpenChange, onRefresh }
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="text-red-500 hover:text-red-600"
                         disabled={isLoading}
                         onClick={() => onRemoveFile(item)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <TrashCan size={16} />
                       </Button>
                     </li>
                   ))}
@@ -190,11 +187,21 @@ export function PolicyImageUploadModal({ open, policy, onOpenChange, onRefresh }
               </Button>
             </>
           )}
-          <Button variant="ghost" type="button" onClick={() => handleClose(false)} disabled={isLoading}>
+          <Button
+            variant="ghost"
+            type="button"
+            onClick={() => handleClose(false)}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
-          <Button type="button" onClick={handleSubmit} disabled={files.length === 0 || isLoading}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Submit'}
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={files.length === 0 || isLoading}
+            loading={isLoading}
+          >
+            Submit
           </Button>
         </DialogFooter>
       </DialogContent>

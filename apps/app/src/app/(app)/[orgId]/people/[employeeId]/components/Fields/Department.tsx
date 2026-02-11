@@ -1,6 +1,14 @@
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
 import type { Departments } from '@db';
+import {
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Stack,
+} from '@trycompai/design-system';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
 
@@ -26,30 +34,32 @@ export const Department = ({
       control={control}
       name="department"
       render={({ field }) => (
-        <FormItem className="flex flex-col">
-          <FormLabel className="text-muted-foreground text-xs font-medium uppercase">
-            Department
-          </FormLabel>
-          <Select
-            onValueChange={field.onChange}
-            defaultValue={field.value}
-            value={field.value}
-            disabled={disabled}
-          >
+        <FormItem>
+          <Stack gap="sm">
+            <Label htmlFor="department">Department</Label>
             <FormControl>
-              <SelectTrigger className="h-10">
-                <SelectValue placeholder="Select department" />
-              </SelectTrigger>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+                value={field.value}
+                disabled={disabled}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department">
+                    {DEPARTMENTS.find((d) => d.value === field.value)?.label ?? field.value}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {DEPARTMENTS.map((dept) => (
+                    <SelectItem key={dept.value} value={dept.value}>
+                      {dept.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </FormControl>
-            <SelectContent>
-              {DEPARTMENTS.map((dept) => (
-                <SelectItem key={dept.value} value={dept.value}>
-                  {dept.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormMessage />
+            <FormMessage />
+          </Stack>
         </FormItem>
       )}
     />

@@ -1,0 +1,51 @@
+appId: ai.trycomp.device-agent
+productName: Comp AI Device Agent
+directories:
+  buildResources: assets
+  output: release
+files:
+  - dist/**/*
+  - assets/**/*
+extraResources:
+  - from: assets/
+    to: assets/
+    filter:
+      - '**/*.png'
+icon: assets/icon.png
+mac:
+  category: public.app-category.utilities
+  icon: assets/icon.icns
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  hardenedRuntime: true
+  entitlements: assets/entitlements.mac.plist
+  entitlementsInherit: assets/entitlements.mac.plist
+dmg:
+  artifactName: CompAI-Device-Agent-${version}-${arch}.${ext}
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: true
+  allowToChangeInstallationDirectory: false
+  artifactName: CompAI-Device-Agent-${version}-setup.${ext}
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  category: Utility
+  artifactName: CompAI-Device-Agent-${version}-${arch}.${ext}
+publish:
+  provider: github
+  owner: trycompai
+  repo: comp
