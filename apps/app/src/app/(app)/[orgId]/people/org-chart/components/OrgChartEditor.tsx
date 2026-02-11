@@ -86,7 +86,7 @@ export function OrgChartEditor({
         ...(node.data ?? {}),
         isLocked,
         onTitleChange: (newTitle: string) => {
-          handleTitleChange(node.id, newTitle, (node.data as OrgChartNodeData | undefined)?.memberId);
+          handleTitleChange(node.id, newTitle);
         },
       },
     }));
@@ -140,6 +140,26 @@ export function OrgChartEditor({
       if (response.error) {
         toast.error('Failed to save org chart');
         return;
+      }
+
+      // Batch-persist job title changes to member records
+      const savedNodeMap = new Map<string, OrgChartNodeData>();
+      for (const n of savedStateRef.current.nodes) {
+        const d = n.data as OrgChartNodeData | undefined;
+        if (d?.memberId) savedNodeMap.set(d.memberId, d);
+      }
+      for (const n of nodes) {
+        const d = n.data as OrgChartNodeData | undefined;
+        if (d?.memberId) {
+          const prev = savedNodeMap.get(d.memberId);
+          const newTitle = (d.title ?? '').trim();
+          const oldTitle = (prev?.title ?? '').trim();
+          if (newTitle !== oldTitle) {
+            api.patch(`/v1/people/${d.memberId}`, { jobTitle: newTitle }).catch(() => {
+              // Non-critical: chart data already persisted with the title
+            });
+          }
+        }
       }
 
       savedStateRef.current = { nodes: [...nodes], edges: [...edges] };
@@ -196,18 +216,12 @@ export function OrgChartEditor({
     setNodes((nds) => [...nds, newNode]);
   };
 
-  const handleTitleChange = (nodeId: string, newTitle: string, memberId?: string) => {
+  const handleTitleChange = (nodeId: string, newTitle: string) => {
     setNodes((nds) =>
       nds.map((n) =>
         n.id === nodeId ? { ...n, data: { ...n.data, title: newTitle } } : n,
       ),
     );
-
-    if (memberId) {
-      api.patch(`/v1/people/${memberId}`, { jobTitle: newTitle }).catch(() => {
-        // Silently fail - the chart save will persist the title in node data regardless
-      });
-    }
   };
 
   const handleDeleteSelected = () => {

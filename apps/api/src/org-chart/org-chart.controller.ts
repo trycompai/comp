@@ -19,6 +19,7 @@ import {
 import { OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { OrgChartService } from './org-chart.service';
+import { UpsertOrgChartDto } from './dto/upsert-org-chart.dto';
 import { UploadOrgChartDto } from './dto/upload-org-chart.dto';
 
 @ApiTags('Org Chart')
@@ -44,16 +45,11 @@ export class OrgChartController {
   @Put()
   @ApiOperation({ summary: 'Create or update an interactive organization chart' })
   @ApiResponse({ status: 200, description: 'The saved organization chart' })
-  @UsePipes(new ValidationPipe({ whitelist: false, transform: false }))
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async upsertOrgChart(
     @OrganizationId() organizationId: string,
-    @Body() body: Record<string, unknown>,
+    @Body() dto: UpsertOrgChartDto,
   ) {
-    const dto = {
-      name: typeof body?.name === 'string' ? body.name : undefined,
-      nodes: Array.isArray(body?.nodes) ? body.nodes : [],
-      edges: Array.isArray(body?.edges) ? body.edges : [],
-    };
     return await this.orgChartService.upsertInteractive(organizationId, dto);
   }
 

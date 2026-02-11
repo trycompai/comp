@@ -49,6 +49,22 @@ export function OrgChartContent({
     );
   }
 
+  // Uploaded chart but image could not be loaded (e.g. S3 unavailable)
+  if (chartData.type === 'uploaded') {
+    return (
+      <div className="flex h-[600px] items-center justify-center rounded-lg border border-border bg-background">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            The uploaded org chart image could not be loaded.
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Please try again later or re-upload the image.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Interactive mode
   return (
     <OrgChartEditor

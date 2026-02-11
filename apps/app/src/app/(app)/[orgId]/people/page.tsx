@@ -38,22 +38,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   const canInviteUsers = canManageMembers || isAuditor;
   const isCurrentUserOwner = currentUserRoles.includes('owner');
 
-  // Check if there are employees to show the Employee Tasks tab
-  const allMembers = await db.member.findMany({
-    where: {
-      organizationId: orgId,
-      deactivated: false,
-    },
-  });
-
-  const employees = allMembers.filter((member) => {
-    const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
-    return roles.includes('employee') || roles.includes('contractor');
-  });
-
-  const showEmployeeTasks = employees.length > 0;
-
-  // Fetch members with user info for org chart
+  // Fetch members with user info (used for both employee check and org chart)
   const membersWithUsers = await db.member.findMany({
     where: {
       organizationId: orgId,
@@ -68,6 +53,14 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
       },
     },
   });
+
+  // Check if there are employees to show the Employee Tasks tab
+  const employees = membersWithUsers.filter((member) => {
+    const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
+    return roles.includes('employee') || roles.includes('contractor');
+  });
+
+  const showEmployeeTasks = employees.length > 0;
 
   // Fetch org chart data directly via Prisma
   const orgChart = await db.organizationChart.findUnique({
