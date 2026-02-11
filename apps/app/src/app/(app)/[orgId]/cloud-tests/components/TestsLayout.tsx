@@ -47,6 +47,7 @@ const needsVariableConfiguration = (provider: Provider): boolean => {
 export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsLayoutProps) {
   const { hasPermission } = usePermissions();
   const canRunScan = hasPermission('integration', 'update');
+  const canCreateIntegration = hasPermission('integration', 'create');
   const api = useApi();
   const [showSettings, setShowSettings] = useState(false);
   const [viewingResults, setViewingResults] = useState(true);
@@ -139,6 +140,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         // Run legacy scan via API route (triggers Trigger.dev task)
         const res = await fetch('/api/cloud-tests/legacy-scan', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ integrationId: targetProvider.id }),
         });
@@ -229,19 +231,23 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         title="Cloud Security Tests"
         actions={
           <>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setAddConnectionProvider(null);
-                setViewingResults(false);
-              }}
-            >
-              <Add />
-              Add Cloud
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
-              <Settings />
-            </Button>
+            {canCreateIntegration && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAddConnectionProvider(null);
+                  setViewingResults(false);
+                }}
+              >
+                <Add />
+                Add Cloud
+              </Button>
+            )}
+            {canRunScan && (
+              <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
+                <Settings />
+              </Button>
+            )}
           </>
         }
       >
@@ -283,6 +289,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         }}
         needsConfiguration={needsVariableConfiguration}
         canRunScan={canRunScan}
+        canAddConnection={canCreateIntegration}
       />
 
       {/* CloudSettingsModal only for providers that do NOT support multiple connections */}

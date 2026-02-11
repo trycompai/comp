@@ -4,10 +4,15 @@ import { ConnectIntegrationDialog } from '@/components/integrations/ConnectInteg
 import { useApi } from '@/hooks/use-api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
 import MultipleSelector from '@comp/ui/multiple-selector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Button, PageHeader, PageLayout, Spinner } from '@trycompai/design-system';
+import {
+  Button,
+  Label,
+  PageHeader,
+  PageLayout,
+  Spinner,
+} from '@trycompai/design-system';
 import { ArrowLeft, CheckmarkFilled, Launch } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -342,7 +347,7 @@ export function EmptyState({
 
             <CardContent className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="region" className="text-sm font-medium">
+                <Label htmlFor="region">
                   Regions
                 </Label>
                 <MultipleSelector
@@ -518,7 +523,7 @@ export function EmptyState({
 
                 return (
                   <div key={field.id} className="space-y-2">
-                    <Label htmlFor={field.id} className="text-sm font-medium">
+                    <Label htmlFor={field.id}>
                       {field.label}
                     </Label>
                     {field.type === 'select' && options.length > 0 ? (

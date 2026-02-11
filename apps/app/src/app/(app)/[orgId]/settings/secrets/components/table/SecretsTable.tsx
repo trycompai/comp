@@ -42,6 +42,7 @@ import {
   ViewOff,
 } from '@trycompai/design-system/icons';
 import { Copy } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -98,16 +99,14 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
     setLoadingSecrets((prev) => ({ ...prev, [secretId]: true }));
 
     try {
-      const pathSegments = window.location.pathname.split('/');
-      const orgId = pathSegments[1];
-
-      const response = await fetch(`/api/secrets/${secretId}?organizationId=${orgId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch secret');
+      const response = await apiClient.get<{ secret: { value: string } }>(
+        `/v1/secrets/${secretId}`,
+      );
+      if (response.error || !response.data?.secret?.value) {
+        throw new Error(response.error || 'Failed to fetch secret');
       }
 
-      const data = await response.json();
-      setRevealedSecrets((prev) => ({ ...prev, [secretId]: data.value }));
+      setRevealedSecrets((prev) => ({ ...prev, [secretId]: response.data!.secret.value }));
     } catch (error) {
       toast.error('Failed to reveal secret');
       console.error('Error revealing secret:', error);
@@ -217,7 +216,7 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
               <TableHead>CATEGORY</TableHead>
               <TableHead>LAST USED</TableHead>
               <TableHead>CREATED</TableHead>
-              <TableHead>ACTIONS</TableHead>
+              {canUpdate && <TableHead>ACTIONS</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -286,41 +285,42 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
                     {formatDate(secret.createdAt)}
                   </Text>
                 </TableCell>
-                <TableCell>
-                  <div className="flex justify-center">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        variant="ellipsis"
-                        onClick={(e) => e.stopPropagation()}
-                        disabled={!canUpdate}
-                      >
-                        <OverflowMenuVertical />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingSecret(secret);
-                          }}
+                {canUpdate && (
+                  <TableCell>
+                    <div className="flex justify-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          variant="ellipsis"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Edit size={16} />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(secret);
-                          }}
-                        >
-                          <TrashCan size={16} />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
+                          <OverflowMenuVertical />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingSecret(secret);
+                            }}
+                          >
+                            <Edit size={16} />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(secret);
+                            }}
+                          >
+                            <TrashCan size={16} />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

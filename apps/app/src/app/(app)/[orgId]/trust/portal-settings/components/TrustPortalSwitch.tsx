@@ -3,14 +3,29 @@
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { Form } from '@comp/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Switch, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Switch,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@trycompai/design-system';
 import { Download, Eye, FileCheck2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -965,24 +980,27 @@ function ComplianceFramework({
 
   return (
     <>
-      <Card className="rounded-lg border">
-        <CardHeader className="pb-2">
+      <Card>
+        <CardHeader>
           <div className="flex items-center gap-4">
             <div className="shrink-0">{logo}</div>
             <div>
-              <CardTitle className="text-lg leading-tight font-semibold">{title}</CardTitle>
-              <CardDescription className="text-muted-foreground mt-1 line-clamp-3 text-sm">
-                {description}
-              </CardDescription>
+              <CardTitle>{title}</CardTitle>
+              <div className="line-clamp-3">
+                <CardDescription>
+                  {description}
+                </CardDescription>
+              </div>
             </div>
           </div>
         </CardHeader>
         <div className="mt-4 border-t" />
-        <CardContent className="pt-4 space-y-4">
+        <CardContent>
           <div className="flex flex-row items-center justify-between gap-6">
             <div className="min-w-0 flex-1">
               {isEnabled ? (
                 <Select disabled={disabled} defaultValue={status} value={status} onValueChange={async (value) => {
+                  if (!value) return;
                   const prev = status;
                   setStatus(value);
                   try {
@@ -991,8 +1009,8 @@ function ComplianceFramework({
                     setStatus(prev);
                   }
                 }}>
-                  <SelectTrigger className="min-w-[180px] text-base font-medium">
-                    <SelectValue placeholder="Select status" className="w-auto" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="started">
@@ -1066,9 +1084,9 @@ function ComplianceFramework({
                       <p className="text-xs text-muted-foreground">Certificate uploaded</p>
                     </div>
                     {onFilePreview && (
-                      <TooltipProvider delayDuration={100}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
                             <button
                               type="button"
                               onClick={async () => {
@@ -1083,42 +1101,41 @@ function ComplianceFramework({
                                 }
                               }}
                               className="text-xs font-medium text-primary hover:text-primary/80 hover:underline transition-colors flex items-center gap-1"
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                              View
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>Open certificate in new tab</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                            />
+                          }
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          View
+                        </TooltipTrigger>
+                        <TooltipContent>Open certificate in new tab</TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
 
                   {/* Action Bar */}
                   <div className="flex items-center gap-2 pt-1">
-                    <TooltipProvider delayDuration={100}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={isUploading || disabled}
-                            className="h-8 gap-1.5 text-xs font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
-                          >
-                            <Upload className="h-3.5 w-3.5" />
-                            Replace
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Replace current certificate (PDF)</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                            iconLeft={<Upload className="h-3.5 w-3.5" />}
+                          />
+                        }
+                      >
+                        Replace
+                      </TooltipTrigger>
+                      <TooltipContent>Replace current certificate (PDF)</TooltipContent>
+                    </Tooltip>
 
                     {onFilePreview && (
-                      <TooltipProvider delayDuration={100}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
                             <Button
                               type="button"
                               variant="outline"
@@ -1134,15 +1151,14 @@ function ComplianceFramework({
                                   toast.error(message);
                                 }
                               }}
-                              className="h-8 gap-1.5 text-xs font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
-                            >
-                              <Download className="h-3.5 w-3.5" />
-                              Download
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Download certificate</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                              iconLeft={<Download className="h-3.5 w-3.5" />}
+                            />
+                          }
+                        >
+                          Download
+                        </TooltipTrigger>
+                        <TooltipContent>Download certificate</TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
                 </div>

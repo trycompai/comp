@@ -106,26 +106,28 @@ export function PendingInvitationRow({
           </div>
         </TableCell>
 
-        {/* ACTIONS */}
-        <TableCell>
-          <div className="flex justify-center">
-            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-              <DropdownMenuTrigger
-                variant="ellipsis"
-                disabled={isCancelling || !canCancel}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <OverflowMenuVertical />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem variant="destructive" onSelect={handleOpenCancelDialog}>
-                  <TrashCan size={16} />
-                  Cancel Invitation
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </TableCell>
+        {/* ACTIONS - hidden entirely when user cannot cancel */}
+        {canCancel && (
+          <TableCell>
+            <div className="flex justify-center">
+              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                <DropdownMenuTrigger
+                  variant="ellipsis"
+                  disabled={isCancelling}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <OverflowMenuVertical />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem variant="destructive" onSelect={handleOpenCancelDialog}>
+                    <TrashCan size={16} />
+                    Cancel Invitation
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </TableCell>
+        )}
       </TableRow>
 
       <AlertDialog open={isCancelDialogOpen} onOpenChange={handleCancelDialogOpenChange}>

@@ -509,7 +509,7 @@ export function TeamMembersClient({
               <TableHead>NAME</TableHead>
               <TableHead>STATUS</TableHead>
               <TableHead>ROLE</TableHead>
-              <TableHead>ACTIONS</TableHead>
+              {canManageMembers && <TableHead>ACTIONS</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>

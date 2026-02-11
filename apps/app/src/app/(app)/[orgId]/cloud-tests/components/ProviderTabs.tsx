@@ -19,6 +19,7 @@ interface ProviderTabsProps {
   onConfigure: (provider: Provider) => void;
   needsConfiguration: (provider: Provider) => boolean;
   canRunScan?: boolean;
+  canAddConnection?: boolean;
 }
 
 const formatProviderLabel = (providerType: string): string => {
@@ -133,6 +134,7 @@ export function ProviderTabs({
   onConfigure,
   needsConfiguration,
   canRunScan,
+  canAddConnection,
 }: ProviderTabsProps) {
   const [activeRegionTabs, setActiveRegionTabs] = useState<Record<string, string>>({});
 
@@ -189,7 +191,7 @@ export function ProviderTabs({
                     </SelectContent>
                   </Select>
                   {/* Only show "Add connection" button for providers that support multiple connections */}
-                  {connections.some((c) => c.supportsMultipleConnections) && (
+                  {canAddConnection !== false && connections.some((c) => c.supportsMultipleConnections) && (
                     <Button
                       size="lg"
                       iconLeft={<Add size={16} />}

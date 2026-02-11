@@ -7,6 +7,8 @@ interface UpdateOrganizationData {
   name?: string;
   website?: string;
   evidenceApprovalEnabled?: boolean;
+  deviceAgentStepEnabled?: boolean;
+  securityTrainingStepEnabled?: boolean;
 }
 
 interface UploadLogoData {

@@ -1,9 +1,9 @@
 'use client';
 
-import { updateOrganizationDeviceAgentStepAction } from '@/actions/organization/update-organization-device-agent-step-action';
-import { updateOrganizationSecurityTrainingStepAction } from '@/actions/organization/update-organization-security-training-step-action';
+import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
+import { usePermissions } from '@/hooks/use-permissions';
 import { SettingGroup, SettingRow, Switch } from '@trycompai/design-system';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 interface PortalSettingsProps {
@@ -15,15 +15,35 @@ export function PortalSettings({
   deviceAgentStepEnabled,
   securityTrainingStepEnabled,
 }: PortalSettingsProps) {
-  const updateDeviceAgentStep = useAction(updateOrganizationDeviceAgentStepAction, {
-    onSuccess: () => toast.success('Device agent step setting updated'),
-    onError: () => toast.error('Error updating device agent step setting'),
-  });
+  const { updateOrganization } = useOrganizationMutations();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('organization', 'update');
+  const [isSavingDevice, setIsSavingDevice] = useState(false);
+  const [isSavingTraining, setIsSavingTraining] = useState(false);
 
-  const updateSecurityTrainingStep = useAction(updateOrganizationSecurityTrainingStepAction, {
-    onSuccess: () => toast.success('Security training step setting updated'),
-    onError: () => toast.error('Error updating security training step setting'),
-  });
+  const handleDeviceAgentToggle = async (checked: boolean) => {
+    setIsSavingDevice(true);
+    try {
+      await updateOrganization({ deviceAgentStepEnabled: checked });
+      toast.success('Device agent step setting updated');
+    } catch {
+      toast.error('Error updating device agent step setting');
+    } finally {
+      setIsSavingDevice(false);
+    }
+  };
+
+  const handleSecurityTrainingToggle = async (checked: boolean) => {
+    setIsSavingTraining(true);
+    try {
+      await updateOrganization({ securityTrainingStepEnabled: checked });
+      toast.success('Security training step setting updated');
+    } catch {
+      toast.error('Error updating security training step setting');
+    } finally {
+      setIsSavingTraining(false);
+    }
+  };
 
   return (
     <SettingGroup>
@@ -34,10 +54,8 @@ export function PortalSettings({
       >
         <Switch
           checked={deviceAgentStepEnabled}
-          onCheckedChange={(checked) => {
-            updateDeviceAgentStep.execute({ deviceAgentStepEnabled: checked });
-          }}
-          disabled={updateDeviceAgentStep.status === 'executing'}
+          onCheckedChange={handleDeviceAgentToggle}
+          disabled={!canUpdate || isSavingDevice}
         />
       </SettingRow>
       <SettingRow
@@ -47,10 +65,8 @@ export function PortalSettings({
       >
         <Switch
           checked={securityTrainingStepEnabled}
-          onCheckedChange={(checked) => {
-            updateSecurityTrainingStep.execute({ securityTrainingStepEnabled: checked });
-          }}
-          disabled={updateSecurityTrainingStep.status === 'executing'}
+          onCheckedChange={handleSecurityTrainingToggle}
+          disabled={!canUpdate || isSavingTraining}
         />
       </SettingRow>
     </SettingGroup>

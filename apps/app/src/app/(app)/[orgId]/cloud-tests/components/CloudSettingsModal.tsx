@@ -2,6 +2,7 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useIntegrationMutations } from '@/hooks/use-integration-platform';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import {
@@ -60,6 +61,8 @@ export function CloudSettingsModal({
   onUpdate,
 }: CloudSettingsModalProps) {
   const api = useApi();
+  const { hasPermission } = usePermissions();
+  const canDelete = hasPermission('integration', 'delete');
   const [activeTab, setActiveTab] = useState<string>(connectedProviders[0]?.connectionId || 'aws');
   const [isDeleting, setIsDeleting] = useState(false);
   const { deleteConnection } = useIntegrationMutations();
@@ -165,6 +168,7 @@ export function CloudSettingsModal({
               </div>
 
               <DialogFooter className="flex justify-end">
+                {canDelete && (
                 <Button
                   variant="destructive"
                   onClick={() => handleDisconnect(provider)}
@@ -182,6 +186,7 @@ export function CloudSettingsModal({
                     </>
                   )}
                 </Button>
+                )}
               </DialogFooter>
             </TabsContent>
           ))}

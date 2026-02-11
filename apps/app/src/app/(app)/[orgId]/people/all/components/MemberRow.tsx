@@ -10,6 +10,17 @@ import {
   AvatarFallback,
   AvatarImage,
   Badge,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   HStack,
   Label,
   TableCell,
@@ -17,21 +28,6 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { Edit, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
-import { Button } from '@comp/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@comp/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
 import type { Role } from '@db';
 
 import { toast } from 'sonner';
@@ -257,51 +253,51 @@ export function MemberRow({
           </div>
         </TableCell>
 
-        {/* ACTIONS */}
-        <TableCell>
-          {!isDeactivated && (
-            <div className="flex justify-center">
-              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canEdit}>
+        {/* ACTIONS - hidden entirely when user cannot edit */}
+        {canEdit && (
+          <TableCell>
+            {!isDeactivated && (
+              <div className="flex justify-center">
+                <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                  <DropdownMenuTrigger
+                    variant="ellipsis"
+                  >
                     <OverflowMenuVertical />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {canEdit && (
-                    <DropdownMenuItem onSelect={handleEditRolesClick}>
-                      <Edit size={16} className="mr-2" />
-                      <span>Edit Roles</span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleEditRolesClick}>
+                      <Edit size={16} />
+                      Edit Roles
                     </DropdownMenuItem>
-                  )}
-                  {member.fleetDmLabelId && isCurrentUserOwner && (
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setIsRemoveDeviceAlertOpen(true);
-                      }}
-                    >
-                      <Laptop className="mr-2 h-4 w-4" />
-                      <span>Remove Device</span>
-                    </DropdownMenuItem>
-                  )}
-                  {canRemove && (
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setIsRemoveAlertOpen(true);
-                      }}
-                    >
-                      <TrashCan size={16} className="mr-2" />
-                      <span>Remove Member</span>
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-        </TableCell>
+                    {member.fleetDmLabelId && isCurrentUserOwner && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          setIsRemoveDeviceAlertOpen(true);
+                        }}
+                      >
+                        <Laptop className="h-4 w-4" />
+                        Remove Device
+                      </DropdownMenuItem>
+                    )}
+                    {canRemove && (
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          setIsRemoveAlertOpen(true);
+                        }}
+                      >
+                        <TrashCan size={16} />
+                        Remove Member
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+          </TableCell>
+        )}
       </TableRow>
 
       <RemoveMemberAlert
