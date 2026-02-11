@@ -1,4 +1,7 @@
 import { auth } from '@/utils/auth';
+import { s3Client, BUCKET_NAME } from '@/app/s3';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
@@ -10,6 +13,7 @@ import { DeviceComplianceChart } from './devices/components/DeviceComplianceChar
 import { EmployeeDevicesList } from './devices/components/EmployeeDevicesList';
 import { getEmployeeDevices } from './devices/data';
 import type { Host } from './devices/types';
+import { OrgChartContent } from './org-chart/components/OrgChartContent';
 
 export default async function PeoplePage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
@@ -49,6 +53,77 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
 
   const showEmployeeTasks = employees.length > 0;
 
+  // Fetch members with user info for org chart
+  const membersWithUsers = await db.member.findMany({
+    where: {
+      organizationId: orgId,
+      deactivated: false,
+    },
+    include: {
+      user: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  // Fetch org chart data directly via Prisma
+  const orgChart = await db.organizationChart.findUnique({
+    where: { organizationId: orgId },
+  });
+
+  // Generate a signed URL for uploaded images
+  let orgChartData = null;
+  if (orgChart) {
+    let signedImageUrl: string | null = null;
+    if (
+      orgChart.type === 'uploaded' &&
+      orgChart.uploadedImageUrl &&
+      s3Client &&
+      BUCKET_NAME
+    ) {
+      try {
+        const cmd = new GetObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: orgChart.uploadedImageUrl,
+        });
+        signedImageUrl = await getSignedUrl(s3Client, cmd, { expiresIn: 900 });
+      } catch {
+        // Signed URL generation failed; image won't render
+      }
+    }
+
+    // Sanitize nodes/edges from JSON to ensure valid React Flow structures
+    const rawNodes = Array.isArray(orgChart.nodes) ? orgChart.nodes : [];
+    const rawEdges = Array.isArray(orgChart.edges) ? orgChart.edges : [];
+
+    const sanitizedNodes = (rawNodes as Record<string, unknown>[])
+      .filter((n) => n && typeof n === 'object' && n.id)
+      .map((n) => ({
+        ...n,
+        position: n.position && typeof (n.position as Record<string, unknown>).x === 'number'
+          ? n.position
+          : { x: 0, y: 0 },
+      }));
+
+    const sanitizedEdges = (rawEdges as Record<string, unknown>[])
+      .filter((e) => e && typeof e === 'object' && e.source && e.target)
+      .map((e, i) => ({
+        ...e,
+        id: e.id || `edge-${e.source}-${e.target}-${i}`,
+      }));
+
+    orgChartData = {
+      ...orgChart,
+      nodes: sanitizedNodes,
+      edges: sanitizedEdges,
+      updatedAt: orgChart.updatedAt.toISOString(),
+      signedImageUrl,
+    };
+  }
+
   // Fetch devices data
   let devices: Host[] = [];
   try {
@@ -75,6 +150,12 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           <DeviceComplianceChart devices={devices} />
           <EmployeeDevicesList devices={devices} isCurrentUserOwner={isCurrentUserOwner} />
         </>
+      }
+      orgChartContent={
+        <OrgChartContent
+          chartData={orgChartData as any}
+          members={membersWithUsers}
+        />
       }
       showEmployeeTasks={showEmployeeTasks}
       canInviteUsers={canInviteUsers}

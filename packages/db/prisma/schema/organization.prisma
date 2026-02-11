@@ -60,5 +60,8 @@ model Organization {
   // Findings
   findings Finding[]
 
+  // Org Chart
+  organizationChart OrganizationChart?
+
   @@index([slug])
 }
