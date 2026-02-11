@@ -71,6 +71,9 @@ export const targetReposVariable: CheckVariable = {
               errorStr.includes('SAML') ||
               errorStr.includes('Forbidden')
             ) {
+              console.warn(
+                `Skipping organization ${org.login} due to SSO/permission error: ${errorStr}`,
+              );
               continue;
             }
             // Re-throw other errors
