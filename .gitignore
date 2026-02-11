@@ -40,6 +40,10 @@ yarn-error.log*
 # turbo
 .turbo
 
+# claude code - personal settings and memory (commands/ is shared)
+.claude/settings.local.json
+.claude/projects/
+
 # react-email
 .react-email
 packages/email/public

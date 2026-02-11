@@ -29,6 +29,16 @@ export const SERVICE_DEFINITIONS: Record<string, ServiceDefinition> = {
     name: 'Portal App',
     permissions: ['training:read', 'training:update'],
   },
+  trust: {
+    envVar: 'SERVICE_TOKEN_TRUST',
+    name: 'Trust Portal',
+    permissions: [
+      'trust:read',
+      'organization:read',
+      'questionnaire:read',
+      'questionnaire:respond',
+    ],
+  },
 };
 
 /**

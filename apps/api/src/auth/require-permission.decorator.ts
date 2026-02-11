@@ -65,6 +65,7 @@ export type GRCResource =
   | 'finding'
   | 'questionnaire'
   | 'integration'
+  | 'apiKey'
   | 'cloud-security'
   | 'training'
   | 'app'

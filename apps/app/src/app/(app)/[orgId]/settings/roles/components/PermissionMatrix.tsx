@@ -11,6 +11,8 @@ import {
  * These map to the permission resources defined in @auth/permissions.ts
  */
 const RESOURCES = [
+  { key: 'organization', label: 'Organization', description: 'Manage organization settings' },
+  { key: 'member', label: 'Members', description: 'Manage team members and roles' },
   { key: 'control', label: 'Controls', description: 'Manage security controls' },
   { key: 'evidence', label: 'Evidence', description: 'Manage compliance evidence' },
   { key: 'policy', label: 'Policies', description: 'Manage organizational policies' },
@@ -22,6 +24,8 @@ const RESOURCES = [
   { key: 'finding', label: 'Findings', description: 'Manage audit findings' },
   { key: 'questionnaire', label: 'Questionnaires', description: 'Manage security questionnaires' },
   { key: 'integration', label: 'Integrations', description: 'Manage third-party integrations' },
+  { key: 'apiKey', label: 'API Keys', description: 'Manage API keys for programmatic access' },
+  { key: 'trust', label: 'Trust Center', description: 'Manage trust portal and access requests' },
 ] as const;
 
 type ResourceKey = (typeof RESOURCES)[number]['key'];
@@ -38,6 +42,14 @@ type AccessLevel = 'none' | 'view' | 'edit';
  * Maps access levels to the actual permission actions for each resource
  */
 const ACCESS_LEVEL_MAPPING: Record<ResourceKey, Record<Exclude<AccessLevel, 'none'>, string[]>> = {
+  organization: {
+    view: ['read'],
+    edit: ['read', 'update'],
+  },
+  member: {
+    view: ['read'],
+    edit: ['create', 'read', 'update', 'delete'],
+  },
   control: {
     view: ['read', 'export'],
     edit: ['create', 'read', 'update', 'delete', 'assign', 'export'],
@@ -81,6 +93,14 @@ const ACCESS_LEVEL_MAPPING: Record<ResourceKey, Record<Exclude<AccessLevel, 'non
   integration: {
     view: ['read'],
     edit: ['create', 'read', 'update', 'delete'],
+  },
+  apiKey: {
+    view: ['read'],
+    edit: ['create', 'read', 'delete'],
+  },
+  trust: {
+    view: ['read'],
+    edit: ['read', 'update'],
   },
 };
 

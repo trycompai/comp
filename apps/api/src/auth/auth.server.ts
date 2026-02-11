@@ -39,6 +39,7 @@ const statement = {
   finding: ['create', 'read', 'update', 'delete'],
   questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
   integration: ['create', 'read', 'update', 'delete'],
+  apiKey: ['create', 'read', 'delete'],
   app: ['read'],
   trust: ['read', 'update'],
 } as const;
@@ -59,6 +60,7 @@ const owner = ac.newRole({
   finding: ['create', 'read', 'update', 'delete'],
   questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
   integration: ['create', 'read', 'update', 'delete'],
+  apiKey: ['create', 'read', 'delete'],
   app: ['read'],
   trust: ['read', 'update'],
 });
@@ -77,6 +79,7 @@ const admin = ac.newRole({
   finding: ['create', 'read', 'update', 'delete'],
   questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
   integration: ['create', 'read', 'update', 'delete'],
+  apiKey: ['create', 'read', 'delete'],
   app: ['read'],
   trust: ['read', 'update'],
 });

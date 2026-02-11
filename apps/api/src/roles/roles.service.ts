@@ -19,6 +19,7 @@ const VALID_RESOURCES: Record<string, string[]> = {
   finding: ['create', 'read', 'update', 'delete'],
   questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
   integration: ['create', 'read', 'update', 'delete'],
+  apiKey: ['create', 'read', 'delete'],
   app: ['read'],
   trust: ['read', 'update'],
 };

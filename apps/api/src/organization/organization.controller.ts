@@ -285,7 +285,7 @@ export class OrganizationController {
   }
 
   @Get('primary-color')
-  @RequirePermission('organization', 'read')
+  @UseGuards() // Override class-level guards — public endpoint for trust portal (uses token or auth)
   @ApiOperation(ORGANIZATION_OPERATIONS.getPrimaryColor)
   @ApiQuery({
     name: 'token',
