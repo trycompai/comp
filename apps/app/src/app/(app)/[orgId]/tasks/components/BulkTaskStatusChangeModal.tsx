@@ -1,6 +1,5 @@
 'use client';
 
-import { apiClient } from '@/lib/api-client';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { Button } from '@comp/ui/button';
 import {
@@ -15,9 +14,9 @@ import { Label } from '@comp/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Member, TaskStatus, User } from '@db';
 import { Loader2 } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useTasks } from '../hooks/useTasks';
 import { TaskStatusIndicator } from './TaskStatusIndicator';
 
 interface BulkTaskStatusChangeModalProps {
@@ -37,9 +36,7 @@ export function BulkTaskStatusChangeModal({
   evidenceApprovalEnabled = false,
   members = [],
 }: BulkTaskStatusChangeModalProps) {
-  const router = useRouter();
-  const params = useParams<{ orgId: string }>();
-  const orgIdParam = Array.isArray(params.orgId) ? params.orgId[0] : params.orgId;
+  const { bulkUpdateStatus, bulkSubmitForReview } = useTasks();
 
   // Filter out in_review from status options - it's only set through approval flow
   const statusOptions = useMemo(
@@ -65,7 +62,7 @@ export function BulkTaskStatusChangeModal({
   }, [defaultStatus, open]);
 
   const handleMove = async () => {
-    if (!orgIdParam || selectedTaskIds.length === 0) {
+    if (selectedTaskIds.length === 0) {
       return;
     }
 
@@ -80,43 +77,17 @@ export function BulkTaskStatusChangeModal({
 
       if (needsApproval) {
         // Submit all tasks for review in a single bulk request
-        const response = await apiClient.post<{ updatedCount: number }>(
-          '/v1/tasks/bulk/submit-for-review',
-          { taskIds: selectedTaskIds, approverId },
-          orgIdParam,
-        );
-
-        if (response.error) {
-          throw new Error(response.error);
-        }
-
-        const updatedCount = response.data?.updatedCount ?? selectedTaskIds.length;
-        toast.success(`${updatedCount} task${updatedCount === 1 ? '' : 's'} submitted for review`);
+        const { submittedCount } = await bulkSubmitForReview(selectedTaskIds, approverId!);
+        toast.success(`${submittedCount} task${submittedCount === 1 ? '' : 's'} submitted for review`);
       } else {
-        // Normal bulk status change
-        const payload = {
-          taskIds: selectedTaskIds,
-          status,
-          ...(status === TaskStatus.done ? { reviewDate: new Date().toISOString() } : {}),
-        };
-
-        const response = await apiClient.patch<{ updatedCount: number }>(
-          '/v1/tasks/bulk',
-          payload,
-          orgIdParam,
-        );
-
-        if (response.error) {
-          throw new Error(response.error);
-        }
-
-        const updatedCount = response.data?.updatedCount ?? selectedTaskIds.length;
+        // Normal bulk status change using hook
+        const reviewDate = status === TaskStatus.done ? new Date().toISOString() : undefined;
+        const { updatedCount } = await bulkUpdateStatus(selectedTaskIds, status, reviewDate);
         toast.success(`Updated ${updatedCount} task${updatedCount === 1 ? '' : 's'}`);
       }
 
       onSuccess?.();
       onOpenChange(false);
-      router.refresh();
     } catch (error) {
       console.error('Failed to bulk update task status', error);
       const message = error instanceof Error ? error.message : 'Failed to update tasks';

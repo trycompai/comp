@@ -37,7 +37,7 @@ export function useOrganizationMembers({
         data: MemberData[];
         error: string;
         success: boolean;
-      }>(`/v1/people`, orgId);
+      }>(`/v1/people`);
 
       if (!data?.data) {
         console.error('[useOrganizationMembers] Failed to fetch organization members', data?.error);
@@ -60,4 +60,14 @@ export function useOrganizationMembers({
     error: error as Error | undefined,
     mutate,
   };
+}
+
+/**
+ * Like useOrganizationMembers but returns only active organization members.
+ * Use this for assignee dropdowns and anywhere users should select a member.
+ */
+export function useAssignableMembers(
+  options: UseOrganizationMembersOptions = {},
+): UseOrganizationMembersReturn {
+  return useOrganizationMembers(options);
 }

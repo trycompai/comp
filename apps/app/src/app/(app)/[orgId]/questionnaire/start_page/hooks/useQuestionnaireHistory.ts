@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { QuestionnaireListItem } from '../../components/types';
 
 interface UseQuestionnaireHistoryProps {
-  questionnaires: Awaited<ReturnType<typeof import('../data/queries').getQuestionnaires>>;
+  questionnaires: QuestionnaireListItem[];
 }
 
 export function useQuestionnaireHistory({ questionnaires }: UseQuestionnaireHistoryProps) {
@@ -18,7 +19,7 @@ export function useQuestionnaireHistory({ questionnaires }: UseQuestionnaireHist
 
     // Filter by source
     if (sourceFilter !== 'all') {
-      filtered = filtered.filter((questionnaire: Awaited<ReturnType<typeof import('../data/queries').getQuestionnaires>>[number]) =>
+      filtered = filtered.filter((questionnaire: QuestionnaireListItem) =>
         questionnaire.source === sourceFilter,
       );
     }
@@ -26,7 +27,7 @@ export function useQuestionnaireHistory({ questionnaires }: UseQuestionnaireHist
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((questionnaire: Awaited<ReturnType<typeof import('../data/queries').getQuestionnaires>>[number]) =>
+      filtered = filtered.filter((questionnaire: QuestionnaireListItem) =>
         questionnaire.filename.toLowerCase().includes(query),
       );
     }

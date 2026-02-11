@@ -4,7 +4,7 @@ import type { Member, Task, User } from '@db';
 import clsx from 'clsx';
 import { useRef } from 'react';
 import { useDrop } from 'react-dnd';
-import { updateTaskOrder } from '../actions/updateTaskOrder';
+import { useTasks } from '../hooks/useTasks';
 import { ItemTypes, TaskCard, type DragItem, type StatusId } from './TaskCard';
 
 // --- StatusGroup Component Props Interface ---
@@ -28,6 +28,7 @@ export function StatusGroup({
   members,
   statusFilter,
 }: StatusGroupProps) {
+  const { reorderTasks } = useTasks();
   // Ref for the inner task list div (might be needed for other interactions later)
   const taskListRef = useRef<HTMLDivElement>(null);
   // Ref for the outer div (header + list) which will be the main drop target
@@ -77,8 +78,8 @@ export function StatusGroup({
       status: task.status as StatusId,
     }));
 
-    // Call the server action to persist the new order.
-    await updateTaskOrder(updates);
+    // Call the hook to persist the new order.
+    await reorderTasks(updates);
   }
 
   return (

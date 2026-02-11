@@ -1,30 +1,20 @@
 'use client';
 
-import { updateSidebarState } from '@/actions/sidebar';
 import { useSidebar } from '@/context/sidebar-context';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { ArrowLeftFromLine } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useRef } from 'react';
 
 export function SidebarCollapseButton() {
   const { isCollapsed, setIsCollapsed } = useSidebar();
-  const previousIsCollapsedRef = useRef(isCollapsed);
-
-  const { execute } = useAction(updateSidebarState, {
-    onError: () => {
-      // Revert the optimistic update if the server action fails
-      setIsCollapsed(previousIsCollapsedRef.current);
-    },
-  });
 
   const handleToggle = () => {
-    previousIsCollapsedRef.current = isCollapsed;
-    // Update local state immediately for responsive UI
-    setIsCollapsed(!isCollapsed);
-    // Update server state (cookie) in the background
-    execute({ isCollapsed: !isCollapsed });
+    const next = !isCollapsed;
+    setIsCollapsed(next);
+    // Persist via cookie (1 year expiry)
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1);
+    document.cookie = `sidebar-collapsed=${JSON.stringify(next)};path=/;expires=${expires.toUTCString()}`;
   };
 
   return (

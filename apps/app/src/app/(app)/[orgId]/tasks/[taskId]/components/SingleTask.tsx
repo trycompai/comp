@@ -1,10 +1,9 @@
 'use client';
 
-import { regenerateTaskAction } from '@/actions/tasks/regenerate-task-action';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
-import { apiClient } from '@/lib/api-client';
 import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useActiveMember } from '@/utils/auth-client';
 import {
   Breadcrumb,
@@ -34,7 +33,6 @@ import {
 } from '@db';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { CheckCircle2, ChevronRight, Clock, Download, RefreshCw, SendHorizontal, Trash2, XCircle } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -69,6 +67,7 @@ interface SingleTaskProps {
 
 export function SingleTask({
   initialTask,
+  initialMembers,
   initialAutomations,
   isWebAutomationsEnabled,
   isPlatformAdmin,
@@ -81,6 +80,11 @@ export function SingleTask({
     task,
     isLoading,
     mutate: mutateTask,
+    updateTask,
+    regenerateTask,
+    submitForReview,
+    approveTask: approveTaskFn,
+    rejectTask: rejectTaskFn,
   } = useTask({
     initialData: initialTask,
   });
@@ -90,14 +94,20 @@ export function SingleTask({
   const { mutate: mutateActivity } = useTaskActivity();
 
   const { data: activeMember } = useActiveMember();
+  const { hasPermission } = usePermissions();
   const { members } = useOrganizationMembers();
 
+  // Parse member roles for findings (auditor has special finding permissions)
   const memberRoles = activeMember?.role?.split(',').map((r: string) => r.trim()) || [];
   const isAuditor = memberRoles.includes('auditor');
   const isAdminOrOwner = memberRoles.includes('admin') || memberRoles.includes('owner');
 
+  const canUpdateTask = hasPermission('task', 'update');
+  const canDeleteTask = hasPermission('task', 'delete');
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const [selectedFindingIdForHistory, setSelectedFindingIdForHistory] = useState<string | null>(
     null,
   );
@@ -107,14 +117,19 @@ export function SingleTask({
   const [reviewApproverId, setReviewApproverId] = useState<string | null>(null);
   const [isSubmittingForReview, setIsSubmittingForReview] = useState(false);
 
-  const regenerate = useAction(regenerateTaskAction, {
-    onSuccess: () => {
+  const handleRegenerate = async () => {
+    if (!task) return;
+    setIsRegenerating(true);
+    setRegenerateConfirmOpen(false);
+    try {
+      await regenerateTask();
       toast.success('Task updated with latest template content.');
-    },
-    onError: (error) => {
-      toast.error(error.error?.serverError || 'Failed to regenerate task');
-    },
-  });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to regenerate task');
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   const handleRequestApproval = () => {
     // Pre-populate with existing approver if one is already assigned
@@ -126,18 +141,11 @@ export function SingleTask({
     if (!task || !orgId || !reviewApproverId) return;
     setIsSubmittingForReview(true);
     try {
-      const response = await apiClient.post<Task>(
-        `/v1/tasks/${task.id}/submit-for-review`,
-        { approverId: reviewApproverId },
-        orgId,
-      );
-      if (response.error) {
-        throw new Error(response.error);
-      }
+      await submitForReview(reviewApproverId);
       toast.success('Task submitted for approval');
       setApprovalDialogOpen(false);
       setReviewApproverId(null);
-      await Promise.all([mutateTask(), mutateActivity()]);
+      await mutateActivity();
     } catch (error) {
       console.error('Failed to submit for review:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to submit for review');
@@ -149,16 +157,9 @@ export function SingleTask({
   const handleApproveTask = async () => {
     if (!task || !orgId) return;
     try {
-      const response = await apiClient.post<Task>(
-        `/v1/tasks/${task.id}/approve`,
-        {},
-        orgId,
-      );
-      if (response.error) {
-        throw new Error(response.error);
-      }
+      await approveTaskFn();
       toast.success('Task approved successfully');
-      await Promise.all([mutateTask(), mutateActivity()]);
+      await mutateActivity();
     } catch (error) {
       console.error('Failed to approve task:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to approve task');
@@ -168,16 +169,9 @@ export function SingleTask({
   const handleRejectTask = async () => {
     if (!task || !orgId) return;
     try {
-      const response = await apiClient.post<Task>(
-        `/v1/tasks/${task.id}/reject`,
-        {},
-        orgId,
-      );
-      if (response.error) {
-        throw new Error(response.error);
-      }
+      await rejectTaskFn();
       toast.success('Task review rejected');
-      await Promise.all([mutateTask(), mutateActivity()]);
+      await mutateActivity();
     } catch (error) {
       console.error('Failed to reject task:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to reject task');
@@ -224,13 +218,7 @@ export function SingleTask({
 
     if (Object.keys(updatePayload).length > 0) {
       try {
-        const response = await apiClient.patch<Task>(`/v1/tasks/${task.id}`, updatePayload, orgId);
-
-        if (response.error) {
-          throw new Error(response.error);
-        }
-
-        await mutateTask();
+        await updateTask(updatePayload);
       } catch (error) {
         console.error('Failed to update task:', error);
         toast.error(error instanceof Error ? error.message : 'Failed to update task');
@@ -376,7 +364,6 @@ export function SingleTask({
                         await downloadTaskEvidenceZip({
                           taskId: task.id,
                           taskTitle: task.title,
-                          organizationId: orgId,
                           includeJson: true,
                         });
                         toast.success('Task evidence downloaded');
@@ -389,26 +376,31 @@ export function SingleTask({
                   >
                     <Download className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setRegenerateConfirmOpen(true)}
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    title="Regenerate task"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setDeleteDialogOpen(true)}
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    title="Delete task"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {canUpdateTask && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setRegenerateConfirmOpen(true)}
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      title="Regenerate task"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {canDeleteTask && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeleteDialogOpen(true)}
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      title="Delete task"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
+
               {/* Attachments */}
               <div className="space-y-3">
                 <TaskMainContent task={task} showComments={false} />
@@ -505,13 +497,10 @@ export function SingleTask({
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                regenerate.execute({ taskId: task.id });
-                setRegenerateConfirmOpen(false);
-              }}
-              disabled={regenerate.status === 'executing'}
+              onClick={handleRegenerate}
+              disabled={isRegenerating}
             >
-              {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
+              {isRegenerating ? 'Working...' : 'Confirm'}
             </Button>
           </DialogFooter>
         </DialogContent>

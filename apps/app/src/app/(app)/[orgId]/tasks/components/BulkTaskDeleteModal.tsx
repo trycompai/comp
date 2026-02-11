@@ -1,6 +1,5 @@
 'use client';
 
-import { apiClient } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -11,9 +10,9 @@ import {
   DialogTitle,
 } from '@comp/ui/dialog';
 import { Loader2 } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useTasks } from '../hooks/useTasks';
 
 interface BulkTaskDeleteModalProps {
   open: boolean;
@@ -28,40 +27,22 @@ export function BulkTaskDeleteModal({
   selectedTaskIds,
   onSuccess,
 }: BulkTaskDeleteModalProps) {
-  const router = useRouter();
-  const params = useParams<{ orgId: string }>();
-  const orgIdParam = Array.isArray(params.orgId) ? params.orgId[0] : params.orgId;
-
+  const { bulkDelete } = useTasks();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const selectedCount = selectedTaskIds.length;
   const isSingular = selectedCount === 1;
 
   const handleDelete = async () => {
-    if (!orgIdParam || selectedTaskIds.length === 0) {
+    if (selectedTaskIds.length === 0) {
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const payload = {
-        taskIds: selectedTaskIds,
-      };
-
-      const response = await apiClient.delete<{ deletedCount: number }>(
-        '/v1/tasks/bulk',
-        orgIdParam,
-        payload,
-      );
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      const deletedCount = response.data?.deletedCount ?? selectedTaskIds.length;
+      const { deletedCount } = await bulkDelete(selectedTaskIds);
       toast.success(`Deleted ${deletedCount} task${deletedCount === 1 ? '' : 's'}`);
       onSuccess?.();
       onOpenChange(false);
-      router.refresh();
     } catch (error) {
       console.error('Failed to bulk delete tasks', error);
       const message = error instanceof Error ? error.message : 'Failed to delete tasks';

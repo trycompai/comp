@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getFeatureFlags } from '@/app/posthog';
+import { requireRoutePermission } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
@@ -15,6 +16,8 @@ export default async function BrowserConnectionPage({
   params: Promise<{ orgId: string }>;
 }) {
   const { orgId } = await params;
+
+  await requireRoutePermission('settings/browser-connection', orgId);
 
   const session = await auth.api.getSession({
     headers: await headers(),

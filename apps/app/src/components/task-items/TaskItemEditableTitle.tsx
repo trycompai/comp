@@ -8,6 +8,7 @@ interface TaskItemEditableTitleProps {
   onUpdate: (updates: { title?: string }) => Promise<void>;
   onAfterUpdate?: () => void;
   className?: string;
+  readOnly?: boolean;
 }
 
 export function TaskItemEditableTitle({
@@ -16,6 +17,7 @@ export function TaskItemEditableTitle({
   onUpdate,
   onAfterUpdate,
   className,
+  readOnly,
 }: TaskItemEditableTitleProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(title);
@@ -82,8 +84,8 @@ export function TaskItemEditableTitle({
         </div>
       ) : (
         <h1
-          onClick={() => setIsEditingTitle(true)}
-          className={cn('text-2xl font-semibold cursor-text hover:bg-accent/50 rounded px-2 py-1 -mx-2 -my-1 transition-colors', className)}
+          onClick={() => !readOnly && setIsEditingTitle(true)}
+          className={cn('text-2xl font-semibold rounded px-2 py-1 -mx-2 -my-1 transition-colors', readOnly ? 'cursor-default' : 'cursor-text hover:bg-accent/50', className)}
         >
           {title}
         </h1>

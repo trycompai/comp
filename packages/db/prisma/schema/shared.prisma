@@ -7,6 +7,7 @@ model ApiKey {
   expiresAt  DateTime?
   lastUsedAt DateTime?
   isActive   Boolean   @default(true)
+  scopes     String[]  @default([])
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String

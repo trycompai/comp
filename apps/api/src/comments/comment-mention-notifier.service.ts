@@ -244,6 +244,7 @@ export class CommentMentionNotifierService {
       const mentionedUsers = await db.user.findMany({
         where: {
           id: { in: mentionedUserIds },
+          isPlatformAdmin: false,
         },
       });
 
@@ -296,6 +297,7 @@ export class CommentMentionNotifierService {
           db,
           user.email,
           'taskMentions',
+          organizationId,
         );
         if (isUnsubscribed) {
           this.logger.log(

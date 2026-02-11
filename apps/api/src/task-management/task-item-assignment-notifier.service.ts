@@ -66,6 +66,7 @@ export class TaskItemAssignmentNotifierService {
                 id: true,
                 name: true,
                 email: true,
+                isPlatformAdmin: true,
               },
             },
           },
@@ -86,6 +87,14 @@ export class TaskItemAssignmentNotifierService {
       if (!assigneeUser?.id || !assigneeUser.email) {
         this.logger.warn(
           `Skipping assignment notification: assignee member ${assigneeMemberId} has no user/email`,
+        );
+        return;
+      }
+
+      // Skip notifications for platform admin members
+      if (assigneeUser.isPlatformAdmin) {
+        this.logger.log(
+          `Skipping assignment notification: assignee ${assigneeUser.email} is a platform admin`,
         );
         return;
       }
@@ -118,6 +127,7 @@ export class TaskItemAssignmentNotifierService {
         db,
         assigneeUser.email,
         'taskAssignments',
+        organizationId,
       );
       if (isUnsubscribed) {
         this.logger.log(

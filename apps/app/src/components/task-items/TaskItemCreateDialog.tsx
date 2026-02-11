@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@comp/ui/dialog';
 import type { TaskItemEntityType, TaskItemFilters, TaskItemSortBy, TaskItemSortOrder } from '@/hooks/use-task-items';
 import { TaskItemForm } from './TaskItemForm';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface TaskItemCreateDialogProps {
   open: boolean;
@@ -29,6 +30,12 @@ export function TaskItemCreateDialog({
   filters,
   onSuccess,
 }: TaskItemCreateDialogProps) {
+  const { hasPermission } = usePermissions();
+
+  if (!hasPermission('task', 'create')) {
+    return null;
+  }
+
   const handleSuccess = () => {
     onSuccess();
     onOpenChange(false);

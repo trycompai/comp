@@ -18,6 +18,7 @@ interface ProviderTabsProps {
   onAddConnection: (providerType: string) => void;
   onConfigure: (provider: Provider) => void;
   needsConfiguration: (provider: Provider) => boolean;
+  canRunScan?: boolean;
 }
 
 const formatProviderLabel = (providerType: string): string => {
@@ -131,6 +132,7 @@ export function ProviderTabs({
   onAddConnection,
   onConfigure,
   needsConfiguration,
+  canRunScan,
 }: ProviderTabsProps) {
   const [activeRegionTabs, setActiveRegionTabs] = useState<Record<string, string>>({});
 
@@ -249,6 +251,7 @@ export function ProviderTabs({
                           isScanning={isScanning}
                           needsConfiguration={needsConfiguration(connection)}
                           onConfigure={() => onConfigure(connection)}
+                          canRunScan={canRunScan}
                         />
                       </div>
                     </TabsContent>

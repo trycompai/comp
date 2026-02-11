@@ -23,9 +23,7 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@/*": ["./src/*"],
-      "@db": ["./prisma/index"],
-      "@comp/email": ["../../packages/email/index.ts"],
-      "@comp/email/*": ["../../packages/email/*"]
+      "@db": ["./prisma/index"]
     },
     "jsx": "react-jsx"
   }

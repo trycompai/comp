@@ -1,57 +1,46 @@
-import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { EmailNotificationPreferences } from './components/EmailNotificationPreferences';
 
-export default async function UserSettings() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+export default async function UserSettings({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId } = await params;
 
-  if (!session?.user?.email) {
+  const res = await serverApi.get<{
+    email: string;
+    preferences: {
+      policyNotifications: boolean;
+      taskReminders: boolean;
+      weeklyTaskDigest: boolean;
+      unassignedItemsNotifications: boolean;
+      taskMentions: boolean;
+      taskAssignments: boolean;
+    };
+    isAdminOrOwner: boolean;
+    roleNotifications: {
+      policyNotifications: boolean;
+      taskReminders: boolean;
+      taskAssignments: boolean;
+      taskMentions: boolean;
+      weeklyTaskDigest: boolean;
+      findingNotifications: boolean;
+    } | null;
+  }>('/v1/people/me/email-preferences');
+
+  if (!res.data?.email) {
     return null;
   }
 
-  const user = await db.user.findUnique({
-    where: { email: session.user.email },
-    select: {
-      emailPreferences: true,
-      emailNotificationsUnsubscribed: true,
-    },
-  });
-
-  const DEFAULT_PREFERENCES = {
-    policyNotifications: true,
-    taskReminders: true,
-    weeklyTaskDigest: true,
-    unassignedItemsNotifications: true,
-    taskMentions: true,
-    taskAssignments: true,
-  };
-
-  // If user has the old all-or-nothing unsubscribe flag, convert to preferences
-  if (user?.emailNotificationsUnsubscribed) {
-    const preferences = {
-      policyNotifications: false,
-      taskReminders: false,
-      weeklyTaskDigest: false,
-      unassignedItemsNotifications: false,
-      taskMentions: false,
-      taskAssignments: false,
-    };
-    return (
-      <EmailNotificationPreferences initialPreferences={preferences} email={session.user.email} />
-    );
-  }
-
-  const preferences =
-    user?.emailPreferences && typeof user.emailPreferences === 'object'
-      ? { ...DEFAULT_PREFERENCES, ...(user.emailPreferences as Record<string, boolean>) }
-      : DEFAULT_PREFERENCES;
-
   return (
-    <EmailNotificationPreferences initialPreferences={preferences} email={session.user.email} />
+    <EmailNotificationPreferences
+      initialPreferences={res.data.preferences}
+      email={res.data.email}
+      isAdminOrOwner={res.data.isAdminOrOwner}
+      roleNotifications={res.data.roleNotifications}
+    />
   );
 }
 

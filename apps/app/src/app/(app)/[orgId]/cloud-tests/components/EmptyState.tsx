@@ -1,6 +1,7 @@
 'use client';
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
+import { useApi } from '@/hooks/use-api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
@@ -10,8 +11,6 @@ import { Button, PageHeader, PageLayout, Spinner } from '@trycompai/design-syste
 import { ArrowLeft, CheckmarkFilled, Launch } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { connectCloudAction } from '../actions/connect-cloud';
-import { validateAwsCredentialsAction } from '../actions/validate-aws-credentials';
 
 type CloudProvider = 'aws' | 'gcp' | 'azure' | null;
 type Step = 'choose' | 'connect' | 'validate-aws' | 'success';
@@ -142,6 +141,7 @@ export function EmptyState({
   onConnected,
   initialProvider = null,
 }: EmptyStateProps) {
+  const api = useApi();
   const initialIsAws = initialProvider === 'aws';
   const [step, setStep] = useState<Step>(initialProvider && !initialIsAws ? 'connect' : 'choose');
   const [selectedProvider, setSelectedProvider] = useState<CloudProvider>(
@@ -230,7 +230,11 @@ export function EmptyState({
 
     try {
       setIsConnecting(true);
-      const result = await validateAwsCredentialsAction({
+      const result = await api.post<{
+        success: boolean;
+        accountId?: string;
+        regions?: { value: string; label: string }[];
+      }>('/v1/cloud-security/legacy/validate-aws', {
         accessKeyId: credentials.access_key_id,
         secretAccessKey: credentials.secret_access_key,
       });
@@ -246,7 +250,7 @@ export function EmptyState({
         setStep('validate-aws');
         toast.success('Credentials validated! Now select your regions.');
       } else {
-        toast.error(result?.data?.error || 'Failed to validate credentials');
+        toast.error(result?.error || 'Failed to validate credentials');
       }
     } catch (error) {
       console.error('Validation error:', error);
@@ -271,26 +275,25 @@ export function EmptyState({
 
     try {
       setIsConnecting(true);
-      const result = await connectCloudAction({
-        cloudProvider: selectedProvider,
+      const result = await api.post<{
+        success: boolean;
+        integrationId?: string;
+        error?: string;
+      }>('/v1/cloud-security/legacy/connect', {
+        provider: selectedProvider,
         credentials,
       });
 
       if (result?.data?.success) {
         setStep('success');
-        if (result.data?.trigger) {
-          onConnected?.(result.data.trigger);
-        }
-        if (result.data?.runErrors && result.data.runErrors.length > 0) {
-          toast.error(result.data.runErrors[0] || 'Initial scan reported an issue');
-        }
+        onConnected?.();
         if (onBack) {
           setTimeout(() => {
             onBack();
           }, 2000);
         }
       } else {
-        toast.error(result?.data?.error || 'Failed to connect cloud provider');
+        toast.error(result?.error || 'Failed to connect cloud provider');
       }
     } catch (error) {
       console.error('Connection error:', error);

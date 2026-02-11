@@ -59,11 +59,12 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
   },
   {
     id: 'assignee',
-    accessorKey: 'assignee.name',
+    accessorKey: 'assignee.user.name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Assignee" />,
     enableSorting: false,
     cell: ({ row }) => {
-      if (!row.original.assignee) {
+      const user = row.original.assignee?.user;
+      if (!user) {
         return (
           <div className="flex items-center gap-2">
             <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full">
@@ -78,17 +79,17 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
             <AvatarImage
-              src={row.original.assignee.image || undefined}
-              alt={row.original.assignee.name || row.original.assignee.email || ''}
+              src={user.image || undefined}
+              alt={user.name || user.email || ''}
             />
             <AvatarFallback>
-              {row.original.assignee.name?.charAt(0) ||
-                row.original.assignee.email?.charAt(0).toUpperCase() ||
+              {user.name?.charAt(0) ||
+                user.email?.charAt(0).toUpperCase() ||
                 '?'}
             </AvatarFallback>
           </Avatar>
           <p className="text-sm font-medium">
-            {row.original.assignee.name || row.original.assignee.email}
+            {user.name || user.email}
           </p>
         </div>
       );

@@ -1,14 +1,11 @@
 'use client';
 
-import {
-  removeTrustFaviconAction,
-  updateTrustFaviconAction,
-} from '../actions/update-trust-favicon';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@trycompai/design-system';
 import { Add, TrashCan } from '@trycompai/design-system/icons';
-import { useAction } from 'next-safe-action/hooks';
 import Image from 'next/image';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface UpdateTrustFaviconProps {
@@ -16,30 +13,46 @@ interface UpdateTrustFaviconProps {
 }
 
 export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProps) {
+  const { hasPermission } = usePermissions();
+  const canUpdatePortal = hasPermission('trust', 'update');
+  const { uploadFavicon, removeFavicon } = useTrustPortalSettings();
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentFaviconUrl);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const uploadFavicon = useAction(updateTrustFaviconAction, {
-    onSuccess: (result) => {
-      if (result.data?.faviconUrl) {
-        setPreviewUrl(result.data.faviconUrl);
+  const handleUpload = useCallback(
+    async (fileName: string, fileType: string, fileData: string) => {
+      setIsUploading(true);
+      try {
+        const result = await uploadFavicon(fileName, fileType, fileData);
+        if (result && typeof result === 'object' && 'faviconUrl' in result) {
+          setPreviewUrl((result as { faviconUrl: string }).faviconUrl);
+        }
+        toast.success('Favicon updated');
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : 'Failed to upload favicon',
+        );
+      } finally {
+        setIsUploading(false);
       }
-      toast.success('Favicon updated');
     },
-    onError: (error) => {
-      toast.error(error.error.serverError || 'Failed to upload favicon');
-    },
-  });
+    [uploadFavicon],
+  );
 
-  const removeFavicon = useAction(removeTrustFaviconAction, {
-    onSuccess: () => {
+  const handleRemove = useCallback(async () => {
+    setIsRemoving(true);
+    try {
+      await removeFavicon();
       setPreviewUrl(null);
       toast.success('Favicon removed');
-    },
-    onError: () => {
+    } catch {
       toast.error('Failed to remove favicon');
-    },
-  });
+    } finally {
+      setIsRemoving(false);
+    }
+  }, [removeFavicon]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -65,11 +78,7 @@ export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProp
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = (reader.result as string).split(',')[1];
-      uploadFavicon.execute({
-        fileName: file.name,
-        fileType: file.type,
-        fileData: base64,
-      });
+      handleUpload(file.name, file.type, base64);
     };
     reader.readAsDataURL(file);
 
@@ -79,7 +88,7 @@ export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProp
     }
   };
 
-  const isLoading = uploadFavicon.status === 'executing' || removeFavicon.status === 'executing';
+  const isLoading = isUploading || isRemoving;
 
   return (
     <Card>
@@ -116,22 +125,24 @@ export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProp
               className="hidden"
               disabled={isLoading}
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading}
-              loading={uploadFavicon.status === 'executing'}
-            >
-              Upload favicon
-            </Button>
-            {previewUrl && (
+            {canUpdatePortal && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                loading={isUploading}
+              >
+                Upload favicon
+              </Button>
+            )}
+            {canUpdatePortal && previewUrl && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => removeFavicon.execute({})}
+                onClick={handleRemove}
                 disabled={isLoading}
                 iconLeft={<TrashCan size={16} />}
               >

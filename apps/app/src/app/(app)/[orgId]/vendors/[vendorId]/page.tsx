@@ -1,16 +1,26 @@
-import { auth } from '@/utils/auth';
-import { extractDomain } from '@/utils/normalize-website';
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { cache } from 'react';
 import { VendorDetailTabs } from './components/VendorDetailTabs';
 
 interface PageProps {
   params: Promise<{ vendorId: string; locale: string; orgId: string }>;
   searchParams?: Promise<{
     taskItemId?: string;
+  }>;
+}
+
+interface PeopleApiResponse {
+  data: Array<{
+    id: string;
+    role: string;
+    deactivated: boolean;
+    user: {
+      id: string;
+      name: string | null;
+      email: string;
+      image: string | null;
+    };
   }>;
 }
 
@@ -24,14 +34,30 @@ export default async function VendorPage({ params, searchParams }: PageProps) {
   const { taskItemId } = (await searchParams) ?? {};
 
   // Fetch data in parallel for faster loading
-  const [vendorData, assignees] = await Promise.all([
-    getVendor({ vendorId, organizationId: orgId }),
-    getAssignees(orgId),
+  // GET /v1/vendors/:id returns vendor fields flat (no data wrapper)
+  // GET /v1/people returns { data: people[], count }
+  const [vendorResult, peopleResult] = await Promise.all([
+    serverApi.get<Record<string, unknown>>(`/v1/vendors/${vendorId}`),
+    serverApi.get<PeopleApiResponse>('/v1/people'),
   ]);
 
-  if (!vendorData || !vendorData.vendor) {
+  const vendor = vendorResult.data;
+
+  if (!vendor) {
     redirect('/');
   }
+
+  // Transform people to assignees (filter out employee/contractor, filter deactivated)
+  const people = peopleResult.data?.data ?? [];
+  const assignees = people
+    .filter((p) => !p.deactivated && !['employee', 'contractor'].includes(p.role))
+    .map((p) => ({
+      id: p.id,
+      role: p.role,
+      user: p.user,
+      organizationId: orgId,
+      deactivated: false,
+    }));
 
   // Hide vendor-level content when viewing a task in focus mode
   const isViewingTask = Boolean(taskItemId);
@@ -40,101 +66,12 @@ export default async function VendorPage({ params, searchParams }: PageProps) {
     <VendorDetailTabs
       vendorId={vendorId}
       orgId={orgId}
-      vendor={vendorData.vendor}
-      assignees={assignees}
+      vendor={vendor as any}
+      assignees={assignees as any}
       isViewingTask={isViewingTask}
     />
   );
 }
-
-const getVendor = cache(async (params: { vendorId: string; organizationId: string }) => {
-  const { vendorId, organizationId } = params;
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user?.id) {
-    return null;
-  }
-
-  const vendor = await db.vendor.findUnique({
-    where: {
-      id: vendorId,
-      organizationId,
-    },
-    include: {
-      assignee: {
-        include: {
-          user: true,
-        },
-      },
-    },
-  });
-
-  // Fetch risk assessment from GlobalVendors if vendor has a website
-  // Find ALL duplicates and prefer the one WITH risk assessment data (most recent)
-  const domain = extractDomain(vendor?.website ?? null);
-  let globalVendor = null;
-  if (domain) {
-    const duplicates = await db.globalVendors.findMany({
-      where: {
-        website: {
-          contains: domain,
-        },
-      },
-      select: {
-        website: true,
-        riskAssessmentData: true,
-        riskAssessmentVersion: true,
-        riskAssessmentUpdatedAt: true,
-      },
-      orderBy: [{ riskAssessmentUpdatedAt: 'desc' }, { createdAt: 'desc' }],
-    });
-
-    // Prefer record WITH risk assessment data (most recent)
-    globalVendor = duplicates.find((gv) => gv.riskAssessmentData !== null) ?? duplicates[0] ?? null;
-  }
-
-  // Merge GlobalVendors risk assessment data into vendor object for backward compatibility
-  const vendorWithRiskAssessment = vendor
-    ? {
-        ...vendor,
-        riskAssessmentData: globalVendor?.riskAssessmentData ?? null,
-        riskAssessmentVersion: globalVendor?.riskAssessmentVersion ?? null,
-        riskAssessmentUpdatedAt: globalVendor?.riskAssessmentUpdatedAt ?? null,
-      }
-    : null;
-
-  return {
-    vendor: vendorWithRiskAssessment,
-    globalVendor,
-  };
-});
-
-const getAssignees = cache(async (organizationId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user?.id) {
-    return [];
-  }
-
-  const assignees = await db.member.findMany({
-    where: {
-      organizationId,
-      role: {
-        notIn: ['employee', 'contractor'],
-      },
-      deactivated: false,
-    },
-    include: {
-      user: true,
-    },
-  });
-
-  return assignees;
-});
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

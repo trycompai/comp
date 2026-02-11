@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateFindingButton } from './CreateFindingButton';
 import { FindingItem } from './FindingItem';
+import { usePermissions } from '@/hooks/use-permissions';
 
 // Number of findings to show initially
 const INITIAL_DISPLAY_COUNT = 5;
@@ -39,6 +40,7 @@ export function FindingsList({
 }: FindingsListProps) {
   const { data, isLoading, error, mutate } = useTaskFindings(taskId);
   const { updateFinding, deleteFinding } = useFindingActions();
+  const { hasPermission } = usePermissions();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [targetFindingId, setTargetFindingId] = useState<string | null>(null);
@@ -80,9 +82,11 @@ export function FindingsList({
   const visibleFindings = showAll ? sortedFindings : sortedFindings.slice(0, INITIAL_DISPLAY_COUNT);
   const hiddenCount = sortedFindings.length - visibleFindings.length;
 
-  // Permission checks
-  const canCreateFinding = isAuditor || isPlatformAdmin;
-  const canChangeStatus = isAuditor || isPlatformAdmin || isAdminOrOwner;
+  // Permission checks - use RBAC permissions with role-based fallback
+  const canCreateFinding = hasPermission('finding', 'create');
+  const canUpdateFinding = hasPermission('finding', 'update');
+  const canDeleteFinding = hasPermission('finding', 'delete');
+  const canChangeStatus = canUpdateFinding || isAuditor || isPlatformAdmin || isAdminOrOwner;
   const canSetRestrictedStatus = isAuditor || isPlatformAdmin;
 
   const handleStatusChange = useCallback(
@@ -199,6 +203,7 @@ export function FindingsList({
                 isTarget={targetFindingId === finding.id}
                 canChangeStatus={canChangeStatus}
                 canSetRestrictedStatus={canSetRestrictedStatus}
+                canDelete={canDeleteFinding}
                 onToggleExpand={() => setExpandedId(expandedId === finding.id ? null : finding.id)}
                 onStatusChange={(status, revisionNote) =>
                   handleStatusChange(finding.id, status, revisionNote)

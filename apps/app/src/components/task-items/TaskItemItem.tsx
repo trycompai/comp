@@ -1,7 +1,7 @@
 'use client';
 
 import { useOptimisticTaskItems } from '@/hooks/use-task-items';
-import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import { useAssignableMembers } from '@/hooks/use-organization-members';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
 import { TaskItemDescriptionView } from './TaskItemDescriptionView';
@@ -61,6 +61,7 @@ import { toast } from 'sonner';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { format } from 'date-fns';
 import { VerifyRiskAssessmentTaskItemSkeletonRow } from './verify-risk-assessment/VerifyRiskAssessmentTaskItemSkeletonRow';
+import { usePermissions } from '@/hooks/use-permissions';
 
 const formatShortDate = (date: string | Date): string => {
   try {
@@ -122,6 +123,10 @@ export function TaskItemItem({
   onToggleExpanded,
   onStatusOrPriorityChange,
 }: TaskItemItemProps) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('task', 'update');
+  const canDelete = hasPermission('task', 'delete');
+
   if (taskItem.title === 'Verify risk assessment' && taskItem.status === 'in_progress') {
     return <VerifyRiskAssessmentTaskItemSkeletonRow />;
   }
@@ -147,7 +152,7 @@ export function TaskItemItem({
     sortOrder,
     filters,
   );
-  const { members } = useOrganizationMembers();
+  const { members } = useAssignableMembers();
   
   // Filter members to only show owner and admin roles
   // Always include current assignee even if they're not owner/admin (to preserve existing assignments)
@@ -342,13 +347,14 @@ export function TaskItemItem({
                 {/* Priority Icon - Fixed width */}
                 <div className="w-8 shrink-0 flex items-center justify-center">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger asChild disabled={!canUpdate}>
                       <button
                         type="button"
                         onClick={(e) => e.stopPropagation()}
-                        className={`group/priority h-6 px-1.5 rounded-md cursor-pointer select-none transition-colors duration-150 focus:outline-none hover:bg-accent/50 active:bg-accent flex items-center justify-center gap-0.5 ${getPriorityColor(taskItem.priority)}`}
-                        aria-label={`Priority: ${taskItem.priority}. Click to change.`}
-                        title={`Priority: ${taskItem.priority}. Click to change.`}
+                        className={`group/priority h-6 px-1.5 rounded-md select-none transition-colors duration-150 focus:outline-none flex items-center justify-center gap-0.5 ${canUpdate ? 'cursor-pointer hover:bg-accent/50 active:bg-accent' : 'cursor-default'} ${getPriorityColor(taskItem.priority)}`}
+                        aria-label={`Priority: ${taskItem.priority}${canUpdate ? '. Click to change.' : ''}`}
+                        title={`Priority: ${taskItem.priority}${canUpdate ? '. Click to change.' : ''}`}
+                        disabled={!canUpdate}
                       >
                         {(() => {
                           const PriorityIcon = getPriorityIcon(taskItem.priority);
@@ -407,13 +413,14 @@ export function TaskItemItem({
                 {/* Status Icon - Fixed width */}
                 <div className="w-8 shrink-0 flex items-center justify-center">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger asChild disabled={!canUpdate}>
                       <button
                         type="button"
                         onClick={(e) => e.stopPropagation()}
-                        className={`group/status h-6 px-1.5 rounded-md cursor-pointer select-none transition-colors duration-150 focus:outline-none hover:bg-accent/50 active:bg-accent flex items-center justify-center gap-0.5 ${getStatusColor(taskItem.status)}`}
-                        aria-label={`Status: ${taskItem.status.replace('_', ' ')}. Click to change.`}
-                        title={`Status: ${taskItem.status.replace('_', ' ')}. Click to change.`}
+                        className={`group/status h-6 px-1.5 rounded-md select-none transition-colors duration-150 focus:outline-none flex items-center justify-center gap-0.5 ${canUpdate ? 'cursor-pointer hover:bg-accent/50 active:bg-accent' : 'cursor-default'} ${getStatusColor(taskItem.status)}`}
+                        aria-label={`Status: ${taskItem.status.replace('_', ' ')}${canUpdate ? '. Click to change.' : ''}`}
+                        title={`Status: ${taskItem.status.replace('_', ' ')}${canUpdate ? '. Click to change.' : ''}`}
+                        disabled={!canUpdate}
                       >
                         {(() => {
                           const StatusIcon = getStatusIcon(taskItem.status);
@@ -485,7 +492,7 @@ export function TaskItemItem({
                         }
                       }}
                       withTitle={false}
-                      disabled={isUpdating}
+                      disabled={isUpdating || !canUpdate}
                     />
                   </div>
                 </div>
@@ -496,6 +503,7 @@ export function TaskItemItem({
                 </div>
 
                 {/* Delete Button */}
+                {canDelete && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -509,6 +517,7 @@ export function TaskItemItem({
                     >
                   <Trash2 className="h-4 w-4" />
                     </Button>
+                )}
               </div>
         </div>
       </div>
@@ -652,10 +661,12 @@ export function TaskItemItem({
               <Button size="sm" variant="outline" onClick={onToggleExpanded}>
                 Close
               </Button>
-              <Button size="sm" onClick={handleEditToggle}>
-                <Pencil className="mr-2 h-3.5 w-3.5" />
-                Edit
-              </Button>
+              {canUpdate && (
+                <Button size="sm" onClick={handleEditToggle}>
+                  <Pencil className="mr-2 h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              )}
             </div>
           </div>
 

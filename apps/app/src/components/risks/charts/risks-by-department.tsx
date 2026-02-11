@@ -1,14 +1,19 @@
-import { auth } from '@/utils/auth';
+import { serverApi } from '@/lib/api-server';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { db } from '@db';
-import { headers } from 'next/headers';
-import { cache } from 'react';
 import { DepartmentChart } from './department-chart';
 
 const ALL_DEPARTMENTS = ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'];
 
+interface DepartmentStat {
+  department: string | null;
+  _count: number;
+}
+
 export async function RisksByDepartment() {
-  const risks = await getRisksByDepartment();
+  const res = await serverApi.get<{ data: DepartmentStat[] }>(
+    '/v1/risks/stats/by-department',
+  );
+  const risks = Array.isArray(res.data?.data) ? res.data.data : [];
 
   const data = ALL_DEPARTMENTS.map((dept) => {
     const found = risks.find(
@@ -44,21 +49,3 @@ export async function RisksByDepartment() {
     </Card>
   );
 }
-
-const getRisksByDepartment = cache(async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session || !session.session.activeOrganizationId) {
-    return [];
-  }
-
-  const risksByDepartment = await db.risk.groupBy({
-    by: ['department'],
-    where: { organizationId: session.session.activeOrganizationId },
-    _count: true,
-  });
-
-  return risksByDepartment;
-});

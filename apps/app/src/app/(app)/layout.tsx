@@ -1,7 +1,11 @@
+import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+
+interface AuthMeResponse {
+  pendingInvitation: { id: string } | null;
+}
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
   const hdrs = await headers();
@@ -13,16 +17,11 @@ export default async function Layout({ children }: { children: React.ReactNode }
     return redirect('/auth');
   }
 
-  const pendingInvite = await db.invitation.findFirst({
-    where: {
-      email: session.user.email,
-      status: 'pending',
-    },
-  });
+  const meRes = await serverApi.get<AuthMeResponse>('/v1/auth/me');
+  const pendingInvite = meRes.data?.pendingInvitation;
 
   if (pendingInvite) {
     let path = hdrs.get('x-pathname') || hdrs.get('referer') || '';
-    // normalize potential locale prefix
     path = path.replace(/\/([a-z]{2})\//, '/');
     const target = `/invite/${pendingInvite.id}`;
     if (!path.startsWith(target)) {

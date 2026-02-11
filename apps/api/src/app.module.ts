@@ -34,6 +34,11 @@ import { BrowserbaseModule } from './browserbase/browserbase.module';
 import { TaskManagementModule } from './task-management/task-management.module';
 import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
 import { TrainingModule } from './training/training.module';
+import { RolesModule } from './roles/roles.module';
+import { ControlsModule } from './controls/controls.module';
+import { FrameworksModule } from './frameworks/frameworks.module';
+import { AuditModule } from './audit/audit.module';
+import { SecretsModule } from './secrets/secrets.module';
 
 @Module({
   imports: [
@@ -53,6 +58,7 @@ import { TrainingModule } from './training/training.module';
       },
     ]),
     AuthModule,
+    RolesModule,
     OrganizationModule,
     PeopleModule,
     RisksModule,
@@ -80,6 +86,10 @@ import { TrainingModule } from './training/training.module';
     TaskManagementModule,
     AssistantChatModule,
     TrainingModule,
+    ControlsModule,
+    FrameworksModule,
+    AuditModule,
+    SecretsModule,
   ],
   controllers: [AppController],
   providers: [

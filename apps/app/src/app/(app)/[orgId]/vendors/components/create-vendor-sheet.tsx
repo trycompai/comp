@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { useMediaQuery } from '@comp/ui/hooks';
 import type { Member, User } from '@db';
 import {
@@ -26,12 +27,15 @@ export function CreateVendorSheet({
   assignees: (Member & { user: User })[];
   organizationId: string;
 }) {
+  const { hasPermission } = usePermissions();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSuccess = useCallback(() => {
     setIsOpen(false);
   }, []);
+
+  if (!hasPermission('vendor', 'create')) return null;
 
   const trigger = (
     <Button iconLeft={<Add size={16} />} onClick={() => setIsOpen(true)}>

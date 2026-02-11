@@ -42,22 +42,15 @@ import {
   ViewOff,
 } from '@trycompai/design-system/icons';
 import { Copy } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import type { Secret } from '../../hooks/useSecrets';
+import { useSecrets } from '../../hooks/useSecrets';
 import { EditSecretDialog } from '../EditSecretDialog';
 
-interface Secret {
-  id: string;
-  name: string;
-  description: string | null;
-  category: string | null;
-  createdAt: string;
-  updatedAt: string;
-  lastUsedAt: string | null;
-}
-
 interface SecretsTableProps {
-  secrets: Secret[];
+  initialSecrets: Secret[];
 }
 
 const CATEGORY_MAP: Record<string, string> = {
@@ -76,7 +69,11 @@ function formatDate(date: string): string {
   }).format(new Date(date));
 }
 
-export function SecretsTable({ secrets }: SecretsTableProps) {
+export function SecretsTable({ initialSecrets }: SecretsTableProps) {
+  const { secrets, deleteSecret } = useSecrets({ initialData: initialSecrets });
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('organization', 'update');
+
   const [revealedSecrets, setRevealedSecrets] = useState<Record<string, string>>({});
   const [loadingSecrets, setLoadingSecrets] = useState<Record<string, boolean>>({});
   const [editingSecret, setEditingSecret] = useState<Secret | null>(null);
@@ -110,7 +107,7 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
       }
 
       const data = await response.json();
-      setRevealedSecrets((prev) => ({ ...prev, [secretId]: data.secret.value }));
+      setRevealedSecrets((prev) => ({ ...prev, [secretId]: data.value }));
     } catch (error) {
       toast.error('Failed to reveal secret');
       console.error('Error revealing secret:', error);
@@ -137,22 +134,10 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
 
     setIsDeleting(true);
     try {
-      const pathSegments = window.location.pathname.split('/');
-      const orgId = pathSegments[1];
-
-      const response = await fetch(
-        `/api/secrets/${secretToDelete.id}?organizationId=${orgId}`,
-        { method: 'DELETE' },
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to delete secret');
-      }
-
+      await deleteSecret(secretToDelete.id);
       toast.success('Secret deleted successfully');
       setDeleteDialogOpen(false);
       setSecretToDelete(null);
-      window.location.reload();
     } catch (error) {
       toast.error('Failed to delete secret');
       console.error('Error deleting secret:', error);
@@ -169,7 +154,7 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
         secret.name.toLowerCase().includes(query) ||
         secret.description?.toLowerCase().includes(query),
     );
-  }, [secrets, searchQuery, ]);
+  }, [secrets, searchQuery]);
 
   const pageCount = Math.max(1, Math.ceil(filteredSecrets.length / perPage));
   const paginatedSecrets = filteredSecrets.slice((page - 1) * perPage, page * perPage);
@@ -307,6 +292,7 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
                       <DropdownMenuTrigger
                         variant="ellipsis"
                         onClick={(e) => e.stopPropagation()}
+                        disabled={!canUpdate}
                       >
                         <OverflowMenuVertical />
                       </DropdownMenuTrigger>
@@ -370,7 +356,6 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
           secret={editingSecret}
           open={!!editingSecret}
           onOpenChange={(open) => !open && setEditingSecret(null)}
-          onSecretUpdated={() => window.location.reload()}
         />
       )}
     </Stack>

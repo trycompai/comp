@@ -6,27 +6,24 @@ import { useMemo } from 'react';
 import useSWR, { SWRConfiguration, SWRResponse } from 'swr';
 
 export interface UseApiSWROptions<T> extends SWRConfiguration<ApiResponse<T>> {
-  organizationId?: string;
   enabled?: boolean;
 }
 
 /**
- * SWR-based hook for GET requests with automatic organization context
- * Provides caching, revalidation, and real-time updates
+ * SWR-based hook for GET requests.
+ * Organization context is carried by the session token.
+ * The active org ID is still used in the SWR cache key so that switching orgs invalidates caches.
  */
 export function useApiSWR<T = unknown>(
   endpoint: string | null, // null to disable the request
   options: UseApiSWROptions<T> = {},
-): SWRResponse<ApiResponse<T>, Error> & {
-  organizationId?: string;
-} {
+): SWRResponse<ApiResponse<T>, Error> {
   const activeOrg = useActiveOrganization();
-  const { organizationId: explicitOrgId, enabled = true, ...swrOptions } = options;
+  const { enabled = true, ...swrOptions } = options;
 
-  // Determine organization context
-  const organizationId = explicitOrgId || activeOrg.data?.id;
+  const organizationId = activeOrg.data?.id;
 
-  // Create stable key for SWR
+  // Create stable key for SWR — include org ID for cache scoping
   const swrKey = useMemo(() => {
     if (!endpoint || !organizationId || !enabled) {
       return null;
@@ -35,8 +32,8 @@ export function useApiSWR<T = unknown>(
   }, [endpoint, organizationId, enabled]);
 
   // SWR fetcher function
-  const fetcher = async ([url, orgId]: readonly [string, string]): Promise<ApiResponse<T>> => {
-    return apiClient.get<T>(url, orgId);
+  const fetcher = async ([url]: readonly [string, string]): Promise<ApiResponse<T>> => {
+    return apiClient.get<T>(url);
   };
 
   const swrResponse = useSWR(swrKey, fetcher, {
@@ -49,90 +46,6 @@ export function useApiSWR<T = unknown>(
     ...swrOptions,
   });
 
-  return {
-    ...swrResponse,
-    organizationId,
-  };
+  return swrResponse;
 }
 
-/**
- * Hook specifically for fetching organization data
- */
-export function useOrganization(
-  organizationId?: string,
-  options: UseApiSWROptions<{ id: string; name: string; slug: string }> = {},
-) {
-  return useApiSWR('/v1/organization', {
-    ...options,
-    organizationId,
-  });
-}
-
-/**
- * Custom hook for fetching tasks with SWR
- */
-export function useTasks(
-  organizationId?: string,
-  options: UseApiSWROptions<Array<{ id: string; title: string; status: string }>> = {},
-) {
-  return useApiSWR('/v1/tasks', {
-    ...options,
-    organizationId,
-    // Refresh tasks every 30 seconds
-    refreshInterval: 30000,
-  });
-}
-
-/**
- * Custom hook for fetching a single task with SWR
- */
-export function useTask(
-  taskId: string | null,
-  organizationId?: string,
-  options: UseApiSWROptions<{
-    id: string;
-    title: string;
-    status: string;
-    description?: string;
-  }> = {},
-) {
-  return useApiSWR(taskId ? `/v1/tasks/${taskId}` : null, {
-    ...options,
-    organizationId,
-  });
-}
-
-/**
- * Example usage:
- *
- * ```typescript
- * function TaskList() {
- *   const { data, error, isLoading, mutate } = useTasks();
- *
- *   if (error) return <div>Failed to load tasks</div>;
- *   if (isLoading) return <div>Loading...</div>;
- *   if (data?.error) return <div>Error: {data.error}</div>;
- *
- *   return (
- *     <div>
- *       {data?.data?.map(task => (
- *         <div key={task.id}>{task.title}</div>
- *       ))}
- *       <button onClick={() => mutate()}>Refresh</button>
- *     </div>
- *   );
- * }
- *
- * function TaskDetail({ taskId }: { taskId: string }) {
- *   const { data, error, isLoading } = useTask(taskId);
- *
- *   // Component implementation...
- * }
- *
- * // Using different organization
- * function CrossOrgData() {
- *   const { data } = useOrganization('other-org-id');
- *   // Component implementation...
- * }
- * ```
- */

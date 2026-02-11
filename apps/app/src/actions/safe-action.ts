@@ -241,7 +241,7 @@ export const authWithOrgAccessClient = authActionClient.use(async ({ next, clien
   // Check if user is a member of the organization
   const member = await db.member.findFirst({
     where: {
-      userId: ctx.user.id,
+      userId: ctx.user!.id,
       organizationId,
       deactivated: false,
     },

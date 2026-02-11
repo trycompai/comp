@@ -1,8 +1,8 @@
 'use client';
 
-import { updateSidebarState } from '@/actions/sidebar';
 import Chat from '@/components/ai/chat';
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
+import { canAccessRoute, type UserPermissions } from '@/lib/permissions';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
@@ -38,11 +38,10 @@ import {
   Text,
   ThemeSwitcher,
 } from '@trycompai/design-system';
-import { useAction } from 'next-safe-action/hooks';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Suspense, useCallback, useRef } from 'react';
+import { Suspense, useCallback } from 'react';
 import { SettingsSidebar } from '../settings/components/SettingsSidebar';
 import { TrustSidebar } from '../trust/components/TrustSidebar';
 import { getAppShellSearchGroups } from './app-shell-search-groups';
@@ -61,6 +60,7 @@ interface AppShellWrapperProps {
   isWebAutomationsEnabled: boolean;
   hasAuditorRole: boolean;
   isOnlyAuditor: boolean;
+  permissions: UserPermissions;
   user: {
     name: string | null;
     email: string;
@@ -89,30 +89,26 @@ function AppShellWrapperContent({
   isWebAutomationsEnabled,
   hasAuditorRole,
   isOnlyAuditor,
+  permissions,
   user,
 }: AppShellWrapperContentProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const { isCollapsed, setIsCollapsed } = useSidebar();
-  const previousIsCollapsedRef = useRef(isCollapsed);
   const isSettingsActive = pathname?.startsWith(`/${organization.id}/settings`);
   const isTrustActive = pathname?.startsWith(`/${organization.id}/trust`);
-
-  const { execute } = useAction(updateSidebarState, {
-    onError: () => {
-      setIsCollapsed(previousIsCollapsedRef.current);
-    },
-  });
 
   const handleSidebarOpenChange = useCallback(
     (open: boolean) => {
       const nextIsCollapsed = !open;
-      previousIsCollapsedRef.current = isCollapsed;
       setIsCollapsed(nextIsCollapsed);
-      execute({ isCollapsed: nextIsCollapsed });
+      // Persist via cookie (1 year expiry)
+      const expires = new Date();
+      expires.setFullYear(expires.getFullYear() + 1);
+      document.cookie = `sidebar-collapsed=${JSON.stringify(nextIsCollapsed)};path=/;expires=${expires.toUTCString()}`;
     },
-    [execute, isCollapsed, setIsCollapsed],
+    [isCollapsed, setIsCollapsed],
   );
 
   const searchGroups = getAppShellSearchGroups({
@@ -123,6 +119,7 @@ function AppShellWrapperContent({
     isQuestionnaireEnabled,
     isTrustNdaEnabled,
     isAdvancedModeEnabled: organization.advancedModeEnabled,
+    permissions,
   });
 
   return (
@@ -221,7 +218,7 @@ function AppShellWrapperContent({
               label="Compliance"
             />
           </Link>
-          {isTrustNdaEnabled && (
+          {isTrustNdaEnabled && canAccessRoute(permissions, 'trust') && (
             <Link href={`/${organization.id}/trust`}>
               <AppShellRailItem
                 isActive={isTrustActive}
@@ -230,7 +227,7 @@ function AppShellWrapperContent({
               />
             </Link>
           )}
-          {!isOnlyAuditor && (
+          {canAccessRoute(permissions, 'settings') && (
             <Link href={`/${organization.id}/settings`}>
               <AppShellRailItem
                 isActive={isSettingsActive}
@@ -246,7 +243,7 @@ function AppShellWrapperContent({
               title={isSettingsActive ? 'Settings' : isTrustActive ? 'Trust' : 'Compliance'}
             />
             {isSettingsActive ? (
-              <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} />
+              <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} permissions={permissions} />
             ) : isTrustActive ? (
               <TrustSidebar orgId={organization.id} />
             ) : (
@@ -255,6 +252,7 @@ function AppShellWrapperContent({
                 isQuestionnaireEnabled={isQuestionnaireEnabled}
                 hasAuditorRole={hasAuditorRole}
                 isOnlyAuditor={isOnlyAuditor}
+                permissions={permissions}
               />
             )}
           </AppShellSidebar>

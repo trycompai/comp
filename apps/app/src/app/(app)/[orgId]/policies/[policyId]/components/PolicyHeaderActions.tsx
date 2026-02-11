@@ -1,9 +1,8 @@
 'use client';
 
-import { getPolicyPdfUrlAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/get-policy-pdf-url';
-import { regeneratePolicyAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/regenerate-policy';
 import { generatePolicyPDF } from '@/lib/pdf-generator';
 import { Button } from '@comp/ui/button';
+import { useSWRConfig } from 'swr';
 import {
   Dialog,
   DialogContent,
@@ -23,11 +22,13 @@ import { Icons } from '@comp/ui/icons';
 import type { Member, Policy, PolicyVersion, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { AuditLogWithRelations } from '../data';
+import { auditLogsKey } from '../hooks/useAuditLogs';
+import { usePolicy, policyKey } from '../hooks/usePolicy';
+import { policyVersionsKey } from '../hooks/usePolicyVersions';
+import { usePermissions } from '@/hooks/use-permissions';
 
 type PolicyWithVersion = Policy & {
   approver: (Member & { user: User }) | null;
@@ -36,15 +37,21 @@ type PolicyWithVersion = Policy & {
 
 export function PolicyHeaderActions({
   policy,
-  logs,
+  organizationId,
 }: {
   policy: PolicyWithVersion | null;
-  logs: AuditLogWithRelations[];
+  organizationId: string;
 }) {
   const router = useRouter();
+  const { mutate: globalMutate } = useSWRConfig();
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+
+  const { regeneratePolicy, getPdfUrl } = usePolicy({
+    policyId: policy?.id ?? '',
+    organizationId,
+  });
 
   // Real-time task tracking
   const [runInfo, setRunInfo] = useState<{
@@ -59,6 +66,13 @@ export function PolicyHeaderActions({
     enabled: !!runInfo?.runId && !!runInfo?.accessToken,
   });
 
+  const revalidateAll = () => {
+    if (!policy) return;
+    globalMutate(policyKey(policy.id, organizationId));
+    globalMutate(policyVersionsKey(policy.id, organizationId));
+    globalMutate(auditLogsKey(policy.id, organizationId));
+  };
+
   // Handle run completion
   useEffect(() => {
     if (!run) return;
@@ -71,7 +85,7 @@ export function PolicyHeaderActions({
       setIsRegenerating(false);
       setRunInfo(null);
       toastIdRef.current = null;
-      router.refresh();
+      revalidateAll();
     } else if (run.status === 'FAILED' || run.status === 'CRASHED' || run.status === 'CANCELED') {
       if (toastIdRef.current) {
         toast.dismiss(toastIdRef.current);
@@ -81,29 +95,28 @@ export function PolicyHeaderActions({
       setRunInfo(null);
       toastIdRef.current = null;
     }
-  }, [run, router]);
+  }, [run]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Delete flows through query param to existing dialog in PolicyOverview
-  const regenerate = useAction(regeneratePolicyAction, {
-    onSuccess: (result) => {
-      if (result.data?.runId && result.data?.publicAccessToken) {
-        // Show loading toast
+  const handleRegenerate = async () => {
+    if (!policy) return;
+    setIsRegenerating(true);
+    setRegenerateConfirmOpen(false);
+
+    try {
+      const response = await regeneratePolicy();
+
+      const { runId, publicAccessToken } = response.data?.data ?? {};
+      if (runId && publicAccessToken) {
         const toastId = toast.loading('Regenerating policy content...');
         toastIdRef.current = toastId;
-        setIsRegenerating(true);
 
-        // Start tracking the run
-        setRunInfo({
-          runId: result.data.runId,
-          accessToken: result.data.publicAccessToken,
-        });
+        setRunInfo({ runId, accessToken: publicAccessToken });
       }
-    },
-    onError: () => {
+    } catch {
       toast.error('Failed to trigger policy regeneration');
       setIsRegenerating(false);
-    },
-  });
+    }
+  };
 
   const updateQueryParam = ({ key, value }: { key: string; value: string }) => {
     const url = new URL(window.location.href);
@@ -120,31 +133,22 @@ export function PolicyHeaderActions({
     setIsDownloading(true);
 
     try {
-      // Check if the published version has a PDF uploaded
-      const publishedVersionPdfUrl = policy.currentVersion?.pdfUrl;
+      // Always call the API to check for an uploaded PDF (also creates audit log)
+      const url = await getPdfUrl(policy.currentVersion?.id);
 
-      if (publishedVersionPdfUrl) {
+      if (url) {
         // Download the uploaded PDF directly
-        const result = await getPolicyPdfUrlAction({
-          policyId: policy.id,
-          versionId: policy.currentVersion?.id,
-        });
-
-        if (result?.data?.success && result.data.data) {
-          // Create a temporary link and trigger download
-          const link = document.createElement('a');
-          link.href = result.data.data; // data is the signed URL string
-          link.download = `${policy.name || 'Policy'}.pdf`;
-          link.target = '_blank';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          return;
-        }
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${policy.name || 'Policy'}.pdf`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
       }
 
       // Fall back to generating PDF from content
-      // Use published version content if available, otherwise policy content
       const contentSource = policy.currentVersion?.content ?? policy.content;
 
       if (!contentSource) {
@@ -164,18 +168,27 @@ export function PolicyHeaderActions({
       }
 
       // Generate and download the PDF
-      generatePolicyPDF(policyContent as any, logs, policy.name || 'Policy Document');
+      generatePolicyPDF(policyContent, [], policy.name || 'Policy Document');
     } catch (error) {
       console.error('Error downloading policy PDF:', error);
       toast.error('Failed to generate policy PDF');
     } finally {
       setIsDownloading(false);
+      // Revalidate audit logs so the activity tab reflects the download
+      globalMutate(auditLogsKey(policy.id, organizationId));
     }
   };
+
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('policy', 'update');
+  const canDelete = hasPermission('policy', 'delete');
 
   if (!policy) return null;
 
   const isPendingApproval = !!policy.approverId;
+
+  // Hide entire menu if user has no write permissions
+  if (!canUpdate && !canDelete) return null;
 
   return (
     <>
@@ -186,40 +199,48 @@ export function PolicyHeaderActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onClick={() => setRegenerateConfirmOpen(true)}
-            disabled={isPendingApproval || isRegenerating}
-          >
-            <Icons.AI className="mr-2 h-4 w-4" />{' '}
-            {isRegenerating ? 'Regenerating...' : 'Regenerate policy'}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              updateQueryParam({ key: 'policy-overview-sheet', value: 'true' });
-            }}
-          >
-            <Icons.Edit className="mr-2 h-4 w-4" /> Edit policy
-          </DropdownMenuItem>
+          {canUpdate && (
+            <DropdownMenuItem
+              onClick={() => setRegenerateConfirmOpen(true)}
+              disabled={isPendingApproval || isRegenerating}
+            >
+              <Icons.AI className="mr-2 h-4 w-4" />{' '}
+              {isRegenerating ? 'Regenerating...' : 'Regenerate policy'}
+            </DropdownMenuItem>
+          )}
+          {canUpdate && (
+            <DropdownMenuItem
+              onClick={() => {
+                updateQueryParam({ key: 'policy-overview-sheet', value: 'true' });
+              }}
+            >
+              <Icons.Edit className="mr-2 h-4 w-4" /> Edit policy
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => handleDownloadPDF()} disabled={isDownloading}>
             <Icons.Download className="mr-2 h-4 w-4" />{' '}
             {isDownloading ? 'Downloading...' : 'Download as PDF'}
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              updateQueryParam({ key: 'archive-policy-sheet', value: 'true' });
-            }}
-          >
-            <Icons.InboxCustomize className="mr-2 h-4 w-4" /> Archive / Restore
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              updateQueryParam({ key: 'delete-policy', value: 'true' });
-            }}
-            className="text-destructive"
-          >
-            <Icons.Delete className="mr-2 h-4 w-4" /> Delete
-          </DropdownMenuItem>
+          {canUpdate && (
+            <DropdownMenuItem
+              onClick={() => {
+                updateQueryParam({ key: 'archive-policy-sheet', value: 'true' });
+              }}
+            >
+              <Icons.InboxCustomize className="mr-2 h-4 w-4" /> Archive / Restore
+            </DropdownMenuItem>
+          )}
+          {canDelete && (
+            <DropdownMenuItem
+              onClick={() => {
+                updateQueryParam({ key: 'delete-policy', value: 'true' });
+              }}
+              className="text-destructive"
+            >
+              <Icons.Delete className="mr-2 h-4 w-4" /> Delete
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -239,13 +260,10 @@ export function PolicyHeaderActions({
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                regenerate.execute({ policyId: policy.id });
-                setRegenerateConfirmOpen(false);
-              }}
-              disabled={regenerate.status === 'executing'}
+              onClick={handleRegenerate}
+              disabled={isRegenerating}
             >
-              {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
+              {isRegenerating ? 'Working…' : 'Confirm'}
             </Button>
           </DialogFooter>
         </DialogContent>

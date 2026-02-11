@@ -1,13 +1,12 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import type { GlobalVendors } from '@db';
-import { useAction } from 'next-safe-action/hooks';
 import { useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { searchGlobalVendorsAction } from '../actions/search-global-vendors-action';
 import type { CreateVendorFormValues } from './create-vendor-form-schema';
 
 const getVendorDisplayName = (vendor: GlobalVendors): string => {
@@ -37,25 +36,25 @@ export function VendorNameAutocompleteField({ form }: Props) {
   const [isSearching, setIsSearching] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
 
-  const searchVendors = useAction(searchGlobalVendorsAction, {
-    onExecute: () => setIsSearching(true),
-    onSuccess: (result) => {
-      if (result.data?.success && result.data.data?.vendors) {
-        setSearchResults(result.data.data.vendors);
-      } else {
-        setSearchResults([]);
-      }
-      setIsSearching(false);
-    },
-    onError: () => {
-      setSearchResults([]);
-      setIsSearching(false);
-    },
-  });
+  const api = useApi();
 
-  const debouncedSearch = useDebouncedCallback((query: string) => {
+  const debouncedSearch = useDebouncedCallback(async (query: string) => {
     if (query.trim().length > 1) {
-      searchVendors.execute({ name: query });
+      setIsSearching(true);
+      try {
+        const response = await api.get<{ vendors: GlobalVendors[] }>(
+          `/v1/vendors/global/search?name=${encodeURIComponent(query)}`,
+        );
+        if (response.data?.vendors) {
+          setSearchResults(response.data.vendors);
+        } else {
+          setSearchResults([]);
+        }
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
     } else {
       setSearchResults([]);
     }

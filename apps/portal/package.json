@@ -2,6 +2,7 @@
   "name": "@comp/portal",
   "version": "0.1.0",
   "dependencies": {
+    "@comp/auth": "workspace:*",
     "@aws-sdk/client-s3": "^3.859.0",
     "@aws-sdk/s3-request-presigner": "^3.859.0",
     "@hookform/resolvers": "^5.2.2",

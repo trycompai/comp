@@ -1,6 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
@@ -31,6 +32,8 @@ interface BrowserConnectionClientProps {
 }
 
 export function BrowserConnectionClient({ organizationId }: BrowserConnectionClientProps) {
+  const { hasPermission } = usePermissions();
+  const canManageBrowser = hasPermission('integration', 'create');
   const [status, setStatus] = useState<Status>('idle');
   const [hasContext, setHasContext] = useState(false);
   const [contextId, setContextId] = useState<string | null>(null);
@@ -45,7 +48,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
     try {
       const res = await apiClient.get<{ hasContext: boolean; contextId?: string }>(
         '/v1/browserbase/org-context',
-        organizationId,
       );
       if (res.data) {
         setHasContext(res.data.hasContext);
@@ -54,7 +56,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
     } catch {
       // Ignore
     }
-  }, [organizationId]);
+  }, []);
 
   useEffect(() => {
     checkContextStatus();
@@ -70,7 +72,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       const contextRes = await apiClient.post<ContextResponse>(
         '/v1/browserbase/org-context',
         {},
-        organizationId,
       );
       if (contextRes.error || !contextRes.data) {
         throw new Error(contextRes.error || 'Failed to create context');
@@ -82,7 +83,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       const sessionRes = await apiClient.post<SessionResponse>(
         '/v1/browserbase/session',
         { contextId: contextRes.data.contextId },
-        organizationId,
       );
       if (sessionRes.error || !sessionRes.data) {
         throw new Error(sessionRes.error || 'Failed to create session');
@@ -95,7 +95,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       await apiClient.post(
         '/v1/browserbase/navigate',
         { sessionId: startedSessionId, url: urlToCheck },
-        organizationId,
       );
 
       setStatus('session-active');
@@ -111,7 +110,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
           await apiClient.post(
             '/v1/browserbase/session/close',
             { sessionId: startedSessionId },
-            organizationId,
           );
         } catch {
           // Ignore cleanup errors (don't mask original error)
@@ -130,7 +128,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       const res = await apiClient.post<AuthStatusResponse>(
         '/v1/browserbase/check-auth',
         { sessionId, url: urlToCheck },
-        organizationId,
       );
       if (res.error || !res.data) {
         throw new Error(res.error || 'Failed to check auth');
@@ -139,7 +136,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       setAuthStatus(res.data);
 
       // Close the session after checking
-      await apiClient.post('/v1/browserbase/session/close', { sessionId }, organizationId);
+      await apiClient.post('/v1/browserbase/session/close', { sessionId });
       setSessionId(null);
       setLiveViewUrl(null);
       setStatus('idle');
@@ -152,7 +149,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
   const handleCloseSession = async () => {
     if (sessionId) {
       try {
-        await apiClient.post('/v1/browserbase/session/close', { sessionId }, organizationId);
+        await apiClient.post('/v1/browserbase/session/close', { sessionId });
       } catch {
         // Ignore
       }
@@ -201,10 +198,12 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
                     onChange={(e) => setUrlToCheck(e.target.value)}
                     className="flex-1"
                   />
-                  <Button onClick={handleStartSession} disabled={!urlToCheck}>
-                    <Globe className="mr-2 h-4 w-4" />
-                    {hasContext ? 'Open Browser' : 'Connect Browser'}
-                  </Button>
+                  {canManageBrowser && (
+                    <Button onClick={handleStartSession} disabled={!urlToCheck}>
+                      <Globe className="mr-2 h-4 w-4" />
+                      {hasContext ? 'Open Browser' : 'Connect Browser'}
+                    </Button>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Open a browser session to authenticate with websites. Your login session will be
@@ -256,7 +255,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
                   variant="outline"
                   size="sm"
                   onClick={handleCheckAuth}
-                  disabled={status === 'checking'}
+                  disabled={status === 'checking' || !canManageBrowser}
                 >
                   {status === 'checking' ? (
                     <>

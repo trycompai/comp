@@ -1,6 +1,6 @@
 import { LogoSpinner } from '@/components/logo-spinner';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
 import { cookies } from 'next/headers';
 import { OnboardingStatus } from './components/onboarding-status';
 
@@ -8,18 +8,20 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+interface OnboardingResponse {
+  triggerJobId: string | null;
+}
+
 export default async function RunPage({ params }: PageProps) {
   const { id } = await params;
   const cookieStore = await cookies();
   const publicAccessToken = cookieStore.get('publicAccessToken')?.value || undefined;
 
-  const onboarding = await db.onboarding.findUnique({
-    where: {
-      organizationId: id,
-    },
-  });
+  const onboardingRes = await serverApi.get<OnboardingResponse>(
+    '/v1/organization/onboarding',
+  );
 
-  const triggerJobId = onboarding?.triggerJobId;
+  const triggerJobId = onboardingRes.data?.triggerJobId;
 
   if (!triggerJobId) {
     return (

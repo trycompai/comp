@@ -1,6 +1,7 @@
 'use client';
 
-import { updatePolicyFormAction } from '@/actions/policies/update-policy-form-action';
+import { usePermissions } from '@/hooks/use-permissions';
+import { usePolicyMutations } from '@/hooks/use-policy-mutations';
 import { updatePolicyFormSchema } from '@/actions/schema';
 import { StatusIndicator } from '@/components/status-indicator';
 import { useSession } from '@/utils/auth-client';
@@ -14,7 +15,7 @@ import { Departments, Frequency, type Policy, type PolicyStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -22,16 +23,11 @@ import type { z } from 'zod';
 const policyStatuses: PolicyStatus[] = ['draft', 'published', 'needs_review'] as const;
 
 export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('policy', 'update');
+  const { updatePolicy } = usePolicyMutations();
   const session = useSession();
-
-  const updatePolicyForm = useAction(updatePolicyFormAction, {
-    onSuccess: () => {
-      toast.success('Policy updated successfully');
-    },
-    onError: () => {
-      toast.error('Failed to update policy');
-    },
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const calculateReviewDate = (): Date => {
     if (!policy.reviewDate) {
@@ -54,16 +50,22 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updatePolicyFormSchema>) => {
-    updatePolicyForm.execute({
-      id: data.id,
-      status: data.status as PolicyStatus,
-      assigneeId: data.assigneeId,
-      department: data.department,
-      review_frequency: data.review_frequency,
-      review_date: data.review_date,
-      entityId: data.id,
-    });
+  const onSubmit = async (data: z.infer<typeof updatePolicyFormSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await updatePolicy(data.id, {
+        status: data.status,
+        assigneeId: data.assigneeId,
+        department: data.department,
+        frequency: data.review_frequency,
+        reviewDate: data.review_date,
+      });
+      toast.success('Policy updated successfully');
+    } catch {
+      toast.error('Failed to update policy');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -196,9 +198,9 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
           <Button
             type="submit"
             variant="default"
-            disabled={updatePolicyForm.status === 'executing'}
+            disabled={isSubmitting || !canUpdate}
           >
-            {updatePolicyForm.status === 'executing' ? (
+            {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               'Save'

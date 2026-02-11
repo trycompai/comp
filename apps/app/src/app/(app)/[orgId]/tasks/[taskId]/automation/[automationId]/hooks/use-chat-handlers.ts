@@ -40,7 +40,7 @@ export function useChatHandlers({
               id: string;
               name: string;
             };
-          }>(`/v1/tasks/${taskId}/automations`, {}, orgId);
+          }>(`/v1/tasks/${taskId}/automations`, {});
 
           if (response.error || !response.data?.success) {
             throw new Error(response.error || 'Failed to create automation');

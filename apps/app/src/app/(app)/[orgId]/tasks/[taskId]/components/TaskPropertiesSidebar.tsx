@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTask } from '../hooks/use-task';
 import { PropertySelector } from './PropertySelector';
 import { DEPARTMENT_COLORS, taskDepartments, taskFrequencies, taskStatuses } from './constants';
@@ -29,6 +30,9 @@ export function TaskPropertiesSidebar({
   const { orgId } = useParams<{ orgId: string }>();
   const { task, isLoading } = useTask();
   const { members } = useOrganizationMembers();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('task', 'update');
+  const canAssign = hasPermission('task', 'assign');
 
   const assignedMember =
     !task?.assigneeId || !members ? null : members.find((m) => m.id === task.assigneeId);
@@ -79,11 +83,12 @@ export function TaskPropertiesSidebar({
               </div>
             )}
             onSelect={handleStatusChange}
+            disabled={!canUpdate || isStatusLocked}
             trigger={
               <Button
                 variant="ghost"
                 className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center gap-2 px-2 py-0.5 font-medium capitalize transition-colors cursor-pointer"
-                disabled={isStatusLocked}
+                disabled={!canUpdate || isStatusLocked}
               >
                 <TaskStatusIndicator status={task.status} />
                 {task.status.replace('_', ' ')}
@@ -92,7 +97,6 @@ export function TaskPropertiesSidebar({
             searchPlaceholder="Change status..."
             emptyText="No status found."
             contentWidth="w-48"
-            disabled={isStatusLocked}
           />
         </div>
 
@@ -126,7 +130,7 @@ export function TaskPropertiesSidebar({
               <Button
                 variant="ghost"
                 className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center justify-end gap-1.5 px-2 py-0.5 transition-colors cursor-pointer"
-                disabled={members?.length === 0}
+                disabled={!canAssign || members?.length === 0}
               >
                 {assignedMember ? (
                   <>
@@ -151,7 +155,7 @@ export function TaskPropertiesSidebar({
             searchPlaceholder="Change assignee..."
             emptyText="No member found."
             contentWidth="w-64"
-            disabled={members?.length === 0}
+            disabled={!canAssign || members?.length === 0}
             allowUnassign={true}
             showCheck={false}
           />
@@ -188,7 +192,7 @@ export function TaskPropertiesSidebar({
                 <Button
                   variant="ghost"
                   className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center justify-end gap-1.5 px-2 py-0.5 transition-colors cursor-pointer"
-                  disabled={members?.length === 0}
+                  disabled={!canAssign || members?.length === 0}
                 >
                   {approverMember ? (
                     <>
@@ -213,7 +217,7 @@ export function TaskPropertiesSidebar({
               searchPlaceholder="Change approver..."
               emptyText="No member found."
               contentWidth="w-64"
-              disabled={members?.length === 0}
+              disabled={!canAssign || members?.length === 0}
               allowUnassign={true}
               showCheck={false}
             />
@@ -233,6 +237,7 @@ export function TaskPropertiesSidebar({
                 frequency: selectedFreq === null ? null : (selectedFreq as TaskFrequency),
               });
             }}
+            disabled={!canUpdate}
             trigger={
               <Button
                 variant="ghost"
@@ -256,6 +261,7 @@ export function TaskPropertiesSidebar({
             value={task.department ?? 'none'}
             options={taskDepartments}
             getKey={(dept) => dept}
+            disabled={!canUpdate}
             renderOption={(dept) => {
               if (dept === 'none') {
                 return <span className="text-muted-foreground">None</span>;

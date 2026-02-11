@@ -1,6 +1,5 @@
 'use client';
 
-import { updatePolicyFormAction } from '@/actions/policies/update-policy-form-action';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import {
   Departments,
@@ -37,9 +36,11 @@ import {
 } from '@trycompai/design-system';
 import { Calendar } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
-import { useAction } from 'next-safe-action/hooks';
+import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { usePolicy } from '../hooks/usePolicy';
+import { usePermissions } from '@/hooks/use-permissions';
 
 type PolicyWithVersion = Policy & {
   currentVersion?: (PolicyVersion & { publishedBy: (Member & { user: User }) | null }) | null;
@@ -59,6 +60,12 @@ export function UpdatePolicyOverview({
   isPendingApproval,
   onMutate,
 }: UpdatePolicyOverviewProps) {
+  const { orgId } = useParams<{ orgId: string }>();
+  const { updatePolicy } = usePolicy({
+    policyId: policy.id,
+    organizationId: orgId,
+  });
+
   const [isStatusChangeDialogOpen, setIsStatusChangeDialogOpen] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<{
     assigneeId: { from: string | null; to: string | null } | null;
@@ -69,7 +76,6 @@ export function UpdatePolicyOverview({
       assigneeId: string | null;
       department: Departments;
       reviewFrequency: Frequency;
-      reviewDate: Date;
     };
   } | null>(null);
 
@@ -85,20 +91,10 @@ export function UpdatePolicyOverview({
     policy.frequency || Frequency.monthly,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('policy', 'update');
 
-  const fieldsDisabled = isPendingApproval;
-
-  const updatePolicyForm = useAction(updatePolicyFormAction, {
-    onSuccess: () => {
-      toast.success('Policy updated successfully');
-      setIsSubmitting(false);
-      onMutate?.();
-    },
-    onError: () => {
-      toast.error('Failed to update policy');
-      setIsSubmitting(false);
-    },
-  });
+  const fieldsDisabled = isPendingApproval || !canUpdate;
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -107,7 +103,6 @@ export function UpdatePolicyOverview({
     const assigneeId = selectedAssigneeId;
     const department = selectedDepartment;
     const reviewFrequency = selectedFrequency;
-    const reviewDate = policy.reviewDate ? new Date(policy.reviewDate) : new Date();
 
     // Show confirmation dialog with list of changes
     const assigneeChanged = assigneeId !== policy.assigneeId;
@@ -118,28 +113,32 @@ export function UpdatePolicyOverview({
       assigneeId: assigneeChanged ? { from: policy.assigneeId, to: assigneeId } : null,
       department: departmentChanged ? { from: policy.department, to: department } : null,
       reviewFrequency: frequencyChanged ? { from: policy.frequency, to: reviewFrequency } : null,
-      formData: { assigneeId, department, reviewFrequency, reviewDate, status: policy.status },
+      formData: { assigneeId, department, reviewFrequency, status: policy.status },
     });
     setIsStatusChangeDialogOpen(true);
     setIsSubmitting(false);
   };
 
-  const handleConfirmChanges = () => {
+  const handleConfirmChanges = async () => {
     if (!pendingChanges) return;
 
     setIsSubmitting(true);
-    updatePolicyForm.execute({
-      id: policy.id,
-      status: pendingChanges.formData.status,
-      assigneeId: pendingChanges.formData.assigneeId,
-      department: pendingChanges.formData.department,
-      review_frequency: pendingChanges.formData.reviewFrequency,
-      review_date: pendingChanges.formData.reviewDate,
-      approverId: null,
-      entityId: policy.id,
-    });
-    setIsStatusChangeDialogOpen(false);
-    setPendingChanges(null);
+    try {
+      await updatePolicy({
+        status: pendingChanges.formData.status,
+        assigneeId: pendingChanges.formData.assigneeId,
+        department: pendingChanges.formData.department,
+        frequency: pendingChanges.formData.reviewFrequency,
+      });
+      toast.success('Policy updated successfully');
+      onMutate?.();
+    } catch {
+      toast.error('Failed to update policy');
+    } finally {
+      setIsSubmitting(false);
+      setIsStatusChangeDialogOpen(false);
+      setPendingChanges(null);
+    }
   };
 
   // Check if any form values have actually changed from their original values
@@ -151,7 +150,7 @@ export function UpdatePolicyOverview({
     return assigneeChanged || departmentChanged || frequencyChanged;
   }, [selectedAssigneeId, selectedDepartment, selectedFrequency, policy.assigneeId, policy.department, policy.frequency]);
 
-  const isLoading = isSubmitting || updatePolicyForm.isExecuting;
+  const isLoading = isSubmitting;
 
   return (
     <>
@@ -233,7 +232,7 @@ export function UpdatePolicyOverview({
               <InputGroup>
                 <InputGroupInput
                   id="review_date_display"
-                  value={policy.reviewDate ? format(new Date(policy.reviewDate), 'PPP') : 'None'}
+                  value={policy.reviewDate ? format(new Date(policy.reviewDate), 'PPP') : 'Not set'}
                   disabled
                   readOnly
                 />
@@ -241,20 +240,10 @@ export function UpdatePolicyOverview({
                   <Calendar size={16} />
                 </InputGroupAddon>
               </InputGroup>
-              <input
-                type="hidden"
-                id="review_date"
-                name="review_date"
-                value={
-                  policy.reviewDate
-                    ? new Date(policy.reviewDate).toISOString()
-                    : new Date().toISOString()
-                }
-              />
             </Stack>
           </Grid>
 
-          {!isPendingApproval && (
+          {!isPendingApproval && canUpdate && (
             <HStack justify="end">
               <Button
                 disabled={!hasFormChanges || isLoading}

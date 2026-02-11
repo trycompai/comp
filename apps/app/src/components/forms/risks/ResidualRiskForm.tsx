@@ -1,17 +1,18 @@
 'use client';
 
-import { updateResidualRiskEnumAction } from '@/actions/risk/update-residual-risk-enum-action';
 import { updateResidualRiskEnumSchema } from '@/actions/schema';
+import { useRiskActions } from '@/hooks/use-risks';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import type { z } from 'zod';
 
 interface ResidualRiskFormProps {
@@ -42,6 +43,9 @@ export function ResidualRiskForm({
   initialProbability,
   initialImpact,
 }: ResidualRiskFormProps) {
+  const { updateRisk } = useRiskActions();
+  const { mutate: globalMutate } = useSWRConfig();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [_, setOpen] = useQueryState('residual-risk-sheet');
 
   const form = useForm<z.infer<typeof updateResidualRiskEnumSchema>>({
@@ -53,18 +57,25 @@ export function ResidualRiskForm({
     },
   });
 
-  const updateResidualRisk = useAction(updateResidualRiskEnumAction, {
-    onSuccess: () => {
+  const onSubmit = async (data: z.infer<typeof updateResidualRiskEnumSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await updateRisk(data.id, {
+        residualLikelihood: data.probability,
+        residualImpact: data.impact,
+      });
       toast.success('Residual risk updated successfully');
+      globalMutate(
+        (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
+        undefined,
+        { revalidate: true },
+      );
       setOpen(null);
-    },
-    onError: () => {
+    } catch {
       toast.error('Failed to update residual risk');
-    },
-  });
-
-  const onSubmit = (data: z.infer<typeof updateResidualRiskEnumSchema>) => {
-    updateResidualRisk.execute(data);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -122,9 +133,9 @@ export function ResidualRiskForm({
           <Button
             type="submit"
             variant="default"
-            disabled={updateResidualRisk.status === 'executing'}
+            disabled={isSubmitting}
           >
-            {updateResidualRisk.status === 'executing' ? (
+            {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               'Save'

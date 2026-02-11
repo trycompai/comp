@@ -34,7 +34,11 @@ export const taskSchedule = schedules.task({
             name: true,
             members: {
               where: {
-                role: { contains: 'owner' },
+                deactivated: false,
+                OR: [
+                  { user: { isPlatformAdmin: false } },
+                  { role: { contains: 'owner' } },
+                ],
               },
               select: {
                 user: {
@@ -44,17 +48,6 @@ export const taskSchedule = schedules.task({
                     email: true,
                   },
                 },
-              },
-            },
-          },
-        },
-        assignee: {
-          select: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
               },
             },
           },
@@ -218,20 +211,20 @@ export const taskSchedule = schedules.task({
         }
       };
 
-      // Find recipients (org owner and assignee) for each task and add to recipientsMap
+      // Add all org members as potential recipients for each task.
+      // The notification matrix (isUserUnsubscribed) handles role-based filtering.
       for (const task of allUpdatedTasks) {
-        // Org owners
         if (task.organization && Array.isArray(task.organization.members)) {
           addRecipients(task.organization.members, task);
-        }
-        // Policy assignee
-        if (task.assignee) {
-          addRecipients([task.assignee], task);
         }
       }
 
       // Final deduplicated recipients array.
       const recipients = Array.from(recipientsMap.values());
+
+      logger.info(
+        `Sending notifications to ${recipients.length} recipients: ${recipients.map((r) => r.email).join(', ')}`,
+      );
 
       // Send email notifications to each recipient
       await Promise.allSettled(
@@ -241,7 +234,7 @@ export const taskSchedule = schedules.task({
             : ('todo' as const);
 
           // Check if user is unsubscribed
-          const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'taskAssignments');
+          const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'taskAssignments', recipient.task.organizationId);
 
           if (isUnsubscribed) {
             logger.info(
@@ -277,7 +270,7 @@ export const taskSchedule = schedules.task({
       );
 
       // Also trigger Novu for in-app notifications
-      novu.triggerBulk({
+      await novu.triggerBulk({
         events: recipients.map((recipient) => ({
           workflowId: 'task-review-required',
           to: {

@@ -6,16 +6,17 @@ import type { Departments, Member, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Section, Stack } from '@trycompai/design-system';
 import { Save } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { updateEmployee } from '../actions/update-employee';
 import { Department } from './Fields/Department';
 import { Email } from './Fields/Email';
 import { JoinDate } from './Fields/JoinDate';
 import { Name } from './Fields/Name';
 import { Status } from './Fields/Status';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useEmployee } from '../hooks/useEmployee';
 
 // Define form schema with Zod
 const employeeFormSchema = z.object({
@@ -30,13 +31,22 @@ export type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
 export const EmployeeDetails = ({
   employee,
-  canEdit,
+  canEdit: _canEdit,
 }: {
   employee: Member & {
     user: User;
   };
   canEdit: boolean;
 }) => {
+  const { hasPermission } = usePermissions();
+  const canEdit = hasPermission('member', 'update');
+
+  const { updateEmployee } = useEmployee({
+    employeeId: employee.id,
+    initialData: employee,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeFormSchema),
     defaultValues: {
@@ -49,31 +59,10 @@ export const EmployeeDetails = ({
     mode: 'onChange',
   });
 
-  const { execute, status: actionStatus } = useAction(updateEmployee, {
-    onSuccess: (res) => {
-      if (!res?.data?.success) {
-        toast.error(res?.data?.error?.message || 'Failed to update employee details');
-        return;
-      }
-      toast.success('Employee details updated successfully');
-    },
-    onError: (error) => {
-      toast.error(error?.error?.serverError || 'Failed to update employee details');
-    },
-  });
-
   const onSubmit = async (values: EmployeeFormValues) => {
-    // Prepare update data
-    const updateData: {
-      employeeId: string;
-      name?: string;
-      email?: string;
-      department?: string;
-      isActive?: boolean;
-      createdAt?: Date;
-    } = { employeeId: employee.id };
+    // Prepare update data - only include changed fields
+    const updateData: Record<string, unknown> = {};
 
-    // Only include changed fields
     if (values.name !== employee.user.name) {
       updateData.name = values.name;
     }
@@ -84,7 +73,7 @@ export const EmployeeDetails = ({
       updateData.department = values.department;
     }
     if (values.createdAt && values.createdAt.toISOString() !== employee.createdAt.toISOString()) {
-      updateData.createdAt = values.createdAt;
+      updateData.createdAt = values.createdAt.toISOString();
     }
 
     const isActive = values.status === 'active';
@@ -92,12 +81,19 @@ export const EmployeeDetails = ({
       updateData.isActive = isActive;
     }
 
-    // Execute the update only if there are changes
-    if (Object.keys(updateData).length > 1) {
-      await execute(updateData);
-    } else {
-      // No changes were made
+    if (Object.keys(updateData).length === 0) {
       toast.info('No changes to save');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await updateEmployee(updateData);
+      toast.success('Employee details updated successfully');
+    } catch {
+      toast.error('Failed to update employee details');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -119,13 +115,13 @@ export const EmployeeDetails = ({
                 disabled={
                   !form.formState.isDirty ||
                   form.formState.isSubmitting ||
-                  actionStatus === 'executing'
+                  isSubmitting
                 }
               >
-                {!(form.formState.isSubmitting || actionStatus === 'executing') && (
+                {!(form.formState.isSubmitting || isSubmitting) && (
                   <Save className="h-4 w-4" />
                 )}
-                {form.formState.isSubmitting || actionStatus === 'executing' ? 'Saving...' : 'Save'}
+                {form.formState.isSubmitting || isSubmitting ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </Stack>

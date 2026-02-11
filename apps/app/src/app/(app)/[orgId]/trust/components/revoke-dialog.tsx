@@ -1,4 +1,5 @@
 import { useRevokeAccessGrant } from '@/hooks/use-access-requests';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -27,6 +28,8 @@ export function RevokeDialog({
   grantId: string;
   onClose: () => void;
 }) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const { mutateAsync: revokeGrant } = useRevokeAccessGrant(orgId);
 
   const form = useForm({
@@ -90,7 +93,7 @@ export function RevokeDialog({
             </Button>
             <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
               {([canSubmit, isSubmitting]) => (
-                <Button variant="destructive" type="submit" disabled={!canSubmit || isSubmitting}>
+                <Button variant="destructive" type="submit" disabled={!canSubmit || isSubmitting || !canUpdate}>
                   {isSubmitting ? 'Revoking...' : 'Revoke Grant'}
                 </Button>
               )}

@@ -1,54 +1,42 @@
 import {
   emailOTPClient,
-  inferAdditionalFields,
-  jwtClient,
   magicLinkClient,
   multiSessionClient,
   organizationClient,
 } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
-import { auth } from './auth';
 import { ac, allRoles } from './permissions';
 
-// Log the actual base URL the client will use (handles build-time and runtime cases)
+/**
+ * Auth client for browser-side authentication.
+ *
+ * This client uses the app's own URL as the base, which routes through the
+ * auth proxy at /api/auth/[...all]. This ensures cookies are set for the
+ * correct domain (the app's domain).
+ *
+ * For server-side session validation, use auth.ts instead.
+ *
+ * SECURITY NOTE: Authentication is handled via httpOnly cookies set by the API.
+ * We do not store tokens in localStorage to prevent XSS attacks.
+ */
 
-const resolvedBaseURL =
-  process.env.NEXT_PUBLIC_BETTER_AUTH_URL ??
-  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+// Use empty string for relative URLs - this makes all auth requests go through
+// the app's own /api/auth/* routes, which proxy to the API server.
+// This ensures cookies are set for the app's domain, not the API's domain.
+const BASE_URL = '';
 
 export const authClient = createAuthClient({
-  baseURL: resolvedBaseURL,
+  baseURL: BASE_URL,
   plugins: [
     organizationClient({
       ac,
       roles: allRoles,
     }),
-    inferAdditionalFields<typeof auth>(),
     emailOTPClient(),
     magicLinkClient(),
-    jwtClient(),
     multiSessionClient(),
   ],
-  fetchOptions: {
-    onSuccess: (ctx) => {
-      // JWT tokens are now managed by jwtManager for better expiry handling
-      // Just log that we received tokens - jwtManager will handle storage
-      const authToken = ctx.response.headers.get('set-auth-token');
-      if (authToken) {
-        console.log('🎯 Bearer token available in response');
-      }
-
-      const jwtToken = ctx.response.headers.get('set-auth-jwt');
-      if (jwtToken) {
-        console.log('🎯 JWT token available in response');
-      }
-    },
-    auth: {
-      type: 'Bearer',
-      token: () =>
-        typeof window !== 'undefined' ? localStorage.getItem('bearer_token') || '' : '',
-    },
-  },
+  // Authentication is handled via httpOnly cookies - no localStorage tokens needed
 });
 
 export const {

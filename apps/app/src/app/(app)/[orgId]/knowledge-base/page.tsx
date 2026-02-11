@@ -1,4 +1,5 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
@@ -7,12 +8,20 @@ import { ContextSection } from '../questionnaire/knowledge-base/context/componen
 import { ManualAnswersSection } from '../questionnaire/knowledge-base/manual-answers/components';
 import { PublishedPoliciesSection } from '../questionnaire/knowledge-base/published-policies/components';
 import { KnowledgeBaseHeader } from '../questionnaire/knowledge-base/components/KnowledgeBaseHeader';
-import {
-  getContextEntries,
-  getKnowledgeBaseDocuments,
-  getManualAnswers,
-  getPublishedPolicies,
-} from '../questionnaire/knowledge-base/data/queries';
+import type {
+  ContextEntry,
+  KBDocument,
+  ManualAnswer,
+  PublishedPolicy,
+} from '../questionnaire/components/types';
+
+interface PolicyApiResponse {
+  data: Array<PublishedPolicy & { status: string; isArchived: boolean }>;
+}
+
+interface ContextApiResponse {
+  data: ContextEntry[];
+}
 
 export default async function KnowledgeBasePage() {
   const session = await auth.api.getSession({
@@ -25,13 +34,26 @@ export default async function KnowledgeBasePage() {
 
   const organizationId = session.session.activeOrganizationId;
 
-  // Fetch all data in parallel
-  const [policies, contextEntries, manualAnswers, documents] = await Promise.all([
-    getPublishedPolicies(organizationId),
-    getContextEntries(organizationId),
-    getManualAnswers(organizationId),
-    getKnowledgeBaseDocuments(organizationId),
-  ]);
+  // Fetch all data in parallel via API
+  const [policiesResult, contextResult, manualAnswersResult, kbDocumentsResult] =
+    await Promise.all([
+      serverApi.get<PolicyApiResponse>('/v1/policies'),
+      serverApi.get<ContextApiResponse>('/v1/context'),
+      serverApi.get<ManualAnswer[]>('/v1/knowledge-base/manual-answers'),
+      serverApi.get<KBDocument[]>('/v1/knowledge-base/documents'),
+    ]);
+
+  const allPolicies = policiesResult.data?.data ?? [];
+  const policies = allPolicies.filter(
+    (p) => p.status === 'published' && !p.isArchived,
+  );
+  const contextEntries = contextResult.data?.data ?? [];
+  const manualAnswers = Array.isArray(manualAnswersResult.data)
+    ? manualAnswersResult.data
+    : [];
+  const documents = Array.isArray(kbDocumentsResult.data)
+    ? kbDocumentsResult.data
+    : [];
 
   return (
     <PageWithBreadcrumb

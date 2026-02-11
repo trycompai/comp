@@ -17,6 +17,7 @@ interface TaskItemEditableDescriptionProps {
   entityId: string;
   entityType: 'risk' | 'vendor';
   descriptionMaxHeightClass?: string;
+  readOnly?: boolean;
 }
 
 function parseDescription(desc: string | null | undefined): JSONContent | null {
@@ -60,6 +61,7 @@ export function TaskItemEditableDescription({
   entityId,
   entityType,
   descriptionMaxHeightClass,
+  readOnly,
 }: TaskItemEditableDescriptionProps) {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState<JSONContent | null>(
@@ -342,8 +344,8 @@ export function TaskItemEditableDescription({
         </div>
       ) : (
         <div
-          onClick={() => setIsEditingDescription(true)}
-          className="text-base cursor-text hover:bg-accent/50 rounded px-2 py-1 -mx-2 -my-1 transition-colors min-h-[40px]"
+          onClick={() => !readOnly && setIsEditingDescription(true)}
+          className={`text-base rounded px-2 py-1 -mx-2 -my-1 transition-colors min-h-[40px] ${readOnly ? 'cursor-default' : 'cursor-text hover:bg-accent/50'}`}
         >
           <TaskItemScrollableDescription
             description={taskItem.description}

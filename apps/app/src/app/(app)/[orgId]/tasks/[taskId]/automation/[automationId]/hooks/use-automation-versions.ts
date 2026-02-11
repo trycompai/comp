@@ -83,7 +83,7 @@ export function useAutomationVersions(
       const response = await api.get<{
         success: boolean;
         versions: EvidenceAutomationVersion[];
-      }>(url, orgId);
+      }>(url);
 
       if (response.error) {
         throw new Error(response.error);

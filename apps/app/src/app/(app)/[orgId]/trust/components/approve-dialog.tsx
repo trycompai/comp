@@ -1,4 +1,5 @@
 import { useAccessRequest, useApproveAccessRequest } from '@/hooks/use-access-requests';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -22,6 +23,8 @@ export function ApproveDialog({
   requestId: string;
   onClose: () => void;
 }) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const { data } = useAccessRequest(orgId, requestId);
   const { mutateAsync: approveRequest } = useApproveAccessRequest(orgId);
 
@@ -122,7 +125,7 @@ export function ApproveDialog({
             </Button>
             <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
               {([canSubmit, isSubmitting]) => (
-                <Button type="submit" disabled={!canSubmit || isSubmitting}>
+                <Button type="submit" disabled={!canSubmit || isSubmitting || !canUpdate}>
                   {isSubmitting ? 'Approving...' : 'Approve & Send NDA'}
                 </Button>
               )}

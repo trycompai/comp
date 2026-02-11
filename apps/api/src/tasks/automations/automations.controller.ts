@@ -10,7 +10,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -19,6 +18,8 @@ import {
 } from '@nestjs/swagger';
 import { OrganizationId } from '../../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../../auth/permission.guard';
+import { RequirePermission } from '../../auth/require-permission.decorator';
 import { TasksService } from '../tasks.service';
 import { AutomationsService } from './automations.service';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
@@ -28,14 +29,8 @@ import { UPDATE_AUTOMATION_RESPONSES } from './schemas/update-automation.respons
 
 @ApiTags('Task Automations')
 @Controller({ path: 'tasks/:taskId/automations', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class AutomationsController {
   constructor(
     private readonly automationsService: AutomationsService,
@@ -43,6 +38,7 @@ export class AutomationsController {
   ) {}
 
   @Get()
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get all automations for a task',
     description: 'Retrieve all automations for a specific task',
@@ -67,6 +63,7 @@ export class AutomationsController {
   }
 
   @Get(':automationId')
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get automation details',
     description: 'Retrieve details for a specific automation',
@@ -97,6 +94,7 @@ export class AutomationsController {
   }
 
   @Post()
+  @RequirePermission('task', 'create')
   @ApiOperation(AUTOMATION_OPERATIONS.createAutomation)
   @ApiParam({
     name: 'taskId',
@@ -118,6 +116,7 @@ export class AutomationsController {
   }
 
   @Patch(':automationId')
+  @RequirePermission('task', 'update')
   @ApiOperation(AUTOMATION_OPERATIONS.updateAutomation)
   @ApiParam({
     name: 'taskId',
@@ -146,6 +145,7 @@ export class AutomationsController {
   }
 
   @Delete(':automationId')
+  @RequirePermission('task', 'delete')
   @ApiOperation({
     summary: 'Delete an automation',
     description: 'Delete a specific automation and all its associated data',
@@ -175,7 +175,26 @@ export class AutomationsController {
     return this.automationsService.delete(automationId);
   }
 
+  @Get(':automationId/runs')
+  @RequirePermission('task', 'read')
+  @ApiOperation({
+    summary: 'Get all runs for a specific automation',
+    description: 'Retrieve all runs for a specific automation',
+  })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  @ApiResponse({ status: 200, description: 'Runs retrieved successfully' })
+  async getAutomationRuns(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.automationsService.findRunsByAutomationId(automationId);
+  }
+
   @Get(':automationId/versions')
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get all versions for an automation',
     description: 'Retrieve all published versions of an automation script',
@@ -232,6 +251,7 @@ export class AutomationsController {
   // ==================== AUTOMATION RUNS (per task) ====================
 
   @Get('runs')
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get all automation runs for a task',
     description:

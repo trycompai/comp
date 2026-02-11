@@ -1,19 +1,113 @@
 import { getFeatureFlags } from '@/app/posthog';
-import { env } from '@/env.mjs';
+import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { QuestionnaireTabs } from './components/QuestionnaireTabs';
-import {
-  getContextEntries,
-  getKnowledgeBaseDocuments,
-  getManualAnswers,
-  getPublishedPolicies,
-} from './knowledge-base/data/queries';
-import { getQuestionnaires } from './start_page/data/queries';
 
-export default async function SecurityQuestionnairePage() {
+const ISO27001_NAMES = ['ISO 27001', 'iso27001', 'ISO27001'];
+
+interface PolicyApiResponse {
+  data: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    status: string;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+}
+
+interface QuestionnaireApiResponse {
+  data: Array<{
+    id: string;
+    filename: string;
+    fileType: string;
+    status: string;
+    totalQuestions: number;
+    answeredQuestions: number;
+    source: string | null;
+    createdAt: string;
+    updatedAt: string;
+    questions: Array<{
+      id: string;
+      question: string;
+      answer: string | null;
+      status: string;
+      questionIndex: number;
+    }>;
+  }>;
+}
+
+interface FrameworkApiResponse {
+  data: Array<{
+    id: string;
+    frameworkId: string;
+    framework: {
+      id: string;
+      name: string;
+      description: string | null;
+      visible: boolean;
+    };
+  }>;
+}
+
+interface PeopleApiResponse {
+  data: Array<{
+    id: string;
+    role: string;
+    userId: string;
+    deactivated: boolean;
+    user: {
+      id: string;
+      name: string | null;
+      email: string;
+      image: string | null;
+    };
+  }>;
+}
+
+interface ContextApiResponse {
+  data: Array<{
+    id: string;
+    question: string;
+    answer: string | null;
+    tags: string[];
+    createdAt: string;
+    updatedAt: string;
+  }>;
+}
+
+interface ManualAnswerApiResponse {
+  id: string;
+  question: string;
+  answer: string;
+  tags: string[];
+  sourceQuestionnaireId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface KBDocumentApiResponse {
+  id: string;
+  name: string;
+  description: string | null;
+  s3Key: string;
+  fileType: string;
+  fileSize: number;
+  processingStatus: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export default async function SecurityQuestionnairePage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId } = await params;
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -22,7 +116,6 @@ export default async function SecurityQuestionnairePage() {
     return notFound();
   }
 
-  // Check feature flag on server
   const flags = await getFeatureFlags(session.user.id);
   const isFeatureEnabled = flags['ai-vendor-questionnaire'] === true;
 
@@ -32,173 +125,121 @@ export default async function SecurityQuestionnairePage() {
 
   const organizationId = session.session.activeOrganizationId;
 
-  // Check if organization has published policies
-  const hasPublishedPolicies = await checkPublishedPolicies(organizationId);
+  // Fetch all data in parallel via API
+  const [
+    policiesResult,
+    questionnairesResult,
+    frameworksResult,
+    peopleResult,
+    contextResult,
+    manualAnswersResult,
+    kbDocumentsResult,
+  ] = await Promise.all([
+    serverApi.get<PolicyApiResponse>('/v1/policies'),
+    serverApi.get<QuestionnaireApiResponse>('/v1/questionnaire'),
+    serverApi.get<FrameworkApiResponse>('/v1/frameworks'),
+    serverApi.get<PeopleApiResponse>('/v1/people'),
+    serverApi.get<ContextApiResponse>('/v1/context'),
+    serverApi.get<ManualAnswerApiResponse[]>('/v1/knowledge-base/manual-answers'),
+    serverApi.get<KBDocumentApiResponse[]>('/v1/knowledge-base/documents'),
+  ]);
 
-  // Fetch questionnaires history
-  const questionnaires = await getQuestionnaires(organizationId);
+  // Derive hasPublishedPolicies
+  const allPolicies = policiesResult.data?.data ?? [];
+  const publishedPolicies = allPolicies.filter(
+    (p) => p.status === 'published' && !p.isArchived,
+  );
+  const hasPublishedPolicies = publishedPolicies.length > 0;
 
-  // Check SOA feature flag and ISO 27001
-  const isSOAFeatureEnabled =
-    flags['is-statement-of-applicability-enabled'] === true ||
-    flags['is-statement-of-applicability-enabled'] === 'true';
+  // Questionnaires list
+  const questionnaires = questionnairesResult.data?.data ?? [];
 
-  const isoFrameworkInstance = await db.frameworkInstance.findFirst({
-    where: {
-      organizationId,
-      framework: {
-        name: {
-          in: ['ISO 27001', 'iso27001', 'ISO27001'],
-        },
-      },
-    },
-    include: {
-      framework: true,
-    },
+  // Check ISO 27001 framework
+  const frameworks = frameworksResult.data?.data ?? [];
+  const isoFrameworkInstance = frameworks.find((fi) => {
+    return fi.framework?.name && ISO27001_NAMES.includes(fi.framework.name);
   });
 
-  const hasISO27001 = !!isoFrameworkInstance?.framework;
-  const showSOATab = hasISO27001 && isSOAFeatureEnabled;
+  const hasISO27001 = !!isoFrameworkInstance;
+  const showSOATab = hasISO27001;
 
-  // Fetch SOA data if needed
+  // People data
+  const people = peopleResult.data?.data ?? [];
+
+  // Context data
+  const contextEntries = contextResult.data?.data ?? [];
+
+  // Knowledge base data — these endpoints return arrays directly (no data wrapper)
+  const manualAnswers = Array.isArray(manualAnswersResult.data)
+    ? manualAnswersResult.data
+    : [];
+  const documents = Array.isArray(kbDocumentsResult.data)
+    ? kbDocumentsResult.data
+    : [];
+
+  // Build SOA data if needed
   let soaData = null;
   let soaError: string | null = null;
 
-  if (showSOATab && isoFrameworkInstance?.framework) {
+  if (showSOATab && isoFrameworkInstance) {
     try {
-      const frameworkId = isoFrameworkInstance.frameworkId;
-      const framework = isoFrameworkInstance.framework;
+      const { frameworkId, framework } = isoFrameworkInstance;
 
-      // Call API to ensure SOA setup
-      const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-      const headersList = await headers();
-      const cookieHeader = headersList.get('cookie') || '';
+      const setupResult = await serverApi.post<{
+        success: boolean;
+        error?: string;
+        configuration: Record<string, unknown> | null;
+        document: Record<string, unknown> | null;
+      }>('/v1/soa/ensure-setup', { frameworkId, organizationId });
 
-      // Get JWT token from Better Auth server-side
-      let jwtToken: string | null = null;
-      try {
-        const authUrl = env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3000';
-        const tokenResponse = await fetch(`${authUrl}/api/auth/token`, {
-          method: 'GET',
-          headers: {
-            Cookie: cookieHeader,
-          },
-        });
-
-        if (tokenResponse.ok) {
-          const tokenData = await tokenResponse.json();
-          jwtToken = tokenData.token || null;
-        }
-      } catch {
-        console.warn('Failed to get JWT token, continuing without it');
-      }
-
-      const apiHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'X-Organization-Id': organizationId,
-      };
-
-      if (jwtToken) {
-        apiHeaders['Authorization'] = `Bearer ${jwtToken}`;
-      }
-
-      const response = await fetch(`${apiUrl}/v1/soa/ensure-setup`, {
-        method: 'POST',
-        headers: apiHeaders,
-        body: JSON.stringify({
-          frameworkId,
-          organizationId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API call failed: ${response.status} - ${errorText}`);
-      }
-
-      const setupResult = await response.json();
-      const configuration = setupResult?.configuration;
-      const document = setupResult?.document;
+      const configuration = setupResult.data?.configuration;
+      const document = setupResult.data?.document;
 
       if (configuration && document) {
-        // Fetch approver member with full user data
+        // Find approver from people list
         let approver = null;
-        if (document && 'approverId' in document && document.approverId) {
-          approver = await db.member.findUnique({
-            where: { id: document.approverId as string },
-            include: {
-              user: true,
-            },
-          });
+        const approverId = document.approverId as string | undefined;
+        if (approverId) {
+          approver =
+            people.find((p) => p.id === approverId) ?? null;
         }
 
-        // Get current user member and check permissions
-        let currentMember = null;
-        let canApprove = false;
-        let isPendingApproval = false;
-        let canCurrentUserApprove = false;
+        // Find current member
+        const currentMember =
+          people.find(
+            (p) => p.userId === session.user.id && !p.deactivated,
+          ) ?? null;
 
-        if (session?.user?.id) {
-          currentMember = await db.member.findFirst({
-            where: {
-              organizationId,
-              userId: session.user.id,
-              deactivated: false,
-            },
-          });
-          canApprove = currentMember
-            ? currentMember.role.includes('owner') || currentMember.role.includes('admin')
-            : false;
-          isPendingApproval = !!(
-            document &&
-            'status' in document &&
-            document.status === 'needs_review'
+        const canApprove = currentMember
+          ? currentMember.role.includes('owner') ||
+            currentMember.role.includes('admin')
+          : false;
+
+        const isPendingApproval = document.status === 'needs_review';
+        const canCurrentUserApprove =
+          isPendingApproval && approverId === currentMember?.id;
+
+        // Filter owner/admin members
+        const ownerAdminMembers = people
+          .filter(
+            (p) =>
+              !p.deactivated &&
+              (p.role.includes('owner') || p.role.includes('admin')),
+          )
+          .sort((a, b) =>
+            (a.user?.name ?? '').localeCompare(b.user?.name ?? ''),
           );
-          canCurrentUserApprove = !!(
-            isPendingApproval &&
-            document &&
-            'approverId' in document &&
-            document.approverId === currentMember?.id
-          );
-        }
 
-        // Get owner/admin members for approval selection
-        const ownerAdminMembers = await db.member.findMany({
-          where: {
-            organizationId,
-            deactivated: false,
-            OR: [{ role: { contains: 'owner' } }, { role: { contains: 'admin' } }],
-          },
-          include: {
-            user: true,
-          },
-          orderBy: {
-            user: {
-              name: 'asc',
-            },
-          },
-        });
-
-        // Check if organization is fully remote
+        // Check if fully remote from context
         let isFullyRemote = false;
-        try {
-          const teamWorkContext = await db.context.findFirst({
-            where: {
-              organizationId,
-              question: {
-                contains: 'How does your team work',
-                mode: 'insensitive',
-              },
-            },
-          });
-
-          if (teamWorkContext?.answer) {
-            const answerLower = teamWorkContext.answer.toLowerCase();
-            isFullyRemote =
-              answerLower.includes('fully remote') || answerLower.includes('fully-remote');
-          }
-        } catch {
-          // Default to false
+        const teamWorkContext = contextEntries.find((c) =>
+          c.question?.toLowerCase().includes('how does your team work'),
+        );
+        if (teamWorkContext?.answer) {
+          const answerLower = teamWorkContext.answer.toLowerCase();
+          isFullyRemote =
+            answerLower.includes('fully remote') ||
+            answerLower.includes('fully-remote');
         }
 
         soaData = {
@@ -207,7 +248,7 @@ export default async function SecurityQuestionnairePage() {
           document,
           isFullyRemote,
           canApprove,
-          approver,
+          approver: approver ? { ...approver, user: approver.user } : null,
           isPendingApproval,
           canCurrentUserApprove,
           currentMemberId: currentMember?.id || null,
@@ -218,18 +259,10 @@ export default async function SecurityQuestionnairePage() {
       console.error('Failed to setup SOA:', error);
       soaError = 'Failed to setup SOA. Please try again later.';
     }
-  } else if (showSOATab && !isoFrameworkInstance?.framework) {
+  } else if (showSOATab && !isoFrameworkInstance) {
     soaError =
       'ISO 27001 framework not found. Please add ISO 27001 framework to your organization to get started.';
   }
-
-  // Fetch Knowledge Base data
-  const [policies, contextEntries, manualAnswers, documents] = await Promise.all([
-    getPublishedPolicies(organizationId),
-    getContextEntries(organizationId),
-    getManualAnswers(organizationId),
-    getKnowledgeBaseDocuments(organizationId),
-  ]);
 
   return (
     <QuestionnaireTabs
@@ -237,24 +270,12 @@ export default async function SecurityQuestionnairePage() {
       questionnaires={questionnaires}
       hasPublishedPolicies={hasPublishedPolicies}
       showSOATab={showSOATab}
-      soaData={soaData}
+      soaData={soaData as Parameters<typeof QuestionnaireTabs>[0]['soaData']}
       soaError={soaError}
-      policies={policies}
+      policies={publishedPolicies}
       contextEntries={contextEntries}
       manualAnswers={manualAnswers}
       documents={documents}
     />
   );
 }
-
-const checkPublishedPolicies = async (organizationId: string): Promise<boolean> => {
-  const count = await db.policy.count({
-    where: {
-      organizationId,
-      status: 'published',
-      isArchived: false,
-    },
-  });
-
-  return count > 0;
-};

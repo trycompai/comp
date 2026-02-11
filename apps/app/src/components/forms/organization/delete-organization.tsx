@@ -1,6 +1,7 @@
 'use client';
 
-import { deleteOrganizationAction } from '@/actions/organization/delete-organization-action';
+import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
@@ -17,7 +18,6 @@ import {
   Button,
 } from '@trycompai/design-system';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { redirect } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -29,19 +29,26 @@ export function DeleteOrganization({
   organizationId: string;
   isOwner: boolean;
 }) {
+  const { deleteOrganization } = useOrganizationMutations();
+  const { hasPermission } = usePermissions();
   const [value, setValue] = useState('');
-  const deleteOrganization = useAction(deleteOrganizationAction, {
-    onSuccess: () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleDelete = async () => {
+    setIsSubmitting(true);
+    try {
+      await deleteOrganization();
       toast.success('Organization deleted');
       redirect('/');
-    },
-    onError: () => {
+    } catch {
       toast.error('Error deleting organization');
-    },
-  });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  // Only show delete organization section to the owner
-  if (!isOwner) {
+  // Only show delete organization section to the owner with delete permission
+  if (!isOwner || !hasPermission('organization', 'delete')) {
     return null;
   }
 
@@ -83,16 +90,11 @@ export function DeleteOrganization({
               <AlertDialogFooter>
                 <AlertDialogCancel>{'Cancel'}</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={() =>
-                    deleteOrganization.execute({
-                      id: organizationId,
-                      organizationId,
-                    })
-                  }
-                  disabled={value !== 'delete'}
+                  onClick={handleDelete}
+                  disabled={value !== 'delete' || isSubmitting}
                   variant="destructive"
                 >
-                  {deleteOrganization.status === 'executing' ? (
+                  {isSubmitting ? (
                     <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                   ) : null}
                   {'Delete'}

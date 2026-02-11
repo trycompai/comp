@@ -2,6 +2,8 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { VENDOR_STATUS_TYPES, VendorStatus } from '@/components/vendor-status';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useVendorActions } from '@/hooks/use-vendors';
 import { Button } from '@comp/ui/button';
 import { Checkbox } from '@comp/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -10,12 +12,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/
 import { Member, type User, type Vendor, VendorCategory } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { HelpCircle, Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import type { z } from 'zod';
 import { updateVendorSchema } from '../../actions/schema';
-import { updateVendorAction } from '../../actions/update-vendor-action';
 
 export function UpdateSecondaryFieldsForm({
   vendor,
@@ -26,15 +28,11 @@ export function UpdateSecondaryFieldsForm({
   assignees: (Member & { user: User })[];
   onUpdate?: () => void;
 }) {
-  const updateVendor = useAction(updateVendorAction, {
-    onSuccess: () => {
-      toast.success('Vendor updated successfully');
-      onUpdate?.();
-    },
-    onError: () => {
-      toast.error('Failed to update vendor');
-    },
-  });
+  const { updateVendor } = useVendorActions();
+  const { mutate: globalMutate } = useSWRConfig();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('vendor', 'update');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateVendorSchema>>({
     resolver: zodResolver(updateVendorSchema),
@@ -49,19 +47,33 @@ export function UpdateSecondaryFieldsForm({
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateVendorSchema>) => {
-    // Explicitly set assigneeId to null if it's an empty string (representing "None")
+  const onSubmit = async (data: z.infer<typeof updateVendorSchema>) => {
     const finalAssigneeId = data.assigneeId === '' ? null : data.assigneeId;
 
-    updateVendor.execute({
-      id: data.id,
-      name: data.name,
-      description: data.description,
-      assigneeId: finalAssigneeId, // Use the potentially nulled value
-      category: data.category,
-      status: data.status,
-      isSubProcessor: data.isSubProcessor,
-    });
+    setIsSubmitting(true);
+    try {
+      await updateVendor(data.id, {
+        name: data.name,
+        description: data.description,
+        assigneeId: finalAssigneeId,
+        category: data.category,
+        status: data.status,
+        isSubProcessor: data.isSubProcessor,
+      });
+
+      toast.success('Vendor updated successfully');
+      globalMutate(
+        (key) =>
+          (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+          (typeof key === 'string' && key.includes('/v1/vendors')),
+        undefined,
+        { revalidate: true },
+      );
+    } catch {
+      toast.error('Failed to update vendor');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -76,7 +88,7 @@ export function UpdateSecondaryFieldsForm({
                 <FormLabel>{'Assignee'}</FormLabel>
                 <FormControl>
                   <SelectAssignee
-                    disabled={updateVendor.status === 'executing'}
+                    disabled={!canUpdate || isSubmitting}
                     withTitle={false}
                     assignees={assignees}
                     assigneeId={field.value}
@@ -94,7 +106,7 @@ export function UpdateSecondaryFieldsForm({
               <FormItem>
                 <FormLabel>{'Status'}</FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select value={field.value} onValueChange={field.onChange} disabled={!canUpdate}>
                     <SelectTrigger>
                       <SelectValue placeholder={'Select a status...'}>
                         {field.value && <VendorStatus status={field.value} />}
@@ -120,7 +132,7 @@ export function UpdateSecondaryFieldsForm({
               <FormItem>
                 <FormLabel>{'Category'}</FormLabel>
                 <FormControl>
-                  <Select {...field} value={field.value} onValueChange={field.onChange}>
+                  <Select {...field} value={field.value} onValueChange={field.onChange} disabled={!canUpdate}>
                     <SelectTrigger>
                       <SelectValue placeholder={'Select a category...'} />
                     </SelectTrigger>
@@ -174,7 +186,7 @@ export function UpdateSecondaryFieldsForm({
                       id="isSubProcessor"
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      disabled={updateVendor.status === 'executing'}
+                      disabled={!canUpdate || isSubmitting}
                     />
                     <span className="text-sm">
                       Display on Trust Center
@@ -185,15 +197,17 @@ export function UpdateSecondaryFieldsForm({
             )}
           />
         </div>
-        <div className="mt-4 flex justify-end">
-          <Button type="submit" variant="default" disabled={updateVendor.status === 'executing'}>
-            {updateVendor.status === 'executing' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Save'
-            )}
-          </Button>
-        </div>
+        {canUpdate && (
+          <div className="mt-4 flex justify-end">
+            <Button type="submit" variant="default" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Save'
+              )}
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );

@@ -130,6 +130,24 @@ export class AutomationsService {
     };
   }
 
+  async findRunsByAutomationId(automationId: string) {
+    const runs = await db.evidenceAutomationRun.findMany({
+      where: {
+        evidenceAutomationId: automationId,
+      },
+      include: {
+        evidenceAutomation: {
+          select: { name: true },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return runs;
+  }
+
   async listVersions(automationId: string, limit?: number, offset?: number) {
     const versions = await db.evidenceAutomationVersion.findMany({
       where: {

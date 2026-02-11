@@ -2,8 +2,9 @@
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
-import { api } from '@/lib/api-client';
 import { downloadAutomationPDF } from '@/lib/evidence-download';
+import type { TaskIntegrationCheck, StoredCheckRun } from '../hooks/useIntegrationChecks';
+import { useIntegrationChecks } from '../hooks/useIntegrationChecks';
 import { cn } from '@/lib/utils';
 import { useActiveOrganization } from '@/utils/auth-client';
 import { Badge } from '@comp/ui/badge';
@@ -32,58 +33,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { EvidenceJsonView } from './EvidenceJsonView';
 
-interface TaskIntegrationCheck {
-  integrationId: string;
-  integrationName: string;
-  integrationLogoUrl: string;
-  checkId: string;
-  checkName: string;
-  checkDescription: string;
-  isConnected: boolean;
-  needsConfiguration: boolean;
-  connectionId?: string;
-  connectionStatus?: string;
-  authType?: 'oauth2' | 'custom' | 'api_key' | 'basic' | 'jwt';
-  oauthConfigured?: boolean;
-}
-
-interface StoredCheckRun {
-  id: string;
-  checkId: string;
-  checkName: string;
-  status: string;
-  startedAt: string;
-  completedAt: string;
-  durationMs: number;
-  totalChecked: number;
-  passedCount: number;
-  failedCount: number;
-  errorMessage?: string;
-  logs?: Array<{
-    level: string;
-    message: string;
-    data?: Record<string, unknown>;
-    timestamp: string;
-  }>;
-  provider: {
-    slug: string;
-    name: string;
-  };
-  results: Array<{
-    id: string;
-    passed: boolean;
-    resourceType: string;
-    resourceId: string;
-    title: string;
-    description?: string;
-    severity?: string;
-    remediation?: string;
-    evidence?: Record<string, unknown>;
-    collectedAt: string;
-  }>;
-  createdAt: string;
-}
-
 interface TaskIntegrationChecksProps {
   taskId: string;
   onTaskUpdated?: () => void;
@@ -102,12 +51,23 @@ export function TaskIntegrationChecks({
   const activeOrg = useActiveOrganization();
   const organizationName = activeOrg.data?.name || orgId;
 
-  const [checks, setChecks] = useState<TaskIntegrationCheck[]>([]);
-  const [storedRuns, setStoredRuns] = useState<StoredCheckRun[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    checks,
+    runs: storedRuns,
+    isLoading: loading,
+    error: hookError,
+    mutateChecks,
+    runCheck,
+  } = useIntegrationChecks({ taskId, orgId });
+
   const [runningCheck, setRunningCheck] = useState<string | null>(null);
   const [expandedCheck, setExpandedCheck] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync hook-level error into local state
+  useEffect(() => {
+    if (hookError) setError(hookError);
+  }, [hookError]);
 
   // OAuth success handling - open config dialog after successful connection
   const [configureDialogOpen, setConfigureDialogOpen] = useState(false);
@@ -158,100 +118,24 @@ export function TaskIntegrationChecks({
     }
   }, [searchParams, checks, loading]);
 
-  // Fetch checks and historical runs for this task
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [checksResponse, runsResponse] = await Promise.all([
-          api.get<{
-            checks: TaskIntegrationCheck[];
-            task: { id: string; title: string; templateId: string | null };
-          }>(`/v1/integrations/tasks/${taskId}/checks?organizationId=${orgId}`),
-          api.get<{ runs: StoredCheckRun[] }>(
-            `/v1/integrations/tasks/${taskId}/runs?organizationId=${orgId}`,
-          ),
-        ]);
-
-        if (checksResponse.data?.checks) {
-          setChecks(checksResponse.data.checks);
-        }
-        if (runsResponse.data?.runs) {
-          setStoredRuns(runsResponse.data.runs);
-        }
-      } catch (err) {
-        console.error('Failed to fetch app automations:', err);
-        setError('Failed to load app automations');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [taskId, orgId]);
-
-  const refreshRuns = useCallback(async () => {
-    try {
-      const runsResponse = await api.get<{ runs: StoredCheckRun[] }>(
-        `/v1/integrations/tasks/${taskId}/runs?organizationId=${orgId}`,
-      );
-      if (runsResponse.data?.runs) {
-        setStoredRuns(runsResponse.data.runs);
-      }
-    } catch (err) {
-      console.error('Failed to refresh runs:', err);
-    }
-  }, [taskId, orgId]);
-
-  const refreshChecks = useCallback(async () => {
-    try {
-      const checksResponse = await api.get<{
-        checks: TaskIntegrationCheck[];
-        task: { id: string; title: string; templateId: string | null };
-      }>(`/v1/integrations/tasks/${taskId}/checks?organizationId=${orgId}`);
-      if (checksResponse.data?.checks) {
-        setChecks(checksResponse.data.checks);
-      }
-    } catch (err) {
-      console.error('Failed to refresh checks:', err);
-    }
-  }, [taskId, orgId]);
-
   const handleRunCheck = useCallback(
     async (connectionId: string, checkId: string) => {
       setRunningCheck(checkId);
       setExpandedCheck(checkId); // Auto-expand when running
       setError(null);
       try {
-        const response = await api.post<{
-          success: boolean;
-          error?: string;
-          checkRunId?: string;
-          taskStatus?: string | null;
-        }>(`/v1/integrations/tasks/${taskId}/run-check?organizationId=${orgId}`, {
-          connectionId,
-          checkId,
-        });
-
-        const data = response.data;
-        if (data?.success) {
-          await refreshRuns();
-          // Refresh task data if status was updated
-          if (data.taskStatus && onTaskUpdated) {
-            onTaskUpdated();
-          }
-        } else if (data?.error) {
-          setError(data.error);
+        const result = await runCheck(connectionId, checkId);
+        if (result.taskStatus && onTaskUpdated) {
+          onTaskUpdated();
         }
       } catch (err) {
         console.error('Failed to run check:', err);
-        setError('Failed to run check');
+        setError(err instanceof Error ? err.message : 'Failed to run check');
       } finally {
         setRunningCheck(null);
       }
     },
-    [taskId, orgId, refreshRuns, onTaskUpdated],
+    [runCheck, onTaskUpdated],
   );
 
   if (loading) {
@@ -592,7 +476,6 @@ export function TaskIntegrationChecks({
                                       taskId,
                                       automationId: check.checkId,
                                       automationName: check.checkName,
-                                      organizationId: orgId,
                                     });
                                     toast.success('Evidence PDF downloaded');
                                   } catch (err) {
@@ -725,7 +608,7 @@ export function TaskIntegrationChecks({
           }
           onSaved={() => {
             // Refresh the checks data after saving to update needsConfiguration status
-            refreshChecks();
+            mutateChecks();
             setConfigureDialogOpen(false);
             setConfigureConnection(null);
           }}

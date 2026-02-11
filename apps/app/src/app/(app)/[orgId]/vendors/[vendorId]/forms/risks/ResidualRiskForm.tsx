@@ -1,14 +1,17 @@
 'use client';
 
-import { updateVendorResidualRisk } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/update-vendor-residual-risk';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useVendorActions } from '@/hooks/use-vendors';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@comp/ui/button';
 import { Select, SelectItem, Stack } from '@trycompai/design-system';
+import { useState } from 'react';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import { z } from 'zod';
 
 const formSchema = z.object({
@@ -29,6 +32,10 @@ export function ResidualRiskForm({
   initialProbability = Likelihood.very_unlikely,
   initialImpact = Impact.insignificant,
 }: ResidualRiskFormProps) {
+  const { hasPermission } = usePermissions();
+  const { updateVendor } = useVendorActions();
+  const { mutate: globalMutate } = useSWRConfig();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [_, setOpen] = useQueryState('residual-risk-sheet');
 
   const form = useForm<FormValues>({
@@ -40,18 +47,26 @@ export function ResidualRiskForm({
   });
 
   async function onSubmit(values: FormValues) {
+    setIsSubmitting(true);
     try {
-      await updateVendorResidualRisk({
-        vendorId,
+      await updateVendor(vendorId, {
         residualProbability: values.residualProbability,
         residualImpact: values.residualImpact,
       });
 
       toast.success('Residual risk updated successfully');
+      globalMutate(
+        (key) =>
+          (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+          (typeof key === 'string' && key.includes('/v1/vendors')),
+        undefined,
+        { revalidate: true },
+      );
       setOpen(null);
-    } catch (error) {
-      console.error('Error submitting form:', error);
+    } catch {
       toast.error('An unexpected error occurred');
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -100,7 +115,7 @@ export function ResidualRiskForm({
           />
 
           <div className="flex justify-end pt-4">
-            <Button type="submit">Save</Button>
+            <Button type="submit" disabled={isSubmitting || !hasPermission('vendor', 'assess')}>Save</Button>
           </div>
         </Stack>
       </form>

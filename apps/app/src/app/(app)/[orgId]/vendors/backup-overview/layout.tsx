@@ -1,23 +1,45 @@
 import { AppOnboarding } from '@/components/app-onboarding';
-import { getServersideSession } from '@/lib/get-session';
+import { serverApi } from '@/lib/api-server';
 import { SecondaryMenu } from '@comp/ui/secondary-menu';
-import { db } from '@db';
-import { headers } from 'next/headers';
-import { Suspense, cache } from 'react';
+import type { Member, User } from '@db';
+import { Suspense } from 'react';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';
 
-export default async function Layout({ children }: { children: React.ReactNode }) {
-  const {
-    session: { activeOrganizationId },
-  } = await getServersideSession({
-    headers: await headers(),
-  });
+interface VendorsResponse {
+  data: unknown[];
+  count: number;
+}
 
-  const orgId = activeOrganizationId;
-  const overview = await getVendorOverview();
-  const assignees = await getAssignees();
+interface PeopleResponse {
+  data: (Member & { user: User })[];
+}
 
-  if (overview?.vendors === 0) {
+export default async function Layout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId } = await params;
+
+  const [vendorsRes, membersRes] = await Promise.all([
+    serverApi.get<VendorsResponse>('/v1/vendors'),
+    serverApi.get<PeopleResponse>('/v1/people'),
+  ]);
+
+  const vendorCount = vendorsRes.data?.count ?? 0;
+  const allMembers = Array.isArray(membersRes.data?.data)
+    ? membersRes.data.data
+    : [];
+  const assignees = allMembers.filter(
+    (m) =>
+      !m.deactivated &&
+      !m.role.includes('employee') &&
+      !m.role.includes('contractor'),
+  );
+
+  if (vendorCount === 0) {
     return (
       <div className="m-auto max-w-[1200px]">
         <Suspense fallback={<div>Loading...</div>}>
@@ -62,72 +84,12 @@ export default async function Layout({ children }: { children: React.ReactNode }
       <Suspense fallback={<div>Loading...</div>}>
         <SecondaryMenu
           items={[
-            {
-              path: `/${orgId}/vendors`,
-              label: 'Overview',
-            },
-            {
-              path: `/${orgId}/vendors/register`,
-              label: 'Vendors',
-            },
+            { path: `/${orgId}/vendors`, label: 'Overview' },
+            { path: `/${orgId}/vendors/register`, label: 'Vendors' },
           ]}
         />
-
         <div>{children}</div>
       </Suspense>
     </div>
   );
 }
-
-const getAssignees = cache(async () => {
-  const {
-    session: { activeOrganizationId },
-  } = await getServersideSession({
-    headers: await headers(),
-  });
-
-  if (!activeOrganizationId) {
-    return [];
-  }
-
-  const assignees = await db.member.findMany({
-    where: {
-      organizationId: activeOrganizationId,
-      role: {
-        notIn: ['employee', 'contractor'],
-      },
-      deactivated: false,
-    },
-    include: {
-      user: true,
-    },
-  });
-
-  return assignees;
-});
-
-const getVendorOverview = cache(async () => {
-  const {
-    session: { activeOrganizationId },
-  } = await getServersideSession({
-    headers: await headers(),
-  });
-
-  const orgId = activeOrganizationId;
-
-  if (!orgId) {
-    return { vendors: 0 };
-  }
-
-  return await db.$transaction(async (tx) => {
-    const [vendors] = await Promise.all([
-      tx.vendor.count({
-        where: { organizationId: orgId },
-      }),
-    ]);
-
-    return {
-      vendors,
-    };
-  });
-});

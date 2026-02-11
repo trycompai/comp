@@ -2,10 +2,15 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
   Post,
   Query,
   Res,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
   Logger,
 } from '@nestjs/common';
@@ -17,8 +22,18 @@ import {
   ApiOkResponse,
   ApiProduces,
   ApiQuery,
+  ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
+import {
+  OrganizationId,
+  AuthContext,
+} from '../auth/auth-context.decorator';
+import { AuditRead } from '../audit/skip-audit-log.decorator';
+import type { AuthContext as AuthContextType } from '../auth/types';
 import { ParseQuestionnaireDto } from './dto/parse-questionnaire.dto';
 import { ExportQuestionnaireDto } from './dto/export-questionnaire.dto';
 import { AnswerSingleQuestionDto } from './dto/answer-single-question.dto';
@@ -48,6 +63,8 @@ import {
   path: 'questionnaire',
   version: '1',
 })
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@ApiSecurity('apikey')
 export class QuestionnaireController {
   private readonly logger = new Logger(QuestionnaireController.name);
 
@@ -56,7 +73,68 @@ export class QuestionnaireController {
     private readonly trustAccessService: TrustAccessService,
   ) {}
 
+  @Get()
+  @RequirePermission('questionnaire', 'read')
+  @ApiOkResponse({ description: 'List of questionnaires' })
+  async findAll(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.questionnaireService.findAll(organizationId);
+    return {
+      data,
+      count: data.length,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Get(':id')
+  @RequirePermission('questionnaire', 'read')
+  @ApiOkResponse({ description: 'Questionnaire details' })
+  async findById(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const questionnaire = await this.questionnaireService.findById(
+      id,
+      organizationId,
+    );
+    if (!questionnaire) {
+      throw new NotFoundException('Questionnaire not found');
+    }
+    return {
+      ...questionnaire,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Delete(':id')
+  @RequirePermission('questionnaire', 'delete')
+  @ApiOkResponse({ description: 'Questionnaire deleted' })
+  async deleteById(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.questionnaireService.deleteById(id, organizationId);
+  }
+
   @Post('parse')
+  @RequirePermission('questionnaire', 'read')
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Parsed questionnaire content',
@@ -69,6 +147,7 @@ export class QuestionnaireController {
   }
 
   @Post('answer-single')
+  @RequirePermission('questionnaire', 'respond')
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Generated single answer result',
@@ -104,6 +183,7 @@ export class QuestionnaireController {
   }
 
   @Post('save-answer')
+  @RequirePermission('questionnaire', 'respond')
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Save manual or generated answer',
@@ -120,6 +200,7 @@ export class QuestionnaireController {
   }
 
   @Post('delete-answer')
+  @RequirePermission('questionnaire', 'delete')
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Delete questionnaire answer',
@@ -136,6 +217,8 @@ export class QuestionnaireController {
   }
 
   @Post('export')
+  @RequirePermission('questionnaire', 'read')
+  @AuditRead()
   @ApiConsumes('application/json')
   @ApiProduces(
     'application/pdf',
@@ -161,6 +244,7 @@ export class QuestionnaireController {
   }
 
   @Post('upload-and-parse')
+  @RequirePermission('questionnaire', 'create')
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description:
@@ -178,6 +262,7 @@ export class QuestionnaireController {
   }
 
   @Post('upload-and-parse/upload')
+  @RequirePermission('questionnaire', 'create')
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -241,6 +326,7 @@ export class QuestionnaireController {
   }
 
   @Post('parse/upload')
+  @RequirePermission('questionnaire', 'create')
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -321,6 +407,7 @@ export class QuestionnaireController {
   }
 
   @Post('parse/upload/token')
+  @UseGuards() // Override class-level guards — this endpoint uses token-based auth
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiQuery({
@@ -398,6 +485,8 @@ export class QuestionnaireController {
   }
 
   @Post('answers/export')
+  @RequirePermission('questionnaire', 'read')
+  @AuditRead()
   @ApiConsumes('application/json')
   @ApiProduces(
     'application/pdf',
@@ -424,6 +513,7 @@ export class QuestionnaireController {
   }
 
   @Post('answers/export/upload')
+  @RequirePermission('questionnaire', 'create')
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -491,6 +581,7 @@ export class QuestionnaireController {
   }
 
   @Post('auto-answer')
+  @RequirePermission('questionnaire', 'respond')
   @ApiConsumes('application/json')
   @ApiProduces('text/event-stream')
   async autoAnswer(

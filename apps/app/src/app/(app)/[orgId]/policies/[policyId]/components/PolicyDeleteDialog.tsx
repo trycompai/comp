@@ -1,6 +1,5 @@
 'use client';
 
-import { deletePolicyAction } from '@/actions/policies/delete-policy';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -14,12 +13,13 @@ import { Form } from '@comp/ui/form';
 import { Policy } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trash2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { usePermissions } from '@/hooks/use-permissions';
+import { usePolicy } from '../hooks/usePolicy';
 
 const formSchema = z.object({
   comment: z.string().optional(),
@@ -35,7 +35,14 @@ interface PolicyDeleteDialogProps {
 
 export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDialogProps) {
   const router = useRouter();
+  const { orgId } = useParams<{ orgId: string }>();
+  const { hasPermission } = usePermissions();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { deletePolicy } = usePolicy({
+    policyId: policy.id,
+    organizationId: orgId,
+  });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -44,26 +51,18 @@ export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDial
     },
   });
 
-  const deletePolicy = useAction(deletePolicyAction, {
-    onSuccess: () => {
-      onClose();
-    },
-    onError: () => {
-      toast.error('Failed to delete policy.');
-    },
-  });
-
-  const handleSubmit = async (values: FormValues) => {
+  const handleSubmit = async (_values: FormValues) => {
     setIsSubmitting(true);
-    deletePolicy.execute({
-      id: policy.id,
-      entityId: policy.id,
-    });
-
-    setTimeout(() => {
+    try {
+      await deletePolicy();
+      onClose();
+      toast.info('Policy deleted! Redirecting to policies list...');
       router.replace(`/${policy.organizationId}/policies`);
-    }, 1000);
-    toast.info('Policy deleted! Redirecting to policies list...');
+    } catch {
+      toast.error('Failed to delete policy.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -81,7 +80,7 @@ export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDial
               <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" variant="destructive" disabled={isSubmitting} className="gap-2">
+              <Button type="submit" variant="destructive" disabled={isSubmitting || !hasPermission('policy', 'delete')} className="gap-2">
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />

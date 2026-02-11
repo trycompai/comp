@@ -1,7 +1,7 @@
 'use client';
 
-import { updateOrganizationAdvancedModeAction } from '@/actions/organization/update-organization-advanced-mode-action';
-import { organizationAdvancedModeSchema } from '@/actions/schema';
+import { useApi } from '@/hooks/use-api';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   Card,
   CardContent,
@@ -14,24 +14,25 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/fo
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Switch } from '@trycompai/design-system';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import type { z } from 'zod';
+import { z } from 'zod';
+
+const organizationAdvancedModeSchema = z.object({
+  advancedModeEnabled: z.boolean(),
+});
 
 export function UpdateOrganizationAdvancedMode({
   advancedModeEnabled,
 }: {
   advancedModeEnabled: boolean;
 }) {
-  const updateAdvancedMode = useAction(updateOrganizationAdvancedModeAction, {
-    onSuccess: () => {
-      toast.success('Advanced mode setting updated');
-    },
-    onError: () => {
-      toast.error('Error updating advanced mode setting');
-    },
-  });
+  const api = useApi();
+  const { hasPermission } = usePermissions();
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof organizationAdvancedModeSchema>>({
     resolver: zodResolver(organizationAdvancedModeSchema),
@@ -40,8 +41,20 @@ export function UpdateOrganizationAdvancedMode({
     },
   });
 
-  const onSubmit = (data: z.infer<typeof organizationAdvancedModeSchema>) => {
-    updateAdvancedMode.execute(data);
+  const onSubmit = async (data: z.infer<typeof organizationAdvancedModeSchema>) => {
+    setIsSubmitting(true);
+    try {
+      const response = await api.patch('/v1/organization', {
+        advancedModeEnabled: data.advancedModeEnabled,
+      });
+      if (response.error) throw new Error(response.error);
+      toast.success('Advanced mode setting updated');
+      router.refresh();
+    } catch {
+      toast.error('Error updating advanced mode setting');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -78,6 +91,7 @@ export function UpdateOrganizationAdvancedMode({
                         // Auto-submit when switch is toggled
                         form.handleSubmit(onSubmit)();
                       }}
+                      disabled={!hasPermission('organization', 'update')}
                     />
                   </FormControl>
                   <FormMessage />
@@ -89,7 +103,7 @@ export function UpdateOrganizationAdvancedMode({
             <div className="text-muted-foreground text-xs">
               Changes are saved automatically when toggled.
             </div>
-            {updateAdvancedMode.status === 'executing' && (
+            {isSubmitting && (
               <div className="flex items-center text-muted-foreground text-sm">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...

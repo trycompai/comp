@@ -1,22 +1,19 @@
 'use client';
 
-import { researchVendorAction } from '@/actions/research-vendor';
-import type { ActionResponse } from '@/types/actions';
 import { SelectAssignee } from '@/components/SelectAssignee';
+import { useVendorActions } from '@/hooks/use-vendors';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
-import { type Member, type User, type Vendor, VendorCategory, VendorStatus } from '@db';
+import { type Member, type User, VendorCategory, VendorStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
-import { createVendorAction } from '../actions/create-vendor-action';
 import { VendorNameAutocompleteField } from './VendorNameAutocompleteField';
 import { createVendorSchema, type CreateVendorFormValues } from './create-vendor-form-schema';
 
@@ -30,53 +27,10 @@ export function CreateVendorForm({
   onSuccess?: () => void;
 }) {
   const { mutate } = useSWRConfig();
+  const { createVendor } = useVendorActions();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const pendingWebsiteRef = useRef<string | null>(null);
-
-  const createVendor = useAction(createVendorAction, {
-    onSuccess: async (result) => {
-      const response = result.data as ActionResponse<Vendor> | undefined;
-      
-      // Check if the action returned success: false (e.g., duplicate vendor)
-      if (response && response.success === false) {
-        pendingWebsiteRef.current = null;
-        const errorMessage = response.error || 'Failed to create vendor';
-        toast.error(errorMessage);
-        return;
-      }
-
-      // If we get here, vendor was created successfully
-      
-      // Run optional follow-up research FIRST (non-blocking)
-      const website = pendingWebsiteRef.current;
-      pendingWebsiteRef.current = null;
-      if (website) {
-        // Fire and forget - non-blocking
-        researchVendor.execute({ website });
-      }
-
-      // Invalidate vendors cache
-      mutate(
-        (key) => Array.isArray(key) && key[0] === 'vendors',
-        undefined,
-        { revalidate: true },
-      );
-
-      // Show success toast
-      toast.success('Vendor created successfully');
-      
-      // Close sheet
-      onSuccess?.();
-    },
-    onError: (error) => {
-      // Handle thrown errors (shouldn't happen with our try-catch, but keep as fallback)
-      const errorMessage = error.error?.serverError || 'Failed to create vendor';
-      pendingWebsiteRef.current = null;
-      toast.error(errorMessage);
-    },
-  });
-
-  const researchVendor = useAction(researchVendorAction);
 
   const form = useForm<CreateVendorFormValues>({
     resolver: zodResolver(createVendorSchema),
@@ -91,11 +45,48 @@ export function CreateVendorForm({
   });
 
   const onSubmit = async (data: CreateVendorFormValues) => {
-    // Prevent double-submits (also disabled via button state)
-    if (createVendor.status === 'executing') return;
+    if (isSubmitting) return;
 
+    setIsSubmitting(true);
     pendingWebsiteRef.current = data.website ?? null;
-    createVendor.execute({ ...data, organizationId });
+
+    try {
+      await createVendor({
+        name: data.name,
+        description: data.description || '',
+        category: data.category,
+        website: data.website || undefined,
+        assigneeId: data.assigneeId,
+      });
+
+      // Run optional follow-up research (non-blocking)
+      const website = pendingWebsiteRef.current;
+      pendingWebsiteRef.current = null;
+      if (website) {
+        fetch('/api/vendors/research', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ website }),
+        }).catch(() => {});
+      }
+
+      // Invalidate vendors cache
+      mutate(
+        (key) =>
+          (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+          (typeof key === 'string' && key.includes('/v1/vendors')),
+        undefined,
+        { revalidate: true },
+      );
+
+      toast.success('Vendor created successfully');
+      onSuccess?.();
+    } catch (error) {
+      pendingWebsiteRef.current = null;
+      toast.error(error instanceof Error ? error.message : 'Failed to create vendor');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -224,7 +215,7 @@ export function CreateVendorForm({
           </div>
 
           <div className="mt-4 flex justify-end">
-            <Button type="submit" variant="default" disabled={createVendor.status === 'executing'}>
+            <Button type="submit" variant="default" disabled={isSubmitting}>
               <div className="flex items-center justify-center">
                 {'Create Vendor'}
                 <ArrowRightIcon className="ml-2 h-4 w-4" />

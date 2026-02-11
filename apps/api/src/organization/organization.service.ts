@@ -4,8 +4,12 @@ import {
   Logger,
   BadRequestException,
   ForbiddenException,
+  InternalServerErrorException,
 } from '@nestjs/common';
+import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db, Role } from '@trycompai/db';
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 import type { TransferOwnershipResponseDto } from './dto/transfer-ownership.dto';
 
@@ -29,6 +33,7 @@ export class OrganizationService {
           fleetDmLabelId: true,
           isFleetSetupCompleted: true,
           primaryColor: true,
+          advancedModeEnabled: true,
           createdAt: true,
         },
       });
@@ -48,6 +53,14 @@ export class OrganizationService {
     }
   }
 
+  async findOnboarding(organizationId: string) {
+    const onboarding = await db.onboarding.findFirst({
+      where: { organizationId },
+      select: { triggerJobId: true, triggerJobCompleted: true },
+    });
+    return onboarding;
+  }
+
   async updateById(id: string, updateData: UpdateOrganizationDto) {
     try {
       // First check if the organization exists
@@ -65,6 +78,7 @@ export class OrganizationService {
           fleetDmLabelId: true,
           isFleetSetupCompleted: true,
           primaryColor: true,
+          advancedModeEnabled: true,
           createdAt: true,
         },
       });
@@ -89,6 +103,7 @@ export class OrganizationService {
           fleetDmLabelId: true,
           isFleetSetupCompleted: true,
           primaryColor: true,
+          advancedModeEnabled: true,
           createdAt: true,
         },
       });
@@ -274,6 +289,324 @@ export class OrganizationService {
       throw error;
     }
   }
+  async listApiKeys(organizationId: string) {
+    const apiKeys = await db.apiKey.findMany({
+      where: { organizationId, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        expiresAt: true,
+        lastUsedAt: true,
+        isActive: true,
+        scopes: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      data: apiKeys.map((key) => ({
+        ...key,
+        createdAt: key.createdAt.toISOString(),
+        expiresAt: key.expiresAt ? key.expiresAt.toISOString() : null,
+        lastUsedAt: key.lastUsedAt ? key.lastUsedAt.toISOString() : null,
+      })),
+      count: apiKeys.length,
+    };
+  }
+
+  async getRoleNotificationSettings(organizationId: string) {
+    const BUILT_IN_ROLES = [
+      'owner',
+      'admin',
+      'auditor',
+      'employee',
+      'contractor',
+    ] as const;
+
+    const BUILT_IN_DEFAULTS: Record<
+      string,
+      Record<string, boolean>
+    > = {
+      owner: {
+        policyNotifications: true,
+        taskReminders: true,
+        taskAssignments: true,
+        taskMentions: true,
+        weeklyTaskDigest: true,
+        findingNotifications: true,
+      },
+      admin: {
+        policyNotifications: true,
+        taskReminders: true,
+        taskAssignments: true,
+        taskMentions: true,
+        weeklyTaskDigest: true,
+        findingNotifications: true,
+      },
+      auditor: {
+        policyNotifications: true,
+        taskReminders: false,
+        taskAssignments: false,
+        taskMentions: false,
+        weeklyTaskDigest: false,
+        findingNotifications: true,
+      },
+      employee: {
+        policyNotifications: true,
+        taskReminders: true,
+        taskAssignments: true,
+        taskMentions: true,
+        weeklyTaskDigest: true,
+        findingNotifications: false,
+      },
+      contractor: {
+        policyNotifications: true,
+        taskReminders: true,
+        taskAssignments: true,
+        taskMentions: true,
+        weeklyTaskDigest: false,
+        findingNotifications: false,
+      },
+    };
+
+    const ALL_ON: Record<string, boolean> = {
+      policyNotifications: true,
+      taskReminders: true,
+      taskAssignments: true,
+      taskMentions: true,
+      weeklyTaskDigest: true,
+      findingNotifications: true,
+    };
+
+    const [savedSettings, customRoles] = await Promise.all([
+      db.roleNotificationSetting.findMany({ where: { organizationId } }),
+      db.organizationRole.findMany({
+        where: { organizationId },
+        select: { name: true },
+      }),
+    ]);
+
+    const settingsMap = new Map(savedSettings.map((s) => [s.role, s]));
+    const configs: Array<{
+      role: string;
+      label: string;
+      isCustom: boolean;
+      notifications: Record<string, boolean>;
+    }> = [];
+
+    for (const role of BUILT_IN_ROLES) {
+      const saved = settingsMap.get(role);
+      const defaults = BUILT_IN_DEFAULTS[role];
+      configs.push({
+        role,
+        label: role.charAt(0).toUpperCase() + role.slice(1),
+        isCustom: false,
+        notifications: saved
+          ? {
+              policyNotifications: saved.policyNotifications,
+              taskReminders: saved.taskReminders,
+              taskAssignments: saved.taskAssignments,
+              taskMentions: saved.taskMentions,
+              weeklyTaskDigest: saved.weeklyTaskDigest,
+              findingNotifications: saved.findingNotifications,
+            }
+          : defaults,
+      });
+    }
+
+    for (const customRole of customRoles) {
+      const saved = settingsMap.get(customRole.name);
+      configs.push({
+        role: customRole.name,
+        label: customRole.name,
+        isCustom: true,
+        notifications: saved
+          ? {
+              policyNotifications: saved.policyNotifications,
+              taskReminders: saved.taskReminders,
+              taskAssignments: saved.taskAssignments,
+              taskMentions: saved.taskMentions,
+              weeklyTaskDigest: saved.weeklyTaskDigest,
+              findingNotifications: saved.findingNotifications,
+            }
+          : ALL_ON,
+      });
+    }
+
+    return { data: configs };
+  }
+
+  async getLogoSignedUrl(logoKey: string | null | undefined): Promise<string | null> {
+    if (!logoKey || !s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      return null;
+    }
+
+    try {
+      return await getSignedUrl(
+        s3Client,
+        new GetObjectCommand({
+          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+          Key: logoKey,
+        }),
+        { expiresIn: 3600 },
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  async getOwnershipData(organizationId: string, userId: string) {
+    const currentUserMember = await db.member.findFirst({
+      where: { organizationId, userId, deactivated: false },
+    });
+
+    const currentUserRoles =
+      currentUserMember?.role?.split(',').map((r) => r.trim()) ?? [];
+    const isOwner = currentUserRoles.includes(Role.owner);
+
+    let eligibleMembers: Array<{
+      id: string;
+      user: { name: string | null; email: string };
+    }> = [];
+
+    if (isOwner) {
+      eligibleMembers = await db.member.findMany({
+        where: {
+          organizationId,
+          userId: { not: userId },
+          deactivated: false,
+        },
+        select: {
+          id: true,
+          user: { select: { name: true, email: true } },
+        },
+        orderBy: { user: { email: 'asc' } },
+      });
+    }
+
+    return { isOwner, eligibleMembers };
+  }
+
+  async updateRoleNotifications(
+    organizationId: string,
+    settings: Array<{
+      role: string;
+      policyNotifications: boolean;
+      taskReminders: boolean;
+      taskAssignments: boolean;
+      taskMentions: boolean;
+      weeklyTaskDigest: boolean;
+      findingNotifications: boolean;
+    }>,
+  ) {
+    try {
+      await Promise.all(
+        settings.map((setting) =>
+          db.roleNotificationSetting.upsert({
+            where: {
+              organizationId_role: {
+                organizationId,
+                role: setting.role,
+              },
+            },
+            create: {
+              organizationId,
+              role: setting.role,
+              policyNotifications: setting.policyNotifications,
+              taskReminders: setting.taskReminders,
+              taskAssignments: setting.taskAssignments,
+              taskMentions: setting.taskMentions,
+              weeklyTaskDigest: setting.weeklyTaskDigest,
+              findingNotifications: setting.findingNotifications,
+            },
+            update: {
+              policyNotifications: setting.policyNotifications,
+              taskReminders: setting.taskReminders,
+              taskAssignments: setting.taskAssignments,
+              taskMentions: setting.taskMentions,
+              weeklyTaskDigest: setting.weeklyTaskDigest,
+              findingNotifications: setting.findingNotifications,
+            },
+          }),
+        ),
+      );
+
+      this.logger.log(
+        `Updated role notification settings for organization ${organizationId} (${settings.length} roles)`,
+      );
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error(
+        `Failed to update role notification settings for organization ${organizationId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async uploadLogo(
+    organizationId: string,
+    fileName: string,
+    fileType: string,
+    fileData: string,
+  ) {
+    if (!fileType.startsWith('image/')) {
+      throw new BadRequestException('Only image files are allowed');
+    }
+
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      throw new InternalServerErrorException(
+        'File upload service is not available',
+      );
+    }
+
+    const fileBuffer = Buffer.from(fileData, 'base64');
+    const MAX_LOGO_SIZE = 2 * 1024 * 1024;
+    if (fileBuffer.length > MAX_LOGO_SIZE) {
+      throw new BadRequestException('Logo must be less than 2MB');
+    }
+
+    const timestamp = Date.now();
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const key = `${organizationId}/logo/${timestamp}-${sanitizedFileName}`;
+
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+        Key: key,
+        Body: fileBuffer,
+        ContentType: fileType,
+      }),
+    );
+
+    await db.organization.update({
+      where: { id: organizationId },
+      data: { logo: key },
+    });
+
+    const signedUrl = await getSignedUrl(
+      s3Client,
+      new GetObjectCommand({
+        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+        Key: key,
+      }),
+      { expiresIn: 3600 },
+    );
+
+    return { logoUrl: signedUrl };
+  }
+
+  async removeLogo(organizationId: string) {
+    await db.organization.update({
+      where: { id: organizationId },
+      data: { logo: null },
+    });
+
+    return { success: true };
+  }
+
   async getPrimaryColor(organizationId: string, token?: string) {
     try {
       let targetOrgId = organizationId;

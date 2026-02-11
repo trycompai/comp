@@ -3,13 +3,10 @@
 import type { Role } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { z } from 'zod';
 
-import type { ActionResponse } from '@/actions/types';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -30,97 +27,86 @@ import {
 } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { addEmployeeWithoutInvite } from '../actions/addEmployeeWithoutInvite';
-import { checkMemberStatus } from '../actions/checkMemberStatus';
-import { inviteNewMember } from '../actions/inviteNewMember';
-import { sendInvitationEmailToExistingMember } from '../actions/sendInvitationEmail';
+import type { CustomRoleOption } from './MultiRoleCombobox';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
-// --- Constants for Roles ---
-const ALL_SELECTABLE_ROLES = [
-  'admin',
-  'auditor',
-  'employee',
-  'contractor',
-] as const satisfies Readonly<[Role, ...Role[]]>;
-type InviteRole = (typeof ALL_SELECTABLE_ROLES)[number];
-const DEFAULT_ROLES: InviteRole[] = [];
-
-const isInviteRole = (role: string, allowedRoles: InviteRole[]): role is InviteRole => {
-  return allowedRoles.includes(role as InviteRole);
-};
-
-const createFormSchema = (allowedRoles: InviteRole[]) => {
-  const roleEnum = z.enum(allowedRoles as [InviteRole, ...InviteRole[]]);
-  const manualInviteSchema = z.object({
-    email: z.string().email({ message: 'Invalid email address.' }),
-    roles: z.array(roleEnum).min(1, { message: 'Please select at least one role.' }),
-  });
-
-  const manualModeSchema = z.object({
-    mode: z.literal('manual'),
-    manualInvites: z
-      .array(manualInviteSchema)
-      .min(1, { message: 'Please add at least one invite.' }),
-    csvFile: z.any().optional(), // Optional here, validated by union
-  });
-
-  const csvModeSchema = z.object({
-    mode: z.literal('csv'),
-    manualInvites: z.array(manualInviteSchema).optional(), // Optional here
-    csvFile: z.any().refine((val) => val instanceof FileList && val.length === 1, {
-      message: 'Please select a single CSV file.',
-    }),
-  });
-
-  return z.discriminatedUnion('mode', [manualModeSchema, csvModeSchema]);
-};
-
-type FormData = z.infer<ReturnType<typeof createFormSchema>>;
+import {
+  ALL_SELECTABLE_ROLES,
+  formSchema,
+  type InviteFormData,
+  type InviteResult,
+} from './invite-form-schema';
+import { parseCsvContent, validateCsvFile } from './csv-invite-parser';
 
 interface InviteMembersModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
-  allowedRoles: InviteRole[];
+  allowedRoles: Role[];
+  customRoles?: CustomRoleOption[];
+  onInviteSuccess?: () => void;
 }
 
-interface BulkInviteResultData {
-  successfulInvites: number;
-  failedItems: {
-    input: string | { email: string; role: InviteRole | InviteRole[] };
-    error: string;
-  }[];
+async function submitInvites(
+  invites: Array<{ email: string; roles: string[] }>,
+): Promise<InviteResult[]> {
+  const response = await fetch('/api/people/invite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ invites }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to process invitations.');
+  }
+
+  const { results } = await response.json();
+  return results;
+}
+
+function handleInviteResults(
+  results: InviteResult[],
+  form: ReturnType<typeof useForm<InviteFormData>>,
+  onOpenChange: (open: boolean) => void,
+  onInviteSuccess?: () => void,
+) {
+  const successCount = results.filter((r) => r.success).length;
+  const failedInvites = results.filter((r) => !r.success);
+
+  if (successCount > 0) {
+    toast.success(`Successfully invited ${successCount} member(s).`);
+    if (failedInvites.length === 0) {
+      form.reset();
+      onOpenChange(false);
+    }
+    onInviteSuccess?.();
+  }
+
+  if (failedInvites.length > 0) {
+    toast.error(
+      `Failed to invite ${failedInvites.length} member(s): ${failedInvites.map((f) => f.email).join(', ')}`,
+    );
+  }
 }
 
 export function InviteMembersModal({
   open,
   onOpenChange,
-  organizationId,
   allowedRoles,
+  customRoles = [],
+  onInviteSuccess,
 }: InviteMembersModalProps) {
-  const router = useRouter();
   const [mode, setMode] = useState<'manual' | 'csv'>('manual');
   const [isLoading, setIsLoading] = useState(false);
   const [csvFileName, setCsvFileName] = useState<string | null>(null);
-  const [lastResult, setLastResult] = useState<ActionResponse<BulkInviteResultData> | null>(null);
+  const normalizedAllowedRoles = allowedRoles.length > 0 ? allowedRoles : ALL_SELECTABLE_ROLES;
 
-  const normalizedAllowedRoles = allowedRoles.length > 0 ? allowedRoles : [...ALL_SELECTABLE_ROLES];
-  const formSchema = useMemo(
-    () => createFormSchema(normalizedAllowedRoles),
-    [normalizedAllowedRoles.join(',')],
-  );
-
-  const form = useForm<FormData>({
+  const form = useForm<InviteFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       mode: 'manual',
-      manualInvites: [
-        {
-          email: '',
-          roles: DEFAULT_ROLES,
-        },
-      ],
+      manualInvites: [{ email: '', roles: [] }],
       csvFile: undefined,
     },
     mode: 'onChange',
@@ -131,17 +117,12 @@ export function InviteMembersModal({
     name: 'manualInvites',
   });
 
-  async function onSubmit(values: FormData) {
-    console.log('onSubmit triggered', { values });
+  async function onSubmit(values: InviteFormData) {
     setIsLoading(true);
-
     try {
       if (values.mode === 'manual') {
-        console.log('Processing manual mode');
         if (!values.manualInvites || values.manualInvites.length === 0) {
-          console.error('Manual mode validation failed: No invites.');
           toast.error('Please add at least one member to invite.');
-          setIsLoading(false);
           return;
         }
 
@@ -149,325 +130,108 @@ export function InviteMembersModal({
           (invite) => !invite.roles || invite.roles.length === 0,
         );
         if (invalidInvites.length > 0) {
-          console.error(
-            `Manual mode validation failed: No roles selected for: ${invalidInvites.map((i) => i.email || 'invite').join(', ')}`,
-          );
           toast.error(
             `Please select at least one role for: ${invalidInvites.map((i) => i.email || 'invite').join(', ')}`,
           );
-          setIsLoading(false);
           return;
         }
 
-        // Process invitations
-        let successCount = 0;
-        const failedInvites: { email: string; error: string }[] = [];
-
-        // Process each invitation sequentially
-        for (const invite of values.manualInvites) {
-          const hasEmployeeRoleAndNoAdmin =
-            !invite.roles.includes('admin') &&
-            (invite.roles.includes('employee') || invite.roles.includes('contractor'));
-          try {
-            if (hasEmployeeRoleAndNoAdmin) {
-              await addEmployeeWithoutInvite({
-                organizationId,
-                email: invite.email.toLowerCase(),
-                roles: invite.roles,
-              });
-            } else {
-              // Check member status and reactivate if needed
-              const memberStatus = await checkMemberStatus({
-                email: invite.email.toLowerCase(),
-                organizationId,
-              });
-
-              if (memberStatus.memberExists && memberStatus.isActive) {
-                // Member already exists and is active - send invitation email manually
-                await sendInvitationEmailToExistingMember({
-                  email: invite.email.toLowerCase(),
-                  organizationId,
-                  roles: invite.roles,
-                });
-              } else {
-                // Member doesn't exist - use server action to send the invitation
-                await inviteNewMember({
-                  email: invite.email.toLowerCase(),
-                  organizationId,
-                  roles: invite.roles,
-                });
-              }
-            }
-            successCount++;
-          } catch (error) {
-            console.error(`Failed to invite ${invite.email}:`, error);
-            failedInvites.push({
-              email: invite.email,
-              error: error instanceof Error ? error.message : 'Unknown error',
-            });
-          }
-        }
-
-        // Handle results
-        if (successCount > 0) {
-          toast.success(`Successfully invited ${successCount} member(s).`);
-
-          if (failedInvites.length === 0) {
-            form.reset();
-            onOpenChange(false);
-          }
-
-          // Revalidate the page to refresh the member list
-          router.refresh();
-        }
-
-        if (failedInvites.length > 0) {
-          toast.error(
-            `Failed to invite ${failedInvites.length} member(s): ${failedInvites.map((f) => f.email).join(', ')}`,
-          );
-        }
+        const invites = values.manualInvites.map((invite) => ({
+          email: invite.email.toLowerCase(),
+          roles: invite.roles,
+        }));
+        const results = await submitInvites(invites);
+        handleInviteResults(results, form, onOpenChange, onInviteSuccess);
       } else if (values.mode === 'csv') {
-        // Handle CSV file uploads
-        console.log('Processing CSV mode');
-
-        // Validate file exists and is valid
-        if (
-          !values.csvFile ||
-          !(values.csvFile instanceof FileList) ||
-          values.csvFile.length !== 1
-        ) {
-          console.error('CSV mode validation failed: No valid file selected.');
-          form.setError('csvFile', {
-            message: 'A valid CSV file is required.',
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        const file = values.csvFile[0];
-        if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-          console.error('CSV mode validation failed: Incorrect file type.', {
-            type: file.type,
-          });
-          form.setError('csvFile', {
-            message: 'File must be a CSV.',
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-          console.error('CSV mode validation failed: File too large.', {
-            size: file.size,
-          });
-          form.setError('csvFile', {
-            message: 'File size must be less than 5MB.',
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        try {
-          // Parse CSV file
-          const text = await file.text();
-          const lines = text.split('\n');
-
-          // Skip header row, process each line
-          const header = lines[0].toLowerCase();
-          if (!header.includes('email') || !header.includes('role')) {
-            toast.error(
-              "Invalid CSV format. The first row must include 'email' and 'role' columns.",
-            );
-            setIsLoading(false);
-            return;
-          }
-
-          // Parse header to find column indexes
-          const headers = header.split(',').map((h) => h.trim());
-          const emailIndex = headers.findIndex((h) => h === 'email');
-          const roleIndex = headers.findIndex((h) => h === 'role');
-
-          if (emailIndex === -1 || roleIndex === -1) {
-            toast.error("CSV must contain 'email' and 'role' columns.");
-            setIsLoading(false);
-            return;
-          }
-
-          // Process rows
-          const dataRows = lines.slice(1).filter((line) => line.trim() !== '');
-
-          if (dataRows.length === 0) {
-            toast.error('CSV file does not contain any data rows.');
-            setIsLoading(false);
-            return;
-          }
-
-          // Track results
-          let successCount = 0;
-          const failedInvites: { email: string; error: string }[] = [];
-
-          // Process each row
-          for (const row of dataRows) {
-            const columns = row.split(',').map((col) => col.trim());
-
-            if (columns.length <= Math.max(emailIndex, roleIndex)) {
-              failedInvites.push({
-                email: columns[emailIndex] || 'Invalid row',
-                error: 'Invalid CSV row format',
-              });
-              continue;
-            }
-
-            const email = columns[emailIndex];
-            const roleValue = columns[roleIndex];
-
-            // Validate email
-            if (!email || !z.string().email().safeParse(email).success) {
-              failedInvites.push({
-                email: email || 'Invalid email',
-                error: 'Invalid email format',
-              });
-              continue;
-            }
-
-            // Validate role(s) - split by pipe for multiple roles
-            const roles = roleValue.split('|').map((r) => r.trim());
-            const validRoles = roles.filter((role) => isInviteRole(role, normalizedAllowedRoles));
-
-            if (validRoles.length === 0) {
-              failedInvites.push({
-                email,
-                error: `Invalid role(s): ${roleValue}. Must be one of: ${normalizedAllowedRoles.join(', ')}`,
-              });
-              continue;
-            }
-
-            // Attempt to invite
-            const hasEmployeeRoleAndNoAdmin =
-              (validRoles.includes('employee') || validRoles.includes('contractor')) &&
-              !validRoles.includes('admin');
-            try {
-              if (hasEmployeeRoleAndNoAdmin) {
-                await addEmployeeWithoutInvite({
-                  organizationId,
-                  email: email.toLowerCase(),
-                  roles: validRoles,
-                });
-              } else {
-                // Check member status and reactivate if needed
-                const memberStatus = await checkMemberStatus({
-                  email: email.toLowerCase(),
-                  organizationId,
-                });
-
-                if (memberStatus.memberExists && memberStatus.isActive) {
-                  // Member already exists and is active - send invitation email manually
-                  await sendInvitationEmailToExistingMember({
-                    email: email.toLowerCase(),
-                    organizationId,
-                    roles: validRoles,
-                  });
-                } else {
-                  // Member doesn't exist - use server action to send the invitation
-                  await inviteNewMember({
-                    email: email.toLowerCase(),
-                    organizationId,
-                    roles: validRoles,
-                  });
-                }
-              }
-              successCount++;
-            } catch (error) {
-              console.error(`Failed to invite ${email}:`, error);
-              failedInvites.push({
-                email,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              });
-            }
-          }
-
-          // Handle results
-          if (successCount > 0) {
-            toast.success(`Successfully invited ${successCount} member(s).`);
-
-            if (failedInvites.length === 0) {
-              form.reset();
-              onOpenChange(false);
-            }
-
-            // Revalidate the page to refresh the member list
-            router.refresh();
-          }
-
-          if (failedInvites.length > 0) {
-            toast.error(
-              `Failed to invite ${failedInvites.length} member(s): ${failedInvites.map((f) => f.email).join(', ')}`,
-            );
-          }
-        } catch (csvError) {
-          console.error('Error parsing CSV:', csvError);
-          toast.error('Failed to parse CSV file. Please check the format.');
-        }
+        await handleCsvSubmit(values);
       }
     } catch (error) {
-      console.error('Error processing invitations:', error);
-      toast.error('An unexpected error occurred while processing invitations.');
+      const message = error instanceof Error ? error.message : 'An unexpected error occurred.';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
   }
 
-  const handleModeChange = (newMode: string) => {
-    if (newMode === 'manual' || newMode === 'csv') {
-      setMode(newMode);
-      form.setValue('mode', newMode, { shouldValidate: true });
-
-      if (newMode === 'manual') {
-        if (fields.length === 0) {
-          append({ email: '', roles: DEFAULT_ROLES });
-        }
-        form.setValue('csvFile', undefined);
-        setCsvFileName(null);
-      } else if (newMode === 'csv') {
-        form.setValue('manualInvites', undefined);
-      }
-
-      form.clearErrors();
+  async function handleCsvSubmit(values: InviteFormData) {
+    if (!values.csvFile || !(values.csvFile instanceof FileList) || values.csvFile.length !== 1) {
+      form.setError('csvFile', { message: 'A valid CSV file is required.' });
+      return;
     }
+
+    const file = values.csvFile[0];
+    const fileError = validateCsvFile(file);
+    if (fileError) {
+      form.setError('csvFile', { message: fileError });
+      return;
+    }
+
+    const text = await file.text();
+    const { invites: csvInvites, errors: parseErrors } = parseCsvContent(text);
+
+    if (parseErrors.length > 0 && csvInvites.length === 0) {
+      toast.error(parseErrors[0].error);
+      return;
+    }
+
+    if (csvInvites.length > 0) {
+      const results = await submitInvites(csvInvites);
+      const allResults: InviteResult[] = [
+        ...results,
+        ...parseErrors.map((e) => ({ email: e.email, success: false, error: e.error })),
+      ];
+      handleInviteResults(allResults, form, onOpenChange, onInviteSuccess);
+    } else if (parseErrors.length > 0) {
+      toast.error(
+        `Failed: ${parseErrors.map((f) => `${f.email}: ${f.error}`).join(', ')}`,
+      );
+    }
+  }
+
+  const handleModeChange = (newMode: string) => {
+    if (newMode !== 'manual' && newMode !== 'csv') return;
+    setMode(newMode);
+    form.setValue('mode', newMode, { shouldValidate: true });
+
+    if (newMode === 'manual') {
+      if (fields.length === 0) append({ email: '', roles: [] });
+      form.setValue('csvFile', undefined);
+      setCsvFileName(null);
+    } else {
+      form.setValue('manualInvites', undefined);
+    }
+    form.clearErrors();
   };
 
-  const csvTemplate = useMemo(() => {
+  const csvTemplateDataUri = useMemo(() => {
     const primaryRole = normalizedAllowedRoles[0];
     const secondaryRole = normalizedAllowedRoles[1];
     const multiRoleExample =
       normalizedAllowedRoles.length > 1 ? `${primaryRole}|${secondaryRole}` : primaryRole;
-
-    const rows = [
-      'email,role',
-      `john@company.com,${primaryRole}`,
-      `jane@company.com,${multiRoleExample}`,
-    ];
-
-    return rows.join('\n');
+    const csv = `email,role\njohn@company.com,${primaryRole}\njane@company.com,${multiRoleExample}`;
+    return `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
   }, [normalizedAllowedRoles]);
-
-  const csvTemplateDataUri = `data:text/csv;charset=utf-8,${encodeURIComponent(csvTemplate)}`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="sm:max-w-lg"
-        onInteractOutside={(e) => {
-          e.preventDefault();
-        }}
-      >
+      <DialogContent className="sm:max-w-lg" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>{'Add User'}</DialogTitle>
-          <DialogDescription>{'Add an employee to your organization.'}</DialogDescription>
+          <DialogTitle>Add User</DialogTitle>
+          <DialogDescription>Add an employee to your organization.</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit, (errors) => {
+              const firstError = Object.values(errors)[0];
+              const message =
+                firstError && 'message' in firstError
+                  ? (firstError.message as string)
+                  : 'Please fill in all required fields.';
+              toast.error(message);
+            })}
+            className="space-y-4"
+          >
             <Tabs value={mode} onValueChange={handleModeChange}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="manual">Manual</TabsTrigger>
@@ -482,11 +246,11 @@ export function InviteMembersModal({
                       name={`manualInvites.${index}.email`}
                       render={({ field }) => (
                         <FormItem className="flex-1">
-                          {index === 0 && <FormLabel>{'Email'}</FormLabel>}
+                          {index === 0 && <FormLabel>Email</FormLabel>}
                           <FormControl>
                             <Input
                               className="h-10"
-                              placeholder={'Enter email address'}
+                              placeholder="Enter email address"
                               {...field}
                               value={field.value || ''}
                             />
@@ -500,12 +264,13 @@ export function InviteMembersModal({
                       name={`manualInvites.${index}.roles`}
                       render={({ field: { onChange, value }, fieldState: { error } }) => (
                         <FormItem className="w-[200px]">
-                          {index === 0 && <FormLabel>{'Role'}</FormLabel>}
+                          {index === 0 && <FormLabel>Role</FormLabel>}
                           <MultiRoleCombobox
-                            selectedRoles={value || []}
+                            selectedRoles={(value || []) as Role[]}
                             onSelectedRolesChange={onChange}
                             allowedRoles={normalizedAllowedRoles}
-                            placeholder={'Select a role'}
+                            customRoles={customRoles}
+                            placeholder="Select a role"
                           />
                           <FormMessage>{error?.message}</FormMessage>
                         </FormItem>
@@ -529,17 +294,12 @@ export function InviteMembersModal({
                   variant="outline"
                   size="sm"
                   className="mt-2"
-                  onClick={() =>
-                    append({
-                      email: '',
-                      roles: DEFAULT_ROLES,
-                    })
-                  }
+                  onClick={() => append({ email: '', roles: [] })}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add Another
                 </Button>
-                <FormDescription>{'Add an employee to your organization.'}</FormDescription>
+                <FormDescription>Add an employee to your organization.</FormDescription>
               </TabsContent>
 
               <TabsContent value="csv" className="space-y-4 pt-4">
@@ -548,7 +308,7 @@ export function InviteMembersModal({
                   name="csvFile"
                   render={({ field: { onChange, value, ...fieldProps } }) => (
                     <FormItem>
-                      <FormLabel>{'CSV File'}</FormLabel>
+                      <FormLabel>CSV File</FormLabel>
                       <div className="flex items-center gap-2">
                         <Button
                           type="button"
@@ -568,24 +328,22 @@ export function InviteMembersModal({
                           accept=".csv"
                           {...fieldProps}
                           onChange={(event) => {
-                            const fileList = event.target.files;
-                            onChange(fileList);
-                            setCsvFileName(fileList?.[0]?.name || null);
+                            onChange(event.target.files);
+                            setCsvFileName(event.target.files?.[0]?.name || null);
                           }}
                           className="sr-only"
                         />
                       </FormControl>
                       <FormDescription>
-                        {
-                          "Upload a CSV file with 'email' and 'role' columns. Use pipe (|) to separate multiple roles (e.g., employee|admin)."
-                        }
+                        Upload a CSV with &apos;email&apos; and &apos;role&apos; columns. Use pipe
+                        (|) for multiple roles.
                       </FormDescription>
                       <a
                         href={csvTemplateDataUri}
                         download="comp_invite_template.csv"
                         className="text-muted-foreground hover:text-foreground text-xs underline transition-colors"
                       >
-                        {'Download CSV template'}
+                        Download CSV template
                       </a>
                       <FormMessage />
                     </FormItem>
@@ -602,7 +360,7 @@ export function InviteMembersModal({
                 disabled={isLoading}
                 className="w-full sm:w-auto"
               >
-                {'Cancel'}
+                Cancel
               </Button>
               <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

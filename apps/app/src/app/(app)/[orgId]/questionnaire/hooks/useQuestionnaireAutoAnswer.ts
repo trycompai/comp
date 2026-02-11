@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { QuestionAnswer } from '../components/types';
 import { env } from '@/env.mjs';
-import { jwtManager } from '@/utils/jwt-manager';
 
 interface UseQuestionnaireAutoAnswerProps {
   results: QuestionAnswer[] | null;
@@ -76,17 +75,13 @@ export function useQuestionnaireAutoAnswer({
     }
 
     try {
-      // Use fetch with ReadableStream for SSE (EventSource only supports GET)
-      // credentials: 'include' is required to send cookies for authentication
-      const token = await jwtManager.getValidToken();
       const response = await fetch(
         `${env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}/v1/questionnaire/auto-answer`,
         {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            'X-Organization-Id': payload.organizationId,
           },
         body: JSON.stringify({
             organizationId: payload.organizationId,

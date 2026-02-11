@@ -1,14 +1,19 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
+import { useVendor, useVendorActions } from '@/hooks/use-vendors';
 import { RiskMatrixChart } from '@/components/risks/charts/RiskMatrixChart';
 import type { Vendor } from '@db';
-import { updateVendorInherentRisk } from '../actions/update-vendor-inherent-risk';
 
 interface InherentRiskChartProps {
   vendor: Vendor;
 }
 
 export function VendorInherentRiskChart({ vendor }: InherentRiskChartProps) {
+  const { updateVendor } = useVendorActions();
+  const { mutate } = useVendor(vendor.id);
+  const { hasPermission } = usePermissions();
+
   return (
     <RiskMatrixChart
       title={'Inherent Risk'}
@@ -16,12 +21,13 @@ export function VendorInherentRiskChart({ vendor }: InherentRiskChartProps) {
       riskId={vendor.id}
       activeLikelihood={vendor.inherentProbability}
       activeImpact={vendor.inherentImpact}
+      readOnly={!hasPermission('vendor', 'assess')}
       saveAction={async ({ id, probability, impact }) => {
-        return updateVendorInherentRisk({
-          vendorId: id,
+        await updateVendor(id, {
           inherentProbability: probability,
           inherentImpact: impact,
         });
+        mutate();
       }}
     />
   );

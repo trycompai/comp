@@ -6,6 +6,7 @@ import { Button } from '@comp/ui/button';
 import { Checkbox } from '@comp/ui/checkbox';
 import { Member, Task, User } from '@db';
 import { RefreshCw, Trash2, User as UserIcon } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { BulkTaskAssigneeChangeModal } from './BulkTaskAssigneeChangeModal';
 import { BulkTaskDeleteModal } from './BulkTaskDeleteModal';
 import { BulkTaskStatusChangeModal } from './BulkTaskStatusChangeModal';
@@ -46,6 +47,7 @@ export function ModernSingleStatusTaskList({
   handleTaskClick,
   evidenceApprovalEnabled = false,
 }: ModernSingleStatusTaskListProps) {
+  const { hasPermission } = usePermissions();
   const [selectable, setSelectable] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [openBulkStatus, setOpenBulkStatus] = useState(false);
@@ -126,36 +128,42 @@ export function ModernSingleStatusTaskList({
             />
             <span className="text-sm text-muted-foreground">Select all</span>
             <div className="ml-auto flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setOpenBulkStatus(true)}
-                disabled={selectedTaskIds.length === 0}
-                className={buttonClassName}
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                <span>Status</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setOpenBulkAssignee(true)}
-                disabled={selectedTaskIds.length === 0}
-                className={buttonClassName}
-              >
-                <UserIcon className="h-3.5 w-3.5" />
-                <span>Assignee</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setOpenBulkDelete(true)}
-                disabled={selectedTaskIds.length === 0}
-                className={deleteButtonClassName}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                <span>Delete</span>
-              </Button>
+              {hasPermission('task', 'update') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setOpenBulkStatus(true)}
+                  disabled={selectedTaskIds.length === 0}
+                  className={buttonClassName}
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>Status</span>
+                </Button>
+              )}
+              {hasPermission('task', 'assign') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setOpenBulkAssignee(true)}
+                  disabled={selectedTaskIds.length === 0}
+                  className={buttonClassName}
+                >
+                  <UserIcon className="h-3.5 w-3.5" />
+                  <span>Assignee</span>
+                </Button>
+              )}
+              {hasPermission('task', 'delete') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setOpenBulkDelete(true)}
+                  disabled={selectedTaskIds.length === 0}
+                  className={deleteButtonClassName}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Delete</span>
+                </Button>
+              )}
             </div>
             <BulkTaskStatusChangeModal
               selectedTaskIds={selectedTaskIds}

@@ -1,16 +1,17 @@
 'use client';
 
+import { useVendorActions } from '@/hooks/use-vendors';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import type { Vendor } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input, Stack, Textarea } from '@trycompai/design-system';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import type { z } from 'zod';
 import { updateVendorSchema } from '../../actions/schema';
-import { updateVendorAction } from '../../actions/update-vendor-action';
 
 interface UpdateTitleAndDescriptionFormProps {
   vendor: Vendor;
@@ -21,16 +22,9 @@ export function UpdateTitleAndDescriptionForm({
   vendor,
   onSuccess,
 }: UpdateTitleAndDescriptionFormProps) {
-  const updateVendor = useAction(updateVendorAction, {
-    onSuccess: () => {
-      toast.success('Vendor updated successfully');
-      onSuccess?.();
-    },
-    onError: (error) => {
-      console.error('Error updating vendor:', error);
-      toast.error('Failed to update vendor');
-    },
-  });
+  const { updateVendor } = useVendorActions();
+  const { mutate: globalMutate } = useSWRConfig();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateVendorSchema>>({
     resolver: zodResolver(updateVendorSchema),
@@ -45,16 +39,32 @@ export function UpdateTitleAndDescriptionForm({
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateVendorSchema>) => {
-    updateVendor.execute({
-      id: data.id,
-      name: data.name,
-      description: data.description,
-      category: data.category,
-      status: data.status,
-      assigneeId: data.assigneeId,
-      website: data.website,
-    });
+  const onSubmit = async (data: z.infer<typeof updateVendorSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await updateVendor(data.id, {
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        status: data.status,
+        assigneeId: data.assigneeId,
+        website: data.website === '' ? undefined : data.website,
+      });
+
+      toast.success('Vendor updated successfully');
+      globalMutate(
+        (key) =>
+          (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+          (typeof key === 'string' && key.includes('/v1/vendors')),
+        undefined,
+        { revalidate: true },
+      );
+      onSuccess?.();
+    } catch {
+      toast.error('Failed to update vendor');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -116,8 +126,8 @@ export function UpdateTitleAndDescriptionForm({
             )}
           />
           <div className="flex justify-end pt-4">
-            <Button type="submit" disabled={updateVendor.status === 'executing'}>
-              {updateVendor.status === 'executing' ? 'Saving...' : 'Save'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </Stack>

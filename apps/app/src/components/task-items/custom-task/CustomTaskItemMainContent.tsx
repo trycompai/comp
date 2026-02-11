@@ -13,6 +13,7 @@ interface CustomTaskItemMainContentProps {
   onStatusOrPriorityChange?: () => void;
   entityId: string;
   entityType: TaskItemEntityType;
+  readOnly?: boolean;
 }
 
 /**
@@ -31,6 +32,7 @@ export function CustomTaskItemMainContent({
   onStatusOrPriorityChange,
   entityId,
   entityType,
+  readOnly,
 }: CustomTaskItemMainContentProps) {
   return (
     <div className="space-y-6">
@@ -45,6 +47,7 @@ export function CustomTaskItemMainContent({
                 onUpdate={onUpdate}
                 onAfterUpdate={onStatusOrPriorityChange}
                 className="text-lg"
+                readOnly={readOnly}
               />
             </div>
           </div>
@@ -67,6 +70,7 @@ export function CustomTaskItemMainContent({
             entityId={entityId}
             entityType={entityType}
             descriptionMaxHeightClass="max-h-96"
+            readOnly={readOnly}
           />
         </CardContent>
       </Card>

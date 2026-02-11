@@ -4,10 +4,11 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { db, PolicyStatus, Prisma } from '@trycompai/db';
+import { AuditLogEntityType, CommentEntityType, db, Frequency, PolicyStatus, Prisma } from '@trycompai/db';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
+import type { UploadPolicyPdfDto } from './dto/upload-policy-pdf.dto';
 import type { CreatePolicyDto } from './dto/create-policy.dto';
 import type { UpdatePolicyDto } from './dto/update-policy.dto';
 import type {
@@ -27,10 +28,32 @@ export class PoliciesService {
     private readonly pdfRendererService: PolicyPdfRendererService,
   ) {}
 
-  async findAll(organizationId: string) {
+  private computeNextReviewDate(frequency: Frequency | null): Date {
+    const date = new Date();
+    switch (frequency) {
+      case Frequency.monthly:
+        date.setMonth(date.getMonth() + 1);
+        break;
+      case Frequency.quarterly:
+        date.setMonth(date.getMonth() + 3);
+        break;
+      case Frequency.yearly:
+        date.setFullYear(date.getFullYear() + 1);
+        break;
+      default:
+        date.setFullYear(date.getFullYear() + 1);
+        break;
+    }
+    return date;
+  }
+
+  async findAll(
+    organizationId: string,
+    visibilityFilter: Prisma.PolicyWhereInput = {},
+  ) {
     try {
       const policies = await db.policy.findMany({
-        where: { organizationId },
+        where: { organizationId, ...visibilityFilter },
         select: {
           id: true,
           name: true,
@@ -56,6 +79,8 @@ export class PoliciesService {
           pendingVersionId: true,
           displayFormat: true,
           pdfUrl: true,
+          visibility: true,
+          visibleToDepartments: true,
           assignee: {
             select: {
               id: true,
@@ -83,56 +108,147 @@ export class PoliciesService {
     }
   }
 
-  async findById(id: string, organizationId: string) {
+  async publishAll(organizationId: string, userId: string) {
+    const member = await db.member.findFirst({
+      where: { userId, organizationId, deactivated: false },
+    });
+
+    if (!member) {
+      throw new BadRequestException('Member not found');
+    }
+
+    if (!member.role.includes('owner')) {
+      throw new BadRequestException(
+        'Only organization owners can publish all policies',
+      );
+    }
+
+    const policies = await db.policy.findMany({
+      where: {
+        organizationId,
+        status: { in: [PolicyStatus.draft, PolicyStatus.needs_review] },
+      },
+    });
+
+    if (policies.length === 0) {
+      throw new BadRequestException('No unpublished policies found');
+    }
+
+    for (const policy of policies) {
+      if (!policy.currentVersionId) {
+        await db.$transaction(async (tx) => {
+          const newVersion = await tx.policyVersion.create({
+            data: {
+              policyId: policy.id,
+              version: 1,
+              content: (policy.content as Prisma.InputJsonValue[]) || [],
+              pdfUrl: policy.pdfUrl,
+              publishedById: member.id,
+              changelog: 'Initial published version',
+            },
+          });
+
+          await tx.policy.update({
+            where: { id: policy.id },
+            data: {
+              status: PolicyStatus.published,
+              currentVersionId: newVersion.id,
+              assigneeId: member.id,
+              reviewDate: new Date(
+                new Date().setDate(new Date().getDate() + 90),
+              ),
+              lastPublishedAt: new Date(),
+              draftContent:
+                (policy.content as Prisma.InputJsonValue[]) || [],
+              approverId: null,
+              pendingVersionId: null,
+            },
+          });
+        });
+      } else {
+        const currentVersion = await db.policyVersion.findUnique({
+          where: { id: policy.currentVersionId },
+          select: { content: true },
+        });
+
+        await db.policy.update({
+          where: { id: policy.id },
+          data: {
+            status: PolicyStatus.published,
+            assigneeId: member.id,
+            reviewDate: new Date(
+              new Date().setDate(new Date().getDate() + 90),
+            ),
+            lastPublishedAt: new Date(),
+            draftContent:
+              (currentVersion?.content as Prisma.InputJsonValue[]) ||
+              (policy.content as Prisma.InputJsonValue[]) ||
+              [],
+            approverId: null,
+            pendingVersionId: null,
+          },
+        });
+      }
+    }
+
+    // Fetch members for email notifications
+    const organization = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+
+    const members = await db.member.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+        deactivated: false,
+        user: { isPlatformAdmin: false },
+      },
+      include: {
+        user: { select: { email: true, name: true } },
+      },
+    });
+
+    const emailPayloads = members
+      .filter((m) => m.user.email)
+      .map((m) => ({
+        email: m.user.email,
+        userName: m.user.name || 'there',
+        organizationName: organization?.name || 'Your organization',
+        organizationId,
+      }));
+
+    return {
+      success: true,
+      publishedCount: policies.length,
+      members: emailPayloads,
+    };
+  }
+
+  private readonly policyDetailInclude = {
+    approver: { include: { user: true } },
+    assignee: { include: { user: true } },
+    currentVersion: {
+      include: {
+        publishedBy: { include: { user: true } },
+      },
+    },
+  };
+
+  async findById(id: string, organizationId: string, userId?: string) {
     try {
       const policy = await db.policy.findFirst({
-        where: {
-          id,
-          organizationId,
-        },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          status: true,
-          content: true,
-          draftContent: true,
-          frequency: true,
-          department: true,
-          isRequiredToSign: true,
-          signedBy: true,
-          reviewDate: true,
-          isArchived: true,
-          createdAt: true,
-          updatedAt: true,
-          lastArchivedAt: true,
-          lastPublishedAt: true,
-          organizationId: true,
-          assigneeId: true,
-          approverId: true,
-          policyTemplateId: true,
-          currentVersionId: true,
-          pendingVersionId: true,
-          displayFormat: true,
-          pdfUrl: true,
-          approver: {
-            include: {
-              user: true,
-            },
-          },
-          currentVersion: {
-            select: {
-              id: true,
-              content: true,
-              pdfUrl: true,
-              version: true,
-            },
-          },
-        },
+        where: { id, organizationId },
+        include: this.policyDetailInclude,
       });
 
       if (!policy) {
         throw new NotFoundException(`Policy with ID ${id} not found`);
+      }
+
+      // Lazy version migration: ensure currentVersion exists
+      if (!policy.currentVersionId || !policy.currentVersion) {
+        return this.lazyMigrateVersion(policy, organizationId, userId);
       }
 
       this.logger.log(`Retrieved policy: ${policy.name} (${id})`);
@@ -144,6 +260,92 @@ export class PoliciesService {
       this.logger.error(`Failed to retrieve policy ${id}:`, error);
       throw error;
     }
+  }
+
+  private async lazyMigrateVersion(
+    policy: { id: string; content: unknown; pdfUrl: string | null; name: string },
+    organizationId: string,
+    userId?: string,
+  ) {
+    try {
+      // Check if any versions already exist
+      const latestVersion = await db.policyVersion.findFirst({
+        where: { policyId: policy.id },
+        orderBy: { version: 'desc' },
+        select: { id: true },
+      });
+
+      if (latestVersion) {
+        // Fix orphaned state: set latest version as current
+        return db.policy.update({
+          where: { id: policy.id },
+          data: { currentVersionId: latestVersion.id },
+          include: this.policyDetailInclude,
+        });
+      }
+
+      // No versions exist — create version 1
+      let memberId: string | null = null;
+      if (userId) {
+        const member = await db.member.findFirst({
+          where: { userId, organizationId, deactivated: false },
+          select: { id: true },
+        });
+        memberId = member?.id ?? null;
+      }
+
+      return db.$transaction(async (tx) => {
+        const newVersion = await tx.policyVersion.create({
+          data: {
+            policyId: policy.id,
+            version: 1,
+            content: (policy.content as Prisma.InputJsonValue[]) || [],
+            pdfUrl: policy.pdfUrl,
+            publishedById: memberId,
+            changelog: 'Migrated from legacy policy',
+          },
+        });
+
+        return tx.policy.update({
+          where: { id: policy.id },
+          data: { currentVersionId: newVersion.id },
+          include: this.policyDetailInclude,
+        });
+      });
+    } catch (error) {
+      this.logger.error(
+        `Lazy migration failed for policy: ${policy.id}`,
+        error,
+      );
+      // Re-fetch policy data even if migration failed
+      const fallback = await db.policy.findFirst({
+        where: { id: policy.id },
+        include: this.policyDetailInclude,
+      });
+      if (!fallback) {
+        throw new NotFoundException(`Policy with ID ${policy.id} not found`);
+      }
+      return fallback;
+    }
+  }
+
+  async getControlMapping(policyId: string, organizationId: string) {
+    const [mappedControls, allControls] = await Promise.all([
+      db.control.findMany({
+        where: {
+          organizationId,
+          policies: { some: { id: policyId } },
+        },
+      }),
+      db.control.findMany({
+        where: { organizationId },
+      }),
+    ]);
+
+    return {
+      mappedControls: mappedControls || [],
+      allControls: allControls || [],
+    };
   }
 
   async create(organizationId: string, createData: CreatePolicyDto) {
@@ -236,7 +438,10 @@ export class PoliciesService {
       }
 
       // Prepare update data with special handling for status changes
-      const updatePayload: Record<string, unknown> = { ...updateData };
+      // Remove reviewDate from client payload — it's computed server-side
+      // based on frequency changes and version publishing
+      const { reviewDate: _ignoredReviewDate, ...safeUpdateData } = updateData;
+      const updatePayload: Record<string, unknown> = { ...safeUpdateData };
 
       // If status is being changed to published, update lastPublishedAt
       if (updateData.status === 'published') {
@@ -246,6 +451,13 @@ export class PoliciesService {
       // If isArchived is being set to true, update lastArchivedAt
       if (updateData.isArchived === true) {
         updatePayload.lastArchivedAt = new Date();
+      }
+
+      // If frequency changed, recalculate the next review date
+      if (updateData.frequency) {
+        updatePayload.reviewDate = this.computeNextReviewDate(
+          updateData.frequency as Frequency,
+        );
       }
 
       // Coerce content to Prisma JSON[] input if provided
@@ -277,6 +489,7 @@ export class PoliciesService {
           assigneeId: true,
           approverId: true,
           policyTemplateId: true,
+          displayFormat: true,
         },
       });
 
@@ -359,6 +572,23 @@ export class PoliciesService {
       this.logger.error(`Failed to delete policy ${id}:`, error);
       throw error;
     }
+  }
+
+  async getActivity(policyId: string, organizationId: string) {
+    return db.auditLog.findMany({
+      where: {
+        organizationId,
+        entityType: AuditLogEntityType.policy,
+        entityId: policyId,
+      },
+      include: {
+        user: true,
+        member: true,
+        organization: true,
+      },
+      orderBy: { timestamp: 'desc' },
+      take: 10,
+    });
   }
 
   async getVersions(policyId: string, organizationId: string) {
@@ -532,6 +762,7 @@ export class PoliciesService {
             organizationId: true,
             currentVersionId: true,
             pendingVersionId: true,
+            status: true,
           },
         },
       },
@@ -545,7 +776,12 @@ export class PoliciesService {
       throw new NotFoundException('Version not found');
     }
 
-    if (version.id === version.policy.currentVersionId) {
+    // Only block editing the current version if the policy is published
+    // Draft policies should be editable even on their current version
+    if (
+      version.id === version.policy.currentVersionId &&
+      version.policy.status === 'published'
+    ) {
       throw new BadRequestException(
         'Cannot edit the published version. Create a new version to make changes.',
       );
@@ -566,7 +802,7 @@ export class PoliciesService {
       data: { content: processedContent },
     });
 
-    return { versionId };
+    return { versionId, version: version.version };
   }
 
   async deleteVersion(
@@ -686,6 +922,7 @@ export class PoliciesService {
               content: contentToPublish,
               draftContent: contentToPublish,
               lastPublishedAt: new Date(),
+              reviewDate: this.computeNextReviewDate(policy.frequency),
               status: 'published',
               // Clear any pending approval since we're publishing directly
               pendingVersionId: null,
@@ -1160,6 +1397,502 @@ export class PoliciesService {
       downloadUrl,
       policyCount: policies.length,
     };
+  }
+
+  async denyChanges(
+    policyId: string,
+    organizationId: string,
+    approverId: string,
+    userId: string,
+    comment?: string,
+  ) {
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    if (policy.approverId !== approverId) {
+      throw new BadRequestException('Approver mismatch');
+    }
+
+    const newStatus = policy.currentVersionId
+      ? PolicyStatus.published
+      : PolicyStatus.draft;
+
+    await db.policy.update({
+      where: { id: policyId, organizationId },
+      data: {
+        status: newStatus,
+        approverId: null,
+        pendingVersionId: null,
+      },
+    });
+
+    if (comment && comment.trim() !== '') {
+      const member = await db.member.findFirst({
+        where: { userId, organizationId, deactivated: false },
+        select: { id: true },
+      });
+
+      if (member) {
+        await db.comment.create({
+          data: {
+            content: `Policy changes denied: ${comment}`,
+            entityId: policyId,
+            entityType: CommentEntityType.policy,
+            organizationId,
+            authorId: member.id,
+          },
+        });
+      }
+    }
+
+    return { success: true };
+  }
+
+  async acceptChanges(
+    policyId: string,
+    organizationId: string,
+    approverId: string,
+    userId: string,
+    comment?: string,
+  ) {
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+      include: {
+        organization: { select: { name: true } },
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    if (policy.approverId !== approverId) {
+      throw new BadRequestException('Approver mismatch');
+    }
+
+    const isNewPolicy = policy.lastPublishedAt === null;
+
+    const updateData: Prisma.PolicyUpdateInput = {
+      status: PolicyStatus.published,
+      approver: { disconnect: true },
+      signedBy: [],
+      lastPublishedAt: new Date(),
+      reviewDate: this.computeNextReviewDate(policy.frequency),
+      pendingVersionId: null,
+    };
+
+    // If there's a pending version, make it the current version
+    let publishedVersion: number | null = null;
+    if (policy.pendingVersionId) {
+      const pendingVersion = await db.policyVersion.findUnique({
+        where: { id: policy.pendingVersionId },
+      });
+
+      if (!pendingVersion || pendingVersion.policyId !== policy.id) {
+        throw new BadRequestException(
+          'The pending version no longer exists. Approval cannot be completed.',
+        );
+      }
+
+      publishedVersion = pendingVersion.version;
+      updateData.currentVersion = { connect: { id: pendingVersion.id } };
+      updateData.content = pendingVersion.content as Prisma.InputJsonValue[];
+      updateData.draftContent = pendingVersion.content as Prisma.InputJsonValue[];
+    }
+
+    await db.policy.update({
+      where: { id: policyId, organizationId },
+      data: updateData,
+    });
+
+    // If a comment was provided, create a comment
+    if (comment && comment.trim() !== '') {
+      const member = await db.member.findFirst({
+        where: { userId, organizationId, deactivated: false },
+        select: { id: true },
+      });
+
+      if (member) {
+        await db.comment.create({
+          data: {
+            content: `Policy changes accepted: ${comment}`,
+            entityId: policyId,
+            entityType: CommentEntityType.policy,
+            organizationId,
+            authorId: member.id,
+          },
+        });
+      }
+    }
+
+    // Get all active members for email notifications
+    const members = await db.member.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+        deactivated: false,
+        user: { isPlatformAdmin: false },
+      },
+      include: { user: true },
+    });
+
+    return {
+      success: true,
+      version: publishedVersion,
+      emailNotifications: members
+        .filter((m) => m.user.email)
+        .map((m) => {
+          let notificationType: 'new' | 're-acceptance' | 'updated';
+          const wasAlreadySigned = policy.signedBy.includes(m.id);
+          if (isNewPolicy) {
+            notificationType = 'new';
+          } else if (wasAlreadySigned) {
+            notificationType = 're-acceptance';
+          } else {
+            notificationType = 'updated';
+          }
+          return {
+            email: m.user.email,
+            userName: m.user.name || m.user.email || 'Employee',
+            policyName: policy.name,
+            organizationId,
+            organizationName: policy.organization.name,
+            notificationType,
+          };
+        }),
+    };
+  }
+
+  async regeneratePolicy(
+    policyId: string,
+    organizationId: string,
+    userId?: string,
+  ) {
+    // Verify the policy exists
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+      select: { id: true },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    // Get member ID
+    let memberId: string | undefined;
+    if (userId) {
+      const member = await db.member.findFirst({
+        where: { organizationId, userId },
+        select: { id: true },
+      });
+      memberId = member?.id;
+    }
+
+    // Load frameworks
+    const instances = await db.frameworkInstance.findMany({
+      where: { organizationId },
+      include: { framework: true },
+    });
+
+    const uniqueFrameworks = Array.from(
+      new Map(instances.map((fi) => [fi.framework.id, fi.framework])).values(),
+    ).map((f) => ({
+      id: f.id,
+      name: f.name,
+      version: f.version,
+      description: f.description,
+      visible: f.visible,
+      createdAt: f.createdAt,
+      updatedAt: f.updatedAt,
+    }));
+
+    // Load context hub
+    const contextEntries = await db.context.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: 'asc' },
+    });
+    const contextHub = contextEntries
+      .map((c) => `${c.question}\n${c.answer}`)
+      .join('\n');
+
+    return {
+      policyId,
+      organizationId,
+      contextHub,
+      frameworks: uniqueFrameworks,
+      memberId,
+    };
+  }
+
+  async mapControls(
+    policyId: string,
+    organizationId: string,
+    controlIds: string[],
+  ) {
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+      select: { id: true },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    const updated = await db.policy.update({
+      where: { id: policyId },
+      data: {
+        controls: {
+          connect: controlIds.map((id) => ({ id })),
+        },
+      },
+      include: { controls: true },
+    });
+
+    this.logger.log(
+      `Mapped ${controlIds.length} controls to policy ${policyId}`,
+    );
+    return updated;
+  }
+
+  async getPdfSignedUrl(
+    policyId: string,
+    organizationId: string,
+    versionId?: string,
+  ) {
+    let pdfUrl: string | null = null;
+
+    if (versionId) {
+      const version = await db.policyVersion.findUnique({
+        where: { id: versionId },
+        select: {
+          pdfUrl: true,
+          policyId: true,
+          policy: { select: { organizationId: true } },
+        },
+      });
+
+      if (
+        !version ||
+        version.policyId !== policyId ||
+        version.policy.organizationId !== organizationId
+      ) {
+        throw new NotFoundException('Version not found');
+      }
+
+      pdfUrl = version.pdfUrl;
+    } else {
+      const policy = await db.policy.findUnique({
+        where: { id: policyId, organizationId },
+        select: {
+          pdfUrl: true,
+          currentVersion: { select: { pdfUrl: true } },
+        },
+      });
+
+      pdfUrl = policy?.currentVersion?.pdfUrl ?? policy?.pdfUrl ?? null;
+    }
+
+    if (!pdfUrl) {
+      return { url: null };
+    }
+
+    const signedUrl =
+      await this.attachmentsService.getPresignedInlinePdfUrl(pdfUrl);
+
+    return { url: signedUrl };
+  }
+
+  async uploadPdf(
+    policyId: string,
+    organizationId: string,
+    dto: UploadPolicyPdfDto,
+  ) {
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+      select: {
+        id: true,
+        pdfUrl: true,
+        currentVersionId: true,
+        pendingVersionId: true,
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    const fileBuffer = Buffer.from(dto.fileData, 'base64');
+    const sanitizedFileName = dto.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    let oldPdfUrl: string | null = null;
+
+    if (dto.versionId) {
+      const version = await db.policyVersion.findUnique({
+        where: { id: dto.versionId },
+        select: { id: true, policyId: true, pdfUrl: true, version: true },
+      });
+
+      if (!version || version.policyId !== policyId) {
+        throw new NotFoundException('Version not found');
+      }
+
+      if (version.id === policy.currentVersionId) {
+        throw new BadRequestException(
+          'Cannot upload PDF to the published version',
+        );
+      }
+      if (version.id === policy.pendingVersionId) {
+        throw new BadRequestException(
+          'Cannot upload PDF to a version pending approval',
+        );
+      }
+
+      oldPdfUrl = version.pdfUrl;
+      const s3Key = `${organizationId}/policies/${policyId}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
+
+      await this.attachmentsService.uploadBuffer(
+        s3Key,
+        fileBuffer,
+        dto.fileType,
+      );
+
+      await db.policyVersion.update({
+        where: { id: dto.versionId },
+        data: { pdfUrl: s3Key },
+      });
+
+      if (oldPdfUrl && oldPdfUrl !== s3Key) {
+        await this.attachmentsService
+          .deletePolicyVersionPdf(oldPdfUrl)
+          .catch((err) => {
+            this.logger.warn('Failed to clean up old version PDF', err);
+          });
+      }
+
+      return { s3Key };
+    }
+
+    // Legacy: upload to policy level
+    oldPdfUrl = policy.pdfUrl;
+    const s3Key = `${organizationId}/policies/${policyId}/${Date.now()}-${sanitizedFileName}`;
+
+    await this.attachmentsService.uploadBuffer(s3Key, fileBuffer, dto.fileType);
+
+    await db.policy.update({
+      where: { id: policyId, organizationId },
+      data: { pdfUrl: s3Key, displayFormat: 'PDF' },
+    });
+
+    if (oldPdfUrl && oldPdfUrl !== s3Key) {
+      await this.attachmentsService
+        .deletePolicyVersionPdf(oldPdfUrl)
+        .catch((err) => {
+          this.logger.warn('Failed to clean up old policy PDF', err);
+        });
+    }
+
+    return { s3Key };
+  }
+
+  async deletePdf(
+    policyId: string,
+    organizationId: string,
+    versionId?: string,
+  ) {
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+      select: {
+        id: true,
+        pdfUrl: true,
+        currentVersionId: true,
+        pendingVersionId: true,
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    let oldPdfUrl: string | null = null;
+
+    if (versionId) {
+      const version = await db.policyVersion.findUnique({
+        where: { id: versionId },
+        select: { id: true, policyId: true, pdfUrl: true },
+      });
+
+      if (!version || version.policyId !== policyId) {
+        throw new NotFoundException('Version not found');
+      }
+
+      if (version.id === policy.currentVersionId) {
+        throw new BadRequestException(
+          'Cannot delete PDF from the published version',
+        );
+      }
+      if (version.id === policy.pendingVersionId) {
+        throw new BadRequestException(
+          'Cannot delete PDF from a version pending approval',
+        );
+      }
+
+      oldPdfUrl = version.pdfUrl;
+
+      await db.policyVersion.update({
+        where: { id: versionId },
+        data: { pdfUrl: null },
+      });
+    } else {
+      oldPdfUrl = policy.pdfUrl;
+
+      await db.policy.update({
+        where: { id: policyId, organizationId },
+        data: { pdfUrl: null, displayFormat: 'EDITOR' },
+      });
+    }
+
+    if (oldPdfUrl) {
+      await this.attachmentsService
+        .deletePolicyVersionPdf(oldPdfUrl)
+        .catch((err) => {
+          this.logger.warn('Failed to delete PDF from S3', err);
+        });
+    }
+
+    return { success: true };
+  }
+
+  async unmapControl(
+    policyId: string,
+    organizationId: string,
+    controlId: string,
+  ) {
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+      select: { id: true },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    const updated = await db.policy.update({
+      where: { id: policyId },
+      data: {
+        controls: {
+          disconnect: { id: controlId },
+        },
+      },
+    });
+
+    this.logger.log(
+      `Unmapped control ${controlId} from policy ${policyId}`,
+    );
+    return updated;
   }
 
   private isUniqueConstraintError(error: unknown): boolean {

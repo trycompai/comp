@@ -16,7 +16,11 @@ export const weeklyTaskReminder = schedules.task({
         name: true,
         members: {
           where: {
-            OR: [{ role: { contains: 'owner' } }, { role: { contains: 'admin' } }],
+            deactivated: false,
+            OR: [
+              { user: { isPlatformAdmin: false } },
+              { role: { contains: 'owner' } },
+            ],
           },
           select: {
             id: true,
@@ -34,7 +38,7 @@ export const weeklyTaskReminder = schedules.task({
 
     logger.info(`Found ${organizations.length} organizations to process`);
 
-    // Build email payloads for all admins/owners with TODO tasks
+    // Build email payloads for all members with TODO tasks
     const emailPayloads = [];
 
     for (const org of organizations) {
@@ -63,16 +67,11 @@ export const weeklyTaskReminder = schedules.task({
 
       logger.info(`Found ${todoTasks.length} TODO tasks for organization ${org.name}`);
 
-      // Build payload for each admin/owner
+      // Build payload for each member — the downstream
+      // isUserUnsubscribed check handles role-based filtering via the notification matrix.
       for (const member of org.members) {
         if (!member.user.email || !member.user.name) {
           logger.warn(`Skipping member ${member.id} - missing email or name`);
-          continue;
-        }
-
-        // Skip internal trycomp.ai emails
-        if (member.user.email.includes('@trycomp.ai')) {
-          logger.info(`Skipping internal email: ${member.user.email}`);
           continue;
         }
 

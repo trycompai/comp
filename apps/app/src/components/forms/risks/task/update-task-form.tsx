@@ -1,9 +1,9 @@
 'use client';
 
-import { updateTaskAction } from '@/actions/risk/task/update-task-action';
 import { updateTaskSchema } from '@/actions/schema';
 import { SelectUser } from '@/components/select-user';
 import { StatusIndicator } from '@/components/status-indicator';
+import { useTaskMutations } from '@/hooks/use-task-mutations';
 import { Button } from '@comp/ui/button';
 import { Calendar } from '@comp/ui/calendar';
 import { cn } from '@comp/ui/cn';
@@ -14,20 +14,14 @@ import { type Task, TaskStatus, type User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
 export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
-  const updateTask = useAction(updateTaskAction, {
-    onSuccess: () => {
-      toast.success('Task updated successfully');
-    },
-    onError: () => {
-      toast.error('Something went wrong, please try again.');
-    },
-  });
+  const { updateTask } = useTaskMutations();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateTaskSchema>>({
     resolver: zodResolver(updateTaskSchema),
@@ -38,13 +32,19 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateTaskSchema>) => {
-    updateTask.execute({
-      id: data.id,
-      dueDate: data.dueDate ? data.dueDate : undefined,
-      assigneeId: data.assigneeId,
-      status: data.status as TaskStatus,
-    });
+  const onSubmit = async (data: z.infer<typeof updateTaskSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await updateTask(data.id, {
+        status: data.status,
+        assigneeId: data.assigneeId,
+      });
+      toast.success('Task updated successfully');
+    } catch {
+      toast.error('Something went wrong, please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -144,8 +144,8 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
           />
         </div>
         <div className="mt-4 flex justify-end">
-          <Button type="submit" variant="default" disabled={updateTask.status === 'executing'}>
-            {updateTask.status === 'executing' ? (
+          <Button type="submit" variant="default" disabled={isSubmitting}>
+            {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               'Save'

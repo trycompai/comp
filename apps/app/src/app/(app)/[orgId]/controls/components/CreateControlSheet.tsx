@@ -1,6 +1,5 @@
 'use client';
 
-import { createControlAction } from '@/actions/controls/create-control-action';
 import { Button } from '@comp/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -11,12 +10,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import { Textarea } from '@comp/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon, X } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { useControls } from '../hooks/useControls';
 
 const createControlSchema = z.object({
   name: z.string().min(1, {
@@ -52,24 +51,15 @@ export function CreateControlSheet({
     frameworkName: string;
   }[];
 }) {
+  const { createControl } = useControls();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [createControlOpen, setCreateControlOpen] = useQueryState('create-control');
   const isOpen = Boolean(createControlOpen);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleOpenChange = (open: boolean) => {
     setCreateControlOpen(open ? 'true' : null);
   };
-
-  const createControl = useAction(createControlAction, {
-    onSuccess: () => {
-      toast.success('Control created successfully');
-      setCreateControlOpen(null);
-      form.reset();
-    },
-    onError: (error) => {
-      toast.error(error.error?.serverError || 'Failed to create control');
-    },
-  });
 
   const form = useForm<z.infer<typeof createControlSchema>>({
     resolver: zodResolver(createControlSchema),
@@ -83,10 +73,20 @@ export function CreateControlSheet({
   });
 
   const onSubmit = useCallback(
-    (data: z.infer<typeof createControlSchema>) => {
-      createControl.execute(data);
+    async (data: z.infer<typeof createControlSchema>) => {
+      setIsSubmitting(true);
+      try {
+        await createControl(data);
+        toast.success('Control created successfully');
+        setCreateControlOpen(null);
+        form.reset();
+      } catch {
+        toast.error('Failed to create control');
+      } finally {
+        setIsSubmitting(false);
+      }
     },
-    [createControl],
+    [createControl, form, setCreateControlOpen],
   );
 
   // Memoize policy options to prevent re-renders
@@ -369,7 +369,7 @@ export function CreateControlSheet({
             <div className="border-t bg-background p-4 flex justify-end flex-shrink-0">
               <Button
                 type="submit"
-                disabled={createControl.status === 'executing'}
+                disabled={isSubmitting}
                 onClick={form.handleSubmit(onSubmit)}
               >
                 <div className="flex items-center justify-center">
@@ -396,7 +396,7 @@ export function CreateControlSheet({
         <div className="border-t bg-background p-4 flex justify-end flex-shrink-0">
           <Button
             type="submit"
-            disabled={createControl.status === 'executing'}
+            disabled={isSubmitting}
             onClick={form.handleSubmit(onSubmit)}
           >
             <div className="flex items-center justify-center">

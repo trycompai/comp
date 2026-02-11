@@ -1,16 +1,16 @@
 'use client';
 
 import { useDebounce } from '@/hooks/useDebounce';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { trustPortalSwitchAction } from '../../portal-settings/actions/trust-portal-switch';
 import { AllowedDomainsManager } from '../../portal-settings/components/AllowedDomainsManager';
 import { TrustPortalDomain } from '../../portal-settings/components/TrustPortalDomain';
 
@@ -37,17 +37,9 @@ export function TrustSettingsClient({
   vercelVerification,
   allowedDomains,
 }: TrustSettingsClientProps) {
-  const trustPortalSwitch = useAction(trustPortalSwitchAction, {
-    onSuccess: () => {
-      toast.success('Trust settings updated');
-    },
-    onError: () => {
-      toast.error('Failed to update trust settings');
-    },
-  });
-
-  const trustPortalSwitchRef = useRef(trustPortalSwitch);
-  trustPortalSwitchRef.current = trustPortalSwitch;
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
+  const { updateToggleSettings } = useTrustPortalSettings();
 
   const form = useForm<z.infer<typeof trustSettingsSchema>>({
     resolver: zodResolver(trustSettingsSchema),
@@ -66,6 +58,7 @@ export function TrustSettingsClient({
 
   const autoSave = useCallback(
     async (field: string, value: unknown) => {
+      if (!canUpdate) return;
       if (savingRef.current[field]) {
         return;
       }
@@ -74,19 +67,21 @@ export function TrustSettingsClient({
       if (lastSaved.current[field] !== value) {
         savingRef.current[field] = true;
         try {
-          const data = {
+          await updateToggleSettings({
             enabled: true, // Settings page assumes portal is enabled
             contactEmail:
               field === 'contactEmail' ? (value as string) : (current.contactEmail ?? ''),
-          };
-          await trustPortalSwitchRef.current.execute(data);
+          });
+          toast.success('Trust settings updated');
           lastSaved.current[field] = value as string | null;
+        } catch {
+          toast.error('Failed to update trust settings');
         } finally {
           savingRef.current[field] = false;
         }
       }
     },
-    [form],
+    [form, updateToggleSettings],
   );
 
   const [contactEmailValue, setContactEmailValue] = useState(form.getValues('contactEmail') || '');
@@ -139,6 +134,7 @@ export function TrustSettingsClient({
                         }}
                         onBlur={handleContactEmailBlur}
                         placeholder="contact@example.com"
+                        disabled={!canUpdate}
                         autoComplete="off"
                         autoCapitalize="none"
                         autoCorrect="off"

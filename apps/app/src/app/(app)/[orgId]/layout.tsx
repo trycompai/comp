@@ -2,6 +2,8 @@ import { getFeatureFlags } from '@/app/posthog';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
 import { getOrganizations } from '@/data/getOrganizations';
+import { canAccessApp } from '@/lib/permissions';
+import { resolveUserPermissions } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -11,7 +13,7 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppShellWrapper } from './components/AppShellWrapper';
 
-// Helper to safely parse comma-separated roles string
+// Helper to safely parse comma-separated roles string (used for UI display only)
 function parseRolesString(rolesStr: string | null | undefined): Role[] {
   if (!rolesStr) return [];
   return rolesStr
@@ -73,30 +75,34 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
-  // Sync activeOrganizationId BEFORE any redirects that might use it
-  // This ensures session.activeOrganizationId is always correct for users with multiple orgs
+  // Sync activeOrganizationId if it doesn't match the URL's orgId.
+  // Direct DB update instead of HTTP call to avoid race conditions:
+  // Next.js renders layouts and pages in parallel, so child pages may call
+  // serverApi before an HTTP-based sync completes. A direct DB write is faster
+  // and membership has already been validated above.
   const currentActiveOrgId = session.session.activeOrganizationId;
   if (!currentActiveOrgId || currentActiveOrgId !== requestedOrgId) {
     try {
-      await auth.api.setActiveOrganization({
-        headers: requestHeaders,
-        body: {
-          organizationId: requestedOrgId,
-        },
+      await db.session.update({
+        where: { id: session.session.id },
+        data: { activeOrganizationId: requestedOrgId },
       });
     } catch (error) {
       console.error('[Layout] Failed to sync activeOrganizationId:', error);
-      // Continue anyway - the URL params are the source of truth for this request
     }
   }
 
-  const roles = parseRolesString(member.role);
-  const hasAccess =
-    roles.includes(Role.owner) || roles.includes(Role.admin) || roles.includes(Role.auditor);
+  // Resolve effective permissions from all roles (built-in + custom)
+  const permissions = await resolveUserPermissions(member.role, requestedOrgId);
 
-  if (!hasAccess) {
+  // Check if user can access the main app (has app:read or any app route permission)
+  const hasAppAccess = canAccessApp(permissions);
+  if (!hasAppAccess) {
     return redirect('/no-access');
   }
+
+  // Parse roles for UI display purposes (auditor-specific UI)
+  const roles = parseRolesString(member.role);
 
   // If this org is not accessible on current plan, redirect to upgrade
   if (!organization.hasAccess) {
@@ -159,7 +165,7 @@ export default async function Layout({
   const user = {
     name: session.user.name,
     email: session.user.email,
-    image: session.user.image,
+    image: session.user.image ?? null,
   };
 
   return (
@@ -178,6 +184,7 @@ export default async function Layout({
         isWebAutomationsEnabled={isWebAutomationsEnabled}
         hasAuditorRole={hasAuditorRole}
         isOnlyAuditor={isOnlyAuditor}
+        permissions={permissions}
         user={user}
       >
         {children}

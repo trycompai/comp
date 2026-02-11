@@ -1,58 +1,57 @@
-import { auth } from '@/utils/auth';
+import { serverApi } from '@/lib/api-server';
 import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import type {
+  Control,
+  FrameworkEditorFramework,
+  FrameworkEditorRequirement,
+  FrameworkInstance,
+  Policy,
+  RequirementMap,
+  Task,
+} from '@db';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ControlHeaderActions } from './components/ControlHeaderActions';
 import { SingleControl } from './components/SingleControl';
-import { getControl } from './data/getControl';
 import type { ControlProgressResponse } from './data/getOrganizationControlProgress';
-import { getOrganizationControlProgress } from './data/getOrganizationControlProgress';
-import { getRelatedPolicies } from './data/getRelatedPolicies';
+
+type ControlDetail = Control & {
+  policies: Policy[];
+  tasks: Task[];
+  requirementsMapped: (RequirementMap & {
+    frameworkInstance: FrameworkInstance & {
+      framework: FrameworkEditorFramework;
+    };
+    requirement: FrameworkEditorRequirement;
+  })[];
+  progress: ControlProgressResponse;
+};
 
 interface ControlPageProps {
   params: {
     controlId: string;
     orgId: string;
-    locale: string;
   };
 }
 
 export default async function ControlPage({ params }: ControlPageProps) {
-  // Await params before using them
-  const { controlId, orgId, locale } = await Promise.resolve(params);
+  const { controlId, orgId } = await Promise.resolve(params);
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const controlRes = await serverApi.get<ControlDetail>(
+    `/v1/controls/${controlId}`,
+  );
 
-  if (!session?.session.activeOrganizationId) {
+  if (!controlRes.data || controlRes.error) {
     redirect('/');
   }
 
-  const control = await getControl(controlId);
-
-  // If we get an error or no result, redirect
-  if (!control || 'error' in control) {
-    redirect('/');
-  }
-
-  const organizationControlProgressResult = await getOrganizationControlProgress(controlId);
-
-  // Extract the progress data from the result or create default data if there's an error
-  const controlProgress: ControlProgressResponse = ('data' in
-    (organizationControlProgressResult || {}) &&
-    organizationControlProgressResult?.data?.progress) || {
+  const control = controlRes.data;
+  const controlProgress: ControlProgressResponse = control.progress ?? {
     total: 0,
     completed: 0,
     progress: 0,
     byType: {},
   };
-
-  const relatedPolicies = await getRelatedPolicies({
-    organizationId: orgId,
-    controlId: controlId,
-  });
 
   return (
     <PageLayout>
@@ -66,11 +65,14 @@ export default async function ControlPage({ params }: ControlPageProps) {
           { label: control.name, isCurrent: true },
         ]}
       />
-      <PageHeader title={control.name} actions={<ControlHeaderActions control={control} />} />
+      <PageHeader
+        title={control.name}
+        actions={<ControlHeaderActions control={control} />}
+      />
       <SingleControl
         control={control}
         controlProgress={controlProgress}
-        relatedPolicies={relatedPolicies}
+        relatedPolicies={control.policies}
         relatedTasks={control.tasks}
       />
     </PageLayout>

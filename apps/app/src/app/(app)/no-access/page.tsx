@@ -1,10 +1,21 @@
 import { Header } from '@/components/header';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
+import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import type { Organization } from '@db';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+
+interface OrgInfo {
+  id: string;
+  name: string;
+  logo: string | null;
+}
+
+interface AuthMeResponse {
+  organizations: OrgInfo[];
+}
 
 export default async function NoAccess() {
   const session = await auth.api.getSession({
@@ -15,21 +26,13 @@ export default async function NoAccess() {
     return redirect('/');
   }
 
-  const organizations = await db.organization.findMany({
-    where: {
-      members: {
-        some: {
-          userId: session.user.id,
-        },
-      },
-    },
-  });
+  const [meRes, orgRes] = await Promise.all([
+    serverApi.get<AuthMeResponse>('/v1/auth/me'),
+    serverApi.get<Organization>('/v1/organization'),
+  ]);
 
-  const currentOrg = await db.organization.findUnique({
-    where: {
-      id: session.session.activeOrganizationId,
-    },
-  });
+  const organizations = meRes.data?.organizations ?? [];
+  const currentOrg = orgRes.data ?? null;
 
   return (
     <div className="flex h-dvh flex-col">
@@ -38,16 +41,19 @@ export default async function NoAccess() {
         <h1 className="text-2xl font-bold">Access Denied</h1>
         <div className="flex flex-col text-center">
           <p>
-            <b>Employees</b> and <b>Contractors</b> don&apos;t have access to app.trycomp.ai, did you mean to go to{' '}
+            Your current role doesn&apos;t have access to the app. If you&apos;re looking for the employee portal, go to{' '}
             <Link href="https://portal.trycomp.ai" className="text-primary underline">
               portal.trycomp.ai
             </Link>
-            ?
+            .
           </p>
           <p>Please select another organization or contact your organization administrator.</p>
         </div>
         <div>
-          <OrganizationSwitcher organizations={organizations} organization={currentOrg} />
+          <OrganizationSwitcher
+            organizations={organizations as Organization[]}
+            organization={currentOrg}
+          />
         </div>
       </div>
     </div>

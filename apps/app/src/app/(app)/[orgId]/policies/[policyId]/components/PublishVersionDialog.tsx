@@ -1,6 +1,5 @@
 'use client';
 
-import { createVersionAction } from '@/actions/policies/create-version';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -13,13 +12,15 @@ import {
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import { Stack } from '@trycompai/design-system';
-import { useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
+import { usePolicyVersions } from '../hooks/usePolicyVersions';
 
 interface PublishVersionDialogProps {
   policyId: string;
-  currentVersionNumber?: number; // The published version number for display
+  currentVersionNumber?: number;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (newVersionId: string) => void;
@@ -32,34 +33,30 @@ export function PublishVersionDialog({
   onClose,
   onSuccess,
 }: PublishVersionDialogProps) {
-  const router = useRouter();
+  const { orgId } = useParams<{ orgId: string }>();
+  const { hasPermission } = usePermissions();
+  const { createVersion } = usePolicyVersions({
+    policyId,
+    organizationId: orgId,
+  });
+
   const [changelog, setChangelog] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreate = async () => {
     setIsCreating(true);
-
     try {
-      const result = await createVersionAction({
-        policyId,
-        changelog: changelog.trim() || undefined,
-        entityId: policyId,
-      });
-
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to create version');
-      }
-
-      const newVersionId = result.data.data?.versionId;
-      toast.success(`Created version ${result.data.data?.version} as draft`);
+      const response = await createVersion(changelog.trim() || undefined);
+      const versionData = response.data?.data;
+      const newVersionId = versionData?.versionId;
+      toast.success(`Created version ${versionData?.version} as draft`);
       setChangelog('');
       onClose();
       if (newVersionId) {
         onSuccess?.(newVersionId);
       }
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to create version');
+    } catch {
+      toast.error('Failed to create version');
     } finally {
       setIsCreating(false);
     }
@@ -104,7 +101,7 @@ export function PublishVersionDialog({
           <Button variant="outline" onClick={onClose} disabled={isCreating}>
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={isCreating}>
+          <Button onClick={handleCreate} disabled={isCreating || !hasPermission('policy', 'update')}>
             {isCreating ? 'Creating...' : 'Create Version'}
           </Button>
         </DialogFooter>

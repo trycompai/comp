@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
@@ -8,7 +7,6 @@ import { EvidenceAutomationRun, EvidenceAutomationVersion } from '@db';
 import { Switch } from '@trycompai/design-system';
 import { Clock, Code2 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useTaskAutomation } from '../../../../automation/[automationId]/hooks/use-task-automation';
@@ -32,16 +30,10 @@ export function MetricsSection({
   isTogglingEnabled,
   editScriptUrl,
 }: MetricsSectionProps) {
-  const { orgId, taskId, automationId } = useParams<{
-    orgId: string;
-    taskId: string;
-    automationId: string;
-  }>();
-
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const { mutate: mutateAutomation } = useTaskAutomation();
+  const { updateAutomation } = useTaskAutomation();
 
   // Get latest published version runs only
   const latestVersionNumber = initialVersions.length > 0 ? initialVersions[0].version : null;
@@ -74,20 +66,10 @@ export function MetricsSection({
     }
 
     try {
-      const response = await api.patch(
-        `/v1/tasks/${taskId}/automations/${automationId}`,
-        { name: nameValue.trim() },
-        orgId,
-      );
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      await mutateAutomation();
+      await updateAutomation({ name: nameValue.trim() });
       toast.success('Name updated');
       setEditingName(false);
-    } catch (error) {
+    } catch {
       toast.error('Failed to update name');
       setNameValue(automationName);
       setEditingName(false);

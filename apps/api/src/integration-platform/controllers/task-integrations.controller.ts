@@ -8,7 +8,13 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../../auth/permission.guard';
+import { RequirePermission } from '../../auth/require-permission.decorator';
+import { OrganizationId } from '../../auth/auth-context.decorator';
 import {
   getActiveManifests,
   getManifest,
@@ -51,6 +57,9 @@ interface RunCheckForTaskDto {
 }
 
 @Controller({ path: 'integrations/tasks', version: '1' })
+@ApiTags('Integrations')
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@ApiSecurity('apikey')
 export class TaskIntegrationsController {
   private readonly logger = new Logger(TaskIntegrationsController.name);
 
@@ -66,16 +75,11 @@ export class TaskIntegrationsController {
    * Get all integration checks that can auto-complete a specific task template
    */
   @Get('template/:templateId/checks')
+  @RequirePermission('integration', 'read')
   async getChecksForTaskTemplate(
     @Param('templateId') templateId: string,
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
   ): Promise<{ checks: TaskIntegrationCheck[] }> {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const manifests = getActiveManifests();
     const checks: TaskIntegrationCheck[] = [];
@@ -157,19 +161,14 @@ export class TaskIntegrationsController {
    * Get integration checks for a specific task (by task ID)
    */
   @Get(':taskId/checks')
+  @RequirePermission('integration', 'read')
   async getChecksForTask(
     @Param('taskId') taskId: string,
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
   ): Promise<{
     checks: TaskIntegrationCheck[];
     task: { id: string; title: string; templateId: string | null };
   }> {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     // Get the task to find its template ID
     const task = await db.task.findUnique({
@@ -204,9 +203,10 @@ export class TaskIntegrationsController {
    * Run a specific check for a task and store results
    */
   @Post(':taskId/run-check')
+  @RequirePermission('integration', 'update')
   async runCheckForTask(
     @Param('taskId') taskId: string,
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
     @Body() body: RunCheckForTaskDto,
   ): Promise<{
     success: boolean;
@@ -215,12 +215,6 @@ export class TaskIntegrationsController {
     checkRunId?: string;
     taskStatus?: string | null;
   }> {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const { connectionId, checkId } = body;
 
@@ -503,17 +497,11 @@ export class TaskIntegrationsController {
    * Get check run history for a task
    */
   @Get(':taskId/runs')
+  @RequirePermission('integration', 'read')
   async getTaskCheckRuns(
     @Param('taskId') taskId: string,
-    @Query('organizationId') organizationId: string,
     @Query('limit') limit?: string,
   ) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const runs = await this.checkRunRepository.findByTask(
       taskId,

@@ -36,6 +36,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { usePermissions } from '@/hooks/use-permissions';
 
 const createFindingSchema = z.object({
   type: z.nativeEnum(FindingType),
@@ -60,6 +61,8 @@ export function CreateFindingSheet({
 }: CreateFindingSheetProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { hasPermission } = usePermissions();
+  const canCreateFinding = hasPermission('finding', 'create');
 
   const { data: templatesData } = useFindingTemplates();
   const { createFinding } = useFindingActions();
@@ -229,7 +232,7 @@ export function CreateFindingSheet({
         <div className="flex justify-end pt-4">
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !canCreateFinding}
             loading={isSubmitting}
             iconRight={<ArrowRight size={16} />}
           >

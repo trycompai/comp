@@ -6,7 +6,6 @@ import {
   Response,
 } from '@nestjs/common';
 import {
-  ApiHeader,
   ApiOperation,
   ApiResponse,
   ApiSecurity,
@@ -14,6 +13,8 @@ import {
 } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { DeviceAgentService } from './device-agent.service';
 import { DEVICE_AGENT_OPERATIONS } from './schemas/device-agent-operations';
@@ -23,14 +24,9 @@ import type { Response as ExpressResponse } from 'express';
 
 @ApiTags('Device Agent')
 @Controller({ path: 'device-agent', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@RequirePermission('app', 'read')
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class DeviceAgentController {
   constructor(private readonly deviceAgentService: DeviceAgentService) {}
 

@@ -2,10 +2,10 @@
 
 import { Button, Switch } from '@trycompai/design-system';
 import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
-import { useEffect, useMemo, useState } from 'react';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { updateVendorTrustSettingsAction } from '../actions/vendor-settings';
-import { useAction } from 'next-safe-action/hooks';
 import {
   ISO27001,
   ISO42001,
@@ -153,29 +153,38 @@ export function TrustPortalVendors({
   initialVendors,
   orgId,
 }: TrustPortalVendorsProps) {
+  const { updateVendorTrustSettings } = useTrustPortalSettings();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const [vendors, setVendors] = useState<Vendor[]>(initialVendors);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const updateVendor = useAction(updateVendorTrustSettingsAction, {
-    onSuccess: ({ data }) => {
-      if (data) {
-        setVendors((prev) =>
-          prev.map((v) => (v.id === data.id ? { ...v, ...data } as Vendor : v)),
-        );
+  const handleToggleVisibility = useCallback(
+    async (vendorId: string, currentValue: boolean) => {
+      // Optimistic update
+      setVendors((prev) =>
+        prev.map((v) =>
+          v.id === vendorId ? { ...v, showOnTrustPortal: !currentValue } : v,
+        ),
+      );
+
+      try {
+        await updateVendorTrustSettings(vendorId, {
+          showOnTrustPortal: !currentValue,
+        });
         toast.success('Vendor settings updated');
+      } catch {
+        // Revert on failure
+        setVendors((prev) =>
+          prev.map((v) =>
+            v.id === vendorId ? { ...v, showOnTrustPortal: currentValue } : v,
+          ),
+        );
+        toast.error('Failed to update vendor settings');
       }
     },
-    onError: () => {
-      toast.error('Failed to update vendor settings');
-    },
-  });
-
-  const handleToggleVisibility = (vendorId: string, currentValue: boolean) => {
-    updateVendor.execute({
-      vendorId,
-      showOnTrustPortal: !currentValue,
-    });
-  };
+    [updateVendorTrustSettings],
+  );
 
   // Pagination logic
   const totalPages = Math.max(1, Math.ceil(vendors.length / ITEMS_PER_PAGE));
@@ -244,6 +253,7 @@ export function TrustPortalVendors({
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={vendor.showOnTrustPortal}
+                    disabled={!canUpdate}
                     onCheckedChange={() =>
                       handleToggleVisibility(vendor.id, vendor.showOnTrustPortal)
                     }

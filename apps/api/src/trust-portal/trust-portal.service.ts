@@ -524,6 +524,481 @@ export class TrustPortalService {
     return { success: true };
   }
 
+  async updateFaqs(
+    organizationId: string,
+    faqs: Array<{ question: string; answer: string }>,
+  ) {
+    // Normalize order values
+    const normalizedFaqs =
+      faqs.length > 0
+        ? faqs.map((faq, index) => ({
+            question: faq.question,
+            answer: faq.answer,
+            order: index,
+          }))
+        : null;
+
+    await db.organization.update({
+      where: { id: organizationId },
+      data: { trustPortalFaqs: normalizedFaqs as any },
+    });
+
+    return { success: true };
+  }
+
+  async updateAllowedDomains(organizationId: string, domains: string[]) {
+    const normalizedDomains = [
+      ...new Set(domains.map((d) => d.toLowerCase().trim())),
+    ];
+
+    await db.trust.upsert({
+      where: { organizationId },
+      update: { allowedDomains: normalizedDomains },
+      create: { organizationId, allowedDomains: normalizedDomains },
+    });
+
+    return { success: true };
+  }
+
+  async updateFrameworks(
+    organizationId: string,
+    frameworks: Record<string, boolean | string | undefined>,
+  ) {
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+    });
+
+    if (!trust) {
+      throw new NotFoundException('Trust portal not found for organization');
+    }
+
+    const data: Record<string, any> = {};
+
+    // Map framework fields
+    const boolFields = [
+      'soc2type1',
+      'soc2type2',
+      'iso27001',
+      'iso42001',
+      'gdpr',
+      'hipaa',
+      'pci_dss',
+      'nen7510',
+      'iso9001',
+    ] as const;
+    const statusFields = [
+      'soc2type1_status',
+      'soc2type2_status',
+      'iso27001_status',
+      'iso42001_status',
+      'gdpr_status',
+      'hipaa_status',
+      'pci_dss_status',
+      'nen7510_status',
+      'iso9001_status',
+    ] as const;
+
+    for (const field of boolFields) {
+      if (frameworks[field] !== undefined) {
+        data[field] = frameworks[field];
+      }
+    }
+    for (const field of statusFields) {
+      if (frameworks[field] !== undefined) {
+        data[field] = frameworks[field];
+      }
+    }
+
+    await db.trust.update({
+      where: { organizationId },
+      data,
+    });
+
+    return { success: true };
+  }
+
+  async togglePortal(
+    organizationId: string,
+    enabled: boolean,
+    contactEmail?: string,
+    primaryColor?: string,
+  ) {
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+
+    if (!org) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    // Ensure friendlyUrl exists when enabling the portal
+    if (enabled) {
+      await this.ensureFriendlyUrl(organizationId, org.name);
+    }
+
+    await db.trust.upsert({
+      where: { organizationId },
+      update: {
+        status: enabled ? 'published' : 'draft',
+        contactEmail: contactEmail === '' ? null : (contactEmail ?? undefined),
+      },
+      create: {
+        organizationId,
+        status: enabled ? 'published' : 'draft',
+        contactEmail: contactEmail === '' ? null : (contactEmail ?? undefined),
+      },
+    });
+
+    if (primaryColor !== undefined) {
+      await db.organization.update({
+        where: { id: organizationId },
+        data: { primaryColor: primaryColor === '' ? null : primaryColor },
+      });
+    }
+
+    return { success: true };
+  }
+
+  private slugifyOrganizationName(name: string): string {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/&/g, 'and')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 60);
+  }
+
+  private async ensureFriendlyUrl(
+    organizationId: string,
+    organizationName: string,
+  ): Promise<string> {
+    const current = await db.trust.findUnique({
+      where: { organizationId },
+      select: { friendlyUrl: true },
+    });
+
+    if (current?.friendlyUrl) return current.friendlyUrl;
+
+    const baseCandidate =
+      this.slugifyOrganizationName(organizationName) ||
+      `org-${organizationId.slice(-8)}`;
+
+    for (let i = 0; i < 50; i += 1) {
+      const candidate = i === 0 ? baseCandidate : `${baseCandidate}-${i + 1}`;
+
+      const taken = await db.trust.findUnique({
+        where: { friendlyUrl: candidate },
+        select: { organizationId: true },
+      });
+
+      if (taken && taken.organizationId !== organizationId) continue;
+
+      try {
+        await db.trust.upsert({
+          where: { organizationId },
+          update: { friendlyUrl: candidate },
+          create: { organizationId, friendlyUrl: candidate },
+        });
+        return candidate;
+      } catch (error: unknown) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    return organizationId;
+  }
+
+  async addCustomDomain(organizationId: string, domain: string) {
+    if (!process.env.TRUST_PORTAL_PROJECT_ID || !process.env.VERCEL_TEAM_ID) {
+      throw new InternalServerErrorException(
+        'Vercel project configuration is missing',
+      );
+    }
+
+    const projectId = process.env.TRUST_PORTAL_PROJECT_ID;
+    const teamId = process.env.VERCEL_TEAM_ID;
+
+    try {
+      const currentTrust = await db.trust.findUnique({
+        where: { organizationId },
+      });
+
+      const domainVerified =
+        currentTrust?.domain === domain
+          ? currentTrust.domainVerified
+          : false;
+
+      // Check if domain already exists on the Vercel project
+      const existingDomainsResp = await this.vercelApi.get(
+        `/v9/projects/${projectId}/domains`,
+        { params: { teamId } },
+      );
+
+      const existingDomains: Array<{ name: string }> =
+        existingDomainsResp.data?.domains ?? [];
+
+      if (existingDomains.some((d) => d.name === domain)) {
+        const domainOwner = await db.trust.findUnique({
+          where: { organizationId, domain },
+        });
+
+        if (!domainOwner || domainOwner.organizationId === organizationId) {
+          await this.vercelApi.delete(
+            `/v9/projects/${projectId}/domains/${domain}`,
+            { params: { teamId } },
+          );
+        } else {
+          return {
+            success: false,
+            error: 'Domain is already in use by another organization',
+          };
+        }
+      }
+
+      this.logger.log(`Adding domain to Vercel project: ${domain}`);
+
+      const addResp = await this.vercelApi.post(
+        `/v9/projects/${projectId}/domains`,
+        { name: domain },
+        { params: { teamId } },
+      );
+
+      const addData = addResp.data;
+      const isVercelDomain = addData.verified === false;
+      const vercelVerification =
+        addData.verification?.[0]?.value || null;
+
+      await db.trust.upsert({
+        where: { organizationId },
+        update: {
+          domain,
+          domainVerified,
+          isVercelDomain,
+          vercelVerification,
+        },
+        create: {
+          organizationId,
+          domain,
+          domainVerified: false,
+          isVercelDomain,
+          vercelVerification,
+        },
+      });
+
+      return {
+        success: true,
+        needsVerification: !domainVerified,
+      };
+    } catch (error) {
+      // Handle Vercel 409 conflict — domain already exists on the project
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
+        const errorData = error.response.data?.error;
+
+        if (
+          errorData?.code === 'domain_already_in_use' &&
+          errorData?.projectId === projectId
+        ) {
+          const existingOwner = await db.trust.findFirst({
+            where: {
+              domain,
+              organizationId: { not: organizationId },
+            },
+            select: { organizationId: true },
+          });
+
+          if (existingOwner) {
+            return {
+              success: false,
+              error: 'Domain is already in use by another organization',
+            };
+          }
+
+          const domainInfo = errorData.domain;
+          const vercelVerification =
+            domainInfo?.verification?.[0]?.value || null;
+          const isVercelDomain = domainInfo?.verified !== true;
+
+          await db.trust.upsert({
+            where: { organizationId },
+            update: {
+              domain,
+              domainVerified: false,
+              isVercelDomain,
+              vercelVerification,
+            },
+            create: {
+              organizationId,
+              domain,
+              domainVerified: false,
+              isVercelDomain,
+              vercelVerification,
+            },
+          });
+
+          return {
+            success: true,
+            needsVerification: true,
+          };
+        }
+      }
+
+      // Extract meaningful error message
+      let errorMessage = 'Failed to update custom domain';
+      if (axios.isAxiosError(error)) {
+        errorMessage =
+          error.response?.data?.error?.message ||
+          error.message ||
+          errorMessage;
+      } else if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      }
+
+      this.logger.error(`Custom domain error for ${domain}:`, error);
+      throw new BadRequestException(errorMessage);
+    }
+  }
+
+  /**
+   * DNS CNAME patterns for Vercel verification.
+   */
+  private static readonly VERCEL_DNS_CNAME_PATTERN =
+    /\.vercel-dns(-\d+)?\.com\.?$/i;
+  private static readonly VERCEL_DNS_FALLBACK_PATTERN =
+    /vercel-dns[^.]*\.com\.?$/i;
+
+  async checkDnsRecords(organizationId: string, domain: string) {
+    const rootDomain = domain.split('.').slice(-2).join('.');
+
+    const [cnameResp, txtResp, vercelTxtResp] = await Promise.all([
+      axios
+        .get(`https://networkcalc.com/api/dns/lookup/${domain}`)
+        .catch(() => null),
+      axios
+        .get(
+          `https://networkcalc.com/api/dns/lookup/${rootDomain}?type=TXT`,
+        )
+        .catch(() => null),
+      axios
+        .get(
+          `https://networkcalc.com/api/dns/lookup/_vercel.${rootDomain}?type=TXT`,
+        )
+        .catch(() => null),
+    ]);
+
+    if (
+      !cnameResp ||
+      cnameResp.status !== 200 ||
+      cnameResp.data?.status !== 'OK' ||
+      !txtResp ||
+      txtResp.status !== 200 ||
+      txtResp.data?.status !== 'OK'
+    ) {
+      throw new BadRequestException(
+        'DNS record verification failed, check the records are valid or try again later.',
+      );
+    }
+
+    const cnameRecords = cnameResp.data?.records?.CNAME;
+    const txtRecords = txtResp.data?.records?.TXT;
+    const vercelTxtRecords = vercelTxtResp?.data?.records?.TXT;
+
+    const trustRecord = await db.trust.findUnique({
+      where: { organizationId, domain },
+      select: { isVercelDomain: true, vercelVerification: true },
+    });
+
+    const expectedTxtValue = `compai-domain-verification=${organizationId}`;
+    const expectedVercelTxtValue = trustRecord?.vercelVerification;
+
+    // Check CNAME
+    let isCnameVerified = false;
+    if (cnameRecords) {
+      isCnameVerified = cnameRecords.some(
+        (r: { address: string }) =>
+          TrustPortalService.VERCEL_DNS_CNAME_PATTERN.test(r.address),
+      );
+      if (!isCnameVerified) {
+        const fallback = cnameRecords.find(
+          (r: { address: string }) =>
+            TrustPortalService.VERCEL_DNS_FALLBACK_PATTERN.test(r.address),
+        );
+        if (fallback) {
+          this.logger.warn(
+            `CNAME matched fallback pattern: ${fallback.address}`,
+          );
+          isCnameVerified = true;
+        }
+      }
+    }
+
+    // Check TXT
+    let isTxtVerified = false;
+    if (txtRecords) {
+      isTxtVerified = txtRecords.some((record: any) => {
+        if (typeof record === 'string') return record === expectedTxtValue;
+        if (record?.value) return record.value === expectedTxtValue;
+        if (Array.isArray(record?.txt))
+          return record.txt.some((t: string) => t === expectedTxtValue);
+        return false;
+      });
+    }
+
+    // Check Vercel TXT
+    let isVercelTxtVerified = false;
+    if (vercelTxtRecords) {
+      isVercelTxtVerified = vercelTxtRecords.some((record: any) => {
+        if (typeof record === 'string')
+          return record === expectedVercelTxtValue;
+        if (record?.value) return record.value === expectedVercelTxtValue;
+        if (Array.isArray(record?.txt))
+          return record.txt.some(
+            (t: string) => t === expectedVercelTxtValue,
+          );
+        return false;
+      });
+    }
+
+    const isVerified =
+      isCnameVerified && isTxtVerified && isVercelTxtVerified;
+
+    if (!isVerified) {
+      return {
+        success: false,
+        isCnameVerified,
+        isTxtVerified,
+        isVercelTxtVerified,
+        error:
+          'Error verifying DNS records. Please ensure both CNAME and TXT records are correctly configured, or wait a few minutes and try again.',
+      };
+    }
+
+    await db.trust.upsert({
+      where: { organizationId, domain },
+      update: { domainVerified: true, status: 'published' },
+      create: {
+        organizationId,
+        domain,
+        status: 'published',
+      },
+    });
+
+    return {
+      success: true,
+      isCnameVerified,
+      isTxtVerified,
+      isVercelTxtVerified,
+    };
+  }
+
   private async assertFrameworkIsCompliant(
     organizationId: string,
     framework: TrustFramework,
@@ -781,6 +1256,345 @@ export class TrustPortalService {
       where: { organizationId, isActive: true },
       orderBy: { order: 'asc' },
     });
+  }
+
+  /**
+   * Get complete trust portal settings for the admin page.
+   * Ensures trust record exists, returns all config fields, favicon URL, org data.
+   */
+  async getSettings(organizationId: string) {
+    // Ensure trust record exists with a friendlyUrl
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true, primaryColor: true, trustPortalFaqs: true },
+    });
+
+    if (!org) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    await this.ensureFriendlyUrl(organizationId, org.name);
+
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+    });
+
+    if (!trust) {
+      throw new NotFoundException('Trust portal not found');
+    }
+
+    // Get favicon signed URL if available
+    let faviconUrl: string | null = null;
+    if (trust.favicon && s3Client && APP_AWS_ORG_ASSETS_BUCKET) {
+      try {
+        const command = new GetObjectCommand({
+          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+          Key: trust.favicon,
+        });
+        faviconUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+      } catch {
+        // If favicon fetch fails, continue without it
+      }
+    }
+
+    // Fetch default overview content from Context Hub if overview is empty
+    let defaultOverviewContent: string | null = null;
+    if (!trust.overviewContent) {
+      const missionContext = await db.context.findFirst({
+        where: { organizationId, question: 'Mission & Vision' },
+        select: { answer: true },
+      });
+      defaultOverviewContent = missionContext?.answer ?? null;
+    }
+
+    return {
+      enabled: trust.status === 'published',
+      friendlyUrl: trust.friendlyUrl,
+      domain: trust.domain ?? '',
+      domainVerified: trust.domainVerified ?? false,
+      isVercelDomain: trust.isVercelDomain ?? false,
+      vercelVerification: trust.vercelVerification ?? null,
+      contactEmail: trust.contactEmail ?? null,
+      allowedDomains: trust.allowedDomains ?? [],
+      // Framework flags
+      soc2type1: trust.soc2type1 ?? false,
+      soc2type2: trust.soc2type2 || trust.soc2 || false,
+      iso27001: trust.iso27001 ?? false,
+      iso42001: trust.iso42001 ?? false,
+      gdpr: trust.gdpr ?? false,
+      hipaa: trust.hipaa ?? false,
+      pcidss: trust.pci_dss ?? false,
+      nen7510: trust.nen7510 ?? false,
+      iso9001: trust.iso9001 ?? false,
+      // Framework statuses
+      soc2type1Status: trust.soc2type1_status ?? 'started',
+      soc2type2Status:
+        !trust.soc2type2 && trust.soc2
+          ? trust.soc2_status ?? 'started'
+          : trust.soc2type2_status ?? 'started',
+      iso27001Status: trust.iso27001_status ?? 'started',
+      iso42001Status: trust.iso42001_status ?? 'started',
+      gdprStatus: trust.gdpr_status ?? 'started',
+      hipaaStatus: trust.hipaa_status ?? 'started',
+      pcidssStatus: trust.pci_dss_status ?? 'started',
+      nen7510Status: trust.nen7510_status ?? 'started',
+      iso9001Status: trust.iso9001_status ?? 'started',
+      // Overview
+      overviewTitle: trust.overviewTitle ?? null,
+      overviewContent: trust.overviewContent ?? defaultOverviewContent,
+      showOverview: trust.showOverview ?? false,
+      // Favicon
+      faviconUrl,
+      // Organization data
+      primaryColor: org.primaryColor ?? null,
+      faqs: org.trustPortalFaqs ?? null,
+    };
+  }
+
+  /**
+   * Upload a favicon for the trust portal.
+   */
+  async uploadFavicon(
+    organizationId: string,
+    dto: { fileName: string; fileType: string; fileData: string },
+  ) {
+    this.ensureS3Availability();
+
+    const { fileName, fileType, fileData } = dto;
+
+    // Validate file type
+    const allowedTypes = [
+      'image/x-icon',
+      'image/vnd.microsoft.icon',
+      'image/png',
+      'image/svg+xml',
+    ];
+    const allowedExtensions = ['.ico', '.png', '.svg'];
+    const fileExtension = fileName
+      .toLowerCase()
+      .substring(fileName.lastIndexOf('.'));
+
+    if (
+      !allowedTypes.includes(fileType) &&
+      !allowedExtensions.includes(fileExtension)
+    ) {
+      throw new BadRequestException(
+        'Favicon must be .ico, .png, or .svg format',
+      );
+    }
+
+    // Convert base64 to buffer
+    const fileBuffer = Buffer.from(fileData, 'base64');
+
+    // Validate file size (100KB limit)
+    if (fileBuffer.length > 100 * 1024) {
+      throw new BadRequestException('Favicon must be less than 100KB');
+    }
+
+    // Generate S3 key
+    const timestamp = Date.now();
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const key = `${organizationId}/trust/favicon/${timestamp}-${sanitizedFileName}`;
+
+    // Upload to S3
+    const putCommand = new PutObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: key,
+      Body: fileBuffer,
+      ContentType: fileType,
+      CacheControl: 'public, max-age=31536000, immutable',
+    });
+    await s3Client!.send(putCommand);
+
+    // Update trust record
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+    });
+
+    if (!trust) {
+      throw new NotFoundException('Trust portal not found');
+    }
+
+    await db.trust.update({
+      where: { organizationId },
+      data: { favicon: key },
+    });
+
+    // Generate signed URL for immediate display
+    const getCommand = new GetObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: key,
+    });
+    const signedUrl = await getSignedUrl(s3Client!, getCommand, {
+      expiresIn: 3600,
+    });
+
+    return { success: true, faviconUrl: signedUrl };
+  }
+
+  /**
+   * Remove the trust portal favicon.
+   */
+  async removeFavicon(organizationId: string) {
+    await db.trust.update({
+      where: { organizationId },
+      data: { favicon: null },
+    });
+
+    return { success: true };
+  }
+
+  /**
+   * Get all vendors with sync from GlobalVendors risk assessment data.
+   * Extracts compliance badges and generates logo URLs.
+   */
+  async getAllVendorsWithSync(organizationId: string) {
+    const vendors = await db.vendor.findMany({
+      where: { organizationId },
+      orderBy: [{ trustPortalOrder: 'asc' }, { name: 'asc' }],
+    });
+
+    // Sync compliance badges and logos in parallel
+    const syncedVendors = await Promise.all(
+      vendors.map(async (vendor) => {
+        const updates: Prisma.VendorUpdateInput = {};
+        let hasUpdates = false;
+
+        // Look up GlobalVendors record by website
+        if (vendor.website) {
+          const globalVendor = await db.globalVendors.findUnique({
+            where: { website: vendor.website },
+            select: { riskAssessmentData: true },
+          });
+
+          if (globalVendor?.riskAssessmentData) {
+            const extractedBadges = this.extractComplianceBadges(
+              globalVendor.riskAssessmentData,
+            );
+            if (extractedBadges && extractedBadges.length > 0) {
+              const currentBadges = vendor.complianceBadges as
+                | Array<{ type: string }>
+                | null;
+              const currentTypes = new Set(
+                currentBadges?.map((b) => b.type) ?? [],
+              );
+              const extractedTypes = new Set(
+                extractedBadges.map((b) => b.type),
+              );
+
+              const isDifferent =
+                currentTypes.size !== extractedTypes.size ||
+                [...extractedTypes].some((t) => !currentTypes.has(t));
+
+              if (isDifferent) {
+                updates.complianceBadges =
+                  extractedBadges as unknown as Prisma.InputJsonValue;
+                hasUpdates = true;
+              }
+            }
+          }
+        }
+
+        // Generate logo URL if missing
+        if (!vendor.logoUrl && vendor.website) {
+          const logoUrl = this.generateLogoUrl(vendor.website);
+          if (logoUrl) {
+            updates.logoUrl = logoUrl;
+            hasUpdates = true;
+          }
+        }
+
+        if (hasUpdates) {
+          const updated = await db.vendor.update({
+            where: { id: vendor.id },
+            data: updates,
+          });
+          return updated;
+        }
+
+        return vendor;
+      }),
+    );
+
+    return syncedVendors.map((v) => ({
+      id: v.id,
+      name: v.name,
+      description: v.description,
+      website: v.website,
+      showOnTrustPortal: v.showOnTrustPortal,
+      logoUrl: v.logoUrl,
+      complianceBadges: v.complianceBadges,
+    }));
+  }
+
+  private extractComplianceBadges(
+    data: Prisma.JsonValue,
+  ): Array<{ type: string; verified: boolean }> | null {
+    try {
+      const parsed = data as {
+        certifications?: Array<{ type: string; status: string }>;
+      };
+
+      if (!parsed?.certifications || !Array.isArray(parsed.certifications)) {
+        return null;
+      }
+
+      const badges: Array<{ type: string; verified: boolean }> = [];
+      const seenTypes = new Set<string>();
+
+      for (const cert of parsed.certifications) {
+        if (cert.status !== 'verified') continue;
+
+        const badgeType = this.mapCertificationToBadgeType(cert.type);
+        if (badgeType && !seenTypes.has(badgeType)) {
+          seenTypes.add(badgeType);
+          badges.push({ type: badgeType, verified: true });
+        }
+      }
+
+      return badges.length > 0 ? badges : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private mapCertificationToBadgeType(certType: string): string | null {
+    const normalized = certType.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    if (normalized.includes('soc2') || normalized.includes('soc 2'))
+      return 'soc2';
+    if (normalized.includes('iso27001') || normalized.includes('iso 27001'))
+      return 'iso27001';
+    if (normalized.includes('iso42001') || normalized.includes('iso 42001'))
+      return 'iso42001';
+    if (normalized.includes('gdpr')) return 'gdpr';
+    if (normalized.includes('hipaa')) return 'hipaa';
+    if (
+      normalized.includes('pcidss') ||
+      normalized.includes('pci dss') ||
+      normalized.includes('pci_dss')
+    )
+      return 'pci_dss';
+    if (normalized.includes('nen7510') || normalized.includes('nen 7510'))
+      return 'nen7510';
+    if (normalized.includes('iso9001') || normalized.includes('iso 9001'))
+      return 'iso9001';
+
+    return null;
+  }
+
+  private generateLogoUrl(website: string | null): string | null {
+    if (!website) return null;
+    try {
+      const urlWithProtocol = website.startsWith('http')
+        ? website
+        : `https://${website}`;
+      const parsed = new URL(urlWithProtocol);
+      const domain = parsed.hostname.replace(/^www\./, '');
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+    } catch {
+      return null;
+    }
   }
 
   async getPublicVendors(organizationId: string) {

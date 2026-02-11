@@ -278,7 +278,7 @@ export function TaskList({
     });
 
     // Sort recent runs by date and take most recent
-    recentRuns.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    recentRuns.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     recentRuns = recentRuns.slice(0, 10);
 
     const automationHealth = {

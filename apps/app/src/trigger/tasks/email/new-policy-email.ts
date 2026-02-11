@@ -28,7 +28,7 @@ export const sendNewPolicyEmail = task({
     });
 
     try {
-      const unsubscribed = await isUserUnsubscribed(db, payload.email, 'policyNotifications');
+      const unsubscribed = await isUserUnsubscribed(db, payload.email, 'policyNotifications', payload.organizationId);
       if (unsubscribed) {
         logger.info('User is unsubscribed from email notifications, skipping', {
           email: payload.email,

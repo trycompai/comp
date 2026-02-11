@@ -1,6 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { db } from '@trycompai/db';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
+
+/** Result from validating an API key */
+export interface ApiKeyValidationResult {
+  organizationId: string;
+  scopes: string[];
+}
 
 @Injectable()
 export class ApiKeyService {
@@ -23,6 +34,100 @@ export class ApiKeyService {
     return createHash('sha256').update(apiKey).digest('hex');
   }
 
+  private generateApiKey(): string {
+    const apiKey = randomBytes(32).toString('hex');
+    return `comp_${apiKey}`;
+  }
+
+  private generateSalt(): string {
+    return randomBytes(16).toString('hex');
+  }
+
+  async create(
+    organizationId: string,
+    name: string,
+    expiresAt?: string,
+    scopes?: string[],
+  ) {
+    // Validate scopes if provided
+    const validatedScopes = scopes?.length ? scopes : [];
+    if (validatedScopes.length > 0) {
+      const availableScopes = this.getAvailableScopes();
+      const invalid = validatedScopes.filter((s) => !availableScopes.includes(s));
+      if (invalid.length > 0) {
+        throw new BadRequestException(
+          `Invalid scopes: ${invalid.join(', ')}`,
+        );
+      }
+    }
+
+    const apiKey = this.generateApiKey();
+    const salt = this.generateSalt();
+    const hashedKey = this.hashApiKey(apiKey, salt);
+
+    let expirationDate: Date | null = null;
+    if (expiresAt && expiresAt !== 'never') {
+      const now = new Date();
+      switch (expiresAt) {
+        case '30days':
+          expirationDate = new Date(now.setDate(now.getDate() + 30));
+          break;
+        case '90days':
+          expirationDate = new Date(now.setDate(now.getDate() + 90));
+          break;
+        case '1year':
+          expirationDate = new Date(
+            now.setFullYear(now.getFullYear() + 1),
+          );
+          break;
+      }
+    }
+
+    const record = await db.apiKey.create({
+      data: {
+        name,
+        key: hashedKey,
+        salt,
+        expiresAt: expirationDate,
+        organizationId,
+        scopes: validatedScopes,
+      },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        expiresAt: true,
+      },
+    });
+
+    return {
+      ...record,
+      key: apiKey,
+      createdAt: record.createdAt.toISOString(),
+      expiresAt: record.expiresAt ? record.expiresAt.toISOString() : null,
+    };
+  }
+
+  async revoke(apiKeyId: string, organizationId: string) {
+    const result = await db.apiKey.updateMany({
+      where: {
+        id: apiKeyId,
+        organizationId,
+      },
+      data: {
+        isActive: false,
+      },
+    });
+
+    if (result.count === 0) {
+      throw new NotFoundException(
+        'API key not found or not authorized to revoke',
+      );
+    }
+
+    return { success: true };
+  }
+
   /**
    * Extract API key from request headers
    * @param apiKeyHeader X-API-Key header value
@@ -38,11 +143,11 @@ export class ApiKeyService {
   }
 
   /**
-   * Validate an API key and return the organization ID
+   * Validate an API key and return the organization ID + scopes
    * @param apiKey The API key to validate
-   * @returns The organization ID if the API key is valid, null otherwise
+   * @returns The validation result if valid, null otherwise
    */
-  async validateApiKey(apiKey: string): Promise<string | null> {
+  async validateApiKey(apiKey: string): Promise<ApiKeyValidationResult | null> {
     if (!apiKey) {
       return null;
     }
@@ -67,6 +172,7 @@ export class ApiKeyService {
           salt: true,
           organizationId: true,
           expiresAt: true,
+          scopes: true,
         },
       });
 
@@ -103,11 +209,47 @@ export class ApiKeyService {
         `Valid API key used for organization: ${matchingRecord.organizationId}`,
       );
 
-      // Return the organization ID
-      return matchingRecord.organizationId;
+      return {
+        organizationId: matchingRecord.organizationId,
+        scopes: matchingRecord.scopes,
+      };
     } catch (error) {
       this.logger.error('Error validating API key:', error);
       return null;
     }
+  }
+
+  /**
+   * Returns all valid `resource:action` scope pairs derived from the permission statement.
+   */
+  getAvailableScopes(): string[] {
+    // Import is dynamic-like but we use a hard-coded map matching the permission statement.
+    // This is kept in sync with packages/auth/src/permissions.ts
+    const resources: Record<string, readonly string[]> = {
+      organization: ['read', 'update', 'delete'],
+      member: ['create', 'read', 'update', 'delete'],
+      invitation: ['create', 'read', 'cancel'],
+      team: ['create', 'read', 'update', 'delete'],
+      control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
+      evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],
+      policy: ['create', 'read', 'update', 'delete', 'publish', 'approve'],
+      risk: ['create', 'read', 'update', 'delete', 'assess', 'export'],
+      vendor: ['create', 'read', 'update', 'delete', 'assess'],
+      task: ['create', 'read', 'update', 'delete', 'assign', 'complete'],
+      framework: ['create', 'read', 'update', 'delete'],
+      audit: ['create', 'read', 'update', 'export'],
+      finding: ['create', 'read', 'update', 'delete'],
+      questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
+      integration: ['create', 'read', 'update', 'delete'],
+      apiKey: ['create', 'read', 'delete'],
+    };
+
+    const scopes: string[] = [];
+    for (const [resource, actions] of Object.entries(resources)) {
+      for (const action of actions) {
+        scopes.push(`${resource}:${action}`);
+      }
+    }
+    return scopes;
   }
 }

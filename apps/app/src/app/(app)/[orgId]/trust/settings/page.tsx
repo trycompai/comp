@@ -1,9 +1,16 @@
-import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { TrustSettingsClient } from './components/TrustSettingsClient';
+
+interface TrustPortalSettings {
+  contactEmail: string | null;
+  domain: string;
+  domainVerified: boolean;
+  isVercelDomain: boolean;
+  vercelVerification: string | null;
+  allowedDomains: string[];
+}
 
 export default async function TrustSettingsPage({
   params,
@@ -12,7 +19,11 @@ export default async function TrustSettingsPage({
 }) {
   const { orgId } = await params;
 
-  const trustPortal = await getTrustPortal(orgId);
+  const settingsRes = await serverApi.get<TrustPortalSettings>(
+    '/v1/trust-portal/settings',
+  );
+
+  const trustPortal = settingsRes.data;
 
   return (
     <PageLayout header={<PageHeader title="Trust Settings" />}>
@@ -28,32 +39,6 @@ export default async function TrustSettingsPage({
     </PageLayout>
   );
 }
-
-const getTrustPortal = async (orgId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.session.activeOrganizationId) {
-    return null;
-  }
-
-  const trustPortal = await db.trust.findUnique({
-    where: {
-      organizationId: orgId,
-    },
-  });
-
-  return {
-    contactEmail: trustPortal?.contactEmail ?? null,
-    domain: trustPortal?.domain ?? '',
-    domainVerified: trustPortal?.domainVerified ?? false,
-    isVercelDomain: trustPortal?.isVercelDomain ?? false,
-    vercelVerification: trustPortal?.vercelVerification ?? null,
-    allowedDomains: trustPortal?.allowedDomains ?? [],
-  };
-};
-
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

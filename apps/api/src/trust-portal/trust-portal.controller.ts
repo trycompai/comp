@@ -2,17 +2,18 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiProperty,
   ApiQuery,
@@ -22,7 +23,9 @@ import {
 } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
-import { AuthContext } from '../auth/auth-context.decorator';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import {
   DomainStatusResponseDto,
@@ -68,19 +71,59 @@ class ListComplianceResourcesDto {
 
 @ApiTags('Trust Portal')
 @Controller({ path: 'trust-portal', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class TrustPortalController {
   constructor(private readonly trustPortalService: TrustPortalService) {}
 
+  @Get('settings')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'read')
+  @ApiOperation({
+    summary: 'Get complete trust portal settings for admin page',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Trust portal settings retrieved successfully',
+  })
+  async getSettings(@OrganizationId() organizationId: string) {
+    return this.trustPortalService.getSettings(organizationId);
+  }
+
+  @Post('favicon')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary: 'Upload a favicon for the trust portal',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Favicon uploaded successfully',
+  })
+  async uploadFavicon(
+    @OrganizationId() organizationId: string,
+    @Body() body: { fileName: string; fileType: string; fileData: string },
+  ) {
+    return this.trustPortalService.uploadFavicon(organizationId, body);
+  }
+
+  @Delete('favicon')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary: 'Remove the trust portal favicon',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Favicon removed successfully',
+  })
+  async removeFavicon(@OrganizationId() organizationId: string) {
+    return this.trustPortalService.removeFavicon(organizationId);
+  }
+
   @Get('domain/status')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'Get domain verification status',
     description:
@@ -113,6 +156,7 @@ export class TrustPortalController {
 
   @Post('compliance-resources/upload')
   @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Upload or replace a compliance certificate (PDF only)',
     description:
@@ -139,6 +183,7 @@ export class TrustPortalController {
 
   @Post('compliance-resources/signed-url')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'Generate a temporary signed URL for a compliance certificate',
   })
@@ -158,6 +203,7 @@ export class TrustPortalController {
 
   @Post('compliance-resources/list')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'List uploaded compliance certificates for the organization',
   })
@@ -177,6 +223,7 @@ export class TrustPortalController {
 
   @Post('documents/upload')
   @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Upload an additional trust portal document',
     description:
@@ -198,6 +245,7 @@ export class TrustPortalController {
 
   @Post('documents/list')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'List additional trust portal documents for the organization',
   })
@@ -217,6 +265,7 @@ export class TrustPortalController {
 
   @Post('documents/:documentId/download')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'Generate a temporary signed URL for a trust portal document',
   })
@@ -237,6 +286,7 @@ export class TrustPortalController {
 
   @Post('documents/:documentId/delete')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Delete (deactivate) a trust portal document',
   })
@@ -260,8 +310,94 @@ export class TrustPortalController {
     return this.trustPortalService.deleteTrustDocument(documentId, dto);
   }
 
+  @Put('settings/toggle')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({ summary: 'Enable or disable the trust portal' })
+  async togglePortal(
+    @OrganizationId() organizationId: string,
+    @Body()
+    body: {
+      enabled: boolean;
+      contactEmail?: string;
+      primaryColor?: string;
+    },
+  ) {
+    return this.trustPortalService.togglePortal(
+      organizationId,
+      body.enabled,
+      body.contactEmail,
+      body.primaryColor,
+    );
+  }
+
+  @Post('settings/custom-domain')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({ summary: 'Add or update a custom domain for the trust portal' })
+  async addCustomDomain(
+    @OrganizationId() organizationId: string,
+    @Body() body: { domain: string },
+  ) {
+    if (!body.domain) {
+      throw new BadRequestException('Domain is required');
+    }
+    return this.trustPortalService.addCustomDomain(organizationId, body.domain);
+  }
+
+  @Post('settings/check-dns')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({ summary: 'Check DNS records for a custom domain' })
+  async checkDnsRecords(
+    @OrganizationId() organizationId: string,
+    @Body() body: { domain: string },
+  ) {
+    if (!body.domain) {
+      throw new BadRequestException('Domain is required');
+    }
+    return this.trustPortalService.checkDnsRecords(
+      organizationId,
+      body.domain,
+    );
+  }
+
+  @Put('settings/faqs')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({ summary: 'Update trust portal FAQs' })
+  async updateFaqs(
+    @OrganizationId() organizationId: string,
+    @Body() body: { faqs: Array<{ question: string; answer: string }> },
+  ) {
+    return this.trustPortalService.updateFaqs(
+      organizationId,
+      body.faqs ?? [],
+    );
+  }
+
+  @Put('settings/allowed-domains')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({ summary: 'Update allowed domains for the trust portal' })
+  async updateAllowedDomains(
+    @OrganizationId() organizationId: string,
+    @Body() body: { domains: string[] },
+  ) {
+    return this.trustPortalService.updateAllowedDomains(
+      organizationId,
+      body.domains ?? [],
+    );
+  }
+
+  @Put('settings/frameworks')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({ summary: 'Update trust portal framework settings' })
+  async updateFrameworks(
+    @OrganizationId() organizationId: string,
+    @Body() body: Record<string, boolean | string | undefined>,
+  ) {
+    return this.trustPortalService.updateFrameworks(organizationId, body);
+  }
+
   @Post('overview')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Update trust portal overview section',
   })
@@ -280,6 +416,7 @@ export class TrustPortalController {
 
   @Get('overview')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'Get trust portal overview',
   })
@@ -294,6 +431,7 @@ export class TrustPortalController {
 
   @Post('custom-links')
   @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Create a custom link for trust portal',
   })
@@ -312,6 +450,7 @@ export class TrustPortalController {
 
   @Post('custom-links/:linkId')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Update a custom link',
   })
@@ -330,6 +469,7 @@ export class TrustPortalController {
 
   @Post('custom-links/:linkId/delete')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Delete a custom link',
   })
@@ -346,6 +486,7 @@ export class TrustPortalController {
 
   @Post('custom-links/reorder')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Reorder custom links',
   })
@@ -367,6 +508,7 @@ export class TrustPortalController {
 
   @Get('custom-links')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'List custom links for trust portal',
   })
@@ -381,6 +523,7 @@ export class TrustPortalController {
 
   @Post('vendors/:vendorId/trust-settings')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Update vendor trust portal settings',
   })
@@ -399,15 +542,18 @@ export class TrustPortalController {
 
   @Get('vendors')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'List vendors configured for trust portal',
   })
-  @ApiQuery({ name: 'organizationId', required: true })
-  async listPublicVendors(
-    @Query('organizationId') organizationId: string,
-    @AuthContext() authContext: AuthContextType,
+  @ApiQuery({ name: 'all', required: false, description: 'When true, returns all org vendors with sync' })
+  async listVendors(
+    @OrganizationId() organizationId: string,
+    @Query('all') all?: string,
   ) {
-    this.assertOrganizationAccess(organizationId, authContext);
+    if (all === 'true') {
+      return this.trustPortalService.getAllVendorsWithSync(organizationId);
+    }
     return this.trustPortalService.getPublicVendors(organizationId);
   }
 

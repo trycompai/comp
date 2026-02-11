@@ -1,5 +1,6 @@
 'use client';
 
+import { canAccessRoute, type UserPermissions } from '@/lib/permissions';
 import { AppShellNav, AppShellNavItem } from '@trycompai/design-system';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -7,6 +8,7 @@ import { usePathname } from 'next/navigation';
 interface SettingsSidebarProps {
   orgId: string;
   showBrowserTab: boolean;
+  permissions: UserPermissions;
 }
 
 type SettingsNavItem = {
@@ -16,22 +18,24 @@ type SettingsNavItem = {
   hidden?: boolean;
 };
 
-export function SettingsSidebar({ orgId, showBrowserTab }: SettingsSidebarProps) {
+export function SettingsSidebar({ orgId, showBrowserTab, permissions }: SettingsSidebarProps) {
   const pathname = usePathname() ?? '';
 
   const items: SettingsNavItem[] = [
     { id: 'general', label: 'General', path: `/${orgId}/settings` },
-    { id: 'context', label: 'Context', path: `/${orgId}/settings/context-hub` },
-    { id: 'api', label: 'API Keys', path: `/${orgId}/settings/api-keys` },
+    { id: 'context', label: 'Context', path: `/${orgId}/settings/context-hub`, hidden: !canAccessRoute(permissions, 'settings/context-hub') },
+    { id: 'api', label: 'API Keys', path: `/${orgId}/settings/api-keys`, hidden: !canAccessRoute(permissions, 'settings/api-keys') },
     { id: 'portal', label: 'Portal', path: `/${orgId}/settings/portal` },
-    { id: 'secrets', label: 'Secrets', path: `/${orgId}/settings/secrets` },
+    { id: 'secrets', label: 'Secrets', path: `/${orgId}/settings/secrets`, hidden: !canAccessRoute(permissions, 'settings/secrets') },
+    { id: 'roles', label: 'Roles', path: `/${orgId}/settings/roles`, hidden: !canAccessRoute(permissions, 'settings/roles') },
+    { id: 'notifications', label: 'Notifications', path: `/${orgId}/settings/notifications`, hidden: !canAccessRoute(permissions, 'settings/notifications') },
     {
       id: 'browser',
       label: 'Browser',
       path: `/${orgId}/settings/browser-connection`,
-      hidden: !showBrowserTab,
+      hidden: !showBrowserTab || !canAccessRoute(permissions, 'settings/browser-connection'),
     },
-    { id: 'user', label: 'User Settings', path: `/${orgId}/settings/user` },
+    { id: 'user', label: 'User Settings', path: `/${orgId}/settings/user`, hidden: !canAccessRoute(permissions, 'settings/user') },
   ];
 
   const isPathActive = (path: string) => {

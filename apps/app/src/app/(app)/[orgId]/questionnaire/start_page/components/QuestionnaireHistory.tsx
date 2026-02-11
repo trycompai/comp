@@ -23,7 +23,8 @@ import { Building2, CheckCircle2, ChevronLeft, ChevronRight, FileSpreadsheet, Fi
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { deleteQuestionnaireAction } from '../actions/delete-questionnaire';
+import type { QuestionnaireListItem } from '../../components/types';
+import { useQuestionnaires } from '../../hooks/useQuestionnaires';
 import { useQuestionnaireHistory } from '../hooks/useQuestionnaireHistory';
 
 function getFileIcon(filename: string) {
@@ -41,13 +42,18 @@ function getFileIcon(filename: string) {
 }
 
 interface QuestionnaireHistoryProps {
-  questionnaires: Awaited<ReturnType<typeof import('../data/queries').getQuestionnaires>>;
+  questionnaires: QuestionnaireListItem[];
   orgId: string;
 }
 
-export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHistoryProps) {
+export function QuestionnaireHistory({ questionnaires: initialQuestionnaires, orgId }: QuestionnaireHistoryProps) {
   const router = useRouter();
   const filterSectionRef = useRef<HTMLDivElement>(null);
+
+  const { questionnaires, deleteQuestionnaire } = useQuestionnaires({
+    fallbackData: initialQuestionnaires,
+  });
+
   const {
     searchQuery,
     setSearchQuery,
@@ -64,7 +70,6 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
 
   const handleSourceFilterChange = (value: 'all' | 'internal' | 'external') => {
     setSourceFilter(value);
-    // Scroll to keep filter section in view
     setTimeout(() => {
       filterSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
@@ -92,7 +97,6 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
     <div className="flex flex-col gap-4">
       {/* Search Input and Source Filter */}
       <div ref={filterSectionRef} className="flex items-center justify-between gap-4 flex-wrap">
-        {/* Search Input */}
         <div className="relative w-[280px] animate-in fade-in duration-500 ease-out">
           <InputGroup>
             <InputGroupAddon>
@@ -116,7 +120,6 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
           )}
         </div>
 
-        {/* Source Filter */}
         <div className="relative animate-in fade-in duration-500 ease-out" style={{ animationDelay: '50ms' }}>
           <Select
             value={sourceFilter}
@@ -178,11 +181,11 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
         </Card>
       ) : (
         <div className="flex flex-col gap-2">
-          {paginatedQuestionnaires.map((questionnaire: Awaited<ReturnType<typeof import('../data/queries').getQuestionnaires>>[number], index) => (
+          {paginatedQuestionnaires.map((questionnaire: QuestionnaireListItem, index) => (
             <div
               key={questionnaire.id}
               className="animate-in fade-in duration-500 ease-out"
-              style={{ 
+              style={{
                 animationDelay: `${index * 50}ms`,
                 animationFillMode: 'backwards'
               }}
@@ -191,6 +194,7 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
                 questionnaire={questionnaire}
                 orgId={orgId}
                 router={router}
+                onDelete={deleteQuestionnaire}
               />
             </div>
           ))}
@@ -199,7 +203,6 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
 
       {/* Pagination and Items Per Page */}
       <div className="flex items-center justify-between pt-2">
-        {/* Items Per Page */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground animate-in fade-in duration-500 ease-out">
           <Select
             value={itemsPerPage.toString()}
@@ -216,7 +219,6 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
           <span>per page</span>
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center gap-2 animate-in fade-in duration-500 ease-out" style={{ animationDelay: '50ms' }}>
             <Button
@@ -248,23 +250,25 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
 }
 
 interface QuestionnaireHistoryItemProps {
-  questionnaire: Awaited<ReturnType<typeof import('../data/queries').getQuestionnaires>>[number];
+  questionnaire: QuestionnaireListItem;
   orgId: string;
   router: ReturnType<typeof useRouter>;
+  onDelete: (id: string) => Promise<boolean>;
 }
 
 function QuestionnaireHistoryItem({
   questionnaire,
   orgId,
   router,
+  onDelete,
 }: QuestionnaireHistoryItemProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isClicking, setIsClicking] = useState(false);
 
   const answeredCount = questionnaire.questions.filter((q: { answer: string | null }) => q.answer).length;
-        const totalQuestions = questionnaire.questions.length;
-        const isParsing = questionnaire.status === 'parsing';
+  const totalQuestions = questionnaire.questions.length;
+  const isParsing = questionnaire.status === 'parsing';
   const FileIcon = getFileIcon(questionnaire.filename);
 
   const handleItemClick = () => {
@@ -281,17 +285,11 @@ function QuestionnaireHistoryItem({
     setIsDeleting(true);
 
     try {
-      const result = await deleteQuestionnaireAction({ questionnaireId: questionnaire.id });
-
-      if (result?.data?.success) {
-        toast.success('Questionnaire deleted successfully');
-        setIsDeleteDialogOpen(false);
-        router.refresh();
-      } else {
-        toast.error(result?.data?.error || 'Failed to delete questionnaire');
-      }
+      await onDelete(questionnaire.id);
+      toast.success('Questionnaire deleted successfully');
+      setIsDeleteDialogOpen(false);
     } catch (error) {
-      toast.error('An error occurred while deleting the questionnaire');
+      toast.error(error instanceof Error ? error.message : 'An error occurred while deleting the questionnaire');
     } finally {
       setIsDeleting(false);
     }
@@ -303,8 +301,8 @@ function QuestionnaireHistoryItem({
     <>
       <Card
         className={`group relative overflow-hidden transition-all duration-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] ${
-          isParsing 
-            ? 'cursor-not-allowed opacity-75' 
+          isParsing
+            ? 'cursor-not-allowed opacity-75'
             : `cursor-pointer hover:shadow-sm hover:border-primary/50 hover:-translate-y-1 active:scale-[0.98] ${
                 isClicking ? 'scale-95 shadow-none translate-y-0 opacity-80' : ''
               }`
@@ -312,10 +310,9 @@ function QuestionnaireHistoryItem({
         onClick={handleItemClick}
       >
         <div className="flex items-center gap-4 p-4">
-          {/* Icon with gradient background */}
           <div className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
-            isParsing 
-              ? 'bg-muted' 
+            isParsing
+              ? 'bg-muted'
               : 'bg-gradient-to-br from-primary/10 via-primary/5 to-transparent'
           }`}>
             {isParsing ? (
@@ -332,7 +329,6 @@ function QuestionnaireHistoryItem({
             )}
           </div>
 
-          {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1 min-w-0">
@@ -357,8 +353,8 @@ function QuestionnaireHistoryItem({
                       </div>
                       {totalQuestions > 0 && (
                         <div className={`min-w-32 inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 transition-colors ${
-                          isCompleted 
-                            ? 'bg-green-500/10 ring-1 ring-green-500/20' 
+                          isCompleted
+                            ? 'bg-green-500/10 ring-1 ring-green-500/20'
                             : 'bg-muted/50'
                         }`}>
                           <span className={`text-[10px] font-medium uppercase tracking-wide ${
@@ -374,14 +370,14 @@ function QuestionnaireHistoryItem({
                         </div>
                       )}
                       {questionnaire.source === 'external' ? (
-                        <Badge 
+                        <Badge
                           className="gap-1 px-2 py-0.5 text-[10px] font-medium bg-blue-400/10 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20 ring-1 ring-blue-500/20"
                         >
                           <Globe2 className="h-2.5 w-2.5" />
                           Trust Center
                         </Badge>
                       ) : (
-                        <Badge 
+                        <Badge
                           className="gap-1 px-2 py-0.5 text-[10px] font-medium bg-primary/10 text-primary hover:bg-primary/20 ring-1 ring-primary/20"
                         >
                           <Building2 className="h-2.5 w-2.5" />
@@ -395,7 +391,6 @@ function QuestionnaireHistoryItem({
             </div>
           </div>
 
-          {/* Delete Button */}
           <Button
             variant="ghost"
             size="icon"
@@ -412,7 +407,6 @@ function QuestionnaireHistoryItem({
         </div>
       </Card>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

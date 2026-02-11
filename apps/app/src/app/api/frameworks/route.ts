@@ -1,18 +1,13 @@
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const frameworks = await db.frameworkEditorFramework.findMany({
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        version: true,
-        visible: true,
-      },
-    });
+    const res = await serverApi.get<{ data: { id: string; name: string; description: string; version: string; visible: boolean }[] }>(
+      '/v1/frameworks/available',
+    );
 
+    const frameworks = Array.isArray(res.data?.data) ? res.data.data : [];
     return NextResponse.json({ frameworks });
   } catch (error) {
     console.error('Error fetching frameworks:', error);

@@ -35,7 +35,7 @@ import {
 import type { Role } from '@db';
 
 import { toast } from 'sonner';
-import { MultiRoleCombobox } from './MultiRoleCombobox';
+import { MultiRoleCombobox, type CustomRoleOption } from './MultiRoleCombobox';
 import { RemoveDeviceAlert } from './RemoveDeviceAlert';
 import { RemoveMemberAlert } from './RemoveMemberAlert';
 import type { MemberWithUser } from './TeamMembers';
@@ -47,6 +47,7 @@ interface MemberRowProps {
   onUpdateRole: (memberId: string, roles: Role[]) => void;
   canEdit: boolean;
   isCurrentUserOwner: boolean;
+  customRoles?: CustomRoleOption[];
 }
 
 function getInitials(name?: string | null, email?: string | null): string {
@@ -95,6 +96,7 @@ export function MemberRow({
   onUpdateRole,
   canEdit,
   isCurrentUserOwner,
+  customRoles = [],
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -114,9 +116,11 @@ export function MemberRow({
   const currentRoles = parseRoles(member.role);
 
   const isOwner = currentRoles.includes('owner');
-  const canRemove = !isOwner;
+  const isPlatformAdmin = member.user.isPlatformAdmin === true;
+  const canRemove = !isOwner && !isPlatformAdmin;
   const isDeactivated = member.deactivated || !member.isActive;
-  const profileHref = `/${orgId}/people/${memberId}`;
+  const canViewProfile = !isDeactivated;
+  const profileHref = canViewProfile ? `/${orgId}/people/${memberId}` : null;
 
   const handleEditRolesClick = () => {
     setSelectedRoles(parseRoles(member.role));
@@ -176,14 +180,24 @@ export function MemberRow({
               </Avatar>
             </div>
             <div className="min-w-0">
-              <Link
-                href={profileHref}
-                className={`truncate text-sm font-medium hover:underline ${
-                  isDeactivated ? 'text-muted-foreground' : ''
-                }`}
-              >
-                {memberName}
-              </Link>
+              {profileHref ? (
+                <Link
+                  href={profileHref}
+                  className={`truncate text-sm font-medium hover:underline ${
+                    isDeactivated ? 'text-muted-foreground' : ''
+                  }`}
+                >
+                  {memberName}
+                </Link>
+              ) : (
+                <span
+                  className={`truncate text-sm font-medium ${
+                    isDeactivated ? 'text-muted-foreground' : ''
+                  }`}
+                >
+                  {memberName}
+                </span>
+              )}
               <Text variant="muted">{memberEmail}</Text>
             </div>
           </HStack>
@@ -201,11 +215,45 @@ export function MemberRow({
         {/* ROLE */}
         <TableCell>
           <div className="flex flex-wrap gap-1">
-            {currentRoles.map((role) => (
-              <Badge key={role} variant="outline">
-                {getRoleLabel(role)}
-              </Badge>
-            ))}
+            {isPlatformAdmin && (
+              <div className="text-xs whitespace-nowrap text-indigo-700 border-indigo-300 bg-indigo-50 dark:text-indigo-300 dark:border-indigo-700 dark:bg-indigo-950">
+                <Badge variant="outline">
+                  Comp AI
+                </Badge>
+              </div>
+            )}
+            {currentRoles.map((role) => {
+              const builtInRoles = ['owner', 'admin', 'auditor', 'employee', 'contractor'];
+              const customRole = !builtInRoles.includes(role)
+                ? customRoles.find((r) => r.name === role)
+                : undefined;
+
+              return (
+                <div key={role} className={`text-xs whitespace-nowrap ${isDeactivated ? 'opacity-50' : ''}`}>
+                <Badge
+                  variant="secondary"
+                >
+                  {(() => {
+                    if (customRole) return customRole.name;
+                    switch (role) {
+                      case 'owner':
+                        return 'Owner';
+                      case 'admin':
+                        return 'Admin';
+                      case 'auditor':
+                        return 'Auditor';
+                      case 'employee':
+                        return 'Employee';
+                      case 'contractor':
+                        return 'Contractor';
+                      default:
+                        return role;
+                    }
+                  })()}
+                </Badge>
+                </div>
+              );
+            })}
           </div>
         </TableCell>
 
@@ -292,6 +340,7 @@ export function MemberRow({
                 onSelectedRolesChange={setSelectedRoles}
                 placeholder="Select a role"
                 lockedRoles={isOwner ? ['owner'] : []}
+                customRoles={customRoles}
               />
               {isOwner && (
                 <p className="text-muted-foreground mt-1 text-xs">

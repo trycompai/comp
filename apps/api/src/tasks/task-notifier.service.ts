@@ -66,10 +66,13 @@ export class TaskNotifierService {
             where: {
               organizationId,
               deactivated: false,
+              OR: [
+                { user: { isPlatformAdmin: false } },
+                { role: { contains: 'owner' } },
+              ],
             },
             select: {
               id: true,
-              role: true,
               user: {
                 select: {
                   id: true,
@@ -81,15 +84,8 @@ export class TaskNotifierService {
           }),
         ]);
 
-      // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
-      const adminMembers = allMembers.filter(
-        (member) =>
-          member.role &&
-          (member.role.includes('admin') || member.role.includes('owner')),
-      );
-
       this.logger.debug(
-        `[notifyBulkStatusChange] Found ${allMembers.length} total members, ${adminMembers.length} admins/owners for organization ${organizationId}`,
+        `[notifyBulkStatusChange] Found ${allMembers.length} total members for organization ${organizationId}`,
       );
 
       const organizationName = organization?.name ?? 'your organization';
@@ -98,31 +94,11 @@ export class TaskNotifierService {
         changedByUser?.email?.trim() ||
         'Someone';
 
-      // Build recipient list: unique assignees + admins, excluding actor
-      const recipientMap = new Map<
-        string,
-        { id: string; name: string; email: string }
-      >();
+      // Build recipient list: all members excluding actor.
+      // The isUserUnsubscribed check handles role-based filtering via the notification matrix.
+      const recipientMap = new Map<string, { id: string; name: string; email: string }>();
 
-      // Add assignees from affected tasks
-      for (const task of tasks) {
-        if (task.assignee?.user?.id && task.assignee.user.email) {
-          const userId = task.assignee.user.id;
-          if (userId !== changedByUserId) {
-            recipientMap.set(userId, {
-              id: userId,
-              name:
-                task.assignee.user.name?.trim() ||
-                task.assignee.user.email?.trim() ||
-                'User',
-              email: task.assignee.user.email,
-            });
-          }
-        }
-      }
-
-      // Add admin members
-      for (const member of adminMembers) {
+      for (const member of allMembers) {
         if (member.user?.id && member.user.email) {
           const userId = member.user.id;
           if (userId !== changedByUserId) {
@@ -135,10 +111,6 @@ export class TaskNotifierService {
           }
         }
       }
-
-      this.logger.debug(
-        `[notifyBulkStatusChange] Found ${allMembers.length} total members, ${adminMembers.length} admins/owners for organization ${organizationId}`,
-      );
 
       const recipients = Array.from(recipientMap.values());
       const taskCount = tasks.length;
@@ -161,6 +133,7 @@ export class TaskNotifierService {
             db,
             recipient.email,
             'taskAssignments',
+            organizationId,
           );
 
           if (isUnsubscribed) {
@@ -322,6 +295,7 @@ export class TaskNotifierService {
             db,
             recipient.email,
             'taskAssignments',
+            organizationId,
           );
 
           if (isUnsubscribed) {
@@ -441,10 +415,13 @@ export class TaskNotifierService {
             where: {
               organizationId,
               deactivated: false,
+              OR: [
+                { user: { isPlatformAdmin: false } },
+                { role: { contains: 'owner' } },
+              ],
             },
             select: {
               id: true,
-              role: true,
               user: {
                 select: {
                   id: true,
@@ -457,18 +434,8 @@ export class TaskNotifierService {
         ],
       );
 
-      // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
-      const adminMembers = allMembers.filter(
-        (member) =>
-          member.role &&
-          (member.role.includes('admin') || member.role.includes('owner')),
-      );
-
       this.logger.debug(
-        `[notifyStatusChange] Found ${allMembers.length} total members, ${adminMembers.length} admins/owners for organization ${organizationId}`,
-      );
-      this.logger.debug(
-        `[notifyStatusChange] Task assignee: ${task?.assignee ? 'exists' : 'none'}, assignee user: ${task?.assignee?.user?.id || 'none'}`,
+        `[notifyStatusChange] Found ${allMembers.length} total members for organization ${organizationId}`,
       );
 
       const organizationName = organization?.name ?? 'your organization';
@@ -479,29 +446,11 @@ export class TaskNotifierService {
       const oldStatusLabel = oldStatus.replace('_', ' ');
       const newStatusLabel = newStatus.replace('_', ' ');
 
-      // Build recipient list: assignee + admins, excluding actor
-      const recipientMap = new Map<
-        string,
-        { id: string; name: string; email: string }
-      >();
+      // Build recipient list: all members excluding actor.
+      // The isUserUnsubscribed check handles role-based filtering via the notification matrix.
+      const recipientMap = new Map<string, { id: string; name: string; email: string }>();
 
-      // Add assignee if exists
-      if (task?.assignee?.user?.id && task.assignee.user.email) {
-        const userId = task.assignee.user.id;
-        if (userId !== changedByUserId) {
-          recipientMap.set(userId, {
-            id: userId,
-            name:
-              task.assignee.user.name?.trim() ||
-              task.assignee.user.email?.trim() ||
-              'User',
-            email: task.assignee.user.email,
-          });
-        }
-      }
-
-      // Add admin members
-      for (const member of adminMembers) {
+      for (const member of allMembers) {
         if (member.user?.id && member.user.email) {
           const userId = member.user.id;
           if (userId !== changedByUserId) {
@@ -534,6 +483,7 @@ export class TaskNotifierService {
             db,
             recipient.email,
             'taskAssignments',
+            organizationId,
           );
 
           if (isUnsubscribed) {
@@ -713,6 +663,7 @@ export class TaskNotifierService {
             db,
             recipient.email,
             'taskAssignments',
+            organizationId,
           );
 
           if (isUnsubscribed) {

@@ -1,6 +1,11 @@
 'use client';
 
 import { FileUploader } from '@/components/file-uploader';
+import { usePermissions } from '@/hooks/use-permissions';
+import {
+  useTrustPortalDocuments,
+  type TrustPortalDocument,
+} from '@/hooks/use-trust-portal-documents';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,18 +19,10 @@ import {
 import { Button } from '@comp/ui/button';
 import { Card } from '@comp/ui/card';
 import { Download, FileText, Trash2, Upload } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { api } from '@/lib/api-client';
 
-export type TrustPortalDocument = {
-  id: string;
-  name: string;
-  description: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+export type { TrustPortalDocument };
 
 interface TrustPortalAdditionalDocumentsSectionProps {
   organizationId: string;
@@ -33,25 +30,23 @@ interface TrustPortalAdditionalDocumentsSectionProps {
   documents: TrustPortalDocument[];
 }
 
-type UploadTrustPortalDocumentResponse = {
-  id: string;
-  name: string;
-  description?: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type TrustPortalDocumentDownloadResponse = {
-  signedUrl: string;
-  fileName: string;
-};
-
 export function TrustPortalAdditionalDocumentsSection({
   organizationId,
   enabled,
-  documents,
+  documents: initialDocuments,
 }: TrustPortalAdditionalDocumentsSectionProps) {
-  const router = useRouter();
+  const { hasPermission } = usePermissions();
+  const canUpdatePortal = hasPermission('trust', 'update');
+  const {
+    documents,
+    uploadDocument,
+    downloadDocument,
+    deleteDocument,
+  } = useTrustPortalDocuments({
+    organizationId,
+    initialData: initialDocuments,
+  });
+
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
@@ -101,28 +96,15 @@ export function TrustPortalAdditionalDocumentsSection({
             newProgress[file.name] = 50;
             setUploadProgress({ ...newProgress });
 
-            const response = await api.post<UploadTrustPortalDocumentResponse>(
-              '/v1/trust-portal/documents/upload',
-              {
-                organizationId,
-                fileName: file.name,
-                fileType: file.type || 'application/octet-stream',
-                fileData,
-              },
-              organizationId,
+            await uploadDocument(
+              file.name,
+              file.type || 'application/octet-stream',
+              fileData,
             );
 
-            if (response.error) {
-              throw new Error(response.error || 'Failed to upload file');
-            }
-
-            if (response.data?.id) {
-              newProgress[file.name] = 100;
-              setUploadProgress({ ...newProgress });
-              toast.success(`Uploaded ${file.name}`);
-            } else {
-              throw new Error('Failed to upload file: invalid response');
-            }
+            newProgress[file.name] = 100;
+            setUploadProgress({ ...newProgress });
+            toast.success(`Uploaded ${file.name}`);
           } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error';
             toast.error(`Failed to upload ${file.name}: ${message}`);
@@ -130,14 +112,12 @@ export function TrustPortalAdditionalDocumentsSection({
             setUploadProgress({ ...newProgress });
           }
         }
-
-        router.refresh();
       } finally {
         setIsUploading(false);
         setUploadProgress({});
       }
     },
-    [enabled, organizationId, router],
+    [enabled, uploadDocument],
   );
 
   const handleDownload = useCallback(
@@ -146,24 +126,10 @@ export function TrustPortalAdditionalDocumentsSection({
 
       setDownloadingIds((prev) => new Set(prev).add(documentId));
       try {
-        const response = await api.post<TrustPortalDocumentDownloadResponse>(
-          `/v1/trust-portal/documents/${documentId}/download`,
-          { organizationId },
-          organizationId,
-        );
-
-        if (response.error) {
-          toast.error(response.error || 'Failed to download file');
-          return;
-        }
-
-        if (!response.data?.signedUrl) {
-          toast.error('Failed to download file: invalid response');
-          return;
-        }
+        const result = await downloadDocument(documentId);
 
         const link = document.createElement('a');
-        link.href = response.data.signedUrl;
+        link.href = result.signedUrl;
         link.download = fileName;
         document.body.appendChild(link);
         link.click();
@@ -180,7 +146,7 @@ export function TrustPortalAdditionalDocumentsSection({
         });
       }
     },
-    [downloadingIds, organizationId],
+    [downloadingIds, downloadDocument],
   );
 
   const handleDeleteClick = (documentId: string, fileName: string) => {
@@ -195,23 +161,8 @@ export function TrustPortalAdditionalDocumentsSection({
     setIsDeleteDialogOpen(false);
 
     try {
-      const response = await api.post<{ success: boolean }>(
-        `/v1/trust-portal/documents/${documentToDelete.id}/delete`,
-        { organizationId },
-        organizationId,
-      );
-
-      if (response.error) {
-        toast.error(response.error || 'Failed to delete document');
-        return;
-      }
-
-      if (response.data?.success) {
-        toast.success(`Deleted ${documentToDelete.name}`);
-        router.refresh();
-      } else {
-        toast.error('Failed to delete document: invalid response');
-      }
+      await deleteDocument(documentToDelete.id);
+      toast.success(`Deleted ${documentToDelete.name}`);
     } catch (error) {
       console.error('Error deleting trust portal document:', error);
       toast.error('An error occurred while deleting the document');
@@ -219,7 +170,7 @@ export function TrustPortalAdditionalDocumentsSection({
       setDeletingId(null);
       setDocumentToDelete(null);
     }
-  }, [documentToDelete, organizationId, router]);
+  }, [documentToDelete, deleteDocument]);
 
   return (
     <Card className="p-6">
@@ -282,47 +233,51 @@ export function TrustPortalAdditionalDocumentsSection({
                   </div>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => handleDeleteClick(doc.id, doc.name)}
-                  disabled={!enabled || isDeleting || isDownloading}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {canUpdatePortal && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => handleDeleteClick(doc.id, doc.name)}
+                    disabled={!enabled || isDeleting || isDownloading}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      <div className="mt-4">
-        <FileUploader
-          onUpload={handleFileUpload}
-          multiple={true}
-          maxFileCount={10}
-          accept={{
-            'application/pdf': ['.pdf'],
-            'application/msword': ['.doc'],
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-            'application/vnd.ms-excel': ['.xls'],
-            'text/csv': ['.csv'],
-            'text/plain': ['.txt'],
-            'text/markdown': ['.md'],
-            'image/png': ['.png'],
-            'image/jpeg': ['.jpg', '.jpeg'],
-            'image/gif': ['.gif'],
-            'image/webp': ['.webp'],
-            'image/svg+xml': ['.svg'],
-          }}
-          maxSize={100 * 1024 * 1024}
-          disabled={!enabled || isUploading}
-          progresses={uploadProgress}
-        />
-      </div>
+      {canUpdatePortal && (
+        <div className="mt-4">
+          <FileUploader
+            onUpload={handleFileUpload}
+            multiple={true}
+            maxFileCount={10}
+            accept={{
+              'application/pdf': ['.pdf'],
+              'application/msword': ['.doc'],
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+              'application/vnd.ms-excel': ['.xls'],
+              'text/csv': ['.csv'],
+              'text/plain': ['.txt'],
+              'text/markdown': ['.md'],
+              'image/png': ['.png'],
+              'image/jpeg': ['.jpg', '.jpeg'],
+              'image/gif': ['.gif'],
+              'image/webp': ['.webp'],
+              'image/svg+xml': ['.svg'],
+            }}
+            maxSize={100 * 1024 * 1024}
+            disabled={!enabled || isUploading}
+            progresses={uploadProgress}
+          />
+        </div>
+      )}
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
@@ -348,5 +303,3 @@ export function TrustPortalAdditionalDocumentsSection({
     </Card>
   );
 }
-
-

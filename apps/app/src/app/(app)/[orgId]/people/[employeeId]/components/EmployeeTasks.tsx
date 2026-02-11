@@ -3,8 +3,11 @@
 import type { TrainingVideo } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion, Member, Organization, Policy, User } from '@db';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
   Section,
   Stack,
   Tabs,
@@ -16,7 +19,6 @@ import {
 import { AlertCircle, Award, CheckCircle2, Download, Info } from 'lucide-react';
 import type { FleetPolicy, Host } from '../../devices/types';
 import { PolicyItem } from '../../devices/components/PolicyItem';
-import { downloadTrainingCertificate } from '../actions/download-training-certificate';
 import { cn } from '@/lib/utils';
 
 export const EmployeeTasks = ({
@@ -54,21 +56,22 @@ export const EmployeeTasks = ({
   const handleDownloadCertificate = async () => {
     if (!trainingCompletionDate) return;
 
-    const result = await downloadTrainingCertificate({
-      memberId: employee.id,
-      organizationId: organization.id,
-    });
+    try {
+      const response = await fetch('/api/training/certificate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId: employee.id,
+          organizationId: organization.id,
+        }),
+      });
 
-    if (result?.data) {
-      // Convert base64 to blob and download
-      const byteCharacters = atob(result.data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      if (!response.ok) {
+        console.error('Failed to download certificate');
+        return;
       }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
 
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -77,6 +80,8 @@ export const EmployeeTasks = ({
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download certificate:', error);
     }
   };
   return (
@@ -244,8 +249,10 @@ export const EmployeeTasks = ({
                 <CardHeader>
                   <CardTitle>{host.computer_name}&apos;s Policies</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {fleetPolicies.map((policy) => <PolicyItem key={policy.id} policy={policy} />)}
+                <CardContent>
+                  <div className="space-y-3">
+                    {fleetPolicies.map((policy) => <PolicyItem key={policy.id} policy={policy} />)}
+                  </div>
                 </CardContent>
               </Card>
             ) : (
