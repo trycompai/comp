@@ -8,7 +8,7 @@ import type { GitHubOrg, GitHubRepo } from './types';
 
 /**
  * Variable for selecting which repositories to monitor.
- * Dynamically fetches all repos from user's organizations.
+ * Dynamically fetches repositories the user has access to.
  *
  * Values are stored as `owner/repo:branch` format.
  * If branch is omitted, defaults to `main`.
@@ -24,37 +24,77 @@ export const targetReposVariable: CheckVariable = {
   type: 'multi-select',
   required: true,
   placeholder: 'Select repositories...',
-  helpText: 'Select repositories, then specify the branch to check for each.',
+  helpText: 'Select repositories and optionally specify branches (defaults to main).',
   fetchOptions: async (ctx) => {
-    const orgs = await ctx.fetch<GitHubOrg[]>('/user/orgs');
-    const allRepos: Array<{ value: string; label: string }> = [];
+    const allRepos = new Map<string, { value: string; label: string }>();
+    let userReposError: unknown;
+    let orgReposError: unknown;
 
-    for (const org of orgs) {
+    const addRepo = (repo: GitHubRepo) => {
+      if (!repo?.full_name) return;
+      if (allRepos.has(repo.full_name)) return;
+      allRepos.set(repo.full_name, {
+        value: repo.full_name,
+        label: `${repo.full_name}${repo.private ? ' (private)' : ''}`,
+      });
+    };
+
+    try {
+      const allAccessibleRepos = await ctx.fetchAllPages<GitHubRepo>(
+        '/user/repos?affiliation=owner,collaborator,organization_member&visibility=all',
+      );
+      const orgRepos = allAccessibleRepos.filter(
+        (repo) => repo.owner?.type === 'Organization',
+      );
+      for (const repo of orgRepos) {
+        addRepo(repo);
+      }
+    } catch (error) {
+      userReposError = error;
+    }
+
+    if (allRepos.size === 0) {
       try {
-        const repos = await ctx.fetchAllPages<GitHubRepo>(`/orgs/${org.login}/repos`);
-        for (const repo of repos) {
-          allRepos.push({
-            value: repo.full_name,
-            label: `${repo.full_name}${repo.private ? ' (private)' : ''}`,
-          });
+        const orgs = await ctx.fetchAllPages<GitHubOrg>('/user/orgs');
+        for (const org of orgs) {
+          try {
+            const repos = await ctx.fetchAllPages<GitHubRepo>(`/orgs/${org.login}/repos`);
+            for (const repo of repos) {
+              addRepo(repo);
+            }
+          } catch (error) {
+            const errorStr = String(error);
+            // Skip orgs with SAML SSO that haven't been authorized, or permission errors
+            // This allows users to still see repos from authorized orgs
+            if (
+              errorStr.includes('403') ||
+              errorStr.includes('SAML') ||
+              errorStr.includes('Forbidden')
+            ) {
+              console.warn(
+                `Skipping organization ${org.login} due to SSO/permission error: ${errorStr}`,
+              );
+              continue;
+            }
+            // Re-throw other errors
+            throw error;
+          }
         }
       } catch (error) {
-        const errorStr = String(error);
-        // Skip orgs with SAML SSO that haven't been authorized, or permission errors
-        // This allows users to still see repos from authorized orgs
-        if (
-          errorStr.includes('403') ||
-          errorStr.includes('SAML') ||
-          errorStr.includes('Forbidden')
-        ) {
-          continue;
-        }
-        // Re-throw other errors
-        throw error;
+        orgReposError = error;
       }
     }
 
-    return allRepos;
+    if (allRepos.size === 0) {
+      if (userReposError) {
+        throw userReposError;
+      }
+      if (orgReposError) {
+        throw orgReposError;
+      }
+    }
+
+    return Array.from(allRepos.values()).sort((a, b) => a.label.localeCompare(b.label));
   },
 };
 

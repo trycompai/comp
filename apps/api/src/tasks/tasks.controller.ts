@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -256,6 +257,55 @@ export class TasksController {
     );
   }
 
+  @Post('bulk/submit-for-review')
+  @ApiOperation({
+    summary: 'Bulk submit tasks for review',
+    description: 'Submit multiple tasks for review with a single approver',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        taskIds: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['tsk_abc123', 'tsk_def456'],
+        },
+        approverId: {
+          type: 'string',
+          example: 'mem_abc123',
+          description: 'Member ID of the approver',
+        },
+      },
+      required: ['taskIds', 'approverId'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Tasks submitted for review' })
+  @ApiResponse({ status: 400, description: 'Invalid request' })
+  async bulkSubmitForReview(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body() body: { taskIds: string[]; approverId: string },
+  ): Promise<{ submittedCount: number }> {
+    if (!authContext.userId) {
+      throw new BadRequestException(
+        'User ID is required. Bulk operations require authenticated user session.',
+      );
+    }
+    if (!Array.isArray(body.taskIds) || body.taskIds.length === 0) {
+      throw new BadRequestException('taskIds must be a non-empty array');
+    }
+    if (!body.approverId) {
+      throw new BadRequestException('approverId is required');
+    }
+    return await this.tasksService.bulkSubmitForReview(
+      organizationId,
+      body.taskIds,
+      authContext.userId,
+      body.approverId,
+    );
+  }
+
   @Delete('bulk')
   @ApiOperation({
     summary: 'Delete multiple tasks',
@@ -355,11 +405,34 @@ export class TasksController {
     return await this.tasksService.getTask(organizationId, taskId);
   }
 
+  @Get(':taskId/activity')
+  @ApiOperation({
+    summary: 'Get task activity',
+    description: 'Retrieve audit log activity for a specific task with pagination',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiResponse({ status: 200, description: 'Activity retrieved successfully' })
+  @ApiResponse({ status: 400, description: 'Task not found' })
+  async getTaskActivity(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    const parsedSkip = skip ? Math.max(0, parseInt(skip, 10) || 0) : 0;
+    const parsedTake = take ? Math.min(50, Math.max(1, parseInt(take, 10) || 10)) : 10;
+    return await this.tasksService.getTaskActivity(organizationId, taskId, parsedSkip, parsedTake);
+  }
+
   @Patch(':taskId')
   @ApiOperation({
     summary: 'Update a task',
     description:
-      'Update an existing task (status, assignee, frequency, department, reviewDate)',
+      'Update an existing task (status, assignee, approver, frequency, department, reviewDate)',
   })
   @ApiParam({
     name: 'taskId',
@@ -380,6 +453,12 @@ export class TasksController {
           nullable: true,
           example: 'mem_abc123',
           description: 'Assignee member ID, or null to unassign',
+        },
+        approverId: {
+          type: 'string',
+          nullable: true,
+          example: 'mem_abc123',
+          description: 'Approver member ID, or null to unassign',
         },
         frequency: {
           type: 'string',
@@ -424,6 +503,7 @@ export class TasksController {
     body: {
       status?: TaskStatus;
       assigneeId?: string | null;
+      approverId?: string | null;
       frequency?: string;
       department?: string;
       reviewDate?: string;
@@ -458,11 +538,124 @@ export class TasksController {
       {
         status: body.status,
         assigneeId: body.assigneeId,
+        approverId: body.approverId,
         frequency: body.frequency,
         department: body.department,
         reviewDate: parsedReviewDate,
       },
       userId,
+    );
+  }
+
+  // ==================== TASK APPROVAL ====================
+
+  @Post(':taskId/submit-for-review')
+  @ApiOperation({
+    summary: 'Submit task for review',
+    description:
+      'Move task status to in_review and assign an approver.',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        approverId: {
+          type: 'string',
+          example: 'mem_abc123',
+          description: 'Member ID of the approver',
+        },
+      },
+      required: ['approverId'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Task submitted for review' })
+  @ApiResponse({ status: 400, description: 'Invalid request' })
+  async submitForReview(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Param('taskId') taskId: string,
+    @Body() body: { approverId: string },
+  ): Promise<TaskResponseDto> {
+    if (!authContext.userId) {
+      throw new BadRequestException(
+        'User ID is required. This operation requires an authenticated user session.',
+      );
+    }
+    if (!body.approverId) {
+      throw new BadRequestException('approverId is required');
+    }
+    return await this.tasksService.submitForReview(
+      organizationId,
+      taskId,
+      authContext.userId,
+      body.approverId,
+    );
+  }
+
+  @Post(':taskId/approve')
+  @ApiOperation({
+    summary: 'Approve a task',
+    description:
+      'Approve a task that is in review. Only the assigned approver can approve. Moves status to done and creates an audit comment.',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiResponse({ status: 200, description: 'Task approved successfully' })
+  @ApiResponse({ status: 400, description: 'Task is not in review' })
+  @ApiResponse({ status: 403, description: 'Not the assigned approver' })
+  async approveTask(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Param('taskId') taskId: string,
+  ): Promise<TaskResponseDto> {
+    if (!authContext.userId) {
+      throw new BadRequestException(
+        'User ID is required. This operation requires an authenticated user session.',
+      );
+    }
+    return await this.tasksService.approveTask(
+      organizationId,
+      taskId,
+      authContext.userId,
+    );
+  }
+
+  @Post(':taskId/reject')
+  @ApiOperation({
+    summary: 'Reject a task review',
+    description:
+      'Reject a task that is in review. Only the assigned approver can reject. Reverts status to the previous status and creates an audit comment.',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiResponse({ status: 200, description: 'Task rejected successfully' })
+  @ApiResponse({ status: 400, description: 'Task is not in review' })
+  @ApiResponse({ status: 403, description: 'Not the assigned approver' })
+  async rejectTask(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Param('taskId') taskId: string,
+  ): Promise<TaskResponseDto> {
+    if (!authContext.userId) {
+      throw new BadRequestException(
+        'User ID is required. This operation requires an authenticated user session.',
+      );
+    }
+    return await this.tasksService.rejectTask(
+      organizationId,
+      taskId,
+      authContext.userId,
     );
   }
 

@@ -31,11 +31,18 @@ model Task {
   EvidenceAutomationRun EvidenceAutomationRun[]
   integrationCheckRuns  IntegrationCheckRun[]
   findings              Finding[]
+
+  // Evidence approval
+  approverId     String?
+  approver       Member?     @relation("TaskApprover", fields: [approverId], references: [id])
+  approvedAt     DateTime?
+  previousStatus TaskStatus?
 }
 
 enum TaskStatus {
   todo
   in_progress
+  in_review
   done
   not_relevant
   failed

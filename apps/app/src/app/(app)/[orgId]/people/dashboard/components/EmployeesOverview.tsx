@@ -1,6 +1,6 @@
 import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
 import { auth } from '@/utils/auth';
-import type { Member, Policy, User } from '@db';
+import type { Member, Organization, Policy, User } from '@db';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { EmployeeCompletionChart } from './EmployeeCompletionChart';
@@ -35,8 +35,13 @@ export async function EmployeesOverview() {
   let employees: EmployeeWithUser[] = [];
   let policies: Policy[] = [];
   const processedTrainingVideos: ProcessedTrainingVideo[] = [];
+  let organization: Organization | null = null;
 
   if (organizationId) {
+    organization = await db.organization.findUnique({
+      where: { id: organizationId },
+    });
+
     // Fetch employees
     const fetchedMembers = await db.member.findMany({
       where: {
@@ -63,8 +68,8 @@ export async function EmployeesOverview() {
       },
     });
 
-    // Fetch and process training videos if employees exist
-    if (employees.length > 0) {
+    // Fetch and process training videos if employees exist and training step is enabled
+    if (employees.length > 0 && organization?.securityTrainingStepEnabled !== false) {
       const employeeTrainingVideos = await db.employeeTrainingVideoCompletion.findMany({
         where: {
           memberId: {
@@ -99,6 +104,7 @@ export async function EmployeesOverview() {
         policies={policies}
         trainingVideos={processedTrainingVideos as any}
         showAll={true}
+        securityTrainingStepEnabled={organization?.securityTrainingStepEnabled ?? true}
       />
     </div>
   );
