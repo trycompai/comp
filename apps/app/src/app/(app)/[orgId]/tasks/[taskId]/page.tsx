@@ -25,6 +25,7 @@ export default async function TaskPage({
 
   let isWebAutomationsEnabled = false;
   let isPlatformAdmin = false;
+  let evidenceApprovalEnabled = false;
 
   if (session?.user?.id) {
     const flags = await getFeatureFlags(session.user.id);
@@ -40,12 +41,20 @@ export default async function TaskPage({
     isPlatformAdmin = user?.isPlatformAdmin ?? false;
   }
 
+  // Fetch organization setting for evidence approval
+  const organization = await db.organization.findUnique({
+    where: { id: orgId },
+    select: { evidenceApprovalEnabled: true },
+  });
+  evidenceApprovalEnabled = organization?.evidenceApprovalEnabled ?? false;
+
   return (
     <SingleTask
       initialTask={task}
       initialAutomations={automations}
       isWebAutomationsEnabled={isWebAutomationsEnabled}
       isPlatformAdmin={isPlatformAdmin}
+      evidenceApprovalEnabled={evidenceApprovalEnabled}
     />
   );
 }
@@ -63,6 +72,9 @@ const getTask = async (taskId: string) => {
       },
       include: {
         controls: true,
+        approver: {
+          include: { user: true },
+        },
       },
     });
 
