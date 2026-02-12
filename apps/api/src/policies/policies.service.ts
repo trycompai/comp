@@ -235,10 +235,11 @@ export class PoliciesService {
         throw new NotFoundException(`Policy with ID ${id} not found`);
       }
 
-      // Cannot update content of a published policy — use version endpoints instead
+      // Cannot update content unless policy is in draft status
+      // This covers both 'published' and 'needs_review' states
       if (
         Array.isArray(updateData.content) &&
-        existingPolicy.status === 'published'
+        existingPolicy.status !== 'draft'
       ) {
         throw new BadRequestException(
           'Cannot update content of a published policy. Create a new version to make changes.',
@@ -292,13 +293,15 @@ export class PoliciesService {
             assigneeId: true,
             approverId: true,
             policyTemplateId: true,
+            currentVersionId: true,
           },
         });
 
         // Keep current version content in sync with policy content
-        if (contentValue && existingPolicy.currentVersionId) {
+        // Read currentVersionId from within the transaction to avoid stale pointer
+        if (contentValue && policy.currentVersionId) {
           await tx.policyVersion.update({
-            where: { id: existingPolicy.currentVersionId },
+            where: { id: policy.currentVersionId },
             data: { content: contentValue },
           });
         }
@@ -614,10 +617,11 @@ export class PoliciesService {
       throw new NotFoundException('Version not found');
     }
 
-    // Cannot edit the published version (matching UI behavior: only block when policy is published)
+    // Cannot edit the current version unless the policy is in draft status
+    // This covers both 'published' and 'needs_review' states
     if (
       version.id === version.policy.currentVersionId &&
-      version.policy.status === 'published'
+      version.policy.status !== 'draft'
     ) {
       throw new BadRequestException(
         'Cannot edit the published version. Create a new version to make changes.',

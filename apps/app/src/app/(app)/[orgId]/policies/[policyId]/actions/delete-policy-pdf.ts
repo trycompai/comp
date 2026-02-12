@@ -60,8 +60,9 @@ export const deletePolicyPdfAction = authActionClient
           return { success: false, error: 'Version not found' };
         }
 
-        // Don't allow deleting PDF from the published version
-        if (version.id === policy.currentVersionId && policy.status === 'published') {
+        // Don't allow deleting PDF from the current version unless policy is in draft
+        // This covers both 'published' and 'needs_review' states
+        if (version.id === policy.currentVersionId && policy.status !== 'draft') {
           return { success: false, error: 'Cannot delete PDF from the published version' };
         }
         if (version.id === policy.pendingVersionId) {

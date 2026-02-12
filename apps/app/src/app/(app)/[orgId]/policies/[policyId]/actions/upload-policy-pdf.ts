@@ -67,8 +67,9 @@ export const uploadPolicyPdfAction = authActionClient
           return { success: false, error: 'Version not found' };
         }
 
-        // Don't allow uploading PDF to the published version
-        if (version.id === policy.currentVersionId && policy.status === 'published') {
+        // Don't allow uploading PDF to the current version unless policy is in draft
+        // This covers both 'published' and 'needs_review' states
+        if (version.id === policy.currentVersionId && policy.status !== 'draft') {
           return { success: false, error: 'Cannot upload PDF to the published version' };
         }
         if (version.id === policy.pendingVersionId) {
