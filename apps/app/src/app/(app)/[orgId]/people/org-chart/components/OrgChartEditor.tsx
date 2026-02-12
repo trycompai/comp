@@ -23,21 +23,12 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { OrgChartNode, type OrgChartNodeData } from './OrgChartNode';
 import { PeopleSidebar } from './PeopleSidebar';
-
-interface Member {
-  id: string;
-  user: {
-    name: string;
-    email: string;
-  };
-  role: string;
-  jobTitle?: string | null;
-}
+import type { OrgChartMember } from '../types';
 
 interface OrgChartEditorProps {
   initialNodes: Node[];
   initialEdges: Edge[];
-  members: Member[];
+  members: OrgChartMember[];
   updatedAt: string | null;
 }
 

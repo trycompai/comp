@@ -3,19 +3,10 @@
 import { useState } from 'react';
 import { Button } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
-
-interface Member {
-  id: string;
-  user: {
-    name: string;
-    email: string;
-  };
-  role: string;
-  jobTitle?: string | null;
-}
+import type { OrgChartMember } from '../types';
 
 interface PeopleSidebarProps {
-  members: Member[];
+  members: OrgChartMember[];
   onAddMember: (person: {
     name: string;
     title: string;
@@ -41,7 +32,7 @@ export function PeopleSidebar({
       m.user.email.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const handleAddMember = (member: Member) => {
+  const handleAddMember = (member: OrgChartMember) => {
     onAddMember({
       name: member.user.name,
       title: member.jobTitle || '',

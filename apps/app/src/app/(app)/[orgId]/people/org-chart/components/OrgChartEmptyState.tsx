@@ -5,19 +5,10 @@ import { Button } from '@trycompai/design-system';
 import { Add, Upload } from '@trycompai/design-system/icons';
 import { OrgChartEditor } from './OrgChartEditor';
 import { UploadOrgChartDialog } from './UploadOrgChartDialog';
-
-interface Member {
-  id: string;
-  user: {
-    name: string;
-    email: string;
-  };
-  role: string;
-  jobTitle?: string | null;
-}
+import type { OrgChartMember } from '../types';
 
 interface OrgChartEmptyStateProps {
-  members: Member[];
+  members: OrgChartMember[];
 }
 
 export function OrgChartEmptyState({ members }: OrgChartEmptyStateProps) {

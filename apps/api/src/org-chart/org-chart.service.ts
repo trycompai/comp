@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -22,6 +23,15 @@ export class OrgChartService {
   private bucketName: string | undefined;
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
   private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
+  private readonly ALLOWED_IMAGE_MIME_TYPES = [
+    'image/png',
+    'image/jpeg',
+    'image/gif',
+    'image/webp',
+    'image/svg+xml',
+    'image/bmp',
+    'image/tiff',
+  ];
 
   constructor() {
     this.s3Client = s3Client ?? null;
@@ -65,6 +75,15 @@ export class OrgChartService {
       this.logger.log(
         `[OrgChart API] Saving for org ${organizationId}: nodes=${data.nodes?.length ?? 'null'}, edges=${data.edges?.length ?? 'null'}`,
       );
+
+      // If switching from uploaded → interactive, clean up the orphaned S3 object
+      const existing = await db.organizationChart.findUnique({
+        where: { organizationId },
+      });
+      if (existing?.uploadedImageUrl) {
+        await this.deleteS3Object(existing.uploadedImageUrl);
+      }
+
       const chart = await db.organizationChart.upsert({
         where: { organizationId },
         create: {
@@ -78,6 +97,7 @@ export class OrgChartService {
           type: 'interactive',
           nodes: data.nodes as any,
           edges: data.edges as any,
+          uploadedImageUrl: null,
           ...(data.name && { name: data.name }),
         },
       });
@@ -106,10 +126,18 @@ export class OrgChartService {
     }
 
     try {
+      // Validate MIME type is an allowed image type
+      const normalizedType = data.fileType.toLowerCase();
+      if (!this.ALLOWED_IMAGE_MIME_TYPES.includes(normalizedType)) {
+        throw new BadRequestException(
+          `File type '${data.fileType}' is not allowed. Only image files are accepted.`,
+        );
+      }
+
       const fileBuffer = Buffer.from(data.fileData, 'base64');
 
       if (fileBuffer.length > this.MAX_FILE_SIZE_BYTES) {
-        throw new InternalServerErrorException(
+        throw new BadRequestException(
           'File exceeds the 100MB size limit',
         );
       }
@@ -160,7 +188,10 @@ export class OrgChartService {
         signedImageUrl,
       };
     } catch (error) {
-      if (error instanceof InternalServerErrorException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof InternalServerErrorException
+      ) {
         throw error;
       }
       this.logger.error(

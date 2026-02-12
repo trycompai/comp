@@ -4,16 +4,7 @@ import type { Edge, Node } from '@xyflow/react';
 import { OrgChartEditor } from './OrgChartEditor';
 import { OrgChartEmptyState } from './OrgChartEmptyState';
 import { OrgChartImageView } from './OrgChartImageView';
-
-interface Member {
-  id: string;
-  user: {
-    name: string;
-    email: string;
-  };
-  role: string;
-  jobTitle?: string | null;
-}
+import type { OrgChartMember } from '../types';
 
 interface OrgChartData {
   id: string;
@@ -27,7 +18,7 @@ interface OrgChartData {
 
 interface OrgChartContentProps {
   chartData: OrgChartData | null;
-  members: Member[];
+  members: OrgChartMember[];
 }
 
 export function OrgChartContent({
