@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsString, IsOptional, IsArray } from 'class-validator';
 
 export class AISuggestPolicyRequestDto {
@@ -29,5 +30,6 @@ export class AISuggestPolicyRequestDto {
   })
   @IsOptional()
   @IsArray()
+  @Transform(({ value }) => value)
   chatHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
 }

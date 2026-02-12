@@ -6100,6 +6100,107 @@
       }
     },
     "/v1/policies/{id}/versions/{versionId}": {
+      "get": {
+        "description": "Returns a single policy version by its ID, including content and metadata.",
+        "operationId": "PoliciesController_getPolicyVersionById_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "type": "string",
+              "example": "pol_abc123def456"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "description": "Policy version ID",
+            "schema": {
+              "type": "string",
+              "example": "pv_abc123def456"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy version retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "object"
+                    },
+                    "currentVersionId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "pendingVersionId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Resource not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get policy version by ID",
+        "tags": [
+          "Policies"
+        ]
+      },
       "patch": {
         "description": "Updates content for a non-published, non-pending version. Published and pending versions are immutable.",
         "operationId": "PoliciesController_updateVersionContent_v1",
