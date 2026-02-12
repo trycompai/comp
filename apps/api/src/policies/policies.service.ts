@@ -222,30 +222,6 @@ export class PoliciesService {
     updateData: UpdatePolicyDto,
   ) {
     try {
-      // First check if the policy exists and belongs to the organization
-      const existingPolicy = await db.policy.findFirst({
-        where: {
-          id,
-          organizationId,
-        },
-        select: { id: true, name: true, status: true, currentVersionId: true },
-      });
-
-      if (!existingPolicy) {
-        throw new NotFoundException(`Policy with ID ${id} not found`);
-      }
-
-      // Cannot update content unless policy is in draft status
-      // This covers both 'published' and 'needs_review' states
-      if (
-        Array.isArray(updateData.content) &&
-        existingPolicy.status !== 'draft'
-      ) {
-        throw new BadRequestException(
-          'Cannot update content of a published policy. Create a new version to make changes.',
-        );
-      }
-
       // Prepare update data with special handling for status changes
       const updatePayload: Record<string, unknown> = { ...updateData };
 
@@ -268,8 +244,26 @@ export class PoliciesService {
         updatePayload.content = contentValue;
       }
 
-      // Update policy and sync content to current version in a transaction
+      // All reads and writes in one transaction to prevent concurrent publish bypass
       const updatedPolicy = await db.$transaction(async (tx) => {
+        // Check existence and status inside the transaction
+        const existingPolicy = await tx.policy.findFirst({
+          where: { id, organizationId },
+          select: { id: true, status: true },
+        });
+
+        if (!existingPolicy) {
+          throw new NotFoundException(`Policy with ID ${id} not found`);
+        }
+
+        // Cannot update content unless policy is in draft status
+        // This covers both 'published' and 'needs_review' states
+        if (contentValue && existingPolicy.status !== 'draft') {
+          throw new BadRequestException(
+            'Cannot update content of a published policy. Create a new version to make changes.',
+          );
+        }
+
         const policy = await tx.policy.update({
           where: { id },
           data: updatePayload,
@@ -298,7 +292,6 @@ export class PoliciesService {
         });
 
         // Keep current version content in sync with policy content
-        // Read currentVersionId from within the transaction to avoid stale pointer
         if (contentValue && policy.currentVersionId) {
           await tx.policyVersion.update({
             where: { id: policy.currentVersionId },
