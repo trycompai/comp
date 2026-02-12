@@ -65,7 +65,7 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
           <span
             className={cn('text-base', hasAcceptedPolicies && 'text-muted-foreground line-through')}
           >
-            Accept security policies
+            Security Policies
           </span>
         </div>
       </AccordionTrigger>
@@ -74,7 +74,7 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
           {policies.length > 0 ? (
             <>
               <p className="text-muted-foreground text-sm">
-                Please review and accept the following security policies:
+                Please review and accept the following policies:
               </p>
               <div>
                 {policies.map((policy) => {

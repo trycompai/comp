@@ -7,7 +7,7 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
 import { authClient } from '@/utils/auth-client';
-import { CertificateCheck, CloudAuditing, Logout, Settings } from '@carbon/icons-react';
+import { Building, CertificateCheck, CloudAuditing, Logout, Settings } from '@carbon/icons-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +43,7 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useRef } from 'react';
+import { CompanySidebar } from '../company/components/CompanySidebar';
 import { SettingsSidebar } from '../settings/components/SettingsSidebar';
 import { TrustSidebar } from '../trust/components/TrustSidebar';
 import { getAppShellSearchGroups } from './app-shell-search-groups';
@@ -98,6 +99,7 @@ function AppShellWrapperContent({
   const previousIsCollapsedRef = useRef(isCollapsed);
   const isSettingsActive = pathname?.startsWith(`/${organization.id}/settings`);
   const isTrustActive = pathname?.startsWith(`/${organization.id}/trust`);
+  const isCompanyActive = pathname?.startsWith(`/${organization.id}/company`);
 
   const { execute } = useAction(updateSidebarState, {
     onError: () => {
@@ -216,9 +218,16 @@ function AppShellWrapperContent({
         <AppShellRail>
           <Link href={`/${organization.id}/frameworks`}>
             <AppShellRailItem
-              isActive={!isSettingsActive && !isTrustActive}
+              isActive={!isSettingsActive && !isTrustActive && !isCompanyActive}
               icon={<CertificateCheck className="size-5" />}
               label="Compliance"
+            />
+          </Link>
+          <Link href={`/${organization.id}/company`}>
+            <AppShellRailItem
+              isActive={isCompanyActive}
+              icon={<Building className="size-5" />}
+              label="Company"
             />
           </Link>
           {isTrustNdaEnabled && (
@@ -243,12 +252,22 @@ function AppShellWrapperContent({
         <AppShellMain>
           <AppShellSidebar collapsible>
             <AppShellSidebarHeader
-              title={isSettingsActive ? 'Settings' : isTrustActive ? 'Trust' : 'Compliance'}
+              title={
+                isSettingsActive
+                  ? 'Settings'
+                  : isTrustActive
+                    ? 'Trust'
+                    : isCompanyActive
+                      ? 'Company'
+                      : 'Compliance'
+              }
             />
             {isSettingsActive ? (
               <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} />
             ) : isTrustActive ? (
               <TrustSidebar orgId={organization.id} />
+            ) : isCompanyActive ? (
+              <CompanySidebar orgId={organization.id} />
             ) : (
               <AppSidebar
                 organization={organization}

@@ -125,6 +125,14 @@ export const getAppShellSearchGroups = ({
         ]
       : []),
     createNavItem({
+      id: 'company',
+      label: 'Company',
+      icon: <Group size={16} />,
+      path: `/${organizationId}/company`,
+      keywords: ['company', 'forms', 'evidence submissions'],
+      router,
+    }),
+    createNavItem({
       id: 'people',
       label: 'People',
       icon: <Group size={16} />,

@@ -3,12 +3,16 @@
 import { trainingVideos } from '@/lib/data/training-videos';
 import { Accordion } from '@comp/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { evidenceFormDefinitionList } from '@comp/company';
 import type { EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
+import Link from 'next/link';
 import useSWR from 'swr';
 import type { FleetPolicy, Host } from '../types';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
 import { PoliciesAccordionItem } from './tasks/PoliciesAccordionItem';
+
+const portalForms = evidenceFormDefinitionList.filter((f) => f.portalAccessible);
 
 type PolicyWithVersion = Policy & {
   currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
@@ -31,7 +35,11 @@ export const EmployeeTasksList = ({
   fleetPolicies,
   host,
 }: EmployeeTasksListProps) => {
-  const { data: response, isValidating, mutate: fetchFleetPolicies } = useSWR<{ device: Host | null; fleetPolicies: FleetPolicy[] }>(
+  const {
+    data: response,
+    isValidating,
+    mutate: fetchFleetPolicies,
+  } = useSWR<{ device: Host | null; fleetPolicies: FleetPolicy[] }>(
     `/api/fleet-policies?organizationId=${organizationId}`,
     async (url) => {
       const res = await fetch(url);
@@ -42,7 +50,7 @@ export const EmployeeTasksList = ({
       fallbackData: { device: host, fleetPolicies },
       refreshInterval: 0,
       revalidateOnFocus: false,
-      revalidateOnMount: false
+      revalidateOnMount: false,
     },
   );
 
@@ -55,7 +63,8 @@ export const EmployeeTasksList = ({
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
   const hasInstalledAgent = response.device !== null;
   const allFleetPoliciesPass =
-    response.fleetPolicies.length === 0 || response.fleetPolicies.every((policy) => policy.response === 'pass');
+    response.fleetPolicies.length === 0 ||
+    response.fleetPolicies.every((policy) => policy.response === 'pass');
   const hasCompletedDeviceSetup = hasInstalledAgent && allFleetPoliciesPass;
 
   // Calculate general training completion (matching logic from GeneralTrainingAccordionItem)
@@ -79,11 +88,11 @@ export const EmployeeTasksList = ({
 
   const accordionItems = [
     {
-      title: 'Accept security policies',
+      title: 'Security Policies',
       content: <PoliciesAccordionItem policies={policies} member={member} />,
     },
     {
-      title: 'Download and install Comp AI Device Agent',
+      title: 'Device Agent',
       content: (
         <DeviceAgentAccordionItem
           member={member}
@@ -95,7 +104,7 @@ export const EmployeeTasksList = ({
       ),
     },
     {
-      title: 'Complete general security awareness training',
+      title: 'Security Awareness Training',
       content: <GeneralTrainingAccordionItem trainingVideoCompletions={trainingVideoCompletions} />,
     },
   ];
@@ -128,6 +137,42 @@ export const EmployeeTasksList = ({
               <div key={item.title ?? idx}>{item.content}</div>
             ))}
           </Accordion>
+
+          {/* Company forms */}
+          {portalForms.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Company Forms
+              </div>
+              {portalForms.map((form) => (
+                <div
+                  key={form.type}
+                  className="flex items-center justify-between rounded-md border border-border p-3"
+                >
+                  <div>
+                    <span className="text-sm font-medium">{form.title}</span>
+                    <p className="text-xs text-muted-foreground">{form.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-4">
+                    {form.type === 'access-request' && (
+                      <Link
+                        href={`/${organizationId}/company/${form.type}/submissions`}
+                        className="text-xs text-muted-foreground hover:underline"
+                      >
+                        My requests
+                      </Link>
+                    )}
+                    <Link
+                      href={`/${organizationId}/company/${form.type}`}
+                      className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+                    >
+                      Submit
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

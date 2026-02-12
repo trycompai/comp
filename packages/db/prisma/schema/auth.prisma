@@ -18,6 +18,8 @@ model User {
   members            Member[]
   sessions           Session[]
   fleetPolicyResults FleetPolicyResult[]
+  evidenceSubmissions EvidenceSubmission[] @relation("EvidenceSubmitter")
+  evidenceReviews     EvidenceSubmission[] @relation("EvidenceReviewer")
 
   @@unique([email])
 }

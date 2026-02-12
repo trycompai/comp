@@ -34,6 +34,7 @@ import { BrowserbaseModule } from './browserbase/browserbase.module';
 import { TaskManagementModule } from './task-management/task-management.module';
 import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
 import { TrainingModule } from './training/training.module';
+import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { TrainingModule } from './training/training.module';
     TaskManagementModule,
     AssistantChatModule,
     TrainingModule,
+    EvidenceFormsModule,
   ],
   controllers: [AppController],
   providers: [

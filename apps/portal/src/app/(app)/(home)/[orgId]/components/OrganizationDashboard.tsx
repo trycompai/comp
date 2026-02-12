@@ -82,7 +82,7 @@ export async function OrganizationDashboard({
       organizationId={organizationId}
       policies={policies}
       trainingVideos={trainingVideos}
-      member={member} // Pass the member object down
+      member={member}
       fleetPolicies={fleetPolicies}
       host={host}
     />

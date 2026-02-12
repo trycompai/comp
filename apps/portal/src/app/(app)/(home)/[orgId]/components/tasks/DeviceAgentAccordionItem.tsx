@@ -15,8 +15,8 @@ import type { Member } from '@db';
 import { CheckCircle2, Circle, Download, Loader2, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { FleetPolicyItem } from './FleetPolicyItem';
 import type { FleetPolicy, Host } from '../../types';
+import { FleetPolicyItem } from './FleetPolicyItem';
 
 interface DeviceAgentAccordionItemProps {
   member: Member;
@@ -42,7 +42,10 @@ export function DeviceAgentAccordionItem({
   );
 
   const hasInstalledAgent = host !== null;
-  const failedPoliciesCount = useMemo(() => fleetPolicies.filter((policy) => policy.response !== 'pass').length, [fleetPolicies]);
+  const failedPoliciesCount = useMemo(
+    () => fleetPolicies.filter((policy) => policy.response !== 'pass').length,
+    [fleetPolicies],
+  );
 
   const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
 
@@ -144,7 +147,7 @@ export function DeviceAgentAccordionItem({
             <Circle className="text-muted-foreground h-5 w-5" />
           )}
           <span className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}>
-            Download and install Comp AI Device Agent
+            Device Agent
           </span>
           {hasInstalledAgent && failedPoliciesCount > 0 && (
             <span className="text-amber-600 dark:text-amber-400 text-xs ml-auto">
