@@ -15596,6 +15596,132 @@
           "Training"
         ]
       }
+    },
+    "/v1/org-chart": {
+      "get": {
+        "operationId": "OrgChartController_getOrgChart_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The organization chart"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get the organization chart",
+        "tags": [
+          "Org Chart"
+        ]
+      },
+      "put": {
+        "operationId": "OrgChartController_upsertOrgChart_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The saved organization chart"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create or update an interactive organization chart",
+        "tags": [
+          "Org Chart"
+        ]
+      },
+      "delete": {
+        "operationId": "OrgChartController_deleteOrgChart_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deletion confirmation"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete the organization chart",
+        "tags": [
+          "Org Chart"
+        ]
+      }
+    },
+    "/v1/org-chart/upload": {
+      "post": {
+        "operationId": "OrgChartController_uploadOrgChart_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadOrgChartDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The uploaded organization chart"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload an image as the organization chart",
+        "tags": [
+          "Org Chart"
+        ]
+      }
     }
   },
   "info": {
@@ -15727,6 +15853,12 @@
             ],
             "example": "it"
           },
+          "jobTitle": {
+            "type": "object",
+            "description": "Job title for the member",
+            "example": "Software Engineer",
+            "nullable": true
+          },
           "isActive": {
             "type": "boolean",
             "description": "Whether member is active",
@@ -15754,6 +15886,7 @@
           "role",
           "createdAt",
           "department",
+          "jobTitle",
           "isActive",
           "fleetDmLabelId",
           "user"
@@ -15795,6 +15928,11 @@
             "type": "number",
             "description": "FleetDM label ID for member devices",
             "example": 123
+          },
+          "jobTitle": {
+            "type": "string",
+            "description": "Job title for the member",
+            "example": "Software Engineer"
           }
         },
         "required": [
@@ -15868,6 +16006,11 @@
             "type": "number",
             "description": "FleetDM label ID for member devices",
             "example": 123
+          },
+          "jobTitle": {
+            "type": "string",
+            "description": "Job title for the member",
+            "example": "Software Engineer"
           }
         }
       },
@@ -19370,6 +19513,28 @@
         },
         "required": [
           "sent"
+        ]
+      },
+      "UploadOrgChartDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "description": "Original file name"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file (e.g. image/png)"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64-encoded file data"
+          }
+        },
+        "required": [
+          "fileName",
+          "fileType",
+          "fileData"
         ]
       }
     }
