@@ -15853,6 +15853,12 @@
             ],
             "example": "it"
           },
+          "jobTitle": {
+            "type": "object",
+            "description": "Job title for the member",
+            "example": "Software Engineer",
+            "nullable": true
+          },
           "isActive": {
             "type": "boolean",
             "description": "Whether member is active",
@@ -15880,6 +15886,7 @@
           "role",
           "createdAt",
           "department",
+          "jobTitle",
           "isActive",
           "fleetDmLabelId",
           "user"

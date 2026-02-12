@@ -1,6 +1,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { removeMemberFromOrgChart } from '@/lib/org-chart';
 import type { Departments } from '@db';
 import { db, Prisma } from '@db';
 import { revalidatePath } from 'next/cache';
@@ -142,44 +143,7 @@ export const updateEmployee = authActionClient
 
       // If the member was just deactivated, remove them from the org chart
       if (memberUpdateData.isActive === false) {
-        const orgChart = await db.organizationChart.findUnique({
-          where: { organizationId },
-        });
-
-        if (orgChart) {
-          const chartNodes = (Array.isArray(orgChart.nodes) ? orgChart.nodes : []) as Array<
-            Record<string, unknown>
-          >;
-          const chartEdges = (Array.isArray(orgChart.edges) ? orgChart.edges : []) as Array<
-            Record<string, unknown>
-          >;
-
-          const removedNodeIds = new Set(
-            chartNodes
-              .filter((n) => {
-                const data = n.data as Record<string, unknown> | undefined;
-                return data?.memberId === employeeId;
-              })
-              .map((n) => n.id as string),
-          );
-
-          if (removedNodeIds.size > 0) {
-            const updatedNodes = chartNodes.filter((n) => !removedNodeIds.has(n.id as string));
-            const updatedEdges = chartEdges.filter(
-              (e) =>
-                !removedNodeIds.has(e.source as string) &&
-                !removedNodeIds.has(e.target as string),
-            );
-
-            await db.organizationChart.update({
-              where: { organizationId },
-              data: {
-                nodes: updatedNodes as unknown as Prisma.InputJsonValue,
-                edges: updatedEdges as unknown as Prisma.InputJsonValue,
-              },
-            });
-          }
-        }
+        await removeMemberFromOrgChart(organizationId, employeeId);
       }
 
       revalidatePath(`/${organizationId}/people/${employeeId}`);
