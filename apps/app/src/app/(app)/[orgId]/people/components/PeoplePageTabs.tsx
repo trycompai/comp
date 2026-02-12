@@ -46,11 +46,9 @@ export function PeoplePageTabs({
             tabs={
               <TabsList variant="underline">
                 <TabsTrigger value="people">People</TabsTrigger>
-                {showEmployeeTasks && (
-                  <TabsTrigger value="employee-tasks">Employee Tasks</TabsTrigger>
-                )}
-                <TabsTrigger value="devices">Employee Devices</TabsTrigger>
-                <TabsTrigger value="org-chart">Org Chart</TabsTrigger>
+                {showEmployeeTasks && <TabsTrigger value="employee-tasks">Tasks</TabsTrigger>}
+                <TabsTrigger value="devices">Devices</TabsTrigger>
+                <TabsTrigger value="org-chart">Chart</TabsTrigger>
               </TabsList>
             }
             actions={
