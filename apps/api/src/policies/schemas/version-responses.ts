@@ -43,6 +43,30 @@ const BAD_REQUEST_RESPONSE: ApiResponseOptions = {
   },
 };
 
+export const GET_POLICY_VERSION_BY_ID_RESPONSES: Record<
+  string,
+  ApiResponseOptions
+> = {
+  200: {
+    status: 200,
+    description: 'Policy version retrieved successfully',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            version: { type: 'object' },
+            currentVersionId: { type: 'string', nullable: true },
+            pendingVersionId: { type: 'string', nullable: true },
+          },
+        },
+      },
+    },
+  },
+  401: UNAUTHORIZED_RESPONSE,
+  404: NOT_FOUND_RESPONSE,
+};
+
 export const GET_POLICY_VERSIONS_RESPONSES: Record<string, ApiResponseOptions> =
   {
     200: {

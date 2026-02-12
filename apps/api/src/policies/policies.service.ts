@@ -228,11 +228,21 @@ export class PoliciesService {
           id,
           organizationId,
         },
-        select: { id: true, name: true },
+        select: { id: true, name: true, status: true, currentVersionId: true },
       });
 
       if (!existingPolicy) {
         throw new NotFoundException(`Policy with ID ${id} not found`);
+      }
+
+      // Cannot update content of a published policy — use version endpoints instead
+      if (
+        Array.isArray(updateData.content) &&
+        existingPolicy.status === 'published'
+      ) {
+        throw new BadRequestException(
+          'Cannot update content of a published policy. Create a new version to make changes.',
+        );
       }
 
       // Prepare update data with special handling for status changes
@@ -249,35 +259,51 @@ export class PoliciesService {
       }
 
       // Coerce content to Prisma JSON[] input if provided
-      if (Array.isArray(updateData.content)) {
-        updatePayload.content = updateData.content as Prisma.InputJsonValue[];
+      const contentValue = Array.isArray(updateData.content)
+        ? (updateData.content as Prisma.InputJsonValue[])
+        : null;
+
+      if (contentValue) {
+        updatePayload.content = contentValue;
       }
 
-      // Update the policy
-      const updatedPolicy = await db.policy.update({
-        where: { id },
-        data: updatePayload,
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          status: true,
-          content: true,
-          frequency: true,
-          department: true,
-          isRequiredToSign: true,
-          signedBy: true,
-          reviewDate: true,
-          isArchived: true,
-          createdAt: true,
-          updatedAt: true,
-          lastArchivedAt: true,
-          lastPublishedAt: true,
-          organizationId: true,
-          assigneeId: true,
-          approverId: true,
-          policyTemplateId: true,
-        },
+      // Update policy and sync content to current version in a transaction
+      const updatedPolicy = await db.$transaction(async (tx) => {
+        const policy = await tx.policy.update({
+          where: { id },
+          data: updatePayload,
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            status: true,
+            content: true,
+            frequency: true,
+            department: true,
+            isRequiredToSign: true,
+            signedBy: true,
+            reviewDate: true,
+            isArchived: true,
+            createdAt: true,
+            updatedAt: true,
+            lastArchivedAt: true,
+            lastPublishedAt: true,
+            organizationId: true,
+            assigneeId: true,
+            approverId: true,
+            policyTemplateId: true,
+          },
+        });
+
+        // Keep current version content in sync with policy content
+        if (contentValue && existingPolicy.currentVersionId) {
+          await tx.policyVersion.update({
+            where: { id: existingPolicy.currentVersionId },
+            data: { content: contentValue },
+          });
+        }
+
+        return policy;
       });
 
       this.logger.log(`Updated policy: ${updatedPolicy.name} (${id})`);
@@ -359,6 +385,48 @@ export class PoliciesService {
       this.logger.error(`Failed to delete policy ${id}:`, error);
       throw error;
     }
+  }
+
+  async getVersionById(
+    policyId: string,
+    versionId: string,
+    organizationId: string,
+  ) {
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+      select: { id: true, currentVersionId: true, pendingVersionId: true },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    const version = await db.policyVersion.findUnique({
+      where: { id: versionId },
+      include: {
+        publishedBy: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!version || version.policyId !== policyId) {
+      throw new NotFoundException('Version not found');
+    }
+
+    return {
+      version,
+      currentVersionId: policy.currentVersionId,
+      pendingVersionId: policy.pendingVersionId,
+    };
   }
 
   async getVersions(policyId: string, organizationId: string) {
@@ -530,6 +598,7 @@ export class PoliciesService {
           select: {
             id: true,
             organizationId: true,
+            status: true,
             currentVersionId: true,
             pendingVersionId: true,
           },
@@ -545,7 +614,11 @@ export class PoliciesService {
       throw new NotFoundException('Version not found');
     }
 
-    if (version.id === version.policy.currentVersionId) {
+    // Cannot edit the published version (matching UI behavior: only block when policy is published)
+    if (
+      version.id === version.policy.currentVersionId &&
+      version.policy.status === 'published'
+    ) {
       throw new BadRequestException(
         'Cannot edit the published version. Create a new version to make changes.',
       );
