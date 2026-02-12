@@ -1,29 +1,29 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useApi } from '@/hooks/use-api';
+import { Button } from '@trycompai/design-system';
+import { Add, Close, Edit, Locked, Save, Unlocked } from '@trycompai/design-system/icons';
 import {
-  ReactFlow,
-  Controls,
   Background,
   BackgroundVariant,
+  Controls,
+  ReactFlow,
   addEdge,
-  useNodesState,
   useEdgesState,
+  useNodesState,
   type Connection,
   type Edge,
   type Node,
   type ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Button } from '@trycompai/design-system';
-import { Edit, Save, Close, Locked, Unlocked, Add } from '@trycompai/design-system/icons';
-import { useApi } from '@/hooks/use-api';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import type { OrgChartMember } from '../types';
 import { OrgChartNode, type OrgChartNodeData } from './OrgChartNode';
 import { PeopleSidebar } from './PeopleSidebar';
-import type { OrgChartMember } from '../types';
 
 interface OrgChartEditorProps {
   initialNodes: Node[];
@@ -41,8 +41,7 @@ export function OrgChartEditor({
   const api = useApi();
   const router = useRouter();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [reactFlowInstance, setReactFlowInstance] =
-    useState<ReactFlowInstance | null>(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -181,11 +180,7 @@ export function OrgChartEditor({
     setIsLocked(false);
   };
 
-  const handleAddPerson = (person: {
-    name: string;
-    title: string;
-    memberId?: string;
-  }) => {
+  const handleAddPerson = (person: { name: string; title: string; memberId?: string }) => {
     const position = reactFlowInstance
       ? reactFlowInstance.screenToFlowPosition({
           x: window.innerWidth / 2,
@@ -209,9 +204,7 @@ export function OrgChartEditor({
 
   const handleTitleChange = (nodeId: string, newTitle: string) => {
     setNodes((nds) =>
-      nds.map((n) =>
-        n.id === nodeId ? { ...n, data: { ...n.data, title: newTitle } } : n,
-      ),
+      nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, title: newTitle } } : n)),
     );
   };
 
@@ -228,8 +221,7 @@ export function OrgChartEditor({
     );
   };
 
-  const hasSelectedElements =
-    nodes.some((n) => n.selected) || edges.some((e) => e.selected);
+  const hasSelectedElements = nodes.some((n) => n.selected) || edges.some((e) => e.selected);
 
   const formattedLastSaved = lastSavedAt
     ? `Saved ${formatDistanceToNow(new Date(lastSavedAt), { addSuffix: true })}`
@@ -271,11 +263,7 @@ export function OrgChartEditor({
                 </Button>
               </div>
               {hasSelectedElements && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDeleteSelected}
-                >
+                <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
                   Delete
                 </Button>
               )}
