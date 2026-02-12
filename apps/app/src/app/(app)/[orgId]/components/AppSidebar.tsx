@@ -10,6 +10,7 @@ import {
   Policy,
   Security,
   ShoppingBag,
+  Task,
   TaskComplete,
   Warning,
 } from '@carbon/icons-react';
@@ -73,6 +74,12 @@ export function AppSidebar({
       path: `/${organization.id}/tasks`,
       name: 'Evidence',
       icon: <ListChecked className="size-4" />,
+    },
+    {
+      id: 'company',
+      path: `/${organization.id}/company`,
+      name: 'Tasks',
+      icon: <Task className="size-4" />,
     },
     {
       id: 'people',
