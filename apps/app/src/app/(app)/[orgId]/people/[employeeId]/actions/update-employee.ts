@@ -14,6 +14,7 @@ const schema = z.object({
   department: z.string().optional(),
   isActive: z.boolean().optional(),
   createdAt: z.date().optional(),
+  jobTitle: z.string().optional(),
 });
 
 export const updateEmployee = authActionClient
@@ -26,7 +27,7 @@ export const updateEmployee = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { employeeId, name, email, department, isActive, createdAt } = parsedInput;
+    const { employeeId, name, email, department, isActive, createdAt, jobTitle } = parsedInput;
 
     const organizationId = ctx.session.activeOrganizationId;
     if (!organizationId) {
@@ -81,6 +82,7 @@ export const updateEmployee = authActionClient
       department?: Departments;
       isActive?: boolean;
       createdAt?: Date;
+      jobTitle?: string;
     } = {};
     const userUpdateData: { name?: string; email?: string } = {};
 
@@ -92,6 +94,9 @@ export const updateEmployee = authActionClient
     }
     if (createdAt !== undefined && createdAt.toISOString() !== member.createdAt.toISOString()) {
       memberUpdateData.createdAt = createdAt;
+    }
+    if (jobTitle !== undefined && jobTitle !== member.jobTitle) {
+      memberUpdateData.jobTitle = jobTitle;
     }
     if (name !== undefined && name !== member.user.name) {
       userUpdateData.name = name;
@@ -134,6 +139,48 @@ export const updateEmployee = authActionClient
           });
         }
       });
+
+      // If the member was just deactivated, remove them from the org chart
+      if (memberUpdateData.isActive === false) {
+        const orgChart = await db.organizationChart.findUnique({
+          where: { organizationId },
+        });
+
+        if (orgChart) {
+          const chartNodes = (Array.isArray(orgChart.nodes) ? orgChart.nodes : []) as Array<
+            Record<string, unknown>
+          >;
+          const chartEdges = (Array.isArray(orgChart.edges) ? orgChart.edges : []) as Array<
+            Record<string, unknown>
+          >;
+
+          const removedNodeIds = new Set(
+            chartNodes
+              .filter((n) => {
+                const data = n.data as Record<string, unknown> | undefined;
+                return data?.memberId === employeeId;
+              })
+              .map((n) => n.id as string),
+          );
+
+          if (removedNodeIds.size > 0) {
+            const updatedNodes = chartNodes.filter((n) => !removedNodeIds.has(n.id as string));
+            const updatedEdges = chartEdges.filter(
+              (e) =>
+                !removedNodeIds.has(e.source as string) &&
+                !removedNodeIds.has(e.target as string),
+            );
+
+            await db.organizationChart.update({
+              where: { organizationId },
+              data: {
+                nodes: updatedNodes as unknown as Prisma.InputJsonValue,
+                edges: updatedEdges as unknown as Prisma.InputJsonValue,
+              },
+            });
+          }
+        }
+      }
 
       revalidatePath(`/${organizationId}/people/${employeeId}`);
       revalidatePath(`/${organizationId}/people`);

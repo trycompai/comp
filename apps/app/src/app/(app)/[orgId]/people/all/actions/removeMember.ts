@@ -236,6 +236,46 @@ export const removeMember = authActionClient
         }),
       ]);
 
+      // Remove the member from the org chart (if present)
+      const orgChart = await db.organizationChart.findUnique({
+        where: { organizationId: ctx.session.activeOrganizationId },
+      });
+
+      if (orgChart) {
+        const chartNodes = (Array.isArray(orgChart.nodes) ? orgChart.nodes : []) as Array<
+          Record<string, unknown>
+        >;
+        const chartEdges = (Array.isArray(orgChart.edges) ? orgChart.edges : []) as Array<
+          Record<string, unknown>
+        >;
+
+        const removedNodeIds = new Set(
+          chartNodes
+            .filter((n) => {
+              const data = n.data as Record<string, unknown> | undefined;
+              return data?.memberId === memberId;
+            })
+            .map((n) => n.id as string),
+        );
+
+        if (removedNodeIds.size > 0) {
+          const updatedNodes = chartNodes.filter((n) => !removedNodeIds.has(n.id as string));
+          const updatedEdges = chartEdges.filter(
+            (e) =>
+              !removedNodeIds.has(e.source as string) &&
+              !removedNodeIds.has(e.target as string),
+          );
+
+          await db.organizationChart.update({
+            where: { organizationId: ctx.session.activeOrganizationId },
+            data: {
+              nodes: updatedNodes as unknown as import('@db').Prisma.InputJsonValue,
+              edges: updatedEdges as unknown as import('@db').Prisma.InputJsonValue,
+            },
+          });
+        }
+      }
+
       // Mark the member as deactivated instead of deleting
       await db.member.update({
         where: {
