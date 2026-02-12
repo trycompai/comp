@@ -26,4 +26,14 @@ export const POLICY_OPERATIONS: Record<string, ApiOperationOptions> = {
     description:
       'Permanently deletes a policy. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
   },
+  uploadPolicyPdf: {
+    summary: 'Upload policy PDF',
+    description:
+      'Uploads or replaces a policy PDF. Only draft policies can be modified.',
+  },
+  uploadPolicyVersionPdf: {
+    summary: 'Upload policy version PDF',
+    description:
+      'Uploads or replaces a PDF for a specific policy version. Only draft versions can be modified.',
+  },
 };

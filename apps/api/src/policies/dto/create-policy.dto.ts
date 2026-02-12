@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -81,7 +82,9 @@ export class CreatePolicyDto {
     items: { type: 'object', additionalProperties: true },
   })
   @IsArray()
-  content: unknown[];
+  @IsObject({ each: true })
+  @Type(() => Object)
+  content: Record<string, unknown>[];
 
   @ApiProperty({
     description: 'Review frequency of the policy',

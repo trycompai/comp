@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class CreateVersionDto {
   @ApiProperty({
@@ -36,7 +37,9 @@ export class UpdateVersionContentDto {
     items: { type: 'object', additionalProperties: true },
   })
   @IsArray()
-  content: unknown[];
+  @IsObject({ each: true })
+  @Type(() => Object)
+  content: Record<string, unknown>[];
 }
 
 export class PublishVersionDto {

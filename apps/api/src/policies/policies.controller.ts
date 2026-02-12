@@ -31,6 +31,7 @@ import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
 import { AISuggestPolicyRequestDto } from './dto/ai-suggest-policy.dto';
+import { UploadPolicyPdfDto } from './dto/upload-policy-pdf.dto';
 import {
   CreateVersionDto,
   PublishVersionDto,
@@ -315,6 +316,100 @@ export class PoliciesController {
     @AuthContext() authContext: AuthContextType,
   ) {
     const data = await this.policiesService.updateVersionContent(
+      id,
+      versionId,
+      organizationId,
+      body,
+    );
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post(':id/pdf')
+  @ApiOperation(POLICY_OPERATIONS.uploadPolicyPdf)
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiBody(POLICY_BODIES.uploadPolicyPdf)
+  @ApiResponse({
+    status: 200,
+    description: 'Policy PDF uploaded',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            pdfUrl: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Policy not found' })
+  async uploadPolicyPdf(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Body() body: UploadPolicyPdfDto,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.uploadPolicyPdf(
+      id,
+      organizationId,
+      body,
+    );
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post(':id/versions/:versionId/pdf')
+  @ApiOperation(POLICY_OPERATIONS.uploadPolicyVersionPdf)
+  @ApiParam(VERSION_PARAMS.policyId)
+  @ApiParam(VERSION_PARAMS.versionId)
+  @ApiBody(POLICY_BODIES.uploadPolicyVersionPdf)
+  @ApiResponse({
+    status: 200,
+    description: 'Policy version PDF uploaded',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            versionId: { type: 'string' },
+            pdfUrl: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Version not found' })
+  async uploadPolicyVersionPdf(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @OrganizationId() organizationId: string,
+    @Body() body: UploadPolicyPdfDto,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.uploadPolicyVersionPdf(
       id,
       versionId,
       organizationId,

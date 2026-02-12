@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { db, PolicyStatus, Prisma } from '@trycompai/db';
+import { db, PolicyDisplayFormat, PolicyStatus, Prisma } from '@trycompai/db';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
@@ -16,11 +16,13 @@ import type {
   SubmitForApprovalDto,
   UpdateVersionContentDto,
 } from './dto/version.dto';
+import type { UploadPolicyPdfDto } from './dto/upload-policy-pdf.dto';
 
 @Injectable()
 export class PoliciesService {
   private readonly logger = new Logger(PoliciesService.name);
   private readonly versionCreateRetries = 3;
+  private readonly maxPolicyPdfSizeBytes = 100 * 1024 * 1024; // 100MB
 
   constructor(
     private readonly attachmentsService: AttachmentsService,
@@ -532,6 +534,7 @@ export class PoliciesService {
             organizationId: true,
             currentVersionId: true,
             pendingVersionId: true,
+            status: true,
           },
         },
       },
@@ -545,7 +548,10 @@ export class PoliciesService {
       throw new NotFoundException('Version not found');
     }
 
-    if (version.id === version.policy.currentVersionId) {
+    if (
+      version.id === version.policy.currentVersionId &&
+      version.policy.status !== PolicyStatus.draft
+    ) {
       throw new BadRequestException(
         'Cannot edit the published version. Create a new version to make changes.',
       );
@@ -567,6 +573,171 @@ export class PoliciesService {
     });
 
     return { versionId };
+  }
+
+  private validatePolicyPdfUpload(fileType: string, fileData: string): Buffer {
+    if (fileType.toLowerCase() !== 'application/pdf') {
+      throw new BadRequestException('Only application/pdf is supported.');
+    }
+
+    const fileBuffer = Buffer.from(fileData, 'base64');
+    if (fileBuffer.length === 0) {
+      throw new BadRequestException('File data is empty.');
+    }
+
+    if (fileBuffer.length > this.maxPolicyPdfSizeBytes) {
+      throw new BadRequestException(
+        `File size exceeds maximum allowed size of ${this.maxPolicyPdfSizeBytes / (1024 * 1024)}MB`,
+      );
+    }
+
+    return fileBuffer;
+  }
+
+  async uploadPolicyPdf(
+    policyId: string,
+    organizationId: string,
+    dto: UploadPolicyPdfDto,
+  ) {
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+      select: {
+        id: true,
+        status: true,
+        pdfUrl: true,
+        currentVersionId: true,
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    if (policy.currentVersionId) {
+      throw new BadRequestException(
+        'This policy uses versioning. Upload the PDF to a draft version instead.',
+      );
+    }
+
+    if (policy.status !== PolicyStatus.draft) {
+      throw new BadRequestException(
+        'Cannot upload PDF to a published policy. Create a new version to make changes.',
+      );
+    }
+
+    const fileBuffer = this.validatePolicyPdfUpload(
+      dto.fileType,
+      dto.fileData,
+    );
+
+    const s3Key = await this.attachmentsService.uploadToS3(
+      fileBuffer,
+      dto.fileName,
+      dto.fileType,
+      organizationId,
+      'policy_pdf',
+      policyId,
+    );
+
+    await db.policy.update({
+      where: { id: policyId, organizationId },
+      data: {
+        pdfUrl: s3Key,
+        displayFormat: PolicyDisplayFormat.PDF,
+      },
+    });
+
+    if (policy.pdfUrl && policy.pdfUrl !== s3Key) {
+      try {
+        await this.attachmentsService.deletePolicyVersionPdf(policy.pdfUrl);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to delete old policy PDF for policy ${policyId}:`,
+          error,
+        );
+      }
+    }
+
+    return { pdfUrl: s3Key };
+  }
+
+  async uploadPolicyVersionPdf(
+    policyId: string,
+    versionId: string,
+    organizationId: string,
+    dto: UploadPolicyPdfDto,
+  ) {
+    const version = await db.policyVersion.findUnique({
+      where: { id: versionId },
+      include: {
+        policy: {
+          select: {
+            id: true,
+            organizationId: true,
+            currentVersionId: true,
+            pendingVersionId: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (
+      !version ||
+      version.policy.id !== policyId ||
+      version.policy.organizationId !== organizationId
+    ) {
+      throw new NotFoundException('Version not found');
+    }
+
+    if (version.id === version.policy.pendingVersionId) {
+      throw new BadRequestException(
+        'Cannot upload PDF to a version that is pending approval.',
+      );
+    }
+
+    if (
+      version.id === version.policy.currentVersionId &&
+      version.policy.status !== PolicyStatus.draft
+    ) {
+      throw new BadRequestException(
+        'Cannot upload PDF to the published version. Create a new version to make changes.',
+      );
+    }
+
+    const fileBuffer = this.validatePolicyPdfUpload(
+      dto.fileType,
+      dto.fileData,
+    );
+
+    const s3Key = await this.attachmentsService.uploadToS3(
+      fileBuffer,
+      dto.fileName,
+      dto.fileType,
+      organizationId,
+      'policy_version_pdf',
+      versionId,
+    );
+
+    const oldPdfUrl = version.pdfUrl;
+
+    await db.policyVersion.update({
+      where: { id: versionId },
+      data: { pdfUrl: s3Key },
+    });
+
+    if (oldPdfUrl && oldPdfUrl !== s3Key) {
+      try {
+        await this.attachmentsService.deletePolicyVersionPdf(oldPdfUrl);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to delete old policy version PDF for version ${versionId}:`,
+          error,
+        );
+      }
+    }
+
+    return { versionId, pdfUrl: s3Key };
   }
 
   async deleteVersion(

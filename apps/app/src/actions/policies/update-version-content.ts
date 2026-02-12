@@ -106,7 +106,7 @@ export const updateVersionContentAction = authActionClient
     }
 
     // Cannot edit published version (only if the policy is actually published)
-    if (version.id === version.policy.currentVersionId && version.policy.status === PolicyStatus.published) {
+    if (version.id === version.policy.currentVersionId && version.policy.status !== PolicyStatus.draft) {
       return {
         success: false,
         error: 'Cannot edit the published version. Create a new version to make changes.',
