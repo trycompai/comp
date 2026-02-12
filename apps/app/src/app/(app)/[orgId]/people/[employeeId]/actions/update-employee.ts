@@ -1,6 +1,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { removeMemberFromOrgChart } from '@/lib/org-chart';
 import type { Departments } from '@db';
 import { db, Prisma } from '@db';
 import { revalidatePath } from 'next/cache';
@@ -14,6 +15,7 @@ const schema = z.object({
   department: z.string().optional(),
   isActive: z.boolean().optional(),
   createdAt: z.date().optional(),
+  jobTitle: z.string().optional(),
 });
 
 export const updateEmployee = authActionClient
@@ -26,7 +28,7 @@ export const updateEmployee = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { employeeId, name, email, department, isActive, createdAt } = parsedInput;
+    const { employeeId, name, email, department, isActive, createdAt, jobTitle } = parsedInput;
 
     const organizationId = ctx.session.activeOrganizationId;
     if (!organizationId) {
@@ -81,6 +83,7 @@ export const updateEmployee = authActionClient
       department?: Departments;
       isActive?: boolean;
       createdAt?: Date;
+      jobTitle?: string;
     } = {};
     const userUpdateData: { name?: string; email?: string } = {};
 
@@ -92,6 +95,9 @@ export const updateEmployee = authActionClient
     }
     if (createdAt !== undefined && createdAt.toISOString() !== member.createdAt.toISOString()) {
       memberUpdateData.createdAt = createdAt;
+    }
+    if (jobTitle !== undefined && jobTitle !== member.jobTitle) {
+      memberUpdateData.jobTitle = jobTitle;
     }
     if (name !== undefined && name !== member.user.name) {
       userUpdateData.name = name;
@@ -134,6 +140,11 @@ export const updateEmployee = authActionClient
           });
         }
       });
+
+      // If the member was just deactivated, remove them from the org chart
+      if (memberUpdateData.isActive === false) {
+        await removeMemberFromOrgChart(organizationId, employeeId);
+      }
 
       revalidatePath(`/${organizationId}/people/${employeeId}`);
       revalidatePath(`/${organizationId}/people`);

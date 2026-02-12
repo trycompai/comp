@@ -50,4 +50,13 @@ export class CreatePeopleDto {
   @IsOptional()
   @IsNumber()
   fleetDmLabelId?: number;
+
+  @ApiProperty({
+    description: 'Job title for the member',
+    example: 'Software Engineer',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  jobTitle?: string;
 }

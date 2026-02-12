@@ -52,6 +52,7 @@ import { VERSION_BODIES } from './schemas/version-bodies';
 import {
   CREATE_POLICY_VERSION_RESPONSES,
   DELETE_VERSION_RESPONSES,
+  GET_POLICY_VERSION_BY_ID_RESPONSES,
   GET_POLICY_VERSIONS_RESPONSES,
   PUBLISH_VERSION_RESPONSES,
   SET_ACTIVE_VERSION_RESPONSES,
@@ -252,6 +253,37 @@ export class PoliciesController {
     @AuthContext() authContext: AuthContextType,
   ) {
     const data = await this.policiesService.getVersions(id, organizationId);
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Get(':id/versions/:versionId')
+  @ApiOperation(VERSION_OPERATIONS.getPolicyVersionById)
+  @ApiParam(VERSION_PARAMS.policyId)
+  @ApiParam(VERSION_PARAMS.versionId)
+  @ApiResponse(GET_POLICY_VERSION_BY_ID_RESPONSES[200])
+  @ApiResponse(GET_POLICY_VERSION_BY_ID_RESPONSES[401])
+  @ApiResponse(GET_POLICY_VERSION_BY_ID_RESPONSES[404])
+  async getPolicyVersionById(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.getVersionById(
+      id,
+      versionId,
+      organizationId,
+    );
 
     return {
       data,

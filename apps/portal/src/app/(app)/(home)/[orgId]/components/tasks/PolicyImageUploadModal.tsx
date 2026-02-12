@@ -12,24 +12,27 @@ import {
 } from '@comp/ui/dialog';
 import { ImagePlus, Trash2, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { FleetPolicy } from '../../types';
 
 interface PolicyImageUploadModalProps {
   open: boolean;
   policy: FleetPolicy;
+  organizationId: string;
   onOpenChange: (open: boolean) => void;
   onRefresh: () => void;
 }
 
-export function PolicyImageUploadModal({ open, policy, onOpenChange, onRefresh }: PolicyImageUploadModalProps) {
+export function PolicyImageUploadModal({
+  open,
+  policy,
+  organizationId,
+  onOpenChange,
+  onRefresh,
+}: PolicyImageUploadModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<Array<{ file: File; previewUrl: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const params = useParams<{ orgId: string }>();
-  const orgIdParam = params?.orgId;
-  const organizationId = Array.isArray(orgIdParam) ? orgIdParam[0] : orgIdParam;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);

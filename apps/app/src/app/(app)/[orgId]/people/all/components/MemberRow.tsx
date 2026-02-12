@@ -16,7 +16,7 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Edit, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
+import { Checkmark, Edit, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -45,6 +45,7 @@ interface MemberRowProps {
   onRemove: (memberId: string) => void;
   onRemoveDevice: (memberId: string) => void;
   onUpdateRole: (memberId: string, roles: Role[]) => void;
+  onReactivate: (memberId: string) => void;
   canEdit: boolean;
   isCurrentUserOwner: boolean;
 }
@@ -93,6 +94,7 @@ export function MemberRow({
   onRemove,
   onRemoveDevice,
   onUpdateRole,
+  onReactivate,
   canEdit,
   isCurrentUserOwner,
 }: MemberRowProps) {
@@ -106,6 +108,7 @@ export function MemberRow({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isRemovingDevice, setIsRemovingDevice] = useState(false);
+  const [isReactivating, setIsReactivating] = useState(false);
 
   const memberName = member.user.name || member.user.email || 'Member';
   const memberEmail = member.user.email || '';
@@ -148,6 +151,16 @@ export function MemberRow({
       await onRemove(memberId);
     } finally {
       setIsRemoving(false);
+    }
+  };
+
+  const handleReactivateClick = async () => {
+    setDropdownOpen(false);
+    setIsReactivating(true);
+    try {
+      await onReactivate(memberId);
+    } finally {
+      setIsReactivating(false);
     }
   };
 
@@ -211,48 +224,55 @@ export function MemberRow({
 
         {/* ACTIONS */}
         <TableCell>
-          {!isDeactivated && (
-            <div className="flex justify-center">
-              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canEdit}>
-                    <OverflowMenuVertical />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {canEdit && (
-                    <DropdownMenuItem onSelect={handleEditRolesClick}>
-                      <Edit size={16} className="mr-2" />
-                      <span>Edit Roles</span>
-                    </DropdownMenuItem>
-                  )}
-                  {member.fleetDmLabelId && isCurrentUserOwner && (
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setIsRemoveDeviceAlertOpen(true);
-                      }}
-                    >
-                      <Laptop className="mr-2 h-4 w-4" />
-                      <span>Remove Device</span>
-                    </DropdownMenuItem>
-                  )}
-                  {canRemove && (
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setIsRemoveAlertOpen(true);
-                      }}
-                    >
-                      <TrashCan size={16} className="mr-2" />
-                      <span>Remove Member</span>
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
+          <div className="flex justify-center">
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canEdit}>
+                  <OverflowMenuVertical />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {isDeactivated && canEdit && (
+                  <DropdownMenuItem
+                    onSelect={handleReactivateClick}
+                    disabled={isReactivating}
+                  >
+                    <Checkmark size={16} className="mr-2" />
+                    <span>{isReactivating ? 'Reinstating...' : 'Reinstate Member'}</span>
+                  </DropdownMenuItem>
+                )}
+                {!isDeactivated && canEdit && (
+                  <DropdownMenuItem onSelect={handleEditRolesClick}>
+                    <Edit size={16} className="mr-2" />
+                    <span>Edit Roles</span>
+                  </DropdownMenuItem>
+                )}
+                {!isDeactivated && member.fleetDmLabelId && isCurrentUserOwner && (
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setDropdownOpen(false);
+                      setIsRemoveDeviceAlertOpen(true);
+                    }}
+                  >
+                    <Laptop className="mr-2 h-4 w-4" />
+                    <span>Remove Device</span>
+                  </DropdownMenuItem>
+                )}
+                {!isDeactivated && canRemove && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                    onSelect={() => {
+                      setDropdownOpen(false);
+                      setIsRemoveAlertOpen(true);
+                    }}
+                  >
+                    <TrashCan size={16} className="mr-2" />
+                    <span>Remove Member</span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </TableCell>
       </TableRow>
 
