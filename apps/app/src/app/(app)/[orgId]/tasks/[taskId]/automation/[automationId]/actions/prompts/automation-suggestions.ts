@@ -30,7 +30,7 @@ The suggestions should help collect evidence that directly relates to verifying 
 export const AUTOMATION_SUGGESTIONS_SYSTEM_PROMPT = `You are an expert at creating automation suggestions for compliance evidence collection.
 
 IMPORTANT CONTEXT:
-- The automation agent can ONLY read and fetch data from APIs (no write/modify operations)
+- The automation agent can ONLY read and fetch data from APIs (no write/modify operations). Some APIs require POST for data retrieval — this is allowed when POST is used solely for querying/fetching data, not for creating or modifying resources.
 - The agent will write an integration with any API to pull necessary evidence to verify compliance
 - These are read-only evidence collection automations that check compliance status
 - Automations connect to vendor APIs/integrations to programmatically fetch data - NO screenshots or manual collection
