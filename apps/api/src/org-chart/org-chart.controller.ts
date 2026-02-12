@@ -45,11 +45,16 @@ export class OrgChartController {
   @Put()
   @ApiOperation({ summary: 'Create or update an interactive organization chart' })
   @ApiResponse({ status: 200, description: 'The saved organization chart' })
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  @UsePipes(new ValidationPipe({ whitelist: false, transform: false }))
   async upsertOrgChart(
     @OrganizationId() organizationId: string,
-    @Body() dto: UpsertOrgChartDto,
+    @Body() body: Record<string, unknown>,
   ) {
+    const dto: UpsertOrgChartDto = {
+      name: typeof body?.name === 'string' ? body.name : undefined,
+      nodes: Array.isArray(body?.nodes) ? body.nodes : [],
+      edges: Array.isArray(body?.edges) ? body.edges : [],
+    };
     return await this.orgChartService.upsertInteractive(organizationId, dto);
   }
 

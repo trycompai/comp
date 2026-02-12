@@ -23,7 +23,7 @@ export class OrgChartService {
   private bucketName: string | undefined;
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
   private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
-  private readonly ALLOWED_IMAGE_MIME_TYPES = [
+  private readonly ALLOWED_UPLOAD_MIME_TYPES = [
     'image/png',
     'image/jpeg',
     'image/gif',
@@ -31,6 +31,7 @@ export class OrgChartService {
     'image/svg+xml',
     'image/bmp',
     'image/tiff',
+    'application/pdf',
   ];
 
   constructor() {
@@ -76,13 +77,12 @@ export class OrgChartService {
         `[OrgChart API] Saving for org ${organizationId}: nodes=${data.nodes?.length ?? 'null'}, edges=${data.edges?.length ?? 'null'}`,
       );
 
-      // If switching from uploaded → interactive, clean up the orphaned S3 object
+      // Check for an existing uploaded image before the upsert so we can
+      // clean it up from S3 *after* the DB write succeeds.
       const existing = await db.organizationChart.findUnique({
         where: { organizationId },
       });
-      if (existing?.uploadedImageUrl) {
-        await this.deleteS3Object(existing.uploadedImageUrl);
-      }
+      const previousImageKey = existing?.uploadedImageUrl ?? null;
 
       const chart = await db.organizationChart.upsert({
         where: { organizationId },
@@ -101,6 +101,12 @@ export class OrgChartService {
           ...(data.name && { name: data.name }),
         },
       });
+
+      // Delete the old S3 object only after the DB update succeeded,
+      // so a DB failure doesn't orphan the image permanently.
+      if (previousImageKey) {
+        await this.deleteS3Object(previousImageKey);
+      }
 
       this.logger.log(
         `Upserted interactive org chart for organization ${organizationId}`,
@@ -126,11 +132,11 @@ export class OrgChartService {
     }
 
     try {
-      // Validate MIME type is an allowed image type
+      // Validate MIME type is an allowed upload type (images + PDF)
       const normalizedType = data.fileType.toLowerCase();
-      if (!this.ALLOWED_IMAGE_MIME_TYPES.includes(normalizedType)) {
+      if (!this.ALLOWED_UPLOAD_MIME_TYPES.includes(normalizedType)) {
         throw new BadRequestException(
-          `File type '${data.fileType}' is not allowed. Only image files are accepted.`,
+          `File type '${data.fileType}' is not allowed. Supported formats: PNG, JPG, GIF, WebP, SVG, BMP, TIFF, PDF.`,
         );
       }
 

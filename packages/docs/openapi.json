@@ -15639,16 +15639,6 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpsertOrgChartDto"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "The saved organization chart"
@@ -19516,33 +19506,6 @@
         },
         "required": [
           "sent"
-        ]
-      },
-      "UpsertOrgChartDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Name of the org chart"
-          },
-          "nodes": {
-            "description": "React Flow nodes array",
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "edges": {
-            "description": "React Flow edges array",
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          }
-        },
-        "required": [
-          "nodes",
-          "edges"
         ]
       },
       "UploadOrgChartDto": {
