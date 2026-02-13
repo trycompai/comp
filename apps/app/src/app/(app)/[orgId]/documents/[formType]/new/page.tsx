@@ -1,17 +1,9 @@
 import { CompanySubmissionWizard } from '@/app/(app)/[orgId]/documents/components/CompanySubmissionWizard';
+import { conciseFormDescriptions } from '@/app/(app)/[orgId]/documents/form-descriptions';
 import { Breadcrumb, PageHeader, PageLayout, Text } from '@trycompai/design-system';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { evidenceFormDefinitions, evidenceFormTypeSchema } from '../../forms';
-
-const conciseFormDescriptions: Record<string, string> = {
-  'board-meeting': 'Hold a board meeting and capture minutes.',
-  'it-leadership-meeting': 'Run an IT leadership meeting and document outcomes.',
-  'risk-committee-meeting': 'Conduct a risk committee meeting and record decisions.',
-  'access-request': 'Track and retain user access requests.',
-  'whistleblower-report': 'Submit a confidential whistleblower report.',
-  'penetration-test': 'Upload a third-party penetration test report.',
-};
 
 export default async function NewCompanySubmissionPage({
   params,

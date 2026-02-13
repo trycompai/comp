@@ -4,6 +4,7 @@ import {
   evidenceFormDefinitions,
   type EvidenceFormType,
 } from '@/app/(app)/[orgId]/documents/forms';
+import { conciseFormDescriptions } from '@/app/(app)/[orgId]/documents/form-descriptions';
 import { api } from '@/lib/api-client';
 import { jwtManager } from '@/utils/jwt-manager';
 import {
@@ -31,19 +32,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
-
-const conciseFormDescriptions: Record<string, string> = {
-  'board-meeting': 'Hold a board meeting and capture minutes.',
-  'it-leadership-meeting': 'Run an IT leadership meeting and document outcomes.',
-  'risk-committee-meeting': 'Conduct a risk committee meeting and record decisions.',
-  'access-request':
-    'Track and retain user access requests. Employees can request access to systems through the employee portal.',
-  'whistleblower-report': 'Submit a confidential whistleblower report.',
-  'penetration-test': 'Upload a third-party penetration test report.',
-  'rbac-matrix': 'Document role-based access by system, role, and approval.',
-  'infrastructure-inventory': 'Track infrastructure assets, ownership, and review dates.',
-  'employee-performance-evaluation': 'Capture structured employee review outcomes and sign-off.',
-};
+import { StatusBadge, formatSubmissionDate } from './submission-utils';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -57,29 +46,6 @@ type EvidenceSubmissionRow = {
     email: string;
   } | null;
 };
-
-function StatusBadge({ status }: { status: string }) {
-  switch (status) {
-    case 'approved':
-      return (
-        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400">
-          Approved
-        </span>
-      );
-    case 'rejected':
-      return (
-        <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-950/30 dark:text-red-400">
-          Rejected
-        </span>
-      );
-    default:
-      return (
-        <span className="inline-flex items-center rounded-full bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400">
-          Pending
-        </span>
-      );
-  }
-}
 
 type EvidenceFormResponse = {
   form: (typeof evidenceFormDefinitions)[EvidenceFormType];
@@ -97,35 +63,6 @@ const summaryColumnWidth = 280;
 function truncate(str: string, max: number) {
   if (str.length <= max) return str;
   return `${str.slice(0, max)}…`;
-}
-
-const submissionDateFormatter = new Intl.DateTimeFormat('en-US', {
-  month: '2-digit',
-  day: '2-digit',
-  year: 'numeric',
-});
-
-function formatSubmissionDate(submissionDate: unknown, submittedAt?: string | null): string {
-  const candidates: unknown[] = [submissionDate, submittedAt];
-
-  for (const candidate of candidates) {
-    if (typeof candidate !== 'string') continue;
-    const value = candidate.trim();
-    if (!value) continue;
-
-    // Preserve the date exactly for YYYY-MM-DD and ISO date-time inputs.
-    const ymdMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T)/);
-    if (ymdMatch) {
-      return `${ymdMatch[2]}/${ymdMatch[3]}/${ymdMatch[1]}`;
-    }
-
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      return submissionDateFormatter.format(parsed);
-    }
-  }
-
-  return '—';
 }
 
 function getMatrixRowCount(value: unknown): number {

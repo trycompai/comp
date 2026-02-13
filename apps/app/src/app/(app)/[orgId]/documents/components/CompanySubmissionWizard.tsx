@@ -30,9 +30,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
+import {
+  type MatrixColumnDefinition,
+  type MatrixRowValue,
+  isMatrixField,
+  normalizeMatrixRows,
+  renderSubmissionValue,
+} from './submission-utils';
 
 type Step = 1 | 2 | 3;
 
@@ -49,75 +54,8 @@ async function fileToBase64(file: File): Promise<string> {
   });
 }
 
-function renderSubmissionValue(value: unknown, field?: EvidenceFormFieldDefinition) {
-  if (!value) return '—';
-
-  if (
-    typeof value === 'object' &&
-    'downloadUrl' in value &&
-    typeof value.downloadUrl === 'string'
-  ) {
-    const fileValue = value as EvidenceFormFile;
-    return (
-      <a
-        href={fileValue.downloadUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="text-primary underline"
-      >
-        {fileValue.fileName}
-      </a>
-    );
-  }
-
-  if (field?.type === 'select' && field.options && typeof value === 'string') {
-    const matched = field.options.find((opt) => opt.value === value);
-    if (matched) return matched.label;
-  }
-
-  if (typeof value === 'string' && value.length > 0) return value;
-  return '—';
-}
-
-function MarkdownPreview({ content }: { content: string }) {
-  return (
-    <div className="prose prose-sm max-w-none dark:prose-invert text-sm">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-    </div>
-  );
-}
-
-type MatrixRowValue = Record<string, string>;
-type MatrixColumnDefinition = {
-  key: string;
-  label: string;
-  required?: boolean;
-  placeholder?: string;
-  description?: string;
-};
-
-function isMatrixField(field: EvidenceFormFieldDefinition): field is EvidenceFormFieldDefinition & {
-  type: 'matrix';
-  columns: ReadonlyArray<MatrixColumnDefinition>;
-} {
-  return field.type === 'matrix' && Array.isArray(field.columns) && field.columns.length > 0;
-}
-
 function createEmptyMatrixRow(columns: ReadonlyArray<MatrixColumnDefinition>): MatrixRowValue {
   return Object.fromEntries(columns.map((column) => [column.key, '']));
-}
-
-function normalizeMatrixRows(value: unknown): MatrixRowValue[] {
-  if (!Array.isArray(value)) return [];
-  return value.map((row) => {
-    if (!row || typeof row !== 'object') return {};
-    return Object.fromEntries(
-      Object.entries(row).map(([key, rawValue]) => [
-        key,
-        typeof rawValue === 'string' ? rawValue : '',
-      ]),
-    );
-  });
 }
 
 export function CompanySubmissionWizard({

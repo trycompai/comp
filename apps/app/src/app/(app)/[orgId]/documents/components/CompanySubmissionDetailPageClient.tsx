@@ -2,8 +2,6 @@
 
 import {
   evidenceFormDefinitions,
-  type EvidenceFormFieldDefinition,
-  type EvidenceFormFile,
   type EvidenceFormType,
 } from '@/app/(app)/[orgId]/documents/forms';
 import { api } from '@/lib/api-client';
@@ -32,6 +30,13 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
 import useSWR from 'swr';
+import {
+  StatusBadge,
+  formatSubmissionDate,
+  isMatrixField,
+  normalizeMatrixRows,
+  renderSubmissionValue,
+} from './submission-utils';
 
 type EvidenceSubmissionRow = {
   id: string;
@@ -55,125 +60,12 @@ type EvidenceSubmissionResponse = {
   submission: EvidenceSubmissionRow;
 };
 
-function StatusBadge({ status }: { status: string }) {
-  switch (status) {
-    case 'approved':
-      return (
-        <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400">
-          Approved
-        </span>
-      );
-    case 'rejected':
-      return (
-        <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-950/30 dark:text-red-400">
-          Rejected
-        </span>
-      );
-    default:
-      return (
-        <span className="inline-flex items-center rounded-full bg-yellow-50 px-2.5 py-0.5 text-xs font-medium text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400">
-          Pending
-        </span>
-      );
-  }
-}
-
-const submissionDateFormatter = new Intl.DateTimeFormat('en-US', {
-  month: '2-digit',
-  day: '2-digit',
-  year: 'numeric',
-});
-
-function formatSubmissionDate(submissionDate: unknown, submittedAt?: string | null): string {
-  const candidates: unknown[] = [submissionDate, submittedAt];
-
-  for (const candidate of candidates) {
-    if (typeof candidate !== 'string') continue;
-    const value = candidate.trim();
-    if (!value) continue;
-
-    const ymdMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T)/);
-    if (ymdMatch) {
-      return `${ymdMatch[2]}/${ymdMatch[3]}/${ymdMatch[1]}`;
-    }
-
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      return submissionDateFormatter.format(parsed);
-    }
-  }
-
-  return '—';
-}
-
-function renderSubmissionValue(value: unknown, field?: EvidenceFormFieldDefinition) {
-  if (!value) return '—';
-
-  if (
-    typeof value === 'object' &&
-    'downloadUrl' in value &&
-    typeof value.downloadUrl === 'string'
-  ) {
-    const fileValue = value as EvidenceFormFile;
-    return (
-      <a
-        href={fileValue.downloadUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="text-primary underline"
-      >
-        {fileValue.fileName}
-      </a>
-    );
-  }
-
-  if (field?.type === 'select' && field.options && typeof value === 'string') {
-    const matched = field.options.find((opt) => opt.value === value);
-    if (matched) return matched.label;
-  }
-
-  if (field?.type === 'date') {
-    return formatSubmissionDate(value);
-  }
-
-  return String(value);
-}
-
 function MarkdownPreview({ content }: { content: string }) {
   return (
     <div className="prose prose-sm max-w-none dark:prose-invert text-sm">
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </div>
   );
-}
-
-type MatrixRowValue = Record<string, string>;
-type MatrixColumnDefinition = {
-  key: string;
-  label: string;
-  required?: boolean;
-  placeholder?: string;
-  description?: string;
-};
-
-function isMatrixField(field: EvidenceFormFieldDefinition): field is EvidenceFormFieldDefinition & {
-  type: 'matrix';
-  columns: ReadonlyArray<MatrixColumnDefinition>;
-} {
-  return field.type === 'matrix' && Array.isArray(field.columns) && field.columns.length > 0;
-}
-
-function normalizeMatrixRows(value: unknown): MatrixRowValue[] {
-  if (!Array.isArray(value)) return [];
-  return value.map((row) => {
-    if (!row || typeof row !== 'object') return {};
-    return Object.fromEntries(
-      Object.entries(row).map(([key, rawValue]) => [
-        key,
-        typeof rawValue === 'string' ? rawValue : '',
-      ]),
-    );
-  });
 }
 
 export function CompanySubmissionDetailPageClient({
