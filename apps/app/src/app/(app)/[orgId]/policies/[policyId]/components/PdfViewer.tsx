@@ -97,19 +97,27 @@ export function PdfViewer({
   }, [pdfUrl, policyId, versionId, getUrl]);
 
   const { execute: upload, status: uploadStatus } = useAction(uploadPolicyPdfAction, {
-    onSuccess: () => {
-      toast.success('PDF uploaded successfully.');
-      setFiles([]);
-      onMutate?.();
+    onSuccess: (result) => {
+      if (result?.data?.success) {
+        toast.success('PDF uploaded successfully.');
+        setFiles([]);
+        onMutate?.();
+      } else {
+        toast.error(result?.data?.error || 'Failed to upload PDF.');
+      }
     },
     onError: (error) => toast.error(error.error.serverError || 'Failed to upload PDF.'),
   });
 
   const { execute: deletePdf, status: deleteStatus } = useAction(deletePolicyPdfAction, {
-    onSuccess: () => {
-      toast.success('PDF deleted successfully.');
-      setSignedUrl(null);
-      onMutate?.();
+    onSuccess: (result) => {
+      if (result?.data?.success) {
+        toast.success('PDF deleted successfully.');
+        setSignedUrl(null);
+        onMutate?.();
+      } else {
+        toast.error(result?.data?.error || 'Failed to delete PDF.');
+      }
     },
     onError: (error) => toast.error(error.error.serverError || 'Failed to delete PDF.'),
   });

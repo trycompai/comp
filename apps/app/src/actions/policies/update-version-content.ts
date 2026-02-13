@@ -105,8 +105,9 @@ export const updateVersionContentAction = authActionClient
       return { success: false, error: 'Version does not belong to this policy' };
     }
 
-    // Cannot edit published version (only if the policy is actually published)
-    if (version.id === version.policy.currentVersionId && version.policy.status === PolicyStatus.published) {
+    // Cannot edit the current version unless the policy is in draft status
+    // This covers both 'published' and 'needs_review' states
+    if (version.id === version.policy.currentVersionId && version.policy.status !== PolicyStatus.draft) {
       return {
         success: false,
         error: 'Cannot edit the published version. Create a new version to make changes.',
