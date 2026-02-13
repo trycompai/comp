@@ -1,4 +1,6 @@
 import { db } from '@db';
+import { ArrowLeft, Lock } from 'lucide-react';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { loadChatHistory } from './actions/task-automation-actions';
 import { AutomationLayoutWrapper } from './automation-layout-wrapper';
@@ -21,6 +23,37 @@ export default async function Page({
 
   if (!task) {
     redirect('/tasks');
+  }
+
+  // Check if enterprise API is configured
+  if (!process.env.ENTERPRISE_API_SECRET) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="max-w-md w-full mx-auto p-8 text-center space-y-4">
+          <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+            <Lock className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground">Enterprise Feature</h2>
+          <p className="text-sm text-muted-foreground">
+            Task automations require an enterprise license. Contact{' '}
+            <a
+              href="mailto:sales@trycomp.ai"
+              className="text-primary underline underline-offset-4 hover:text-primary/80"
+            >
+              sales@trycomp.ai
+            </a>{' '}
+            to learn more about enabling this feature.
+          </p>
+          <Link
+            href={`/${orgId}/tasks/${taskId}`}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mt-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to task
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const taskName = task.title;
