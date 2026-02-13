@@ -2,10 +2,9 @@
 
 import { useMemo, useState } from 'react';
 
-import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
-import { CheckCircle2, HelpCircle, Image, MoreVertical, Upload, XCircle } from 'lucide-react';
+import { CheckCircle2, HelpCircle, Image as ImageIcon, MoreVertical, Upload, XCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +14,7 @@ import {
 import type { FleetPolicy } from '../../types';
 import { PolicyImageUploadModal } from './PolicyImageUploadModal';
 import { PolicyImagePreviewModal } from './PolicyImagePreviewModal';
+import { Button } from '@trycompai/design-system';
 
 interface FleetPolicyItemProps {
   policy: FleetPolicy;
@@ -32,7 +32,7 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
         return [
           {
             label: 'Preview images',
-            renderIcon: () => <Image className="mr-2 h-4 w-4" />,
+            renderIcon: () => <ImageIcon className="mr-2 h-4 w-4" />,
             onClick: () => setIsPreviewOpen(true),
           },
         ];
@@ -104,11 +104,10 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
                 disabled={!hasActions}
+                iconLeft={<MoreVertical className="h-4 w-4" />}
               >
-                <MoreVertical className="h-4 w-4" />
+                Actions
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

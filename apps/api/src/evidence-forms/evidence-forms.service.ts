@@ -5,6 +5,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { z } from 'zod';
 import {
@@ -34,6 +35,10 @@ const reviewSchema = z.object({
   reason: z.string().trim().optional(),
 });
 
+const EVIDENCE_FORM_REVIEWER_ROLES = ['owner', 'admin', 'auditor'] as const;
+const MAX_UPLOAD_FILE_SIZE_BYTES = 100 * 1024 * 1024;
+const MAX_UPLOAD_BASE64_LENGTH = Math.ceil(MAX_UPLOAD_FILE_SIZE_BYTES / 3) * 4;
+
 function toCsvRow(values: string[]): string {
   return values.map((value) => `"${value.replace(/"/g, '""')}"`).join(',');
 }
@@ -55,7 +60,21 @@ function flattenValue(value: unknown): string {
     return JSON.stringify(value);
   }
 
-  return String(value);
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'bigint'
+  ) {
+    return value.toString();
+  }
+  if (typeof value === 'symbol') {
+    return value.description ?? '';
+  }
+
+  return '';
 }
 
 function flattenMatrixRows(
@@ -91,6 +110,59 @@ function flattenMatrixRows(
 export class EvidenceFormsService {
   constructor(private readonly attachmentsService: AttachmentsService) {}
 
+  private requireJwtUser(authContext: AuthContext): string {
+    if (authContext.isApiKey || authContext.authType === 'api-key') {
+      throw new UnauthorizedException(
+        'This endpoint requires JWT authentication and does not support API key authentication',
+      );
+    }
+
+    if (!authContext.userId) {
+      throw new UnauthorizedException('Authenticated user session is required');
+    }
+
+    return authContext.userId;
+  }
+
+  private requirePrivilegedEvidenceAccess(authContext: AuthContext): string {
+    const userId = this.requireJwtUser(authContext);
+    const roles = authContext.userRoles ?? [];
+    const hasRequiredRole = EVIDENCE_FORM_REVIEWER_ROLES.some((role) =>
+      roles.includes(role),
+    );
+
+    if (!hasRequiredRole) {
+      throw new UnauthorizedException(
+        `Access denied. Required one of roles: ${EVIDENCE_FORM_REVIEWER_ROLES.join(', ')}`,
+      );
+    }
+
+    return userId;
+  }
+
+  private decodeBase64File(fileData: string): Buffer {
+    const normalized = fileData.trim();
+    if (normalized.length === 0 || normalized.length % 4 !== 0) {
+      throw new BadRequestException(
+        'Invalid file data. Expected base64 string.',
+      );
+    }
+
+    const base64Pattern = /^[A-Za-z0-9+/]+={0,2}$/;
+    if (!base64Pattern.test(normalized)) {
+      throw new BadRequestException(
+        'Invalid file data. Expected base64 string.',
+      );
+    }
+
+    const fileBuffer = Buffer.from(normalized, 'base64');
+    if (!fileBuffer.length) {
+      throw new BadRequestException('File cannot be empty');
+    }
+
+    return fileBuffer;
+  }
+
   listForms() {
     return evidenceFormDefinitionList;
   }
@@ -116,22 +188,29 @@ export class EvidenceFormsService {
 
   async getFormWithSubmissions(params: {
     organizationId: string;
+    authContext: AuthContext;
     formType: string;
     search?: string;
-    limit?: number;
-    offset?: number;
+    limit?: string;
+    offset?: string;
   }) {
     const { organizationId, formType } = params;
+    this.requirePrivilegedEvidenceAccess(params.authContext);
+
     const parsedType = evidenceFormTypeSchema.safeParse(formType);
     if (!parsedType.success) {
       throw new BadRequestException('Unsupported form type');
     }
 
-    const query = listQuerySchema.parse({
+    const parsedQuery = listQuerySchema.safeParse({
       search: params.search,
       limit: params.limit,
       offset: params.offset,
     });
+    if (!parsedQuery.success) {
+      throw new BadRequestException(parsedQuery.error.flatten());
+    }
+    const query = parsedQuery.data;
 
     const submissions = await db.evidenceSubmission.findMany({
       where: {
@@ -170,9 +249,12 @@ export class EvidenceFormsService {
 
   async getSubmission(params: {
     organizationId: string;
+    authContext: AuthContext;
     formType: string;
     submissionId: string;
   }) {
+    this.requirePrivilegedEvidenceAccess(params.authContext);
+
     const parsedType = evidenceFormTypeSchema.safeParse(params.formType);
     if (!parsedType.success) {
       throw new BadRequestException('Unsupported form type');
@@ -285,7 +367,19 @@ export class EvidenceFormsService {
       throw new BadRequestException(parsed.error.flatten());
     }
 
-    const fileBuffer = Buffer.from(parsed.data.fileData, 'base64');
+    if (parsed.data.fileData.length > MAX_UPLOAD_BASE64_LENGTH) {
+      throw new BadRequestException(
+        `File exceeds the ${MAX_UPLOAD_FILE_SIZE_BYTES / (1024 * 1024)}MB limit`,
+      );
+    }
+
+    const fileBuffer = this.decodeBase64File(parsed.data.fileData);
+    if (fileBuffer.length > MAX_UPLOAD_FILE_SIZE_BYTES) {
+      throw new BadRequestException(
+        `File exceeds the ${MAX_UPLOAD_FILE_SIZE_BYTES / (1024 * 1024)}MB limit`,
+      );
+    }
+
     const fileKey = await this.attachmentsService.uploadToS3(
       fileBuffer,
       parsed.data.fileName,
@@ -305,7 +399,13 @@ export class EvidenceFormsService {
     };
   }
 
-  async exportCsv(params: { organizationId: string; formType: string }) {
+  async exportCsv(params: {
+    organizationId: string;
+    formType: string;
+    authContext: AuthContext;
+  }) {
+    this.requirePrivilegedEvidenceAccess(params.authContext);
+
     const parsedType = evidenceFormTypeSchema.safeParse(params.formType);
     if (!parsedType.success) {
       throw new BadRequestException('Unsupported form type');
@@ -403,11 +503,9 @@ export class EvidenceFormsService {
       throw new BadRequestException('Unsupported form type');
     }
 
-    if (!params.authContext.userId) {
-      throw new BadRequestException(
-        'Authenticated user session is required to review submissions',
-      );
-    }
+    const reviewerUserId = this.requirePrivilegedEvidenceAccess(
+      params.authContext,
+    );
 
     const parsed = reviewSchema.safeParse(params.payload);
     if (!parsed.success) {
@@ -415,7 +513,9 @@ export class EvidenceFormsService {
     }
 
     if (parsed.data.action === 'rejected' && !parsed.data.reason) {
-      throw new BadRequestException('A reason is required when rejecting a submission');
+      throw new BadRequestException(
+        'A reason is required when rejecting a submission',
+      );
     }
 
     const submission = await db.evidenceSubmission.findFirst({
@@ -434,7 +534,7 @@ export class EvidenceFormsService {
       where: { id: params.submissionId },
       data: {
         status: parsed.data.action,
-        reviewedById: params.authContext.userId,
+        reviewedById: reviewerUserId,
         reviewedAt: new Date(),
         reviewReason: parsed.data.reason ?? null,
       },
@@ -459,12 +559,14 @@ export class EvidenceFormsService {
 
   async getMySubmissions(params: {
     organizationId: string;
-    userId: string;
+    authContext: AuthContext;
     formType?: string;
   }) {
+    const userId = this.requireJwtUser(params.authContext);
+
     const where: Record<string, unknown> = {
       organizationId: params.organizationId,
-      submittedById: params.userId,
+      submittedById: userId,
     };
 
     if (params.formType) {
@@ -494,12 +596,14 @@ export class EvidenceFormsService {
 
   async getPendingSubmissionCount(params: {
     organizationId: string;
-    userId: string;
+    authContext: AuthContext;
   }) {
+    const userId = this.requireJwtUser(params.authContext);
+
     const count = await db.evidenceSubmission.count({
       where: {
         organizationId: params.organizationId,
-        submittedById: params.userId,
+        submittedById: userId,
         status: 'pending',
       },
     });

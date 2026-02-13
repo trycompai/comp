@@ -98,7 +98,7 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
   'whistleblower-report': {
     type: 'whistleblower-report',
     title: 'Whistleblower Report',
-    description: 'Submit an anonymous whistleblower report. All submissions are confidential.',
+    description: 'Submit an anonymous whistleblower report. Submissions are confidential.',
     category: 'Security',
     submissionDateMode: 'auto',
     portalAccessible: true,

@@ -1,4 +1,4 @@
-import { CompanySubmissionDetailPageClient } from '@/app/(app)/[orgId]/company/components/CompanySubmissionDetailPageClient';
+import { CompanySubmissionDetailPageClient } from '@/app/(app)/[orgId]/documents/components/CompanySubmissionDetailPageClient';
 import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -24,14 +24,14 @@ export default async function CompanySubmissionDetailPage({
       <Breadcrumb
         items={[
           {
-            label: 'Company',
-            href: `/${orgId}/company`,
-            props: { render: <Link href={`/${orgId}/company`} /> },
+            label: 'Documents',
+            href: `/${orgId}/documents`,
+            props: { render: <Link href={`/${orgId}/documents`} /> },
           },
           {
             label: formDefinition.title,
-            href: `/${orgId}/company/${parsedFormType}`,
-            props: { render: <Link href={`/${orgId}/company/${parsedFormType}`} /> },
+            href: `/${orgId}/documents/${parsedFormType}`,
+            props: { render: <Link href={`/${orgId}/documents/${parsedFormType}`} /> },
           },
           { label: 'Submission Details', isCurrent: true },
         ]}

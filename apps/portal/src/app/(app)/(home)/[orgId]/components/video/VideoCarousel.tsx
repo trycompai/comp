@@ -137,10 +137,6 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
             isMarkingComplete={isExecuting}
             onNext={isCurrentVideoCompleted && hasNextVideo ? goToNext : undefined}
             allVideosCompleted={allVideosCompleted} // Use local state for UI
-            onWatchAgain={() => {
-              // Reset the rewatching state if needed inside YoutubeEmbed
-              // No direct action needed here unless YoutubeEmbed needs reset
-            }}
           />
           <CarouselControls
             currentIndex={currentIndex}

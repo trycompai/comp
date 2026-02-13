@@ -13,7 +13,7 @@ export function CompanySidebar({ orgId }: CompanySidebarProps) {
   const pathname = usePathname() ?? '';
 
   const isPathActive = (path: string) => {
-    if (path === `/${orgId}/company`) {
+    if (path === `/${orgId}/documents`) {
       return pathname === path;
     }
     return pathname.startsWith(path);
@@ -29,14 +29,14 @@ export function CompanySidebar({ orgId }: CompanySidebarProps) {
     categories.get(cat)!.push({
       id: form.type,
       label: form.title,
-      path: `/${orgId}/company/${form.type}`,
+      path: `/${orgId}/documents/${form.type}`,
     });
   }
 
   return (
     <AppShellNav>
-      <Link href={`/${orgId}/company`}>
-        <AppShellNavItem isActive={isPathActive(`/${orgId}/company`)}>Overview</AppShellNavItem>
+      <Link href={`/${orgId}/documents`}>
+        <AppShellNavItem isActive={isPathActive(`/${orgId}/documents`)}>Overview</AppShellNavItem>
       </Link>
 
       {Array.from(categories.entries()).map(([category, items]) => (

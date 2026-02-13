@@ -408,7 +408,8 @@ export class TasksController {
   @Get(':taskId/activity')
   @ApiOperation({
     summary: 'Get task activity',
-    description: 'Retrieve audit log activity for a specific task with pagination',
+    description:
+      'Retrieve audit log activity for a specific task with pagination',
   })
   @ApiParam({
     name: 'taskId',
@@ -424,8 +425,15 @@ export class TasksController {
     @Query('take') take?: string,
   ) {
     const parsedSkip = skip ? Math.max(0, parseInt(skip, 10) || 0) : 0;
-    const parsedTake = take ? Math.min(50, Math.max(1, parseInt(take, 10) || 10)) : 10;
-    return await this.tasksService.getTaskActivity(organizationId, taskId, parsedSkip, parsedTake);
+    const parsedTake = take
+      ? Math.min(50, Math.max(1, parseInt(take, 10) || 10))
+      : 10;
+    return await this.tasksService.getTaskActivity(
+      organizationId,
+      taskId,
+      parsedSkip,
+      parsedTake,
+    );
   }
 
   @Patch(':taskId')
@@ -552,8 +560,7 @@ export class TasksController {
   @Post(':taskId/submit-for-review')
   @ApiOperation({
     summary: 'Submit task for review',
-    description:
-      'Move task status to in_review and assign an approver.',
+    description: 'Move task status to in_review and assign an approver.',
   })
   @ApiParam({
     name: 'taskId',

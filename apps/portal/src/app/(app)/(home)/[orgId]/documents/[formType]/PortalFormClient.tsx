@@ -13,6 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Stack,
   Text,
   Textarea,
 } from '@trycompai/design-system';
@@ -35,7 +36,6 @@ interface PortalFormClientProps {
   formDescription: string;
   fields: ReadonlyArray<FieldDef>;
   submitAction: (formData: FormData) => Promise<void>;
-  basePath: string;
   successMessage?: boolean;
   errorMessage?: string;
 }
@@ -45,7 +45,6 @@ export function PortalFormClient({
   formDescription,
   fields,
   submitAction,
-  basePath,
   successMessage,
   errorMessage,
 }: PortalFormClientProps) {
@@ -64,7 +63,7 @@ export function PortalFormClient({
   const fullWidthFields = fields.filter((f) => !isCompact(f));
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <Stack gap="lg">
       <PageHeader title={`New ${formTitle} Submission`} />
       <Text variant="muted">{formDescription}</Text>
 
@@ -153,12 +152,6 @@ export function PortalFormClient({
                         required={field.required}
                         placeholder={field.placeholder}
                         rows={12}
-                        style={{
-                          width: '100%',
-                          maxWidth: 'none',
-                          maxHeight: '350px',
-                          minHeight: '350px',
-                        }}
                       />
                       <p className="text-xs text-muted-foreground">
                         10,000 character limit &bull; Markdown supported
@@ -197,6 +190,6 @@ export function PortalFormClient({
           </div>
         </form>
       </Section>
-    </div>
+    </Stack>
   );
 }

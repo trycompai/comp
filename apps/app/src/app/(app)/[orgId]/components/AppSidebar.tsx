@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Catalog,
   Chemistry,
   Dashboard,
   Document,
@@ -10,7 +11,6 @@ import {
   Policy,
   Security,
   ShoppingBag,
-  Task,
   TaskComplete,
   Warning,
 } from '@carbon/icons-react';
@@ -76,10 +76,10 @@ export function AppSidebar({
       icon: <ListChecked className="size-4" />,
     },
     {
-      id: 'company',
-      path: `/${organization.id}/company`,
-      name: 'Tasks',
-      icon: <Task className="size-4" />,
+      id: 'documents',
+      path: `/${organization.id}/documents`,
+      name: 'Documents',
+      icon: <Catalog className="size-4" />,
     },
     {
       id: 'people',

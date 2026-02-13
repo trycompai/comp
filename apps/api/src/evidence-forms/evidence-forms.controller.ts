@@ -35,7 +35,7 @@ export class EvidenceFormsController {
     summary: 'List evidence forms',
     description: 'List all available pre-built evidence forms',
   })
-  async listForms() {
+  listForms() {
     return this.evidenceFormsService.listForms();
   }
 
@@ -62,7 +62,7 @@ export class EvidenceFormsController {
   ) {
     return this.evidenceFormsService.getMySubmissions({
       organizationId,
-      userId: authContext.userId!,
+      authContext,
       formType,
     });
   }
@@ -79,7 +79,7 @@ export class EvidenceFormsController {
   ) {
     return this.evidenceFormsService.getPendingSubmissionCount({
       organizationId,
-      userId: authContext.userId!,
+      authContext,
     });
   }
 
@@ -91,6 +91,7 @@ export class EvidenceFormsController {
   })
   async getFormWithSubmissions(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
     @Param('formType') formType: string,
     @Query('search') search?: string,
     @Query('limit') limit?: string,
@@ -98,10 +99,11 @@ export class EvidenceFormsController {
   ) {
     return this.evidenceFormsService.getFormWithSubmissions({
       organizationId,
+      authContext,
       formType,
       search,
-      limit: limit ? parseInt(limit, 10) : undefined,
-      offset: offset ? parseInt(offset, 10) : undefined,
+      limit,
+      offset,
     });
   }
 
@@ -113,11 +115,13 @@ export class EvidenceFormsController {
   })
   async getSubmission(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
     @Param('formType') formType: string,
     @Param('submissionId') submissionId: string,
   ) {
     return this.evidenceFormsService.getSubmission({
       organizationId,
+      authContext,
       formType,
       submissionId,
     });
@@ -191,11 +195,13 @@ export class EvidenceFormsController {
   @Header('Content-Type', 'text/csv')
   async exportCsv(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
     @Param('formType') formType: string,
     @Res() res: Response,
   ) {
     const csv = await this.evidenceFormsService.exportCsv({
       organizationId,
+      authContext,
       formType,
     });
 

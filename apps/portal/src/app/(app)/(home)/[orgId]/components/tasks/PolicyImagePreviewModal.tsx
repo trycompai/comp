@@ -2,13 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@comp/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@comp/ui/dialog';
 import Image from 'next/image';
 import { CarouselControls } from '../video/CarouselControls';
 
@@ -18,7 +12,11 @@ interface PolicyImagePreviewModalProps {
   images: string[];
 }
 
-export function PolicyImagePreviewModal({ open, images, onOpenChange }: PolicyImagePreviewModalProps) {
+export function PolicyImagePreviewModal({
+  open,
+  images,
+  onOpenChange,
+}: PolicyImagePreviewModalProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -48,7 +46,7 @@ export function PolicyImagePreviewModal({ open, images, onOpenChange }: PolicyIm
 
           {hasImages && currentIndex >= 0 && currentIndex < images.length && (
             <>
-              <div className="overflow-hidden w-full h-[500px]">
+              <div className="h-[55vh] min-h-[280px] w-full overflow-hidden md:min-h-[420px]">
                 <Image
                   key={images[currentIndex]}
                   src={images[currentIndex]}

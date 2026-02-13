@@ -9,5 +9,5 @@ export default async function Layout({ children }: { children: React.ReactNode }
     return redirect('/auth');
   }
 
-  return <div className="mx-auto max-w-3xl">{children}</div>;
+  return <>{children}</>;
 }

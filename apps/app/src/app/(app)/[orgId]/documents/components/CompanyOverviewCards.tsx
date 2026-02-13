@@ -77,7 +77,7 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
               const showTodo = statuses ? isTodo(status?.lastSubmittedAt ?? null) : false;
 
               return (
-                <Link key={form.type} href={`/${organizationId}/company/${form.type}`}>
+                <Link key={form.type} href={`/${organizationId}/documents/${form.type}`}>
                   <Card>
                     <CardHeader>
                       <CardTitle>{form.title}</CardTitle>

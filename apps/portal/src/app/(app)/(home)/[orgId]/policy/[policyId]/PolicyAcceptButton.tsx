@@ -1,7 +1,7 @@
 'use client';
 
 import { acceptPolicy } from '@/actions/accept-policies';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/design-system';
 import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -48,16 +48,20 @@ export function PolicyAcceptButton({
 
   if (accepted) {
     return (
-      <Button disabled className="w-full">
-        <Check className="mr-2 h-4 w-4" />
-        Policy Accepted
-      </Button>
+      <div className="w-full">
+        <Button disabled iconLeft={<Check className="h-4 w-4" />}>
+          Policy Accepted
+        </Button>
+      </div>
+      
     );
   }
 
   return (
-    <Button onClick={handleAccept} disabled={isPending} className="w-full">
-      {isPending ? 'Accepting...' : 'Accept Policy'}
-    </Button>
+    <div className="w-full">
+      <Button onClick={handleAccept} disabled={isPending}>
+        {isPending ? 'Accepting...' : 'Accept Policy'}
+      </Button>
+    </div>
   );
 }

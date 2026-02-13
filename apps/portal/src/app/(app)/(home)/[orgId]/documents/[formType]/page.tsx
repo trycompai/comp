@@ -1,9 +1,14 @@
 import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
+import { Breadcrumb, PageLayout } from '@trycompai/design-system';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { headers as getHeaders } from 'next/headers';
+import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { evidenceFormDefinitions, evidenceFormTypeSchema } from '../forms';
 import { PortalFormClient } from './PortalFormClient';
+
+const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024;
 
 async function getJwtToken(cookieHeader: string): Promise<string | null> {
   if (!cookieHeader) return null;
@@ -46,7 +51,7 @@ export default async function PortalCompanyFormPage({
     notFound();
   }
   const visibleFields = form.fields;
-  const basePath = `/${orgId}/company/${formTypeValue}`;
+  const basePath = `/${orgId}/documents/${formTypeValue}`;
   const state = await searchParams;
 
   async function submitAction(formData: FormData) {
@@ -87,6 +92,9 @@ export default async function PortalCompanyFormPage({
               throw new Error(`${field.label} is required`);
             }
             continue;
+          }
+          if (raw.size > MAX_FILE_SIZE_BYTES) {
+            throw new Error(`File exceeds the ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB limit`);
           }
 
           // Upload file via API
@@ -138,7 +146,7 @@ export default async function PortalCompanyFormPage({
       redirect(`${basePath}/submissions?success=1`);
     } catch (error) {
       // Next.js redirect throws a special error — re-throw it
-      if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+      if (isRedirectError(error)) {
         throw error;
       }
       const errorMessage = error instanceof Error ? error.message : 'Failed to submit form';
@@ -161,14 +169,25 @@ export default async function PortalCompanyFormPage({
   }));
 
   return (
-    <PortalFormClient
-      formTitle={form.title}
-      formDescription={form.description}
-      fields={serializedFields}
-      submitAction={submitAction}
-      basePath={basePath}
-      successMessage={state.success === '1'}
-      errorMessage={state.error ? decodeURIComponent(state.error) : undefined}
-    />
+    <PageLayout>
+      <Breadcrumb
+        items={[
+          {
+            label: 'Employee Portal',
+            href: `/${orgId}`,
+            props: { render: <Link href={`/${orgId}`} /> },
+          },
+          { label: form.title, isCurrent: true },
+        ]}
+      />
+      <PortalFormClient
+        formTitle={form.title}
+        formDescription={form.description}
+        fields={serializedFields}
+        submitAction={submitAction}
+        successMessage={state.success === '1'}
+        errorMessage={state.error ? decodeURIComponent(state.error) : undefined}
+      />
+    </PageLayout>
   );
 }

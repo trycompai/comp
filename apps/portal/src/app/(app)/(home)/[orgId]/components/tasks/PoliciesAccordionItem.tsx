@@ -2,9 +2,9 @@
 
 import { acceptAllPolicies } from '@/actions/accept-policies';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
-import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import type { Member, Policy, PolicyVersion } from '@db';
+import { Button } from '@trycompai/design-system';
 import { CheckCircle2, Circle, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -95,7 +95,6 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
                 })}
               </div>
               <Button
-                size="sm"
                 onClick={handleAcceptAllPolicies}
                 disabled={hasAcceptedPolicies || isAcceptingAll}
               >

@@ -2,7 +2,12 @@
 
 import {
   Button,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
   PageHeader,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -72,7 +77,7 @@ export function PortalSubmissionsClient({
   showSuccess,
 }: PortalSubmissionsClientProps) {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <Stack gap="lg">
       <PageHeader title={`My ${formTitle} Submissions`} />
       <Text variant="muted">
         View the status of your submitted {formTitle.toLowerCase()} forms.
@@ -85,14 +90,17 @@ export function PortalSubmissionsClient({
       )}
 
       {submissions.length === 0 ? (
-        <div className="rounded-md border border-border p-6 text-center">
-          <Text variant="muted">You have no submissions for this form yet.</Text>
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>No submissions yet</EmptyTitle>
+            <EmptyDescription>You have no submissions for this form yet.</EmptyDescription>
+          </EmptyHeader>
           <div className="mt-4">
-            <Link href={`/${orgId}/company/${formType}`}>
-              <Button size="sm">Create Submission</Button>
+            <Link href={`/${orgId}/documents/${formType}`}>
+              <Button>Create Submission</Button>
             </Link>
           </div>
-        </div>
+        </Empty>
       ) : (
         <Table variant="bordered">
           <TableHeader>
@@ -121,13 +129,10 @@ export function PortalSubmissionsClient({
       )}
 
       <div className="flex items-center gap-3">
-        <Link href={`/${orgId}`}>
-          <Button variant="ghost">Back</Button>
-        </Link>
-        <Link href={`/${orgId}/company/${formType}`}>
+        <Link href={`/${orgId}/documents/${formType}`}>
           <Button>New Submission</Button>
         </Link>
       </div>
-    </div>
+    </Stack>
   );
 }

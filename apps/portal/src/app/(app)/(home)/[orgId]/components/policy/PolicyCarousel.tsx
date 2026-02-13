@@ -1,8 +1,8 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
 import type { Member, Policy, PolicyVersion } from '@db';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button, Text } from '@trycompai/design-system';
+import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -87,7 +87,7 @@ export function PolicyCarousel({
     <div className="w-full space-y-4">
       <div
         ref={scrollContainerRef}
-        className="flex snap-x snap-mandatory overflow-x-hidden scroll-smooth"
+        className="flex snap-x snap-mandatory overflow-x-auto scroll-smooth"
         onScroll={handleScroll}
       >
         {policies.map((policy) => (
@@ -110,18 +110,18 @@ export function PolicyCarousel({
           onClick={handlePrevious}
           disabled={currentIndex === 0}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft size={16} />
         </Button>
-        <span className="text-muted-foreground text-sm">
+        <Text variant="muted" size="sm">
           Policy {currentIndex + 1} of {policies.length}
-        </span>
+        </Text>
         <Button
           variant="outline"
           size="icon"
           onClick={handleNext}
           disabled={currentIndex === policies.length - 1}
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight size={16} />
         </Button>
       </div>
     </div>

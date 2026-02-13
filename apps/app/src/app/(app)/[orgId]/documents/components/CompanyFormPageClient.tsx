@@ -1,6 +1,9 @@
 'use client';
 
-import { evidenceFormDefinitions, type EvidenceFormType } from '@/app/(app)/[orgId]/company/forms';
+import {
+  evidenceFormDefinitions,
+  type EvidenceFormType,
+} from '@/app/(app)/[orgId]/documents/forms';
 import { api } from '@/lib/api-client';
 import { jwtManager } from '@/utils/jwt-manager';
 import {
@@ -22,7 +25,7 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Document, Download, Search } from '@trycompai/design-system/icons';
+import { Add, Catalog, Download, Search } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -33,7 +36,8 @@ const conciseFormDescriptions: Record<string, string> = {
   'board-meeting': 'Hold a board meeting and capture minutes.',
   'it-leadership-meeting': 'Run an IT leadership meeting and document outcomes.',
   'risk-committee-meeting': 'Conduct a risk committee meeting and record decisions.',
-  'access-request': 'Track and retain user access requests. Employees can request access to systems through the employee portal.',
+  'access-request':
+    'Track and retain user access requests. Employees can request access to systems through the employee portal.',
   'whistleblower-report': 'Submit a confidential whistleblower report.',
   'penetration-test': 'Upload a third-party penetration test report.',
   'rbac-matrix': 'Document role-based access by system, role, and approval.',
@@ -82,6 +86,11 @@ type EvidenceFormResponse = {
   submissions: EvidenceSubmissionRow[];
   total: number;
 };
+
+const submissionDateColumnWidth = 128;
+const submittedByColumnWidth = 128;
+const statusColumnWidth = 176;
+const summaryColumnWidth = 280;
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -211,8 +220,8 @@ export function CompanyFormPageClient({
         title={formDefinition.title}
         actions={
           <div className="flex items-center gap-2">
-            <Link href={`/${organizationId}/company/${formType}/new`}>
-              <Button>New Submission</Button>
+            <Link href={`/${organizationId}/documents/${formType}/new`}>
+              <Button iconLeft={<Add size={16} />}>New Submission</Button>
             </Link>
             <Button
               type="button"
@@ -248,27 +257,50 @@ export function CompanyFormPageClient({
         </div>
 
         {isLoading ? (
-          <Text variant="muted">Loading submissions...</Text>
+          <Empty>
+            <EmptyMedia variant="icon">
+              <Catalog />
+            </EmptyMedia>
+            <EmptyHeader>
+              <EmptyTitle>No submissions yet.</EmptyTitle>
+              <EmptyDescription>
+                Start by creating a new submission, click the New Submission button above.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : !data || data.submissions.length === 0 ? (
           <Empty>
             <EmptyMedia variant="icon">
-              <Document size={24} />
+              <Catalog />
             </EmptyMedia>
             <EmptyHeader>
               <EmptyTitle>No submissions yet</EmptyTitle>
               <EmptyDescription>
-                Click New Submission to create your first {formDefinition.title.toLowerCase()}{' '}
-                record.
+                Start by creating a new submission, click the New Submission button above.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
         ) : (
-          <Table variant="bordered">
+          <Table variant="bordered" style={{ tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: submissionDateColumnWidth }} />
+              <col style={{ width: submittedByColumnWidth }} />
+              {formType === 'access-request' && <col style={{ width: statusColumnWidth }} />}
+              {showSummaryColumn && <col style={{ width: summaryColumnWidth }} />}
+            </colgroup>
             <TableHeader>
               <TableRow>
-                <TableHead>Submission Date</TableHead>
-                <TableHead>Submitted By</TableHead>
-                {formType === 'access-request' && <TableHead>Status</TableHead>}
+                <TableHead>
+                  <div className="whitespace-nowrap">Submission Date</div>
+                </TableHead>
+                <TableHead>
+                  <div className="whitespace-nowrap">Submitted By</div>
+                </TableHead>
+                {formType === 'access-request' && (
+                  <TableHead>
+                    <div className="whitespace-nowrap">Status</div>
+                  </TableHead>
+                )}
                 {showSummaryColumn && <TableHead>Summary</TableHead>}
               </TableRow>
             </TableHeader>
@@ -287,25 +319,36 @@ export function CompanyFormPageClient({
                     key={submission.id}
                     onClick={() =>
                       router.push(
-                        `/${organizationId}/company/${formType}/submissions/${submission.id}`,
+                        `/${organizationId}/documents/${formType}/submissions/${submission.id}`,
                       )
                     }
                     style={{ cursor: 'pointer' }}
                   >
                     <TableCell>
-                      {formatSubmissionDate(submission.data.submissionDate, submission.submittedAt)}
+                      <div className="whitespace-nowrap">
+                        {formatSubmissionDate(
+                          submission.data.submissionDate,
+                          submission.submittedAt,
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {submission.submittedBy?.name ?? submission.submittedBy?.email ?? 'Unknown'}
+                      <span className="block truncate">
+                        {submission.submittedBy?.name ?? submission.submittedBy?.email ?? 'Unknown'}
+                      </span>
                     </TableCell>
                     {formType === 'access-request' && (
                       <TableCell>
-                        <StatusBadge status={submission.status} />
+                        <div>
+                          <StatusBadge status={submission.status} />
+                        </div>
                       </TableCell>
                     )}
                     {showSummaryColumn && (
                       <TableCell>
-                        <span className="text-muted-foreground">{rowSummary || '—'}</span>
+                        <span className="block truncate text-muted-foreground">
+                          {rowSummary || '—'}
+                        </span>
                       </TableCell>
                     )}
                   </TableRow>

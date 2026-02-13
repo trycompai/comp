@@ -6,7 +6,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ orgId:
 
   return (
     <PageLayout>
-      <PageHeader title="Company" />
+      <PageHeader title="Documents" />
       <CompanyOverviewCards organizationId={orgId} />
     </PageLayout>
   );

@@ -1,10 +1,10 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import { Accordion } from '@comp/ui/accordion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { evidenceFormDefinitionList } from '@comp/company';
+import { Accordion } from '@comp/ui/accordion';
 import type { EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
+import { Button } from '@trycompai/design-system';
 import Link from 'next/link';
 import useSWR from 'swr';
 import type { FleetPolicy, Host } from '../types';
@@ -111,70 +111,56 @@ export const EmployeeTasksList = ({
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Overview</CardTitle>
-          <CardDescription>
-            Please complete the following tasks to stay compliant and secure.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Progress indicator */}
-          <div>
-            <div className="text-muted-foreground text-sm">
-              {completedCount} of {accordionItems.length} tasks completed
-            </div>
-            <div className="w-full bg-muted rounded-full h-2.5">
-              <div
-                className="bg-primary h-full rounded-full"
-                style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
-              ></div>
-            </div>
+      {/* Progress indicator */}
+      <div>
+        <div className="text-muted-foreground text-sm">
+          {completedCount} of {accordionItems.length} tasks completed
+        </div>
+        <div className="w-full bg-muted rounded-full h-2.5">
+          <div
+            className="bg-primary h-full rounded-full"
+            style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
+          ></div>
+        </div>
+      </div>
+
+      <Accordion type="single" collapsible className="space-y-3">
+        {accordionItems.map((item, idx) => (
+          <div key={item.title ?? idx}>{item.content}</div>
+        ))}
+      </Accordion>
+
+      {/* Company forms */}
+      {portalForms.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Company Forms
           </div>
-
-          <Accordion type="single" collapsible className="space-y-3">
-            {accordionItems.map((item, idx) => (
-              <div key={item.title ?? idx}>{item.content}</div>
-            ))}
-          </Accordion>
-
-          {/* Company forms */}
-          {portalForms.length > 0 && (
-            <div className="space-y-2">
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Company Forms
+          {portalForms.map((form) => (
+            <div
+              key={form.type}
+              className="flex items-center justify-between rounded-md border border-border p-3"
+            >
+              <div>
+                <span className="text-sm font-medium">{form.title}</span>
+                <p className="text-xs text-muted-foreground">{form.description}</p>
               </div>
-              {portalForms.map((form) => (
-                <div
-                  key={form.type}
-                  className="flex items-center justify-between rounded-md border border-border p-3"
-                >
-                  <div>
-                    <span className="text-sm font-medium">{form.title}</span>
-                    <p className="text-xs text-muted-foreground">{form.description}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-4">
-                    {form.type === 'access-request' && (
-                      <Link
-                        href={`/${organizationId}/company/${form.type}/submissions`}
-                        className="text-xs text-muted-foreground hover:underline"
-                      >
-                        My requests
-                      </Link>
-                    )}
-                    <Link
-                      href={`/${organizationId}/company/${form.type}`}
-                      className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
-                    >
-                      Submit
-                    </Link>
-                  </div>
-                </div>
-              ))}
+              <div className="flex items-center gap-2 shrink-0 ml-4">
+                {form.type === 'access-request' && (
+                  <Link href={`/${organizationId}/documents/${form.type}/submissions`}>
+                    <Button variant="ghost">
+                      My requests
+                    </Button>
+                  </Link>
+                )}
+                <Link href={`/${organizationId}/documents/${form.type}`}>
+                  <Button>Submit</Button>
+                </Link>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

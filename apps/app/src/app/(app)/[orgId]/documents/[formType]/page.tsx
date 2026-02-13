@@ -1,4 +1,4 @@
-import { CompanyFormPageClient } from '@/app/(app)/[orgId]/company/components/CompanyFormPageClient';
+import { CompanyFormPageClient } from '@/app/(app)/[orgId]/documents/components/CompanyFormPageClient';
 import { Breadcrumb, PageLayout } from '@trycompai/design-system';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -23,9 +23,9 @@ export default async function CompanyFormDetailPage({
       <Breadcrumb
         items={[
           {
-            label: 'Company',
-            href: `/${orgId}/company`,
-            props: { render: <Link href={`/${orgId}/company`} /> },
+            label: 'Documents',
+            href: `/${orgId}/documents`,
+            props: { render: <Link href={`/${orgId}/documents`} /> },
           },
           { label: formDefinition.title, isCurrent: true },
         ]}

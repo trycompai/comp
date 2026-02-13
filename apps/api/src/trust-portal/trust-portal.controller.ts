@@ -325,7 +325,11 @@ export class TrustPortalController {
     @AuthContext() authContext: AuthContextType,
   ) {
     const dto = UpdateCustomLinkSchema.parse(body);
-    return this.trustPortalService.updateCustomLink(linkId, dto, authContext.organizationId);
+    return this.trustPortalService.updateCustomLink(
+      linkId,
+      dto,
+      authContext.organizationId,
+    );
   }
 
   @Post('custom-links/:linkId/delete')
@@ -341,7 +345,10 @@ export class TrustPortalController {
     @Param('linkId') linkId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    return this.trustPortalService.deleteCustomLink(linkId, authContext.organizationId);
+    return this.trustPortalService.deleteCustomLink(
+      linkId,
+      authContext.organizationId,
+    );
   }
 
   @Post('custom-links/reorder')
@@ -394,7 +401,11 @@ export class TrustPortalController {
     @AuthContext() authContext: AuthContextType,
   ) {
     const dto = UpdateVendorTrustSettingsSchema.parse(body);
-    return this.trustPortalService.updateVendorTrustSettings(vendorId, dto, authContext.organizationId);
+    return this.trustPortalService.updateVendorTrustSettings(
+      vendorId,
+      dto,
+      authContext.organizationId,
+    );
   }
 
   @Get('vendors')

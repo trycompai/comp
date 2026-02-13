@@ -6,7 +6,7 @@ import {
   type EvidenceFormFieldDefinition,
   type EvidenceFormFile,
   type EvidenceFormType,
-} from '@/app/(app)/[orgId]/company/forms';
+} from '@/app/(app)/[orgId]/documents/forms';
 import { FileUploader } from '@/components/file-uploader';
 import { api } from '@/lib/api-client';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -112,7 +112,10 @@ function normalizeMatrixRows(value: unknown): MatrixRowValue[] {
   return value.map((row) => {
     if (!row || typeof row !== 'object') return {};
     return Object.fromEntries(
-      Object.entries(row).map(([key, rawValue]) => [key, typeof rawValue === 'string' ? rawValue : '']),
+      Object.entries(row).map(([key, rawValue]) => [
+        key,
+        typeof rawValue === 'string' ? rawValue : '',
+      ]),
     );
   });
 }
@@ -131,10 +134,7 @@ export function CompanySubmissionWizard({
   const formDefinition = evidenceFormDefinitions[formType];
   const formSchema = evidenceFormSubmissionSchemaMap[formType];
   const visibleFields = formDefinition.fields.filter((field) => field.key !== 'submissionDate');
-  const matrixFields = useMemo(
-    () => visibleFields.filter(isMatrixField),
-    [visibleFields],
-  );
+  const matrixFields = useMemo(() => visibleFields.filter(isMatrixField), [visibleFields]);
 
   const compactFields = useMemo(() => {
     const compact = visibleFields.filter(
@@ -211,10 +211,12 @@ export function CompanySubmissionWizard({
     }
   };
 
-  const addMatrixRow = (field: EvidenceFormFieldDefinition & {
-    type: 'matrix';
-    columns: ReadonlyArray<MatrixColumnDefinition>;
-  }) => {
+  const addMatrixRow = (
+    field: EvidenceFormFieldDefinition & {
+      type: 'matrix';
+      columns: ReadonlyArray<MatrixColumnDefinition>;
+    },
+  ) => {
     const rows = normalizeMatrixRows(getValues(field.key as never));
     setValue(field.key as never, [...rows, createEmptyMatrixRow(field.columns)] as never, {
       shouldDirty: true,
@@ -291,7 +293,7 @@ export function CompanySubmissionWizard({
     }
 
     toast.success('Submission saved');
-    router.push(`/${organizationId}/company/${formType}`);
+    router.push(`/${organizationId}/documents/${formType}`);
     router.refresh();
   };
 
@@ -433,25 +435,26 @@ export function CompanySubmissionWizard({
                           accept={
                             field.accept
                               ? Object.fromEntries(
-                                  field.accept.split(',').map((ext) => {
-                                    const trimmed = ext.trim();
-                                    if (trimmed.startsWith('.pdf')) return ['application/pdf', []];
-                                    if (trimmed.startsWith('.doc') || trimmed.startsWith('.docx')) {
-                                      return [
-                                        'application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                        [],
-                                      ];
-                                    }
-                                    if (
-                                      trimmed.startsWith('.png') ||
-                                      trimmed.startsWith('.jpg') ||
-                                      trimmed.startsWith('.jpeg')
-                                    ) {
-                                      return ['image/*', []];
-                                    }
-                                    if (trimmed.startsWith('.txt')) return ['text/plain', []];
-                                    return ['application/octet-stream', []];
-                                  }),
+                                  field.accept
+                                    .split(',')
+                                    .map((ext): [string, string[]] | null => {
+                                      const trimmed = ext.trim().toLowerCase();
+                                      if (trimmed === '.pdf') return ['application/pdf', []];
+                                      if (trimmed === '.doc') return ['application/msword', []];
+                                      if (trimmed === '.docx') {
+                                        return [
+                                          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                          [],
+                                        ];
+                                      }
+                                      if (trimmed === '.png') return ['image/png', []];
+                                      if (trimmed === '.jpg' || trimmed === '.jpeg') {
+                                        return ['image/jpeg', []];
+                                      }
+                                      if (trimmed === '.txt') return ['text/plain', []];
+                                      return null;
+                                    })
+                                    .filter((entry): entry is [string, string[]] => entry !== null),
                                 )
                               : { 'application/pdf': [], 'image/*': [], 'text/*': [] }
                           }
@@ -499,7 +502,10 @@ export function CompanySubmissionWizard({
 
                   <div className="space-y-3">
                     {rowValues.map((row, rowIndex) => (
-                      <div key={`${field.key}-${rowIndex}`} className="rounded-md border border-border p-3">
+                      <div
+                        key={`${field.key}-${rowIndex}`}
+                        className="rounded-md border border-border p-3"
+                      >
                         <div className="mb-3 flex items-center justify-between">
                           <Text size="sm" weight="medium">
                             Row {rowIndex + 1}
@@ -574,41 +580,41 @@ export function CompanySubmissionWizard({
                       {field.label}
                     </div>
                     <div className="lg:col-span-2 text-sm whitespace-pre-wrap wrap-anywhere">
-                      {isMatrixField(field) ? (
-                        (() => {
-                          const rows = normalizeMatrixRows(values[field.key as keyof typeof values]);
-                          if (rows.length === 0) return '—';
+                      {isMatrixField(field)
+                        ? (() => {
+                            const rows = normalizeMatrixRows(
+                              values[field.key as keyof typeof values],
+                            );
+                            if (rows.length === 0) return '—';
 
-                          return (
-                            <div className="space-y-3">
-                              {rows.map((row, rowIndex) => (
-                                <div
-                                  key={`${field.key}-review-${rowIndex}`}
-                                  className="rounded-md border border-border p-3"
-                                >
-                                  <Text size="sm" weight="medium">
-                                    Row {rowIndex + 1}
-                                  </Text>
-                                  <div className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-2">
-                                    {field.columns.map((column) => (
-                                      <div key={`${field.key}-review-${rowIndex}-${column.key}`}>
-                                        <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                                          {column.label}
+                            return (
+                              <div className="space-y-3">
+                                {rows.map((row, rowIndex) => (
+                                  <div
+                                    key={`${field.key}-review-${rowIndex}`}
+                                    className="rounded-md border border-border p-3"
+                                  >
+                                    <Text size="sm" weight="medium">
+                                      Row {rowIndex + 1}
+                                    </Text>
+                                    <div className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-2">
+                                      {field.columns.map((column) => (
+                                        <div key={`${field.key}-review-${rowIndex}-${column.key}`}>
+                                          <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                                            {column.label}
+                                          </div>
+                                          <div className="text-sm whitespace-pre-wrap wrap-anywhere">
+                                            {row[column.key] || '—'}
+                                          </div>
                                         </div>
-                                        <div className="text-sm whitespace-pre-wrap wrap-anywhere">
-                                          {row[column.key] || '—'}
-                                        </div>
-                                      </div>
-                                    ))}
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })()
-                      ) : (
-                        renderSubmissionValue(values[field.key as keyof typeof values], field)
-                      )}
+                                ))}
+                              </div>
+                            );
+                          })()
+                        : renderSubmissionValue(values[field.key as keyof typeof values], field)}
                     </div>
                   </div>
                 ))}
@@ -618,7 +624,7 @@ export function CompanySubmissionWizard({
         )}
 
         <div className="flex items-center justify-between">
-          <Link href={`/${organizationId}/company/${formType}`}>
+          <Link href={`/${organizationId}/documents/${formType}`}>
             <Button variant="ghost">Cancel</Button>
           </Link>
           <div className="flex items-center gap-2">

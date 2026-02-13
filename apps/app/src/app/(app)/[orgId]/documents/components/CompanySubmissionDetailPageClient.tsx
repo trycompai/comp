@@ -5,21 +5,28 @@ import {
   type EvidenceFormFieldDefinition,
   type EvidenceFormFile,
   type EvidenceFormType,
-} from '@/app/(app)/[orgId]/company/forms';
+} from '@/app/(app)/[orgId]/documents/forms';
 import { api } from '@/lib/api-client';
 import {
-  Badge,
   Button,
   Empty,
+  EmptyMedia,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
   Field,
   FieldLabel,
   Section,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
   Text,
   Textarea,
 } from '@trycompai/design-system';
+import { Document } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -161,7 +168,10 @@ function normalizeMatrixRows(value: unknown): MatrixRowValue[] {
   return value.map((row) => {
     if (!row || typeof row !== 'object') return {};
     return Object.fromEntries(
-      Object.entries(row).map(([key, rawValue]) => [key, typeof rawValue === 'string' ? rawValue : '']),
+      Object.entries(row).map(([key, rawValue]) => [
+        key,
+        typeof rawValue === 'string' ? rawValue : '',
+      ]),
     );
   });
 }
@@ -222,7 +232,17 @@ export function CompanySubmissionDetailPageClient({
   };
 
   if (isLoading) {
-    return <Text variant="muted">Loading submission...</Text>;
+    return (
+      <Empty>
+        <EmptyMedia variant="icon">
+          <Document size={24} />
+        </EmptyMedia>
+        <EmptyHeader>
+          <EmptyTitle>Loading submission...</EmptyTitle>
+          <EmptyDescription>Fetching the selected document details.</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
   }
 
   if (error || !data?.submission) {
@@ -327,11 +347,9 @@ export function CompanySubmissionDetailPageClient({
                   <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     {field.label}
                   </div>
-                  <div className="lg:col-span-2">
+                  <div className="lg:col-span-2 text-sm">
                     {content ? (
-                      <div className="rounded-md border border-border bg-muted/30 p-4">
-                        <MarkdownPreview content={content} />
-                      </div>
+                      <MarkdownPreview content={content} />
                     ) : (
                       <Text size="sm" variant="muted">
                         —
@@ -364,39 +382,28 @@ export function CompanySubmissionDetailPageClient({
                         —
                       </Text>
                     ) : (
-                      <div className="overflow-x-auto rounded-md border border-border">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="border-b border-border bg-muted/30">
-                              {field.columns.map((column) => (
-                                <th
-                                  key={`${field.key}-header-${column.key}`}
-                                  className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                                >
-                                  {column.label}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {rows.map((row, rowIndex) => (
-                              <tr
-                                key={`${field.key}-row-${rowIndex}`}
-                                className="border-b border-border last:border-b-0"
-                              >
-                                {field.columns.map((column) => (
-                                  <td
-                                    key={`${field.key}-row-${rowIndex}-${column.key}`}
-                                    className="px-3 py-2 align-top text-sm whitespace-pre-wrap"
-                                  >
-                                    {row[column.key] || '—'}
-                                  </td>
-                                ))}
-                              </tr>
+                      <Table variant="bordered">
+                        <TableHeader>
+                          <TableRow>
+                            {field.columns.map((column) => (
+                              <TableHead key={`${field.key}-header-${column.key}`}>
+                                {column.label}
+                              </TableHead>
                             ))}
-                          </tbody>
-                        </table>
-                      </div>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {rows.map((row, rowIndex) => (
+                            <TableRow key={`${field.key}-row-${rowIndex}`}>
+                              {field.columns.map((column) => (
+                                <TableCell key={`${field.key}-row-${rowIndex}-${column.key}`}>
+                                  <div className="whitespace-pre-wrap">{row[column.key] || '—'}</div>
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     )}
                   </div>
                 </div>
@@ -416,9 +423,7 @@ export function CompanySubmissionDetailPageClient({
               </div>
               <div className="p-4 space-y-4">
                 <Field>
-                  <FieldLabel htmlFor="reviewReason">
-                    Reason (required for rejection)
-                  </FieldLabel>
+                  <FieldLabel htmlFor="reviewReason">Reason (required for rejection)</FieldLabel>
                   <Textarea
                     id="reviewReason"
                     value={reviewReason}
