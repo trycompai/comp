@@ -149,6 +149,7 @@ export function FleetPolicyItem({ policy, organizationId, onRefresh }: FleetPoli
       </div>
       <PolicyImageUploadModal
         policy={policy}
+        organizationId={organizationId}
         open={isUploadOpen}
         onOpenChange={setIsUploadOpen}
         onRefresh={onRefresh}
