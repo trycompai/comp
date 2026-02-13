@@ -1,3 +1,10 @@
+# [1.83.0](https://github.com/trycompai/comp/compare/v1.82.3...v1.83.0) (2026-02-13)
+
+
+### Features
+
+* **automation:** add enterprise feature check and user guidance ([#2131](https://github.com/trycompai/comp/issues/2131)) ([80489af](https://github.com/trycompai/comp/commit/80489af57b94790a5ae67956658cdc9cb1a1043f))
+
 ## [1.82.3](https://github.com/trycompai/comp/compare/v1.82.2...v1.82.3) (2026-02-12)
 
 
