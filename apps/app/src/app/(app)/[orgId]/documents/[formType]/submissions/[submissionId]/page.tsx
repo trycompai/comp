@@ -1,5 +1,8 @@
 import { CompanySubmissionDetailPageClient } from '@/app/(app)/[orgId]/documents/components/CompanySubmissionDetailPageClient';
+import { auth } from '@/utils/auth';
+import { db } from '@db';
 import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
+import { headers } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { evidenceFormDefinitions, evidenceFormTypeSchema } from '../../../forms';
@@ -18,6 +21,18 @@ export default async function CompanySubmissionDetailPage({
 
   const parsedFormType = parsedType.data;
   const formDefinition = evidenceFormDefinitions[parsedFormType];
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  let isPlatformAdmin = false;
+  if (session?.user?.id) {
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { isPlatformAdmin: true },
+    });
+    isPlatformAdmin = user?.isPlatformAdmin ?? false;
+  }
 
   return (
     <PageLayout>
@@ -41,6 +56,7 @@ export default async function CompanySubmissionDetailPage({
         organizationId={orgId}
         formType={parsedFormType}
         submissionId={submissionId}
+        isPlatformAdmin={isPlatformAdmin}
       />
     </PageLayout>
   );

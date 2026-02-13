@@ -11614,11 +11614,21 @@
           },
           {
             "name": "taskId",
-            "required": true,
+            "required": false,
             "in": "query",
             "description": "Task ID to get findings for",
             "schema": {
               "example": "tsk_abc123",
+              "type": "string"
+            }
+          },
+          {
+            "name": "evidenceSubmissionId",
+            "required": false,
+            "in": "query",
+            "description": "Evidence submission ID to get findings for",
+            "schema": {
+              "example": "evs_abc123",
               "type": "string"
             }
           }
@@ -19159,6 +19169,11 @@
             "description": "Task ID this finding is associated with",
             "example": "tsk_abc123"
           },
+          "evidenceSubmissionId": {
+            "type": "string",
+            "description": "Evidence submission ID this finding is associated with",
+            "example": "evs_abc123"
+          },
           "type": {
             "type": "string",
             "description": "Type of finding (SOC 2 or ISO 27001)",
@@ -19181,7 +19196,6 @@
           }
         },
         "required": [
-          "taskId",
           "type",
           "content"
         ]

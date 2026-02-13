@@ -33,8 +33,10 @@ model Finding {
   updatedAt DateTime @updatedAt
 
   // Relationships
-  taskId         String
-  task           Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId         String?
+  task           Task?            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  evidenceSubmissionId String?
+  evidenceSubmission   EvidenceSubmission? @relation(fields: [evidenceSubmissionId], references: [id], onDelete: Cascade)
   templateId     String?
   template       FindingTemplate? @relation(fields: [templateId], references: [id])
   createdById    String
@@ -43,5 +45,6 @@ model Finding {
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([taskId])
+  @@index([evidenceSubmissionId])
   @@index([organizationId, status])
 }

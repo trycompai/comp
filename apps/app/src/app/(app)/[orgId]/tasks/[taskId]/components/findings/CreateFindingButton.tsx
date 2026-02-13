@@ -6,11 +6,16 @@ import { useState } from 'react';
 import { CreateFindingSheet } from './CreateFindingSheet';
 
 interface CreateFindingButtonProps {
-  taskId: string;
+  taskId?: string;
+  evidenceSubmissionId?: string;
   onSuccess?: () => void;
 }
 
-export function CreateFindingButton({ taskId, onSuccess }: CreateFindingButtonProps) {
+export function CreateFindingButton({
+  taskId,
+  evidenceSubmissionId,
+  onSuccess,
+}: CreateFindingButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -20,6 +25,7 @@ export function CreateFindingButton({ taskId, onSuccess }: CreateFindingButtonPr
       </Button>
       <CreateFindingSheet
         taskId={taskId}
+        evidenceSubmissionId={evidenceSubmissionId}
         open={open}
         onOpenChange={setOpen}
         onSuccess={onSuccess}

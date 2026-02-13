@@ -15,6 +15,7 @@ model EvidenceSubmission {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   submittedBy  User?        @relation("EvidenceSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
   reviewedBy   User?        @relation("EvidenceReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  findings     Finding[]
 
   @@index([organizationId, formType, submittedAt])
   @@index([organizationId, formType])

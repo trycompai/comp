@@ -5,6 +5,7 @@ import {
   type EvidenceFormType,
 } from '@/app/(app)/[orgId]/documents/forms';
 import { api } from '@/lib/api-client';
+import { useActiveMember } from '@/utils/auth-client';
 import {
   Button,
   Empty,
@@ -37,6 +38,7 @@ import {
   normalizeMatrixRows,
   renderSubmissionValue,
 } from './submission-utils';
+import { DocumentFindingsSection } from './DocumentFindingsSection';
 
 type EvidenceSubmissionRow = {
   id: string;
@@ -72,10 +74,12 @@ export function CompanySubmissionDetailPageClient({
   organizationId,
   formType,
   submissionId,
+  isPlatformAdmin,
 }: {
   organizationId: string;
   formType: EvidenceFormType;
   submissionId: string;
+  isPlatformAdmin: boolean;
 }) {
   const endpoint = `/v1/evidence-forms/${formType}/submissions/${submissionId}`;
   const swrKey: readonly [string, string] = [endpoint, organizationId];
@@ -93,6 +97,10 @@ export function CompanySubmissionDetailPageClient({
 
   const [reviewReason, setReviewReason] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const { data: activeMember } = useActiveMember();
+  const memberRoles = activeMember?.role?.split(',').map((role: string) => role.trim()) || [];
+  const isAuditor = memberRoles.includes('auditor');
+  const isAdminOrOwner = memberRoles.includes('admin') || memberRoles.includes('owner');
 
   const handleReview = async (action: 'approved' | 'rejected') => {
     if (action === 'rejected' && !reviewReason.trim()) {
@@ -349,6 +357,13 @@ export function CompanySubmissionDetailPageClient({
             </div>
           </div>
         )}
+
+        <DocumentFindingsSection
+          submissionId={submissionId}
+          isAuditor={isAuditor}
+          isPlatformAdmin={isPlatformAdmin}
+          isAdminOrOwner={isAdminOrOwner}
+        />
       </div>
     </Section>
   );
