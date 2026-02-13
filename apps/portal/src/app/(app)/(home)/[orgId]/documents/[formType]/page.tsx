@@ -1,5 +1,6 @@
 import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
+import { db } from '@db';
 import { Breadcrumb, PageLayout } from '@trycompai/design-system';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { headers as getHeaders } from 'next/headers';
@@ -48,6 +49,23 @@ export default async function PortalCompanyFormPage({
   const formTypeValue = parsedType.data;
   const form = evidenceFormDefinitions[formTypeValue];
   if (!form.portalAccessible) {
+    notFound();
+  }
+
+  const organization = await db.organization.findUnique({
+    where: { id: orgId },
+    select: {
+      whistleblowerReportEnabled: true,
+      accessRequestFormEnabled: true,
+    },
+  });
+  if (!organization) {
+    notFound();
+  }
+  if (formTypeValue === 'whistleblower-report' && !organization.whistleblowerReportEnabled) {
+    notFound();
+  }
+  if (formTypeValue === 'access-request' && !organization.accessRequestFormEnabled) {
     notFound();
   }
   const visibleFields = form.fields;

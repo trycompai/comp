@@ -29,6 +29,8 @@ interface EmployeeTasksListProps {
   host: Host | null;
   deviceAgentStepEnabled: boolean;
   securityTrainingStepEnabled: boolean;
+  whistleblowerReportEnabled: boolean;
+  accessRequestFormEnabled: boolean;
 }
 
 export const EmployeeTasksList = ({
@@ -40,6 +42,8 @@ export const EmployeeTasksList = ({
   host,
   deviceAgentStepEnabled,
   securityTrainingStepEnabled,
+  whistleblowerReportEnabled,
+  accessRequestFormEnabled,
 }: EmployeeTasksListProps) => {
   const {
     data: response,
@@ -126,6 +130,11 @@ export const EmployeeTasksList = ({
         ]
       : []),
   ];
+  const visiblePortalForms = portalForms.filter((form) => {
+    if (form.type === 'whistleblower-report') return whistleblowerReportEnabled;
+    if (form.type === 'access-request') return accessRequestFormEnabled;
+    return true;
+  });
 
   const allCompleted = completedCount === accordionItems.length;
 
@@ -167,12 +176,12 @@ export const EmployeeTasksList = ({
       </Accordion>
 
       {/* Company forms */}
-      {portalForms.length > 0 && (
+      {visiblePortalForms.length > 0 && (
         <div className="space-y-2">
           <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Company Forms
           </div>
-          {portalForms.map((form) => (
+          {visiblePortalForms.map((form) => (
             <div
               key={form.type}
               className="flex items-center justify-between rounded-md border border-border p-3"

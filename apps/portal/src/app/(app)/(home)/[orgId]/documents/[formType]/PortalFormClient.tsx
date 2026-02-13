@@ -19,6 +19,7 @@ import {
 } from '@trycompai/design-system';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useState } from 'react';
 
 type FieldDef = {
   key: string;
@@ -49,6 +50,7 @@ export function PortalFormClient({
   errorMessage,
 }: PortalFormClientProps) {
   const params = useParams<{ orgId: string }>();
+  const [selectedFiles, setSelectedFiles] = useState<Record<string, string>>({});
 
   const isCompact = (f: FieldDef) => f.type === 'text' || f.type === 'date' || f.type === 'select';
 
@@ -149,6 +151,12 @@ export function PortalFormClient({
                       <Textarea
                         id={field.key}
                         name={field.key}
+                        style={{
+                          width: '100%',
+                          maxWidth: 'none',
+                          maxHeight: '350px',
+                          minHeight: '350px',
+                        }}
                         required={field.required}
                         placeholder={field.placeholder}
                         rows={12}
@@ -161,15 +169,36 @@ export function PortalFormClient({
 
                   {field.type === 'file' && (
                     <div className="space-y-2">
-                      <div className="rounded-md border border-border p-4">
-                        <Input
-                          id={field.key}
-                          name={field.key}
-                          type="file"
-                          required={field.required}
-                          accept={field.accept}
-                        />
-                      </div>
+                      <label htmlFor={field.key} className="block cursor-pointer">
+                        <div className="rounded-md border-2 border-dashed border-border bg-muted/20 p-6 text-center transition hover:bg-muted/40">
+                          <p className="text-sm font-medium text-foreground">
+                            Drop file here or click to upload
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Maximum file size: 100 MB
+                          </p>
+                        </div>
+                      </label>
+                      <input
+                        id={field.key}
+                        name={field.key}
+                        type="file"
+                        required={field.required}
+                        accept={field.accept}
+                        className="sr-only"
+                        onChange={(event) => {
+                          const selectedFile = event.target.files?.[0];
+                          setSelectedFiles((current) => ({
+                            ...current,
+                            [field.key]: selectedFile?.name ?? '',
+                          }));
+                        }}
+                      />
+                      {selectedFiles[field.key] && (
+                        <Text size="sm" variant="muted">
+                          Selected: {selectedFiles[field.key]}
+                        </Text>
+                      )}
                       <Text size="sm" variant="muted">
                         Accepted: {field.accept ?? 'all file types'}
                       </Text>
