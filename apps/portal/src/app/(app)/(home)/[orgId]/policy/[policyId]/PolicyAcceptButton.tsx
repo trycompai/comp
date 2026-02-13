@@ -53,7 +53,6 @@ export function PolicyAcceptButton({
           Policy Accepted
         </Button>
       </div>
-      
     );
   }
 

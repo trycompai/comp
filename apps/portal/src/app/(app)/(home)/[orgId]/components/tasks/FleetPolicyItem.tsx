@@ -3,18 +3,25 @@
 import { useMemo, useState } from 'react';
 
 import { cn } from '@comp/ui/cn';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
-import { CheckCircle2, HelpCircle, Image as ImageIcon, MoreVertical, Upload, XCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import type { FleetPolicy } from '../../types';
-import { PolicyImageUploadModal } from './PolicyImageUploadModal';
-import { PolicyImagePreviewModal } from './PolicyImagePreviewModal';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { Button } from '@trycompai/design-system';
+import {
+  CheckCircle2,
+  HelpCircle,
+  Image as ImageIcon,
+  MoreVertical,
+  Upload,
+  XCircle,
+} from 'lucide-react';
+import type { FleetPolicy } from '../../types';
+import { PolicyImagePreviewModal } from './PolicyImagePreviewModal';
+import { PolicyImageUploadModal } from './PolicyImageUploadModal';
 
 interface FleetPolicyItemProps {
   policy: FleetPolicy;
@@ -46,8 +53,8 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
         label: 'Upload images',
         renderIcon: () => <Upload className="mr-2 h-4 w-4" />,
         onClick: () => setIsUploadOpen(true),
-      }
-    ]
+      },
+    ];
   }, [policy]);
 
   const hasActions = useMemo(() => actions.length > 0, [actions]);
@@ -66,7 +73,10 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     <HelpCircle size={14} />
                   </button>
                 </TooltipTrigger>

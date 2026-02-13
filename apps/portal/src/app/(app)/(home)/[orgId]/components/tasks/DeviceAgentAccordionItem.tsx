@@ -186,10 +186,7 @@ export function DeviceAgentAccordionItem({
                         </SelectContent>
                       </Select>
                     )}
-                    <Button
-                      onClick={handleDownload}
-                      disabled={isDownloading || hasInstalledAgent}
-                    >
+                    <Button onClick={handleDownload} disabled={isDownloading || hasInstalledAgent}>
                       {getButtonContent()}
                     </Button>
                   </div>

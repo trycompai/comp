@@ -148,9 +148,7 @@ export const EmployeeTasksList = ({
               <div className="flex items-center gap-2 shrink-0 ml-4">
                 {form.type === 'access-request' && (
                   <Link href={`/${organizationId}/documents/${form.type}/submissions`}>
-                    <Button variant="ghost">
-                      My requests
-                    </Button>
+                    <Button variant="ghost">My requests</Button>
                   </Link>
                 )}
                 <Link href={`/${organizationId}/documents/${form.type}`}>

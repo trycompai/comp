@@ -35,11 +35,7 @@ export function PolicyContainer({ policies, member }: PolicyContainerProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            iconLeft={<ArrowLeft size={16} />}
-            onClick={handleBackToGrid}
-          >
+          <Button variant="outline" iconLeft={<ArrowLeft size={16} />} onClick={handleBackToGrid}>
             Back to Policies
           </Button>
           <Text variant="muted" size="sm">

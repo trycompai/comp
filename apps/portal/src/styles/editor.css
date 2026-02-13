@@ -123,7 +123,7 @@ pre .hljs-strong {
 
 .ProseMirror ul > li::before {
   content: '';
-  @apply absolute top-2 left-0 h-1.5 w-1.5 rounded-full bg-foreground;
+  @apply bg-foreground absolute top-2 left-0 h-1.5 w-1.5 rounded-full;
 }
 
 .ProseMirror ol {

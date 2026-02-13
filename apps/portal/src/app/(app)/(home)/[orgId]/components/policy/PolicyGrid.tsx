@@ -42,29 +42,29 @@ export function PolicyGrid({ policies, onPolicyClick, member }: PolicyGridProps)
                 onClick={() => onPolicyClick(index)}
               >
                 <Card>
-                {isCompleted && (
-                  <div className="bg-background/60 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[2px]">
-                    <Text weight="medium">Completed</Text>
-                  </div>
-                )}
-                <CardHeader>
-                  <CardTitle>{policy.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex min-h-[120px] flex-col justify-between gap-4">
-                    <p className="text-muted-foreground line-clamp-4">{policy.description}</p>
-                    <div>
-                      <Text variant="muted" size="sm">
-                        Status: {policy.status}
-                        {policy.updatedAt && (
-                          <span className="ml-2">
-                            (Updated: {new Date(policy.updatedAt).toLocaleDateString()})
-                          </span>
-                        )}
-                      </Text>
+                  {isCompleted && (
+                    <div className="bg-background/60 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[2px]">
+                      <Text weight="medium">Completed</Text>
                     </div>
-                  </div>
-                </CardContent>
+                  )}
+                  <CardHeader>
+                    <CardTitle>{policy.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex min-h-[120px] flex-col justify-between gap-4">
+                      <p className="text-muted-foreground line-clamp-4">{policy.description}</p>
+                      <div>
+                        <Text variant="muted" size="sm">
+                          Status: {policy.status}
+                          {policy.updatedAt && (
+                            <span className="ml-2">
+                              (Updated: {new Date(policy.updatedAt).toLocaleDateString()})
+                            </span>
+                          )}
+                        </Text>
+                      </div>
+                    </div>
+                  </CardContent>
                 </Card>
               </div>
             );
