@@ -3,9 +3,11 @@
 import { trainingVideos } from '@/lib/data/training-videos';
 import { evidenceFormDefinitionList } from '@comp/company';
 import { Accordion } from '@comp/ui/accordion';
+import { Card, CardContent } from '@comp/ui/card';
 import type { EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
 import { Button } from '@trycompai/design-system';
 import Link from 'next/link';
+import { CheckCircle2 } from 'lucide-react';
 import useSWR from 'swr';
 import type { FleetPolicy, Host } from '../types';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
@@ -25,6 +27,8 @@ interface EmployeeTasksListProps {
   member: Member;
   fleetPolicies: FleetPolicy[];
   host: Host | null;
+  deviceAgentStepEnabled: boolean;
+  securityTrainingStepEnabled: boolean;
 }
 
 export const EmployeeTasksList = ({
@@ -34,6 +38,8 @@ export const EmployeeTasksList = ({
   member,
   fleetPolicies,
   host,
+  deviceAgentStepEnabled,
+  securityTrainingStepEnabled,
 }: EmployeeTasksListProps) => {
   const {
     data: response,
@@ -82,8 +88,8 @@ export const EmployeeTasksList = ({
 
   const completedCount = [
     hasAcceptedPolicies,
-    hasCompletedDeviceSetup,
-    hasCompletedGeneralTraining,
+    ...(deviceAgentStepEnabled ? [hasCompletedDeviceSetup] : []),
+    ...(securityTrainingStepEnabled ? [hasCompletedGeneralTraining] : []),
   ].filter(Boolean).length;
 
   const accordionItems = [
@@ -91,23 +97,53 @@ export const EmployeeTasksList = ({
       title: 'Security Policies',
       content: <PoliciesAccordionItem policies={policies} member={member} />,
     },
-    {
-      title: 'Device Agent',
-      content: (
-        <DeviceAgentAccordionItem
-          member={member}
-          host={response.device}
-          fleetPolicies={response.fleetPolicies}
-          isLoading={isValidating}
-          fetchFleetPolicies={fetchFleetPolicies}
-        />
-      ),
-    },
-    {
-      title: 'Security Awareness Training',
-      content: <GeneralTrainingAccordionItem trainingVideoCompletions={trainingVideoCompletions} />,
-    },
+    ...(deviceAgentStepEnabled
+      ? [
+          {
+            title: 'Download and install Comp AI Device Agent',
+            content: (
+              <DeviceAgentAccordionItem
+                member={member}
+                host={response.device}
+                fleetPolicies={response.fleetPolicies}
+                isLoading={isValidating}
+                fetchFleetPolicies={fetchFleetPolicies}
+              />
+            ),
+          },
+        ]
+      : []),
+    ...(securityTrainingStepEnabled
+      ? [
+          {
+            title: 'Complete general security awareness training',
+            content: (
+              <GeneralTrainingAccordionItem
+                trainingVideoCompletions={trainingVideoCompletions}
+              />
+            ),
+          },
+        ]
+      : []),
   ];
+
+  const allCompleted = completedCount === accordionItems.length;
+
+  if (allCompleted) {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <CheckCircle2 className="h-12 w-12 text-primary mb-4" />
+            <h2 className="text-xl font-semibold mb-2">You're all set!</h2>
+            <p className="text-muted-foreground text-sm max-w-md">
+              You've completed all required tasks. No further action is needed at this time.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

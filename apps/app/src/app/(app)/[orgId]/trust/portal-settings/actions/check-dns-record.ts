@@ -4,8 +4,11 @@ import { authActionClient } from '@/actions/safe-action';
 import { env } from '@/env.mjs';
 import { db } from '@db';
 import { Vercel } from '@vercel/sdk';
+import * as dns from 'node:dns';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
+
+const dnsPromises = dns.promises;
 
 /**
  * Strict pattern to match known Vercel DNS CNAME targets.
@@ -57,34 +60,17 @@ export const checkDnsRecordAction = authActionClient
     const rootDomain = domain.split('.').slice(-2).join('.');
     const activeOrgId = ctx.session.activeOrganizationId;
 
-    const response = await fetch(`https://networkcalc.com/api/dns/lookup/${domain}`);
-    const txtResponse = await fetch(
-      `https://networkcalc.com/api/dns/lookup/${rootDomain}?type=TXT`,
-    );
-    const vercelTxtResponse = await fetch(
-      `https://networkcalc.com/api/dns/lookup/_vercel.${rootDomain}?type=TXT`,
-    );
+    // Use Node's built-in DNS (no HTTPS) to avoid SSL/certificate issues with external APIs
+    const getCnameRecords = (host: string): Promise<string[]> =>
+      dnsPromises.resolve(host, 'CNAME').catch(() => []);
+    const getTxtRecords = (host: string): Promise<string[][]> =>
+      dnsPromises.resolve(host, 'TXT').catch(() => []);
 
-    const data = await response.json();
-    const txtData = await txtResponse.json();
-    const vercelTxtData = await vercelTxtResponse.json();
-
-    if (
-      response.status !== 200 ||
-      data.status !== 'OK' ||
-      txtResponse.status !== 200 ||
-      txtData.status !== 'OK'
-    ) {
-      console.error('DNS lookup failed:', data);
-      throw new Error(
-        data.message ||
-          'DNS record verification failed, check the records are valid or try again later.',
-      );
-    }
-
-    const cnameRecords = data.records?.CNAME;
-    const txtRecords = txtData.records?.TXT;
-    const vercelTxtRecords = vercelTxtData.records?.TXT;
+    const [cnameRecords, txtRecords, vercelTxtRecords] = await Promise.all([
+      getCnameRecords(domain),
+      getTxtRecords(rootDomain),
+      getTxtRecords(`_vercel.${rootDomain}`),
+    ]);
     const isVercelDomain = await db.trust.findUnique({
       where: {
         organizationId: activeOrgId,
@@ -100,61 +86,38 @@ export const checkDnsRecordAction = authActionClient
 
     let isCnameVerified = false;
 
-    if (cnameRecords) {
+    if (cnameRecords.length > 0) {
       // First try strict pattern
-      isCnameVerified = cnameRecords.some((record: { address: string }) =>
-        VERCEL_DNS_CNAME_PATTERN.test(record.address),
+      isCnameVerified = cnameRecords.some((address) =>
+        VERCEL_DNS_CNAME_PATTERN.test(address),
       );
 
       // If strict fails, try fallback pattern (catches new Vercel patterns we haven't seen)
       if (!isCnameVerified) {
-        const fallbackMatch = cnameRecords.find((record: { address: string }) =>
-          VERCEL_DNS_FALLBACK_PATTERN.test(record.address),
+        const fallbackMatch = cnameRecords.find((address) =>
+          VERCEL_DNS_FALLBACK_PATTERN.test(address),
         );
 
         if (fallbackMatch) {
           console.warn(
             `[DNS Check] CNAME matched fallback pattern but not strict pattern. ` +
-              `Address: ${fallbackMatch.address}. Consider updating VERCEL_DNS_CNAME_PATTERN.`,
+              `Address: ${fallbackMatch}. Consider updating VERCEL_DNS_CNAME_PATTERN.`,
           );
           isCnameVerified = true;
         }
       }
     }
 
-    let isTxtVerified = false;
-    let isVercelTxtVerified = false;
+    // Node's resolve(host, 'TXT') returns string[][] - each inner array is one TXT record
+    const txtRecordMatches = (records: string[][], expected: string | null) =>
+      expected != null &&
+      records.some((segments) => segments.some((s) => s === expected));
 
-    if (txtRecords) {
-      // Check for our custom TXT record
-      isTxtVerified = txtRecords.some((record: any) => {
-        if (typeof record === 'string') {
-          return record === expectedTxtValue;
-        }
-        if (record && typeof record.value === 'string') {
-          return record.value === expectedTxtValue;
-        }
-        if (record && Array.isArray(record.txt) && record.txt.length > 0) {
-          return record.txt.some((txt: string) => txt === expectedTxtValue);
-        }
-        return false;
-      });
-    }
-
-    if (vercelTxtRecords) {
-      isVercelTxtVerified = vercelTxtRecords.some((record: any) => {
-        if (typeof record === 'string') {
-          return record === expectedVercelTxtValue;
-        }
-        if (record && typeof record.value === 'string') {
-          return record.value === expectedVercelTxtValue;
-        }
-        if (record && Array.isArray(record.txt) && record.txt.length > 0) {
-          return record.txt.some((txt: string) => txt === expectedVercelTxtValue);
-        }
-        return false;
-      });
-    }
+    const isTxtVerified = txtRecordMatches(txtRecords, expectedTxtValue);
+    const isVercelTxtVerified = txtRecordMatches(
+      vercelTxtRecords,
+      expectedVercelTxtValue ?? null,
+    );
 
     const isVerified = isCnameVerified && isTxtVerified && isVercelTxtVerified;
 

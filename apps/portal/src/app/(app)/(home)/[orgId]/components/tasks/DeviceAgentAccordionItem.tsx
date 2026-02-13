@@ -248,7 +248,12 @@ export function DeviceAgentAccordionItem({
                 {fleetPolicies.length > 0 ? (
                   <>
                     {fleetPolicies.map((policy) => (
-                      <FleetPolicyItem key={policy.id} policy={policy} onRefresh={handleRefresh} />
+                      <FleetPolicyItem
+                        key={policy.id}
+                        policy={policy}
+                        organizationId={member.organizationId}
+                        onRefresh={handleRefresh}
+                      />
                     ))}
                   </>
                 ) : (

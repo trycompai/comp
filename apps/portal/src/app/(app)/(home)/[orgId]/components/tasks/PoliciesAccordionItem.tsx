@@ -106,7 +106,7 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
               </Button>
             </>
           ) : (
-            <p className="text-muted-foreground text-sm">No policies to accept.</p>
+            <p className="text-muted-foreground text-sm">No policies ready to be signed.</p>
           )}
         </div>
       </AccordionContent>

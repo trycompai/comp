@@ -16,21 +16,25 @@ import {
   HelpCircle,
   Image as ImageIcon,
   MoreVertical,
+  Trash,
   Upload,
   XCircle,
 } from 'lucide-react';
 import type { FleetPolicy } from '../../types';
 import { PolicyImagePreviewModal } from './PolicyImagePreviewModal';
 import { PolicyImageUploadModal } from './PolicyImageUploadModal';
+import { PolicyImageResetModal } from './PolicyImageResetModal';
 
 interface FleetPolicyItemProps {
   policy: FleetPolicy;
+  organizationId: string;
   onRefresh: () => void;
 }
 
-export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
+export function FleetPolicyItem({ policy, organizationId, onRefresh }: FleetPolicyItemProps) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isRemoveOpen, setIsRemoveOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const actions = useMemo(() => {
@@ -41,6 +45,11 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
             label: 'Preview images',
             renderIcon: () => <ImageIcon className="mr-2 h-4 w-4" />,
             onClick: () => setIsPreviewOpen(true),
+          },
+          {
+            label: 'Remove images',
+            renderIcon: () => <Trash className="mr-2 h-4 w-4" />,
+            onClick: () => setIsRemoveOpen(true),
           },
         ];
       }
@@ -148,6 +157,13 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
         images={policy?.attachments || []}
         open={isPreviewOpen}
         onOpenChange={setIsPreviewOpen}
+      />
+      <PolicyImageResetModal
+        open={isRemoveOpen}
+        organizationId={organizationId}
+        policyId={policy.id}
+        onOpenChange={setIsRemoveOpen}
+        onRefresh={onRefresh}
       />
     </>
   );

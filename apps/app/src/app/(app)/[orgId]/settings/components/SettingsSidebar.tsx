@@ -23,6 +23,7 @@ export function SettingsSidebar({ orgId, showBrowserTab }: SettingsSidebarProps)
     { id: 'general', label: 'General', path: `/${orgId}/settings` },
     { id: 'context', label: 'Context', path: `/${orgId}/settings/context-hub` },
     { id: 'api', label: 'API Keys', path: `/${orgId}/settings/api-keys` },
+    { id: 'portal', label: 'Portal', path: `/${orgId}/settings/portal` },
     { id: 'secrets', label: 'Secrets', path: `/${orgId}/settings/secrets` },
     {
       id: 'browser',

@@ -33,6 +33,7 @@ import { CloudSecurityModule } from './cloud-security/cloud-security.module';
 import { BrowserbaseModule } from './browserbase/browserbase.module';
 import { TaskManagementModule } from './task-management/task-management.module';
 import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
+import { OrgChartModule } from './org-chart/org-chart.module';
 import { TrainingModule } from './training/training.module';
 import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
 
@@ -81,6 +82,7 @@ import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
     TaskManagementModule,
     AssistantChatModule,
     TrainingModule,
+    OrgChartModule,
     EvidenceFormsModule,
   ],
   controllers: [AppController],

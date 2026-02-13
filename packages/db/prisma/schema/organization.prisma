@@ -9,8 +9,10 @@ model Organization {
   website             String?
   onboardingCompleted Boolean     @default(false)
   hasAccess           Boolean     @default(false)
-  advancedModeEnabled     Boolean     @default(false)
-  evidenceApprovalEnabled Boolean     @default(false)
+  advancedModeEnabled             Boolean     @default(false)
+  evidenceApprovalEnabled         Boolean     @default(false)
+  deviceAgentStepEnabled          Boolean     @default(true)
+  securityTrainingStepEnabled     Boolean     @default(true)
 
   // FleetDM
   fleetDmLabelId        Int?
@@ -60,6 +62,9 @@ model Organization {
 
   // Findings
   findings Finding[]
+
+  // Org Chart
+  organizationChart OrganizationChart?
 
   @@index([slug])
 }

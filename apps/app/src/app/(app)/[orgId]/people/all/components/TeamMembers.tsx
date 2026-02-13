@@ -4,6 +4,7 @@ import { auth } from '@/utils/auth';
 import type { Invitation, Member, User } from '@db';
 import { db } from '@db';
 import { headers } from 'next/headers';
+import { reactivateMember } from '../actions/reactivateMember';
 import { removeMember } from '../actions/removeMember';
 import { revokeInvitation } from '../actions/revokeInvitation';
 import { getEmployeeSyncConnections } from '../data/queries';
@@ -80,6 +81,7 @@ export async function TeamMembers(props: TeamMembersProps) {
       data={data}
       organizationId={organizationId ?? ''}
       removeMemberAction={removeMember}
+      reactivateMemberAction={reactivateMember}
       revokeInvitationAction={revokeInvitation}
       canManageMembers={canManageMembers}
       canInviteUsers={canInviteUsers}
