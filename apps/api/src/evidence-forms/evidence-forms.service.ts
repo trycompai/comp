@@ -530,6 +530,12 @@ export class EvidenceFormsService {
       throw new NotFoundException('Submission not found');
     }
 
+    if (submission.status !== 'pending') {
+      throw new BadRequestException(
+        'Submission must be pending to be reviewed',
+      );
+    }
+
     return await db.evidenceSubmission.update({
       where: { id: params.submissionId },
       data: {
