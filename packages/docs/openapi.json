@@ -16251,6 +16251,12 @@
             ],
             "example": "it"
           },
+          "jobTitle": {
+            "type": "object",
+            "description": "Job title for the member",
+            "example": "Software Engineer",
+            "nullable": true
+          },
           "isActive": {
             "type": "boolean",
             "description": "Whether member is active",
@@ -16278,6 +16284,7 @@
           "role",
           "createdAt",
           "department",
+          "jobTitle",
           "isActive",
           "fleetDmLabelId",
           "user"
@@ -16319,6 +16326,11 @@
             "type": "number",
             "description": "FleetDM label ID for member devices",
             "example": 123
+          },
+          "jobTitle": {
+            "type": "string",
+            "description": "Job title for the member",
+            "example": "Software Engineer"
           }
         },
         "required": [
@@ -16392,6 +16404,11 @@
             "type": "number",
             "description": "FleetDM label ID for member devices",
             "example": 123
+          },
+          "jobTitle": {
+            "type": "string",
+            "description": "Job title for the member",
+            "example": "Software Engineer"
           }
         }
       },
