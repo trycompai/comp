@@ -252,19 +252,16 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
 
     // Wait for data to load
     if (!connections || !providers || loadingConnections || loadingProviders) {
-      console.log('[OAuth] Waiting for data to load...');
       return;
     }
 
     // Mark as handled
     hasHandledOAuthRef.current = true;
-    console.log('[OAuth] Handling callback for', providerSlug);
 
     const connection = connections.find((c) => c.providerSlug === providerSlug);
     const provider = providers.find((p) => p.id === providerSlug);
 
     if (connection && provider) {
-      console.log('[OAuth] Found connection and provider, opening dialog');
       toast.success(`${provider.name} connected successfully!`);
 
       // Set state first
@@ -273,16 +270,8 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
 
       // Open dialog after a tick to ensure state is updated
       setTimeout(() => {
-        console.log('[OAuth] Opening manage dialog');
         setManageDialogOpen(true);
       }, 150);
-    } else {
-      console.warn('[OAuth] Connection or provider not found:', {
-        hasConnection: !!connection,
-        hasProvider: !!provider,
-        connectionsCount: connections.length,
-        providersCount: providers.length,
-      });
     }
 
     // Clean up URL parameters

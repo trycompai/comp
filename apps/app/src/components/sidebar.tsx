@@ -1,6 +1,7 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
-import { getOrganizations } from '@/data/getOrganizations';
+import { serverApi } from '@/lib/api-server';
+import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -30,7 +31,8 @@ export async function Sidebar({
 }) {
   const cookieStore = await cookies();
   const isCollapsed = collapsed || cookieStore.get('sidebar-collapsed')?.value === 'true';
-  const { organizations } = await getOrganizations();
+  const meRes = await serverApi.get<{ organizations: OrganizationFromMe[] }>('/v1/auth/me');
+  const organizations = meRes.data?.organizations ?? [];
 
   // Generate logo URLs for all organizations
   const logoUrls: Record<string, string> = {};

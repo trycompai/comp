@@ -1,20 +1,14 @@
 import { Header } from '@/components/header';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { serverApi } from '@/lib/api-server';
+import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
-import type { Organization } from '@db';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-interface OrgInfo {
-  id: string;
-  name: string;
-  logo: string | null;
-}
-
 interface AuthMeResponse {
-  organizations: OrgInfo[];
+  organizations: OrganizationFromMe[];
 }
 
 export default async function NoAccess() {
@@ -28,7 +22,7 @@ export default async function NoAccess() {
 
   const [meRes, orgRes] = await Promise.all([
     serverApi.get<AuthMeResponse>('/v1/auth/me'),
-    serverApi.get<Organization>('/v1/organization'),
+    serverApi.get<{ id: string; name: string }>('/v1/organization'),
   ]);
 
   const organizations = meRes.data?.organizations ?? [];
@@ -51,7 +45,7 @@ export default async function NoAccess() {
         </div>
         <div>
           <OrganizationSwitcher
-            organizations={organizations as Organization[]}
+            organizations={organizations}
             organization={currentOrg}
           />
         </div>

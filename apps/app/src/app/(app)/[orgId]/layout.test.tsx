@@ -24,8 +24,10 @@ vi.mock('@/app/s3', () => ({
 vi.mock('@/components/trigger-token-provider', () => ({
   TriggerTokenProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
-vi.mock('@/data/getOrganizations', () => ({
-  getOrganizations: vi.fn().mockResolvedValue({ organizations: [] }),
+vi.mock('@/lib/api-server', () => ({
+  serverApi: {
+    get: vi.fn().mockResolvedValue({ data: { organizations: [] }, status: 200 }),
+  },
 }));
 vi.mock('@/lib/permissions', () => ({
   canAccessApp: vi.fn().mockReturnValue(true),

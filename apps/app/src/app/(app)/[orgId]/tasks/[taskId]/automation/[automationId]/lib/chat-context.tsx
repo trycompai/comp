@@ -48,7 +48,6 @@ export function ChatProvider({
 
   // Function to update automation ID (called when ephemeral becomes real)
   const updateAutomationId = useCallback((newId: string) => {
-    console.log('[ChatProvider] Updating automation ID to:', newId);
     automationIdRef.current = newId;
     hasBeenManuallyUpdated.current = true;
   }, []);

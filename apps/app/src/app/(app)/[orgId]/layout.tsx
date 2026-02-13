@@ -1,8 +1,9 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
-import { getOrganizations } from '@/data/getOrganizations';
+import { serverApi } from '@/lib/api-server';
 import { canAccessApp } from '@/lib/permissions';
+import type { OrganizationFromMe } from '@/types';
 import { resolveUserPermissions } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -120,8 +121,9 @@ export default async function Layout({
     },
   });
 
-  // Fetch organizations and feature flags for sidebar
-  const { organizations } = await getOrganizations();
+  // Fetch organizations for sidebar via API
+  const meRes = await serverApi.get<{ organizations: OrganizationFromMe[] }>('/v1/auth/me');
+  const organizations = meRes.data?.organizations ?? [];
 
   // Generate logo URLs for all organizations
   const logoUrls: Record<string, string> = {};

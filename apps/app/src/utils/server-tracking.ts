@@ -58,15 +58,6 @@ export async function trackEventServer(
       await sendToLinkedInConversions(parameters);
     }
 
-    // Log for debugging in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Analytics Server Event]', {
-        event: eventName,
-        userId: distinctId,
-        parameters,
-        timestamp: new Date().toISOString(),
-      });
-    }
   } catch (error) {
     console.error('Error tracking server event:', error);
     // Don't throw - tracking should not break the application

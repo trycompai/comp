@@ -6,15 +6,26 @@ vi.mock('@/utils/auth', async () => {
   return { auth: mockAuth };
 });
 
-// Mock db module
+// Mock db module - include Prisma enum exports so mocked auth helpers work
 vi.mock('@db', async () => {
   const { mockDb } = await import('@/test-utils/mocks/db');
-  return { db: mockDb };
+  return {
+    db: mockDb,
+    Departments: {
+      none: 'none',
+      admin: 'admin',
+      gov: 'gov',
+      hr: 'hr',
+      it: 'it',
+      itsm: 'itsm',
+      qms: 'qms',
+    },
+  };
 });
 
 // Then import other test utilities
 import { createMockRequest } from '@/test-utils/helpers/middleware';
-import { createMockSession, mockAuth, setupAuthMocks } from '@/test-utils/mocks/auth';
+import { createMockSession, setupAuthMocks } from '@/test-utils/mocks/auth';
 import { mockDb } from '@/test-utils/mocks/db';
 
 vi.mock('next/headers', () => ({
@@ -31,6 +42,15 @@ vi.mock('next/headers', () => ({
 // Import proxy after mocks are set up
 const { proxy } = await import('./proxy');
 
+/**
+ * Helper: set up mockDb.member.findFirst to return a valid member record.
+ * Call after setupAuthMocks() for tests where the user should pass the
+ * membership check on org routes.
+ */
+function mockMembershipExists() {
+  mockDb.member.findFirst.mockResolvedValue({ id: 'member_test123' });
+}
+
 describe('Middleware', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -38,8 +58,7 @@ describe('Middleware', () => {
 
   describe('Authentication & Basic Access', () => {
     it('should redirect unauthenticated users to /auth', async () => {
-      // Arrange
-      setupAuthMocks({ session: null, user: null });
+      // Arrange - no cookie, no session
       const request = await createMockRequest('/org_123/dashboard');
 
       // Act
@@ -47,148 +66,119 @@ describe('Middleware', () => {
 
       // Assert
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/auth');
+      expect(response.headers.get('location')).toBe(
+        'http://localhost:3000/auth?redirectTo=%2Forg_123%2Fdashboard',
+      );
     });
 
     it('should allow authenticated users to access their org', async () => {
       // Arrange
-      const { user } = setupAuthMocks();
+      setupAuthMocks();
+      mockMembershipExists();
 
-      // Mock that the organization has access
-      mockDb.organization.findFirst.mockResolvedValue({
-        hasAccess: true,
+      const request = await createMockRequest('/org_123/dashboard', {
+        authenticated: true,
       });
-
-      // Mock that onboarding is completed
-      mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
-        onboardingCompleted: true,
-      });
-
-      const request = await createMockRequest('/org_123/dashboard');
 
       // Act
       const response = await proxy(request);
 
       // Assert
-      expect(response.status).toBe(200); // Should pass through
+      expect(response.status).toBe(200);
       expect(response.headers.get('x-pathname')).toBe('/org_123/dashboard');
     });
 
-    it.skip('should prevent users from accessing orgs they do not belong to', async () => {
-      // SECURITY ISSUE: This check is not implemented in the middleware!
+    it('should prevent users from accessing orgs they do not belong to', async () => {
       // Arrange
-      const { session, user } = setupAuthMocks();
+      setupAuthMocks();
 
       // User is NOT a member of org_OTHER
       mockDb.member.findFirst.mockResolvedValue(null);
 
-      const request = await createMockRequest('/org_OTHER/dashboard');
+      const request = await createMockRequest('/org_OTHER/dashboard', {
+        authenticated: true,
+      });
 
       // Act
       const response = await proxy(request);
 
       // Assert
-      // TODO: This is currently NOT implemented in the middleware!
-      // The middleware should check membership but doesn't
-      expect(response.status).toBe(403); // Should be forbidden
+      expect(response.status).toBe(403);
+    });
+
+    it('should not check membership for non-org routes', async () => {
+      // Arrange
+      const nonOrgRoutes = ['/setup', '/upgrade/org_123', '/onboarding/org_123'];
+
+      for (const route of nonOrgRoutes) {
+        vi.clearAllMocks();
+        setupAuthMocks();
+
+        const request = await createMockRequest(route, { authenticated: true });
+
+        // Act
+        await proxy(request);
+
+        // Assert - member.findFirst should NOT be called for non-org routes
+        expect(mockDb.member.findFirst).not.toHaveBeenCalled();
+      }
     });
   });
 
   describe('Setup/Onboarding Flow', () => {
-    it('should redirect new users (no org) to /setup from root', async () => {
+    it('should allow access to root path without membership check', async () => {
       // Arrange
       const session = createMockSession({ activeOrganizationId: null });
       setupAuthMocks({ session });
 
-      mockDb.organization.findFirst.mockResolvedValue(null);
-
-      const request = await createMockRequest('/');
+      const request = await createMockRequest('/', { authenticated: true });
 
       // Act
       const response = await proxy(request);
 
-      // Assert
-      expect(mockAuth.api.setActiveOrganization).not.toHaveBeenCalled();
-      // Since user has no org, they should be allowed to access setup
+      // Assert - root path is not an org route, no membership check
       expect(response.status).toBe(200);
+      expect(mockDb.member.findFirst).not.toHaveBeenCalled();
     });
 
-    it('should allow existing users to create additional orgs with intent param', async () => {
+    it('should allow access to /setup with intent param', async () => {
       // Arrange
-      const { session, user } = setupAuthMocks();
-
-      mockDb.organization.findFirst.mockResolvedValue({
-        id: 'org_123',
-        name: 'Existing Org',
-      });
+      setupAuthMocks();
 
       const request = await createMockRequest('/setup', {
         searchParams: Promise.resolve({ intent: 'create-additional' }),
+        authenticated: true,
       });
 
       // Act
       const response = await proxy(request);
 
       // Assert
-      expect(response.status).toBe(200); // Should allow access
-    });
-
-    it('should redirect users with orgs away from /setup (without intent)', async () => {
-      // Arrange
-      const { session, user } = setupAuthMocks();
-
-      mockDb.organization.findFirst.mockResolvedValue({
-        id: 'org_123',
-        name: 'Existing Org',
-      });
-
-      const request = await createMockRequest('/setup');
-
-      // Act
-      const response = await proxy(request);
-
-      // Assert
-      expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/org_123/frameworks');
+      expect(response.status).toBe(200);
     });
   });
 
-  describe('Access Control (hasAccess)', () => {
-    beforeEach(() => {
-      // Set up authenticated user for access control tests
-      setupAuthMocks();
+  describe('Unprotected Routes', () => {
+    it('should bypass membership check for unprotected routes', async () => {
+      // Arrange
+      const unprotectedRoutes = ['/upgrade/org_123', '/setup', '/invite/abc123'];
+
+      for (const route of unprotectedRoutes) {
+        vi.clearAllMocks();
+        setupAuthMocks();
+        const request = await createMockRequest(route, { authenticated: true });
+
+        // Act
+        await proxy(request);
+
+        // Assert - should not call member.findFirst for non-org routes
+        expect(mockDb.member.findFirst).not.toHaveBeenCalled();
+      }
     });
 
-    it('should block access to org routes without hasAccess', async () => {
-      // Arrange
-      mockDb.organization.findFirst.mockResolvedValue({
-        hasAccess: false,
-      });
-
-      const request = await createMockRequest('/org_123/dashboard');
-
-      // Act
-      const response = await proxy(request);
-
-      // Assert
-      expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/upgrade/org_123');
-    });
-
-    it('should allow access with hasAccess = true', async () => {
-      // Arrange
-      mockDb.organization.findFirst.mockResolvedValue({
-        hasAccess: true,
-      });
-
-      // Mock onboarding completed so we don't get redirected to onboarding
-      mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
-        onboardingCompleted: true,
-      });
-
-      const request = await createMockRequest('/org_123/dashboard');
+    it('should allow unauthenticated access to invite routes', async () => {
+      // Arrange - no cookie
+      const request = await createMockRequest('/invite/abc123');
 
       // Act
       const response = await proxy(request);
@@ -197,240 +187,150 @@ describe('Middleware', () => {
       expect(response.status).toBe(200);
     });
 
-    it('should bypass access check for unprotected routes', async () => {
-      // Arrange
-      const unprotectedRoutes = ['/upgrade/org_123', '/setup', '/auth', '/invite/abc123'];
-
-      mockDb.organization.findFirst.mockResolvedValue({
-        hasAccess: false,
-      });
-
-      for (const route of unprotectedRoutes) {
-        const request = await createMockRequest(route);
-
-        // Act
-        const response = await proxy(request);
-
-        // Assert
-        // Some routes might redirect for other reasons (e.g., /auth when already authenticated)
-        // but they shouldn't redirect to the upgrade page
-        if (response.status === 307) {
-          const location = response.headers.get('location');
-          expect(location).not.toContain('/upgrade');
-        }
-      }
-    });
-
-    it('should handle organizations that do not exist', async () => {
-      // Arrange
-      mockDb.organization.findFirst.mockResolvedValue(null);
-
-      const request = await createMockRequest('/org_123/dashboard');
+    it('should allow unauthenticated access to unsubscribe routes', async () => {
+      // Arrange - no cookie
+      const request = await createMockRequest('/unsubscribe/abc123');
 
       // Act
       const response = await proxy(request);
 
       // Assert
-      expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/upgrade/org_123');
+      expect(response.status).toBe(200);
     });
+  });
 
-    it('should preserve query parameters when redirecting to upgrade', async () => {
+  describe('Organization Membership', () => {
+    it('should call db.member.findFirst with correct parameters', async () => {
       // Arrange
-      mockDb.organization.findFirst.mockResolvedValue({
-        hasAccess: false,
-      });
+      setupAuthMocks();
+      mockMembershipExists();
 
       const request = await createMockRequest('/org_123/dashboard', {
-        searchParams: Promise.resolve({
-          redirect: 'policies',
-          tab: 'active',
-        }),
+        authenticated: true,
+      });
+
+      // Act
+      await proxy(request);
+
+      // Assert
+      expect(mockDb.member.findFirst).toHaveBeenCalledWith({
+        where: {
+          userId: 'user_test123',
+          organizationId: 'org_123',
+          deactivated: false,
+        },
+        select: { id: true },
+      });
+    });
+
+    it('should return 403 when user is not a member of the org', async () => {
+      // Arrange
+      setupAuthMocks();
+      mockDb.member.findFirst.mockResolvedValue(null);
+
+      const request = await createMockRequest('/org_456/settings', {
+        authenticated: true,
       });
 
       // Act
       const response = await proxy(request);
 
       // Assert
-      expect(response.status).toBe(307);
-      const location = response.headers.get('location');
-      expect(location).toBe('http://localhost:3000/upgrade/org_123?redirect=policies&tab=active');
+      expect(response.status).toBe(403);
     });
-  });
 
-  describe('Session Healing', () => {
-    it('should auto-set activeOrganizationId when missing', async () => {
+    it('should allow access when user is a member of the org', async () => {
       // Arrange
-      const session = createMockSession({ activeOrganizationId: null });
-      setupAuthMocks({ session });
+      setupAuthMocks();
+      mockMembershipExists();
 
-      mockDb.organization.findFirst.mockResolvedValue({
-        id: 'org_123',
-        name: 'Test Org',
-        hasAccess: true,
+      const request = await createMockRequest('/org_456/settings', {
+        authenticated: true,
       });
 
+      // Act
+      const response = await proxy(request);
+
+      // Assert
+      expect(response.status).toBe(200);
+    });
+
+    it('should not check membership when user has no session cookie', async () => {
+      // Arrange - no cookie, so redirects to /auth before membership check
       const request = await createMockRequest('/org_123/dashboard');
 
       // Act
       const response = await proxy(request);
 
       // Assert
-      expect(mockAuth.api.setActiveOrganization).toHaveBeenCalledWith({
-        headers: expect.any(Object),
-        body: { organizationId: 'org_123' },
-      });
-      expect(response.status).toBe(307); // Redirect to refresh session
+      expect(response.status).toBe(307);
+      expect(response.headers.get('location')).toContain('/auth');
+      expect(mockDb.member.findFirst).not.toHaveBeenCalled();
     });
-  });
 
-  describe('Onboarding Completion', () => {
-    beforeEach(() => {
-      // Set up authenticated user with access for onboarding tests
+    it('should not check membership when session API returns null', async () => {
+      // Arrange - has cookie but session is invalid/expired
+      setupAuthMocks({ session: null, user: null });
+
+      const request = await createMockRequest('/org_123/dashboard', {
+        authenticated: true,
+      });
+
+      // Act
+      const response = await proxy(request);
+
+      // Assert - has token so passes cookie check, but session is null
+      // so membership check is skipped (passthrough to layout which will handle it)
+      expect(response.status).toBe(200);
+      expect(mockDb.member.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('should exclude deactivated members from membership check', async () => {
+      // Arrange
       setupAuthMocks();
-      // Mock that the organization has access (required for onboarding checks)
-      mockDb.organization.findFirst.mockResolvedValue({
-        hasAccess: true,
-      });
-    });
+      // findFirst with deactivated: false returns null for deactivated members
+      mockDb.member.findFirst.mockResolvedValue(null);
 
-    it('should redirect to /onboarding when user has access but onboarding not completed', async () => {
-      // Arrange
-      mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
-        onboardingCompleted: false,
+      const request = await createMockRequest('/org_123/dashboard', {
+        authenticated: true,
       });
-
-      const request = await createMockRequest('/org_123/frameworks');
 
       // Act
       const response = await proxy(request);
 
       // Assert
-      expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/onboarding/org_123');
-    });
-
-    it('should allow access to product when onboarding is completed', async () => {
-      // Arrange
-      mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
-        onboardingCompleted: true,
-      });
-
-      const request = await createMockRequest('/org_123/frameworks');
-
-      // Act
-      const response = await proxy(request);
-
-      // Assert
-      expect(response.status).toBe(200); // Should pass through
-    });
-
-    it('should allow access to /onboarding route even without onboarding completed', async () => {
-      // Arrange
-      mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
-        onboardingCompleted: false,
-      });
-
-      const request = await createMockRequest('/onboarding/org_123');
-
-      // Act
-      const response = await proxy(request);
-
-      // Assert
-      expect(response.status).toBe(200); // Should allow access
-    });
-
-    it('should preserve query params when redirecting to onboarding', async () => {
-      // Arrange
-      mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
-        onboardingCompleted: false,
-      });
-
-      const request = await createMockRequest('/org_123/frameworks', {
-        searchParams: Promise.resolve({
-          checkoutComplete: 'starter',
-          value: '99',
+      expect(response.status).toBe(403);
+      expect(mockDb.member.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            deactivated: false,
+          }),
         }),
-      });
-
-      // Act
-      const response = await proxy(request);
-
-      // Assert
-      expect(response.status).toBe(307);
-      const location = response.headers.get('location');
-      expect(location).toBe(
-        'http://localhost:3000/onboarding/org_123?checkoutComplete=starter&value=99',
       );
-    });
-
-    it('should not check onboarding for unprotected routes', async () => {
-      // Arrange
-      mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
-        onboardingCompleted: false,
-      });
-
-      const unprotectedRoutes = ['/upgrade/org_123', '/onboarding/org_123', '/auth', '/setup'];
-
-      for (const route of unprotectedRoutes) {
-        const request = await createMockRequest(route);
-
-        // Act
-        const response = await proxy(request);
-
-        // Assert
-        // Should not redirect to /onboarding for these routes
-        if (response.status === 307) {
-          const location = response.headers.get('location');
-          expect(location).not.toContain('/onboarding');
-        }
-      }
-    });
-
-    it('should handle organizations without onboardingCompleted field gracefully', async () => {
-      // Arrange - org exists but onboardingCompleted is undefined/null
-      mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
-        onboardingCompleted: null,
-      });
-
-      const request = await createMockRequest('/org_123/frameworks');
-
-      // Act
-      const response = await proxy(request);
-
-      // Assert
-      expect(response.status).toBe(200); // Should allow access (treat null as completed)
     });
   });
 
   describe('Security Boundaries', () => {
-    it('should validate org ID format to prevent injection', async () => {
+    it('should handle malicious org IDs without crashing', async () => {
       // Arrange
       setupAuthMocks();
+      mockMembershipExists();
 
       const maliciousRequests = [
         '/org_../../admin',
         '/org_%00nullbyte/settings',
         '/org_<script>alert(1)</script>/dashboard',
-        '/org_' + 'x'.repeat(1000) + '/settings', // Length attack
+        '/org_' + 'x'.repeat(1000) + '/settings',
       ];
 
       for (const path of maliciousRequests) {
-        const request = await createMockRequest(path);
+        const request = await createMockRequest(path, { authenticated: true });
 
         // Act
         const response = await proxy(request);
 
-        // Assert
-        // Should either reject or handle safely
-        // Currently the middleware doesn't validate org ID format
-        expect(response.status).not.toBe(500); // Should not crash
+        // Assert - should not crash
+        expect(response.status).not.toBe(500);
       }
     });
   });

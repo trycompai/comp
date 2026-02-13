@@ -61,8 +61,6 @@ async function callEnterpriseApi<T>(
     });
   }
 
-  console.log('url', url.toString());
-
   const method = options.method || 'GET';
 
   const response = await fetch(url.toString(), {

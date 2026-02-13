@@ -156,7 +156,6 @@ export function useQuestionnaireDetail({
     setEditingIndex: state.setEditingIndex,
     setEditingAnswer: state.setEditingAnswer,
     setSavingIndex: state.setSavingIndex,
-    router: state.router,
     triggerAutoAnswer: autoAnswer.triggerAutoAnswer,
     triggerSingleAnswer: singleAnswer.triggerSingleAnswer,
     answerQueue: state.answerQueue,

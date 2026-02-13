@@ -16,7 +16,6 @@ export function JwtTokenManager() {
         // Check if we already have a valid JWT token
         const existingToken = localStorage.getItem('jwt_token');
         if (existingToken) {
-          console.log('🎯 JWT token already available');
           return;
         }
 
@@ -24,8 +23,6 @@ export function JwtTokenManager() {
         const currentSession = await authClient.getSession();
         
         if (currentSession.data?.session) {
-          console.log('🔄 Active session found, capturing JWT token...');
-          
           // Call getSession with onSuccess to capture JWT token
           await authClient.getSession({
             fetchOptions: {
@@ -33,7 +30,6 @@ export function JwtTokenManager() {
                 const jwtToken = ctx.response.headers.get('set-auth-jwt');
                 if (jwtToken) {
                   localStorage.setItem('jwt_token', jwtToken);
-                  console.log('🎯 JWT token captured and stored');
                 }
               }
             }
@@ -60,7 +56,6 @@ export function JwtTokenManager() {
     // Listen for storage changes (in case token is cleared)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'jwt_token' && !e.newValue) {
-        console.log('🔄 JWT token removed, attempting to restore...');
         ensureJwtToken();
       }
     };

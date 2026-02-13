@@ -21,6 +21,11 @@ import { type NextRequest, NextResponse } from 'next/server';
  * - 500: { success: false, error: "Failed to delete user" }
  */
 export async function POST(request: NextRequest) {
+  // Block in production - QA endpoints should only work in staging/dev
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+  }
+
   const authHeader = request.headers.get('authorization');
   const qaSecret = process.env.QA_SECRET;
 
@@ -98,8 +103,6 @@ export async function POST(request: NextRequest) {
         email: email,
       },
     });
-
-    console.log(`QA: User ${userId} deleted successfully`);
 
     return NextResponse.json({
       success: true,

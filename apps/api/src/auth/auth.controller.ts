@@ -54,6 +54,7 @@ export class AuthController {
               logo: true,
               onboardingCompleted: true,
               hasAccess: true,
+              createdAt: true,
             },
           },
         },

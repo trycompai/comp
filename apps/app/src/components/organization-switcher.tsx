@@ -1,14 +1,14 @@
 'use client';
 
+import type { OrganizationFromMe } from '@/types';
 import { authClient } from '@/utils/auth-client';
-import type { Organization } from '@db';
 import { OrganizationSelector } from '@trycompai/design-system';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface OrganizationSwitcherProps {
-  organizations: Organization[];
-  organization: Organization | null;
+  organizations: OrganizationFromMe[];
+  organization: { id: string; name: string } | null;
   isCollapsed?: boolean;
   logoUrls?: Record<string, string>;
   modal?: boolean;

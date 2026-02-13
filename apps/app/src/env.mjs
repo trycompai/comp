@@ -46,6 +46,10 @@ export const env = createEnv({
     NOVU_API_KEY: z.string().optional(),
     SERVICE_TOKEN_TRIGGER: z.string().optional(),
     STRIPE_SECRET_KEY: z.string().optional(),
+    BACKEND_API_URL: z.string().optional(),
+    RETOOL_COMP_API_SECRET: z.string().optional(),
+    APP_AWS_ENDPOINT: z.string().optional(),
+    BROWSERBASE_PROJECT_ID: z.string().optional(),
   },
 
   client: {
@@ -60,6 +64,7 @@ export const env = createEnv({
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().optional(),
     NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER: z.string().optional(),
     NEXT_PUBLIC_SELF_HOSTED: z.string().optional(),
+    NEXT_PUBLIC_APP_ENV: z.string().optional(),
   },
 
   runtimeEnv: {
@@ -116,7 +121,12 @@ export const env = createEnv({
     NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER: process.env.NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER,
     SERVICE_TOKEN_TRIGGER: process.env.SERVICE_TOKEN_TRIGGER,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    BACKEND_API_URL: process.env.BACKEND_API_URL,
+    RETOOL_COMP_API_SECRET: process.env.RETOOL_COMP_API_SECRET,
+    APP_AWS_ENDPOINT: process.env.APP_AWS_ENDPOINT,
+    BROWSERBASE_PROJECT_ID: process.env.BROWSERBASE_PROJECT_ID,
     NEXT_PUBLIC_SELF_HOSTED: process.env.NEXT_PUBLIC_SELF_HOSTED,
+    NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,

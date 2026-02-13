@@ -2,10 +2,8 @@
 
 import { Button } from '@comp/ui/button';
 import { Checkbox } from '@comp/ui/checkbox';
-import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { updateUnsubscribePreferencesAction } from './actions/update-preferences';
 
 export interface EmailPreferences {
   policyNotifications: boolean;
@@ -33,16 +31,7 @@ export function UnsubscribePreferencesClient({ email, token, initialPreferences 
     taskAssignments: !initialPreferences.taskAssignments,
   });
   const [error, setError] = useState<string>('');
-
-  const { execute, status } = useAction(updateUnsubscribePreferencesAction, {
-    onSuccess: () => {
-      toast.success('Preferences saved successfully');
-      setError('');
-    },
-    onError: ({ error }) => {
-      setError(error.serverError || 'Failed to save preferences');
-    },
-  });
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleToggle = (key: keyof EmailPreferences, checked: boolean) => {
     // checked = true means unsubscribe (store false in DB), unchecked = false means subscribe (store true in DB)
@@ -66,8 +55,10 @@ export function UnsubscribePreferencesClient({ email, token, initialPreferences 
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setError('');
+    setIsSaving(true);
+
     // Invert preferences before saving: checked (true) = unsubscribed (false in DB), unchecked (false) = subscribed (true in DB)
     const invertedPreferences = {
       policyNotifications: !preferences.policyNotifications,
@@ -78,15 +69,32 @@ export function UnsubscribePreferencesClient({ email, token, initialPreferences 
       taskAssignments: !preferences.taskAssignments,
     };
 
-    execute({
-      email,
-      token,
-      preferences: invertedPreferences,
-    });
-  };
+    try {
+      const response = await fetch('/api/email-preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          token,
+          preferences: invertedPreferences,
+        }),
+      });
 
-  // Check if all are checked (all unsubscribed) - preferences are inverted for display
-  const allUnsubscribed = Object.values(preferences).every((v) => v === true);
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setError(result.error || 'Failed to save preferences');
+        return;
+      }
+
+      toast.success('Preferences saved successfully');
+      setError('');
+    } catch {
+      setError('Failed to save preferences');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -220,8 +228,8 @@ export function UnsubscribePreferencesClient({ email, token, initialPreferences 
         )}
 
         <div className="flex justify-end space-x-4">
-          <Button onClick={handleSave} disabled={status === 'executing'}>
-            {status === 'executing' ? 'Saving...' : 'Save Preferences'}
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Preferences'}
           </Button>
         </div>
 

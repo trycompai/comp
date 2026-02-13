@@ -68,14 +68,6 @@ export function DraggableCards({ children, onReorder }: DraggableCardsProps) {
         return originalIndex;
       });
 
-      console.log('Drag reorder:', {
-        oldIndex,
-        newIndex,
-        newItems: newItems.map((_, i) => `card-${i}`),
-        newOrder,
-        childrenLength: children.length,
-      });
-
       updateOrder(newOrder);
 
       // Call the onReorder callback with the new order

@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
+import type { OrganizationFromMe } from '@/types';
 import type { Onboarding, Organization } from '@db';
 import {
   AppShell,
@@ -51,7 +52,7 @@ import { ConditionalOnboardingTracker } from './ConditionalOnboardingTracker';
 interface AppShellWrapperProps {
   children: React.ReactNode;
   organization: Organization;
-  organizations: Organization[];
+  organizations: OrganizationFromMe[];
   logoUrls: Record<string, string>;
   onboarding: Onboarding | null;
   isCollapsed: boolean;

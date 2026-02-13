@@ -14,10 +14,10 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/fo
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Switch } from '@trycompai/design-system';
 import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import { z } from 'zod';
 
 const organizationAdvancedModeSchema = z.object({
@@ -31,7 +31,7 @@ export function UpdateOrganizationAdvancedMode({
 }) {
   const api = useApi();
   const { hasPermission } = usePermissions();
-  const router = useRouter();
+  const { mutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof organizationAdvancedModeSchema>>({
@@ -49,7 +49,7 @@ export function UpdateOrganizationAdvancedMode({
       });
       if (response.error) throw new Error(response.error);
       toast.success('Advanced mode setting updated');
-      router.refresh();
+      mutate(() => true, undefined, { revalidate: true });
     } catch {
       toast.error('Error updating advanced mode setting');
     } finally {

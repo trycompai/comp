@@ -389,12 +389,7 @@ export function TaskRichDescriptionField({
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files ? Array.from(event.target.files) : [];
-    console.log('handleFileSelect called', {
-      filesCount: fileList.length,
-      editorExists: !!editor,
-      editorDestroyed: editor?.isDestroyed,
-    });
-    
+
     if (fileList.length > 0 && editor && !editor.isDestroyed) {
       // Notify parent that file selection started
       onFileSelectStart?.();
@@ -424,12 +419,9 @@ export function TaskRichDescriptionField({
       const skeletonCount = fileList.length;
       
       try {
-        console.log('Calling onFileUpload...');
         const results = await onFileUpload(fileList);
-        console.log('Upload results:', results, 'Editor state:', { isDestroyed: editor.isDestroyed });
         
         if (!results || results.length === 0) {
-          console.warn('No upload results returned');
           // Remove skeleton paragraphs if upload failed
           try {
             const doc = editor.state.doc;
@@ -545,8 +537,6 @@ export function TaskRichDescriptionField({
           editor.chain().focus().setTextSelection(currentPos).insertContent(remainingContent).run();
         }
         
-        console.log('Files inserted successfully');
-        
         // Manually trigger onChange to ensure parent state is synced
         // TipTap's onUpdate should fire, but we ensure it here for reliability
         // Defer to avoid flushSync during render cycle
@@ -581,13 +571,6 @@ export function TaskRichDescriptionField({
         fileInputRef.current.value = '';
       }
     } else {
-      // Log why we didn't process files
-      if (fileList.length > 0) {
-        console.warn('Cannot attach files:', {
-          editorExists: !!editor,
-          editorDestroyed: editor?.isDestroyed,
-        });
-      }
       // Notify parent that file selection ended even if no files selected
       onFileSelectEnd?.();
       // Reset input so the same file can be selected again

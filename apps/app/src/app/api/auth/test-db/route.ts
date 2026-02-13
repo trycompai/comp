@@ -4,16 +4,18 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  // SECONDARY GUARD: Block in production even if E2E_TEST_MODE is accidentally set
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+  }
+
   if (process.env.E2E_TEST_MODE !== 'true') {
     return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
   }
 
   try {
-    console.log('[TEST-DB] Testing database connection...');
-
     // Test basic query
     const userCount = await db.user.count();
-    console.log('[TEST-DB] User count:', userCount);
 
     // Create a test organization first
     const testOrg = await db.organization.create({
@@ -23,8 +25,6 @@ export async function GET() {
         hasAccess: true,
       },
     });
-
-    console.log('[TEST-DB] Created test organization:', testOrg.id);
 
     // Test creating a simple user
     const testUser = await db.user.create({
@@ -46,8 +46,6 @@ export async function GET() {
       },
     });
 
-    console.log('[TEST-DB] Created test user:', testUser.id);
-
     // Clean up
     await db.user.delete({
       where: { id: testUser.id },
@@ -56,8 +54,6 @@ export async function GET() {
     await db.organization.delete({
       where: { id: testOrg.id },
     });
-
-    console.log('[TEST-DB] Cleaned up test data');
 
     return NextResponse.json({
       success: true,

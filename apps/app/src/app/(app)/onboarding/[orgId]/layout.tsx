@@ -1,19 +1,14 @@
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { MinimalHeader } from '@/components/layout/MinimalHeader';
 import { serverApi } from '@/lib/api-server';
+import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
-import type { Organization } from '@db';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { OnboardingSidebar } from '../../setup/components/OnboardingSidebar';
 
-interface OrgInfo {
-  id: string;
-  name: string;
-}
-
 interface AuthMeResponse {
-  organizations: OrgInfo[];
+  organizations: OrganizationFromMe[];
 }
 
 interface OnboardingRouteLayoutProps {
@@ -51,7 +46,7 @@ export default async function OnboardingRouteLayout({
           <MinimalHeader
             user={session.user}
             organizations={[]}
-            currentOrganization={organization as Organization}
+            currentOrganization={organization}
             variant="onboarding"
           />
           {children}

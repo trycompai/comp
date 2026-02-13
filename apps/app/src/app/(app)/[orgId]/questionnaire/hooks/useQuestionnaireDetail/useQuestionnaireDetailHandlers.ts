@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, type MutableRefObject } from 'react';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import { api } from '@/lib/api-client';
 import type { QuestionnaireResult } from './types';
 import type { Dispatch, SetStateAction } from 'react';
@@ -24,7 +25,6 @@ interface UseQuestionnaireDetailHandlersProps {
   setEditingIndex: (index: number | null) => void;
   setEditingAnswer: (answer: string) => void;
   setSavingIndex: (index: number | null) => void;
-  router: { refresh: () => void };
   triggerAutoAnswer: (payload: {
     organizationId: string;
     questionsAndAnswers: any[];
@@ -58,13 +58,14 @@ export function useQuestionnaireDetailHandlers({
     setEditingIndex,
     setEditingAnswer,
   setSavingIndex,
-  router,
   triggerAutoAnswer,
   triggerSingleAnswer,
   answerQueue,
   setAnswerQueue,
   answerQueueRef,
 }: UseQuestionnaireDetailHandlersProps) {
+  const { mutate } = useSWRConfig();
+
   const handleAutoAnswer = () => {
     if (answeringQuestionIndex !== null) {
       toast.warning('Please wait for the current question to finish before answering all questions');
@@ -249,7 +250,7 @@ export function useQuestionnaireDetailHandlers({
       );
 
       toast.success('Answer deleted. You can now generate a new answer.');
-      router.refresh();
+      mutate((key) => typeof key === 'string' && key.startsWith('/v1/questionnaire'), undefined, { revalidate: true });
     } catch (error) {
       console.error('Failed to delete answer:', error);
       toast.error('Failed to delete answer');

@@ -42,12 +42,6 @@ export function StatusGroup({
     () => ({
       accept: ItemTypes.TASK,
       drop: (item: DragItem) => {
-        console.log(
-          'DEBUG: StatusGroup drop activated on status:',
-          status.id,
-          'for item:',
-          item.id,
-        );
         handleDropTaskInternal(item, status.id, tasks.length);
       },
       collect: (monitor) => ({

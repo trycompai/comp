@@ -1,15 +1,15 @@
 'use client';
 
+import type { OrganizationFromMe } from '@/types';
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
 import { Sheet, SheetContent } from '@comp/ui/sheet';
-import type { Organization } from '@db';
 import { useState } from 'react';
 import { MainMenu } from './main-menu';
 import { OrganizationSwitcher } from './organization-switcher';
 
 interface MobileMenuProps {
-  organizations: Organization[];
+  organizations: OrganizationFromMe[];
   isCollapsed?: boolean;
   organizationId?: string;
   isQuestionnaireEnabled?: boolean;
@@ -54,7 +54,6 @@ export function MobileMenu({
           />
           <MainMenu
             organizationId={organizationId}
-            organization={currentOrganization}
             onItemClick={handleCloseSheet}
             isQuestionnaireEnabled={isQuestionnaireEnabled}
             isTrustNdaEnabled={isTrustNdaEnabled}

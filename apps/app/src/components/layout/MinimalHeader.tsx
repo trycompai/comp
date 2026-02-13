@@ -1,15 +1,15 @@
 'use client';
 
 import { Logo } from '@/app/(app)/setup/components/Logo';
-import type { Organization } from '@db';
+import type { OrganizationFromMe } from '@/types';
 import type { User } from 'better-auth';
 import Link from 'next/link';
 import { OnboardingUserMenu } from './OnboardingUserMenu';
 
 interface MinimalHeaderProps {
   user: User;
-  organizations: Organization[];
-  currentOrganization: Organization | null;
+  organizations: OrganizationFromMe[];
+  currentOrganization: OrganizationFromMe | null;
   variant?: 'setup' | 'upgrade' | 'onboarding';
 }
 

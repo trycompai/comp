@@ -85,9 +85,7 @@ const MAIN_NAV_ROUTES: Array<{ segment: string; path: string }> = [
  */
 export function getDefaultRoute(permissions: UserPermissions, orgId: string): string | null {
   for (const { segment, path } of MAIN_NAV_ROUTES) {
-    console.log('[Can access route]', segment, canAccessRoute(permissions, segment));
     if (canAccessRoute(permissions, segment)) {
-      console.log('[Default route]', `/${orgId}${path}`);
       return `/${orgId}${path}`;
     }
   }

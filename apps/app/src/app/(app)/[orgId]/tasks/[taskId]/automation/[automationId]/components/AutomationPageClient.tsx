@@ -46,22 +46,13 @@ export function AutomationPageClient({
   useEffect(() => {
     if (automationId === 'new' && taskDescription) {
       setIsLoadingSuggestions(true);
-      const clientStartTime = performance.now();
       generateAutomationSuggestions(taskDescription, orgId)
         .then((result) => {
-          const clientReceiveTime = performance.now();
-          console.log(
-            `[AutomationPageClient] Received suggestions in ${(clientReceiveTime - clientStartTime).toFixed(2)}ms`,
-          );
           // Use flushSync to force immediate re-render
           flushSync(() => {
             setSuggestions(result);
             setIsLoadingSuggestions(false);
           });
-          const clientUpdateTime = performance.now();
-          console.log(
-            `[AutomationPageClient] State updated and flushed in ${(clientUpdateTime - clientReceiveTime).toFixed(2)}ms`,
-          );
         })
         .catch((error) => {
           console.error('Failed to generate suggestions:', error);
