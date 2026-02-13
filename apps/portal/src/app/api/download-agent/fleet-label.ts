@@ -26,7 +26,7 @@ export async function createFleetLabel({
 
     // OS-specific queries: mac uses file-only; Windows uses UNION with file and registry
     const query =
-      os === 'macos'
+      os === 'macos' || os === 'macos-intel'
         ? `SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${employeeId}' LIMIT 1;`
         : `SELECT 1 FROM file WHERE path = '${fleetDevicePathWindows}\\${employeeId}'
            UNION SELECT 1 FROM file WHERE path = 'C:\\Users\\Public\\CompAI\\Fleet\\${employeeId}'
