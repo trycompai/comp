@@ -167,6 +167,12 @@ const getOrganizationFindings = cache(async (organizationId: string) => {
           title: true,
         },
       },
+      evidenceSubmission: {
+        select: {
+          id: true,
+          formType: true,
+        },
+      },
     },
     orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
   });

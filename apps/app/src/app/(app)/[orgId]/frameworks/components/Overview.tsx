@@ -28,11 +28,15 @@ export interface PeopleScore {
   completedMembers: number;
 }
 
-export interface FindingWithTask extends Finding {
+export interface FindingWithTarget extends Finding {
   task: {
     id: string;
     title: string;
-  };
+  } | null;
+  evidenceSubmission: {
+    id: string;
+    formType: string;
+  } | null;
 }
 
 export interface OverviewProps {
@@ -45,7 +49,7 @@ export interface OverviewProps {
   peopleScore: PeopleScore;
   currentMember: { id: string; role: string } | null;
   onboardingTriggerJobId: string | null;
-  findings: FindingWithTask[];
+  findings: FindingWithTarget[];
 }
 
 export const Overview = ({

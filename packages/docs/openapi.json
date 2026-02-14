@@ -11614,11 +11614,21 @@
           },
           {
             "name": "taskId",
-            "required": true,
+            "required": false,
             "in": "query",
             "description": "Task ID to get findings for",
             "schema": {
               "example": "tsk_abc123",
+              "type": "string"
+            }
+          },
+          {
+            "name": "evidenceSubmissionId",
+            "required": false,
+            "in": "query",
+            "description": "Evidence submission ID to get findings for",
+            "schema": {
+              "example": "evs_abc123",
               "type": "string"
             }
           }
@@ -15823,6 +15833,404 @@
           "Org Chart"
         ]
       }
+    },
+    "/v1/evidence-forms": {
+      "get": {
+        "description": "List all available pre-built evidence forms",
+        "operationId": "EvidenceFormsController_listForms_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List evidence forms",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/statuses": {
+      "get": {
+        "description": "Returns the latest submission date per form type for the active organization",
+        "operationId": "EvidenceFormsController_getFormStatuses_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get submission statuses for all forms",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/my-submissions": {
+      "get": {
+        "description": "Returns all evidence form submissions by the authenticated user for the active organization",
+        "operationId": "EvidenceFormsController_getMySubmissions_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get current user submissions",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/my-submissions/pending-count": {
+      "get": {
+        "description": "Returns the count of pending evidence submissions for the authenticated user",
+        "operationId": "EvidenceFormsController_getPendingSubmissionCount_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get pending submission count for current user",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}": {
+      "get": {
+        "description": "Fetch a specific form definition with submissions for the active organization",
+        "operationId": "EvidenceFormsController_getFormWithSubmissions_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get form definition and submissions",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}/submissions/{submissionId}": {
+      "get": {
+        "description": "Fetch one evidence form submission for the active organization",
+        "operationId": "EvidenceFormsController_getSubmission_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "submissionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a single submission",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}/submissions": {
+      "post": {
+        "description": "Create a new organization-scoped evidence form submission using Zod-validated payloads",
+        "operationId": "EvidenceFormsController_submitForm_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Submit evidence form entry",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}/submissions/{submissionId}/review": {
+      "patch": {
+        "description": "Approve or reject an evidence form submission with an optional reason",
+        "operationId": "EvidenceFormsController_reviewSubmission_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "submissionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Review a submission",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/uploads": {
+      "post": {
+        "description": "Upload a file for evidence form fields and return file metadata for submission payload",
+        "operationId": "EvidenceFormsController_uploadFile_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload evidence form file",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}/export.csv": {
+      "get": {
+        "description": "Export all form submissions for an organization as CSV",
+        "operationId": "EvidenceFormsController_exportCsv_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export form submissions to CSV",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
     }
   },
   "info": {
@@ -18761,6 +19169,11 @@
             "description": "Task ID this finding is associated with",
             "example": "tsk_abc123"
           },
+          "evidenceSubmissionId": {
+            "type": "string",
+            "description": "Evidence submission ID this finding is associated with",
+            "example": "evs_abc123"
+          },
           "type": {
             "type": "string",
             "description": "Type of finding (SOC 2 or ISO 27001)",
@@ -18783,7 +19196,6 @@
           }
         },
         "required": [
-          "taskId",
           "type",
           "content"
         ]

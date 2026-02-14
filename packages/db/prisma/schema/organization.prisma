@@ -13,6 +13,8 @@ model Organization {
   evidenceApprovalEnabled         Boolean     @default(false)
   deviceAgentStepEnabled          Boolean     @default(true)
   securityTrainingStepEnabled     Boolean     @default(true)
+  whistleblowerReportEnabled      Boolean     @default(true)
+  accessRequestFormEnabled        Boolean     @default(true)
 
   // FleetDM
   fleetDmLabelId        Int?
@@ -36,6 +38,7 @@ model Organization {
   taskItems                          TaskItem[]
   comments                           Comment[]
   attachments                        Attachment[]
+  evidenceSubmissions                EvidenceSubmission[]
   trust                              Trust[]
   context                            Context[]
   secrets                            Secret[]

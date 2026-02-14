@@ -61,7 +61,7 @@ export function GeneralTrainingAccordionItem({
               hasCompletedGeneralTraining && 'text-muted-foreground line-through',
             )}
           >
-            Complete general security awareness training
+            Security Awareness Training
           </span>
           {hasCompletedGeneralTraining ? (
             <span className="text-muted-foreground ml-auto text-sm">Secure annually</span>
@@ -75,8 +75,8 @@ export function GeneralTrainingAccordionItem({
       <AccordionContent className="px-4 pb-4">
         <div className="space-y-4">
           <p className="text-muted-foreground text-sm">
-            Complete the general security awareness training videos to learn about best practices
-            for keeping company data secure.
+            Complete the security awareness training videos to learn about best practices for
+            keeping company data secure.
           </p>
 
           {/* Only show videos that are general training (sat- prefix) */}

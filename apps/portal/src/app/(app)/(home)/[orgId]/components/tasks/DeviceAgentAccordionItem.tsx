@@ -7,16 +7,16 @@ import {
 } from '@/app/api/download-agent/constants';
 import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
-import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Member } from '@db';
+import { Button } from '@trycompai/design-system';
 import { CheckCircle2, Circle, Download, Loader2, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { FleetPolicyItem } from './FleetPolicyItem';
 import type { FleetPolicy, Host } from '../../types';
+import { FleetPolicyItem } from './FleetPolicyItem';
 
 interface DeviceAgentAccordionItemProps {
   member: Member;
@@ -42,7 +42,10 @@ export function DeviceAgentAccordionItem({
   );
 
   const hasInstalledAgent = host !== null;
-  const failedPoliciesCount = useMemo(() => fleetPolicies.filter((policy) => policy.response !== 'pass').length, [fleetPolicies]);
+  const failedPoliciesCount = useMemo(
+    () => fleetPolicies.filter((policy) => policy.response !== 'pass').length,
+    [fleetPolicies],
+  );
 
   const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
 
@@ -144,7 +147,7 @@ export function DeviceAgentAccordionItem({
             <Circle className="text-muted-foreground h-5 w-5" />
           )}
           <span className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}>
-            Download and install Comp AI Device Agent
+            Device Agent
           </span>
           {hasInstalledAgent && failedPoliciesCount > 0 && (
             <span className="text-amber-600 dark:text-amber-400 text-xs ml-auto">
@@ -183,13 +186,7 @@ export function DeviceAgentAccordionItem({
                         </SelectContent>
                       </Select>
                     )}
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={handleDownload}
-                      disabled={isDownloading || hasInstalledAgent}
-                      className="gap-2"
-                    >
+                    <Button onClick={handleDownload} disabled={isDownloading || hasInstalledAgent}>
                       {getButtonContent()}
                     </Button>
                   </div>
@@ -239,13 +236,11 @@ export function DeviceAgentAccordionItem({
                   <CardTitle className="text-lg">{host.computer_name}</CardTitle>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
                     onClick={handleRefresh}
                     disabled={isLoading}
-                    title="Refresh device information"
+                    iconLeft={<RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />}
                   >
-                    <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
+                    Refresh
                   </Button>
                 </div>
               </CardHeader>

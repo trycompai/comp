@@ -14,6 +14,41 @@ import { FindingNotifierService } from './finding-notifier.service';
 @Injectable()
 export class FindingsService {
   private readonly logger = new Logger(FindingsService.name);
+  private readonly findingInclude = {
+    createdBy: {
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+      },
+    },
+    template: {
+      select: {
+        id: true,
+        category: true,
+        title: true,
+      },
+    },
+    task: {
+      select: {
+        id: true,
+        title: true,
+      },
+    },
+    evidenceSubmission: {
+      select: {
+        id: true,
+        formType: true,
+        submittedAt: true,
+        submittedById: true,
+      },
+    },
+  };
 
   constructor(
     private readonly findingAuditService: FindingAuditService,
@@ -37,33 +72,7 @@ export class FindingsService {
 
     const findings = await db.finding.findMany({
       where: { taskId, organizationId },
-      include: {
-        createdBy: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                image: true,
-              },
-            },
-          },
-        },
-        template: {
-          select: {
-            id: true,
-            category: true,
-            title: true,
-          },
-        },
-        task: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-      },
+      include: this.findingInclude,
       orderBy: [
         // Sort by status: open first, then ready_for_review, needs_revision, closed
         { status: 'asc' },
@@ -76,6 +85,35 @@ export class FindingsService {
   }
 
   /**
+   * Get all findings for a specific evidence submission
+   */
+  async findByEvidenceSubmissionId(
+    organizationId: string,
+    evidenceSubmissionId: string,
+  ) {
+    const submission = await db.evidenceSubmission.findFirst({
+      where: { id: evidenceSubmissionId, organizationId },
+    });
+
+    if (!submission) {
+      throw new NotFoundException(
+        `Evidence submission with ID ${evidenceSubmissionId} not found in organization`,
+      );
+    }
+
+    const findings = await db.finding.findMany({
+      where: { evidenceSubmissionId, organizationId },
+      include: this.findingInclude,
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    this.logger.log(
+      `Retrieved ${findings.length} findings for evidence submission ${evidenceSubmissionId}`,
+    );
+    return findings;
+  }
+
+  /**
    * Get all findings for an organization
    */
   async findByOrganizationId(organizationId: string, status?: FindingStatus) {
@@ -84,33 +122,7 @@ export class FindingsService {
         organizationId,
         ...(status && { status }),
       },
-      include: {
-        createdBy: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                image: true,
-              },
-            },
-          },
-        },
-        template: {
-          select: {
-            id: true,
-            category: true,
-            title: true,
-          },
-        },
-        task: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-      },
+      include: this.findingInclude,
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
     });
 
@@ -126,33 +138,7 @@ export class FindingsService {
   async findById(organizationId: string, findingId: string) {
     const finding = await db.finding.findFirst({
       where: { id: findingId, organizationId },
-      include: {
-        createdBy: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                image: true,
-              },
-            },
-          },
-        },
-        template: {
-          select: {
-            id: true,
-            category: true,
-            title: true,
-          },
-        },
-        task: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-      },
+      include: this.findingInclude,
     });
 
     if (!finding) {
@@ -173,15 +159,63 @@ export class FindingsService {
     userId: string,
     createDto: CreateFindingDto,
   ) {
-    // Verify task belongs to organization
-    const task = await db.task.findFirst({
-      where: { id: createDto.taskId, organizationId },
-    });
-
-    if (!task) {
-      throw new NotFoundException(
-        `Task with ID ${createDto.taskId} not found in organization`,
+    const hasTaskTarget = Boolean(createDto.taskId);
+    const hasSubmissionTarget = Boolean(createDto.evidenceSubmissionId);
+    if (!hasTaskTarget && !hasSubmissionTarget) {
+      throw new BadRequestException(
+        'Either taskId or evidenceSubmissionId is required',
       );
+    }
+    if (hasTaskTarget && hasSubmissionTarget) {
+      throw new BadRequestException(
+        'Provide only one target: taskId or evidenceSubmissionId',
+      );
+    }
+
+    let task:
+      | {
+          id: string;
+          title: string;
+        }
+      | null = null;
+    let evidenceSubmission:
+      | {
+          id: string;
+          formType: string;
+          submittedAt: Date;
+          submittedById: string | null;
+        }
+      | null = null;
+
+    if (createDto.taskId) {
+      task = await db.task.findFirst({
+        where: { id: createDto.taskId, organizationId },
+        select: { id: true, title: true },
+      });
+
+      if (!task) {
+        throw new NotFoundException(
+          `Task with ID ${createDto.taskId} not found in organization`,
+        );
+      }
+    }
+
+    if (createDto.evidenceSubmissionId) {
+      evidenceSubmission = await db.evidenceSubmission.findFirst({
+        where: { id: createDto.evidenceSubmissionId, organizationId },
+        select: {
+          id: true,
+          formType: true,
+          submittedAt: true,
+          submittedById: true,
+        },
+      });
+
+      if (!evidenceSubmission) {
+        throw new NotFoundException(
+          `Evidence submission with ID ${createDto.evidenceSubmissionId} not found in organization`,
+        );
+      }
     }
 
     // Verify template exists if provided
@@ -199,7 +233,8 @@ export class FindingsService {
 
     const finding = await db.finding.create({
       data: {
-        taskId: createDto.taskId,
+        taskId: createDto.taskId ?? null,
+        evidenceSubmissionId: createDto.evidenceSubmissionId ?? null,
         type: createDto.type,
         content: createDto.content,
         templateId: createDto.templateId,
@@ -207,33 +242,7 @@ export class FindingsService {
         organizationId,
         status: FindingStatus.open,
       },
-      include: {
-        createdBy: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                image: true,
-              },
-            },
-          },
-        },
-        template: {
-          select: {
-            id: true,
-            category: true,
-            title: true,
-          },
-        },
-        task: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-      },
+      include: this.findingInclude,
     });
 
     // Log to audit trail
@@ -242,8 +251,10 @@ export class FindingsService {
       organizationId,
       userId,
       memberId,
-      taskId: createDto.taskId,
-      taskTitle: task.title,
+      taskId: task?.id,
+      taskTitle: task?.title,
+      evidenceSubmissionId: evidenceSubmission?.id,
+      evidenceSubmissionFormType: evidenceSubmission?.formType,
       content: createDto.content,
       type: createDto.type ?? FindingType.soc2,
     });
@@ -256,17 +267,21 @@ export class FindingsService {
     void this.findingNotifierService.notifyFindingCreated({
       organizationId,
       findingId: finding.id,
-      taskId: createDto.taskId,
-      taskTitle: task.title,
+      taskId: task?.id,
+      taskTitle: task?.title,
+      evidenceSubmissionId: evidenceSubmission?.id,
+      evidenceSubmissionFormType: evidenceSubmission?.formType,
+      evidenceSubmissionSubmittedById: evidenceSubmission?.submittedById,
       findingContent: createDto.content,
       findingType: createDto.type ?? FindingType.soc2,
       actorUserId: userId,
       actorName,
     });
 
-    this.logger.log(
-      `Created finding ${finding.id} for task ${createDto.taskId}`,
-    );
+    const target = task
+      ? `task ${task.id}`
+      : `evidence submission ${evidenceSubmission?.id}`;
+    this.logger.log(`Created finding ${finding.id} for ${target}`);
     return finding;
   }
 
@@ -418,8 +433,12 @@ export class FindingsService {
       const notificationParams = {
         organizationId,
         findingId,
-        taskId: finding.taskId,
-        taskTitle: finding.task.title,
+        taskId: finding.task?.id,
+        taskTitle: finding.task?.title,
+        evidenceSubmissionId: finding.evidenceSubmission?.id,
+        evidenceSubmissionFormType: finding.evidenceSubmission?.formType,
+        evidenceSubmissionSubmittedById:
+          finding.evidenceSubmission?.submittedById,
         findingContent: updatedFinding.content,
         findingType: updatedFinding.type,
         actorUserId: userId,
@@ -496,17 +515,20 @@ export class FindingsService {
       organizationId,
       userId,
       memberId,
-      taskId: finding.taskId,
-      taskTitle: finding.task.title,
+      taskId: finding.task?.id,
+      taskTitle: finding.task?.title,
+      evidenceSubmissionId: finding.evidenceSubmission?.id,
+      evidenceSubmissionFormType: finding.evidenceSubmission?.formType,
       content: finding.content,
     });
 
-    this.logger.log(`Deleted finding ${findingId} from task ${finding.taskId}`);
+    this.logger.log(`Deleted finding ${findingId}`);
     return {
       message: 'Finding deleted successfully',
       deletedFinding: {
         id: finding.id,
         taskId: finding.taskId,
+        evidenceSubmissionId: finding.evidenceSubmissionId,
       },
     };
   }

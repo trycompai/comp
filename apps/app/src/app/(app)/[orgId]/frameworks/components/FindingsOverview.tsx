@@ -32,7 +32,11 @@ interface FindingWithTask extends Finding {
   task: {
     id: string;
     title: string;
-  };
+  } | null;
+  evidenceSubmission: {
+    id: string;
+    formType: string;
+  } | null;
 }
 
 function FindingsList({
@@ -55,7 +59,10 @@ function FindingsList({
                   </div>
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="text-sm font-medium text-foreground line-clamp-1">
-                      {finding.task.title}
+                      {finding.task?.title ??
+                        (finding.evidenceSubmission
+                          ? `Document: ${finding.evidenceSubmission.formType}`
+                          : 'Finding')}
                     </span>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                       {finding.content}
@@ -63,7 +70,15 @@ function FindingsList({
                   </div>
                 </div>
                 <Button asChild size="icon" variant="outline" className="shrink-0 ml-2">
-                  <Link href={`/${organizationId}/tasks/${finding.task.id}#finding-${finding.id}`}>
+                  <Link
+                    href={
+                      finding.task
+                        ? `/${organizationId}/tasks/${finding.task.id}#finding-${finding.id}`
+                        : finding.evidenceSubmission
+                          ? `/${organizationId}/documents/${finding.evidenceSubmission.formType}/submissions/${finding.evidenceSubmission.id}`
+                          : `/${organizationId}/frameworks`
+                    }
+                  >
                     <ArrowRight className="h-3 w-3" />
                   </Link>
                 </Button>

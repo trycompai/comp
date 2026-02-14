@@ -79,6 +79,7 @@
         "@aws-sdk/s3-request-presigner": "^3.859.0",
         "@browserbasehq/sdk": "^2.6.0",
         "@browserbasehq/stagehand": "^3.0.5",
+        "@comp/company": "workspace:*",
         "@comp/integration-platform": "workspace:*",
         "@mendable/firecrawl-js": "^4.9.3",
         "@nestjs/common": "^11.0.1",
@@ -175,6 +176,7 @@
         "@browserbasehq/stagehand": "^3.0.5",
         "@calcom/atoms": "^1.0.102-framer",
         "@calcom/embed-react": "^1.5.3",
+        "@comp/company": "workspace:*",
         "@comp/integration-platform": "workspace:*",
         "@date-fns/tz": "^1.2.0",
         "@dnd-kit/core": "^6.3.1",
@@ -315,6 +317,7 @@
       "dependencies": {
         "@aws-sdk/client-s3": "^3.859.0",
         "@aws-sdk/s3-request-presigner": "^3.859.0",
+        "@comp/company": "workspace:*",
         "@hookform/resolvers": "^5.2.2",
         "@prisma/client": "6.18.0",
         "@react-email/components": "^0.0.41",
@@ -322,6 +325,7 @@
         "@t3-oss/env-nextjs": "^0.13.8",
         "@trycompai/analytics": "workspace:*",
         "@trycompai/db": "1.3.22",
+        "@trycompai/design-system": "^1.0.43",
         "@trycompai/email": "workspace:*",
         "@trycompai/kv": "workspace:*",
         "@trycompai/ui": "workspace:*",
@@ -365,6 +369,17 @@
       "dependencies": {
         "posthog-js": "^1.236.6",
         "posthog-node": "^5.8.2",
+      },
+      "devDependencies": {
+        "tsup": "^8.5.0",
+        "typescript": "^5.8.3",
+      },
+    },
+    "packages/company": {
+      "name": "@comp/company",
+      "version": "1.0.0",
+      "dependencies": {
+        "zod": "^4.3.6",
       },
       "devDependencies": {
         "tsup": "^8.5.0",
@@ -953,6 +968,8 @@
     "@comp/api": ["@comp/api@workspace:apps/api"],
 
     "@comp/app": ["@comp/app@workspace:apps/app"],
+
+    "@comp/company": ["@comp/company@workspace:packages/company"],
 
     "@comp/integration-platform": ["@comp/integration-platform@workspace:packages/integration-platform"],
 

@@ -1,0 +1,220 @@
+@reference "@trycompai/design-system/globals.css";
+
+/* Code block syntax highlighting */
+pre {
+  background: #0d0d0d;
+  color: #fff;
+  font-family: 'JetBrainsMono', monospace;
+  padding: 0.75rem 1rem;
+}
+
+pre code {
+  background: none;
+  color: inherit;
+  font-size: 0.8rem;
+  padding: 0;
+}
+
+pre .hljs-comment,
+pre .hljs-quote {
+  color: #616161;
+}
+
+pre .hljs-variable,
+pre .hljs-template-variable,
+pre .hljs-attribute,
+pre .hljs-tag,
+pre .hljs-name,
+pre .hljs-regexp,
+pre .hljs-link,
+pre .hljs-selector-id,
+pre .hljs-selector-class {
+  color: #f98181;
+}
+
+pre .hljs-number,
+pre .hljs-meta,
+pre .hljs-built_in,
+pre .hljs-builtin-name,
+pre .hljs-literal,
+pre .hljs-type,
+pre .hljs-params {
+  color: #fbbc88;
+}
+
+pre .hljs-string,
+pre .hljs-symbol,
+pre .hljs-bullet {
+  color: #b9f18d;
+}
+
+pre .hljs-title,
+pre .hljs-section {
+  color: #faf594;
+}
+
+pre .hljs-keyword,
+pre .hljs-selector-tag {
+  color: #70cff8;
+}
+
+pre .hljs-emphasis {
+  font-style: italic;
+}
+
+pre .hljs-strong {
+  font-weight: 700;
+}
+
+/* Base editor styles */
+.ProseMirror {
+  @apply w-full leading-relaxed;
+  height: var(--editor-height, 100%);
+  min-height: var(--editor-min-height, 350px);
+}
+
+.ProseMirror:focus {
+  @apply outline-hidden;
+}
+
+/* Typography - with proper spacing */
+.ProseMirror h1 {
+  @apply text-foreground mt-6 mb-4 text-xl font-semibold;
+}
+
+.ProseMirror h2 {
+  @apply text-foreground mt-6 mb-3 text-lg font-semibold;
+}
+
+.ProseMirror h3 {
+  @apply text-foreground mt-5 mb-2 text-base font-semibold;
+}
+
+.ProseMirror h4 {
+  @apply text-foreground mt-4 mb-2 text-sm font-semibold;
+}
+
+.ProseMirror h1:first-child,
+.ProseMirror h2:first-child,
+.ProseMirror h3:first-child,
+.ProseMirror h4:first-child {
+  @apply mt-0;
+}
+
+.ProseMirror p {
+  @apply text-foreground my-3 text-sm leading-relaxed;
+}
+
+/* Preserve empty paragraphs (new lines) */
+.ProseMirror p:empty,
+.ProseMirror p:has(> br:only-child) {
+  min-height: 1.5em;
+}
+
+/* Lists with colored bullets */
+.ProseMirror ul {
+  @apply my-4 ml-6 space-y-2;
+  list-style: none;
+}
+
+.ProseMirror ul > li {
+  @apply relative pl-4 text-sm leading-relaxed;
+}
+
+.ProseMirror ul > li::before {
+  content: '';
+  @apply bg-foreground absolute top-2 left-0 h-1.5 w-1.5 rounded-full;
+}
+
+.ProseMirror ol {
+  @apply my-4 ml-6 space-y-2;
+  list-style: none;
+  counter-reset: item;
+}
+
+.ProseMirror ol > li {
+  @apply relative pl-6 text-sm leading-relaxed;
+  counter-increment: item;
+}
+
+.ProseMirror ol > li::before {
+  content: counter(item) '.';
+  @apply text-muted-foreground absolute left-0 font-medium;
+}
+
+.ProseMirror li > p {
+  @apply m-0;
+}
+
+/* Nested lists */
+.ProseMirror ul ul,
+.ProseMirror ol ol,
+.ProseMirror ul ol,
+.ProseMirror ol ul {
+  @apply my-2;
+}
+
+/* Code blocks */
+.ProseMirror pre {
+  @apply bg-muted my-4 overflow-x-auto rounded-md p-4;
+}
+
+.ProseMirror code {
+  @apply font-mono text-sm;
+}
+
+/* Inline code */
+.ProseMirror :not(pre) > code {
+  @apply bg-muted rounded px-1.5 py-0.5;
+}
+
+/* Blockquotes */
+.ProseMirror blockquote {
+  @apply border-primary text-muted-foreground my-4 border-l-4 pl-4 italic;
+}
+
+/* Task lists */
+.ProseMirror ul[data-type='taskList'] {
+  @apply ml-0 list-none p-0;
+}
+
+.ProseMirror ul[data-type='taskList'] > li {
+  @apply flex items-start gap-2 pl-0;
+}
+
+.ProseMirror ul[data-type='taskList'] > li::before {
+  display: none;
+}
+
+/* Placeholder */
+.ProseMirror p.is-empty::before {
+  @apply text-muted-foreground;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Tables */
+.ProseMirror table {
+  @apply border-border my-4 w-full border-collapse border;
+}
+
+.ProseMirror th {
+  @apply bg-muted text-sm font-medium;
+}
+
+.ProseMirror td,
+.ProseMirror th {
+  @apply border-border border p-3;
+}
+
+/* Links */
+.ProseMirror a {
+  @apply text-primary underline underline-offset-2;
+}
+
+/* Horizontal rule */
+.ProseMirror hr {
+  @apply border-border my-6;
+}

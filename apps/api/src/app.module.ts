@@ -35,6 +35,7 @@ import { TaskManagementModule } from './task-management/task-management.module';
 import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
 import { OrgChartModule } from './org-chart/org-chart.module';
 import { TrainingModule } from './training/training.module';
+import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { TrainingModule } from './training/training.module';
     AssistantChatModule,
     TrainingModule,
     OrgChartModule,
+    EvidenceFormsModule,
   ],
   controllers: [AppController],
   providers: [

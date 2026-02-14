@@ -1,4 +1,5 @@
 import {
+  Catalog,
   Chemistry,
   Dashboard,
   Document,
@@ -124,6 +125,14 @@ export const getAppShellSearchGroups = ({
           }),
         ]
       : []),
+    createNavItem({
+      id: 'documents',
+      label: 'Documents',
+      icon: <Catalog size={16} />,
+      path: `/${organizationId}/documents`,
+      keywords: ['company', 'tasks', 'forms', 'evidence submissions', 'documents'],
+      router,
+    }),
     createNavItem({
       id: 'people',
       label: 'People',

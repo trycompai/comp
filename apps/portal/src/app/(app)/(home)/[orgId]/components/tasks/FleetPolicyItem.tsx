@@ -2,19 +2,27 @@
 
 import { useMemo, useState } from 'react';
 
-import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
-import { CheckCircle2, HelpCircle, Image, MoreVertical, Trash, Upload, XCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { Button } from '@trycompai/design-system';
+import {
+  CheckCircle2,
+  HelpCircle,
+  Image as ImageIcon,
+  MoreVertical,
+  Trash,
+  Upload,
+  XCircle,
+} from 'lucide-react';
 import type { FleetPolicy } from '../../types';
-import { PolicyImageUploadModal } from './PolicyImageUploadModal';
 import { PolicyImagePreviewModal } from './PolicyImagePreviewModal';
+import { PolicyImageUploadModal } from './PolicyImageUploadModal';
 import { PolicyImageResetModal } from './PolicyImageResetModal';
 
 interface FleetPolicyItemProps {
@@ -35,7 +43,7 @@ export function FleetPolicyItem({ policy, organizationId, onRefresh }: FleetPoli
         return [
           {
             label: 'Preview images',
-            renderIcon: () => <Image className="mr-2 h-4 w-4" />,
+            renderIcon: () => <ImageIcon className="mr-2 h-4 w-4" />,
             onClick: () => setIsPreviewOpen(true),
           },
           {
@@ -54,8 +62,8 @@ export function FleetPolicyItem({ policy, organizationId, onRefresh }: FleetPoli
         label: 'Upload images',
         renderIcon: () => <Upload className="mr-2 h-4 w-4" />,
         onClick: () => setIsUploadOpen(true),
-      }
-    ]
+      },
+    ];
   }, [policy]);
 
   const hasActions = useMemo(() => actions.length > 0, [actions]);
@@ -74,7 +82,10 @@ export function FleetPolicyItem({ policy, organizationId, onRefresh }: FleetPoli
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     <HelpCircle size={14} />
                   </button>
                 </TooltipTrigger>
@@ -112,11 +123,10 @@ export function FleetPolicyItem({ policy, organizationId, onRefresh }: FleetPoli
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
                 disabled={!hasActions}
+                iconLeft={<MoreVertical className="h-4 w-4" />}
               >
-                <MoreVertical className="h-4 w-4" />
+                Actions
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

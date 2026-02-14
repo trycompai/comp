@@ -14,6 +14,7 @@ export const env = createEnv({
     AUTH_MICROSOFT_CLIENT_SECRET: z.string().optional(),
     AUTH_SECRET: z.string(),
     INTERNAL_API_TOKEN: z.string().optional(),
+    APP_AUTH_URL: z.string().optional(),
   },
 
   client: {
@@ -39,6 +40,7 @@ export const env = createEnv({
     AUTH_MICROSOFT_CLIENT_SECRET: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
     AUTH_SECRET: process.env.AUTH_SECRET,
     INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN,
+    APP_AUTH_URL: process.env.APP_AUTH_URL,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,

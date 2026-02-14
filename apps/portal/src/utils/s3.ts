@@ -11,15 +11,9 @@ export const BUCKET_NAME = process.env.APP_AWS_BUCKET_NAME;
 export const APP_AWS_ORG_ASSETS_BUCKET = process.env.APP_AWS_ORG_ASSETS_BUCKET;
 
 if (!APP_AWS_ACCESS_KEY_ID || !APP_AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !APP_AWS_REGION) {
-  // Log the error in production environments
-  if (process.env.NODE_ENV === 'production') {
-    console.error('AWS S3 credentials or configuration missing in environment variables.');
-  } else {
-    // Throw in development for immediate feedback
-    throw new Error('AWS S3 credentials or configuration missing. Check environment variables.');
-  }
-  // Optionally, you could export a dummy/error client or null here
-  // depending on how you want consuming code to handle the missing config.
+  console.warn(
+    'AWS S3 credentials or configuration missing in environment variables. File upload features will be unavailable.',
+  );
 }
 
 // Create a single S3 client instance

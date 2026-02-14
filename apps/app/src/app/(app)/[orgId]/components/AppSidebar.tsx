@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Catalog,
   Chemistry,
   Dashboard,
   Document,
@@ -73,6 +74,12 @@ export function AppSidebar({
       path: `/${organization.id}/tasks`,
       name: 'Evidence',
       icon: <ListChecked className="size-4" />,
+    },
+    {
+      id: 'documents',
+      path: `/${organization.id}/documents`,
+      name: 'Documents',
+      icon: <Catalog className="size-4" />,
     },
     {
       id: 'people',

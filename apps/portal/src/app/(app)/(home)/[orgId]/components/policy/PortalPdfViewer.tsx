@@ -1,7 +1,16 @@
 'use client';
 
-import { Card, CardContent } from '@comp/ui/card';
-import { FileText, Loader2 } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  Text,
+} from '@trycompai/design-system';
+import { Document } from '@trycompai/design-system/icons';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -41,8 +50,8 @@ export function PortalPdfViewer({ policyId, s3Key, versionId }: PortalPdfViewerP
 
   if (isLoading) {
     return (
-      <div className="flex h-[500px] w-full items-center justify-center rounded-md border">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex min-h-[320px] w-full items-center justify-center rounded-md border border-border md:min-h-[420px]">
+        <Text variant="muted">Loading policy document...</Text>
       </div>
     );
   }
@@ -52,7 +61,7 @@ export function PortalPdfViewer({ policyId, s3Key, versionId }: PortalPdfViewerP
       <iframe
         key={signedUrl}
         src={signedUrl}
-        className="h-[500px] w-full rounded-md border"
+        className="h-[60vh] min-h-[320px] w-full rounded-md border border-border md:min-h-[420px]"
         title="Policy Document"
       />
     );
@@ -60,13 +69,19 @@ export function PortalPdfViewer({ policyId, s3Key, versionId }: PortalPdfViewerP
 
   // Fallback UI if there's no PDF or an error occurs
   return (
-    <Card className="flex h-[500px] w-full flex-col items-center justify-center">
-      <CardContent className="text-center">
-        <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-        <p className="mt-4 font-semibold">PDF Document Not Available</p>
-        <p className="text-sm text-muted-foreground">
-          This policy is stored as a PDF, but it could not be loaded.
-        </p>
+    <Card>
+      <CardContent>
+        <Empty>
+          <EmptyMedia variant="icon">
+            <Document size={24} />
+          </EmptyMedia>
+          <EmptyHeader>
+            <EmptyTitle>PDF Document Not Available</EmptyTitle>
+            <EmptyDescription>
+              This policy is stored as a PDF, but it could not be loaded.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       </CardContent>
     </Card>
   );
