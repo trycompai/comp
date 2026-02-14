@@ -15,18 +15,18 @@ description: "Complete environment variable reference for Docker self-hosting"
 
 These variables are required for a functional Docker deployment:
 
-| Name | Service(s) | Phase | Notes |
-|------|-----------|-------|-------|
-| `DATABASE_URL` | migrator, seeder, app, portal | runtime | PostgreSQL connection string with `?sslmode=require` |
-| `AUTH_SECRET` | app | runtime | 32-byte base64 secret for auth. Generate: `openssl rand -base64 32` |
-| `SECRET_KEY` | app | runtime | Encryption key for sensitive data. Generate: `openssl rand -base64 32` |
-| `BETTER_AUTH_URL` | app, portal | runtime | Base URL for Better Auth (app or portal's public URL) |
-| `NEXT_PUBLIC_BETTER_AUTH_URL` | app, portal | build | Public auth URL (same as `BETTER_AUTH_URL`) |
-| `BETTER_AUTH_SECRET` | portal | runtime | Portal-specific auth secret. Generate: `openssl rand -base64 32` |
-| `RESEND_API_KEY` | app, portal | runtime | [Resend](https://resend.com) API key for email |
-| `TRIGGER_SECRET_KEY` | app | runtime | [Trigger.dev](https://cloud.trigger.dev) project secret key |
-| `REVALIDATION_SECRET` | app | runtime | Random string for revalidation. Generate: `openssl rand -base64 16` |
-| `NEXT_PUBLIC_PORTAL_URL` | app | build | Public URL of the portal (e.g., `https://portal.yourdomain.com`) |
+| Name | Service(s) | Phase | Notes                                                                           |
+|------|-----------|-------|---------------------------------------------------------------------------------|
+| `DATABASE_URL` | migrator, seeder, app, portal | runtime | PostgreSQL connection string with `?sslmode=require`                            |
+| `AUTH_SECRET` | app | runtime | 32-byte base64 secret for auth. Generate: `openssl rand -base64 32`             |
+| `SECRET_KEY` | app | runtime | Encryption key for sensitive data. Generate: `openssl rand -base64 32`          |
+| `BETTER_AUTH_URL` | app, portal | runtime | Base URL for Better Auth (app or portal's public URL)                           |
+| `NEXT_PUBLIC_BETTER_AUTH_URL` | app, portal | build | Public auth URL (same as `BETTER_AUTH_URL`)                                     |
+| `BETTER_AUTH_SECRET` | portal | runtime | Portal-specific auth secret. Generate: `openssl rand -base64 32`                |
+| `RESEND_API_KEY` | app, portal | runtime | [Resend](https://resend.com) API key for email (or define a custom SMTP relay; see below) |
+| `TRIGGER_SECRET_KEY` | app | runtime | [Trigger.dev](https://cloud.trigger.dev) project secret key                     |
+| `REVALIDATION_SECRET` | app | runtime | Random string for revalidation. Generate: `openssl rand -base64 16`             |
+| `NEXT_PUBLIC_PORTAL_URL` | app | build | Public URL of the portal (e.g., `https://portal.yourdomain.com`)                |
 
 ## All Variables by Category
 
@@ -52,10 +52,23 @@ These variables are required for a functional Docker deployment:
 
 ### Email
 
+<Note>
+  Email configuration is mandatory for the application to work.
+  You can either use Resend by providing an API key or use a custom SMTP-relay.
+  If both are configured, Resend will be used.
+</Note>
+
 | Name | Service(s) | Phase | Required | Notes |
 |------|-----------|-------|----------|-------|
 | `RESEND_API_KEY` | app, portal | runtime | required-minimal | Resend API key for transactional email |
 | `RESEND_DOMAIN` | portal | runtime | optional | Custom domain for sending emails |
+
+| Name | Service(s) | Phase | Required | Notes                     |
+|------|-----------|-------|----------|---------------------------|
+| `RELAY_SMTP_HOST` | app, portal, api | runtime | required-minimal | SMTP host name            |
+| `RELAY_SMTP_PORT` | app, portal, api | runtime | required-minimal | SMTP host port            |
+| `RELAY_SMTP_USER` | app, portal, api | runtime | required-minimal | SMTP username             |
+| `RELAY_SMTP_PASS` | app, portal, api | runtime | required-minimal | password of the SMTP user |
 
 ### Workflows (Trigger.dev)
 
@@ -78,7 +91,8 @@ These variables are required for a functional Docker deployment:
 | `APP_AWS_ENDPOINT` | app, portal | runtime | optional | URL for alternative S3-compatible providers |
 
 <Note>
-AWS S3 variables are required for file upload features (attachments, logos, questionnaires). Without them, these features will fail.
+  AWS S3 variables are required for file upload features (attachments, logos, questionnaires). Without them, these
+  features will fail.
 </Note>
 
 ### AI Providers
@@ -141,27 +155,27 @@ AWS S3 variables are required for file upload features (attachments, logos, ques
 ## Example Minimal Configuration
 
 <CodeGroup>
-```bash packages/db/.env
-DATABASE_URL="postgresql://user:pass@host:5432/comp?sslmode=require"
-```
+  ```bash packages/db/.env
+  DATABASE_URL="postgresql://user:pass@host:5432/comp?sslmode=require"
+  ```
 
-```bash apps/app/.env
-DATABASE_URL="postgresql://user:pass@host:5432/comp?sslmode=require"
-AUTH_SECRET="your-32-byte-secret-here"
-SECRET_KEY="your-32-byte-encryption-key"
-BETTER_AUTH_URL="https://app.yourdomain.com"
-NEXT_PUBLIC_BETTER_AUTH_URL="https://app.yourdomain.com"
-NEXT_PUBLIC_PORTAL_URL="https://portal.yourdomain.com"
-RESEND_API_KEY="re_your_api_key"
-TRIGGER_SECRET_KEY="tr_your_secret_key"
-REVALIDATION_SECRET="random-revalidation-string"
-```
+  ```bash apps/app/.env
+  DATABASE_URL="postgresql://user:pass@host:5432/comp?sslmode=require"
+  AUTH_SECRET="your-32-byte-secret-here"
+  SECRET_KEY="your-32-byte-encryption-key"
+  BETTER_AUTH_URL="https://app.yourdomain.com"
+  NEXT_PUBLIC_BETTER_AUTH_URL="https://app.yourdomain.com"
+  NEXT_PUBLIC_PORTAL_URL="https://portal.yourdomain.com"
+  RESEND_API_KEY="re_your_api_key"
+  TRIGGER_SECRET_KEY="tr_your_secret_key"
+  REVALIDATION_SECRET="random-revalidation-string"
+  ```
 
-```bash apps/portal/.env
-DATABASE_URL="postgresql://user:pass@host:5432/comp?sslmode=require"
-BETTER_AUTH_SECRET="your-32-byte-portal-secret"
-BETTER_AUTH_URL="https://portal.yourdomain.com"
-NEXT_PUBLIC_BETTER_AUTH_URL="https://portal.yourdomain.com"
-RESEND_API_KEY="re_your_api_key"
-```
+  ```bash apps/portal/.env
+  DATABASE_URL="postgresql://user:pass@host:5432/comp?sslmode=require"
+  BETTER_AUTH_SECRET="your-32-byte-portal-secret"
+  BETTER_AUTH_URL="https://portal.yourdomain.com"
+  NEXT_PUBLIC_BETTER_AUTH_URL="https://portal.yourdomain.com"
+  RESEND_API_KEY="re_your_api_key"
+  ```
 </CodeGroup>

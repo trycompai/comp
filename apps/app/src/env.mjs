@@ -13,7 +13,11 @@ export const env = createEnv({
     DATABASE_URL: z.string().min(1),
     OPENAI_API_KEY: z.string().optional(),
     GROQ_API_KEY: z.string().optional(),
-    RESEND_API_KEY: z.string(),
+    RESEND_API_KEY: z.string().optional(),
+    RELAY_SMTP_HOST: z.string().optional(),
+    RELAY_SMTP_PORT: z.string().optional(),
+    RELAY_SMTP_USER: z.string().optional(),
+    RELAY_SMTP_PASS: z.string().optional(),
     UPSTASH_REDIS_REST_URL: z.string().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
     UPSTASH_VECTOR_REST_URL: z.string().optional(),
@@ -74,6 +78,10 @@ export const env = createEnv({
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     GROQ_API_KEY: process.env.GROQ_API_KEY,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    RELAY_SMTP_HOST: process.env.RELAY_SMTP_HOST,
+    RELAY_SMTP_PORT: process.env.RELAY_SMTP_PORT,
+    RELAY_SMTP_USER: process.env.RELAY_SMTP_USER,
+    RELAY_SMTP_PASS: process.env.RELAY_SMTP_PASS,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     UPSTASH_VECTOR_REST_URL: process.env.UPSTASH_VECTOR_REST_URL,
@@ -117,6 +125,32 @@ export const env = createEnv({
     INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     NEXT_PUBLIC_SELF_HOSTED: process.env.NEXT_PUBLIC_SELF_HOSTED,
+  },
+
+  createFinalSchema: (shape, isServer) => {
+    const schema = z.object(shape);
+    if (!isServer) {
+      return schema;
+    }
+
+    return schema.superRefine((data, ctx) => {
+      if (data.RESEND_API_KEY) {
+        return;
+      }
+
+      const relayKeys = ['RELAY_SMTP_HOST', 'RELAY_SMTP_PORT', 'RELAY_SMTP_USER', 'RELAY_SMTP_PASS'];
+      const missingRelayKeys = relayKeys.filter((key) => !data[key]);
+
+      if (missingRelayKeys.length === 0) {
+        return;
+      }
+
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Set RESEND_API_KEY or all RELAY_SMTP_* values.',
+        path: ['RESEND_API_KEY', ...relayKeys],
+      });
+    });
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,

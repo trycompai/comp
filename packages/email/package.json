@@ -9,11 +9,13 @@
     "@trycompai/utils": "workspace:*",
     "date-fns": "^4.1.0",
     "next": "^15.4.6",
+    "nodemailer": "^7.0.13",
     "react-email": "^4.0.15",
     "resend": "^4.4.1",
     "responsive-react-email": "^0.0.5"
   },
   "devDependencies": {
+    "@types/nodemailer": "^7.0.9",
     "react": "^19.1.1",
     "react-dom": "^19.1.0",
     "tsup": "^8.5.0",
