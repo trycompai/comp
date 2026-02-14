@@ -1,11 +1,12 @@
-import { app, BrowserWindow, Menu, nativeImage, Tray } from 'electron';
+import { app, BrowserWindow, Menu, nativeImage, shell, Tray } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import path from 'node:path';
 import type { CheckResult } from '../shared/types';
 import { isAutoLaunchEnabled, setAutoLaunch } from './auto-launch';
 import { log } from './logger';
+import { getPortalUrl } from './store';
 
-export type AutoUpdateStatus = 'downloading' | 'ready' | null;
+export type AutoUpdateStatus = 'downloading' | 'ready' | 'update-available' | null;
 
 let tray: Tray | null = null;
 let statusWindow: BrowserWindow | null = null;
@@ -208,6 +209,17 @@ export function updateTrayMenu(
         label: 'Update ready — restart to install',
         click: () => {
           autoUpdater.quitAndInstall();
+        },
+      },
+    );
+  } else if (currentAutoUpdateStatus === 'update-available') {
+    menuItems.push(
+      { type: 'separator' },
+      {
+        label: 'New version available — download from portal',
+        click: () => {
+          const portalUrl = getPortalUrl();
+          shell.openExternal(portalUrl);
         },
       },
     );

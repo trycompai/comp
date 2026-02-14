@@ -193,11 +193,85 @@ ipcMain.handle(IPC_CHANNELS.REMEDIATE_CHECK, async (_event, checkType: DeviceChe
 
 // --- Auto-Updater ---
 
-const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+
+/**
+ * On Linux, electron-updater can only auto-update AppImage builds.
+ * For .deb installs (process.env.APPIMAGE is not set), we manually
+ * fetch the latest-linux.yml manifest, compare versions, and show
+ * a tray notification directing the user to re-download from the portal.
+ */
+function isLinuxNonAppImage(): boolean {
+  return process.platform === 'linux' && !process.env.APPIMAGE;
+}
+
+/**
+ * Simple semver comparison: returns true if remote > local.
+ * Handles versions like "1.2.3" — ignores pre-release tags.
+ */
+function isNewerVersion(remote: string, local: string): boolean {
+  const r = remote.replace(/^v/, '').split('.').map(Number);
+  const l = local.replace(/^v/, '').split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((r[i] ?? 0) > (l[i] ?? 0)) return true;
+    if ((r[i] ?? 0) < (l[i] ?? 0)) return false;
+  }
+  return false;
+}
+
+/**
+ * Manual update checker for Linux .deb installs.
+ * Fetches latest-linux.yml from the update server, parses the version,
+ * and sets a tray notification if a newer version is available.
+ */
+async function checkForManualUpdate(): Promise<void> {
+  try {
+    const updateUrl =
+      process.env.AUTO_UPDATE_URL || 'https://portal.trycomp.ai/api/device-agent/updates';
+    const ymlUrl = `${updateUrl}/latest-linux.yml`;
+
+    log(`Manual update check: fetching ${ymlUrl}`);
+    const response = await fetch(ymlUrl);
+
+    if (!response.ok) {
+      log(`Manual update check: server returned ${response.status}`, 'WARN');
+      return;
+    }
+
+    const yml = await response.text();
+    // Parse version from YAML (format: "version: 1.2.3")
+    const versionMatch = yml.match(/^version:\s*(.+)$/m);
+    if (!versionMatch) {
+      log('Manual update check: could not parse version from manifest', 'WARN');
+      return;
+    }
+
+    const remoteVersion = versionMatch[1].trim();
+    const localVersion = app.getVersion();
+
+    if (isNewerVersion(remoteVersion, localVersion)) {
+      log(`Manual update: v${remoteVersion} available (current: v${localVersion})`);
+      setAutoUpdateStatus('update-available');
+      updateTrayMenu(currentStatus, currentResults, trayCallbacks);
+    } else {
+      log(`Manual update check: up to date (v${localVersion})`);
+    }
+  } catch (err) {
+    log(`Manual update check failed: ${err}`, 'WARN');
+  }
+}
 
 function initAutoUpdater(): void {
   if (!app.isPackaged) {
     log('Skipping auto-updater in dev mode');
+    return;
+  }
+
+  // Linux .deb installs can't use electron-updater — use manual check instead
+  if (isLinuxNonAppImage()) {
+    log('Linux non-AppImage detected — using manual update checker');
+    checkForManualUpdate();
+    setInterval(checkForManualUpdate, UPDATE_CHECK_INTERVAL_MS);
     return;
   }
 
