@@ -162,6 +162,7 @@ export function InviteMembersModal({
         // Process invitations
         let successCount = 0;
         const failedInvites: { email: string; error: string }[] = [];
+        const emailFailedEmails: string[] = [];
 
         // Process each invitation sequentially
         for (const invite of values.manualInvites) {
@@ -170,11 +171,22 @@ export function InviteMembersModal({
             (invite.roles.includes('employee') || invite.roles.includes('contractor'));
           try {
             if (hasEmployeeRoleAndNoAdmin) {
-              await addEmployeeWithoutInvite({
+              const result = await addEmployeeWithoutInvite({
                 organizationId,
                 email: invite.email.toLowerCase(),
                 roles: invite.roles,
               });
+              if (!result.success) {
+                failedInvites.push({
+                  email: invite.email,
+                  error: result.error ?? 'Failed to add employee',
+                });
+              } else {
+                if ('emailSent' in result && result.emailSent === false) {
+                  emailFailedEmails.push(invite.email);
+                }
+                successCount++;
+              }
             } else {
               // Check member status and reactivate if needed
               const memberStatus = await checkMemberStatus({
@@ -197,8 +209,8 @@ export function InviteMembersModal({
                   roles: invite.roles,
                 });
               }
+              successCount++;
             }
-            successCount++;
           } catch (error) {
             console.error(`Failed to invite ${invite.email}:`, error);
             failedInvites.push({
@@ -224,6 +236,12 @@ export function InviteMembersModal({
         if (failedInvites.length > 0) {
           toast.error(
             `Failed to invite ${failedInvites.length} member(s): ${failedInvites.map((f) => f.email).join(', ')}`,
+          );
+        }
+
+        if (emailFailedEmails.length > 0) {
+          toast.warning(
+            `${emailFailedEmails.length} member(s) added but invite email could not be sent: ${emailFailedEmails.join(', ')}. You can resend from the team page.`,
           );
         }
       } else if (values.mode === 'csv') {
@@ -305,6 +323,7 @@ export function InviteMembersModal({
           // Track results
           let successCount = 0;
           const failedInvites: { email: string; error: string }[] = [];
+          const emailFailedEmails: string[] = [];
 
           // Process each row
           for (const row of dataRows) {
@@ -331,7 +350,7 @@ export function InviteMembersModal({
             }
 
             // Validate role(s) - split by pipe for multiple roles
-            const roles = roleValue.split('|').map((r) => r.trim());
+            const roles = roleValue.split('|').map((r) => r.trim().toLowerCase());
             const validRoles = roles.filter((role) => isInviteRole(role, normalizedAllowedRoles));
 
             if (validRoles.length === 0) {
@@ -348,11 +367,22 @@ export function InviteMembersModal({
               !validRoles.includes('admin');
             try {
               if (hasEmployeeRoleAndNoAdmin) {
-                await addEmployeeWithoutInvite({
+                const result = await addEmployeeWithoutInvite({
                   organizationId,
                   email: email.toLowerCase(),
                   roles: validRoles,
                 });
+                if (!result.success) {
+                  failedInvites.push({
+                    email,
+                    error: result.error ?? 'Failed to add employee',
+                  });
+                } else {
+                  if ('emailSent' in result && result.emailSent === false) {
+                    emailFailedEmails.push(email);
+                  }
+                  successCount++;
+                }
               } else {
                 // Check member status and reactivate if needed
                 const memberStatus = await checkMemberStatus({
@@ -375,8 +405,8 @@ export function InviteMembersModal({
                     roles: validRoles,
                   });
                 }
+                successCount++;
               }
-              successCount++;
             } catch (error) {
               console.error(`Failed to invite ${email}:`, error);
               failedInvites.push({
@@ -402,6 +432,12 @@ export function InviteMembersModal({
           if (failedInvites.length > 0) {
             toast.error(
               `Failed to invite ${failedInvites.length} member(s): ${failedInvites.map((f) => f.email).join(', ')}`,
+            );
+          }
+
+          if (emailFailedEmails.length > 0) {
+            toast.warning(
+              `${emailFailedEmails.length} member(s) added but invite email could not be sent: ${emailFailedEmails.join(', ')}. You can resend from the team page.`,
             );
           }
         } catch (csvError) {

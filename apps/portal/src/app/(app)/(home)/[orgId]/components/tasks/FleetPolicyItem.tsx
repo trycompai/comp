@@ -2,33 +2,31 @@
 
 import { useMemo, useState } from 'react';
 
+import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { CheckCircle2, HelpCircle, Image, MoreVertical, Trash, Upload, XCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
-import { Badge, Button } from '@trycompai/design-system';
-import {
-  Help,
-  Image as ImageIcon,
-  OverflowMenuVertical,
-  Upload,
-} from '@trycompai/design-system/icons';
 import type { FleetPolicy } from '../../types';
-import { PolicyImagePreviewModal } from './PolicyImagePreviewModal';
 import { PolicyImageUploadModal } from './PolicyImageUploadModal';
+import { PolicyImagePreviewModal } from './PolicyImagePreviewModal';
+import { PolicyImageResetModal } from './PolicyImageResetModal';
 
 interface FleetPolicyItemProps {
   policy: FleetPolicy;
+  organizationId: string;
   onRefresh: () => void;
 }
 
-export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
+export function FleetPolicyItem({ policy, organizationId, onRefresh }: FleetPolicyItemProps) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isRemoveOpen, setIsRemoveOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const actions = useMemo(() => {
@@ -37,8 +35,13 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
         return [
           {
             label: 'Preview images',
-            renderIcon: () => <ImageIcon size={16} className="mr-2" />,
+            renderIcon: () => <Image className="mr-2 h-4 w-4" />,
             onClick: () => setIsPreviewOpen(true),
+          },
+          {
+            label: 'Remove images',
+            renderIcon: () => <Trash className="mr-2 h-4 w-4" />,
+            onClick: () => setIsRemoveOpen(true),
           },
         ];
       }
@@ -49,10 +52,10 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
     return [
       {
         label: 'Upload images',
-        renderIcon: () => <Upload size={16} className="mr-2" />,
+        renderIcon: () => <Upload className="mr-2 h-4 w-4" />,
         onClick: () => setIsUploadOpen(true),
-      },
-    ];
+      }
+    ]
   }, [policy]);
 
   const hasActions = useMemo(() => actions.length > 0, [actions]);
@@ -71,11 +74,8 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Help size={14} />
+                  <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                    <HelpCircle size={14} />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
@@ -97,13 +97,26 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
           )}
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant={policy.response === 'pass' ? 'default' : 'destructive'}>
-            {policy.response === 'pass' ? 'Pass' : 'Fail'}
-          </Badge>
+          {policy.response === 'pass' ? (
+            <div className="flex items-center gap-1 text-primary">
+              <CheckCircle2 size={16} />
+              <span className="text-sm">Pass</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
+              <XCircle size={16} />
+              <span className="text-sm">Fail</span>
+            </div>
+          )}
           <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" disabled={!hasActions}>
-                <OverflowMenuVertical size={16} />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                disabled={!hasActions}
+              >
+                <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -126,6 +139,7 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
       </div>
       <PolicyImageUploadModal
         policy={policy}
+        organizationId={organizationId}
         open={isUploadOpen}
         onOpenChange={setIsUploadOpen}
         onRefresh={onRefresh}
@@ -134,6 +148,13 @@ export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
         images={policy?.attachments || []}
         open={isPreviewOpen}
         onOpenChange={setIsPreviewOpen}
+      />
+      <PolicyImageResetModal
+        open={isRemoveOpen}
+        organizationId={organizationId}
+        policyId={policy.id}
+        onOpenChange={setIsRemoveOpen}
+        onRefresh={onRefresh}
       />
     </>
   );

@@ -254,6 +254,7 @@ export function DeviceAgentAccordionItem({
                       <FleetPolicyItem
                         key={policy.id}
                         policy={policy}
+                        organizationId={member.organizationId}
                         onRefresh={handleRefreshFleet}
                       />
                     ))}

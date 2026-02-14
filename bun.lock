@@ -224,6 +224,7 @@
         "@vercel/analytics": "^1.5.0",
         "@vercel/sandbox": "^0.0.21",
         "@vercel/sdk": "^1.7.1",
+        "@xyflow/react": "^12.10.0",
         "ai": "^5.0.108",
         "ai-elements": "^1.6.1",
         "axios": "^1.9.0",

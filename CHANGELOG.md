@@ -1,3 +1,27 @@
+# [1.83.0](https://github.com/trycompai/comp/compare/v1.82.3...v1.83.0) (2026-02-13)
+
+
+### Features
+
+* **automation:** add enterprise feature check and user guidance ([#2131](https://github.com/trycompai/comp/issues/2131)) ([80489af](https://github.com/trycompai/comp/commit/80489af57b94790a5ae67956658cdc9cb1a1043f))
+
+## [1.82.3](https://github.com/trycompai/comp/compare/v1.82.2...v1.82.3) (2026-02-12)
+
+
+### Bug Fixes
+
+* **app:** check DNS records using Node's built-in DNS instead of using external APIs ([#2126](https://github.com/trycompai/comp/issues/2126)) ([5fab9bd](https://github.com/trycompai/comp/commit/5fab9bd703d1d42925b609631acf9e0f058cdf4f))
+* **app:** enable capitalized text for role in csv when adding users ([#2123](https://github.com/trycompai/comp/issues/2123)) ([5fdb448](https://github.com/trycompai/comp/commit/5fdb4482ddd414b31aebb6278cf5d4a82a5b8bc9))
+* **automation:** clarify automation agent's data retrieval capabilities ([#2129](https://github.com/trycompai/comp/issues/2129)) ([eb2957f](https://github.com/trycompai/comp/commit/eb2957fe9f52ea3c97b0b091e304bc4804bb6c95))
+* policy version API content bug + published version protection ([#2130](https://github.com/trycompai/comp/issues/2130)) ([7f79351](https://github.com/trycompai/comp/commit/7f793512731cecf873b765b535d28bc1c5da4fea))
+
+## [1.82.2](https://github.com/trycompai/comp/compare/v1.82.1...v1.82.2) (2026-02-11)
+
+
+### Bug Fixes
+
+* **api:** add email package build process and extension integration ([#2122](https://github.com/trycompai/comp/issues/2122)) ([fdbfc74](https://github.com/trycompai/comp/commit/fdbfc7408ff03b2aa0a7d09975d40bf9fdc22c93))
+
 ## [1.82.1](https://github.com/trycompai/comp/compare/v1.82.0...v1.82.1) (2026-02-05)
 
 

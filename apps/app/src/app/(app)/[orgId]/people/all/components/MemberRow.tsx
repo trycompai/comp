@@ -5,6 +5,18 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+  HStack,
+  Label,
+  TableCell,
+  TableRow,
+  Text,
+} from '@trycompai/design-system';
+import { Checkmark, Edit, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -21,8 +33,6 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Role } from '@db';
-import { Badge, Label, TableCell, TableRow, Text } from '@trycompai/design-system';
-import { Edit, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 
 import { toast } from 'sonner';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
@@ -35,10 +45,25 @@ interface MemberRowProps {
   onRemove: (memberId: string) => void;
   onRemoveDevice: (memberId: string) => void;
   onUpdateRole: (memberId: string, roles: Role[]) => void;
+  onReactivate: (memberId: string) => void;
   canEdit: boolean;
   isCurrentUserOwner: boolean;
   taskCompletion?: { completed: number; total: number };
   hasDeviceAgentDevice?: boolean;
+}
+
+function getInitials(name?: string | null, email?: string | null): string {
+  if (name) {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
+  }
+  if (email) {
+    return email.substring(0, 2).toUpperCase();
+  }
+  return '??';
 }
 
 function getRoleLabel(role: string): string {
@@ -71,6 +96,7 @@ export function MemberRow({
   onRemove,
   onRemoveDevice,
   onUpdateRole,
+  onReactivate,
   canEdit,
   isCurrentUserOwner,
   taskCompletion,
@@ -86,9 +112,11 @@ export function MemberRow({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isRemovingDevice, setIsRemovingDevice] = useState(false);
+  const [isReactivating, setIsReactivating] = useState(false);
 
   const memberName = member.user.name || member.user.email || 'Member';
   const memberEmail = member.user.email || '';
+  const memberAvatar = member.user.image;
   const memberId = member.id;
   const currentRoles = parseRoles(member.role);
 
@@ -130,6 +158,16 @@ export function MemberRow({
     }
   };
 
+  const handleReactivateClick = async () => {
+    setDropdownOpen(false);
+    setIsReactivating(true);
+    try {
+      await onReactivate(memberId);
+    } finally {
+      setIsReactivating(false);
+    }
+  };
+
   const handleRemoveDeviceClick = async () => {
     try {
       setIsRemoveDeviceAlertOpen(false);
@@ -147,19 +185,25 @@ export function MemberRow({
       <TableRow data-state={isDeactivated ? 'disabled' : undefined}>
         {/* NAME */}
         <TableCell>
-          <div className="min-w-0">
-            <Link
-              href={profileHref}
-              className={`truncate text-sm font-medium hover:underline ${
-                isDeactivated ? 'text-muted-foreground' : ''
-              }`}
-            >
-              {memberName}
-            </Link>
-            <Text size="xs" variant="muted">
-              {memberEmail}
-            </Text>
-          </div>
+          <HStack gap="3" align="center">
+            <div className={`flex-shrink-0 ${isDeactivated ? 'grayscale opacity-60' : ''}`}>
+              <Avatar>
+                <AvatarImage src={memberAvatar || undefined} />
+                <AvatarFallback>{getInitials(member.user.name, member.user.email)}</AvatarFallback>
+              </Avatar>
+            </div>
+            <div className="min-w-0">
+              <Link
+                href={profileHref}
+                className={`truncate text-sm font-medium hover:underline ${
+                  isDeactivated ? 'text-muted-foreground' : ''
+                }`}
+              >
+                {memberName}
+              </Link>
+              <Text variant="muted">{memberEmail}</Text>
+            </div>
+          </HStack>
         </TableCell>
 
         {/* STATUS */}
@@ -167,7 +211,7 @@ export function MemberRow({
           {isDeactivated ? (
             <Badge variant="destructive">Inactive</Badge>
           ) : (
-            <Badge variant="default">Active</Badge>
+            <Badge variant="secondary">Active</Badge>
           )}
         </TableCell>
 
@@ -175,7 +219,7 @@ export function MemberRow({
         <TableCell>
           <div className="flex flex-wrap gap-1">
             {currentRoles.map((role) => (
-              <Badge key={role} variant="default">
+              <Badge key={role} variant="outline">
                 {getRoleLabel(role)}
               </Badge>
             ))}
@@ -201,48 +245,55 @@ export function MemberRow({
 
         {/* ACTIONS */}
         <TableCell>
-          {!isDeactivated && (
-            <div className="flex justify-center">
-              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canEdit}>
-                    <OverflowMenuVertical />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {canEdit && (
-                    <DropdownMenuItem onSelect={handleEditRolesClick}>
-                      <Edit size={16} className="mr-2" />
-                      <span>Edit Roles</span>
-                    </DropdownMenuItem>
-                  )}
-                  {(member.fleetDmLabelId || hasDeviceAgentDevice) && isCurrentUserOwner && (
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setIsRemoveDeviceAlertOpen(true);
-                      }}
-                    >
-                      <Laptop className="mr-2 h-4 w-4" />
-                      <span>Remove Device</span>
-                    </DropdownMenuItem>
-                  )}
-                  {canRemove && (
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setIsRemoveAlertOpen(true);
-                      }}
-                    >
-                      <TrashCan size={16} className="mr-2" />
-                      <span>Remove Member</span>
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
+          <div className="flex justify-center">
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canEdit}>
+                  <OverflowMenuVertical />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {isDeactivated && canEdit && (
+                  <DropdownMenuItem
+                    onSelect={handleReactivateClick}
+                    disabled={isReactivating}
+                  >
+                    <Checkmark size={16} className="mr-2" />
+                    <span>{isReactivating ? 'Reinstating...' : 'Reinstate Member'}</span>
+                  </DropdownMenuItem>
+                )}
+                {!isDeactivated && canEdit && (
+                  <DropdownMenuItem onSelect={handleEditRolesClick}>
+                    <Edit size={16} className="mr-2" />
+                    <span>Edit Roles</span>
+                  </DropdownMenuItem>
+                )}
+                {!isDeactivated && (member.fleetDmLabelId || hasDeviceAgentDevice) && isCurrentUserOwner && (
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setDropdownOpen(false);
+                      setIsRemoveDeviceAlertOpen(true);
+                    }}
+                  >
+                    <Laptop className="mr-2 h-4 w-4" />
+                    <span>Remove Device</span>
+                  </DropdownMenuItem>
+                )}
+                {!isDeactivated && canRemove && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                    onSelect={() => {
+                      setDropdownOpen(false);
+                      setIsRemoveAlertOpen(true);
+                    }}
+                  >
+                    <TrashCan size={16} className="mr-2" />
+                    <span>Remove Member</span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </TableCell>
       </TableRow>
 
@@ -258,8 +309,8 @@ export function MemberRow({
         title="Remove Device"
         description={
           <>
-            Are you sure you want to remove all devices for this user <strong>{memberName}</strong>?
-            This will disconnect all devices from the organization.
+            Are you sure you want to remove all devices for this user{' '}
+            <strong>{memberName}</strong>? This will disconnect all devices from the organization.
           </>
         }
         onOpenChange={setIsRemoveDeviceAlertOpen}

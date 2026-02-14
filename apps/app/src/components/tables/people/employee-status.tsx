@@ -1,9 +1,14 @@
-import { EMPLOYEE_STATUS_HEX_COLORS } from '@/app/(app)/[orgId]/people/[employeeId]/components/Fields/Status';
 import { cn } from '@comp/ui/cn';
 
 // Define employee status types
 export const EMPLOYEE_STATUS_TYPES = ['active', 'inactive'] as const;
 export type EmployeeStatusType = (typeof EMPLOYEE_STATUS_TYPES)[number];
+
+// Status color hex values for charts
+export const EMPLOYEE_STATUS_HEX_COLORS: Record<EmployeeStatusType, string> = {
+  inactive: 'var(--color-destructive)',
+  active: 'var(--color-primary)',
+};
 
 /**
  * EmployeeStatus component that matches the styling of the Status component

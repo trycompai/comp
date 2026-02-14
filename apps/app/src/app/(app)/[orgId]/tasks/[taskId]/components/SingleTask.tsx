@@ -362,7 +362,7 @@ export function SingleTask({
                     <TaskAutomationStatusBadge status={task.automationStatus} />
                   </div>
                   {task.description && (
-                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-all">
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
                       {task.description}
                     </p>
                   )}

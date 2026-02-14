@@ -16,7 +16,10 @@ import { InviteMembersModal } from '../all/components/InviteMembersModal';
 
 interface PeoplePageTabsProps {
   peopleContent: ReactNode;
+  employeeTasksContent: ReactNode | null;
   devicesContent: ReactNode;
+  orgChartContent: ReactNode;
+  showEmployeeTasks: boolean;
   canInviteUsers: boolean;
   canManageMembers: boolean;
   organizationId: string;
@@ -24,7 +27,10 @@ interface PeoplePageTabsProps {
 
 export function PeoplePageTabs({
   peopleContent,
+  employeeTasksContent,
   devicesContent,
+  orgChartContent,
+  showEmployeeTasks,
   canInviteUsers,
   canManageMembers,
   organizationId,
@@ -40,7 +46,9 @@ export function PeoplePageTabs({
             tabs={
               <TabsList variant="underline">
                 <TabsTrigger value="people">People</TabsTrigger>
-                <TabsTrigger value="devices">Employee Devices</TabsTrigger>
+                {showEmployeeTasks && <TabsTrigger value="employee-tasks">Tasks</TabsTrigger>}
+                <TabsTrigger value="devices">Devices</TabsTrigger>
+                <TabsTrigger value="org-chart">Chart</TabsTrigger>
               </TabsList>
             }
             actions={
@@ -56,7 +64,11 @@ export function PeoplePageTabs({
         }
       >
         <TabsContent value="people">{peopleContent}</TabsContent>
+        {showEmployeeTasks && (
+          <TabsContent value="employee-tasks">{employeeTasksContent}</TabsContent>
+        )}
         <TabsContent value="devices">{devicesContent}</TabsContent>
+        <TabsContent value="org-chart">{orgChartContent}</TabsContent>
       </PageLayout>
 
       <InviteMembersModal

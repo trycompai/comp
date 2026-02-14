@@ -2,6 +2,7 @@
 
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
+import { sendInviteMemberEmail } from '@comp/email';
 import type { Role } from '@db';
 import { db } from '@db';
 import { headers } from 'next/headers';
@@ -46,6 +47,16 @@ export const addEmployeeWithoutInvite = async ({
       if (!onlyAuditorRole) {
         throw new Error("Auditors can only add users with the 'auditor' role.");
       }
+    }
+
+    // Get organization name
+    const organization = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+
+    if (!organization) {
+      throw new Error('Organization not found.');
     }
 
     let userId = '';
@@ -112,7 +123,30 @@ export const addEmployeeWithoutInvite = async ({
       await createTrainingVideoEntries(member.id);
     }
 
-    return { success: true, data: member };
+    // Generate invite link
+    const inviteLink = `${process.env.NEXT_PUBLIC_PORTAL_URL}/${organizationId}`;
+
+    // Send the invitation email (non-fatal: member is already created)
+    let emailSent = true;
+    let emailError: string | undefined;
+    try {
+      await sendInviteMemberEmail({
+        inviteeEmail: email.toLowerCase(),
+        inviteLink,
+        organizationName: organization.name,
+      });
+    } catch (emailErr) {
+      emailSent = false;
+      emailError = emailErr instanceof Error ? emailErr.message : 'Failed to send invite email';
+      console.error('Invite email failed after member was added:', { email, organizationId, error: emailErr });
+    }
+
+    return {
+      success: true,
+      data: member,
+      emailSent,
+      ...(emailError && { emailError }),
+    };
   } catch (error) {
     console.error('Error adding employee:', error);
     return { success: false, error: 'Failed to add employee' };

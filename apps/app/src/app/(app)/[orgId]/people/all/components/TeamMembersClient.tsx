@@ -37,6 +37,7 @@ import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TeamMembersData } from './TeamMembers';
 
 // Import the server actions themselves to get their types
+import type { reactivateMember } from '../actions/reactivateMember';
 import type { removeMember } from '../actions/removeMember';
 import type { revokeInvitation } from '../actions/revokeInvitation';
 
@@ -48,6 +49,7 @@ interface TeamMembersClientProps {
   data: TeamMembersData;
   organizationId: string;
   removeMemberAction: typeof removeMember;
+  reactivateMemberAction: typeof reactivateMember;
   revokeInvitationAction: typeof revokeInvitation;
   canManageMembers: boolean;
   canInviteUsers: boolean;
@@ -74,6 +76,7 @@ export function TeamMembersClient({
   data,
   organizationId,
   removeMemberAction,
+  reactivateMemberAction,
   revokeInvitationAction,
   canManageMembers,
   canInviteUsers,
@@ -225,6 +228,18 @@ export function TeamMembersClient({
       // Error case
       const errorMessage = result?.serverError || 'Failed to remove member';
       console.error('Remove Member Error:', errorMessage);
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleReactivateMember = async (memberId: string) => {
+    const result = await reactivateMemberAction({ memberId });
+    if (result?.data?.success) {
+      toast.success('Member has been reinstated');
+      router.refresh();
+    } else {
+      const errorMessage = result?.serverError || 'Failed to reinstate member';
+      console.error('Reactivate Member Error:', errorMessage);
       toast.error(errorMessage);
     }
   };
@@ -508,6 +523,7 @@ export function TeamMembersClient({
                   onRemove={handleRemoveMember}
                   onRemoveDevice={handleRemoveDevice}
                   onUpdateRole={handleUpdateRole}
+                  onReactivate={handleReactivateMember}
                   canEdit={canManageMembers}
                   isCurrentUserOwner={isCurrentUserOwner}
                   taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}

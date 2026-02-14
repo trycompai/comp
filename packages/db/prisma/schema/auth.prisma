@@ -96,6 +96,7 @@ model Member {
   createdAt      DateTime     @default(now())
 
   department                      Departments                       @default(none)
+  jobTitle                        String?
   isActive                        Boolean                           @default(true)
   deactivated                     Boolean                           @default(false)
   employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]

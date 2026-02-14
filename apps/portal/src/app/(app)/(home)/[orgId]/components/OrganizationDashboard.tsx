@@ -68,6 +68,8 @@ export async function OrganizationDashboard({
       member={member}
       fleetPolicies={fleetPolicies}
       host={host}
+      deviceAgentStepEnabled={org.deviceAgentStepEnabled}
+      securityTrainingStepEnabled={org.securityTrainingStepEnabled}
     />
   );
 }
