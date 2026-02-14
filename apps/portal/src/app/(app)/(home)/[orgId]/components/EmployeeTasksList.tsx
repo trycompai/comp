@@ -87,16 +87,17 @@ export const EmployeeTasksList = ({
   const hasAcceptedPolicies =
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
 
-  // Device setup is complete if EITHER device-agent is compliant OR all fleet policies pass
+  // Device-agent takes priority: if installed, only its compliance matters.
+  // Fleet is only checked when device-agent is not present.
   const hasDeviceAgentDevices = devices.length > 0;
   const allDeviceAgentCompliant = devices.length > 0 && devices.every((d) => d.isCompliant);
   const hasInstalledFleetAgent = host !== null;
   const allFleetPoliciesPass =
     fleetPolicies.length === 0 || fleetPolicies.every((policy) => policy.response === 'pass');
 
-  const hasCompletedDeviceSetup =
-    (hasDeviceAgentDevices && allDeviceAgentCompliant) ||
-    (hasInstalledFleetAgent && allFleetPoliciesPass);
+  const hasCompletedDeviceSetup = hasDeviceAgentDevices
+    ? allDeviceAgentCompliant
+    : hasInstalledFleetAgent && allFleetPoliciesPass;
 
   // Calculate general training completion
   const generalTrainingVideoIds = trainingVideos

@@ -77,10 +77,11 @@ export function DeviceAgentAccordionItem({
     [fleetPolicies],
   );
 
-  // Overall completion: either device-agent compliant OR all fleet policies pass
-  const isCompleted =
-    (hasDeviceAgentDevices && allDeviceAgentCompliant) ||
-    (hasFleetDevice && failedFleetPolicies === 0 && fleetPolicies.length > 0);
+  // Device-agent takes priority: if installed, only its compliance matters.
+  // Fleet is only checked when device-agent is not present.
+  const isCompleted = hasDeviceAgentDevices
+    ? allDeviceAgentCompliant
+    : hasFleetDevice && failedFleetPolicies === 0;
 
   const fetchDeviceStatus = useCallback(async () => {
     setIsLoadingDeviceAgent(true);
