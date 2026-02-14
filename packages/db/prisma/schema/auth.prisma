@@ -18,7 +18,6 @@ model User {
   members            Member[]
   sessions           Session[]
   fleetPolicyResults FleetPolicyResult[]
-  devices            Device[]
 
   @@unique([email])
 }
@@ -119,6 +118,7 @@ model Member {
   createdFindings        Finding[]            @relation("FindingCreatedBy")
   publishedPolicyVersions PolicyVersion[]     @relation("PolicyVersionPublisher")
   approvedTasks           Task[]               @relation("TaskApprover")
+  devices                 Device[]
 }
 
 model Invitation {

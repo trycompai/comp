@@ -13,10 +13,10 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "prettier --check 'src/**/*.{ts,tsx}'",
-    "package:mac": "electron-builder --mac",
-    "package:win": "electron-builder --win",
-    "package:linux": "electron-builder --linux",
-    "package:all": "electron-builder --mac --win --linux"
+    "package:mac": "electron-builder --mac --config electron-builder.config.js",
+    "package:win": "electron-builder --win --config electron-builder.config.js",
+    "package:linux": "electron-builder --linux --config electron-builder.config.js",
+    "package:all": "electron-builder --mac --win --linux --config electron-builder.config.js"
   },
   "dependencies": {
     "@trycompai/design-system": "*",

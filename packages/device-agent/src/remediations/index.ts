@@ -1,3 +1,4 @@
+import { log } from '../main/logger';
 import type { DeviceCheckType, RemediationInfo, RemediationResult } from '../shared/types';
 import type { ComplianceRemediation } from './types';
 
@@ -52,7 +53,7 @@ function getRemediationsForPlatform(): ComplianceRemediation[] {
     ];
   }
 
-  console.warn(`Unsupported platform for remediation: ${platform}`);
+  log(`Unsupported platform for remediation: ${platform}`, 'WARN');
   return [];
 }
 
@@ -81,14 +82,14 @@ export async function runRemediation(checkType: DeviceCheckType): Promise<Remedi
   }
 
   try {
-    console.log(`Running remediation: ${checkType}`);
+    log(`Running remediation: ${checkType}`);
     const result = await remediation.remediate();
-    console.log(
+    log(
       `  Remediation ${checkType}: ${result.success ? 'SUCCESS' : 'FAILED'} - ${result.message}`,
     );
     return result;
   } catch (error) {
-    console.error(`Remediation failed: ${checkType}`, error);
+    log(`Remediation failed: ${checkType} - ${error}`, 'ERROR');
     return {
       checkType,
       success: false,

@@ -27,12 +27,12 @@ import { PolicyItem } from '../../devices/components/PolicyItem';
 import type { DeviceWithChecks, FleetPolicy, Host } from '../../devices/types';
 import { downloadTrainingCertificate } from '../actions/download-training-certificate';
 
-const CHECK_NAMES: Record<string, string> = {
-  disk_encryption: 'Disk Encryption',
-  antivirus: 'Antivirus',
-  password_policy: 'Password Policy',
-  screen_lock: 'Screen Lock',
-};
+const CHECK_FIELDS = [
+  { key: 'diskEncryptionEnabled' as const, dbKey: 'disk_encryption', label: 'Disk Encryption' },
+  { key: 'antivirusEnabled' as const, dbKey: 'antivirus', label: 'Antivirus' },
+  { key: 'passwordPolicySet' as const, dbKey: 'password_policy', label: 'Password Policy' },
+  { key: 'screenLockEnabled' as const, dbKey: 'screen_lock', label: 'Screen Lock' },
+];
 
 const PLATFORM_LABELS: Record<string, string> = {
   macos: 'macOS',
@@ -268,46 +268,51 @@ export const EmployeeTasks = ({
                 </CardContent>
               </Card>
 
-              {memberDevice.checks.length > 0 ? (
-                <Table variant="bordered">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Check</TableHead>
-                      <TableHead>Details</TableHead>
-                      <TableHead>Result</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {memberDevice.checks.map((check) => (
-                      <TableRow key={check.id}>
+              <Table variant="bordered">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Check</TableHead>
+                    <TableHead>Details</TableHead>
+                    <TableHead>Result</TableHead>
+                    <TableHead>Exception</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {CHECK_FIELDS.map(({ key, dbKey, label }) => {
+                    const isFleetUnsupported = memberDevice.source === 'fleet' && key !== 'diskEncryptionEnabled';
+                    const passed = memberDevice[key];
+                    const details = memberDevice.checkDetails?.[dbKey];
+                    return (
+                      <TableRow key={key}>
                         <TableCell>
                           <Text size="sm" weight="medium">
-                            {CHECK_NAMES[check.checkType] ?? check.checkType}
+                            {label}
                           </Text>
                         </TableCell>
                         <TableCell>
                           <Text size="sm" variant="muted">
-                            {check.details &&
-                            typeof check.details === 'object' &&
-                            'message' in check.details
-                              ? String(check.details.message)
-                              : '—'}
+                            {isFleetUnsupported ? 'Not tracked by Fleet' : (details?.message ?? '—')}
                           </Text>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={check.passed ? 'default' : 'destructive'}>
-                            {check.passed ? 'Pass' : 'Fail'}
-                          </Badge>
+                          {isFleetUnsupported ? (
+                            <Badge variant="outline">N/A</Badge>
+                          ) : (
+                            <Badge variant={passed ? 'default' : 'destructive'}>
+                              {passed ? 'Pass' : 'Fail'}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Text size="sm" variant="muted">
+                            {details?.exception ?? '—'}
+                          </Text>
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <Text size="sm" variant="muted">
-                  No compliance checks have been run yet.
-                </Text>
-              )}
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </Stack>
           ) : host ? (
             <Card>

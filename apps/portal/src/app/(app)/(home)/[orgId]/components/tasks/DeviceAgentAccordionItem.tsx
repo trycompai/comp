@@ -11,14 +11,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FleetPolicy, Host } from '../../types';
 import { FleetPolicyItem } from './FleetPolicyItem';
 
-interface DeviceCheck {
-  id: string;
-  checkType: string;
-  passed: boolean;
-  details: { method?: string; raw?: string; message?: string } | null;
-  checkedAt: string;
-}
-
 interface DeviceStatus {
   id: string;
   name: string;
@@ -26,16 +18,20 @@ interface DeviceStatus {
   platform: string;
   osVersion: string;
   isCompliant: boolean;
+  diskEncryptionEnabled: boolean;
+  antivirusEnabled: boolean;
+  passwordPolicySet: boolean;
+  screenLockEnabled: boolean;
+  checkDetails: Record<string, { method?: string; raw?: string; message?: string; exception?: string; passed?: boolean; checkedAt?: string }> | null;
   lastCheckIn: string | null;
-  checks: DeviceCheck[];
 }
 
-const CHECK_NAMES: Record<string, string> = {
-  disk_encryption: 'Disk Encryption',
-  antivirus: 'Antivirus',
-  password_policy: 'Password Policy',
-  screen_lock: 'Screen Lock',
-};
+const CHECK_FIELDS = [
+  { key: 'diskEncryptionEnabled' as const, dbKey: 'disk_encryption', label: 'Disk Encryption' },
+  { key: 'antivirusEnabled' as const, dbKey: 'antivirus', label: 'Antivirus' },
+  { key: 'passwordPolicySet' as const, dbKey: 'password_policy', label: 'Password Policy' },
+  { key: 'screenLockEnabled' as const, dbKey: 'screen_lock', label: 'Screen Lock' },
+];
 
 interface DeviceAgentAccordionItemProps {
   organizationId: string;
@@ -48,7 +44,7 @@ interface DeviceAgentAccordionItemProps {
 
 export function DeviceAgentAccordionItem({
   organizationId,
-  member: _member,
+  member,
   host,
   fleetPolicies,
   isFleetLoading,
@@ -56,6 +52,7 @@ export function DeviceAgentAccordionItem({
 }: DeviceAgentAccordionItemProps) {
   const [detectedOS, setDetectedOS] = useState<SupportedOS | null>(null);
   const [isLoadingDeviceAgent, setIsLoadingDeviceAgent] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [devices, setDevices] = useState<DeviceStatus[]>([]);
 
   const isMacOS = useMemo(
@@ -68,7 +65,8 @@ export function DeviceAgentAccordionItem({
   const hasDeviceAgentDevices = devices.length > 0;
   const allDeviceAgentCompliant = devices.length > 0 && devices.every((d) => d.isCompliant);
   const failingDeviceAgentChecks = devices.reduce(
-    (count, device) => count + device.checks.filter((c) => !c.passed).length,
+    (count, device) =>
+      count + CHECK_FIELDS.filter(({ key }) => !device[key]).length,
     0,
   );
 
@@ -112,6 +110,24 @@ export function DeviceAgentAccordionItem({
 
   const handleRefreshFleet = () => {
     fetchFleetPolicies();
+  };
+
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      const res = await fetch('/api/download-agent/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgId: organizationId, employeeId: member.id, os: detectedOS }),
+      });
+      if (!res.ok) throw new Error('Failed to get download token');
+      const { token } = await res.json();
+      window.location.href = `/api/download-agent?token=${token}`;
+    } catch (e) {
+      console.error('Download failed:', e);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   // Determine what kind of failure indicator to show in the accordion trigger
@@ -178,34 +194,35 @@ export function DeviceAgentAccordionItem({
                       </Button>
                     </div>
                   </div>
-                  {device.checks.length > 0 ? (
-                    <div className="space-y-2">
-                      {device.checks.map((check) => (
+                  <div className="space-y-2">
+                    {CHECK_FIELDS.map(({ key, dbKey, label }) => {
+                      const passed = device[key];
+                      const details = device.checkDetails?.[dbKey];
+                      return (
                         <div
-                          key={check.id}
+                          key={key}
                           className="flex items-center justify-between rounded-lg border p-3"
                         >
                           <div>
-                            <span className="text-sm font-medium">
-                              {CHECK_NAMES[check.checkType] ?? check.checkType}
-                            </span>
-                            {check.details?.message && (
+                            <span className="text-sm font-medium">{label}</span>
+                            {details?.message && (
                               <p className="text-muted-foreground text-xs">
-                                {check.details.message}
+                                {details.message}
+                              </p>
+                            )}
+                            {details?.exception && (
+                              <p className="text-amber-600 dark:text-amber-400 text-xs mt-0.5">
+                                {details.exception}
                               </p>
                             )}
                           </div>
-                          <Badge variant={check.passed ? 'default' : 'destructive'}>
-                            {check.passed ? 'Pass' : 'Fail'}
+                          <Badge variant={passed ? 'default' : 'destructive'}>
+                            {passed ? 'Pass' : 'Fail'}
                           </Badge>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">
-                      Waiting for first compliance check...
-                    </p>
-                  )}
+                      );
+                    })}
+                  </div>
                   {device.lastCheckIn && (
                     <p className="text-muted-foreground text-xs">
                       Last check-in: {new Date(device.lastCheckIn).toLocaleString()}
@@ -255,20 +272,29 @@ export function DeviceAgentAccordionItem({
                 <li>
                   <strong>Download the Device Agent installer.</strong>
                   <p className="mt-1">
-                    Visit our GitHub releases page to download the latest Device Agent installer for
-                    your operating system.
+                    Download the latest Device Agent installer for your operating system.
                   </p>
                   <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      iconLeft={<Download size={16} />}
+                      onClick={handleDownload}
+                      loading={isDownloading}
+                    >
+                      {`Download${detectedOS ? ` for ${isMacOS ? 'macOS' : isLinux ? 'Linux' : 'Windows'}` : ''}`}
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    or{' '}
                     <a
                       href="https://github.com/trycompai/comp/releases"
                       target="_blank"
                       rel="noopener noreferrer"
+                      className="underline"
                     >
-                      <Button size="sm" iconLeft={<Download size={16} />}>
-                        {`Download from GitHub${detectedOS ? ` (${isMacOS ? 'macOS' : isLinux ? 'Linux' : 'Windows'})` : ''}`}
-                      </Button>
+                      download from GitHub
                     </a>
-                  </div>
+                  </p>
                 </li>
                 <li>
                   <strong>Install the Comp AI Device Agent</strong>

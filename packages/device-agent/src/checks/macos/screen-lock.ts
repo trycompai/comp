@@ -13,6 +13,10 @@ const MAX_IDLE_TIME_SECONDS = 300; // 5 minutes
  *
  * On modern macOS (Ventura+), `sysadminctl -screenLock status` reports the
  * screen lock delay. If a delay is reported, screen lock is enabled.
+ *
+ * On MDM-managed machines, the screen saver idle time may not be available
+ * via `defaults read`. In that case, if `sysadminctl` confirms screen lock
+ * is enabled with an acceptable delay, the check passes.
  */
 export class MacOSScreenLockCheck implements ComplianceCheck {
   checkType = 'screen_lock' as const;
@@ -24,12 +28,28 @@ export class MacOSScreenLockCheck implements ComplianceCheck {
       const { requiresPassword, screenLockDelay } = this.getPasswordRequirement();
 
       const idleTimeOk = idleTime !== null && idleTime > 0 && idleTime <= MAX_IDLE_TIME_SECONDS;
-      const passed = idleTimeOk && requiresPassword;
+
+      // On MDM-managed machines, sysadminctl may report screen lock is active
+      // even when com.apple.screensaver idleTime is not set via defaults.
+      // If sysadminctl confirms screen lock with an acceptable delay, that's sufficient.
+      const sysadminctlOk =
+        requiresPassword && screenLockDelay !== null && screenLockDelay <= MAX_IDLE_TIME_SECONDS;
+
+      const passed = (idleTimeOk && requiresPassword) || sysadminctlOk;
 
       let message: string;
 
-      if (idleTime === null || idleTime === 0) {
-        message = 'Screen saver idle time is not configured';
+      if (passed && sysadminctlOk && !idleTimeOk) {
+        message =
+          screenLockDelay === 0
+            ? 'Screen lock is enforced with immediate password requirement'
+            : `Screen lock is enforced with ${screenLockDelay} second delay`;
+      } else if (idleTime === null || idleTime === 0) {
+        if (requiresPassword && screenLockDelay !== null) {
+          message = `Screen lock requires password but idle time exceeds ${MAX_IDLE_TIME_SECONDS} seconds`;
+        } else {
+          message = 'Screen saver idle time is not configured';
+        }
       } else if (passed) {
         message = `Screen saver activates after ${idleTime} seconds with a password required`;
       } else if (idleTime > MAX_IDLE_TIME_SECONDS) {
@@ -51,13 +71,18 @@ export class MacOSScreenLockCheck implements ComplianceCheck {
         checkedAt: new Date().toISOString(),
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isPermission = /permission|not authorized|operation not permitted/i.test(errorMessage);
+
       return {
         checkType: this.checkType,
         passed: false,
         details: {
           method: 'defaults-read',
-          raw: error instanceof Error ? error.message : String(error),
-          message: 'Unable to determine screen lock settings',
+          raw: errorMessage,
+          message: isPermission
+            ? 'Unable to determine screen lock settings due to insufficient permissions. If your device is managed by an MDM, screen lock may be enforced at the system level.'
+            : 'Unable to determine screen lock settings',
         },
         checkedAt: new Date().toISOString(),
       };
@@ -98,20 +123,25 @@ export class MacOSScreenLockCheck implements ComplianceCheck {
    */
   private getPasswordRequirement(): { requiresPassword: boolean; screenLockDelay: number | null } {
     // Method 1: sysadminctl (macOS Ventura+)
-    // Output format: "screenLock delay is 300 seconds" or "screenLock is off"
+    // Output format: "screenLock delay is 300 seconds", "screenLock delay is immediate", or "screenLock is off"
     try {
       const output = execSync('sysadminctl -screenLock status 2>&1', {
         encoding: 'utf-8',
         timeout: 5000,
       }).trim();
 
-      // If it reports a delay, screen lock is enabled
+      // If it reports a numeric delay, screen lock is enabled
       const delayMatch = output.match(/screenLock\s+delay\s+is\s+(\d+)/i);
       if (delayMatch) {
         return {
           requiresPassword: true,
           screenLockDelay: parseInt(delayMatch[1], 10),
         };
+      }
+
+      // "screenLock delay is immediate" means password required immediately (MDM-managed)
+      if (output.toLowerCase().includes('delay is immediate')) {
+        return { requiresPassword: true, screenLockDelay: 0 };
       }
 
       // "screenLock is on" also means enabled

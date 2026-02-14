@@ -393,7 +393,7 @@
     },
     "packages/device-agent": {
       "name": "@comp/device-agent",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "dependencies": {
         "@trycompai/design-system": "*",
         "electron-store": "^10.0.0",

@@ -17,7 +17,6 @@ type PolicyWithVersion = Policy & {
 interface DeviceStatus {
   id: string;
   isCompliant: boolean;
-  checks: Array<{ passed: boolean }>;
 }
 
 interface EmployeeTasksListProps {

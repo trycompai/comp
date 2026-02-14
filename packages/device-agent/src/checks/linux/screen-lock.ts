@@ -11,7 +11,8 @@ const MAX_IDLE_TIME_SECONDS = 300; // 5 minutes
  *  1. GNOME: gsettings for org.gnome.desktop.session idle-delay and
  *     org.gnome.desktop.screensaver lock-enabled
  *  2. KDE: kreadconfig5 for the screen locker timeout
- *  3. xdg-screensaver as a generic fallback
+ *  3. Cinnamon (Linux Mint): gsettings for org.cinnamon.desktop.screensaver
+ *  4. XFCE: xfconf-query for xfce4-screensaver settings
  */
 export class LinuxScreenLockCheck implements ComplianceCheck {
   checkType = 'screen_lock' as const;
@@ -31,13 +32,26 @@ export class LinuxScreenLockCheck implements ComplianceCheck {
         return kdeResult;
       }
 
+      // Try Cinnamon (Linux Mint)
+      const cinnamonResult = this.checkCinnamon();
+      if (cinnamonResult !== null) {
+        return cinnamonResult;
+      }
+
+      // Try XFCE
+      const xfceResult = this.checkXfce();
+      if (xfceResult !== null) {
+        return xfceResult;
+      }
+
       return {
         checkType: this.checkType,
         passed: false,
         details: {
-          method: 'gsettings + kreadconfig5',
+          method: 'gsettings + kreadconfig5 + xfconf-query',
           raw: 'No supported desktop environment detected',
           message: 'Unable to determine screen lock settings (unsupported desktop environment)',
+          exception: 'Unsupported desktop environment',
         },
         checkedAt: new Date().toISOString(),
       };
@@ -143,6 +157,106 @@ export class LinuxScreenLockCheck implements ComplianceCheck {
         details: {
           method: 'kreadconfig5 (KDE)',
           raw: JSON.stringify({ timeout, autolock }),
+          message,
+        },
+        checkedAt: new Date().toISOString(),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private checkCinnamon(): CheckResult | null {
+    try {
+      const idleDelayOutput = execSync(
+        'gsettings get org.cinnamon.desktop.session idle-delay 2>/dev/null',
+        { encoding: 'utf-8', timeout: 5000 },
+      ).trim();
+
+      const idleMatch = idleDelayOutput.match(/(\d+)/);
+      if (!idleMatch) return null;
+
+      const idleDelay = parseInt(idleMatch[1], 10);
+
+      const lockEnabledOutput = execSync(
+        'gsettings get org.cinnamon.desktop.screensaver lock-enabled 2>/dev/null',
+        { encoding: 'utf-8', timeout: 5000 },
+      ).trim();
+
+      const lockEnabled = lockEnabledOutput === 'true';
+      const idleOk = idleDelay > 0 && idleDelay <= MAX_IDLE_TIME_SECONDS;
+      const passed = idleOk && lockEnabled;
+
+      let message: string;
+      if (passed) {
+        message = `Screen saver activates after ${idleDelay} seconds with lock enabled`;
+      } else if (idleDelay === 0) {
+        message = 'Screen saver idle time is disabled';
+      } else if (!lockEnabled) {
+        message = `Screen saver activates after ${idleDelay} seconds but screen lock is disabled`;
+      } else {
+        message = `Screen saver activates after ${idleDelay} seconds (must be ${MAX_IDLE_TIME_SECONDS} or less)`;
+      }
+
+      return {
+        checkType: this.checkType,
+        passed,
+        details: {
+          method: 'gsettings (Cinnamon)',
+          raw: JSON.stringify({ idleDelay, lockEnabled }),
+          message,
+        },
+        checkedAt: new Date().toISOString(),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private checkXfce(): CheckResult | null {
+    try {
+      const idleOutput = execSync(
+        'xfconf-query -c xfce4-screensaver -p /saver/idle-activation/delay 2>/dev/null',
+        { encoding: 'utf-8', timeout: 5000 },
+      ).trim();
+
+      const idleMinutes = parseInt(idleOutput, 10);
+      if (isNaN(idleMinutes)) return null;
+
+      const idleSeconds = idleMinutes * 60;
+
+      // Check if lock is enabled
+      let lockEnabled = false;
+      try {
+        const lockOutput = execSync(
+          'xfconf-query -c xfce4-screensaver -p /lock/enabled 2>/dev/null',
+          { encoding: 'utf-8', timeout: 5000 },
+        ).trim();
+        lockEnabled = lockOutput.toLowerCase() === 'true';
+      } catch {
+        // Lock property may not exist — treat as disabled
+      }
+
+      const idleOk = idleSeconds > 0 && idleSeconds <= MAX_IDLE_TIME_SECONDS;
+      const passed = idleOk && lockEnabled;
+
+      let message: string;
+      if (passed) {
+        message = `Screen saver activates after ${idleMinutes} minutes with lock enabled`;
+      } else if (idleMinutes === 0) {
+        message = 'Screen saver idle time is disabled';
+      } else if (!lockEnabled) {
+        message = `Screen saver activates after ${idleMinutes} minutes but screen lock is disabled`;
+      } else {
+        message = `Screen saver activates after ${idleMinutes} minutes (must be ${MAX_IDLE_TIME_SECONDS / 60} minutes or less)`;
+      }
+
+      return {
+        checkType: this.checkType,
+        passed,
+        details: {
+          method: 'xfconf-query (XFCE)',
+          raw: JSON.stringify({ idleMinutes, lockEnabled }),
           message,
         },
         checkedAt: new Date().toISOString(),

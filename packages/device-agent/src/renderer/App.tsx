@@ -21,6 +21,7 @@ import type {
 declare global {
   interface Window {
     compAgent: {
+      getAppVersion: () => Promise<string>;
       getAuthStatus: () => Promise<{
         isAuthenticated: boolean;
         organizations: Array<{ organizationName: string }>;
@@ -90,25 +91,31 @@ function getRemediationButtonIcon(info: RemediationInfo): React.ReactNode {
 function CheckCard({
   check,
   remediationInfo,
-  onRemediate,
 }: {
   check: CheckResult;
   remediationInfo: RemediationInfo | undefined;
-  onRemediate: (checkType: DeviceCheckType) => Promise<void>;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRemediating, setIsRemediating] = useState(false);
   const [remediationResult, setRemediationResult] = useState<RemediationResult | null>(null);
 
+  const isGuideOnly = remediationInfo?.type === 'guide_only';
+
   const handleRemediate = useCallback(async () => {
+    // For guide_only, just toggle the instructions panel
+    if (isGuideOnly) {
+      setIsExpanded((prev) => !prev);
+      return;
+    }
     setIsRemediating(true);
     setRemediationResult(null);
     try {
-      await onRemediate(check.checkType);
+      const result = await window.compAgent.remediateCheck(check.checkType);
+      setRemediationResult(result);
     } finally {
       setIsRemediating(false);
     }
-  }, [check.checkType, onRemediate]);
+  }, [check.checkType, isGuideOnly]);
 
   const showRemediation = !check.passed && remediationInfo?.available;
 
@@ -155,12 +162,18 @@ function CheckCard({
                 variant={remediationInfo.type === 'auto_fix' ? 'default' : 'outline'}
                 onClick={handleRemediate}
                 loading={isRemediating}
-                iconLeft={getRemediationButtonIcon(remediationInfo)}
+                iconLeft={isGuideOnly
+                  ? (isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />)
+                  : getRemediationButtonIcon(remediationInfo)}
               >
-                {isRemediating ? 'Fixing...' : getRemediationButtonLabel(remediationInfo)}
+                {isRemediating
+                  ? 'Fixing...'
+                  : isGuideOnly
+                    ? (isExpanded ? 'Hide Guide' : 'View Guide')
+                    : getRemediationButtonLabel(remediationInfo)}
               </Button>
 
-              {remediationInfo.instructions.length > 0 && (
+              {!isGuideOnly && remediationInfo.instructions.length > 0 && (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -199,6 +212,7 @@ export default function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [remediationInfoMap, setRemediationInfoMap] = useState<Record<string, RemediationInfo>>({});
   const [isFixingAll, setIsFixingAll] = useState(false);
+  const [appVersion, setAppVersion] = useState<string>('');
 
   /** Load remediation info from main process */
   const loadRemediationInfo = useCallback(async () => {
@@ -217,6 +231,7 @@ export default function App() {
   useEffect(() => {
     async function init() {
       try {
+        window.compAgent.getAppVersion().then(setAppVersion).catch(() => {});
         const authStatus = await window.compAgent.getAuthStatus();
         setIsAuthenticated(authStatus.isAuthenticated);
         if (authStatus.isAuthenticated) {
@@ -275,14 +290,6 @@ export default function App() {
     }
   }, []);
 
-  const handleRemediate = useCallback(async (checkType: DeviceCheckType) => {
-    try {
-      await window.compAgent.remediateCheck(checkType);
-    } catch (error) {
-      console.error(`Remediation failed for ${checkType}:`, error);
-    }
-  }, []);
-
   /** Fix all failing checks that have auto_fix or admin_fix remediation */
   const handleFixAll = useCallback(async () => {
     setIsFixingAll(true);
@@ -335,7 +342,7 @@ export default function App() {
         </Stack>
         <div className="mt-auto pt-8">
           <Text size="xs" variant="muted">
-            Comp AI Device Agent v1.0.0
+            Comp AI Device Agent {appVersion ? `v${appVersion}` : ''}
           </Text>
         </div>
       </div>
@@ -412,7 +419,6 @@ export default function App() {
             key={check.checkType}
             check={check}
             remediationInfo={remediationInfoMap[check.checkType]}
-            onRemediate={handleRemediate}
           />
         ))}
       </div>
@@ -430,7 +436,7 @@ export default function App() {
         </Button>
         <div className="text-center">
           <Text size="xs" variant="muted">
-            Comp AI Device Agent v1.0.0
+            Comp AI Device Agent {appVersion ? `v${appVersion}` : ''}
           </Text>
         </div>
       </div>

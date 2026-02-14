@@ -1,17 +1,21 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
+import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
+
+const require = createRequire(import.meta.url);
+const pkg = require('./package.json');
 
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin({ exclude: ['electron-store'] })],
     define: {
       __PORTAL_URL__: JSON.stringify(
-        process.env.PORTAL_URL || 'https://app.staging.trycomp.ai',
+        process.env.PORTAL_URL || 'https://portal.trycomp.ai',
       ),
       __AGENT_VERSION__: JSON.stringify(
-        process.env.AGENT_VERSION || '1.0.0',
+        process.env.AGENT_VERSION || pkg.version,
       ),
     },
     build: {

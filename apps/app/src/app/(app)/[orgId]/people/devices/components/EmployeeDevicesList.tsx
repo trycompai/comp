@@ -27,12 +27,12 @@ export interface EmployeeDevicesListProps {
   devices: DeviceWithChecks[];
 }
 
-const CHECK_NAMES: Record<string, string> = {
-  disk_encryption: 'Disk Encryption',
-  antivirus: 'Antivirus',
-  password_policy: 'Password Policy',
-  screen_lock: 'Screen Lock',
-};
+const CHECK_FIELDS = [
+  { key: 'diskEncryptionEnabled' as const, dbKey: 'disk_encryption', label: 'Disk Encryption' },
+  { key: 'antivirusEnabled' as const, dbKey: 'antivirus', label: 'Antivirus' },
+  { key: 'passwordPolicySet' as const, dbKey: 'password_policy', label: 'Password Policy' },
+  { key: 'screenLockEnabled' as const, dbKey: 'screen_lock', label: 'Screen Lock' },
+];
 
 const PLATFORM_LABELS: Record<string, string> = {
   macos: 'macOS',
@@ -51,6 +51,20 @@ function formatTimeAgo(dateString: string | null): string {
   if (diffHours < 24) return `${diffHours}h ago`;
   const diffDays = Math.floor(diffHours / 24);
   return `${diffDays}d ago`;
+}
+
+function getDeviceExceptions(device: DeviceWithChecks): string {
+  const exceptions = CHECK_FIELDS
+    .map(({ dbKey }) => device.checkDetails?.[dbKey]?.exception)
+    .filter(Boolean);
+  return exceptions.length > 0 ? exceptions.join(', ') : '—';
+}
+
+/** Device is considered online if it checked in within the last 2 hours */
+function isDeviceOnline(lastCheckIn: string | null): boolean {
+  if (!lastCheckIn) return false;
+  const diffMs = Date.now() - new Date(lastCheckIn).getTime();
+  return diffMs < 2 * 60 * 60 * 1000;
 }
 
 export const EmployeeDevicesList = ({ devices }: EmployeeDevicesListProps) => {
@@ -142,6 +156,7 @@ export const EmployeeDevicesList = ({ devices }: EmployeeDevicesListProps) => {
               <TableHead>Last Check-in</TableHead>
               <TableHead>Checks</TableHead>
               <TableHead>Compliant</TableHead>
+              <TableHead>Exceptions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -153,6 +168,14 @@ export const EmployeeDevicesList = ({ devices }: EmployeeDevicesListProps) => {
               >
                 <TableCell>
                   <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-block h-2 w-2 shrink-0 rounded-full ${
+                        isDeviceOnline(device.lastCheckIn)
+                          ? 'bg-green-500'
+                          : 'bg-gray-300'
+                      }`}
+                      title={isDeviceOnline(device.lastCheckIn) ? 'Online' : 'Offline'}
+                    />
                     <Text size="sm" weight="medium">
                       {device.name}
                     </Text>
@@ -182,20 +205,28 @@ export const EmployeeDevicesList = ({ devices }: EmployeeDevicesListProps) => {
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {device.checks.map((check) => (
-                      <Badge
-                        key={check.checkType}
-                        variant={check.passed ? 'default' : 'destructive'}
-                      >
-                        {CHECK_NAMES[check.checkType] ?? check.checkType}
-                      </Badge>
-                    ))}
+                    {CHECK_FIELDS.map(({ key, label }) => {
+                      const isFleetUnsupported = device.source === 'fleet' && key !== 'diskEncryptionEnabled';
+                      return (
+                        <Badge
+                          key={key}
+                          variant={isFleetUnsupported ? 'outline' : device[key] ? 'default' : 'destructive'}
+                        >
+                          {label}{isFleetUnsupported ? ' (N/A)' : ''}
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </TableCell>
                 <TableCell>
                   <Badge variant={device.isCompliant ? 'default' : 'destructive'}>
                     {device.isCompliant ? 'Yes' : 'No'}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  <Text size="xs" variant="muted">
+                    {getDeviceExceptions(device)}
+                  </Text>
                 </TableCell>
               </TableRow>
             ))}

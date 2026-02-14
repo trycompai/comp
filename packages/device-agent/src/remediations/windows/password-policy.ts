@@ -26,40 +26,52 @@ export class WindowsPasswordPolicyRemediation implements ComplianceRemediation {
   }
 
   async remediate(): Promise<RemediationResult> {
-    try {
-      // Use Start-Process -Verb RunAs to trigger UAC elevation
-      // -Wait ensures we wait for completion, -PassThru gives us the process object
-      const command = `net accounts /minpwlen:${REQUIRED_MIN_LENGTH}`;
-      execSync(
-        `powershell.exe -NoProfile -NonInteractive -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c ${command}' -Verb RunAs -Wait"`,
-        { encoding: 'utf-8', timeout: 60000 }, // 60s timeout to allow for UAC prompt
-      );
+    // Try multiple methods to set the password policy
+    const methods = [
+      {
+        name: 'net accounts',
+        cmd: `powershell.exe -NoProfile -NonInteractive -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c net accounts /minpwlen:${REQUIRED_MIN_LENGTH}' -Verb RunAs -Wait"`,
+      },
+      {
+        name: 'ADSI',
+        cmd: `powershell.exe -NoProfile -NonInteractive -Command "Start-Process powershell -Verb RunAs -Wait -ArgumentList '-NoProfile -NonInteractive -Command \\\"$c=[ADSI]''WinNT://localhost''; $c.MinPasswordLength=${REQUIRED_MIN_LENGTH}; $c.SetInfo()\\\"'"`,
+      },
+    ];
 
-      return {
-        checkType: this.checkType,
-        success: true,
-        message: `Password policy set: minimum ${REQUIRED_MIN_LENGTH} characters required`,
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+    for (const method of methods) {
+      try {
+        execSync(method.cmd, { encoding: 'utf-8', timeout: 60000 });
 
-      // User cancelled the UAC dialog
-      if (
-        errorMessage.includes('canceled') ||
-        errorMessage.includes('The operation was canceled')
-      ) {
         return {
           checkType: this.checkType,
-          success: false,
-          message: 'UAC elevation was cancelled by the user',
+          success: true,
+          message: `Password policy set: minimum ${REQUIRED_MIN_LENGTH} characters required (via ${method.name})`,
         };
-      }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
 
-      return {
-        checkType: this.checkType,
-        success: false,
-        message: `Failed to set password policy: ${errorMessage}`,
-      };
+        // User cancelled the UAC dialog — don't try next method
+        if (
+          errorMessage.includes('canceled') ||
+          errorMessage.includes('The operation was canceled') ||
+          errorMessage.includes('cancelled')
+        ) {
+          return {
+            checkType: this.checkType,
+            success: false,
+            message: 'Admin elevation was cancelled. Please accept the admin prompt to set the password policy.',
+          };
+        }
+
+        // Try next method
+        continue;
+      }
     }
+
+    return {
+      checkType: this.checkType,
+      success: false,
+      message: `Failed to set password policy. Try manually: open Terminal as Admin and run "net accounts /minpwlen:${REQUIRED_MIN_LENGTH}"`,
+    };
   }
 }

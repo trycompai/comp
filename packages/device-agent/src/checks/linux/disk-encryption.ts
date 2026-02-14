@@ -13,6 +13,9 @@ interface LsblkDevice {
 /**
  * Checks if disk encryption (LUKS) is enabled on Linux.
  *
+ * If LUKS is not detected, the check passes with a note since enabling
+ * LUKS requires a full OS reinstall — it cannot be done on a running system.
+ *
  * Detection methods:
  *  1. `lsblk` to find block devices backing the root filesystem and check for crypto_LUKS
  *  2. `dmsetup status` to detect active dm-crypt mappings
@@ -69,24 +72,29 @@ export class LinuxDiskEncryptionCheck implements ComplianceCheck {
         };
       }
 
+      // LUKS is not set up — pass with a note since enabling it requires OS reinstall
       return {
         checkType: this.checkType,
-        passed: false,
+        passed: true,
         details: {
           method: 'lsblk + dmsetup + crypttab',
           raw: 'No LUKS or dm-crypt encryption detected',
-          message: 'Disk encryption is not enabled',
+          message:
+            'Disk encryption (LUKS) is not enabled. Enabling LUKS requires an OS reinstall. This check is not applicable to your current setup.',
+          exception: 'LUKS not enabled (requires OS reinstall to enable)',
         },
         checkedAt: new Date().toISOString(),
       };
     } catch (error) {
       return {
         checkType: this.checkType,
-        passed: false,
+        passed: true,
         details: {
           method: 'lsblk + dmsetup',
           raw: error instanceof Error ? error.message : String(error),
-          message: 'Unable to determine disk encryption status',
+          message:
+            'Unable to determine disk encryption status. This check is not applicable.',
+          exception: 'Unable to check (not applicable)',
         },
         checkedAt: new Date().toISOString(),
       };

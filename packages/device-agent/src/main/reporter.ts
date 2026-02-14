@@ -1,4 +1,4 @@
-import { API_ROUTES } from '../shared/constants';
+import { AGENT_VERSION, API_ROUTES } from '../shared/constants';
 import type { CheckInRequest, CheckInResponse, CheckResult } from '../shared/types';
 import { log } from './logger';
 import { getAuth, getPortalUrl } from './store';
@@ -33,6 +33,7 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
     const payload: CheckInRequest = {
       deviceId: org.deviceId,
       checks,
+      agentVersion: AGENT_VERSION,
     };
 
     try {

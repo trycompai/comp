@@ -21,42 +21,46 @@ export class WindowsDiskEncryptionRemediation implements ComplianceRemediation {
       requiresAdmin: false,
       description,
       instructions: steps,
-      settingsDeepLink: 'ms-settings:about',
+      settingsDeepLink: 'ms-settings:deviceencryption',
     };
   }
 
   async remediate(): Promise<RemediationResult> {
-    try {
-      // Try to open the BitLocker control panel directly
-      try {
-        execSync('control /name Microsoft.BitLockerDriveEncryption', {
-          encoding: 'utf-8',
-          timeout: 10000,
-        });
-      } catch {
-        // Fallback to Settings > Device encryption
-        execSync(
-          'powershell.exe -NoProfile -NonInteractive -Command "Start-Process ms-settings:about"',
-          {
-            encoding: 'utf-8',
-            timeout: 10000,
-          },
-        );
-      }
+    // Try multiple paths since availability depends on Windows edition and hardware
+    const attempts = [
+      {
+        cmd: 'powershell.exe -NoProfile -NonInteractive -Command "Start-Process ms-settings:deviceencryption"',
+        msg: 'Opened Device encryption settings. Turn on "Device encryption" if available.',
+      },
+      {
+        cmd: 'control /name Microsoft.BitLockerDriveEncryption',
+        msg: 'Opened BitLocker Drive Encryption. Click "Turn on BitLocker" for the C: drive.',
+      },
+      {
+        cmd: 'powershell.exe -NoProfile -NonInteractive -Command "Start-Process ms-settings:about"',
+        msg: 'Opened System About page. Check your Windows edition — Windows 11 Pro is required for BitLocker, or your hardware must support Device encryption (TPM 2.0 + Secure Boot).',
+      },
+    ];
 
-      return {
-        checkType: this.checkType,
-        success: true,
-        openedSettings: true,
-        message:
-          'Opened BitLocker settings. Follow the on-screen instructions to enable disk encryption.',
-      };
-    } catch (error) {
-      return {
-        checkType: this.checkType,
-        success: false,
-        message: `Failed to open BitLocker settings: ${error instanceof Error ? error.message : String(error)}`,
-      };
+    for (const attempt of attempts) {
+      try {
+        execSync(attempt.cmd, { encoding: 'utf-8', timeout: 10000 });
+        return {
+          checkType: this.checkType,
+          success: true,
+          openedSettings: true,
+          message: attempt.msg,
+        };
+      } catch {
+        continue;
+      }
     }
+
+    return {
+      checkType: this.checkType,
+      success: false,
+      message:
+        'Could not open encryption settings. Search for "Device encryption" or "Manage BitLocker" in the Start menu.',
+    };
   }
 }

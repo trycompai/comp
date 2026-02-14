@@ -7,49 +7,31 @@ model Device {
   serialNumber  String?
   hardwareModel String?
 
-  userId         String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId       String
+  member         Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  isCompliant  Boolean   @default(false)
+  isCompliant           Boolean  @default(false)
+  diskEncryptionEnabled Boolean  @default(false)
+  antivirusEnabled      Boolean  @default(false)
+  passwordPolicySet     Boolean  @default(false)
+  screenLockEnabled     Boolean  @default(false)
+  checkDetails          Json?
+
   lastCheckIn  DateTime?
   agentVersion String?
-  installedAt  DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  checks DeviceCheck[]
+  installedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@unique([serialNumber, organizationId])
-  @@index([userId])
+  @@index([memberId])
   @@index([organizationId])
   @@index([isCompliant])
-}
-
-model DeviceCheck {
-  id       String @id @default(dbgenerated("generate_prefixed_cuid('dck'::text)"))
-  deviceId String
-  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-
-  checkType DeviceCheckType
-  passed    Boolean
-  details   Json?
-
-  checkedAt DateTime @default(now())
-
-  @@index([deviceId])
-  @@index([checkType])
 }
 
 enum DevicePlatform {
   macos
   windows
   linux
-}
-
-enum DeviceCheckType {
-  disk_encryption
-  antivirus
-  password_policy
-  screen_lock
 }

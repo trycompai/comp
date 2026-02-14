@@ -9,6 +9,7 @@ export interface CheckResult {
     method: string;
     raw: string;
     message: string;
+    exception?: string;
   };
   checkedAt: string;
 }
@@ -40,6 +41,7 @@ export interface RegisterDeviceResponse {
 export interface CheckInRequest {
   deviceId: string;
   checks: CheckResult[];
+  agentVersion?: string;
 }
 
 export interface CheckInResponse {
@@ -123,4 +125,5 @@ export const IPC_CHANNELS = {
   GET_DEVICE_INFO: 'device:get-info',
   REMEDIATE_CHECK: 'remediation:remediate-check',
   GET_REMEDIATION_INFO: 'remediation:get-info',
+  GET_APP_VERSION: 'app:get-version',
 } as const;

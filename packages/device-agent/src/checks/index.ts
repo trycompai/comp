@@ -1,3 +1,4 @@
+import { log } from '../main/logger';
 import type { CheckResult } from '../shared/types';
 import type { ComplianceCheck } from './types';
 
@@ -52,7 +53,7 @@ function getChecksForPlatform(): ComplianceCheck[] {
     ];
   }
 
-  console.warn(`Unsupported platform: ${platform}`);
+  log(`Unsupported platform: ${platform}`, 'WARN');
   return [];
 }
 
@@ -66,14 +67,14 @@ export async function runAllChecks(): Promise<CheckResult[]> {
 
   for (const check of checks) {
     try {
-      console.log(`Running check: ${check.displayName}`);
+      log(`Running check: ${check.displayName}`);
       const result = await check.run();
       results.push(result);
-      console.log(
+      log(
         `  ${check.displayName}: ${result.passed ? 'PASS' : 'FAIL'} - ${result.details.message}`,
       );
     } catch (error) {
-      console.error(`Check failed: ${check.displayName}`, error);
+      log(`Check failed: ${check.displayName} - ${error}`, 'ERROR');
       results.push({
         checkType: check.checkType,
         passed: false,

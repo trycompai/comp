@@ -57,42 +57,61 @@ export async function POST(req: NextRequest) {
     let device;
 
     if (serialNumber) {
-      // Serial number present — upsert on the unique (serialNumber, organizationId) key
-      device = await db.device.upsert({
+      // Check if a device with this serial number already exists in the org
+      const existing = await db.device.findUnique({
         where: {
           serialNumber_organizationId: {
             serialNumber,
             organizationId,
           },
         },
-        update: {
-          name,
-          hostname,
-          platform,
-          osVersion,
-          hardwareModel,
-          agentVersion,
-          userId: session.user.id,
-        },
-        create: {
-          name,
-          hostname,
-          platform,
-          osVersion,
-          serialNumber,
-          hardwareModel,
-          agentVersion,
-          userId: session.user.id,
-          organizationId,
-        },
+        select: { id: true, memberId: true },
       });
+
+      if (existing && existing.memberId !== member.id) {
+        // Device belongs to a different member — prevent hijacking
+        return NextResponse.json(
+          { error: 'Device is already registered to another user in this organization' },
+          { status: 409 },
+        );
+      }
+
+      if (existing) {
+        // Same member re-registering their own device — update it
+        device = await db.device.update({
+          where: { id: existing.id },
+          data: {
+            name,
+            hostname,
+            platform,
+            osVersion,
+            hardwareModel,
+            agentVersion,
+          },
+        });
+      } else {
+        // New device — create it
+        device = await db.device.create({
+          data: {
+            name,
+            hostname,
+            platform,
+            osVersion,
+            serialNumber,
+            hardwareModel,
+            agentVersion,
+            memberId: member.id,
+            organizationId,
+          },
+        });
+      }
     } else {
-      // No serial number — find by hostname + userId + org (same user re-registering
+      // No serial number — find by hostname + member + org (same user re-registering
       // the same machine), or create a new record with serialNumber = null.
       const existing = await db.device.findFirst({
         where: {
           hostname,
-          userId: session.user.id,
+          memberId: member.id,
           organizationId,
           serialNumber: null,
         },
@@ -119,7 +138,7 @@ export async function POST(req: NextRequest) {
             serialNumber: null,
             hardwareModel,
             agentVersion,
-            userId: session.user.id,
+            memberId: member.id,
             organizationId,
           },
         });

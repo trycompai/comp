@@ -91,7 +91,7 @@ export class DevicesService {
     // Fetch from both sources in parallel
     const [fleetDevices, agentDevices] = await Promise.all([
       this.getFleetDevicesForMember(member.fleetDmLabelId, memberId),
-      this.getAgentDevicesForUser(member.userId, organizationId),
+      this.getAgentDevicesForMember(member.id, organizationId),
     ]);
 
     return mergeDeviceLists(agentDevices, fleetDevices, {
@@ -214,16 +214,22 @@ export class DevicesService {
       const devices = await db.device.findMany({
         where: { organizationId },
         include: {
-          checks: {
-            orderBy: { checkedAt: 'desc' },
-          },
-          user: {
-            select: { name: true, email: true },
+          member: {
+            include: {
+              user: {
+                select: { name: true, email: true },
+              },
+            },
           },
         },
       });
 
-      return devices.map((device) => this.mapAgentDeviceToDto(device));
+      return devices.map((device) =>
+        this.mapAgentDeviceToDto({
+          ...device,
+          user: device.member.user,
+        }),
+      );
     } catch (error) {
       this.logger.warn(
         `Failed to fetch agent devices for org ${organizationId}: ${error instanceof Error ? error.message : error}`,
@@ -232,27 +238,33 @@ export class DevicesService {
     }
   }
 
-  private async getAgentDevicesForUser(
-    userId: string,
+  private async getAgentDevicesForMember(
+    memberId: string,
     organizationId: string,
   ): Promise<DeviceResponseDto[]> {
     try {
       const devices = await db.device.findMany({
-        where: { userId, organizationId },
+        where: { memberId, organizationId },
         include: {
-          checks: {
-            orderBy: { checkedAt: 'desc' },
-          },
-          user: {
-            select: { name: true, email: true },
+          member: {
+            include: {
+              user: {
+                select: { name: true, email: true },
+              },
+            },
           },
         },
       });
 
-      return devices.map((device) => this.mapAgentDeviceToDto(device));
+      return devices.map((device) =>
+        this.mapAgentDeviceToDto({
+          ...device,
+          user: device.member.user,
+        }),
+      );
     } catch (error) {
       this.logger.warn(
-        `Failed to fetch agent devices for user ${userId}: ${error instanceof Error ? error.message : error}`,
+        `Failed to fetch agent devices for member ${memberId}: ${error instanceof Error ? error.message : error}`,
       );
       return [];
     }
@@ -267,20 +279,12 @@ export class DevicesService {
     serialNumber: string | null;
     hardwareModel: string | null;
     isCompliant: boolean;
+    diskEncryptionEnabled: boolean;
     lastCheckIn: Date | null;
     agentVersion: string | null;
     installedAt: Date;
     user: { name: string; email: string };
-    checks: Array<{
-      id: string;
-      checkType: string;
-      passed: boolean;
-      details: unknown;
-      checkedAt: Date;
-    }>;
   }): DeviceResponseDto {
-    // Construct a partial DTO with device-agent fields; consumers should handle
-    // missing FleetDM-specific fields gracefully via the `source` field.
     const dto = new DeviceResponseDto();
     dto.id = device.id;
     dto.computer_name = device.name;
@@ -295,11 +299,7 @@ export class DevicesService {
     dto.display_name = device.name;
     dto.display_text = device.name;
     dto.status = device.isCompliant ? 'compliant' : 'non-compliant';
-    // Use only the latest check per type (checks are ordered by checkedAt desc)
-    const latestDiskEncryptionCheck = device.checks.find(
-      (c) => c.checkType === 'disk_encryption',
-    );
-    dto.disk_encryption_enabled = latestDiskEncryptionCheck?.passed ?? false;
+    dto.disk_encryption_enabled = device.diskEncryptionEnabled;
     dto.source = 'device_agent';
     // Default empty values for FleetDM-specific fields
     dto.software = [];

@@ -10,7 +10,7 @@ import { db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import type { DeviceWithChecks } from '../devices/types';
+import type { CheckDetails, DeviceWithChecks } from '../devices/types';
 import { Employee } from './components/Employee';
 
 const MDM_POLICY_ID = -9999;
@@ -59,7 +59,7 @@ export default async function EmployeeDetailsPage({
   }
 
   const { fleetPolicies, device } = await getFleetPolicies(employee);
-  const memberDevice = await getMemberDevice(employee.userId, orgId);
+  const memberDevice = await getMemberDevice(employee.id, orgId);
 
   return (
     <Employee
@@ -255,17 +255,18 @@ const getFleetPolicies = async (member: Member & { user: User }) => {
 };
 
 const getMemberDevice = async (
-  userId: string,
+  memberId: string,
   organizationId: string,
 ): Promise<DeviceWithChecks | null> => {
   const device = await db.device.findFirst({
-    where: { userId, organizationId },
+    where: { memberId, organizationId },
     include: {
-      checks: {
-        orderBy: { checkedAt: 'desc' },
-      },
-      user: {
-        select: { name: true, email: true },
+      member: {
+        include: {
+          user: {
+            select: { name: true, email: true },
+          },
+        },
       },
     },
     orderBy: { installedAt: 'desc' },
@@ -273,14 +274,6 @@ const getMemberDevice = async (
 
   if (!device) {
     return null;
-  }
-
-  // Keep only the latest check per type
-  const latestChecks = new Map<string, (typeof device.checks)[0]>();
-  for (const check of device.checks) {
-    if (!latestChecks.has(check.checkType)) {
-      latestChecks.set(check.checkType, check);
-    }
   }
 
   return {
@@ -292,24 +285,18 @@ const getMemberDevice = async (
     serialNumber: device.serialNumber,
     hardwareModel: device.hardwareModel,
     isCompliant: device.isCompliant,
+    diskEncryptionEnabled: device.diskEncryptionEnabled,
+    antivirusEnabled: device.antivirusEnabled,
+    passwordPolicySet: device.passwordPolicySet,
+    screenLockEnabled: device.screenLockEnabled,
+    checkDetails: (device.checkDetails as CheckDetails) ?? null,
     lastCheckIn: device.lastCheckIn?.toISOString() ?? null,
     agentVersion: device.agentVersion,
     installedAt: device.installedAt.toISOString(),
     user: {
-      name: device.user.name,
-      email: device.user.email,
+      name: device.member.user.name,
+      email: device.member.user.email,
     },
-    checks: Array.from(latestChecks.values()).map((check) => ({
-      id: check.id,
-      checkType: check.checkType as
-        | 'disk_encryption'
-        | 'antivirus'
-        | 'password_policy'
-        | 'screen_lock',
-      passed: check.passed,
-      details: check.details as Record<string, unknown> | null,
-      checkedAt: check.checkedAt.toISOString(),
-    })),
     source: 'device_agent' as const,
   };
 };

@@ -14,20 +14,17 @@ export async function GET(req: NextRequest) {
     }
 
     const deviceId = req.nextUrl.searchParams.get('deviceId');
-
     const organizationId = req.nextUrl.searchParams.get('organizationId');
 
     if (!deviceId) {
       // Return all devices for this user, optionally filtered by org
       const devices = await db.device.findMany({
         where: {
-          userId: session.user.id,
-          ...(organizationId ? { organizationId } : {}),
-        },
-        include: {
-          checks: {
-            orderBy: { checkedAt: 'desc' },
+          member: {
+            userId: session.user.id,
+            deactivated: false,
           },
+          ...(organizationId ? { organizationId } : {}),
         },
         orderBy: { installedAt: 'desc' },
       });
@@ -39,11 +36,9 @@ export async function GET(req: NextRequest) {
     const device = await db.device.findFirst({
       where: {
         id: deviceId,
-        userId: session.user.id,
-      },
-      include: {
-        checks: {
-          orderBy: { checkedAt: 'desc' },
+        member: {
+          userId: session.user.id,
+          deactivated: false,
         },
       },
     });

@@ -31,6 +31,7 @@ export class MacOSDiskEncryptionCheck implements ComplianceCheck {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const isPermission = /permission|not authorized|operation not permitted/i.test(errorMessage);
 
       return {
         checkType: this.checkType,
@@ -38,7 +39,9 @@ export class MacOSDiskEncryptionCheck implements ComplianceCheck {
         details: {
           method: 'fdesetup status',
           raw: errorMessage,
-          message: 'Unable to determine FileVault status',
+          message: isPermission
+            ? 'Unable to determine FileVault status due to insufficient permissions. If your device is managed by an MDM, try granting Full Disk Access to the Comp AI Device Agent in System Settings > Privacy & Security.'
+            : 'Unable to determine FileVault status',
         },
         checkedAt: new Date().toISOString(),
       };

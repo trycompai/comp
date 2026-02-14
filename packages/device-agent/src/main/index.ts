@@ -14,9 +14,15 @@ import {
   destroyTray,
   getStatusWindow,
   openStatusWindow,
+  setAutoUpdateStatus,
   type TrayStatus,
   updateTrayMenu,
 } from './tray';
+
+// --- Linux Wayland/Ozone support ---
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('ozone-platform-auto');
+}
 
 // --- Top-level crash logging ---
 process.on('uncaughtException', (error) => {
@@ -117,7 +123,7 @@ function handleCheckComplete(results: CheckResult[], isCompliant: boolean) {
 
 function notifyRenderer(channel: string, data: unknown) {
   const statusWindow = getStatusWindow();
-  if (statusWindow) {
+  if (statusWindow && !statusWindow.isDestroyed()) {
     statusWindow.webContents.send(channel, data);
   }
 }
@@ -161,6 +167,10 @@ ipcMain.handle(IPC_CHANNELS.GET_DEVICE_INFO, () => {
   return getDeviceInfo();
 });
 
+ipcMain.handle(IPC_CHANNELS.GET_APP_VERSION, () => {
+  return app.getVersion();
+});
+
 ipcMain.handle(IPC_CHANNELS.GET_REMEDIATION_INFO, () => {
   return getAllRemediationInfo();
 });
@@ -180,6 +190,62 @@ ipcMain.handle(IPC_CHANNELS.REMEDIATE_CHECK, async (_event, checkType: DeviceChe
 
   return result;
 });
+
+// --- Auto-Updater ---
+
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+function initAutoUpdater(): void {
+  if (!app.isPackaged) {
+    log('Skipping auto-updater in dev mode');
+    return;
+  }
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.autoRunAppAfterInstall = true;
+
+  autoUpdater.on('checking-for-update', () => {
+    log('Checking for update...');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    log(`Update available: v${info.version}`);
+    setAutoUpdateStatus('downloading');
+    updateTrayMenu(currentStatus, currentResults, trayCallbacks);
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    log('No update available');
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    log(`Download progress: ${Math.round(progress.percent)}%`);
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    log(`Update downloaded: v${info.version} — will install on next restart`);
+    setAutoUpdateStatus('ready');
+    updateTrayMenu(currentStatus, currentResults, trayCallbacks);
+  });
+
+  autoUpdater.on('error', (err) => {
+    log(`Auto-update error: ${err.message}`, 'WARN');
+    setAutoUpdateStatus(null);
+  });
+
+  // Check on launch
+  autoUpdater.checkForUpdates().catch((err) => {
+    log(`Auto-update check failed: ${err}`, 'WARN');
+  });
+
+  // Check periodically
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch((err) => {
+      log(`Auto-update check failed: ${err}`, 'WARN');
+    });
+  }, UPDATE_CHECK_INTERVAL_MS);
+}
 
 // --- App Lifecycle ---
 
@@ -210,12 +276,8 @@ app.whenReady().then(() => {
     triggerSignIn();
   }
 
-  // Check for updates (silently)
-  if (app.isPackaged) {
-    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-      log(`Auto-update check failed: ${err}`, 'WARN');
-    });
-  }
+  // Silent auto-updates via electron-updater
+  initAutoUpdater();
 });
 
 app.on('window-all-closed', () => {

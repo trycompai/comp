@@ -319,23 +319,23 @@ export class PeopleService {
         }
       }
 
-      // Also delete device-agent Device records for this member's user + organization
+      // Also delete device-agent Device records for this member
       try {
         const deleteResult = await db.device.deleteMany({
           where: {
-            userId: existingMember.user.id,
+            memberId,
             organizationId,
           },
         });
         if (deleteResult.count > 0) {
           this.logger.log(
-            `Deleted ${deleteResult.count} device-agent device(s) for user ${existingMember.user.id} in org ${organizationId}`,
+            `Deleted ${deleteResult.count} device-agent device(s) for member ${memberId} in org ${organizationId}`,
           );
         }
       } catch (deviceError) {
         // Log but don't fail the operation
         this.logger.error(
-          `Failed to delete device-agent devices for user ${existingMember.user.id}:`,
+          `Failed to delete device-agent devices for member ${memberId}:`,
           deviceError,
         );
       }

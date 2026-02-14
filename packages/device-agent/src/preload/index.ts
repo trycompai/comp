@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('compAgent', {
   getAuthStatus: () => ipcRenderer.invoke(IPC_CHANNELS.GET_AUTH_STATUS),
   login: () => ipcRenderer.invoke(IPC_CHANNELS.LOGIN),
   logout: () => ipcRenderer.invoke(IPC_CHANNELS.LOGOUT),
+  getAppVersion: () => ipcRenderer.invoke(IPC_CHANNELS.GET_APP_VERSION),
   getCheckResults: () => ipcRenderer.invoke(IPC_CHANNELS.GET_CHECK_RESULTS),
   runChecksNow: () => ipcRenderer.invoke(IPC_CHANNELS.RUN_CHECKS_NOW),
   getDeviceInfo: () => ipcRenderer.invoke(IPC_CHANNELS.GET_DEVICE_INFO),

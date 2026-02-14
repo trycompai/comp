@@ -1,10 +1,13 @@
-export interface DeviceCheckResult {
-  id: string;
-  checkType: 'disk_encryption' | 'antivirus' | 'password_policy' | 'screen_lock';
-  passed: boolean;
-  details: Record<string, unknown> | null;
-  checkedAt: string;
-}
+export type CheckDetailEntry = {
+  method?: string;
+  raw?: string;
+  message?: string;
+  exception?: string;
+  passed?: boolean;
+  checkedAt?: string;
+};
+
+export type CheckDetails = Record<string, CheckDetailEntry>;
 
 export interface DeviceWithChecks {
   id: string;
@@ -15,6 +18,11 @@ export interface DeviceWithChecks {
   serialNumber: string | null;
   hardwareModel: string | null;
   isCompliant: boolean;
+  diskEncryptionEnabled: boolean;
+  antivirusEnabled: boolean;
+  passwordPolicySet: boolean;
+  screenLockEnabled: boolean;
+  checkDetails: CheckDetails | null;
   lastCheckIn: string | null;
   agentVersion: string | null;
   installedAt: string;
@@ -22,12 +30,11 @@ export interface DeviceWithChecks {
     name: string;
     email: string;
   };
-  checks: DeviceCheckResult[];
   /** Indicates which system reported this device */
   source: 'device_agent' | 'fleet';
 }
 
-/** @deprecated - use DeviceCheckResult instead. Kept for backward compatibility during migration. */
+/** @deprecated - FleetDM legacy type. Kept for backward compatibility during migration. */
 export interface FleetPolicy {
   id: number;
   name: string;

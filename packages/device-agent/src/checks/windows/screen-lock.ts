@@ -61,13 +61,18 @@ export class WindowsScreenLockCheck implements ComplianceCheck {
         checkedAt: new Date().toISOString(),
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isPermission = /access.denied|not recognized|unauthorized/i.test(errorMessage);
+
       return {
         checkType: this.checkType,
         passed: false,
         details: {
           method: 'registry',
-          raw: error instanceof Error ? error.message : String(error),
-          message: 'Unable to determine screen lock settings',
+          raw: errorMessage,
+          message: isPermission
+            ? 'Unable to determine screen lock settings due to insufficient permissions. If your device is managed by an MDM (e.g. Intune), screen lock may be enforced via Group Policy.'
+            : 'Unable to determine screen lock settings',
         },
         checkedAt: new Date().toISOString(),
       };

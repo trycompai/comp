@@ -5,11 +5,10 @@ import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { mergeDeviceLists } from '@trycompai/utils/devices';
-import type { DeviceWithChecks } from '../types';
+import type { CheckDetails, DeviceWithChecks } from '../types';
 
 /**
- * Fetches all devices and their latest compliance checks for the current organization.
- * Uses the new Device/DeviceCheck models (replacing FleetDM).
+ * Fetches all devices for the current organization.
  */
 export const getEmployeeDevicesFromDB: () => Promise<DeviceWithChecks[]> = async () => {
   const session = await auth.api.getSession({
@@ -25,55 +24,40 @@ export const getEmployeeDevicesFromDB: () => Promise<DeviceWithChecks[]> = async
   const devices = await db.device.findMany({
     where: { organizationId },
     include: {
-      checks: {
-        orderBy: { checkedAt: 'desc' },
-      },
-      user: {
-        select: { name: true, email: true },
+      member: {
+        include: {
+          user: {
+            select: { name: true, email: true },
+          },
+        },
       },
     },
     orderBy: { installedAt: 'desc' },
   });
 
-  // For each device, keep only the latest check per type
-  return devices.map((device) => {
-    const latestChecks = new Map<string, (typeof device.checks)[0]>();
-    for (const check of device.checks) {
-      if (!latestChecks.has(check.checkType)) {
-        latestChecks.set(check.checkType, check);
-      }
-    }
-
-    return {
-      id: device.id,
-      name: device.name,
-      hostname: device.hostname,
-      platform: device.platform as 'macos' | 'windows' | 'linux',
-      osVersion: device.osVersion,
-      serialNumber: device.serialNumber,
-      hardwareModel: device.hardwareModel,
-      isCompliant: device.isCompliant,
-      lastCheckIn: device.lastCheckIn?.toISOString() ?? null,
-      agentVersion: device.agentVersion,
-      installedAt: device.installedAt.toISOString(),
-      user: {
-        name: device.user.name,
-        email: device.user.email,
-      },
-      checks: Array.from(latestChecks.values()).map((check) => ({
-        id: check.id,
-        checkType: check.checkType as
-          | 'disk_encryption'
-          | 'antivirus'
-          | 'password_policy'
-          | 'screen_lock',
-        passed: check.passed,
-        details: check.details as Record<string, unknown> | null,
-        checkedAt: check.checkedAt.toISOString(),
-      })),
-      source: 'device_agent' as const,
-    };
-  });
+  return devices.map((device) => ({
+    id: device.id,
+    name: device.name,
+    hostname: device.hostname,
+    platform: device.platform as 'macos' | 'windows' | 'linux',
+    osVersion: device.osVersion,
+    serialNumber: device.serialNumber,
+    hardwareModel: device.hardwareModel,
+    isCompliant: device.isCompliant,
+    diskEncryptionEnabled: device.diskEncryptionEnabled,
+    antivirusEnabled: device.antivirusEnabled,
+    passwordPolicySet: device.passwordPolicySet,
+    screenLockEnabled: device.screenLockEnabled,
+    checkDetails: (device.checkDetails as CheckDetails) ?? null,
+    lastCheckIn: device.lastCheckIn?.toISOString() ?? null,
+    agentVersion: device.agentVersion,
+    installedAt: device.installedAt.toISOString(),
+    user: {
+      name: device.member.user.name,
+      email: device.member.user.email,
+    },
+    source: 'device_agent' as const,
+  }));
 };
 
 /**
@@ -129,7 +113,6 @@ export const getFleetDevices: () => Promise<DeviceWithChecks[]> = async () => {
         created_at: string;
       }) => {
         // Look up which member this host belongs to by checking fleetDmLabelId
-        // We need to find the user info for this host
         const members = await db.member.findMany({
           where: {
             organizationId,
@@ -170,8 +153,7 @@ export const getFleetDevices: () => Promise<DeviceWithChecks[]> = async () => {
               ? 'linux'
               : 'windows';
 
-        // Use disk_encryption_enabled as a basic compliance check
-        const isCompliant = host.disk_encryption_enabled === true;
+        const diskEncryptionEnabled = host.disk_encryption_enabled === true;
 
         const device: DeviceWithChecks = {
           id: `fleet-${host.id}`,
@@ -181,20 +163,16 @@ export const getFleetDevices: () => Promise<DeviceWithChecks[]> = async () => {
           osVersion: host.os_version || 'Unknown',
           serialNumber: host.hardware_serial || null,
           hardwareModel: host.hardware_model || null,
-          isCompliant,
+          isCompliant: diskEncryptionEnabled,
+          diskEncryptionEnabled,
+          antivirusEnabled: false,
+          passwordPolicySet: false,
+          screenLockEnabled: false,
+          checkDetails: null,
           lastCheckIn: host.seen_time || null,
           agentVersion: null,
           installedAt: host.created_at || new Date().toISOString(),
           user: matchedUser,
-          checks: [
-            {
-              id: `fleet-${host.id}-disk`,
-              checkType: 'disk_encryption',
-              passed: host.disk_encryption_enabled === true,
-              details: { message: host.disk_encryption_enabled ? 'Enabled' : 'Not enabled' },
-              checkedAt: host.seen_time || new Date().toISOString(),
-            },
-          ],
           source: 'fleet' as const,
         };
 

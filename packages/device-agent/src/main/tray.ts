@@ -1,11 +1,15 @@
 import { app, BrowserWindow, Menu, nativeImage, Tray } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import path from 'node:path';
 import type { CheckResult } from '../shared/types';
 import { isAutoLaunchEnabled, setAutoLaunch } from './auto-launch';
 import { log } from './logger';
 
+export type AutoUpdateStatus = 'downloading' | 'ready' | null;
+
 let tray: Tray | null = null;
 let statusWindow: BrowserWindow | null = null;
+let currentAutoUpdateStatus: AutoUpdateStatus = null;
 
 export type TrayStatus = 'compliant' | 'non-compliant' | 'checking' | 'unauthenticated';
 
@@ -104,6 +108,13 @@ export function createTray(callbacks: {
 }
 
 /**
+ * Updates the auto-update status and refreshes the tray menu.
+ */
+export function setAutoUpdateStatus(status: AutoUpdateStatus): void {
+  currentAutoUpdateStatus = status;
+}
+
+/**
  * Updates the tray icon and menu based on the current status.
  */
 export function updateTrayMenu(
@@ -177,6 +188,27 @@ export function updateTrayMenu(
       {
         label: 'Sign Out',
         click: callbacks.onSignOut,
+      },
+    );
+  }
+
+  // Show auto-update status
+  if (currentAutoUpdateStatus === 'downloading') {
+    menuItems.push(
+      { type: 'separator' },
+      {
+        label: 'Downloading update...',
+        enabled: false,
+      },
+    );
+  } else if (currentAutoUpdateStatus === 'ready') {
+    menuItems.push(
+      { type: 'separator' },
+      {
+        label: 'Update ready — restart to install',
+        click: () => {
+          autoUpdater.quitAndInstall();
+        },
       },
     );
   }

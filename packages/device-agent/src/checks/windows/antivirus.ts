@@ -81,13 +81,18 @@ export class WindowsAntivirusCheck implements ComplianceCheck {
         checkedAt: new Date().toISOString(),
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isPermission = /access.denied|not recognized|unauthorized/i.test(errorMessage);
+
       return {
         checkType: this.checkType,
         passed: false,
         details: {
           method: 'Get-CimInstance + Get-MpComputerStatus',
-          raw: error instanceof Error ? error.message : String(error),
-          message: 'Unable to determine antivirus status',
+          raw: errorMessage,
+          message: isPermission
+            ? 'Unable to determine antivirus status due to insufficient permissions. On Windows Server or MDM-managed devices, try running the agent as Administrator.'
+            : 'Unable to determine antivirus status',
         },
         checkedAt: new Date().toISOString(),
       };

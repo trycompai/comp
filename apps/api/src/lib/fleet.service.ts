@@ -4,7 +4,7 @@ import axios, { AxiosInstance } from 'axios';
 /**
  * @deprecated FleetDM integration is being replaced by the custom Comp AI Device Agent.
  * See packages/device-agent for the new implementation.
- * Device data is now stored in the Device and DeviceCheck database models.
+ * Device data is now stored in the Device database model.
  * This service will be removed in a future release.
  */
 @Injectable()

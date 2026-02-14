@@ -1,6 +1,7 @@
 import { auth } from '@/app/lib/auth';
 import { db } from '@db';
 import { type NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@db';
 import { z } from 'zod';
 
 export const runtime = 'nodejs';
@@ -11,9 +12,10 @@ const checkResultSchema = z.object({
   passed: z.boolean(),
   details: z
     .object({
-      method: z.string(),
-      raw: z.string(),
-      message: z.string(),
+      method: z.string().max(100),
+      raw: z.string().max(2000),
+      message: z.string().max(1000),
+      exception: z.string().max(500).optional(),
     })
     .optional(),
   checkedAt: z.string().datetime(),
@@ -22,6 +24,7 @@ const checkResultSchema = z.object({
 const checkInSchema = z.object({
   deviceId: z.string().min(1),
   checks: z.array(checkResultSchema).min(1),
+  agentVersion: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -42,13 +45,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { deviceId, checks } = parsed.data;
+    const { deviceId, checks, agentVersion } = parsed.data;
 
-    // Verify the device belongs to the authenticated user
+    // Verify the device belongs to an active member of the authenticated user
     const device = await db.device.findFirst({
       where: {
         id: deviceId,
-        userId: session.user.id,
+        member: {
+          userId: session.user.id,
+          deactivated: false,
+        },
       },
     });
 
@@ -56,67 +62,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Device not found' }, { status: 404 });
     }
 
-    // Verify the user is still an active member of the device's organization
-    const member = await db.member.findFirst({
-      where: {
-        userId: session.user.id,
-        organizationId: device.organizationId,
-        deactivated: false,
-      },
-    });
+    // Build check fields from results
+    const checkFields: Record<string, boolean> = {
+      diskEncryptionEnabled: device.diskEncryptionEnabled,
+      antivirusEnabled: device.antivirusEnabled,
+      passwordPolicySet: device.passwordPolicySet,
+      screenLockEnabled: device.screenLockEnabled,
+    };
 
-    if (!member) {
-      return NextResponse.json({ error: 'Not an active member of this organization' }, { status: 403 });
+    const checkDetails: Record<string, unknown> = (device.checkDetails as Record<string, unknown>) ?? {};
+
+    const checkTypeToField: Record<string, string> = {
+      disk_encryption: 'diskEncryptionEnabled',
+      antivirus: 'antivirusEnabled',
+      password_policy: 'passwordPolicySet',
+      screen_lock: 'screenLockEnabled',
+    };
+
+    for (const check of checks) {
+      const field = checkTypeToField[check.checkType];
+      if (field) {
+        checkFields[field] = check.passed;
+      }
+      checkDetails[check.checkType] = {
+        ...check.details,
+        passed: check.passed,
+        checkedAt: check.checkedAt,
+      };
     }
 
-    // Delete old checks for the same types and create new ones
-    const checkTypes = checks.map((c) => c.checkType);
+    const isCompliant =
+      checkFields.diskEncryptionEnabled &&
+      checkFields.antivirusEnabled &&
+      checkFields.passwordPolicySet &&
+      checkFields.screenLockEnabled;
 
-    await db.$transaction(async (tx) => {
-      // Remove previous checks of the same types for this device
-      await tx.deviceCheck.deleteMany({
-        where: {
-          deviceId,
-          checkType: { in: checkTypes },
-        },
-      });
-
-      // Create new check results
-      await tx.deviceCheck.createMany({
-        data: checks.map((check) => ({
-          deviceId,
-          checkType: check.checkType,
-          passed: check.passed,
-          details: check.details ?? undefined,
-          checkedAt: new Date(check.checkedAt),
-        })),
-      });
-
-      // Compute overall compliance: all checks must pass
-      const allChecks = await tx.deviceCheck.findMany({
-        where: { deviceId },
-      });
-
-      const isCompliant = allChecks.length >= 4 && allChecks.every((c) => c.passed);
-
-      await tx.device.update({
-        where: { id: deviceId },
-        data: {
-          lastCheckIn: new Date(),
-          isCompliant,
-        },
-      });
-    });
-
-    // Fetch updated device state
-    const updatedDevice = await db.device.findUnique({
+    const updatedDevice = await db.device.update({
       where: { id: deviceId },
+      data: {
+        ...checkFields,
+        checkDetails: checkDetails as Prisma.InputJsonValue,
+        isCompliant,
+        lastCheckIn: new Date(),
+        ...(agentVersion ? { agentVersion } : {}),
+      },
       select: { isCompliant: true },
     });
 
     return NextResponse.json({
-      isCompliant: updatedDevice?.isCompliant ?? false,
-      nextCheckIn: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
+      isCompliant: updatedDevice.isCompliant,
+      nextCheckIn: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     });
   } catch (error) {
     console.error('Error processing device check-in:', error);

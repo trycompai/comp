@@ -5,17 +5,25 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@trycompai/design-system';
 import type { DeviceWithChecks } from '../types';
 
-const CHECK_NAMES: Record<string, string> = {
-  disk_encryption: 'Disk Encryption',
-  antivirus: 'Antivirus',
-  password_policy: 'Password Policy',
-  screen_lock: 'Screen Lock',
-};
+const CHECK_FIELDS = [
+  { key: 'diskEncryptionEnabled' as const, dbKey: 'disk_encryption', label: 'Disk Encryption' },
+  { key: 'antivirusEnabled' as const, dbKey: 'antivirus', label: 'Antivirus' },
+  { key: 'passwordPolicySet' as const, dbKey: 'password_policy', label: 'Password Policy' },
+  { key: 'screenLockEnabled' as const, dbKey: 'screen_lock', label: 'Screen Lock' },
+];
 
 const PLATFORM_LABELS: Record<string, string> = {
   macos: 'macOS',
   windows: 'Windows',
+  linux: 'Linux',
 };
+
+function getDeviceExceptions(device: DeviceWithChecks): string {
+  const exceptions = CHECK_FIELDS
+    .map(({ dbKey }) => device.checkDetails?.[dbKey]?.exception)
+    .filter(Boolean);
+  return exceptions.length > 0 ? exceptions.join(', ') : '—';
+}
 
 export function getDeviceColumns(): ColumnDef<DeviceWithChecks>[] {
   return [
@@ -86,14 +94,20 @@ export function getDeviceColumns(): ColumnDef<DeviceWithChecks>[] {
       enableColumnFilter: false,
       enableSorting: false,
       cell: ({ row }) => {
-        const checks = row.original.checks;
+        const device = row.original;
         return (
           <div className="flex flex-wrap gap-1">
-            {checks.map((check) => (
-              <Badge key={check.checkType} variant={check.passed ? 'default' : 'destructive'}>
-                {CHECK_NAMES[check.checkType] ?? check.checkType}
-              </Badge>
-            ))}
+            {CHECK_FIELDS.map(({ key, label }) => {
+              const isFleetUnsupported = device.source === 'fleet' && key !== 'diskEncryptionEnabled';
+              return (
+                <Badge
+                  key={key}
+                  variant={isFleetUnsupported ? 'outline' : device[key] ? 'default' : 'destructive'}
+                >
+                  {label}{isFleetUnsupported ? ' (N/A)' : ''}
+                </Badge>
+              );
+            })}
           </div>
         );
       },
@@ -112,6 +126,17 @@ export function getDeviceColumns(): ColumnDef<DeviceWithChecks>[] {
           </span>
         );
       },
+    },
+    {
+      id: 'exceptions',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Exceptions" />,
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: ({ row }) => (
+        <span className="text-muted-foreground text-xs">
+          {getDeviceExceptions(row.original)}
+        </span>
+      ),
     },
   ];
 }

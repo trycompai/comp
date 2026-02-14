@@ -18,7 +18,9 @@ export const auth = betterAuth({
       generateId: false,
     },
   },
-  trustedOrigins: ['http://localhost:3000', 'https://*.trycomp.ai'],
+  trustedOrigins: process.env.AUTH_TRUSTED_ORIGINS
+    ? process.env.AUTH_TRUSTED_ORIGINS.split(',').map((o) => o.trim())
+    : ['http://localhost:3000', 'https://*.trycomp.ai', 'http://localhost:3002'],
   secret: env.AUTH_SECRET!,
   plugins: [
     organization({

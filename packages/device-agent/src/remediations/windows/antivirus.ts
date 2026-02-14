@@ -20,31 +20,15 @@ export class WindowsAntivirusRemediation implements ComplianceRemediation {
       requiresAdmin: false,
       description,
       instructions: steps,
-      settingsDeepLink: 'windowsdefender:',
+      settingsDeepLink: 'windowsdefender://threat',
     };
   }
 
   async remediate(): Promise<RemediationResult> {
     try {
-      // First, try to enable Windows Defender real-time protection with admin elevation
-      try {
-        execSync(
-          `powershell.exe -NoProfile -NonInteractive -Command "Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -NonInteractive -Command Set-MpPreference -DisableRealtimeMonitoring \\$false' -Wait"`,
-          { encoding: 'utf-8', timeout: 60000 },
-        );
-
-        return {
-          checkType: this.checkType,
-          success: true,
-          message: 'Windows Defender real-time protection has been enabled',
-        };
-      } catch {
-        // If admin elevation failed or was cancelled, fall back to opening Windows Security
-      }
-
-      // Open Windows Security app
+      // Open Windows Security > Virus & threat protection directly
       execSync(
-        'powershell.exe -NoProfile -NonInteractive -Command "Start-Process windowsdefender:"',
+        'powershell.exe -NoProfile -NonInteractive -Command "Start-Process windowsdefender://threat"',
         { encoding: 'utf-8', timeout: 10000 },
       );
 
@@ -53,14 +37,30 @@ export class WindowsAntivirusRemediation implements ComplianceRemediation {
         success: true,
         openedSettings: true,
         message:
-          'Opened Windows Security. Ensure real-time protection is enabled under Virus & threat protection.',
+          'Opened Windows Security. Turn on "Real-time protection" under Virus & threat protection settings.',
       };
-    } catch (error) {
-      return {
-        checkType: this.checkType,
-        success: false,
-        message: `Failed to open Windows Security: ${error instanceof Error ? error.message : String(error)}`,
-      };
+    } catch {
+      // Fallback to Windows Security main page
+      try {
+        execSync(
+          'powershell.exe -NoProfile -NonInteractive -Command "Start-Process windowsdefender:"',
+          { encoding: 'utf-8', timeout: 10000 },
+        );
+
+        return {
+          checkType: this.checkType,
+          success: true,
+          openedSettings: true,
+          message:
+            'Opened Windows Security. Go to Virus & threat protection and ensure real-time protection is on.',
+        };
+      } catch (error) {
+        return {
+          checkType: this.checkType,
+          success: false,
+          message: `Failed to open Windows Security: ${error instanceof Error ? error.message : String(error)}`,
+        };
+      }
     }
   }
 }

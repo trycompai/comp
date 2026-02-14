@@ -21,6 +21,12 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
   const portalUrl = getPortalUrl();
   const portalOrigin = new URL(portalUrl).origin;
 
+  // Clear any stale session cookies so the auth page always shows fresh
+  await session.defaultSession.clearStorageData({
+    storages: ['cookies'],
+  });
+  log('Cleared session cookies before login');
+
   return new Promise((resolve) => {
     const authWindow = new BrowserWindow({
       width: 480,
@@ -35,6 +41,7 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
     });
 
     let isResolved = false;
+    let authPageLoaded = false;
 
     const finish = (result: StoredAuth | null) => {
       if (isResolved) return;
@@ -45,18 +52,54 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
       }
     };
 
-    // Handle OAuth popups (Google/Microsoft sign-in open new windows)
+    // Handle OAuth popups (Google/Microsoft/GitHub sign-in open new windows)
+    const ALLOWED_OAUTH_DOMAINS = [
+      'accounts.google.com',
+      'login.microsoftonline.com',
+      'login.live.com',
+      'github.com',
+      new URL(portalUrl).hostname,
+    ];
     authWindow.webContents.setWindowOpenHandler(({ url }) => {
+      try {
+        const { hostname } = new URL(url);
+        const isAllowed = ALLOWED_OAUTH_DOMAINS.some(
+          (domain) => hostname === domain || hostname.endsWith(`.${domain}`),
+        );
+        if (!isAllowed) {
+          log(`Blocked popup to non-whitelisted domain: ${hostname}`, 'WARN');
+          return { action: 'deny' };
+        }
+      } catch {
+        log(`Blocked popup with invalid URL: ${url}`, 'WARN');
+        return { action: 'deny' };
+      }
       log(`OAuth popup requested: ${url}`);
       return { action: 'allow' };
+    });
+
+    // Wait for the auth page to finish loading before watching for navigation
+    authWindow.webContents.on('did-finish-load', () => {
+      if (!authPageLoaded) {
+        authPageLoaded = true;
+        log('Auth page finished loading, now watching for post-login navigation');
+      }
     });
 
     // Navigate to the portal auth page
     log(`Loading auth page: ${portalUrl}/auth`);
     authWindow.loadURL(`${portalUrl}/auth`);
 
+    let isExtracting = false;
+
     const handleNavigation = async (url: string, source: string) => {
-      if (isResolved) return;
+      if (isResolved || isExtracting) return;
+
+      // Don't react to navigation until the auth page has loaded at least once
+      if (!authPageLoaded) {
+        log(`${source}: ${url} (ignored — auth page not yet loaded)`);
+        return;
+      }
 
       const parsed = new URL(url);
       log(`${source}: ${parsed.pathname}`);
@@ -69,22 +112,30 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
       if (parsed.pathname.startsWith('/api/')) return;
 
       // The user has navigated past the auth page — they're logged in.
-      // Could be / (org picker), /{orgId} (single org redirect), or /unauthorized
       log(`Post-login page detected: ${parsed.pathname}`);
+      isExtracting = true;
+
+      // Hide the window immediately so the user doesn't see the web app
+      if (!authWindow.isDestroyed()) {
+        authWindow.hide();
+      }
 
       // Wait for cookies to settle
       await new Promise((r) => setTimeout(r, 500));
 
       try {
-        const authData = await extractAuthAndRegisterAll(deviceInfo, authWindow);
+        const authData = await extractAuthAndRegisterAll(deviceInfo);
         if (authData) {
           setAuth(authData);
           log(`Auth complete: ${authData.organizations.length} org(s) registered`);
           finish(authData);
+        } else {
+          log('Auth extraction returned null, closing window');
+          finish(null);
         }
-        // If null, don't close — might be intermediate navigation
       } catch (error) {
         log(`Auth extraction failed: ${error}`, 'ERROR');
+        finish(null);
       }
     };
 
@@ -112,7 +163,6 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
  */
 async function extractAuthAndRegisterAll(
   deviceInfo: DeviceInfo,
-  authWindow: BrowserWindow,
 ): Promise<StoredAuth | null> {
   const portalUrl = getPortalUrl();
 
@@ -165,7 +215,7 @@ async function extractAuthAndRegisterAll(
 
   if (!orgsData.organizations || orgsData.organizations.length === 0) {
     log('User has no organizations', 'WARN');
-    dialog.showMessageBoxSync(authWindow, {
+    dialog.showMessageBoxSync({
       type: 'error',
       title: 'No Organization Found',
       message: "You're not part of any organization.",
@@ -221,7 +271,7 @@ async function extractAuthAndRegisterAll(
 
   if (registrations.length === 0) {
     log('Failed to register device for any organization', 'ERROR');
-    dialog.showMessageBoxSync(authWindow, {
+    dialog.showMessageBoxSync({
       type: 'error',
       title: 'Registration Failed',
       message: 'Failed to register your device.',

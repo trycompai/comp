@@ -123,19 +123,18 @@ export async function TeamMembers(props: TeamMembersProps) {
     }
   }
 
-  // Build a set of member IDs whose users have device-agent devices
-  const memberUserIds = members.map((m) => m.userId);
+  // Build a set of member IDs that have device-agent devices
+  const memberIds = members.map((m) => m.id);
   const devicesForMembers = await db.device.findMany({
     where: {
       organizationId,
-      userId: { in: memberUserIds },
+      memberId: { in: memberIds },
     },
-    select: { userId: true },
+    select: { memberId: true },
   });
-  const userIdsWithDevice = new Set(devicesForMembers.map((d) => d.userId));
-  const memberIdsWithDeviceAgent = members
-    .filter((m) => userIdsWithDevice.has(m.userId))
-    .map((m) => m.id);
+  const memberIdsWithDeviceAgent = [
+    ...new Set(devicesForMembers.map((d) => d.memberId)),
+  ];
 
   return (
     <TeamMembersClient

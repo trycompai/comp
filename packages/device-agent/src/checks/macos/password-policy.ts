@@ -44,13 +44,18 @@ export class MacOSPasswordPolicyCheck implements ComplianceCheck {
         checkedAt: new Date().toISOString(),
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isPermission = /permission|not authorized|operation not permitted/i.test(errorMessage);
+
       return {
         checkType: this.checkType,
         passed: false,
         details: {
           method: 'pwpolicy',
-          raw: error instanceof Error ? error.message : String(error),
-          message: 'Unable to determine password policy',
+          raw: errorMessage,
+          message: isPermission
+            ? 'Unable to determine password policy due to insufficient permissions. If your device is managed by an MDM, the policy may be enforced at the system level.'
+            : 'Unable to determine password policy',
         },
         checkedAt: new Date().toISOString(),
       };
