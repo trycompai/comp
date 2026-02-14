@@ -146,7 +146,7 @@ export const env = createEnv({
       }
 
       ctx.addIssue({
-        code: 'mail-config',
+        code: 'custom',
         message: 'Set RESEND_API_KEY or all RELAY_SMTP_* values.',
         path: ['RESEND_API_KEY', ...relayKeys],
       });
