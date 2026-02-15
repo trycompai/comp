@@ -87,11 +87,24 @@ export async function TeamMembers(props: TeamMembersProps) {
     return roles.includes('employee') || roles.includes('contractor');
   });
 
+  // Build a set of member IDs that have device-agent devices
+  const memberIds = members.map((m) => m.id);
+  const devicesForMembers = await db.device.findMany({
+    where: {
+      organizationId,
+      memberId: { in: memberIds },
+    },
+    select: { memberId: true },
+  });
+  const memberIdsWithDeviceAgent = [
+    ...new Set(devicesForMembers.map((d) => d.memberId)),
+  ];
+
   if (employeeMembers.length > 0) {
     // Fetch org settings to know which steps are enabled
     const org = await db.organization.findUnique({
       where: { id: organizationId },
-      select: { securityTrainingStepEnabled: true, deviceAgentStepEnabled: true },
+      select: { securityTrainingStepEnabled: true },
     });
 
     // Fetch required policies
@@ -116,8 +129,7 @@ export async function TeamMembers(props: TeamMembersProps) {
 
     const totalPolicies = policies.length;
     const totalTrainingVideos = org?.securityTrainingStepEnabled ? trainingVideosData.length : 0;
-    const totalDeviceAgent = org?.deviceAgentStepEnabled ? 1 : 0;
-    const totalTasks = totalPolicies + totalTrainingVideos + totalDeviceAgent;
+    const totalTasks = totalPolicies + totalTrainingVideos;
 
     for (const employee of employeeMembers) {
       const policiesCompleted = policies.filter((p) => p.signedBy.includes(employee.id)).length;
@@ -134,19 +146,6 @@ export async function TeamMembers(props: TeamMembersProps) {
       };
     }
   }
-
-  // Build a set of member IDs that have device-agent devices
-  const memberIds = members.map((m) => m.id);
-  const devicesForMembers = await db.device.findMany({
-    where: {
-      organizationId,
-      memberId: { in: memberIds },
-    },
-    select: { memberId: true },
-  });
-  const memberIdsWithDeviceAgent = [
-    ...new Set(devicesForMembers.map((d) => d.memberId)),
-  ];
 
   return (
     <TeamMembersClient
