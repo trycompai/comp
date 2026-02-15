@@ -7,7 +7,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
-const S3_PREFIX = 'device-agent/updates';
+/** Environment subfolder: 'staging' or 'production' (default) */
+const S3_ENV = process.env.DEVICE_AGENT_S3_ENV || 'production';
+const S3_PREFIX = `device-agent/${S3_ENV}/updates`;
 
 /** Allowed file extensions for auto-update files */
 const ALLOWED_EXTENSIONS = new Set([

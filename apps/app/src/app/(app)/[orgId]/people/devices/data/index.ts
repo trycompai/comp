@@ -4,11 +4,13 @@ import { getFleetInstance } from '@/lib/fleet';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
-import { mergeDeviceLists } from '@trycompai/utils/devices';
 import type { CheckDetails, DeviceWithChecks } from '../types';
+import type { Host } from '../types';
+
+const MDM_POLICY_ID = -9999;
 
 /**
- * Fetches all devices for the current organization.
+ * Fetches device-agent devices from the DB for the current organization.
  */
 export const getEmployeeDevicesFromDB: () => Promise<DeviceWithChecks[]> = async () => {
   const session = await auth.api.getSession({
@@ -52,6 +54,7 @@ export const getEmployeeDevicesFromDB: () => Promise<DeviceWithChecks[]> = async
     lastCheckIn: device.lastCheckIn?.toISOString() ?? null,
     agentVersion: device.agentVersion,
     installedAt: device.installedAt.toISOString(),
+    memberId: device.memberId,
     user: {
       name: device.member.user.name,
       email: device.member.user.email,
@@ -61,146 +64,88 @@ export const getEmployeeDevicesFromDB: () => Promise<DeviceWithChecks[]> = async
 };
 
 /**
- * Fetches devices from FleetDM for the current organization.
- * Returns an empty array if FleetDM is not configured or the API call fails.
+ * Fetches Fleet (legacy) devices for the current organization.
+ * Returns Host[] exactly as main branch — untouched Fleet logic.
  */
-export const getFleetDevices: () => Promise<DeviceWithChecks[]> = async () => {
+export const getFleetHosts: () => Promise<Host[] | null> = async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
+  const fleet = await getFleetInstance();
+
   const organizationId = session?.session.activeOrganizationId;
 
   if (!organizationId) {
-    return [];
+    return null;
   }
 
-  // Check if FleetDM is configured
-  if (!process.env.FLEET_URL || !process.env.FLEET_TOKEN) {
-    return [];
-  }
-
-  const organization = await db.organization.findUnique({
-    where: { id: organizationId },
-    select: { fleetDmLabelId: true },
+  // Find all members belonging to the organization.
+  const employees = await db.member.findMany({
+    where: {
+      organizationId,
+      deactivated: false,
+    },
+    include: {
+      user: true,
+    },
   });
 
-  if (!organization?.fleetDmLabelId) {
-    return [];
-  }
+  const labelIdsResponses = await Promise.all(
+    employees
+      .filter((employee) => employee.fleetDmLabelId)
+      .map(async (employee) => ({
+        userId: employee.userId,
+        userName: employee.user?.name,
+        memberId: employee.id,
+        response: await fleet.get(`/labels/${employee.fleetDmLabelId}/hosts`),
+      })),
+  );
 
-  try {
-    const fleet = await getFleetInstance();
-    const labelHosts = await fleet.get(`/labels/${organization.fleetDmLabelId}/hosts`);
-    const hosts = labelHosts.data?.hosts ?? [];
+  const hostRequests = labelIdsResponses.flatMap((entry) =>
+    entry.response.data.hosts.map((host: { id: number }) => ({
+      userId: entry.userId,
+      hostId: host.id,
+      memberId: entry.memberId,
+      userName: entry.userName,
+    })),
+  );
 
-    if (hosts.length === 0) {
-      return [];
-    }
+  // Get all devices by id in parallel
+  const devices = await Promise.all(hostRequests.map(({ hostId }) => fleet.get(`/hosts/${hostId}`)));
+  const userIds = hostRequests.map(({ userId }) => userId);
+  const memberIds = hostRequests.map(({ memberId }) => memberId);
+  const userNames = hostRequests.map(({ userName }) => userName);
 
-    // Fetch detailed info for each host to get policies
-    const devicePromises = hosts.map(
-      async (host: {
-        id: number;
-        computer_name: string;
-        hostname: string;
-        platform: string;
-        os_version: string;
-        hardware_serial: string;
-        hardware_model: string;
-        seen_time: string;
-        disk_encryption_enabled: boolean;
-        created_at: string;
-      }) => {
-        // Look up which member this host belongs to by checking fleetDmLabelId
-        const members = await db.member.findMany({
-          where: {
-            organizationId,
-            fleetDmLabelId: { not: null },
-          },
-          include: {
-            user: { select: { name: true, email: true } },
-          },
-        });
+  const results = await db.fleetPolicyResult.findMany({
+    where: { organizationId },
+    orderBy: { createdAt: 'desc' },
+  });
 
-        // Try to match host to member by checking each member's label
-        let matchedUser = { name: host.computer_name, email: '' };
-        for (const member of members) {
-          if (!member.fleetDmLabelId) continue;
-          try {
-            const memberHosts = await fleet.get(`/labels/${member.fleetDmLabelId}/hosts`);
-            const memberHost = memberHosts.data?.hosts?.find(
-              (h: { id: number }) => h.id === host.id,
-            );
-            if (memberHost) {
-              matchedUser = {
-                name: member.user.name ?? host.computer_name,
-                email: member.user.email ?? '',
-              };
-              break;
-            }
-          } catch {
-            // Skip this member if their label lookup fails
-          }
-        }
-
-        // Map fleet platform to our platform type
-        const platform = host.platform?.toLowerCase();
-        const mappedPlatform: 'macos' | 'windows' | 'linux' =
-          platform === 'darwin' || platform === 'macos' || platform === 'osx'
-            ? 'macos'
-            : platform === 'linux' || platform === 'ubuntu' || platform === 'rhel' || platform === 'centos'
-              ? 'linux'
-              : 'windows';
-
-        const diskEncryptionEnabled = host.disk_encryption_enabled === true;
-
-        const device: DeviceWithChecks = {
-          id: `fleet-${host.id}`,
-          name: host.computer_name || host.hostname,
-          hostname: host.hostname,
-          platform: mappedPlatform,
-          osVersion: host.os_version || 'Unknown',
-          serialNumber: host.hardware_serial || null,
-          hardwareModel: host.hardware_model || null,
-          isCompliant: diskEncryptionEnabled,
-          diskEncryptionEnabled,
-          antivirusEnabled: false,
-          passwordPolicySet: false,
-          screenLockEnabled: false,
-          checkDetails: null,
-          lastCheckIn: host.seen_time || null,
-          agentVersion: null,
-          installedAt: host.created_at || new Date().toISOString(),
-          user: matchedUser,
-          source: 'fleet' as const,
+  return devices.map((device: { data: { host: Host } }, index: number) => {
+    const host = device.data.host;
+    const platform = host.platform?.toLowerCase();
+    const osVersion = host.os_version?.toLowerCase();
+    const isMacOS =
+      platform === 'darwin' ||
+      platform === 'macos' ||
+      platform === 'osx' ||
+      osVersion?.includes('mac');
+    return {
+      ...host,
+      user_name: userNames[index],
+      member_id: memberIds[index],
+      policies: [
+        ...(host.policies || []),
+        ...(isMacOS ? [{ id: MDM_POLICY_ID, name: 'MDM Enabled', response: host.mdm.connected_to_fleet ? 'pass' : 'fail' }] : []),
+      ].map((policy) => {
+        const policyResult = results.find((result) => result.fleetPolicyId === policy.id && result.userId === userIds[index]);
+        return {
+          ...policy,
+          response: policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? 'pass' : 'fail',
+          attachments: policyResult?.attachments || [],
         };
-
-        return device;
-      },
-    );
-
-    return await Promise.all(devicePromises);
-  } catch (error) {
-    console.error('Error fetching fleet devices:', error);
-    return [];
-  }
-};
-
-/**
- * Fetches devices from both the Device Agent DB and FleetDM,
- * deduplicates by serial number or hostname, and returns the merged list.
- * Device-agent entries take priority over FleetDM entries.
- */
-export const getAllDevices: () => Promise<DeviceWithChecks[]> = async () => {
-  const [agentDevices, fleetDevices] = await Promise.all([
-    getEmployeeDevicesFromDB(),
-    getFleetDevices(),
-  ]);
-
-  // Device-agent entries take priority over FleetDM entries
-  return mergeDeviceLists(agentDevices, fleetDevices, {
-    getSerialNumber: (d) => d.serialNumber,
-    getHostname: (d) => d.hostname,
+      }),
+    };
   });
 };

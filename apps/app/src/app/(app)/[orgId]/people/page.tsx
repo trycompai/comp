@@ -10,9 +10,11 @@ import { TeamMembers } from './all/components/TeamMembers';
 import { PeoplePageTabs } from './components/PeoplePageTabs';
 import { EmployeesOverview } from './dashboard/components/EmployeesOverview';
 import { DeviceComplianceChart } from './devices/components/DeviceComplianceChart';
+import { DeviceAgentDevicesList } from './devices/components/DeviceAgentDevicesList';
 import { EmployeeDevicesList } from './devices/components/EmployeeDevicesList';
-import { getAllDevices } from './devices/data';
+import { getEmployeeDevicesFromDB, getFleetHosts } from './devices/data';
 import type { DeviceWithChecks } from './devices/types';
+import type { Host } from './devices/types';
 import { OrgChartContent } from './org-chart/components/OrgChartContent';
 
 export default async function PeoplePage({ params }: { params: Promise<{ orgId: string }> }) {
@@ -117,14 +119,35 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
     };
   }
 
-  // Fetch devices data from both Device Agent DB and FleetDM
-  let devices: DeviceWithChecks[] = [];
-  try {
-    devices = await getAllDevices();
-  } catch (error) {
-    console.error('Error fetching employee devices:', error);
-    devices = [];
+  // Fetch devices from both sources independently — one failing shouldn't break the other
+  let agentDevices: DeviceWithChecks[] = [];
+  let fleetDevices: Host[] = [];
+
+  const [agentResult, fleetResult] = await Promise.allSettled([
+    getEmployeeDevicesFromDB(),
+    getFleetHosts(),
+  ]);
+
+  if (agentResult.status === 'fulfilled') {
+    agentDevices = agentResult.value;
+  } else {
+    console.error('Error fetching device agent devices:', agentResult.reason);
   }
+
+  if (fleetResult.status === 'fulfilled') {
+    fleetDevices = fleetResult.value || [];
+  } else {
+    console.error('Error fetching Fleet devices:', fleetResult.reason);
+  }
+
+  // Filter out Fleet hosts for members who already have device-agent devices
+  // Device agent takes priority over Fleet
+  const memberIdsWithAgent = new Set(
+    agentDevices.map((d) => d.memberId).filter(Boolean),
+  );
+  const filteredFleetDevices = fleetDevices.filter(
+    (host) => !host.member_id || !memberIdsWithAgent.has(host.member_id),
+  );
 
   return (
     <PeoplePageTabs
@@ -139,8 +162,14 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
       employeeTasksContent={showEmployeeTasks ? <EmployeesOverview /> : null}
       devicesContent={
         <div className="space-y-6">
-          <DeviceComplianceChart devices={devices} />
-          <EmployeeDevicesList devices={devices} />
+          {/* Device Agent devices (new system) */}
+          {agentDevices.length > 0 && (
+            <DeviceAgentDevicesList devices={agentDevices} />
+          )}
+
+          {/* Fleet devices (legacy) — shown exactly as main branch */}
+          <DeviceComplianceChart devices={filteredFleetDevices} />
+          <EmployeeDevicesList devices={filteredFleetDevices} isCurrentUserOwner={isCurrentUserOwner} />
         </div>
       }
       orgChartContent={

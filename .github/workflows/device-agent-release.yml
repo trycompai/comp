@@ -20,6 +20,7 @@ jobs:
       portal_url: ${{ steps.version.outputs.portal_url }}
       release_name: ${{ steps.version.outputs.release_name }}
       auto_update_url: ${{ steps.version.outputs.auto_update_url }}
+      s3_env: ${{ steps.version.outputs.s3_env }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,11 +51,13 @@ jobs:
             IS_PRERELEASE="false"
             PORTAL_URL="https://portal.trycomp.ai"
             RELEASE_NAME="Device Agent v${NEXT_VERSION}"
+            S3_ENV="production"
           else
             TAG_NAME="device-agent-v${NEXT_VERSION}-staging.${GITHUB_RUN_NUMBER}"
             IS_PRERELEASE="true"
             PORTAL_URL="https://portal.staging.trycomp.ai"
             RELEASE_NAME="Device Agent v${NEXT_VERSION} (Staging #${GITHUB_RUN_NUMBER})"
+            S3_ENV="staging"
           fi
 
           # Auto-update URL: proxied through the portal (no direct S3 access needed)
@@ -66,6 +69,7 @@ jobs:
           echo "portal_url=$PORTAL_URL" >> $GITHUB_OUTPUT
           echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
           echo "auto_update_url=$AUTO_UPDATE_URL" >> $GITHUB_OUTPUT
+          echo "s3_env=$S3_ENV" >> $GITHUB_OUTPUT
 
           echo "--- Version Info ---"
           echo "Latest tag: $LATEST_TAG"
@@ -74,6 +78,7 @@ jobs:
           echo "Pre-release: $IS_PRERELEASE"
           echo "Portal URL: $PORTAL_URL"
           echo "Auto-update URL: $AUTO_UPDATE_URL"
+          echo "S3 env: $S3_ENV"
 
   build-macos:
     name: Build macOS (.dmg + .zip)
@@ -359,7 +364,6 @@ jobs:
   upload-s3:
     name: Upload to S3
     needs: [detect-version, build-macos, build-windows, build-linux]
-    if: needs.detect-version.outputs.is_prerelease == 'false'
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -378,34 +382,37 @@ jobs:
           AWS_REGION: ${{ secrets.APP_AWS_REGION }}
           S3_BUCKET: ${{ secrets.FLEET_AGENT_BUCKET_NAME }}
           VERSION: ${{ needs.detect-version.outputs.version }}
+          S3_ENV: ${{ needs.detect-version.outputs.s3_env }}
         run: |
+          PREFIX="device-agent/${S3_ENV}"
+
           # macOS (dmg for portal downloads)
           aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-arm64.dmg \
-            s3://${S3_BUCKET}/device-agent/macos/CompAI-Device-Agent-${VERSION}-arm64.dmg
+            s3://${S3_BUCKET}/${PREFIX}/macos/CompAI-Device-Agent-${VERSION}-arm64.dmg
           aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-arm64.dmg \
-            s3://${S3_BUCKET}/device-agent/macos/latest-arm64.dmg
+            s3://${S3_BUCKET}/${PREFIX}/macos/latest-arm64.dmg
 
           aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-x64.dmg \
-            s3://${S3_BUCKET}/device-agent/macos/CompAI-Device-Agent-${VERSION}-x64.dmg
+            s3://${S3_BUCKET}/${PREFIX}/macos/CompAI-Device-Agent-${VERSION}-x64.dmg
           aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-x64.dmg \
-            s3://${S3_BUCKET}/device-agent/macos/latest-x64.dmg
+            s3://${S3_BUCKET}/${PREFIX}/macos/latest-x64.dmg
 
           # Windows
           aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-setup.exe \
-            s3://${S3_BUCKET}/device-agent/windows/CompAI-Device-Agent-${VERSION}-setup.exe
+            s3://${S3_BUCKET}/${PREFIX}/windows/CompAI-Device-Agent-${VERSION}-setup.exe
           aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-setup.exe \
-            s3://${S3_BUCKET}/device-agent/windows/latest-setup.exe
+            s3://${S3_BUCKET}/${PREFIX}/windows/latest-setup.exe
 
           # Linux
           aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-x64.deb \
-            s3://${S3_BUCKET}/device-agent/linux/CompAI-Device-Agent-${VERSION}-x64.deb
+            s3://${S3_BUCKET}/${PREFIX}/linux/CompAI-Device-Agent-${VERSION}-x64.deb
           aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-x64.deb \
-            s3://${S3_BUCKET}/device-agent/linux/latest-x64.deb
+            s3://${S3_BUCKET}/${PREFIX}/linux/latest-x64.deb
 
           aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-x64.AppImage \
-            s3://${S3_BUCKET}/device-agent/linux/CompAI-Device-Agent-${VERSION}-x64.AppImage
+            s3://${S3_BUCKET}/${PREFIX}/linux/CompAI-Device-Agent-${VERSION}-x64.AppImage
           aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-x64.AppImage \
-            s3://${S3_BUCKET}/device-agent/linux/latest-x64.AppImage
+            s3://${S3_BUCKET}/${PREFIX}/linux/latest-x64.AppImage
 
       - name: Upload auto-update files to S3
         env:
@@ -413,8 +420,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.APP_AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.APP_AWS_REGION }}
           S3_BUCKET: ${{ secrets.FLEET_AGENT_BUCKET_NAME }}
+          S3_ENV: ${{ needs.detect-version.outputs.s3_env }}
         run: |
-          UPDATE_DIR="device-agent/updates"
+          UPDATE_DIR="device-agent/${S3_ENV}/updates"
 
           # Upload all .yml files (latest-mac.yml, latest.yml, latest-linux.yml)
           for f in artifacts/*.yml; do

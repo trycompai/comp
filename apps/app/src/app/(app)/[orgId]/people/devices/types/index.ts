@@ -26,6 +26,7 @@ export interface DeviceWithChecks {
   lastCheckIn: string | null;
   agentVersion: string | null;
   installedAt: string;
+  memberId?: string;
   user: {
     name: string;
     email: string;
@@ -34,7 +35,6 @@ export interface DeviceWithChecks {
   source: 'device_agent' | 'fleet';
 }
 
-/** @deprecated - FleetDM legacy type. Kept for backward compatibility during migration. */
 export interface FleetPolicy {
   id: number;
   name: string;
@@ -54,7 +54,6 @@ export interface FleetPolicy {
   attachments?: string[];
 }
 
-/** @deprecated - use DeviceWithChecks instead. Kept for backward compatibility during migration. */
 export interface Host {
   member_id?: string;
   user_name?: string;
@@ -122,7 +121,6 @@ export interface Host {
   display_name: string;
 }
 
-/** @deprecated */
 export type MDM = {
   connected_to_fleet: boolean;
   dep_profile_error: boolean;
