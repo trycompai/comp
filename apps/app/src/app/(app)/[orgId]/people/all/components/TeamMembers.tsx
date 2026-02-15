@@ -88,6 +88,12 @@ export async function TeamMembers(props: TeamMembersProps) {
   });
 
   if (employeeMembers.length > 0) {
+    // Fetch org settings to know which steps are enabled
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { securityTrainingStepEnabled: true, deviceAgentStepEnabled: true },
+    });
+
     // Fetch required policies
     const policies = await db.policy.findMany({
       where: {
@@ -98,24 +104,29 @@ export async function TeamMembers(props: TeamMembersProps) {
       },
     });
 
-    // Fetch training video completions
+    // Fetch training video completions (only if training is enabled)
     const employeeIds = employeeMembers.map((m) => m.id);
-    const trainingCompletions = await db.employeeTrainingVideoCompletion.findMany({
-      where: {
-        memberId: { in: employeeIds },
-      },
-    });
+    const trainingCompletions = org?.securityTrainingStepEnabled
+      ? await db.employeeTrainingVideoCompletion.findMany({
+          where: {
+            memberId: { in: employeeIds },
+          },
+        })
+      : [];
 
-    const totalTrainingVideos = trainingVideosData.length;
     const totalPolicies = policies.length;
-    const totalTasks = totalPolicies + totalTrainingVideos;
+    const totalTrainingVideos = org?.securityTrainingStepEnabled ? trainingVideosData.length : 0;
+    const totalDeviceAgent = org?.deviceAgentStepEnabled ? 1 : 0;
+    const totalTasks = totalPolicies + totalTrainingVideos + totalDeviceAgent;
 
     for (const employee of employeeMembers) {
       const policiesCompleted = policies.filter((p) => p.signedBy.includes(employee.id)).length;
 
-      const trainingsCompleted = trainingCompletions.filter(
-        (tc) => tc.memberId === employee.id && tc.completedAt !== null,
-      ).length;
+      const trainingsCompleted = org?.securityTrainingStepEnabled
+        ? trainingCompletions.filter(
+            (tc) => tc.memberId === employee.id && tc.completedAt !== null,
+          ).length
+        : 0;
 
       taskCompletionMap[employee.id] = {
         completed: policiesCompleted + trainingsCompleted,
