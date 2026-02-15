@@ -97,7 +97,6 @@ export function DeviceComplianceChart({ devices }: DeviceComplianceChartProps) {
     <Card className="my-6 flex flex-col overflow-hidden border">
       <CardHeader className="items-center pb-0">
         <CardTitle>Device Compliance</CardTitle>
-        {/* Optional: Add a subtitle or small description here if needed */}
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[300px]">

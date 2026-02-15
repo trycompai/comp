@@ -6,11 +6,13 @@ import type { SupportedOS } from './types';
  * Detects the operating system (and for macOS, the CPU architecture) from a User-Agent string.
  *
  * Returns:
+ * - 'linux' for Linux OS (excluding Android)
  * - 'windows' for Windows OS
  * - 'macos' for Apple Silicon (ARM-based) Macs
  * - 'macos-intel' for Intel-based Macs
  *
  * Examples of User-Agent strings:
+ * - Linux: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
  * - Windows: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
  * - macOS (Intel): "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
  * - macOS (Apple Silicon): "Mozilla/5.0 (Macintosh; ARM Mac OS X 11_2_3) AppleWebKit/537.36"
@@ -29,6 +31,11 @@ export function detectOSFromUserAgent(userAgent: string | null): SupportedOS | n
   if (!userAgent) return null;
 
   const ua = userAgent.toLowerCase();
+
+  // Check Linux before Windows/Mac — exclude Android which also contains 'linux'
+  if (ua.includes('linux') && !ua.includes('android')) {
+    return 'linux';
+  }
 
   if (ua.includes('windows') || ua.includes('win32') || ua.includes('win64')) {
     return 'windows';

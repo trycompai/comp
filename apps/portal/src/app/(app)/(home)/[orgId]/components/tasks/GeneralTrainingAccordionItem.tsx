@@ -4,7 +4,8 @@ import { trainingVideos } from '@/lib/data/training-videos';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { cn } from '@comp/ui/cn';
 import type { EmployeeTrainingVideoCompletion } from '@db';
-import { CheckCircle2, Circle } from 'lucide-react';
+import { Badge } from '@trycompai/design-system';
+import { CheckmarkFilled, CircleDash } from '@trycompai/design-system/icons';
 import { VideoCarousel } from '../video/VideoCarousel';
 
 interface GeneralTrainingAccordionItemProps {
@@ -51,9 +52,9 @@ export function GeneralTrainingAccordionItem({
       <AccordionTrigger className="px-4 hover:no-underline [&[data-state=open]]:pb-2">
         <div className="flex items-center gap-3">
           {hasCompletedGeneralTraining ? (
-            <CheckCircle2 className="text-primary h-5 w-5" />
+            <CheckmarkFilled size={20} className="text-primary" />
           ) : (
-            <Circle className="text-muted-foreground h-5 w-5" />
+            <CircleDash size={20} className="text-muted-foreground" />
           )}
           <span
             className={cn(
@@ -63,12 +64,10 @@ export function GeneralTrainingAccordionItem({
           >
             Complete general security awareness training
           </span>
-          {hasCompletedGeneralTraining ? (
-            <span className="text-muted-foreground ml-auto text-sm">Secure annually</span>
-          ) : (
-            <span className="text-muted-foreground ml-auto text-sm">
-              {completedCount}/{totalCount} completed
-            </span>
+          {!hasCompletedGeneralTraining && totalCount > 0 && (
+            <Badge variant="outline">
+              {completedCount}/{totalCount}
+            </Badge>
           )}
         </div>
       </AccordionTrigger>
