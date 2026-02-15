@@ -46,6 +46,7 @@ export const env = createEnv({
     NOVU_API_KEY: z.string().optional(),
     INTERNAL_API_TOKEN: z.string().optional(),
     STRIPE_SECRET_KEY: z.string().optional(),
+    SELF_HOSTING: z.string().transform((val) => val === 'true').optional().default('false'),
   },
 
   client: {
