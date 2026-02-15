@@ -283,6 +283,7 @@ export class DevicesService {
     lastCheckIn: Date | null;
     agentVersion: string | null;
     installedAt: Date;
+    updatedAt: Date;
     user: { name: string; email: string };
   }): DeviceResponseDto {
     const dto = new DeviceResponseDto();
@@ -295,7 +296,7 @@ export class DevicesService {
     dto.hardware_model = device.hardwareModel ?? '';
     dto.seen_time = device.lastCheckIn?.toISOString() ?? '';
     dto.created_at = device.installedAt.toISOString();
-    dto.updated_at = device.installedAt.toISOString();
+    dto.updated_at = device.updatedAt.toISOString();
     dto.display_name = device.name;
     dto.display_text = device.name;
     dto.status = device.isCompliant ? 'compliant' : 'non-compliant';
