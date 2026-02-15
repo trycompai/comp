@@ -56,6 +56,8 @@ interface TeamMembersClientProps {
   isAuditor: boolean;
   isCurrentUserOwner: boolean;
   employeeSyncData: EmployeeSyncConnectionsData;
+  taskCompletionMap: Record<string, { completed: number; total: number }>;
+  memberIdsWithDeviceAgent: string[];
 }
 
 // Define a simplified type for merged list items
@@ -81,6 +83,8 @@ export function TeamMembersClient({
   isAuditor,
   isCurrentUserOwner,
   employeeSyncData,
+  taskCompletionMap,
+  memberIdsWithDeviceAgent,
 }: TeamMembersClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -506,6 +510,7 @@ export function TeamMembersClient({
               <TableHead>NAME</TableHead>
               <TableHead>STATUS</TableHead>
               <TableHead>ROLE</TableHead>
+              <TableHead>TASKS</TableHead>
               <TableHead>ACTIONS</TableHead>
             </TableRow>
           </TableHeader>
@@ -521,6 +526,10 @@ export function TeamMembersClient({
                   onReactivate={handleReactivateMember}
                   canEdit={canManageMembers}
                   isCurrentUserOwner={isCurrentUserOwner}
+                  taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}
+                  hasDeviceAgentDevice={memberIdsWithDeviceAgent.includes(
+                    (item as MemberWithUser).id,
+                  )}
                 />
               ) : (
                 <PendingInvitationRow

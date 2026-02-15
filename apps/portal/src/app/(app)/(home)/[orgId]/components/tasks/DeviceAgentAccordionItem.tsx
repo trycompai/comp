@@ -1,130 +1,104 @@
 'use client';
 
-import {
-  MAC_APPLE_SILICON_FILENAME,
-  MAC_INTEL_FILENAME,
-  WINDOWS_FILENAME,
-} from '@/app/api/download-agent/constants';
-import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
+import { detectOSFromUserAgent, type SupportedOS } from '@/utils/os';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
-import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Member } from '@db';
-import { CheckCircle2, Circle, Download, Loader2, RefreshCw } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
-import { FleetPolicyItem } from './FleetPolicyItem';
+import { Badge, Button } from '@trycompai/design-system';
+import { CheckmarkFilled, CircleDash, Download, Renew } from '@trycompai/design-system/icons';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FleetPolicy, Host } from '../../types';
+import { FleetPolicyItem } from './FleetPolicyItem';
+
+interface DeviceStatus {
+  id: string;
+  name: string;
+  hostname: string;
+  platform: string;
+  osVersion: string;
+  isCompliant: boolean;
+  diskEncryptionEnabled: boolean;
+  antivirusEnabled: boolean;
+  passwordPolicySet: boolean;
+  screenLockEnabled: boolean;
+  checkDetails: Record<string, { method?: string; raw?: string; message?: string; exception?: string; passed?: boolean; checkedAt?: string }> | null;
+  lastCheckIn: string | null;
+}
+
+const CHECK_FIELDS = [
+  { key: 'diskEncryptionEnabled' as const, dbKey: 'disk_encryption', label: 'Disk Encryption' },
+  { key: 'antivirusEnabled' as const, dbKey: 'antivirus', label: 'Antivirus' },
+  { key: 'passwordPolicySet' as const, dbKey: 'password_policy', label: 'Password Policy' },
+  { key: 'screenLockEnabled' as const, dbKey: 'screen_lock', label: 'Screen Lock' },
+];
 
 interface DeviceAgentAccordionItemProps {
+  organizationId: string;
   member: Member;
   host: Host | null;
-  isLoading: boolean;
-  fleetPolicies?: FleetPolicy[];
+  fleetPolicies: FleetPolicy[];
+  isFleetLoading: boolean;
   fetchFleetPolicies: () => void;
 }
 
 export function DeviceAgentAccordionItem({
+  organizationId,
   member,
   host,
-  isLoading,
-  fleetPolicies = [],
+  fleetPolicies,
+  isFleetLoading,
   fetchFleetPolicies,
 }: DeviceAgentAccordionItemProps) {
-  const [isDownloading, setIsDownloading] = useState(false);
   const [detectedOS, setDetectedOS] = useState<SupportedOS | null>(null);
+  const [isLoadingDeviceAgent, setIsLoadingDeviceAgent] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [devices, setDevices] = useState<DeviceStatus[]>([]);
 
   const isMacOS = useMemo(
     () => detectedOS === 'macos' || detectedOS === 'macos-intel',
     [detectedOS],
   );
+  const isLinux = useMemo(() => detectedOS === 'linux', [detectedOS]);
 
-  const hasInstalledAgent = host !== null;
-  const failedPoliciesCount = useMemo(() => fleetPolicies.filter((policy) => policy.response !== 'pass').length, [fleetPolicies]);
+  // Device-agent state
+  const hasDeviceAgentDevices = devices.length > 0;
+  const allDeviceAgentCompliant = devices.length > 0 && devices.every((d) => d.isCompliant);
+  const failingDeviceAgentChecks = devices.reduce(
+    (count, device) =>
+      count + CHECK_FIELDS.filter(({ key }) => !device[key]).length,
+    0,
+  );
 
-  const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
+  // Fleet state
+  const hasFleetDevice = host !== null;
+  const failedFleetPolicies = useMemo(
+    () => fleetPolicies.filter((policy) => policy.response !== 'pass').length,
+    [fleetPolicies],
+  );
 
-  const handleDownload = async () => {
-    if (!detectedOS) {
-      toast.error('Could not detect your OS. Please refresh and try again.');
-      return;
-    }
+  // Device-agent takes priority: if installed, only its compliance matters.
+  // Fleet is only checked when device-agent is not present.
+  const isCompleted = hasDeviceAgentDevices
+    ? allDeviceAgentCompliant
+    : hasFleetDevice && failedFleetPolicies === 0;
 
-    setIsDownloading(true);
-
+  const fetchDeviceStatus = useCallback(async () => {
+    setIsLoadingDeviceAgent(true);
     try {
-      // First, we need to get a download token/session from the API
-      const tokenResponse = await fetch('/api/download-agent/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orgId: member.organizationId,
-          employeeId: member.id,
-          os: detectedOS,
-        }),
-      });
-
-      if (!tokenResponse.ok) {
-        const errorText = await tokenResponse.text();
-        throw new Error(errorText || 'Failed to prepare download.');
+      const response = await fetch(
+        `/api/device-agent/status?organizationId=${encodeURIComponent(organizationId)}`,
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setDevices(data.devices || []);
       }
-
-      const { token } = await tokenResponse.json();
-
-      // Now trigger the actual download using the browser's native download mechanism
-      // This will show in the browser's download UI immediately
-      const downloadUrl = `/api/download-agent?token=${encodeURIComponent(token)}`;
-
-      // Method 1: Using a temporary link (most reliable)
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-
-      // Set filename based on OS and architecture
-      if (isMacOS) {
-        a.download = detectedOS === 'macos' ? MAC_APPLE_SILICON_FILENAME : MAC_INTEL_FILENAME;
-      } else {
-        a.download = WINDOWS_FILENAME;
-      }
-
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      toast.success('Download started! Check your downloads folder.');
     } catch (error) {
-      console.error(error);
-      toast.error(error instanceof Error ? error.message : 'Failed to download agent.');
+      console.error('Failed to fetch device status:', error);
     } finally {
-      // Reset after a short delay to allow download to start
-      setTimeout(() => {
-        setIsDownloading(false);
-      }, 1000);
+      setIsLoadingDeviceAgent(false);
     }
-  };
-
-  const getButtonContent = () => {
-    if (isDownloading) {
-      return (
-        <>
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Downloading...
-        </>
-      );
-    } else {
-      return (
-        <>
-          <Download className="h-4 w-4" />
-          Download Agent
-        </>
-      );
-    }
-  };
-
-  const handleRefresh = () => {
-    fetchFleetPolicies();
-  };
+  }, [organizationId]);
 
   useEffect(() => {
     const detectOS = async () => {
@@ -132,120 +106,145 @@ export function DeviceAgentAccordionItem({
       setDetectedOS(os);
     };
     detectOS();
-  }, []);
+    fetchDeviceStatus();
+  }, [fetchDeviceStatus]);
+
+  const handleRefreshFleet = () => {
+    fetchFleetPolicies();
+  };
+
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      const res = await fetch('/api/download-agent/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgId: organizationId, employeeId: member.id, os: detectedOS }),
+      });
+      if (!res.ok) throw new Error('Failed to get download token');
+      const { token } = await res.json();
+      window.location.href = `/api/download-agent?token=${token}`;
+    } catch (e) {
+      console.error('Download failed:', e);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Determine what kind of failure indicator to show in the accordion trigger
+  const failureIndicator = useMemo(() => {
+    if (hasDeviceAgentDevices && failingDeviceAgentChecks > 0) {
+      return `${failingDeviceAgentChecks} check${failingDeviceAgentChecks !== 1 ? 's' : ''} failing`;
+    }
+    if (!hasDeviceAgentDevices && hasFleetDevice && failedFleetPolicies > 0) {
+      return `${failedFleetPolicies} ${failedFleetPolicies !== 1 ? 'policies' : 'policy'} failing`;
+    }
+    return null;
+  }, [hasDeviceAgentDevices, failingDeviceAgentChecks, hasFleetDevice, failedFleetPolicies]);
 
   return (
     <AccordionItem value="device-agent" className="border rounded-xs">
       <AccordionTrigger className="px-4 hover:no-underline [&[data-state=open]]:pb-2">
         <div className="flex items-center gap-3">
           {isCompleted ? (
-            <CheckCircle2 className="text-green-600 dark:text-green-400 h-5 w-5" />
+            <CheckmarkFilled size={20} className="text-primary" />
           ) : (
-            <Circle className="text-muted-foreground h-5 w-5" />
+            <CircleDash size={20} className="text-muted-foreground" />
           )}
           <span className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}>
             Download and install Comp AI Device Agent
           </span>
-          {hasInstalledAgent && failedPoliciesCount > 0 && (
+          {failureIndicator && (
             <span className="text-amber-600 dark:text-amber-400 text-xs ml-auto">
-              {failedPoliciesCount} policies failing
+              {failureIndicator}
             </span>
           )}
         </div>
       </AccordionTrigger>
       <AccordionContent className="px-4 pb-4">
         <div className="space-y-4">
-          <p className="text-sm">
+          <p className="text-muted-foreground text-sm">
             Installing Comp AI Device Agent helps you and your security administrator keep your
             device protected against security threats.
           </p>
 
-          {!hasInstalledAgent ? (
+          {/* THREE-WAY RENDERING */}
+          {hasDeviceAgentDevices ? (
+            /* 1. Device-agent devices found -- show device check results */
             <div className="space-y-4">
-              <ol className="list-decimal space-y-4 pl-5 text-sm">
-                <li>
-                  <strong>Download the Device Agent installer.</strong>
-                  <p className="mt-1">
-                    Click the download button below to get the Device Agent installer.
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    {isMacOS && !hasInstalledAgent && (
-                      <Select
-                        value={detectedOS || 'macos'}
-                        onValueChange={(value: 'macos' | 'macos-intel') => setDetectedOS(value)}
+              {devices.map((device) => (
+                <div key={device.id} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-semibold">{device.name}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {device.platform === 'macos'
+                        ? 'macOS'
+                        : device.platform === 'linux'
+                          ? 'Linux'
+                          : 'Windows'}{' '}
+                      {device.osVersion}
+                    </span>
+                    <div className="ml-auto">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={fetchDeviceStatus}
+                        disabled={isLoadingDeviceAgent}
                       >
-                        <SelectTrigger className="w-[136px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="macos">Apple Silicon</SelectItem>
-                          <SelectItem value="macos-intel">Intel</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={handleDownload}
-                      disabled={isDownloading || hasInstalledAgent}
-                      className="gap-2"
-                    >
-                      {getButtonContent()}
-                    </Button>
-                  </div>
-                </li>
-                <li>
-                  <strong>Install the Comp AI Device Agent</strong>
-                  <p className="mt-1">
-                    {isMacOS
-                      ? 'Double-click the downloaded DMG file and follow the installation instructions.'
-                      : 'Double-click the downloaded EXE file and follow the installation instructions.'}
-                  </p>
-                </li>
-                {isMacOS ? (
-                  <li>
-                    <strong>Login with your work email</strong>
-                    <p className="mt-1">
-                      After installation, login with your work email, select your organization and
-                      then click "Link Device" and "Install Agent".
-                    </p>
-                  </li>
-                ) : (
-                  <li>
-                    <strong>Enable MDM</strong>
-                    <div className="space-y-2">
-                      <p>
-                        Find the Fleet Desktop app in your system tray (bottom right corner). Click
-                        on it and click My Device.
-                      </p>
-                      <p>
-                        You should see a banner that asks you to enable MDM. Click the button and
-                        follow the instructions.
-                      </p>
-                      <p>
-                        After you've enabled MDM, if you refresh the page, the banner will
-                        disappear. Now your computer will automatically enable the necessary
-                        settings on your computer in order to be compliant.
-                      </p>
+                        <Renew size={16} className={cn(isLoadingDeviceAgent && 'animate-spin')} />
+                      </Button>
                     </div>
-                  </li>
-                )}
-              </ol>
+                  </div>
+                  <div className="space-y-2">
+                    {CHECK_FIELDS.map(({ key, dbKey, label }) => {
+                      const passed = device[key];
+                      const details = device.checkDetails?.[dbKey];
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-center justify-between rounded-lg border p-3"
+                        >
+                          <div>
+                            <span className="text-sm font-medium">{label}</span>
+                            {details?.message && (
+                              <p className="text-muted-foreground text-xs">
+                                {details.message}
+                              </p>
+                            )}
+                            {details?.exception && (
+                              <p className="text-amber-600 dark:text-amber-400 text-xs mt-0.5">
+                                {details.exception}
+                              </p>
+                            )}
+                          </div>
+                          <Badge variant={passed ? 'default' : 'destructive'}>
+                            {passed ? 'Pass' : 'Fail'}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {device.lastCheckIn && (
+                    <p className="text-muted-foreground text-xs">
+                      Last check-in: {new Date(device.lastCheckIn).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
-          ) : (
+          ) : hasFleetDevice ? (
+            /* 2. Fleet device found (legacy) -- show fleet policy list */
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg">{host.computer_name}</CardTitle>
+                  <CardTitle className="text-lg">{host!.computer_name}</CardTitle>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
-                    onClick={handleRefresh}
-                    disabled={isLoading}
-                    title="Refresh device information"
+                    onClick={handleRefreshFleet}
+                    disabled={isFleetLoading}
                   >
-                    <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
+                    <Renew size={16} className={cn(isFleetLoading && 'animate-spin')} />
                   </Button>
                 </div>
               </CardHeader>
@@ -257,7 +256,7 @@ export function DeviceAgentAccordionItem({
                         key={policy.id}
                         policy={policy}
                         organizationId={member.organizationId}
-                        onRefresh={handleRefresh}
+                        onRefresh={handleRefreshFleet}
                       />
                     ))}
                   </>
@@ -268,12 +267,62 @@ export function DeviceAgentAccordionItem({
                 )}
               </CardContent>
             </Card>
+          ) : (
+            /* 3. Neither -- show download instructions for new device agent */
+            <div className="space-y-4">
+              <ol className="list-decimal space-y-4 pl-5 text-sm">
+                <li>
+                  <strong>Download the Device Agent installer.</strong>
+                  <p className="mt-1">
+                    Download the latest Device Agent installer for your operating system.
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      iconLeft={<Download size={16} />}
+                      onClick={handleDownload}
+                      loading={isDownloading}
+                    >
+                      {`Download${detectedOS ? ` for ${isMacOS ? 'macOS' : isLinux ? 'Linux' : 'Windows'}` : ''}`}
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    or{' '}
+                    <a
+                      href="https://github.com/trycompai/comp/releases"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      download from GitHub
+                    </a>
+                  </p>
+                </li>
+                <li>
+                  <strong>Install the Comp AI Device Agent</strong>
+                  <p className="mt-1">
+                    {isMacOS
+                      ? 'Double-click the downloaded DMG file and drag the app to your Applications folder.'
+                      : isLinux
+                        ? 'Install the downloaded .deb package using your package manager (e.g. sudo dpkg -i CompAI-Device-Agent.deb).'
+                        : 'Double-click the downloaded EXE file and follow the installation instructions.'}
+                  </p>
+                </li>
+                <li>
+                  <strong>Sign in with your work email</strong>
+                  <p className="mt-1">
+                    After installation, the agent will appear in your system tray. Click it and sign
+                    in with the same credentials you use for this portal. The agent will
+                    automatically run compliance checks on your device.
+                  </p>
+                </li>
+              </ol>
+            </div>
           )}
         </div>
 
         <div className="mt-4 space-y-2">
           <Accordion type="single" collapsible>
-            {/* System Requirements */}
             <AccordionItem value="system-requirements" className="border rounded-xs mt-4">
               <AccordionTrigger className="px-4 hover:no-underline">
                 <span className="text-base">System Requirements</span>
@@ -281,7 +330,8 @@ export function DeviceAgentAccordionItem({
               <AccordionContent className="px-4 pb-4">
                 <div className="text-muted-foreground space-y-2 text-sm">
                   <p>
-                    <strong>Operating Systems:</strong> macOS 14+, Windows 10+
+                    <strong>Operating Systems:</strong> macOS 14+, Windows 10+, Debian 11+ / Ubuntu
+                    20.04+
                   </p>
                   <p>
                     <strong>Memory:</strong> 512MB RAM minimum
@@ -295,21 +345,25 @@ export function DeviceAgentAccordionItem({
           </Accordion>
 
           <Accordion type="single" collapsible>
-            {/* About Comp AI Device Monitor */}
             <AccordionItem value="about" className="border rounded-xs">
               <AccordionTrigger className="px-4 hover:no-underline">
-                <span className="text-base">About Comp AI Device Monitor</span>
+                <span className="text-base">About Comp AI Device Agent</span>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="text-muted-foreground space-y-2 text-sm">
                   <p>
-                    Comp AI Device Monitor is a lightweight agent that helps ensure your device
-                    meets security compliance requirements.
+                    Comp AI Device Agent is a lightweight system tray application that monitors your
+                    device's compliance with your organization's security requirements.
                   </p>
-                  <p>
-                    It monitors device configuration, installed software, and security settings to
-                    help maintain a secure work environment.
-                  </p>
+                  <p>It checks for:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>
+                      Disk encryption (FileVault on macOS, BitLocker on Windows, LUKS on Linux)
+                    </li>
+                    <li>Antivirus software (XProtect, Windows Defender, ClamAV, or third-party)</li>
+                    <li>Minimum password length policy (8+ characters)</li>
+                    <li>Screen lock timeout (5 minutes or less)</li>
+                  </ul>
                   <p>
                     <strong>Security powered by Comp AI:</strong> Your organization uses Comp AI to
                     maintain security and compliance standards.

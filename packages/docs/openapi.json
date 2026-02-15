@@ -16889,9 +16889,17 @@
             "example": "2024-01-10T00:00:00Z"
           },
           "id": {
-            "type": "number",
-            "description": "Device ID",
-            "example": 123
+            "description": "Device ID (numeric for Fleet devices, string UUID for device-agent devices)",
+            "oneOf": [
+              {
+                "type": "number",
+                "example": 123
+              },
+              {
+                "type": "string",
+                "example": "clx1abc123"
+              }
+            ]
           },
           "detail_updated_at": {
             "type": "string",
@@ -17194,6 +17202,15 @@
             "type": "string",
             "description": "Display name",
             "example": "John's MacBook Pro"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source system that reported this device",
+            "example": "fleet",
+            "enum": [
+              "fleet",
+              "device_agent"
+            ]
           }
         },
         "required": [

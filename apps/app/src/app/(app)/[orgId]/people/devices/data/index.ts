@@ -4,11 +4,70 @@ import { getFleetInstance } from '@/lib/fleet';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
+import type { CheckDetails, DeviceWithChecks } from '../types';
 import type { Host } from '../types';
 
 const MDM_POLICY_ID = -9999;
 
-export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
+/**
+ * Fetches device-agent devices from the DB for the current organization.
+ */
+export const getEmployeeDevicesFromDB: () => Promise<DeviceWithChecks[]> = async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const organizationId = session?.session.activeOrganizationId;
+
+  if (!organizationId) {
+    return [];
+  }
+
+  const devices = await db.device.findMany({
+    where: { organizationId },
+    include: {
+      member: {
+        include: {
+          user: {
+            select: { name: true, email: true },
+          },
+        },
+      },
+    },
+    orderBy: { installedAt: 'desc' },
+  });
+
+  return devices.map((device) => ({
+    id: device.id,
+    name: device.name,
+    hostname: device.hostname,
+    platform: device.platform as 'macos' | 'windows' | 'linux',
+    osVersion: device.osVersion,
+    serialNumber: device.serialNumber,
+    hardwareModel: device.hardwareModel,
+    isCompliant: device.isCompliant,
+    diskEncryptionEnabled: device.diskEncryptionEnabled,
+    antivirusEnabled: device.antivirusEnabled,
+    passwordPolicySet: device.passwordPolicySet,
+    screenLockEnabled: device.screenLockEnabled,
+    checkDetails: (device.checkDetails as CheckDetails) ?? null,
+    lastCheckIn: device.lastCheckIn?.toISOString() ?? null,
+    agentVersion: device.agentVersion,
+    installedAt: device.installedAt.toISOString(),
+    memberId: device.memberId,
+    user: {
+      name: device.member.user.name,
+      email: device.member.user.email,
+    },
+    source: 'device_agent' as const,
+  }));
+};
+
+/**
+ * Fetches Fleet (legacy) devices for the current organization.
+ * Returns Host[] exactly as main branch — untouched Fleet logic.
+ */
+export const getFleetHosts: () => Promise<Host[] | null> = async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -52,7 +111,7 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
     })),
   );
 
-  // Get all devices by id. in parallel
+  // Get all devices by id in parallel
   const devices = await Promise.all(hostRequests.map(({ hostId }) => fleet.get(`/hosts/${hostId}`)));
   const userIds = hostRequests.map(({ userId }) => userId);
   const memberIds = hostRequests.map(({ memberId }) => memberId);

@@ -62,6 +62,9 @@ model Organization {
   // Findings
   findings Finding[]
 
+  // Device Agent
+  devices Device[]
+
   // Org Chart
   organizationChart OrganizationChart?
 

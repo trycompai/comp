@@ -6,7 +6,7 @@ import { Suspense } from 'react';
 
 export async function Header() {
   return (
-    <header className="border-border bg-background/70 sticky top-0 z-10 flex items-center justify-between border-b pt-4 pb-2 backdrop-blur-xl backdrop-filter md:bg-transparent md:pb-4 md:backdrop-filter-none">
+    <header className="sticky top-0 z-10 flex items-center justify-between py-4">
       <Link href="/">
         <Icons.Logo />
       </Link>

@@ -5,6 +5,7 @@ import type { EmployeeTrainingVideoCompletion, Member, Organization, Policy, Use
 
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import {
+  Badge,
   Section,
   Stack,
   Tabs,
@@ -15,9 +16,23 @@ import {
 } from '@trycompai/design-system';
 import { AlertCircle, Award, CheckCircle2, Download, Info } from 'lucide-react';
 import type { FleetPolicy, Host } from '../../devices/types';
+import type { DeviceWithChecks } from '../../devices/types';
 import { PolicyItem } from '../../devices/components/PolicyItem';
 import { downloadTrainingCertificate } from '../actions/download-training-certificate';
 import { cn } from '@/lib/utils';
+
+const CHECK_FIELDS = [
+  { key: 'diskEncryptionEnabled' as const, dbKey: 'disk_encryption', label: 'Disk Encryption' },
+  { key: 'antivirusEnabled' as const, dbKey: 'antivirus', label: 'Antivirus' },
+  { key: 'passwordPolicySet' as const, dbKey: 'password_policy', label: 'Password Policy' },
+  { key: 'screenLockEnabled' as const, dbKey: 'screen_lock', label: 'Screen Lock' },
+];
+
+const PLATFORM_LABELS: Record<string, string> = {
+  macos: 'macOS',
+  windows: 'Windows',
+  linux: 'Linux',
+};
 
 export const EmployeeTasks = ({
   employee,
@@ -26,6 +41,7 @@ export const EmployeeTasks = ({
   host,
   fleetPolicies,
   organization,
+  memberDevice,
 }: {
   employee: Member & {
     user: User;
@@ -37,6 +53,7 @@ export const EmployeeTasks = ({
   host: Host;
   fleetPolicies: FleetPolicy[];
   organization: Organization;
+  memberDevice: DeviceWithChecks | null;
 }) => {
   // Calculate training completion status
   const completedVideos = trainingVideos.filter((v) => v.completedAt !== null);
@@ -239,6 +256,74 @@ export const EmployeeTasks = ({
                   </Text>
                 </div>
               </div>
+            ) : memberDevice ? (
+              <Stack gap="4">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Text size="lg" weight="semibold">
+                          {memberDevice.name}
+                        </Text>
+                        <Text size="sm" variant="muted">
+                          {PLATFORM_LABELS[memberDevice.platform] ?? memberDevice.platform}{' '}
+                          {memberDevice.osVersion}
+                          {memberDevice.hardwareModel ? ` \u2022 ${memberDevice.hardwareModel}` : ''}
+                        </Text>
+                      </div>
+                      <Badge variant={memberDevice.isCompliant ? 'default' : 'destructive'}>
+                        {memberDevice.isCompliant ? 'Compliant' : 'Non-Compliant'}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {CHECK_FIELDS.map(({ key, dbKey, label }) => {
+                        const isFleetUnsupported = memberDevice.source === 'fleet' && key !== 'diskEncryptionEnabled';
+                        const passed = memberDevice[key];
+                        const details = memberDevice.checkDetails?.[dbKey];
+                        return (
+                          <div
+                            key={key}
+                            className="flex items-center justify-between rounded-lg border p-3"
+                          >
+                            <div>
+                              <span className="text-sm font-medium">{label}</span>
+                              {!isFleetUnsupported && details?.message && (
+                                <p className="text-muted-foreground text-xs">
+                                  {details.message}
+                                </p>
+                              )}
+                              {isFleetUnsupported && (
+                                <p className="text-muted-foreground text-xs">
+                                  Not tracked by Fleet
+                                </p>
+                              )}
+                              {details?.exception && (
+                                <p className="text-amber-600 dark:text-amber-400 text-xs mt-0.5">
+                                  {details.exception}
+                                </p>
+                              )}
+                            </div>
+                            {isFleetUnsupported ? (
+                              <Badge variant="outline">N/A</Badge>
+                            ) : (
+                              <Badge variant={passed ? 'default' : 'destructive'}>
+                                {passed ? 'Pass' : 'Fail'}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {memberDevice.lastCheckIn && (
+                      <p className="text-muted-foreground text-xs mt-3">
+                        Last check-in: {new Date(memberDevice.lastCheckIn).toLocaleString()}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </Stack>
             ) : host ? (
               <Card>
                 <CardHeader>

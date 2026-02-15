@@ -2,8 +2,9 @@
 
 import { trainingVideos } from '@/lib/data/training-videos';
 import { Accordion } from '@comp/ui/accordion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent } from '@comp/ui/card';
 import type { EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { CheckCircle2 } from 'lucide-react';
 import useSWR from 'swr';
 import type { FleetPolicy, Host } from '../types';
@@ -14,6 +15,11 @@ import { PoliciesAccordionItem } from './tasks/PoliciesAccordionItem';
 type PolicyWithVersion = Policy & {
   currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
 };
+
+interface DeviceStatus {
+  id: string;
+  isCompliant: boolean;
+}
 
 interface EmployeeTasksListProps {
   organizationId: string;
@@ -31,39 +37,69 @@ export const EmployeeTasksList = ({
   policies,
   trainingVideos: trainingVideoCompletions,
   member,
-  fleetPolicies,
-  host,
+  fleetPolicies: initialFleetPolicies,
+  host: initialHost,
   deviceAgentStepEnabled,
   securityTrainingStepEnabled,
 }: EmployeeTasksListProps) => {
-  const { data: response, isValidating, mutate: fetchFleetPolicies } = useSWR<{ device: Host | null; fleetPolicies: FleetPolicy[] }>(
-    `/api/fleet-policies?organizationId=${organizationId}`,
-    async (url) => {
+  // Fetch device-agent status filtered by current org
+  const { data: deviceData } = useSWR<{ devices: DeviceStatus[] }>(
+    `/api/device-agent/status?organizationId=${organizationId}`,
+    async (url: string) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch');
       return res.json();
     },
     {
-      fallbackData: { device: host, fleetPolicies },
+      fallbackData: { devices: [] },
       refreshInterval: 0,
       revalidateOnFocus: false,
-      revalidateOnMount: false
+      revalidateOnMount: true,
     },
   );
 
-  if (!response) {
-    return null;
-  }
+  // Fetch fleet policies via SWR (only if member has a fleet device)
+  const hasFleetDevice = initialHost !== null;
+  const {
+    data: fleetResponse,
+    isValidating: isFleetLoading,
+    mutate: fetchFleetPolicies,
+  } = useSWR<{ device: Host | null; fleetPolicies: FleetPolicy[] }>(
+    hasFleetDevice ? `/api/fleet-policies?organizationId=${organizationId}` : null,
+    async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
+    {
+      fallbackData: { device: initialHost, fleetPolicies: initialFleetPolicies },
+      refreshInterval: 0,
+      revalidateOnFocus: false,
+      revalidateOnMount: false,
+    },
+  );
+
+  const devices = deviceData?.devices ?? [];
+  const fleetPolicies = fleetResponse?.fleetPolicies ?? initialFleetPolicies;
+  const host = fleetResponse?.device ?? initialHost;
 
   // Check completion status
   const hasAcceptedPolicies =
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
-  const hasInstalledAgent = response.device !== null;
-  const allFleetPoliciesPass =
-    response.fleetPolicies.length === 0 || response.fleetPolicies.every((policy) => policy.response === 'pass');
-  const hasCompletedDeviceSetup = hasInstalledAgent && allFleetPoliciesPass;
 
-  // Calculate general training completion (matching logic from GeneralTrainingAccordionItem)
+  // Device-agent takes priority: if installed, only its compliance matters.
+  // Fleet is only checked when device-agent is not present.
+  const hasDeviceAgentDevices = devices.length > 0;
+  const allDeviceAgentCompliant = devices.length > 0 && devices.every((d) => d.isCompliant);
+  const hasInstalledFleetAgent = host !== null;
+  const allFleetPoliciesPass =
+    fleetPolicies.length === 0 || fleetPolicies.every((policy) => policy.response === 'pass');
+
+  const hasCompletedDeviceSetup = hasDeviceAgentDevices
+    ? allDeviceAgentCompliant
+    : hasInstalledFleetAgent && allFleetPoliciesPass;
+
+  // Calculate general training completion
   const generalTrainingVideoIds = trainingVideos
     .filter((video) => video.id.startsWith('sat-'))
     .map((video) => video.id);
@@ -93,10 +129,11 @@ export const EmployeeTasksList = ({
             title: 'Download and install Comp AI Device Agent',
             content: (
               <DeviceAgentAccordionItem
+                organizationId={organizationId}
                 member={member}
-                host={response.device}
-                fleetPolicies={response.fleetPolicies}
-                isLoading={isValidating}
+                host={host}
+                fleetPolicies={fleetPolicies}
+                isFleetLoading={isFleetLoading}
                 fetchFleetPolicies={fetchFleetPolicies}
               />
             ),
@@ -136,35 +173,27 @@ export const EmployeeTasksList = ({
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Overview</CardTitle>
-          <CardDescription>
-            Please complete the following tasks to stay compliant and secure.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Progress indicator */}
-          <div>
-            <div className="text-muted-foreground text-sm">
-              {completedCount} of {accordionItems.length} tasks completed
-            </div>
-            <div className="w-full bg-muted rounded-full h-2.5">
-              <div
-                className="bg-primary h-full rounded-full"
-                style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
-              ></div>
-            </div>
+    <PageLayout padding="lg" header={<PageHeader title="Overview" />}>
+      <div className="space-y-4">
+        {/* Progress indicator */}
+        <div className="space-y-2">
+          <div className="text-muted-foreground text-sm">
+            {completedCount} of {accordionItems.length} tasks completed
           </div>
+          <div className="w-full bg-muted rounded-full h-2.5">
+            <div
+              className="bg-primary h-full rounded-full"
+              style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
+            ></div>
+          </div>
+        </div>
 
-          <Accordion type="single" collapsible className="space-y-3">
-            {accordionItems.map((item, idx) => (
-              <div key={item.title ?? idx}>{item.content}</div>
-            ))}
-          </Accordion>
-        </CardContent>
-      </Card>
-    </div>
+        <Accordion type="single" collapsible className="space-y-3">
+          {accordionItems.map((item, idx) => (
+            <div key={item.title ?? idx}>{item.content}</div>
+          ))}
+        </Accordion>
+      </div>
+    </PageLayout>
   );
 };

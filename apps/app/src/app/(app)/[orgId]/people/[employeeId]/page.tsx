@@ -7,10 +7,10 @@ import {
 import { getFleetInstance } from '@/lib/fleet';
 import type { EmployeeTrainingVideoCompletion, Member, User } from '@db';
 import { db } from '@db';
-import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
+import type { CheckDetails, DeviceWithChecks } from '../devices/types';
 import { Employee } from './components/Employee';
 
 const MDM_POLICY_ID = -9999;
@@ -59,29 +59,20 @@ export default async function EmployeeDetailsPage({
   }
 
   const { fleetPolicies, device } = await getFleetPolicies(employee);
+  const memberDevice = await getMemberDevice(employee.id, orgId);
 
   return (
-    <PageLayout
-      header={
-        <PageHeader
-          title={employee.user.name ?? 'Employee'}
-          breadcrumbs={[
-            { label: 'People', href: `/${orgId}/people` },
-            { label: employee.user.name ?? 'Employee', isCurrent: true },
-          ]}
-        />
-      }
-    >
-      <Employee
-        employee={employee}
-        policies={policies}
-        trainingVideos={employeeTrainingVideos}
-        fleetPolicies={fleetPolicies}
-        host={device}
-        canEdit={canEditMembers}
-        organization={organization}
-      />
-    </PageLayout>
+    <Employee
+      employee={employee}
+      policies={policies}
+      trainingVideos={employeeTrainingVideos}
+      fleetPolicies={fleetPolicies}
+      host={device}
+      canEdit={canEditMembers}
+      organization={organization}
+      memberDevice={memberDevice}
+      orgId={orgId}
+    />
   );
 }
 
@@ -232,16 +223,27 @@ const getFleetPolicies = async (member: Member & { user: User }) => {
     return {
       fleetPolicies: [
         ...(host.policies || []),
-        ...(isMacOS ? [{ id: MDM_POLICY_ID, name: 'MDM Enabled', response: host.mdm.connected_to_fleet ? 'pass' : 'fail' }] : []),
+        ...(isMacOS
+          ? [
+              {
+                id: MDM_POLICY_ID,
+                name: 'MDM Enabled',
+                response: host.mdm.connected_to_fleet ? 'pass' : 'fail',
+              },
+            ]
+          : []),
       ].map((policy) => {
         const policyResult = results.find((result) => result.fleetPolicyId === policy.id);
         return {
           ...policy,
-          response: policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? 'pass' : 'fail',
+          response:
+            policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass'
+              ? 'pass'
+              : 'fail',
           attachments: policyResult?.attachments || [],
         };
       }),
-      device: host
+      device: host,
     };
   } catch (error) {
     console.error(
@@ -250,4 +252,51 @@ const getFleetPolicies = async (member: Member & { user: User }) => {
     );
     return { fleetPolicies: [], device: null };
   }
+};
+
+const getMemberDevice = async (
+  memberId: string,
+  organizationId: string,
+): Promise<DeviceWithChecks | null> => {
+  const device = await db.device.findFirst({
+    where: { memberId, organizationId },
+    include: {
+      member: {
+        include: {
+          user: {
+            select: { name: true, email: true },
+          },
+        },
+      },
+    },
+    orderBy: { installedAt: 'desc' },
+  });
+
+  if (!device) {
+    return null;
+  }
+
+  return {
+    id: device.id,
+    name: device.name,
+    hostname: device.hostname,
+    platform: device.platform as 'macos' | 'windows' | 'linux',
+    osVersion: device.osVersion,
+    serialNumber: device.serialNumber,
+    hardwareModel: device.hardwareModel,
+    isCompliant: device.isCompliant,
+    diskEncryptionEnabled: device.diskEncryptionEnabled,
+    antivirusEnabled: device.antivirusEnabled,
+    passwordPolicySet: device.passwordPolicySet,
+    screenLockEnabled: device.screenLockEnabled,
+    checkDetails: (device.checkDetails as CheckDetails) ?? null,
+    lastCheckIn: device.lastCheckIn?.toISOString() ?? null,
+    agentVersion: device.agentVersion,
+    installedAt: device.installedAt.toISOString(),
+    user: {
+      name: device.member.user.name,
+      email: device.member.user.email,
+    },
+    source: 'device_agent' as const,
+  };
 };
