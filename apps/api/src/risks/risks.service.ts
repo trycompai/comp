@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db, Prisma } from '@trycompai/db';
 import { CreateRiskDto } from './dto/create-risk.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
 
@@ -7,10 +7,13 @@ import { UpdateRiskDto } from './dto/update-risk.dto';
 export class RisksService {
   private readonly logger = new Logger(RisksService.name);
 
-  async findAllByOrganization(organizationId: string) {
+  async findAllByOrganization(
+    organizationId: string,
+    assignmentFilter: Prisma.RiskWhereInput = {},
+  ) {
     try {
       const risks = await db.risk.findMany({
-        where: { organizationId },
+        where: { organizationId, ...assignmentFilter },
         orderBy: { createdAt: 'desc' },
         include: {
           assignee: {

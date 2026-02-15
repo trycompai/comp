@@ -27,10 +27,13 @@ export class PoliciesService {
     private readonly pdfRendererService: PolicyPdfRendererService,
   ) {}
 
-  async findAll(organizationId: string) {
+  async findAll(
+    organizationId: string,
+    visibilityFilter: Prisma.PolicyWhereInput = {},
+  ) {
     try {
       const policies = await db.policy.findMany({
-        where: { organizationId },
+        where: { organizationId, ...visibilityFilter },
         select: {
           id: true,
           name: true,
@@ -56,6 +59,8 @@ export class PoliciesService {
           pendingVersionId: true,
           displayFormat: true,
           pdfUrl: true,
+          visibility: true,
+          visibleToDepartments: true,
           assignee: {
             select: {
               id: true,
@@ -115,6 +120,8 @@ export class PoliciesService {
           pendingVersionId: true,
           displayFormat: true,
           pdfUrl: true,
+          visibility: true,
+          visibleToDepartments: true,
           approver: {
             include: {
               user: true,
