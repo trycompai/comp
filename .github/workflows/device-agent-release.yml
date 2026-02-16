@@ -180,7 +180,7 @@ jobs:
         run: bun run package:win
 
       - name: Setup SSL.com eSigner CodeSignTool
-        uses: sslcom/esigner-codesign@develop
+        uses: sslcom/esigner-codesign@v1.3.2
         with:
           command: get_credential_ids
           username: ${{ secrets.ESIGNER_USERNAME }}
@@ -188,7 +188,7 @@ jobs:
           totp_secret: ${{ secrets.ESIGNER_TOTP_SECRET }}
 
       - name: Sign Windows EXE with SSL.com eSigner
-        uses: sslcom/esigner-codesign@develop
+        uses: sslcom/esigner-codesign@v1.3.2
         with:
           command: sign
           username: ${{ secrets.ESIGNER_USERNAME }}
