@@ -179,24 +179,43 @@ jobs:
           AUTO_UPDATE_URL: ${{ needs.detect-version.outputs.auto_update_url }}
         run: bun run package:win
 
-      - name: Setup SSL.com eSigner CodeSignTool
-        uses: sslcom/esigner-codesign@v1.3.2
+      - name: Setup Java for CodeSignTool
+        uses: actions/setup-java@v4
         with:
-          command: get_credential_ids
-          username: ${{ secrets.ESIGNER_USERNAME }}
-          password: ${{ secrets.ESIGNER_PASSWORD }}
-          totp_secret: ${{ secrets.ESIGNER_TOTP_SECRET }}
+          distribution: 'corretto'
+          java-version: '11'
 
-      - name: Sign Windows EXE with SSL.com eSigner
-        uses: sslcom/esigner-codesign@v1.3.2
-        with:
-          command: sign
-          username: ${{ secrets.ESIGNER_USERNAME }}
-          password: ${{ secrets.ESIGNER_PASSWORD }}
-          credential_id: ${{ secrets.ESIGNER_CREDENTIAL_ID }}
-          totp_secret: ${{ secrets.ESIGNER_TOTP_SECRET }}
-          file_path: ${{ github.workspace }}/packages/device-agent/release
-          override: true
+      - name: Sign Windows EXE with SSL.com CodeSignTool
+        shell: powershell
+        working-directory: packages/device-agent/release
+        env:
+          ESIGNER_USERNAME: ${{ secrets.ESIGNER_USERNAME }}
+          ESIGNER_PASSWORD: ${{ secrets.ESIGNER_PASSWORD }}
+          ESIGNER_CREDENTIAL_ID: ${{ secrets.ESIGNER_CREDENTIAL_ID }}
+          ESIGNER_TOTP_SECRET: ${{ secrets.ESIGNER_TOTP_SECRET }}
+        run: |
+          # Download and extract CodeSignTool
+          Invoke-WebRequest -Uri "https://github.com/SSLcom/CodeSignTool/releases/download/v1.3.0/CodeSignTool-v1.3.0-windows.zip" -OutFile "codesigntool.zip"
+          Expand-Archive -Path "codesigntool.zip" -DestinationPath "codesigntool"
+
+          # Find the jar file
+          $jar = Get-ChildItem -Path "codesigntool" -Recurse -Filter "code_sign_tool-*.jar" | Select-Object -First 1
+          if (-not $jar) { throw "CodeSignTool jar not found" }
+          Write-Host "Found CodeSignTool jar at: $($jar.FullName)"
+
+          # Sign each .exe file using Java directly (skips .bat which needs bundled JDK)
+          Get-ChildItem -Filter "*.exe" | ForEach-Object {
+            Write-Host "Signing $($_.Name)..."
+            & java -Xmx1024M -jar "$($jar.FullName)" sign `
+              -username="$env:ESIGNER_USERNAME" `
+              -password="$env:ESIGNER_PASSWORD" `
+              -credential_id="$env:ESIGNER_CREDENTIAL_ID" `
+              -totp_secret="$env:ESIGNER_TOTP_SECRET" `
+              -input_file_path="$($_.FullName)" `
+              -override="true"
+            if ($LASTEXITCODE -ne 0) { throw "Code signing failed for $($_.Name)" }
+            Write-Host "Signed $($_.Name) successfully"
+          }
 
       - name: Recalculate latest.yml hash after signing
         shell: bash
@@ -377,10 +396,10 @@ jobs:
 
       - name: Upload installers to S3
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.APP_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.APP_AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.APP_AWS_ACCESS_KEY_ID || secrets.APP_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.APP_AWS_SECRET_ACCESS_KEY || secrets.APP_AWS_SECRET_ACCESS_KEY_STAGING }}
           AWS_REGION: ${{ secrets.APP_AWS_REGION }}
-          S3_BUCKET: ${{ secrets.FLEET_AGENT_BUCKET_NAME }}
+          S3_BUCKET: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.FLEET_AGENT_BUCKET_NAME || secrets.FLEET_AGENT_BUCKET_NAME_STAGING }}
           VERSION: ${{ needs.detect-version.outputs.version }}
           S3_ENV: ${{ needs.detect-version.outputs.s3_env }}
         run: |
@@ -416,10 +435,10 @@ jobs:
 
       - name: Upload auto-update files to S3
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.APP_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.APP_AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.APP_AWS_ACCESS_KEY_ID || secrets.APP_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.APP_AWS_SECRET_ACCESS_KEY || secrets.APP_AWS_SECRET_ACCESS_KEY_STAGING }}
           AWS_REGION: ${{ secrets.APP_AWS_REGION }}
-          S3_BUCKET: ${{ secrets.FLEET_AGENT_BUCKET_NAME }}
+          S3_BUCKET: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.FLEET_AGENT_BUCKET_NAME || secrets.FLEET_AGENT_BUCKET_NAME_STAGING }}
           S3_ENV: ${{ needs.detect-version.outputs.s3_env }}
         run: |
           UPDATE_DIR="device-agent/${S3_ENV}/updates"
