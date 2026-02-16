@@ -5,7 +5,7 @@ import { client as kv } from '@comp/kv';
 import { type NextRequest, NextResponse } from 'next/server';
 import { Readable } from 'stream';
 
-import { MAC_APPLE_SILICON_FILENAME, MAC_INTEL_FILENAME, WINDOWS_FILENAME } from './constants';
+import { DOWNLOAD_TARGETS } from './constants';
 import type { SupportedOS } from './types';
 
 export const runtime = 'nodejs';
@@ -27,22 +27,9 @@ interface DownloadTarget {
 }
 
 const getDownloadTarget = (os: SupportedOS): DownloadTarget => {
-  if (os === 'windows') {
-    return {
-      key: `windows/${WINDOWS_FILENAME}`,
-      filename: WINDOWS_FILENAME,
-      contentType: 'application/octet-stream',
-    };
-  }
-
-  const isAppleSilicon = os === 'macos';
-  const filename = isAppleSilicon ? MAC_APPLE_SILICON_FILENAME : MAC_INTEL_FILENAME;
-
-  return {
-    key: `macos/${filename}`,
-    filename,
-    contentType: 'application/x-apple-diskimage',
-  };
+  const target = DOWNLOAD_TARGETS[os];
+  if (!target) throw new Error(`Unsupported OS: ${os}`);
+  return target;
 };
 
 const buildResponseHeaders = (

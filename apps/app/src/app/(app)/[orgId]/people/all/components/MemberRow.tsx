@@ -48,6 +48,8 @@ interface MemberRowProps {
   onReactivate: (memberId: string) => void;
   canEdit: boolean;
   isCurrentUserOwner: boolean;
+  taskCompletion?: { completed: number; total: number };
+  hasDeviceAgentDevice?: boolean;
 }
 
 function getInitials(name?: string | null, email?: string | null): string {
@@ -97,6 +99,8 @@ export function MemberRow({
   onReactivate,
   canEdit,
   isCurrentUserOwner,
+  taskCompletion,
+  hasDeviceAgentDevice,
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -222,6 +226,23 @@ export function MemberRow({
           </div>
         </TableCell>
 
+        {/* TASKS */}
+        <TableCell>
+          {taskCompletion ? (
+            <Badge
+              variant={
+                taskCompletion.completed === taskCompletion.total ? 'default' : 'destructive'
+              }
+            >
+              {taskCompletion.completed}/{taskCompletion.total}
+            </Badge>
+          ) : (
+            <Text size="sm" variant="muted">
+              —
+            </Text>
+          )}
+        </TableCell>
+
         {/* ACTIONS */}
         <TableCell>
           <div className="flex justify-center">
@@ -247,7 +268,7 @@ export function MemberRow({
                     <span>Edit Roles</span>
                   </DropdownMenuItem>
                 )}
-                {!isDeactivated && member.fleetDmLabelId && isCurrentUserOwner && (
+                {!isDeactivated && (member.fleetDmLabelId || hasDeviceAgentDevice) && isCurrentUserOwner && (
                   <DropdownMenuItem
                     onSelect={() => {
                       setDropdownOpen(false);

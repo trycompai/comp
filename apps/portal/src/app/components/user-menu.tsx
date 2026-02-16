@@ -9,7 +9,6 @@ import {
 } from '@comp/ui/dropdown-menu';
 import { headers } from 'next/headers';
 import { Logout } from './logout';
-import { ThemeSwitch } from './theme-switch';
 
 // Helper function to get initials
 function getInitials(name?: string | null, email?: string | null): string {
@@ -69,11 +68,6 @@ export async function UserMenu() {
             <div className="rounded-full border px-3 py-0.5 text-[11px] font-normal">Beta</div>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <div className="flex flex-row items-center justify-between p-2">
-          <p className="text-sm">Theme</p>
-          <ThemeSwitch />
-        </div>{' '}
         <DropdownMenuSeparator />
         <Logout />
       </DropdownMenuContent>

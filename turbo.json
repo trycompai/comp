@@ -85,6 +85,11 @@
       "persistent": true,
       "cache": false
     },
+    "@comp/device-agent#dev": {
+      "persistent": true,
+      "cache": false,
+      "interactive": true
+    },
     "clean": {
       "cache": false
     },

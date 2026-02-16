@@ -1,0 +1,11 @@
+/* Portal-specific responsive overrides */
+
+/* Scale down the page header heading on mobile */
+[data-slot='page-header'] [data-slot='heading'] {
+  @apply text-2xl sm:text-4xl;
+}
+
+/* Remove the muted background from read-only editor */
+[data-slot='page-layout'] .bg-muted\/50 {
+  background: transparent;
+}

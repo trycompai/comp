@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
-import { AlertTriangle } from 'lucide-react';
+import { WarningAlt } from '@trycompai/design-system/icons';
 
 interface NoAccessMessageProps {
   message?: string;
@@ -8,7 +8,7 @@ interface NoAccessMessageProps {
 export function NoAccessMessage({ message }: NoAccessMessageProps) {
   return (
     <Alert variant="destructive" className="mx-auto max-w-md">
-      <AlertTriangle className="h-4 w-4" />
+      <WarningAlt size={16} />
       <AlertTitle>Access Denied</AlertTitle>
       <AlertDescription>
         {message ??

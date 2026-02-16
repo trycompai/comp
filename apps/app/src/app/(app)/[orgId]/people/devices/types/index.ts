@@ -1,3 +1,40 @@
+export type CheckDetailEntry = {
+  method?: string;
+  raw?: string;
+  message?: string;
+  exception?: string;
+  passed?: boolean;
+  checkedAt?: string;
+};
+
+export type CheckDetails = Record<string, CheckDetailEntry>;
+
+export interface DeviceWithChecks {
+  id: string;
+  name: string;
+  hostname: string;
+  platform: 'macos' | 'windows' | 'linux';
+  osVersion: string;
+  serialNumber: string | null;
+  hardwareModel: string | null;
+  isCompliant: boolean;
+  diskEncryptionEnabled: boolean;
+  antivirusEnabled: boolean;
+  passwordPolicySet: boolean;
+  screenLockEnabled: boolean;
+  checkDetails: CheckDetails | null;
+  lastCheckIn: string | null;
+  agentVersion: string | null;
+  installedAt: string;
+  memberId?: string;
+  user: {
+    name: string;
+    email: string;
+  };
+  /** Indicates which system reported this device */
+  source: 'device_agent' | 'fleet';
+}
+
 export interface FleetPolicy {
   id: number;
   name: string;
@@ -11,8 +48,8 @@ export interface FleetPolicy {
   resolution?: string;
   platform?: string;
   calendar_events_enabled?: boolean;
-  created_at?: string; // ISO date-time string
-  updated_at?: string; // ISO date-time string
+  created_at?: string;
+  updated_at?: string;
   response: string;
   attachments?: string[];
 }

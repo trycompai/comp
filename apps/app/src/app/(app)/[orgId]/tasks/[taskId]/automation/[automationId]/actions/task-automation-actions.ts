@@ -34,7 +34,10 @@ function getEnterpriseConfig() {
   const enterpriseApiKey = process.env.ENTERPRISE_API_SECRET;
 
   if (!enterpriseApiKey) {
-    throw new Error('Not authorized to access enterprise API');
+    throw new EnterpriseApiError(
+      'Task automations require an enterprise license. Please contact sales@trycomp.ai to learn more.',
+      403,
+    );
   }
 
   return { enterpriseApiUrl, enterpriseApiKey };

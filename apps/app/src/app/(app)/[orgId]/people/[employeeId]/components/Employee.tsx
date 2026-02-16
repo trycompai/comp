@@ -2,12 +2,12 @@
 
 import type { TrainingVideo } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion, Member, Organization, Policy, User } from '@db';
-import { Stack } from '@trycompai/design-system';
-import type { FleetPolicy, Host } from '../../devices/types';
+import { PageHeader, PageLayout, Stack } from '@trycompai/design-system';
+import type { DeviceWithChecks, FleetPolicy, Host } from '../../devices/types';
 import { EmployeeDetails } from './EmployeeDetails';
 import { EmployeeTasks } from './EmployeeTasks';
 
-interface EmployeeDetailsProps {
+interface EmployeeProps {
   employee: Member & {
     user: User;
   };
@@ -19,6 +19,8 @@ interface EmployeeDetailsProps {
   host: Host;
   canEdit: boolean;
   organization: Organization;
+  memberDevice: DeviceWithChecks | null;
+  orgId: string;
 }
 
 export function Employee({
@@ -29,18 +31,36 @@ export function Employee({
   host,
   canEdit,
   organization,
-}: EmployeeDetailsProps) {
+  memberDevice,
+  orgId,
+}: EmployeeProps) {
   return (
-    <Stack gap="4">
-      <EmployeeDetails employee={employee} canEdit={canEdit} />
-      <EmployeeTasks
-        employee={employee}
-        policies={policies}
-        trainingVideos={trainingVideos}
-        fleetPolicies={fleetPolicies}
-        host={host}
-        organization={organization}
-      />
-    </Stack>
+    <PageLayout
+      header={
+        <PageHeader
+          title={employee.user.name ?? 'Employee'}
+          breadcrumbs={[
+            { label: 'People', href: `/${orgId}/people` },
+            { label: employee.user.name ?? 'Employee', isCurrent: true },
+          ]}
+        />
+      }
+    >
+      <Stack gap="4">
+        <EmployeeDetails
+          employee={employee}
+          canEdit={canEdit}
+        />
+        <EmployeeTasks
+          employee={employee}
+          policies={policies}
+          trainingVideos={trainingVideos}
+          fleetPolicies={fleetPolicies}
+          host={host}
+          organization={organization}
+          memberDevice={memberDevice}
+        />
+      </Stack>
+    </PageLayout>
   );
 }
