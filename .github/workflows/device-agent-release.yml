@@ -31,8 +31,8 @@ jobs:
       - name: Compute next version
         id: version
         run: |
-          # Get the latest production tag (ignore -staging suffixes)
-          LATEST_TAG=$(git tag -l 'device-agent-v*' --sort=-v:refname | grep -v '\-staging' | head -1)
+          # Get the latest production tag (only match clean semver tags like device-agent-v1.0.0)
+          LATEST_TAG=$(git tag -l 'device-agent-v*' --sort=-v:refname | grep -E '^device-agent-v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
 
           if [ -z "$LATEST_TAG" ]; then
             # No existing tags - start at 1.0.0
