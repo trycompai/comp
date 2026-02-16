@@ -1,21 +1,39 @@
 import { db } from '@db';
 import { cache } from 'react';
+import { countStrictlyCompletedTasks, isTaskStrictlyComplete } from './taskEvidenceDocumentsScore';
 
 export const getDoneTasks = cache(async (organizationId: string) => {
   const tasks = await db.task.findMany({
     where: {
       organizationId,
     },
+    include: {
+      evidenceAutomations: {
+        select: {
+          isEnabled: true,
+          runs: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 1,
+            select: {
+              status: true,
+              success: true,
+              evaluationStatus: true,
+              createdAt: true,
+            },
+          },
+        },
+      },
+    },
   });
 
-  const doneTasks = tasks.filter((t) => t.status === 'done' || t.status === 'not_relevant');
-  const incompleteTasks = tasks.filter(
-    (t) => t.status === 'todo' || t.status === 'in_progress',
-  );
+  const doneTasksCount = countStrictlyCompletedTasks(tasks);
+  const incompleteTasks = tasks.filter((task) => !isTaskStrictlyComplete(task));
 
   return {
     totalTasks: tasks.length,
-    doneTasks: doneTasks.length,
+    doneTasks: doneTasksCount,
     incompleteTasks,
   };
 });

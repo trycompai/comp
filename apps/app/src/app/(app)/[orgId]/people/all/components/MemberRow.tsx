@@ -5,18 +5,6 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Badge,
-  HStack,
-  Label,
-  TableCell,
-  TableRow,
-  Text,
-} from '@trycompai/design-system';
-import { Checkmark, Edit, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -33,6 +21,18 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Role } from '@db';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+  HStack,
+  Label,
+  TableCell,
+  TableRow,
+  Text,
+} from '@trycompai/design-system';
+import { Checkmark, Edit, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 
 import { toast } from 'sonner';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
@@ -119,6 +119,10 @@ export function MemberRow({
   const memberAvatar = member.user.image;
   const memberId = member.id;
   const currentRoles = parseRoles(member.role);
+  const taskProgressPercent =
+    taskCompletion && taskCompletion.total > 0
+      ? Math.round((taskCompletion.completed / taskCompletion.total) * 100)
+      : 0;
 
   const isOwner = currentRoles.includes('owner');
   const canRemove = !isOwner;
@@ -217,25 +221,31 @@ export function MemberRow({
 
         {/* ROLE */}
         <TableCell>
-          <div className="flex flex-wrap gap-1">
-            {currentRoles.map((role) => (
-              <Badge key={role} variant="outline">
-                {getRoleLabel(role)}
-              </Badge>
-            ))}
+          <div className="w-[160px]">
+            <div className="flex flex-wrap gap-1">
+              {currentRoles.map((role) => (
+                <Badge key={role} variant="outline">
+                  {getRoleLabel(role)}
+                </Badge>
+              ))}
+            </div>
           </div>
         </TableCell>
 
         {/* TASKS */}
         <TableCell>
           {taskCompletion ? (
-            <Badge
-              variant={
-                taskCompletion.completed === taskCompletion.total ? 'default' : 'destructive'
-              }
-            >
-              {taskCompletion.completed}/{taskCompletion.total}
-            </Badge>
+            <div className="w-[170px]">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${taskProgressPercent}%` }}
+                />
+              </div>
+              <Text size="xs" variant="muted">
+                {taskCompletion.completed}/{taskCompletion.total} complete
+              </Text>
+            </div>
           ) : (
             <Text size="sm" variant="muted">
               —
@@ -254,10 +264,7 @@ export function MemberRow({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {isDeactivated && canEdit && (
-                  <DropdownMenuItem
-                    onSelect={handleReactivateClick}
-                    disabled={isReactivating}
-                  >
+                  <DropdownMenuItem onSelect={handleReactivateClick} disabled={isReactivating}>
                     <Checkmark size={16} className="mr-2" />
                     <span>{isReactivating ? 'Reinstating...' : 'Reinstate Member'}</span>
                   </DropdownMenuItem>
@@ -268,17 +275,19 @@ export function MemberRow({
                     <span>Edit Roles</span>
                   </DropdownMenuItem>
                 )}
-                {!isDeactivated && (member.fleetDmLabelId || hasDeviceAgentDevice) && isCurrentUserOwner && (
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setDropdownOpen(false);
-                      setIsRemoveDeviceAlertOpen(true);
-                    }}
-                  >
-                    <Laptop className="mr-2 h-4 w-4" />
-                    <span>Remove Device</span>
-                  </DropdownMenuItem>
-                )}
+                {!isDeactivated &&
+                  (member.fleetDmLabelId || hasDeviceAgentDevice) &&
+                  isCurrentUserOwner && (
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        setDropdownOpen(false);
+                        setIsRemoveDeviceAlertOpen(true);
+                      }}
+                    >
+                      <Laptop className="mr-2 h-4 w-4" />
+                      <span>Remove Device</span>
+                    </DropdownMenuItem>
+                  )}
                 {!isDeactivated && canRemove && (
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive focus:bg-destructive/10"
@@ -309,8 +318,8 @@ export function MemberRow({
         title="Remove Device"
         description={
           <>
-            Are you sure you want to remove all devices for this user{' '}
-            <strong>{memberName}</strong>? This will disconnect all devices from the organization.
+            Are you sure you want to remove all devices for this user <strong>{memberName}</strong>?
+            This will disconnect all devices from the organization.
           </>
         }
         onOpenChange={setIsRemoveDeviceAlertOpen}
