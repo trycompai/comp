@@ -45,6 +45,7 @@ export function UpdateSecondaryFieldsForm({
       assigneeId: vendor.assigneeId,
       category: vendor.category,
       status: vendor.status,
+      website: vendor.website ?? '',
       isSubProcessor: vendor.isSubProcessor,
     },
   });
