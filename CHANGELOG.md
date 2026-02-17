@@ -1,3 +1,17 @@
+## [1.83.4](https://github.com/trycompai/comp/compare/v1.83.3...v1.83.4) (2026-02-17)
+
+
+### Bug Fixes
+
+* use primary color for device agent icons and center OTP form ([#2155](https://github.com/trycompai/comp/issues/2155)) ([780bd3d](https://github.com/trycompai/comp/commit/780bd3df6dccf83eaffde1c5c736fb1d26bd8bf9))
+
+## [1.83.3](https://github.com/trycompai/comp/compare/v1.83.2...v1.83.3) (2026-02-17)
+
+
+### Bug Fixes
+
+* **portal:** recognize device agent compliance for task completion ([#2152](https://github.com/trycompai/comp/issues/2152)) ([b1b072e](https://github.com/trycompai/comp/commit/b1b072e95d351a3624ee34bf8bbbaf6bbc926fe6))
+
 ## [1.83.2](https://github.com/trycompai/comp/compare/v1.83.1...v1.83.2) (2026-02-17)
 
 

@@ -1,4 +1,4 @@
-import type { Member, Organization, User } from '@db';
+import type { Device, Member, Organization, User } from '@db';
 import { db } from '@db';
 import { NoAccessMessage } from '../../components/NoAccessMessage';
 import type { FleetPolicy, Host } from '../types';
@@ -15,6 +15,7 @@ interface OrganizationDashboardProps {
   member: MemberWithUserOrg;
   fleetPolicies: FleetPolicy[];
   host: Host | null;
+  agentDevice: Device | null;
 }
 
 export async function OrganizationDashboard({
@@ -22,6 +23,7 @@ export async function OrganizationDashboard({
   member,
   fleetPolicies,
   host,
+  agentDevice,
 }: OrganizationDashboardProps) {
   // Fetch policies specific to the selected organization
   const policies = await db.policy.findMany({
@@ -68,6 +70,7 @@ export async function OrganizationDashboard({
       member={member}
       fleetPolicies={fleetPolicies}
       host={host}
+      agentDevice={agentDevice}
       deviceAgentStepEnabled={org.deviceAgentStepEnabled}
       securityTrainingStepEnabled={org.securityTrainingStepEnabled}
       whistleblowerReportEnabled={org.whistleblowerReportEnabled}
