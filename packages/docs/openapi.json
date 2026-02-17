@@ -11638,7 +11638,18 @@
             "in": "query",
             "description": "Evidence form type to get findings for",
             "schema": {
-              "example": "access-request",
+              "enum": [
+                "board-meeting",
+                "it-leadership-meeting",
+                "risk-committee-meeting",
+                "meeting",
+                "access-request",
+                "whistleblower-report",
+                "penetration-test",
+                "rbac-matrix",
+                "infrastructure-inventory",
+                "employee-performance-evaluation"
+              ],
               "type": "string"
             }
           }
@@ -19204,7 +19215,19 @@
           "evidenceFormType": {
             "type": "string",
             "description": "Evidence form type this finding is associated with (e.g., access-request, whistleblower-report)",
-            "example": "access-request"
+            "example": "access-request",
+            "enum": [
+              "board-meeting",
+              "it-leadership-meeting",
+              "risk-committee-meeting",
+              "meeting",
+              "access-request",
+              "whistleblower-report",
+              "penetration-test",
+              "rbac-matrix",
+              "infrastructure-inventory",
+              "employee-performance-evaluation"
+            ]
           },
           "type": {
             "type": "string",

@@ -1,16 +1,16 @@
 model EvidenceSubmission {
-  id             String   @id @default(dbgenerated("generate_prefixed_cuid('evs'::text)"))
+  id             String           @id @default(dbgenerated("generate_prefixed_cuid('evs'::text)"))
   organizationId String
-  formType       String
+  formType       EvidenceFormType
   submittedById  String?
-  submittedAt    DateTime @default(now())
+  submittedAt    DateTime         @default(now())
   data           Json
-  status         String   @default("pending")
+  status         String           @default("pending")
   reviewedById   String?
   reviewedAt     DateTime?
   reviewReason   String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   submittedBy  User?        @relation("EvidenceSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)

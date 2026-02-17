@@ -5,11 +5,21 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { db, FindingStatus, FindingType } from '@trycompai/db';
+import {
+  db,
+  type EvidenceFormType as DbEvidenceFormType,
+  FindingStatus,
+  FindingType,
+} from '@trycompai/db';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { FindingAuditService } from './finding-audit.service';
 import { FindingNotifierService } from './finding-notifier.service';
+import { type EvidenceFormType } from '@/evidence-forms/evidence-forms.definitions';
+import {
+  toDbEvidenceFormType,
+  toExternalEvidenceFormType,
+} from '@/evidence-forms/evidence-form-type-map';
 
 @Injectable()
 export class FindingsService {
@@ -55,6 +65,28 @@ export class FindingsService {
     private readonly findingNotifierService: FindingNotifierService,
   ) {}
 
+  private normalizeFindingFormTypes<
+    T extends {
+      evidenceFormType: DbEvidenceFormType | null;
+      evidenceSubmission?: {
+        formType: DbEvidenceFormType;
+      } | null;
+    },
+  >(finding: T) {
+    return {
+      ...finding,
+      evidenceFormType: toExternalEvidenceFormType(finding.evidenceFormType),
+      evidenceSubmission: finding.evidenceSubmission
+        ? {
+            ...finding.evidenceSubmission,
+            formType:
+              toExternalEvidenceFormType(finding.evidenceSubmission.formType) ??
+              'meeting',
+          }
+        : null,
+    };
+  }
+
   /**
    * Get all findings for a specific task
    */
@@ -81,7 +113,7 @@ export class FindingsService {
     });
 
     this.logger.log(`Retrieved ${findings.length} findings for task ${taskId}`);
-    return findings;
+    return findings.map((finding) => this.normalizeFindingFormTypes(finding));
   }
 
   /**
@@ -110,7 +142,7 @@ export class FindingsService {
     this.logger.log(
       `Retrieved ${findings.length} findings for evidence submission ${evidenceSubmissionId}`,
     );
-    return findings;
+    return findings.map((finding) => this.normalizeFindingFormTypes(finding));
   }
 
   /**
@@ -118,10 +150,13 @@ export class FindingsService {
    */
   async findByEvidenceFormType(
     organizationId: string,
-    evidenceFormType: string,
+    evidenceFormType: EvidenceFormType,
   ) {
     const findings = await db.finding.findMany({
-      where: { evidenceFormType, organizationId },
+      where: {
+        evidenceFormType: toDbEvidenceFormType(evidenceFormType),
+        organizationId,
+      },
       include: this.findingInclude,
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
     });
@@ -129,7 +164,7 @@ export class FindingsService {
     this.logger.log(
       `Retrieved ${findings.length} findings for evidence form type ${evidenceFormType}`,
     );
-    return findings;
+    return findings.map((finding) => this.normalizeFindingFormTypes(finding));
   }
 
   /**
@@ -148,7 +183,7 @@ export class FindingsService {
     this.logger.log(
       `Retrieved ${findings.length} findings for organization ${organizationId}`,
     );
-    return findings;
+    return findings.map((finding) => this.normalizeFindingFormTypes(finding));
   }
 
   /**
@@ -166,7 +201,7 @@ export class FindingsService {
       );
     }
 
-    return finding;
+    return this.normalizeFindingFormTypes(finding);
   }
 
   /**
@@ -203,7 +238,7 @@ export class FindingsService {
     } | null = null;
     let evidenceSubmission: {
       id: string;
-      formType: string;
+      formType: DbEvidenceFormType;
       submittedAt: Date;
       submittedById: string | null;
     } | null = null;
@@ -253,13 +288,17 @@ export class FindingsService {
     }
 
     const resolvedFormType =
-      createDto.evidenceFormType ?? evidenceSubmission?.formType ?? undefined;
+      createDto.evidenceFormType ??
+      toExternalEvidenceFormType(evidenceSubmission?.formType) ??
+      undefined;
 
     const finding = await db.finding.create({
       data: {
         taskId: createDto.taskId ?? null,
         evidenceSubmissionId: createDto.evidenceSubmissionId ?? null,
-        evidenceFormType: createDto.evidenceFormType ?? null,
+        evidenceFormType: createDto.evidenceFormType
+          ? toDbEvidenceFormType(createDto.evidenceFormType)
+          : null,
         type: createDto.type,
         content: createDto.content,
         templateId: createDto.templateId,
@@ -309,7 +348,7 @@ export class FindingsService {
         ? `evidence form type ${createDto.evidenceFormType}`
         : `evidence submission ${evidenceSubmission?.id}`;
     this.logger.log(`Created finding ${finding.id} for ${target}`);
-    return finding;
+    return this.normalizeFindingFormTypes(finding);
   }
 
   /**
@@ -464,8 +503,7 @@ export class FindingsService {
         taskTitle: finding.task?.title,
         evidenceSubmissionId: finding.evidenceSubmission?.id,
         evidenceSubmissionFormType:
-          (finding as { evidenceFormType?: string | null }).evidenceFormType ??
-          finding.evidenceSubmission?.formType,
+          finding.evidenceFormType ?? finding.evidenceSubmission?.formType,
         evidenceSubmissionSubmittedById:
           finding.evidenceSubmission?.submittedById,
         findingContent: updatedFinding.content,
@@ -519,7 +557,7 @@ export class FindingsService {
     this.logger.log(
       `Updated finding ${findingId}: status=${updatedFinding.status}`,
     );
-    return updatedFinding;
+    return this.normalizeFindingFormTypes(updatedFinding);
   }
 
   /**
@@ -548,8 +586,7 @@ export class FindingsService {
       taskTitle: finding.task?.title,
       evidenceSubmissionId: finding.evidenceSubmission?.id,
       evidenceSubmissionFormType:
-        (finding as { evidenceFormType?: string | null }).evidenceFormType ??
-        finding.evidenceSubmission?.formType,
+        finding.evidenceFormType ?? finding.evidenceSubmission?.formType,
       content: finding.content,
     });
 

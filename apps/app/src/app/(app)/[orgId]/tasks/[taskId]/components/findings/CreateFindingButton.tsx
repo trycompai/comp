@@ -1,5 +1,6 @@
 'use client';
 
+import type { EvidenceFormType } from '@comp/company';
 import { Button } from '@trycompai/design-system';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import { CreateFindingSheet } from './CreateFindingSheet';
 interface CreateFindingButtonProps {
   taskId?: string;
   evidenceSubmissionId?: string;
-  evidenceFormType?: string;
+  evidenceFormType?: EvidenceFormType;
   onSuccess?: () => void;
 }
 

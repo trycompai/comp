@@ -33,6 +33,7 @@ import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { ValidateFindingIdPipe } from './pipes/validate-finding-id.pipe';
 import { db } from '@trycompai/db';
+import { evidenceFormTypeSchema } from '@/evidence-forms/evidence-forms.definitions';
 
 @ApiTags('Findings')
 @Controller({ path: 'findings', version: '1' })
@@ -69,6 +70,7 @@ export class FindingsController {
     required: false,
     description: 'Evidence form type to get findings for',
     example: 'access-request',
+    enum: evidenceFormTypeSchema.options,
   })
   @ApiResponse({
     status: 200,
@@ -102,6 +104,12 @@ export class FindingsController {
       );
     }
 
+    if (evidenceFormType && !evidenceFormTypeSchema.parse(evidenceFormType)) {
+      throw new BadRequestException(
+        `Invalid evidenceFormType value. Must be one of: ${evidenceFormTypeSchema.options.join(', ')}`,
+      );
+    }
+
     if (taskId) {
       return await this.findingsService.findByTaskId(
         authContext.organizationId,
@@ -110,9 +118,11 @@ export class FindingsController {
     }
 
     if (evidenceFormType) {
+      const parsedEvidenceFormType =
+        evidenceFormTypeSchema.parse(evidenceFormType);
       return await this.findingsService.findByEvidenceFormType(
         authContext.organizationId,
-        evidenceFormType,
+        parsedEvidenceFormType,
       );
     }
 

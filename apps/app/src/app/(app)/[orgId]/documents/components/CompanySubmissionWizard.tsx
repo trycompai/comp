@@ -226,20 +226,54 @@ export function CompanySubmissionWizard({
     });
   };
 
+  const validateRequiredMatrixCells = () => {
+    for (const field of matrixFields) {
+      const rows = normalizeMatrixRows(getValues(field.key as never));
+      const rowValues = rows.length > 0 ? rows : [createEmptyMatrixRow(field.columns)];
+
+      for (let rowIndex = 0; rowIndex < rowValues.length; rowIndex += 1) {
+        const row = rowValues[rowIndex] ?? {};
+
+        for (const column of field.columns) {
+          if (!column.required) continue;
+
+          const rawValue = row[column.key];
+          const value = typeof rawValue === 'string' ? rawValue.trim() : '';
+          if (value.length > 0) continue;
+
+          const inputId = `${field.key}-${rowIndex}-${column.key}`;
+          document.getElementById(inputId)?.focus();
+          toast.error(`Complete "${column.label}" in row ${rowIndex + 1} to continue`);
+          return false;
+        }
+      }
+    }
+
+    return true;
+  };
+
   const goToStepTwo = async () => {
     const keys: string[] = [];
     if (activeFormDefinition.submissionDateMode === 'custom') keys.push('submissionDate');
     keys.push(...compactFields.map((f) => f.key));
 
     const isValid = await trigger(keys as never, { shouldFocus: true });
-    if (!isValid) return;
+    if (!isValid) {
+      toast.error('Complete required fields before continuing');
+      return;
+    }
     setStep(2);
   };
 
   const goToStepThree = async () => {
+    if (!validateRequiredMatrixCells()) return;
+
     const keys = [...extendedFields.map((f) => f.key), ...matrixFields.map((f) => f.key)];
     const isValid = keys.length === 0 ? true : await trigger(keys as never, { shouldFocus: true });
-    if (!isValid) return;
+    if (!isValid) {
+      toast.error('Complete required fields before reviewing');
+      return;
+    }
 
     if (isMeeting) {
       setIsAnalyzing(true);

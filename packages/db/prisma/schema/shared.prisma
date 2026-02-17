@@ -52,6 +52,19 @@ enum AuditLogEntityType {
   finding
 }
 
+enum EvidenceFormType {
+  board_meeting                   @map("board-meeting")
+  it_leadership_meeting           @map("it-leadership-meeting")
+  risk_committee_meeting          @map("risk-committee-meeting")
+  meeting
+  access_request                  @map("access-request")
+  whistleblower_report            @map("whistleblower-report")
+  penetration_test                @map("penetration-test")
+  rbac_matrix                     @map("rbac-matrix")
+  infrastructure_inventory        @map("infrastructure-inventory")
+  employee_performance_evaluation @map("employee-performance-evaluation")
+}
+
 model GlobalVendors {
   website                     String   @id @unique
   company_name                String?

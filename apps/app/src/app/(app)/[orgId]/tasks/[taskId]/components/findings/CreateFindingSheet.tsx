@@ -8,6 +8,7 @@ import {
   useFindingTemplates,
   type FindingTemplate,
 } from '@/hooks/use-findings-api';
+import type { EvidenceFormType } from '@comp/company';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { useMediaQuery } from '@comp/ui/hooks';
 import { FindingType } from '@db';
@@ -48,7 +49,7 @@ const createFindingSchema = z.object({
 interface CreateFindingSheetProps {
   taskId?: string;
   evidenceSubmissionId?: string;
-  evidenceFormType?: string;
+  evidenceFormType?: EvidenceFormType;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;

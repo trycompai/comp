@@ -8,7 +8,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateFindingButton } from '../../tasks/[taskId]/components/findings/CreateFindingButton';
 import { FindingItem } from '../../tasks/[taskId]/components/findings/FindingItem';
-import { meetingSubTypeValues } from '../forms';
+import { meetingSubTypeValues, type EvidenceFormType } from '../forms';
 
 const INITIAL_DISPLAY_COUNT = 5;
 
@@ -22,7 +22,7 @@ const STATUS_ORDER: Record<FindingStatus, number> = {
 };
 
 interface DocumentFindingsSectionProps {
-  formType: string;
+  formType: EvidenceFormType;
   isAuditor: boolean;
   isPlatformAdmin: boolean;
   isAdminOrOwner: boolean;
