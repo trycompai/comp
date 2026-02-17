@@ -154,7 +154,7 @@ export function DeviceAgentAccordionItem({
       <AccordionTrigger className="px-4 hover:no-underline [&[data-state=open]]:pb-2">
         <div className="flex items-center gap-3">
           {isCompleted ? (
-            <CheckCircle2 className="text-green-600 dark:text-green-400 h-5 w-5" />
+            <CheckCircle2 className="text-primary h-5 w-5" />
           ) : (
             <Circle className="text-muted-foreground h-5 w-5" />
           )}
@@ -230,7 +230,7 @@ export function DeviceAgentAccordionItem({
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2">
                   {agentDevice.isCompliant ? (
-                    <CheckCircle2 className="text-green-600 dark:text-green-400 h-4 w-4" />
+                    <CheckCircle2 className="text-primary h-4 w-4" />
                   ) : (
                     <Circle className="text-amber-600 dark:text-amber-400 h-4 w-4" />
                   )}

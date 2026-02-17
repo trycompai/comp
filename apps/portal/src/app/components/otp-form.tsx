@@ -64,7 +64,7 @@ export function OtpForm({ email }: OtpFormProps) {
 
   return (
     <Form {...form}>
-      <form className="grid gap-2" onSubmit={form.handleSubmit(onSubmit)}>
+      <form className="grid gap-4 place-items-center" onSubmit={form.handleSubmit(onSubmit)}>
         <FormField
           control={form.control}
           name="otp"
