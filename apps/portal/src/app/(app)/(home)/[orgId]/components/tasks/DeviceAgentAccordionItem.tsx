@@ -51,9 +51,12 @@ export function DeviceAgentAccordionItem({
     [fleetPolicies],
   );
 
-  const fleetCompleted = hasFleetDevice && failedPoliciesCount === 0;
-  const agentCompleted = hasAgentDevice && agentDevice.isCompliant;
-  const isCompleted = fleetCompleted || agentCompleted;
+  // Device agent takes priority over Fleet
+  const isCompleted = hasAgentDevice
+    ? agentDevice.isCompliant
+    : hasFleetDevice
+      ? failedPoliciesCount === 0
+      : false;
 
   const handleDownload = async () => {
     if (!detectedOS) {
@@ -155,7 +158,7 @@ export function DeviceAgentAccordionItem({
           <span className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}>
             Device Agent
           </span>
-          {hasFleetDevice && failedPoliciesCount > 0 && (
+          {!hasAgentDevice && hasFleetDevice && failedPoliciesCount > 0 && (
             <span className="text-amber-600 dark:text-amber-400 text-xs ml-auto">
               {failedPoliciesCount} policies failing
             </span>
@@ -235,6 +238,32 @@ export function DeviceAgentAccordionItem({
                 )}
               </ol>
             </div>
+          ) : hasAgentDevice ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{agentDevice.name}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  {agentDevice.isCompliant ? (
+                    <CheckCircle2 className="text-green-600 dark:text-green-400 h-4 w-4" />
+                  ) : (
+                    <Circle className="text-amber-600 dark:text-amber-400 h-4 w-4" />
+                  )}
+                  <span className="text-sm">
+                    {agentDevice.isCompliant
+                      ? 'All security checks passing'
+                      : 'Some security checks need attention'}
+                  </span>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  {agentDevice.platform} &middot; {agentDevice.osVersion}
+                  {agentDevice.lastCheckIn && (
+                    <> &middot; Last check-in: {new Date(agentDevice.lastCheckIn).toLocaleDateString()}</>
+                  )}
+                </p>
+              </CardContent>
+            </Card>
           ) : hasFleetDevice ? (
             <Card>
               <CardHeader>
@@ -267,32 +296,6 @@ export function DeviceAgentAccordionItem({
                     No policies configured for this device.
                   </p>
                 )}
-              </CardContent>
-            </Card>
-          ) : agentDevice ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{agentDevice.name}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  {agentDevice.isCompliant ? (
-                    <CheckCircle2 className="text-green-600 dark:text-green-400 h-4 w-4" />
-                  ) : (
-                    <Circle className="text-amber-600 dark:text-amber-400 h-4 w-4" />
-                  )}
-                  <span className="text-sm">
-                    {agentDevice.isCompliant
-                      ? 'All security checks passing'
-                      : 'Some security checks need attention'}
-                  </span>
-                </div>
-                <p className="text-muted-foreground text-xs">
-                  {agentDevice.platform} &middot; {agentDevice.osVersion}
-                  {agentDevice.lastCheckIn && (
-                    <> &middot; Last check-in: {new Date(agentDevice.lastCheckIn).toLocaleDateString()}</>
-                  )}
-                </p>
               </CardContent>
             </Card>
           ) : null}

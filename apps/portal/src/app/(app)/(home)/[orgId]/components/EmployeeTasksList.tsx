@@ -73,13 +73,15 @@ export const EmployeeTasksList = ({
   // Check completion status
   const hasAcceptedPolicies =
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
+
+  // Device agent takes priority over Fleet for completion
+  const hasAgentDevice = agentDevice !== null;
   const hasFleetDevice = response.device !== null;
-  const allFleetPoliciesPass =
-    response.fleetPolicies.length === 0 ||
-    response.fleetPolicies.every((policy) => policy.response === 'pass');
-  const hasFleetCompleted = hasFleetDevice && allFleetPoliciesPass;
-  const hasAgentCompleted = agentDevice !== null && agentDevice.isCompliant;
-  const hasCompletedDeviceSetup = hasFleetCompleted || hasAgentCompleted;
+  const hasCompletedDeviceSetup = hasAgentDevice
+    ? agentDevice.isCompliant
+    : hasFleetDevice &&
+      (response.fleetPolicies.length === 0 ||
+        response.fleetPolicies.every((policy) => policy.response === 'pass'));
 
   // Calculate general training completion (matching logic from GeneralTrainingAccordionItem)
   const generalTrainingVideoIds = trainingVideos
