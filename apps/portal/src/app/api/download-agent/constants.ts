@@ -24,8 +24,8 @@ export const DOWNLOAD_TARGETS: Record<
     contentType: 'application/octet-stream',
   },
   linux: {
-    key: `${S3_PREFIX}/linux/latest-x64.deb`,
-    filename: 'CompAI-Device-Agent-x64.deb',
+    key: `${S3_PREFIX}/linux/latest-amd64.deb`,
+    filename: 'CompAI-Device-Agent-amd64.deb',
     contentType: 'application/vnd.debian.binary-package',
   },
 };

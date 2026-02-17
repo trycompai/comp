@@ -1,3 +1,13 @@
+## [1.83.1](https://github.com/trycompai/comp/compare/v1.83.0...v1.83.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* **ci:** fix Linux artifact names and consolidate all CI fixes ([#2144](https://github.com/trycompai/comp/issues/2144)) ([cbcf420](https://github.com/trycompai/comp/commit/cbcf420217c268fdfb35d9c03631a56d8822a028))
+* **ci:** handle pre-release tags in device agent version detection ([#2137](https://github.com/trycompai/comp/issues/2137)) ([b37f225](https://github.com/trycompai/comp/commit/b37f2252e9bf220600b2eb229364c4b6964b7cf0))
+* **ci:** pin Windows code signing to stable sslcom/esigner-codesign@v1.3.2 ([#2141](https://github.com/trycompai/comp/issues/2141)) ([5f35e35](https://github.com/trycompai/comp/commit/5f35e3500bbc6670464d83fb3c9eb7c5c3f4ec29))
+* **ci:** replace broken sslcom/esigner-codesign action with direct CodeSignTool invocation ([#2143](https://github.com/trycompai/comp/issues/2143)) ([884e0d2](https://github.com/trycompai/comp/commit/884e0d23dfce128b0359b3f5ad66d88aaba0c866))
+
 # [1.83.0](https://github.com/trycompai/comp/compare/v1.82.3...v1.83.0) (2026-02-13)
 
 
