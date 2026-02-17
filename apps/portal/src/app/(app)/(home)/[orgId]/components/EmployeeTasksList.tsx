@@ -4,7 +4,7 @@ import { trainingVideos } from '@/lib/data/training-videos';
 import { evidenceFormDefinitionList } from '@comp/company';
 import { Accordion } from '@comp/ui/accordion';
 import { Card, CardContent } from '@comp/ui/card';
-import type { EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
+import type { Device, EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
 import { Button } from '@trycompai/design-system';
 import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
@@ -27,6 +27,7 @@ interface EmployeeTasksListProps {
   member: Member;
   fleetPolicies: FleetPolicy[];
   host: Host | null;
+  agentDevice: Device | null;
   deviceAgentStepEnabled: boolean;
   securityTrainingStepEnabled: boolean;
   whistleblowerReportEnabled: boolean;
@@ -40,6 +41,7 @@ export const EmployeeTasksList = ({
   member,
   fleetPolicies,
   host,
+  agentDevice,
   deviceAgentStepEnabled,
   securityTrainingStepEnabled,
   whistleblowerReportEnabled,
@@ -71,11 +73,13 @@ export const EmployeeTasksList = ({
   // Check completion status
   const hasAcceptedPolicies =
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
-  const hasInstalledAgent = response.device !== null;
+  const hasFleetDevice = response.device !== null;
   const allFleetPoliciesPass =
     response.fleetPolicies.length === 0 ||
     response.fleetPolicies.every((policy) => policy.response === 'pass');
-  const hasCompletedDeviceSetup = hasInstalledAgent && allFleetPoliciesPass;
+  const hasFleetCompleted = hasFleetDevice && allFleetPoliciesPass;
+  const hasAgentCompleted = agentDevice !== null && agentDevice.isCompliant;
+  const hasCompletedDeviceSetup = hasFleetCompleted || hasAgentCompleted;
 
   // Calculate general training completion (matching logic from GeneralTrainingAccordionItem)
   const generalTrainingVideoIds = trainingVideos
@@ -109,6 +113,7 @@ export const EmployeeTasksList = ({
               <DeviceAgentAccordionItem
                 member={member}
                 host={response.device}
+                agentDevice={agentDevice}
                 fleetPolicies={response.fleetPolicies}
                 isLoading={isValidating}
                 fetchFleetPolicies={fetchFleetPolicies}

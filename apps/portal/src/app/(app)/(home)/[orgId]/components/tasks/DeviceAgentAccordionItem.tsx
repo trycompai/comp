@@ -10,7 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@c
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import type { Member } from '@db';
+import type { Device, Member } from '@db';
 import { Button } from '@trycompai/design-system';
 import { CheckCircle2, Circle, Download, Loader2, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -21,6 +21,7 @@ import { FleetPolicyItem } from './FleetPolicyItem';
 interface DeviceAgentAccordionItemProps {
   member: Member;
   host: Host | null;
+  agentDevice: Device | null;
   isLoading: boolean;
   fleetPolicies?: FleetPolicy[];
   fetchFleetPolicies: () => void;
@@ -29,6 +30,7 @@ interface DeviceAgentAccordionItemProps {
 export function DeviceAgentAccordionItem({
   member,
   host,
+  agentDevice,
   isLoading,
   fleetPolicies = [],
   fetchFleetPolicies,
@@ -41,13 +43,17 @@ export function DeviceAgentAccordionItem({
     [detectedOS],
   );
 
-  const hasInstalledAgent = host !== null;
+  const hasFleetDevice = host !== null;
+  const hasAgentDevice = agentDevice !== null;
+  const hasInstalledAgent = hasFleetDevice || hasAgentDevice;
   const failedPoliciesCount = useMemo(
     () => fleetPolicies.filter((policy) => policy.response !== 'pass').length,
     [fleetPolicies],
   );
 
-  const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
+  const fleetCompleted = hasFleetDevice && failedPoliciesCount === 0;
+  const agentCompleted = hasAgentDevice && agentDevice.isCompliant;
+  const isCompleted = fleetCompleted || agentCompleted;
 
   const handleDownload = async () => {
     if (!detectedOS) {
