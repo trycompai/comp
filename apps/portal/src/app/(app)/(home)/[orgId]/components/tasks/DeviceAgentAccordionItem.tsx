@@ -295,7 +295,7 @@ export function DeviceAgentAccordionItem({
               <AccordionContent className="px-4 pb-4">
                 <div className="text-muted-foreground space-y-2 text-sm">
                   <p>
-                    <strong>Operating Systems:</strong> macOS 14+, Windows 10+
+                    <strong>Operating Systems:</strong> macOS 14+, Windows 10+, Linux (Ubuntu 20.04+)
                   </p>
                   <p>
                     <strong>Memory:</strong> 512MB RAM minimum
