@@ -31,7 +31,7 @@ export function isOutstandingDocument(lastSubmittedAt: string | null): boolean {
 }
 
 function isMeetingOutstanding(statuses: DocumentFormStatuses): boolean {
-  return MEETING_SUB_TYPES.some((subType) =>
+  return MEETING_SUB_TYPES.every((subType) =>
     isOutstandingDocument(statuses[subType]?.lastSubmittedAt ?? null),
   );
 }
