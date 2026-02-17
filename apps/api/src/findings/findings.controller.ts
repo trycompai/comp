@@ -104,7 +104,10 @@ export class FindingsController {
       );
     }
 
-    if (evidenceFormType && !evidenceFormTypeSchema.parse(evidenceFormType)) {
+    const parsedEvidenceFormType = evidenceFormType
+      ? evidenceFormTypeSchema.safeParse(evidenceFormType)
+      : null;
+    if (parsedEvidenceFormType && !parsedEvidenceFormType.success) {
       throw new BadRequestException(
         `Invalid evidenceFormType value. Must be one of: ${evidenceFormTypeSchema.options.join(', ')}`,
       );
@@ -117,12 +120,10 @@ export class FindingsController {
       );
     }
 
-    if (evidenceFormType) {
-      const parsedEvidenceFormType =
-        evidenceFormTypeSchema.parse(evidenceFormType);
+    if (evidenceFormType && parsedEvidenceFormType?.success) {
       return await this.findingsService.findByEvidenceFormType(
         authContext.organizationId,
-        parsedEvidenceFormType,
+        parsedEvidenceFormType.data,
       );
     }
 

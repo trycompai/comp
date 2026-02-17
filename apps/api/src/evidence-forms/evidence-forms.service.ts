@@ -578,6 +578,22 @@ export class EvidenceFormsService {
           reviewedAt: new Date(),
           reviewReason: parsed.data.reason,
         },
+        include: {
+          submittedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          reviewedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
       })
       .then(normalizeSubmissionFormType);
   }
