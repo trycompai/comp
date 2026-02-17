@@ -45,6 +45,7 @@ export function UpdateSecondaryFieldsForm({
       assigneeId: vendor.assigneeId,
       category: vendor.category,
       status: vendor.status,
+      website: vendor.website ?? '',
       isSubProcessor: vendor.isSubProcessor,
     },
   });
@@ -60,6 +61,7 @@ export function UpdateSecondaryFieldsForm({
       assigneeId: finalAssigneeId, // Use the potentially nulled value
       category: data.category,
       status: data.status,
+      website: data.website,
       isSubProcessor: data.isSubProcessor,
     });
   };
