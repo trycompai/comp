@@ -33,7 +33,7 @@ function isTodo(lastSubmittedAt: string | null): boolean {
 }
 
 function isMeetingTodo(statuses: FormStatuses): boolean {
-  return MEETING_SUB_TYPES.some((subType) => isTodo(statuses[subType]?.lastSubmittedAt ?? null));
+  return MEETING_SUB_TYPES.every((subType) => isTodo(statuses[subType]?.lastSubmittedAt ?? null));
 }
 
 function StatusBadge({
