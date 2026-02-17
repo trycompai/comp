@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Comp AI Device Agent - Endpoint Compliance",
   "author": "Comp AI <hello@trycomp.ai>",
-  "homepage": "https://trycomp.ai",
+  "homepage": "https://trycomp.ai/",
   "private": true,
   "main": "dist/main/index.js",
   "scripts": {
