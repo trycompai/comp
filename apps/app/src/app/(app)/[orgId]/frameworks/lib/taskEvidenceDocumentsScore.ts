@@ -1,9 +1,9 @@
-import { evidenceFormDefinitionList } from '@comp/company';
+import { evidenceFormDefinitionList, meetingSubTypeValues } from '@comp/company';
 import { db } from '@db';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
-const MEETING_SUB_TYPES = ['board-meeting', 'it-leadership-meeting', 'risk-committee-meeting'];
+const MEETING_SUB_TYPES = meetingSubTypeValues;
 
 export type DocumentFormStatuses = Record<string, { lastSubmittedAt: string | null }>;
 

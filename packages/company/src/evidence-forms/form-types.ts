@@ -22,3 +22,5 @@ export const meetingSubTypes = [
 ] as const;
 
 export type MeetingSubType = (typeof meetingSubTypes)[number]['value'];
+
+export const meetingSubTypeValues: MeetingSubType[] = meetingSubTypes.map((m) => m.value);

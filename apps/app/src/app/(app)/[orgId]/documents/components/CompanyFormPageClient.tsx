@@ -3,6 +3,7 @@
 import { conciseFormDescriptions } from '@/app/(app)/[orgId]/documents/form-descriptions';
 import {
   evidenceFormDefinitions,
+  meetingSubTypeValues,
   type EvidenceFormType,
 } from '@/app/(app)/[orgId]/documents/forms';
 import { api } from '@/lib/api-client';
@@ -57,11 +58,7 @@ type EvidenceFormResponse = {
   total: number;
 };
 
-const MEETING_SUB_TYPES: EvidenceFormType[] = [
-  'board-meeting',
-  'it-leadership-meeting',
-  'risk-committee-meeting',
-];
+const MEETING_SUB_TYPES = meetingSubTypeValues;
 
 const MEETING_TYPE_LABELS: Record<string, string> = {
   'board-meeting': 'Board',
@@ -85,6 +82,17 @@ function truncate(str: string, max: number) {
 function getMatrixRowCount(value: unknown): number {
   if (!Array.isArray(value)) return 0;
   return value.filter((row) => row && typeof row === 'object').length;
+}
+
+async function evidenceFormFetcher([endpoint, orgId]: readonly [
+  string,
+  string,
+]): Promise<EvidenceFormResponse> {
+  const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
+  if (response.error || !response.data) {
+    throw new Error(response.error ?? 'Failed to load submissions');
+  }
+  return response.data;
 }
 
 // ─── Main Component ──────────────────────────────────────────
@@ -132,44 +140,20 @@ export function CompanyFormPageClient({
 
   const { data: singleData, isLoading: singleLoading } = useSWR<EvidenceFormResponse>(
     swrKey,
-    async ([endpoint, orgId]: readonly [string, string]) => {
-      const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
-      if (response.error || !response.data) {
-        throw new Error(response.error ?? 'Failed to load evidence form submissions');
-      }
-      return response.data;
-    },
+    evidenceFormFetcher,
   );
 
   const { data: meetingData0, isLoading: ml0 } = useSWR<EvidenceFormResponse>(
     meetingSwrKeys[0] ?? null,
-    async ([endpoint, orgId]: readonly [string, string]) => {
-      const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
-      if (response.error || !response.data) {
-        throw new Error(response.error ?? 'Failed to load submissions');
-      }
-      return response.data;
-    },
+    evidenceFormFetcher,
   );
   const { data: meetingData1, isLoading: ml1 } = useSWR<EvidenceFormResponse>(
     meetingSwrKeys[1] ?? null,
-    async ([endpoint, orgId]: readonly [string, string]) => {
-      const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
-      if (response.error || !response.data) {
-        throw new Error(response.error ?? 'Failed to load submissions');
-      }
-      return response.data;
-    },
+    evidenceFormFetcher,
   );
   const { data: meetingData2, isLoading: ml2 } = useSWR<EvidenceFormResponse>(
     meetingSwrKeys[2] ?? null,
-    async ([endpoint, orgId]: readonly [string, string]) => {
-      const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
-      if (response.error || !response.data) {
-        throw new Error(response.error ?? 'Failed to load submissions');
-      }
-      return response.data;
-    },
+    evidenceFormFetcher,
   );
 
   const mergedMeetingSubmissions = useMemo(() => {
@@ -216,7 +200,7 @@ export function CompanyFormPageClient({
       }
 
       const exportTypes = isMeeting ? MEETING_SUB_TYPES : [formType];
-      const blobs: Blob[] = [];
+      const results: { blob: Blob; exportType: string }[] = [];
 
       for (const exportType of exportTypes) {
         const response = await fetch(
@@ -231,20 +215,27 @@ export function CompanyFormPageClient({
           },
         );
 
+        if (response.status === 400) {
+          continue;
+        }
+
         if (!response.ok) {
           throw new Error(await response.text());
         }
 
-        blobs.push(await response.blob());
+        results.push({ blob: await response.blob(), exportType });
       }
 
-      for (let i = 0; i < blobs.length; i++) {
-        const blob = blobs[i];
-        if (!blob) continue;
+      if (results.length === 0) {
+        toast.error('No submissions available to export');
+        return;
+      }
+
+      for (const { blob, exportType } of results) {
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = url;
-        anchor.download = `${exportTypes[i]}-submissions.csv`;
+        anchor.download = `${exportType}-submissions.csv`;
         document.body.appendChild(anchor);
         anchor.click();
         document.body.removeChild(anchor);

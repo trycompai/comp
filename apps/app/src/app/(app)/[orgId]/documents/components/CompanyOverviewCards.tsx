@@ -3,6 +3,7 @@
 import { conciseFormDescriptions } from '@/app/(app)/[orgId]/documents/form-descriptions';
 import { useOrganizationFindings } from '@/hooks/use-findings-api';
 import { api } from '@/lib/api-client';
+import { FindingStatus } from '@db';
 import {
   Badge,
   Card,
@@ -13,18 +14,17 @@ import {
   Stack,
   Text,
 } from '@trycompai/design-system';
-import { FindingStatus } from '@db';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import useSWR from 'swr';
-import { evidenceFormDefinitionList } from '../forms';
+import { evidenceFormDefinitionList, meetingSubTypeValues } from '../forms';
 
 type FormStatuses = Record<string, { lastSubmittedAt: string | null }>;
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
-const MEETING_SUB_TYPES = ['board-meeting', 'it-leadership-meeting', 'risk-committee-meeting'];
-const MEETING_ALL_TYPES = new Set([...MEETING_SUB_TYPES, 'meeting']);
+const MEETING_SUB_TYPES = meetingSubTypeValues;
+const MEETING_ALL_TYPES = new Set<string>([...MEETING_SUB_TYPES, 'meeting']);
 
 function isTodo(lastSubmittedAt: string | null): boolean {
   if (!lastSubmittedAt) return true;

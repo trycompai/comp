@@ -8,10 +8,11 @@ import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateFindingButton } from '../../tasks/[taskId]/components/findings/CreateFindingButton';
 import { FindingItem } from '../../tasks/[taskId]/components/findings/FindingItem';
+import { meetingSubTypeValues } from '../forms';
 
 const INITIAL_DISPLAY_COUNT = 5;
 
-const MEETING_SUB_TYPES = ['board-meeting', 'it-leadership-meeting', 'risk-committee-meeting'];
+const MEETING_SUB_TYPES = meetingSubTypeValues;
 
 const STATUS_ORDER: Record<FindingStatus, number> = {
   [FindingStatus.open]: 0,

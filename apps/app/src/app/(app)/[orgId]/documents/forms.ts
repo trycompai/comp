@@ -6,6 +6,7 @@ export {
   evidenceFormSubmissionSchemaMap,
   evidenceFormTypeSchema,
   meetingMinutesPlaceholders,
+  meetingSubTypeValues,
   meetingSubTypes,
   type EvidenceFormDefinition,
   type EvidenceFormFieldDefinition,
