@@ -3,12 +3,17 @@
 import {
   evidenceFormDefinitions,
   evidenceFormSubmissionSchemaMap,
+  meetingMinutesPlaceholders,
+  meetingSubTypes,
   type EvidenceFormFieldDefinition,
   type EvidenceFormFile,
   type EvidenceFormType,
+  type MeetingSubType,
 } from '@/app/(app)/[orgId]/documents/forms';
+import type { MeetingMinutesAnalysisResult } from '@/app/api/evidence-forms/analyze/route';
 import { FileUploader } from '@/components/file-uploader';
 import { api } from '@/lib/api-client';
+import { meetingFields } from '@comp/company';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
@@ -32,11 +37,11 @@ import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
-  type MatrixColumnDefinition,
-  type MatrixRowValue,
   isMatrixField,
   normalizeMatrixRows,
   renderSubmissionValue,
+  type MatrixColumnDefinition,
+  type MatrixRowValue,
 } from './submission-utils';
 
 type Step = 1 | 2 | 3;
@@ -69,9 +74,27 @@ export function CompanySubmissionWizard({
   const [step, setStep] = useState<Step>(1);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
 
-  const formDefinition = evidenceFormDefinitions[formType];
+  const isMeeting = formType === 'meeting';
+  const [selectedMeetingType, setSelectedMeetingType] = useState<MeetingSubType>('board-meeting');
+  const [analysisResult, setAnalysisResult] = useState<MeetingMinutesAnalysisResult | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisSkipped, setAnalysisSkipped] = useState(false);
+
+  const activeFormDefinition = useMemo(() => {
+    if (!isMeeting) return evidenceFormDefinitions[formType];
+
+    const placeholder = meetingMinutesPlaceholders[selectedMeetingType] ?? '';
+    return {
+      ...evidenceFormDefinitions.meeting,
+      fields: meetingFields(placeholder),
+    };
+  }, [formType, isMeeting, selectedMeetingType]);
+
   const formSchema = evidenceFormSubmissionSchemaMap[formType];
-  const visibleFields = formDefinition.fields.filter((field) => field.key !== 'submissionDate');
+  const visibleFields = activeFormDefinition.fields.filter(
+    (field) => field.key !== 'submissionDate',
+  );
   const matrixFields = useMemo(() => visibleFields.filter(isMatrixField), [visibleFields]);
 
   const compactFields = useMemo(() => {
@@ -87,20 +110,26 @@ export function CompanySubmissionWizard({
     [visibleFields],
   );
 
+  const today = new Date().toISOString().slice(0, 10);
+
   const defaultValues = useMemo(() => {
     const defaults: Record<string, unknown> = {
       submissionDate:
-        formDefinition.submissionDateMode === 'custom'
-          ? new Date().toISOString().slice(0, 10)
-          : new Date().toISOString(),
+        activeFormDefinition.submissionDateMode === 'custom' ? today : new Date().toISOString(),
     };
+
+    for (const field of activeFormDefinition.fields) {
+      if (field.type === 'date' && field.key !== 'submissionDate') {
+        defaults[field.key] = today;
+      }
+    }
 
     for (const matrixField of matrixFields) {
       defaults[matrixField.key] = [createEmptyMatrixRow(matrixField.columns)];
     }
 
     return defaults;
-  }, [formDefinition.submissionDateMode, matrixFields]);
+  }, [activeFormDefinition, matrixFields, today]);
 
   const {
     control,
@@ -122,10 +151,11 @@ export function CompanySubmissionWizard({
     setUploadingField(fieldKey);
     try {
       const fileData = await fileToBase64(file);
+      const submitFormType = isMeeting ? selectedMeetingType : formType;
       const response = await api.post<EvidenceFormFile>(
         '/v1/evidence-forms/uploads',
         {
-          formType,
+          formType: submitFormType,
           fileName: file.name,
           fileType: file.type || 'application/octet-stream',
           fileData,
@@ -196,31 +226,107 @@ export function CompanySubmissionWizard({
     });
   };
 
+  const validateRequiredMatrixCells = () => {
+    for (const field of matrixFields) {
+      const rows = normalizeMatrixRows(getValues(field.key as never));
+      const rowValues = rows.length > 0 ? rows : [createEmptyMatrixRow(field.columns)];
+
+      for (let rowIndex = 0; rowIndex < rowValues.length; rowIndex += 1) {
+        const row = rowValues[rowIndex] ?? {};
+
+        for (const column of field.columns) {
+          if (!column.required) continue;
+
+          const rawValue = row[column.key];
+          const value = typeof rawValue === 'string' ? rawValue.trim() : '';
+          if (value.length > 0) continue;
+
+          const inputId = `${field.key}-${rowIndex}-${column.key}`;
+          document.getElementById(inputId)?.focus();
+          toast.error(`Complete "${column.label}" in row ${rowIndex + 1} to continue`);
+          return false;
+        }
+      }
+    }
+
+    return true;
+  };
+
   const goToStepTwo = async () => {
     const keys: string[] = [];
-    if (formDefinition.submissionDateMode === 'custom') keys.push('submissionDate');
+    if (activeFormDefinition.submissionDateMode === 'custom') keys.push('submissionDate');
     keys.push(...compactFields.map((f) => f.key));
 
     const isValid = await trigger(keys as never, { shouldFocus: true });
-    if (!isValid) return;
+    if (!isValid) {
+      toast.error('Complete required fields before continuing');
+      return;
+    }
     setStep(2);
   };
 
   const goToStepThree = async () => {
+    if (!validateRequiredMatrixCells()) return;
+
     const keys = [...extendedFields.map((f) => f.key), ...matrixFields.map((f) => f.key)];
     const isValid = keys.length === 0 ? true : await trigger(keys as never, { shouldFocus: true });
-    if (!isValid) return;
-    setStep(3);
+    if (!isValid) {
+      toast.error('Complete required fields before reviewing');
+      return;
+    }
+
+    if (isMeeting) {
+      setIsAnalyzing(true);
+      setAnalysisResult(null);
+      setAnalysisError(null);
+      setAnalysisSkipped(false);
+      setStep(3);
+
+      try {
+        const meetingMinutes = String(getValues('meetingMinutes' as never) ?? '');
+        const response = await fetch('/api/evidence-forms/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Organization-Id': organizationId,
+          },
+          body: JSON.stringify({
+            meetingMinutes,
+            meetingType: selectedMeetingType,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          setAnalysisError(
+            (errorData as { error?: string } | null)?.error ??
+              'AI analysis unavailable. You may submit without analysis.',
+          );
+          return;
+        }
+
+        const result = (await response.json()) as MeetingMinutesAnalysisResult;
+        setAnalysisResult(result);
+      } catch {
+        setAnalysisError('AI analysis unavailable. You may submit without analysis.');
+      } finally {
+        setIsAnalyzing(false);
+      }
+    } else {
+      setStep(3);
+    }
   };
 
   const onSubmit = async (formData: Record<string, unknown>) => {
     const payload =
-      formDefinition.submissionDateMode === 'auto'
+      activeFormDefinition.submissionDateMode === 'auto'
         ? { ...formData, submissionDate: new Date().toISOString() }
         : formData;
 
+    const submitFormType = isMeeting ? selectedMeetingType : formType;
+
     const response = await api.post(
-      `/v1/evidence-forms/${formType}/submissions`,
+      `/v1/evidence-forms/${submitFormType}/submissions`,
       payload,
       organizationId,
     );
@@ -235,13 +341,41 @@ export function CompanySubmissionWizard({
     router.refresh();
   };
 
+  const selectedMeetingLabel = meetingSubTypes.find((m) => m.value === selectedMeetingType)?.label;
+
   return (
     <Section>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {step === 1 && (
           <FieldGroup>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {formDefinition.submissionDateMode === 'custom' && (
+              {isMeeting && (
+                <Field>
+                  <FieldLabel htmlFor="meetingType">Meeting type</FieldLabel>
+                  <Text size="sm" variant="muted">
+                    Select the type of meeting to record
+                  </Text>
+                  <Select
+                    value={selectedMeetingType}
+                    onValueChange={(value) => setSelectedMeetingType(value as MeetingSubType)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select meeting type">
+                        {selectedMeetingLabel ?? 'Select meeting type'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {meetingSubTypes.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+
+              {activeFormDefinition.submissionDateMode === 'custom' && (
                 <Controller
                   name={'submissionDate' as never}
                   control={control}
@@ -500,9 +634,72 @@ export function CompanySubmissionWizard({
             <Text size="sm" variant="muted">
               Review your submission before saving.
             </Text>
+
+            {isMeeting && (
+              <div className="rounded-md border border-border p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Text size="sm" weight="medium">
+                    Security topic analysis
+                  </Text>
+                  {isAnalyzing && (
+                    <span className="text-xs text-muted-foreground animate-pulse">
+                      Analyzing...
+                    </span>
+                  )}
+                </div>
+
+                {analysisError && (
+                  <div className="rounded-md bg-muted p-3">
+                    <Text size="sm" variant="muted">
+                      {analysisError}
+                    </Text>
+                  </div>
+                )}
+
+                {analysisResult && (
+                  <>
+                    <div className="space-y-2">
+                      {analysisResult.requirements.map((req) => (
+                        <div key={req.topic} className="flex items-start gap-2 text-sm">
+                          <span className="mt-0.5 shrink-0">
+                            {req.covered ? (
+                              <span className="text-green-600 dark:text-green-400">&#10003;</span>
+                            ) : (
+                              <span className="text-red-600 dark:text-red-400">&#10007;</span>
+                            )}
+                          </span>
+                          <div>
+                            <span className="font-medium">{req.topic}</span>
+                            <p className="text-muted-foreground text-xs">{req.detail}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div
+                      className={`rounded-md p-3 text-sm ${
+                        analysisResult.overallPass
+                          ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300'
+                          : 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300'
+                      }`}
+                    >
+                      {analysisResult.summary}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             <div className="rounded-md border border-border">
               <div className="divide-y divide-border">
-                {formDefinition.submissionDateMode === 'custom' && (
+                {isMeeting && (
+                  <div className="grid grid-cols-1 gap-2 p-4 lg:grid-cols-3">
+                    <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Meeting type
+                    </div>
+                    <div className="lg:col-span-2 text-sm">{selectedMeetingLabel}</div>
+                  </div>
+                )}
+                {activeFormDefinition.submissionDateMode === 'custom' && (
                   <div className="grid grid-cols-1 gap-2 p-4 lg:grid-cols-3">
                     <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       Submission date
@@ -582,9 +779,36 @@ export function CompanySubmissionWizard({
               </Button>
             )}
             {step === 3 && (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Submitting...' : 'Submit evidence'}
-              </Button>
+              <>
+                {isMeeting &&
+                  !analysisResult?.overallPass &&
+                  !analysisError &&
+                  !analysisSkipped &&
+                  !isAnalyzing &&
+                  analysisResult && (
+                    <Button type="button" variant="ghost" onClick={() => setAnalysisSkipped(true)}>
+                      Submit anyway
+                    </Button>
+                  )}
+                <Button
+                  type="submit"
+                  disabled={
+                    isSubmitting ||
+                    isAnalyzing ||
+                    (isMeeting &&
+                      !analysisResult?.overallPass &&
+                      !analysisError &&
+                      !analysisSkipped &&
+                      !!analysisResult)
+                  }
+                >
+                  {isSubmitting
+                    ? 'Submitting...'
+                    : isAnalyzing
+                      ? 'Analyzing...'
+                      : 'Submit evidence'}
+                </Button>
+              </>
             )}
           </div>
         </div>

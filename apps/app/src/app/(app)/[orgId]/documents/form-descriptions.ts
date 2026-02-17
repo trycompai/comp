@@ -1,4 +1,5 @@
 export const conciseFormDescriptions: Record<string, string> = {
+  meeting: 'Record board, IT leadership, or risk committee meeting minutes.',
   'board-meeting': 'Hold a board meeting and capture minutes.',
   'it-leadership-meeting': 'Run an IT leadership meeting and document outcomes.',
   'risk-committee-meeting': 'Conduct a risk committee meeting and record decisions.',

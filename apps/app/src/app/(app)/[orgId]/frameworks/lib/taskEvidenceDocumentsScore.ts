@@ -1,8 +1,9 @@
-import { evidenceFormDefinitionList } from '@comp/company';
+import { evidenceFormDefinitionList, meetingSubTypeValues } from '@comp/company';
 import { db } from '@db';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
-const EXCLUDED_DOCUMENT_FORM_TYPES = new Set(['whistleblower-report']);
+
+const MEETING_SUB_TYPES = meetingSubTypeValues;
 
 export type DocumentFormStatuses = Record<string, { lastSubmittedAt: string | null }>;
 
@@ -29,12 +30,19 @@ export function isOutstandingDocument(lastSubmittedAt: string | null): boolean {
   return elapsed > SIX_MONTHS_MS;
 }
 
-export function computeDocumentsProgress(statuses: DocumentFormStatuses) {
-  const includedForms = evidenceFormDefinitionList.filter(
-    (form) => !EXCLUDED_DOCUMENT_FORM_TYPES.has(form.type),
+function isMeetingOutstanding(statuses: DocumentFormStatuses): boolean {
+  return MEETING_SUB_TYPES.every((subType) =>
+    isOutstandingDocument(statuses[subType]?.lastSubmittedAt ?? null),
   );
+}
+
+export function computeDocumentsProgress(statuses: DocumentFormStatuses) {
+  const includedForms = evidenceFormDefinitionList.filter((form) => !form.hidden && !form.optional);
   const totalDocuments = includedForms.length;
   const outstandingDocuments = includedForms.reduce((count, form) => {
+    if (form.type === 'meeting') {
+      return isMeetingOutstanding(statuses) ? count + 1 : count;
+    }
     const lastSubmittedAt = statuses[form.type]?.lastSubmittedAt ?? null;
     return isOutstandingDocument(lastSubmittedAt) ? count + 1 : count;
   }, 0);

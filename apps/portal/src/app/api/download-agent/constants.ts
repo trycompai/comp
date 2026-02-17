@@ -34,3 +34,4 @@ export const DOWNLOAD_TARGETS: Record<
 export const MAC_APPLE_SILICON_FILENAME = DOWNLOAD_TARGETS.macos.filename;
 export const MAC_INTEL_FILENAME = DOWNLOAD_TARGETS['macos-intel'].filename;
 export const WINDOWS_FILENAME = DOWNLOAD_TARGETS.windows.filename;
+export const LINUX_FILENAME = DOWNLOAD_TARGETS.linux.filename;

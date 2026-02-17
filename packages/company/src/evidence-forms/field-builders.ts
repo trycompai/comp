@@ -24,7 +24,8 @@ export function meetingFields(
       label: 'Meeting minutes',
       type: 'textarea',
       required: true,
-      description: 'Full meeting minutes including review and approval of agenda items',
+      description:
+        'Full meeting minutes including review and approval of agenda items. The agenda must cover security topics relevant to your organization.',
       placeholder: minutesPlaceholder,
     },
     {

@@ -4,6 +4,7 @@ export const evidenceFormTypeSchema = z.enum([
   'board-meeting',
   'it-leadership-meeting',
   'risk-committee-meeting',
+  'meeting',
   'access-request',
   'whistleblower-report',
   'penetration-test',
@@ -13,3 +14,13 @@ export const evidenceFormTypeSchema = z.enum([
 ]);
 
 export type EvidenceFormType = z.infer<typeof evidenceFormTypeSchema>;
+
+export const meetingSubTypes = [
+  { label: 'Board Meeting', value: 'board-meeting' as const },
+  { label: 'IT Leadership Meeting', value: 'it-leadership-meeting' as const },
+  { label: 'Risk Committee Meeting', value: 'risk-committee-meeting' as const },
+] as const;
+
+export type MeetingSubType = (typeof meetingSubTypes)[number]['value'];
+
+export const meetingSubTypeValues: MeetingSubType[] = meetingSubTypes.map((m) => m.value);

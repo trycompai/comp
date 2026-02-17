@@ -1,6 +1,6 @@
 'use client';
 
-import { useFindingActions, useSubmissionFindings, type Finding } from '@/hooks/use-findings-api';
+import { useFindingActions, useFormTypeFindings, type Finding } from '@/hooks/use-findings-api';
 import { Button } from '@comp/ui/button';
 import { FindingStatus } from '@db';
 import { AlertTriangle, ChevronDown, ChevronUp, FileWarning, Loader2 } from 'lucide-react';
@@ -8,8 +8,11 @@ import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateFindingButton } from '../../tasks/[taskId]/components/findings/CreateFindingButton';
 import { FindingItem } from '../../tasks/[taskId]/components/findings/FindingItem';
+import { meetingSubTypeValues, type EvidenceFormType } from '../forms';
 
 const INITIAL_DISPLAY_COUNT = 5;
+
+const MEETING_SUB_TYPES = meetingSubTypeValues;
 
 const STATUS_ORDER: Record<FindingStatus, number> = {
   [FindingStatus.open]: 0,
@@ -19,24 +22,74 @@ const STATUS_ORDER: Record<FindingStatus, number> = {
 };
 
 interface DocumentFindingsSectionProps {
-  submissionId: string;
+  formType: EvidenceFormType;
   isAuditor: boolean;
   isPlatformAdmin: boolean;
   isAdminOrOwner: boolean;
 }
 
 export function DocumentFindingsSection({
-  submissionId,
+  formType,
   isAuditor,
   isPlatformAdmin,
   isAdminOrOwner,
 }: DocumentFindingsSectionProps) {
-  const { data, isLoading, error, mutate } = useSubmissionFindings(submissionId);
+  const isMeeting = formType === 'meeting';
+
+  const { data, isLoading, error, mutate } = useFormTypeFindings(isMeeting ? null : formType);
+  const {
+    data: m0,
+    isLoading: ml0,
+    error: me0,
+    mutate: mm0,
+  } = useFormTypeFindings(isMeeting ? MEETING_SUB_TYPES[0]! : null);
+  const {
+    data: m1,
+    isLoading: ml1,
+    error: me1,
+    mutate: mm1,
+  } = useFormTypeFindings(isMeeting ? MEETING_SUB_TYPES[1]! : null);
+  const {
+    data: m2,
+    isLoading: ml2,
+    error: me2,
+    mutate: mm2,
+  } = useFormTypeFindings(isMeeting ? MEETING_SUB_TYPES[2]! : null);
+  const {
+    data: mParent,
+    isLoading: mlParent,
+    error: meParent,
+    mutate: mmParent,
+  } = useFormTypeFindings(isMeeting ? 'meeting' : null);
+
   const { updateFinding, deleteFinding } = useFindingActions();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
 
-  const rawFindings = data?.data || [];
+  const allIsLoading = isMeeting ? ml0 || ml1 || ml2 || mlParent : isLoading;
+  const allError = isMeeting ? me0 || me1 || me2 || meParent : error;
+  const mutateAll = useCallback(() => {
+    if (isMeeting) {
+      mm0();
+      mm1();
+      mm2();
+      mmParent();
+    } else {
+      mutate();
+    }
+  }, [isMeeting, mutate, mm0, mm1, mm2, mmParent]);
+
+  const rawFindings = useMemo(() => {
+    if (isMeeting) {
+      return [
+        ...(m0?.data || []),
+        ...(m1?.data || []),
+        ...(m2?.data || []),
+        ...(mParent?.data || []),
+      ];
+    }
+    return data?.data || [];
+  }, [isMeeting, data, m0, m1, m2, mParent]);
 
   const sortedFindings = useMemo(() => {
     return [...rawFindings].sort((a: Finding, b: Finding) => {
@@ -65,12 +118,14 @@ export function DocumentFindingsSection({
         toast.success(
           revisionNote ? 'Finding marked for revision with note' : 'Finding status updated',
         );
-        mutate();
+        mutateAll();
       } catch (findingError) {
-        toast.error(findingError instanceof Error ? findingError.message : 'Failed to update status');
+        toast.error(
+          findingError instanceof Error ? findingError.message : 'Failed to update status',
+        );
       }
     },
-    [updateFinding, mutate],
+    [updateFinding, mutateAll],
   );
 
   const handleDelete = useCallback(
@@ -81,12 +136,14 @@ export function DocumentFindingsSection({
       try {
         await deleteFinding(findingId);
         toast.success('Finding deleted');
-        mutate();
+        mutateAll();
       } catch (findingError) {
-        toast.error(findingError instanceof Error ? findingError.message : 'Failed to delete finding');
+        toast.error(
+          findingError instanceof Error ? findingError.message : 'Failed to delete finding',
+        );
       }
     },
-    [deleteFinding, mutate],
+    [deleteFinding, mutateAll],
   );
 
   const openFindingsCount = sortedFindings.filter(
@@ -94,7 +151,7 @@ export function DocumentFindingsSection({
       finding.status === FindingStatus.open || finding.status === FindingStatus.needs_revision,
   ).length;
 
-  if (isLoading) {
+  if (allIsLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -102,13 +159,17 @@ export function DocumentFindingsSection({
     );
   }
 
-  if (error) {
+  if (allError) {
     return (
       <div className="flex items-center justify-center py-8 text-destructive">
         <AlertTriangle className="h-5 w-5 mr-2" />
         <span>Failed to load findings</span>
       </div>
     );
+  }
+
+  if (!canCreateFinding && sortedFindings.length === 0) {
+    return null;
   }
 
   return (
@@ -129,20 +190,15 @@ export function DocumentFindingsSection({
 
           <div className="flex items-center gap-3">
             {openFindingsCount > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-red-50 border border-red-100">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-red-50 border border-red-100 dark:bg-red-950/30 dark:border-red-900/50">
                 <div className="w-2 h-2 rounded-full bg-red-500" />
-                <span className="text-xs font-medium text-red-700">
+                <span className="text-xs font-medium text-red-700 dark:text-red-400">
                   {openFindingsCount} requires action
                 </span>
               </div>
             )}
             {canCreateFinding && (
-              <CreateFindingButton
-                evidenceSubmissionId={submissionId}
-                onSuccess={() => {
-                  mutate();
-                }}
-              />
+              <CreateFindingButton evidenceFormType={formType} onSuccess={mutateAll} />
             )}
           </div>
         </div>
@@ -152,7 +208,7 @@ export function DocumentFindingsSection({
         {sortedFindings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <FileWarning className="h-10 w-10 mb-3 opacity-50" />
-            <p className="text-sm">No findings for this submission</p>
+            <p className="text-sm">No findings for this document</p>
             {canCreateFinding && <p className="text-xs mt-1">Create a finding to flag an issue</p>}
           </div>
         ) : (
