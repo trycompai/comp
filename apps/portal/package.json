@@ -58,7 +58,7 @@
         "db:migrate": "cd ../../packages/db && bunx prisma migrate dev && cd ../../apps/portal",
         "dev": "next dev --turbopack -p 3002",
         "lint": "eslint . && prettier --check .",
-        "prebuild": "bun run db:generate",
+        "prebuild": "bun run db:generate && cd ../../packages/company && bun run build",
         "start": "next start"
     }
 }

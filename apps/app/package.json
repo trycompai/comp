@@ -172,7 +172,7 @@
         "deploy:trigger-prod": "npx trigger.dev@4.0.6 deploy",
         "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bunx trigger.dev@4.0.6 dev\"",
         "lint": "eslint . && prettier --check .",
-        "prebuild": "bun run db:generate",
+        "prebuild": "bun run db:generate && cd ../../packages/company && bun run build",
         "postinstall": "prisma generate --schema=./prisma/schema.prisma || exit 0",
         "start": "next start",
         "test": "vitest",

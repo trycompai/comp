@@ -116,7 +116,7 @@
         "dev:trigger": "bunx trigger.dev@4.0.6 dev",
         "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-        "prebuild": "bun run db:generate",
+        "prebuild": "bun run db:generate && cd ../../packages/company && bun run build",
         "start": "nest start",
         "start:debug": "nest start --debug --watch",
         "start:dev": "nest start --watch",
