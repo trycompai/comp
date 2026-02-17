@@ -88,7 +88,15 @@ export const EmployeeTasksList = ({
     return null;
   }
 
-  const currentAgentDevice = agentDeviceResponse?.devices?.[0] ?? null;
+  // Pick the most recently checked-in device (matching page.tsx ordering: lastCheckIn desc, nulls last)
+  const currentAgentDevice =
+    agentDeviceResponse?.devices
+      ?.sort((a, b) => {
+        if (!a.lastCheckIn && !b.lastCheckIn) return 0;
+        if (!a.lastCheckIn) return 1;
+        if (!b.lastCheckIn) return -1;
+        return new Date(b.lastCheckIn).getTime() - new Date(a.lastCheckIn).getTime();
+      })[0] ?? null;
 
   // Check completion status
   const hasAcceptedPolicies =
