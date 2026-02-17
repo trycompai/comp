@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  LINUX_FILENAME,
   MAC_APPLE_SILICON_FILENAME,
   MAC_INTEL_FILENAME,
   WINDOWS_FILENAME,
@@ -96,6 +97,8 @@ export function DeviceAgentAccordionItem({
       // Set filename based on OS and architecture
       if (isMacOS) {
         a.download = detectedOS === 'macos' ? MAC_APPLE_SILICON_FILENAME : MAC_INTEL_FILENAME;
+      } else if (detectedOS === 'linux') {
+        a.download = LINUX_FILENAME;
       } else {
         a.download = WINDOWS_FILENAME;
       }
@@ -205,37 +208,18 @@ export function DeviceAgentAccordionItem({
                   <p className="mt-1">
                     {isMacOS
                       ? 'Double-click the downloaded DMG file and follow the installation instructions.'
-                      : 'Double-click the downloaded EXE file and follow the installation instructions.'}
+                      : detectedOS === 'linux'
+                        ? 'Install the downloaded DEB package using your package manager or by double-clicking it.'
+                        : 'Double-click the downloaded EXE file and follow the installation instructions.'}
                   </p>
                 </li>
-                {isMacOS ? (
-                  <li>
-                    <strong>Login with your work email</strong>
-                    <p className="mt-1">
-                      After installation, login with your work email, select your organization and
-                      then click "Link Device" and "Install Agent".
-                    </p>
-                  </li>
-                ) : (
-                  <li>
-                    <strong>Enable MDM</strong>
-                    <div className="space-y-2">
-                      <p>
-                        Find the Fleet Desktop app in your system tray (bottom right corner). Click
-                        on it and click My Device.
-                      </p>
-                      <p>
-                        You should see a banner that asks you to enable MDM. Click the button and
-                        follow the instructions.
-                      </p>
-                      <p>
-                        After you've enabled MDM, if you refresh the page, the banner will
-                        disappear. Now your computer will automatically enable the necessary
-                        settings on your computer in order to be compliant.
-                      </p>
-                    </div>
-                  </li>
-                )}
+                <li>
+                  <strong>Login with your work email</strong>
+                  <p className="mt-1">
+                    After installation, login with your work email, select your organization and
+                    then click &quot;Link Device&quot;.
+                  </p>
+                </li>
               </ol>
             </div>
           ) : hasAgentDevice ? (
