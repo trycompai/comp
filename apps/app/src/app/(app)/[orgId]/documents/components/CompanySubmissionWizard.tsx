@@ -3,12 +3,16 @@
 import {
   evidenceFormDefinitions,
   evidenceFormSubmissionSchemaMap,
+  meetingMinutesPlaceholders,
+  meetingSubTypes,
   type EvidenceFormFieldDefinition,
   type EvidenceFormFile,
   type EvidenceFormType,
+  type MeetingSubType,
 } from '@/app/(app)/[orgId]/documents/forms';
 import { FileUploader } from '@/components/file-uploader';
 import { api } from '@/lib/api-client';
+import { meetingFields } from '@comp/company';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
@@ -32,11 +36,11 @@ import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
-  type MatrixColumnDefinition,
-  type MatrixRowValue,
   isMatrixField,
   normalizeMatrixRows,
   renderSubmissionValue,
+  type MatrixColumnDefinition,
+  type MatrixRowValue,
 } from './submission-utils';
 
 type Step = 1 | 2 | 3;
@@ -69,9 +73,23 @@ export function CompanySubmissionWizard({
   const [step, setStep] = useState<Step>(1);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
 
-  const formDefinition = evidenceFormDefinitions[formType];
+  const isMeeting = formType === 'meeting';
+  const [selectedMeetingType, setSelectedMeetingType] = useState<MeetingSubType>('board-meeting');
+
+  const activeFormDefinition = useMemo(() => {
+    if (!isMeeting) return evidenceFormDefinitions[formType];
+
+    const placeholder = meetingMinutesPlaceholders[selectedMeetingType] ?? '';
+    return {
+      ...evidenceFormDefinitions.meeting,
+      fields: meetingFields(placeholder),
+    };
+  }, [formType, isMeeting, selectedMeetingType]);
+
   const formSchema = evidenceFormSubmissionSchemaMap[formType];
-  const visibleFields = formDefinition.fields.filter((field) => field.key !== 'submissionDate');
+  const visibleFields = activeFormDefinition.fields.filter(
+    (field) => field.key !== 'submissionDate',
+  );
   const matrixFields = useMemo(() => visibleFields.filter(isMatrixField), [visibleFields]);
 
   const compactFields = useMemo(() => {
@@ -87,20 +105,26 @@ export function CompanySubmissionWizard({
     [visibleFields],
   );
 
+  const today = new Date().toISOString().slice(0, 10);
+
   const defaultValues = useMemo(() => {
     const defaults: Record<string, unknown> = {
       submissionDate:
-        formDefinition.submissionDateMode === 'custom'
-          ? new Date().toISOString().slice(0, 10)
-          : new Date().toISOString(),
+        activeFormDefinition.submissionDateMode === 'custom' ? today : new Date().toISOString(),
     };
+
+    for (const field of activeFormDefinition.fields) {
+      if (field.type === 'date' && field.key !== 'submissionDate') {
+        defaults[field.key] = today;
+      }
+    }
 
     for (const matrixField of matrixFields) {
       defaults[matrixField.key] = [createEmptyMatrixRow(matrixField.columns)];
     }
 
     return defaults;
-  }, [formDefinition.submissionDateMode, matrixFields]);
+  }, [activeFormDefinition, matrixFields, today]);
 
   const {
     control,
@@ -122,10 +146,11 @@ export function CompanySubmissionWizard({
     setUploadingField(fieldKey);
     try {
       const fileData = await fileToBase64(file);
+      const submitFormType = isMeeting ? selectedMeetingType : formType;
       const response = await api.post<EvidenceFormFile>(
         '/v1/evidence-forms/uploads',
         {
-          formType,
+          formType: submitFormType,
           fileName: file.name,
           fileType: file.type || 'application/octet-stream',
           fileData,
@@ -198,7 +223,7 @@ export function CompanySubmissionWizard({
 
   const goToStepTwo = async () => {
     const keys: string[] = [];
-    if (formDefinition.submissionDateMode === 'custom') keys.push('submissionDate');
+    if (activeFormDefinition.submissionDateMode === 'custom') keys.push('submissionDate');
     keys.push(...compactFields.map((f) => f.key));
 
     const isValid = await trigger(keys as never, { shouldFocus: true });
@@ -215,12 +240,14 @@ export function CompanySubmissionWizard({
 
   const onSubmit = async (formData: Record<string, unknown>) => {
     const payload =
-      formDefinition.submissionDateMode === 'auto'
+      activeFormDefinition.submissionDateMode === 'auto'
         ? { ...formData, submissionDate: new Date().toISOString() }
         : formData;
 
+    const submitFormType = isMeeting ? selectedMeetingType : formType;
+
     const response = await api.post(
-      `/v1/evidence-forms/${formType}/submissions`,
+      `/v1/evidence-forms/${submitFormType}/submissions`,
       payload,
       organizationId,
     );
@@ -235,13 +262,41 @@ export function CompanySubmissionWizard({
     router.refresh();
   };
 
+  const selectedMeetingLabel = meetingSubTypes.find((m) => m.value === selectedMeetingType)?.label;
+
   return (
     <Section>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {step === 1 && (
           <FieldGroup>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {formDefinition.submissionDateMode === 'custom' && (
+              {isMeeting && (
+                <Field>
+                  <FieldLabel htmlFor="meetingType">Meeting type</FieldLabel>
+                  <Text size="sm" variant="muted">
+                    Select the type of meeting to record
+                  </Text>
+                  <Select
+                    value={selectedMeetingType}
+                    onValueChange={(value) => setSelectedMeetingType(value as MeetingSubType)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select meeting type">
+                        {selectedMeetingLabel ?? 'Select meeting type'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {meetingSubTypes.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+
+              {activeFormDefinition.submissionDateMode === 'custom' && (
                 <Controller
                   name={'submissionDate' as never}
                   control={control}
@@ -502,7 +557,15 @@ export function CompanySubmissionWizard({
             </Text>
             <div className="rounded-md border border-border">
               <div className="divide-y divide-border">
-                {formDefinition.submissionDateMode === 'custom' && (
+                {isMeeting && (
+                  <div className="grid grid-cols-1 gap-2 p-4 lg:grid-cols-3">
+                    <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Meeting type
+                    </div>
+                    <div className="lg:col-span-2 text-sm">{selectedMeetingLabel}</div>
+                  </div>
+                )}
+                {activeFormDefinition.submissionDateMode === 'custom' && (
                   <div className="grid grid-cols-1 gap-2 p-4 lg:grid-cols-3">
                     <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       Submission date

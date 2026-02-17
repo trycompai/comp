@@ -29,4 +29,6 @@ export type EvidenceFormDefinition = {
   submissionDateMode: 'custom' | 'auto';
   portalAccessible: boolean;
   fields: ReadonlyArray<EvidenceFormFieldDefinition>;
+  optional?: boolean;
+  hidden?: boolean;
 };

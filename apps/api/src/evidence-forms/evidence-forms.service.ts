@@ -329,7 +329,23 @@ export class EvidenceFormsService {
     const schema = evidenceFormSubmissionSchemaMap[parsedType.data];
     const parsedPayload = schema.safeParse(payloadObject);
     if (!parsedPayload.success) {
-      throw new BadRequestException(parsedPayload.error.flatten());
+      const flattened = parsedPayload.error.flatten();
+      const fieldErrors = Object.entries(flattened.fieldErrors)
+        .map(([field, messages]) => {
+          const msg =
+            Array.isArray(messages) && messages.length > 0
+              ? messages[0]
+              : 'is required';
+          return `${field}: ${msg}`;
+        })
+        .slice(0, 5);
+
+      const message =
+        fieldErrors.length > 0
+          ? `Please fix the following: ${fieldErrors.join('; ')}`
+          : 'Please fill in all required fields';
+
+      throw new BadRequestException(message);
     }
 
     return await db.evidenceSubmission.create({

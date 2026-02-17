@@ -1,13 +1,14 @@
 'use client';
 
+import { conciseFormDescriptions } from '@/app/(app)/[orgId]/documents/form-descriptions';
 import {
   evidenceFormDefinitions,
   type EvidenceFormType,
 } from '@/app/(app)/[orgId]/documents/forms';
-import { conciseFormDescriptions } from '@/app/(app)/[orgId]/documents/form-descriptions';
 import { api } from '@/lib/api-client';
 import { jwtManager } from '@/utils/jwt-manager';
 import {
+  Badge,
   Button,
   Empty,
   EmptyDescription,
@@ -29,7 +30,7 @@ import {
 import { Add, Catalog, Download, Search } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { StatusBadge, formatSubmissionDate } from './submission-utils';
@@ -40,6 +41,7 @@ type EvidenceSubmissionRow = {
   id: string;
   submittedAt: string;
   status: string;
+  formType?: string;
   data: Record<string, unknown>;
   submittedBy?: {
     name: string | null;
@@ -53,9 +55,22 @@ type EvidenceFormResponse = {
   total: number;
 };
 
+const MEETING_SUB_TYPES: EvidenceFormType[] = [
+  'board-meeting',
+  'it-leadership-meeting',
+  'risk-committee-meeting',
+];
+
+const MEETING_TYPE_LABELS: Record<string, string> = {
+  'board-meeting': 'Board',
+  'it-leadership-meeting': 'IT Leadership',
+  'risk-committee-meeting': 'Risk Committee',
+};
+
 const submissionDateColumnWidth = 128;
 const submittedByColumnWidth = 128;
 const statusColumnWidth = 176;
+const meetingTypeColumnWidth = 140;
 const summaryColumnWidth = 280;
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -83,6 +98,7 @@ export function CompanyFormPageClient({
   const [search, setSearch] = useState('');
   const [isExporting, setIsExporting] = useState(false);
 
+  const isMeeting = formType === 'meeting';
   const formDefinition = evidenceFormDefinitions[formType];
   const summaryField = formDefinition.fields.find((field) => field.type === 'textarea');
   const matrixSummaryField = formDefinition.fields.find((field) => field.type === 'matrix');
@@ -90,12 +106,22 @@ export function CompanyFormPageClient({
   const showSummaryColumn = Boolean(summaryField) || hasMatrixSummary;
 
   const query = search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
-  const swrKey: readonly [string, string] = [
-    `/v1/evidence-forms/${formType}${query}`,
-    organizationId,
-  ];
 
-  const { data, isLoading } = useSWR<EvidenceFormResponse>(
+  const meetingSwrKeys = useMemo(
+    () =>
+      isMeeting
+        ? MEETING_SUB_TYPES.map(
+            (subType) => [`/v1/evidence-forms/${subType}${query}`, organizationId] as const,
+          )
+        : [],
+    [isMeeting, query, organizationId],
+  );
+
+  const swrKey: readonly [string, string] | null = isMeeting
+    ? null
+    : [`/v1/evidence-forms/${formType}${query}`, organizationId];
+
+  const { data: singleData, isLoading: singleLoading } = useSWR<EvidenceFormResponse>(
     swrKey,
     async ([endpoint, orgId]: readonly [string, string]) => {
       const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
@@ -105,6 +131,67 @@ export function CompanyFormPageClient({
       return response.data;
     },
   );
+
+  const { data: meetingData0, isLoading: ml0 } = useSWR<EvidenceFormResponse>(
+    meetingSwrKeys[0] ?? null,
+    async ([endpoint, orgId]: readonly [string, string]) => {
+      const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
+      if (response.error || !response.data) {
+        throw new Error(response.error ?? 'Failed to load submissions');
+      }
+      return response.data;
+    },
+  );
+  const { data: meetingData1, isLoading: ml1 } = useSWR<EvidenceFormResponse>(
+    meetingSwrKeys[1] ?? null,
+    async ([endpoint, orgId]: readonly [string, string]) => {
+      const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
+      if (response.error || !response.data) {
+        throw new Error(response.error ?? 'Failed to load submissions');
+      }
+      return response.data;
+    },
+  );
+  const { data: meetingData2, isLoading: ml2 } = useSWR<EvidenceFormResponse>(
+    meetingSwrKeys[2] ?? null,
+    async ([endpoint, orgId]: readonly [string, string]) => {
+      const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
+      if (response.error || !response.data) {
+        throw new Error(response.error ?? 'Failed to load submissions');
+      }
+      return response.data;
+    },
+  );
+
+  const mergedMeetingSubmissions = useMemo(() => {
+    if (!isMeeting) return [];
+    const all: EvidenceSubmissionRow[] = [];
+    const sources = [
+      { data: meetingData0, subType: MEETING_SUB_TYPES[0] },
+      { data: meetingData1, subType: MEETING_SUB_TYPES[1] },
+      { data: meetingData2, subType: MEETING_SUB_TYPES[2] },
+    ];
+    for (const { data: d, subType } of sources) {
+      if (!d) continue;
+      for (const sub of d.submissions) {
+        all.push({ ...sub, formType: subType });
+      }
+    }
+    all.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+    return all;
+  }, [isMeeting, meetingData0, meetingData1, meetingData2]);
+
+  const data = isMeeting
+    ? mergedMeetingSubmissions.length > 0 || meetingData0 || meetingData1 || meetingData2
+      ? {
+          form: formDefinition,
+          submissions: mergedMeetingSubmissions,
+          total: mergedMeetingSubmissions.length,
+        }
+      : undefined
+    : singleData;
+
+  const isLoading = isMeeting ? ml0 || ml1 || ml2 : singleLoading;
 
   const handleExportCsv = async () => {
     if (!data || data.total === 0) {
@@ -119,31 +206,41 @@ export function CompanyFormPageClient({
         throw new Error('Authentication failed');
       }
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333'}/v1/evidence-forms/${formType}/export.csv`,
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'X-Organization-Id': organizationId,
-          },
-          credentials: 'include',
-        },
-      );
+      const exportTypes = isMeeting ? MEETING_SUB_TYPES : [formType];
+      const blobs: Blob[] = [];
 
-      if (!response.ok) {
-        throw new Error(await response.text());
+      for (const exportType of exportTypes) {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333'}/v1/evidence-forms/${exportType}/export.csv`,
+          {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'X-Organization-Id': organizationId,
+            },
+            credentials: 'include',
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        blobs.push(await response.blob());
       }
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `${formType}-submissions.csv`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-      URL.revokeObjectURL(url);
+      for (let i = 0; i < blobs.length; i++) {
+        const blob = blobs[i];
+        if (!blob) continue;
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${exportTypes[i]}-submissions.csv`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'CSV export failed');
     } finally {
@@ -221,6 +318,7 @@ export function CompanyFormPageClient({
           <Table variant="bordered" style={{ tableLayout: 'fixed' }}>
             <colgroup>
               <col style={{ width: submissionDateColumnWidth }} />
+              {isMeeting && <col style={{ width: meetingTypeColumnWidth }} />}
               <col style={{ width: submittedByColumnWidth }} />
               {formType === 'access-request' && <col style={{ width: statusColumnWidth }} />}
               {showSummaryColumn && <col style={{ width: summaryColumnWidth }} />}
@@ -230,6 +328,11 @@ export function CompanyFormPageClient({
                 <TableHead>
                   <div className="whitespace-nowrap">Submission Date</div>
                 </TableHead>
+                {isMeeting && (
+                  <TableHead>
+                    <div className="whitespace-nowrap">Meeting Type</div>
+                  </TableHead>
+                )}
                 <TableHead>
                   <div className="whitespace-nowrap">Submitted By</div>
                 </TableHead>
@@ -251,12 +354,14 @@ export function CompanyFormPageClient({
                   : '';
                 const rowSummary = summaryField ? truncate(summaryValue, 80) : matrixSummary;
 
+                const submissionFormType = submission.formType ?? formType;
+
                 return (
                   <TableRow
                     key={submission.id}
                     onClick={() =>
                       router.push(
-                        `/${organizationId}/documents/${formType}/submissions/${submission.id}`,
+                        `/${organizationId}/documents/${submissionFormType}/submissions/${submission.id}`,
                       )
                     }
                     style={{ cursor: 'pointer' }}
@@ -269,6 +374,13 @@ export function CompanyFormPageClient({
                         )}
                       </div>
                     </TableCell>
+                    {isMeeting && (
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {MEETING_TYPE_LABELS[submissionFormType] ?? submissionFormType}
+                        </Badge>
+                      </TableCell>
+                    )}
                     <TableCell>
                       <span className="block truncate">
                         {submission.submittedBy?.name ?? submission.submittedBy?.email ?? 'Unknown'}
