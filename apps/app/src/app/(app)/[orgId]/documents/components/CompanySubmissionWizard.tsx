@@ -10,6 +10,7 @@ import {
   type EvidenceFormType,
   type MeetingSubType,
 } from '@/app/(app)/[orgId]/documents/forms';
+import type { MeetingMinutesAnalysisResult } from '@/app/api/evidence-forms/analyze/route';
 import { FileUploader } from '@/components/file-uploader';
 import { api } from '@/lib/api-client';
 import { meetingFields } from '@comp/company';
@@ -75,6 +76,10 @@ export function CompanySubmissionWizard({
 
   const isMeeting = formType === 'meeting';
   const [selectedMeetingType, setSelectedMeetingType] = useState<MeetingSubType>('board-meeting');
+  const [analysisResult, setAnalysisResult] = useState<MeetingMinutesAnalysisResult | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisSkipped, setAnalysisSkipped] = useState(false);
 
   const activeFormDefinition = useMemo(() => {
     if (!isMeeting) return evidenceFormDefinitions[formType];
@@ -235,7 +240,47 @@ export function CompanySubmissionWizard({
     const keys = [...extendedFields.map((f) => f.key), ...matrixFields.map((f) => f.key)];
     const isValid = keys.length === 0 ? true : await trigger(keys as never, { shouldFocus: true });
     if (!isValid) return;
-    setStep(3);
+
+    if (isMeeting) {
+      setIsAnalyzing(true);
+      setAnalysisResult(null);
+      setAnalysisError(null);
+      setAnalysisSkipped(false);
+      setStep(3);
+
+      try {
+        const meetingMinutes = String(getValues('meetingMinutes' as never) ?? '');
+        const response = await fetch('/api/evidence-forms/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Organization-Id': organizationId,
+          },
+          body: JSON.stringify({
+            meetingMinutes,
+            meetingType: selectedMeetingType,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          setAnalysisError(
+            (errorData as { error?: string } | null)?.error ??
+              'AI analysis unavailable. You may submit without analysis.',
+          );
+          return;
+        }
+
+        const result = (await response.json()) as MeetingMinutesAnalysisResult;
+        setAnalysisResult(result);
+      } catch {
+        setAnalysisError('AI analysis unavailable. You may submit without analysis.');
+      } finally {
+        setIsAnalyzing(false);
+      }
+    } else {
+      setStep(3);
+    }
   };
 
   const onSubmit = async (formData: Record<string, unknown>) => {
@@ -555,6 +600,61 @@ export function CompanySubmissionWizard({
             <Text size="sm" variant="muted">
               Review your submission before saving.
             </Text>
+
+            {isMeeting && (
+              <div className="rounded-md border border-border p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Text size="sm" weight="medium">
+                    Security topic analysis
+                  </Text>
+                  {isAnalyzing && (
+                    <span className="text-xs text-muted-foreground animate-pulse">
+                      Analyzing...
+                    </span>
+                  )}
+                </div>
+
+                {analysisError && (
+                  <div className="rounded-md bg-muted p-3">
+                    <Text size="sm" variant="muted">
+                      {analysisError}
+                    </Text>
+                  </div>
+                )}
+
+                {analysisResult && (
+                  <>
+                    <div className="space-y-2">
+                      {analysisResult.requirements.map((req) => (
+                        <div key={req.topic} className="flex items-start gap-2 text-sm">
+                          <span className="mt-0.5 shrink-0">
+                            {req.covered ? (
+                              <span className="text-green-600 dark:text-green-400">&#10003;</span>
+                            ) : (
+                              <span className="text-red-600 dark:text-red-400">&#10007;</span>
+                            )}
+                          </span>
+                          <div>
+                            <span className="font-medium">{req.topic}</span>
+                            <p className="text-muted-foreground text-xs">{req.detail}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div
+                      className={`rounded-md p-3 text-sm ${
+                        analysisResult.overallPass
+                          ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300'
+                          : 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300'
+                      }`}
+                    >
+                      {analysisResult.summary}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             <div className="rounded-md border border-border">
               <div className="divide-y divide-border">
                 {isMeeting && (
@@ -645,9 +745,36 @@ export function CompanySubmissionWizard({
               </Button>
             )}
             {step === 3 && (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Submitting...' : 'Submit evidence'}
-              </Button>
+              <>
+                {isMeeting &&
+                  !analysisResult?.overallPass &&
+                  !analysisError &&
+                  !analysisSkipped &&
+                  !isAnalyzing &&
+                  analysisResult && (
+                    <Button type="button" variant="ghost" onClick={() => setAnalysisSkipped(true)}>
+                      Submit anyway
+                    </Button>
+                  )}
+                <Button
+                  type="submit"
+                  disabled={
+                    isSubmitting ||
+                    isAnalyzing ||
+                    (isMeeting &&
+                      !analysisResult?.overallPass &&
+                      !analysisError &&
+                      !analysisSkipped &&
+                      !!analysisResult)
+                  }
+                >
+                  {isSubmitting
+                    ? 'Submitting...'
+                    : isAnalyzing
+                      ? 'Analyzing...'
+                      : 'Submit evidence'}
+                </Button>
+              </>
             )}
           </div>
         </div>

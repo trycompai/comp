@@ -64,7 +64,28 @@ type EvidenceSubmissionResponse = {
 function MarkdownPreview({ content }: { content: string }) {
   return (
     <div className="prose prose-sm max-w-none dark:prose-invert text-sm">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          ol({ children }) {
+            return <ol className="list-decimal list-outside pl-5 space-y-1 my-2">{children}</ol>;
+          },
+          ul({ children }) {
+            return <ul className="list-disc list-outside pl-5 space-y-1 my-2">{children}</ul>;
+          },
+          li({ children }) {
+            return <li className="leading-normal">{children}</li>;
+          },
+          p({ children }) {
+            return <p className="my-2">{children}</p>;
+          },
+          strong({ children }) {
+            return <strong className="font-semibold">{children}</strong>;
+          },
+        }}
+      >
+        {content}
+      </ReactMarkdown>
     </div>
   );
 }
