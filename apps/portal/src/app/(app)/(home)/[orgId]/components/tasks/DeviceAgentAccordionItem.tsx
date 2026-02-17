@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  LINUX_FILENAME,
   MAC_APPLE_SILICON_FILENAME,
   MAC_INTEL_FILENAME,
   WINDOWS_FILENAME,
@@ -10,7 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@c
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import type { Member } from '@db';
+import type { Device, Member } from '@db';
 import { Button } from '@trycompai/design-system';
 import { CheckCircle2, Circle, Download, Loader2, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -21,6 +22,7 @@ import { FleetPolicyItem } from './FleetPolicyItem';
 interface DeviceAgentAccordionItemProps {
   member: Member;
   host: Host | null;
+  agentDevice: Device | null;
   isLoading: boolean;
   fleetPolicies?: FleetPolicy[];
   fetchFleetPolicies: () => void;
@@ -29,6 +31,7 @@ interface DeviceAgentAccordionItemProps {
 export function DeviceAgentAccordionItem({
   member,
   host,
+  agentDevice,
   isLoading,
   fleetPolicies = [],
   fetchFleetPolicies,
@@ -41,13 +44,20 @@ export function DeviceAgentAccordionItem({
     [detectedOS],
   );
 
-  const hasInstalledAgent = host !== null;
+  const hasFleetDevice = host !== null;
+  const hasAgentDevice = agentDevice !== null;
+  const hasInstalledAgent = hasFleetDevice || hasAgentDevice;
   const failedPoliciesCount = useMemo(
     () => fleetPolicies.filter((policy) => policy.response !== 'pass').length,
     [fleetPolicies],
   );
 
-  const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
+  // Device agent takes priority over Fleet
+  const isCompleted = hasAgentDevice
+    ? agentDevice.isCompliant
+    : hasFleetDevice
+      ? failedPoliciesCount === 0
+      : false;
 
   const handleDownload = async () => {
     if (!detectedOS) {
@@ -87,6 +97,8 @@ export function DeviceAgentAccordionItem({
       // Set filename based on OS and architecture
       if (isMacOS) {
         a.download = detectedOS === 'macos' ? MAC_APPLE_SILICON_FILENAME : MAC_INTEL_FILENAME;
+      } else if (detectedOS === 'linux') {
+        a.download = LINUX_FILENAME;
       } else {
         a.download = WINDOWS_FILENAME;
       }
@@ -149,7 +161,7 @@ export function DeviceAgentAccordionItem({
           <span className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}>
             Device Agent
           </span>
-          {hasInstalledAgent && failedPoliciesCount > 0 && (
+          {!hasAgentDevice && hasFleetDevice && failedPoliciesCount > 0 && (
             <span className="text-amber-600 dark:text-amber-400 text-xs ml-auto">
               {failedPoliciesCount} policies failing
             </span>
@@ -196,40 +208,47 @@ export function DeviceAgentAccordionItem({
                   <p className="mt-1">
                     {isMacOS
                       ? 'Double-click the downloaded DMG file and follow the installation instructions.'
-                      : 'Double-click the downloaded EXE file and follow the installation instructions.'}
+                      : detectedOS === 'linux'
+                        ? 'Install the downloaded DEB package using your package manager or by double-clicking it.'
+                        : 'Double-click the downloaded EXE file and follow the installation instructions.'}
                   </p>
                 </li>
-                {isMacOS ? (
-                  <li>
-                    <strong>Login with your work email</strong>
-                    <p className="mt-1">
-                      After installation, login with your work email, select your organization and
-                      then click "Link Device" and "Install Agent".
-                    </p>
-                  </li>
-                ) : (
-                  <li>
-                    <strong>Enable MDM</strong>
-                    <div className="space-y-2">
-                      <p>
-                        Find the Fleet Desktop app in your system tray (bottom right corner). Click
-                        on it and click My Device.
-                      </p>
-                      <p>
-                        You should see a banner that asks you to enable MDM. Click the button and
-                        follow the instructions.
-                      </p>
-                      <p>
-                        After you've enabled MDM, if you refresh the page, the banner will
-                        disappear. Now your computer will automatically enable the necessary
-                        settings on your computer in order to be compliant.
-                      </p>
-                    </div>
-                  </li>
-                )}
+                <li>
+                  <strong>Login with your work email</strong>
+                  <p className="mt-1">
+                    After installation, login with your work email, select your organization and
+                    then click &quot;Link Device&quot;.
+                  </p>
+                </li>
               </ol>
             </div>
-          ) : (
+          ) : hasAgentDevice ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{agentDevice.name}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  {agentDevice.isCompliant ? (
+                    <CheckCircle2 className="text-green-600 dark:text-green-400 h-4 w-4" />
+                  ) : (
+                    <Circle className="text-amber-600 dark:text-amber-400 h-4 w-4" />
+                  )}
+                  <span className="text-sm">
+                    {agentDevice.isCompliant
+                      ? 'All security checks passing'
+                      : 'Some security checks need attention'}
+                  </span>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  {agentDevice.platform} &middot; {agentDevice.osVersion}
+                  {agentDevice.lastCheckIn && (
+                    <> &middot; Last check-in: {new Date(agentDevice.lastCheckIn).toLocaleDateString()}</>
+                  )}
+                </p>
+              </CardContent>
+            </Card>
+          ) : hasFleetDevice ? (
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
@@ -263,7 +282,7 @@ export function DeviceAgentAccordionItem({
                 )}
               </CardContent>
             </Card>
-          )}
+          ) : null}
         </div>
 
         <div className="mt-4 space-y-2">
@@ -276,7 +295,7 @@ export function DeviceAgentAccordionItem({
               <AccordionContent className="px-4 pb-4">
                 <div className="text-muted-foreground space-y-2 text-sm">
                   <p>
-                    <strong>Operating Systems:</strong> macOS 14+, Windows 10+
+                    <strong>Operating Systems:</strong> macOS 14+, Windows 10+, Linux (Ubuntu 20.04+)
                   </p>
                   <p>
                     <strong>Memory:</strong> 512MB RAM minimum

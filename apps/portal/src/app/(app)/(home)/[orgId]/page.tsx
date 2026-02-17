@@ -57,6 +57,15 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
   // Fleet policies - only fetch if member has a fleet device label
   const fleetData = await getFleetPolicies(member);
 
+  // Device agent device - fetch from DB
+  const agentDevice = await db.device.findFirst({
+    where: {
+      memberId: member.id,
+      organizationId: orgId,
+    },
+    orderBy: { lastCheckIn: { sort: 'desc', nulls: 'last' } },
+  });
+
   return (
     <PageLayout>
       <PageHeader title="Comp AI - Employee Portal" />
@@ -66,6 +75,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
         member={member}
         fleetPolicies={fleetData.fleetPolicies}
         host={fleetData.device}
+        agentDevice={agentDevice}
       />
     </PageLayout>
   );
