@@ -61,6 +61,7 @@ export function UpdateSecondaryFieldsForm({
       assigneeId: finalAssigneeId, // Use the potentially nulled value
       category: data.category,
       status: data.status,
+      website: data.website,
       isSubProcessor: data.isSubProcessor,
     });
   };
