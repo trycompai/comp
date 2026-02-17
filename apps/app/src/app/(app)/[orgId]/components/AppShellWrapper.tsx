@@ -243,7 +243,13 @@ function AppShellWrapperContent({
         <AppShellMain>
           <AppShellSidebar collapsible>
             <AppShellSidebarHeader
-              title={isSettingsActive ? 'Settings' : isTrustActive ? 'Trust' : 'Compliance'}
+              title={
+                isSettingsActive
+                  ? 'Settings'
+                  : isTrustActive
+                    ? 'Trust'
+                    : 'Compliance'
+              }
             />
             {isSettingsActive ? (
               <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} />

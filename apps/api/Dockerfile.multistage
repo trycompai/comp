@@ -14,6 +14,7 @@ COPY packages/utils/package.json ./packages/utils/
 COPY packages/integration-platform/package.json ./packages/integration-platform/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 COPY packages/email/package.json ./packages/email/
+COPY packages/company/package.json ./packages/company/
 
 # Copy API package.json
 COPY apps/api/package.json ./apps/api/
@@ -34,6 +35,7 @@ COPY packages/utils ./packages/utils
 COPY packages/integration-platform ./packages/integration-platform
 COPY packages/tsconfig ./packages/tsconfig
 COPY packages/email ./packages/email
+COPY packages/company ./packages/company
 
 # Copy API source
 COPY apps/api ./apps/api
@@ -45,6 +47,7 @@ COPY --from=deps /app/node_modules ./node_modules
 RUN cd packages/db && bun run build && cd ../..
 RUN cd packages/integration-platform && bun run build && cd ../..
 RUN cd packages/email && bun run build && cd ../..
+RUN cd packages/company && bun run build && cd ../..
 
 # Generate Prisma client for API (copy schema and generate)
 RUN cd packages/db && node scripts/combine-schemas.js && cd ../..
@@ -79,6 +82,7 @@ COPY --from=builder /app/packages/utils ./packages/utils
 COPY --from=builder /app/packages/integration-platform ./packages/integration-platform
 COPY --from=builder /app/packages/tsconfig ./packages/tsconfig
 COPY --from=builder /app/packages/email ./packages/email
+COPY --from=builder /app/packages/company ./packages/company
 
 # Copy production node_modules (includes symlinks to workspace packages above)
 COPY --from=builder /app/node_modules ./node_modules

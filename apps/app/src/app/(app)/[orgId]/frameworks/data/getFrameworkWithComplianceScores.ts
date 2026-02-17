@@ -15,7 +15,18 @@ export async function getFrameworkWithComplianceScores({
   tasks,
 }: {
   frameworksWithControls: FrameworkInstanceWithControls[];
-  tasks: (Task & { controls: Control[] })[];
+  tasks: (Task & {
+    controls: Control[];
+    evidenceAutomations?: Array<{
+      isEnabled: boolean;
+      runs?: Array<{
+        status: string;
+        success: boolean | null;
+        evaluationStatus: string | null;
+        createdAt: Date;
+      }>;
+    }>;
+  })[];
 }): Promise<FrameworkInstanceWithComplianceScore[]> {
   const frameworksWithComplianceScores = frameworksWithControls.map((frameworkInstance) => {
     const { complianceScore } = computeFrameworkStats(frameworkInstance, tasks);

@@ -1,7 +1,7 @@
 'use client';
 
 import type { Member, Policy, PolicyVersion } from '@db';
-import { Button } from '@trycompai/design-system';
+import { Button, Text } from '@trycompai/design-system';
 import { ArrowLeft } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { PolicyCarousel } from './PolicyCarousel';
@@ -35,17 +35,12 @@ export function PolicyContainer({ policies, member }: PolicyContainerProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleBackToGrid}
-            iconLeft={<ArrowLeft size={16} />}
-          >
+          <Button variant="outline" iconLeft={<ArrowLeft size={16} />} onClick={handleBackToGrid}>
             Back to Policies
           </Button>
-          <p className="text-muted-foreground text-sm">
+          <Text variant="muted" size="sm">
             Policy {selectedPolicyIndex + 1} of {policies.length}
-          </p>
+          </Text>
         </div>
         <PolicyCarousel
           policies={policies}

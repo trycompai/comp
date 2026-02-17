@@ -2,7 +2,7 @@
 
 import { acceptPolicy } from '@/actions/accept-policies';
 import { Button } from '@trycompai/design-system';
-import { Checkmark } from '@trycompai/design-system/icons';
+import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
@@ -49,7 +49,7 @@ export function PolicyAcceptButton({
   if (accepted) {
     return (
       <div className="w-full">
-        <Button disabled iconLeft={<Checkmark size={16} />}>
+        <Button disabled iconLeft={<Check className="h-4 w-4" />}>
           Policy Accepted
         </Button>
       </div>
@@ -58,8 +58,8 @@ export function PolicyAcceptButton({
 
   return (
     <div className="w-full">
-      <Button onClick={handleAccept} disabled={isPending} loading={isPending}>
-        Accept Policy
+      <Button onClick={handleAccept} disabled={isPending}>
+        {isPending ? 'Accepting...' : 'Accept Policy'}
       </Button>
     </div>
   );

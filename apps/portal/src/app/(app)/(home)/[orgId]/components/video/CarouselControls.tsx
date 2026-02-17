@@ -1,5 +1,5 @@
-import { Button } from '@trycompai/design-system';
-import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
+import { Button, Text } from '@trycompai/design-system';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CarouselControlsProps {
   currentIndex: number;
@@ -25,12 +25,12 @@ export function CarouselControls({
         disabled={isFirstVideo}
         aria-label="Previous video"
       >
-        <ChevronLeft size={16} />
+        <ChevronLeft className="h-4 w-4" />
       </Button>
 
-      <div className="text-muted-foreground text-sm">
+      <Text variant="muted" size="sm">
         {currentIndex + 1} of {total}
-      </div>
+      </Text>
 
       <Button
         variant="outline"
@@ -39,7 +39,7 @@ export function CarouselControls({
         disabled={!onNext}
         aria-label="Next video"
       >
-        <ChevronRight size={16} />
+        <ChevronRight className="h-4 w-4" />
       </Button>
     </div>
   );

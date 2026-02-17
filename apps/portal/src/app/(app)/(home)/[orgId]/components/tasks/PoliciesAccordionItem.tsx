@@ -5,7 +5,7 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/acco
 import { cn } from '@comp/ui/cn';
 import type { Member, Policy, PolicyVersion } from '@db';
 import { Button } from '@trycompai/design-system';
-import { CheckmarkFilled, CircleDash, Document } from '@trycompai/design-system/icons';
+import { CheckCircle2, Circle, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -58,14 +58,14 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
       <AccordionTrigger className="px-4 hover:no-underline [&[data-state=open]]:pb-2">
         <div className="flex items-center gap-3">
           {hasAcceptedPolicies ? (
-            <CheckmarkFilled size={20} className="text-primary" />
+            <CheckCircle2 className="text-primary h-5 w-5" />
           ) : (
-            <CircleDash size={20} className="text-muted-foreground" />
+            <Circle className="text-muted-foreground h-5 w-5" />
           )}
           <span
             className={cn('text-base', hasAcceptedPolicies && 'text-muted-foreground line-through')}
           >
-            Accept security policies
+            Security Policies
           </span>
         </div>
       </AccordionTrigger>
@@ -74,7 +74,7 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
           {policies.length > 0 ? (
             <>
               <p className="text-muted-foreground text-sm">
-                Please review and accept the following security policies:
+                Please review and accept the following policies:
               </p>
               <div>
                 {policies.map((policy) => {
@@ -86,21 +86,23 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
                         href={`/${member.organizationId}/policy/${policy.id}`}
                         className="hover:text-primary flex items-center gap-2 text-sm transition-colors"
                       >
-                        <Document size={16} className="text-muted-foreground" />
+                        <FileText className="text-muted-foreground h-4 w-4" />
                         <span className={cn(isAccepted && 'line-through')}>{policy.name}</span>
                       </Link>
-                      {isAccepted && <CheckmarkFilled size={12} className="text-primary" />}
+                      {isAccepted && <CheckCircle2 className="text-primary h-3 w-3" />}
                     </div>
                   );
                 })}
               </div>
               <Button
-                size="sm"
                 onClick={handleAcceptAllPolicies}
                 disabled={hasAcceptedPolicies || isAcceptingAll}
-                loading={isAcceptingAll}
               >
-                {hasAcceptedPolicies ? 'All Policies Accepted' : 'Accept All'}
+                {isAcceptingAll
+                  ? 'Accepting...'
+                  : hasAcceptedPolicies
+                    ? 'All Policies Accepted'
+                    : 'Accept All'}
               </Button>
             </>
           ) : (

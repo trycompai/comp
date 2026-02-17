@@ -1,0 +1,357 @@
+import { meetingFields } from './field-builders';
+import type { EvidenceFormType } from './form-types';
+import {
+  boardMeetingMinutesPlaceholder,
+  itLeadershipMinutesPlaceholder,
+  riskCommitteeMinutesPlaceholder,
+} from './minutes-placeholders';
+import type { EvidenceFormDefinition } from './types';
+
+export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefinition> = {
+  'board-meeting': {
+    type: 'board-meeting',
+    title: 'Board Meeting',
+    description:
+      "Create a company board that meets twice a year to discuss the company's direction. Conduct at least 1 meeting.",
+    category: 'Governance',
+    submissionDateMode: 'custom',
+    portalAccessible: false,
+    fields: meetingFields(boardMeetingMinutesPlaceholder),
+  },
+  'it-leadership-meeting': {
+    type: 'it-leadership-meeting',
+    title: 'IT Leadership Meeting',
+    description:
+      'Create an IT leadership committee that meets monthly to discuss tech development. Conduct at least 1 meeting.',
+    category: 'Governance',
+    submissionDateMode: 'custom',
+    portalAccessible: false,
+    fields: meetingFields(itLeadershipMinutesPlaceholder),
+  },
+  'risk-committee-meeting': {
+    type: 'risk-committee-meeting',
+    title: 'Risk Committee Meeting',
+    description:
+      'Create a risk committee that meets twice a year to discuss risks to your company. Conduct at least 1 meeting.',
+    category: 'Governance',
+    submissionDateMode: 'custom',
+    portalAccessible: false,
+    fields: meetingFields(riskCommitteeMinutesPlaceholder),
+  },
+  'access-request': {
+    type: 'access-request',
+    title: 'Access Request',
+    description: 'Track and retain user access requests with justification.',
+    category: 'Security',
+    submissionDateMode: 'custom',
+    portalAccessible: true,
+    fields: [
+      {
+        key: 'userName',
+        label: 'User Name',
+        type: 'text',
+        required: true,
+        description: 'Full name of the person requesting access',
+      },
+      {
+        key: 'accountsNeeded',
+        label: 'Accounts Needed',
+        type: 'textarea',
+        required: true,
+        description: 'Systems or platforms access is needed for',
+      },
+      {
+        key: 'permissionsNeeded',
+        label: 'Permissions Needed',
+        type: 'select',
+        required: true,
+        description: 'Level of access required',
+        options: [
+          { label: 'Read', value: 'read' },
+          { label: 'Write', value: 'write' },
+          { label: 'Admin', value: 'admin' },
+        ],
+      },
+      {
+        key: 'reasonForRequest',
+        label: 'Reason For Request',
+        type: 'textarea',
+        required: true,
+        description: 'Business justification for access request',
+      },
+      {
+        key: 'accessGrantedBy',
+        label: 'Access Granted By',
+        type: 'text',
+        required: true,
+        description: 'Name of person who approved and granted access',
+      },
+      {
+        key: 'dateAccessGranted',
+        label: 'Date Access Granted',
+        type: 'date',
+        required: true,
+        description: 'Date when access was provided',
+      },
+    ],
+  },
+  'whistleblower-report': {
+    type: 'whistleblower-report',
+    title: 'Whistleblower Report',
+    description: 'Submit an anonymous whistleblower report. Submissions are confidential.',
+    category: 'Security',
+    submissionDateMode: 'auto',
+    portalAccessible: true,
+    fields: [
+      {
+        key: 'incidentDate',
+        label: 'Incident date',
+        type: 'date',
+        required: true,
+        description: 'Date the incident occurred',
+      },
+      {
+        key: 'complaintDetails',
+        label: 'Complaint Details',
+        type: 'textarea',
+        required: true,
+        description: 'Detailed description of the complaint or concern',
+      },
+      {
+        key: 'individualsInvolved',
+        label: 'Individuals Involved',
+        type: 'textarea',
+        required: true,
+        description: 'Names or roles of people involved in the incident',
+      },
+      {
+        key: 'evidence',
+        label: 'Evidence',
+        type: 'textarea',
+        required: true,
+        description: 'Any supporting evidence or documentation',
+      },
+      {
+        key: 'evidenceFile',
+        label: 'Supporting file',
+        type: 'file',
+        required: false,
+        accept: '.pdf,.doc,.docx,.txt,.png,.jpg,.jpeg',
+        description: 'Optional file attachment to support your report',
+      },
+    ],
+  },
+  'penetration-test': {
+    type: 'penetration-test',
+    title: 'Penetration Test',
+    description:
+      'Upload a third-party penetration test report to satisfy security testing evidence requirements.',
+    category: 'Security',
+    submissionDateMode: 'custom',
+    portalAccessible: false,
+    fields: [
+      {
+        key: 'testDate',
+        label: 'Test date',
+        type: 'date',
+        required: true,
+        description: 'Date the penetration test was conducted',
+      },
+      {
+        key: 'vendorName',
+        label: 'Vendor / testing firm',
+        type: 'text',
+        required: true,
+        description: 'Name of the third-party firm that performed the test',
+      },
+      {
+        key: 'summary',
+        label: 'Summary of findings',
+        type: 'textarea',
+        required: true,
+        description: 'High-level summary of test scope, findings, and remediation status',
+      },
+      {
+        key: 'pentestReport',
+        label: 'Pentest report (PDF)',
+        type: 'file',
+        required: true,
+        accept: '.pdf',
+        description: 'Upload the full third-party penetration test report',
+      },
+    ],
+  },
+  'rbac-matrix': {
+    type: 'rbac-matrix',
+    title: 'RBAC Matrix',
+    description:
+      'Track role-based access control by documenting systems, roles, permissions scope, assignees, and approval records.',
+    category: 'Security',
+    submissionDateMode: 'custom',
+    portalAccessible: false,
+    fields: [
+      {
+        key: 'matrixRows',
+        label: 'RBAC entries',
+        type: 'matrix',
+        required: true,
+        description: 'Audit-minimum role access evidence.',
+        addRowLabel: 'Add RBAC row',
+        columns: [
+          {
+            key: 'system',
+            label: 'System',
+            required: true,
+            placeholder: 'e.g. AWS',
+          },
+          {
+            key: 'roleName',
+            label: 'Role Name',
+            required: true,
+            placeholder: 'e.g. prod:operator',
+          },
+          {
+            key: 'permissionsScope',
+            label: 'Permissions / Scope',
+            required: true,
+            placeholder: 'Assume role; read logs/metrics; no IAM:admin',
+          },
+          {
+            key: 'approvedBy',
+            label: 'Approved By',
+            required: true,
+            placeholder: 'name, role',
+          },
+          {
+            key: 'lastReviewed',
+            label: 'Last Reviewed',
+            required: true,
+            placeholder: 'YYYY-MM-DD',
+          },
+        ],
+      },
+    ],
+  },
+  'infrastructure-inventory': {
+    type: 'infrastructure-inventory',
+    title: 'Infrastructure Inventory',
+    description:
+      'Maintain an infrastructure inventory across cloud and on-prem assets with ownership, platform details, and review cadence.',
+    category: 'Security',
+    submissionDateMode: 'custom',
+    portalAccessible: false,
+    fields: [
+      {
+        key: 'inventoryRows',
+        label: 'Infrastructure assets',
+        type: 'matrix',
+        required: true,
+        description: 'Audit-minimum infrastructure evidence.',
+        addRowLabel: 'Add asset row',
+        columns: [
+          {
+            key: 'assetId',
+            label: 'Asset ID',
+            required: true,
+            placeholder: 'e.g. 001',
+          },
+          {
+            key: 'systemType',
+            label: 'System Type',
+            required: true,
+            placeholder: 'e.g. EC2 Instance',
+          },
+          {
+            key: 'environment',
+            label: 'Environment',
+            required: true,
+            placeholder: 'e.g. Production',
+          },
+          {
+            key: 'location',
+            label: 'Location',
+            placeholder: 'e.g. AWS ap-south-1 / on-prem',
+          },
+          {
+            key: 'assignedOwner',
+            label: 'Assigned Owner',
+            required: true,
+            placeholder: 'e.g. DevOps Team',
+          },
+          {
+            key: 'lastReviewed',
+            label: 'Last Reviewed',
+            required: true,
+            placeholder: 'YYYY-MM-DD',
+          },
+        ],
+      },
+    ],
+  },
+  'employee-performance-evaluation': {
+    type: 'employee-performance-evaluation',
+    title: 'Employee Performance Evaluation',
+    description: 'Capture a lightweight performance review record for audit evidence.',
+    category: 'People',
+    submissionDateMode: 'custom',
+    portalAccessible: false,
+    fields: [
+      {
+        key: 'employeeName',
+        label: 'Employee name',
+        type: 'text',
+        required: true,
+        description: 'Full name of the employee being reviewed',
+      },
+      {
+        key: 'manager',
+        label: 'Manager',
+        type: 'text',
+        required: true,
+        description: 'Name of the reviewing manager',
+      },
+      {
+        key: 'reviewPeriodTo',
+        label: 'Review period end date',
+        type: 'date',
+        required: true,
+        description: 'End date of the review period',
+      },
+      {
+        key: 'overallRating',
+        label: 'Overall Rating',
+        type: 'select',
+        required: true,
+        description: "Manager's overall performance rating",
+        options: [
+          { label: 'Needs Improvement', value: 'needs-improvement' },
+          { label: 'Meets Expectations', value: 'meets-expectations' },
+          { label: 'Exceeds Expectations', value: 'exceeds-expectations' },
+        ],
+      },
+      {
+        key: 'managerSignature',
+        label: 'Manager signature (name)',
+        type: 'text',
+        required: true,
+        description: 'Typed name of the manager as signature',
+      },
+      {
+        key: 'managerSignatureDate',
+        label: 'Manager signature date',
+        type: 'date',
+        required: true,
+        description: 'Date the manager signed the review',
+      },
+      {
+        key: 'managerComments',
+        label: 'Manager Comments',
+        type: 'textarea',
+        required: true,
+        description: "Manager's written performance feedback and observations",
+      },
+    ],
+  },
+};
+
+export const evidenceFormDefinitionList = Object.values(evidenceFormDefinitions);

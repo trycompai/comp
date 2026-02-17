@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation';
 import { NoAccessMessage } from './NoAccessMessage';
 // Removed OrganizationSelector import
 import { auth } from '@/app/lib/auth';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, Stack, Text } from '@trycompai/design-system';
 import Link from 'next/link';
 
 // Define the type for the member prop including the user and organization relations
@@ -66,8 +66,8 @@ export async function Overview() {
 
   // Render a dashboard for each valid membership
   return (
-    <div className="space-y-8">
-      <h1>Your Organizations</h1>
+    <Stack gap="lg">
+      <Text weight="medium">Your Organizations</Text>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {validMemberships.map((member) => (
           <Link href={`/${member.organization.id}`} key={member.id}>
@@ -76,12 +76,12 @@ export async function Overview() {
                 <CardTitle>{member.organization.name}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p>{member.user.name}</p>
+                <Text>{member.user.name}</Text>
               </CardContent>
             </Card>
           </Link>
         ))}
       </div>
-    </div>
+    </Stack>
   );
 }

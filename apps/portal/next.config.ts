@@ -3,13 +3,13 @@ import './src/env.mjs';
 
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
-const workspaceRoot = path.join(__dirname, '..', '..');
-
 const config = {
-  turbopack: {
-    root: workspaceRoot,
-  },
-  transpilePackages: ['@trycompai/db', '@trycompai/design-system', '@carbon/icons-react'],
+  transpilePackages: [
+    '@trycompai/db',
+    '@trycompai/design-system',
+    '@carbon/icons-react',
+    '@comp/company',
+  ],
   images: {
     remotePatterns: [
       {

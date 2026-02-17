@@ -24,9 +24,9 @@ interface EmployeeCompletionChartProps {
   securityTrainingStepEnabled?: boolean;
 }
 
-// Define colors for the chart using DS semantic colors
+// Define colors for the chart using semantic tokens
 const taskColors = {
-  completed: 'bg-success', // Green - completed/good state
+  completed: 'bg-primary', // Primary green
   incomplete: 'bg-warning', // Yellow - needs action
 };
 
@@ -258,7 +258,10 @@ export function EmployeeCompletionChart({
                     <div className="text-muted-foreground text-right text-xs">
                       {stat.policiesCompleted}/{stat.policiesTotal} policies signed
                       {securityTrainingStepEnabled && (
-                        <> • {stat.trainingsCompleted}/{stat.trainingsTotal} training</>
+                        <>
+                          {' '}
+                          • {stat.trainingsCompleted}/{stat.trainingsTotal} training
+                        </>
                       )}
                     </div>
                   </div>
@@ -267,7 +270,7 @@ export function EmployeeCompletionChart({
 
                   <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
                     <div className="flex items-center gap-1">
-                      <div className="size-2 rounded-xs bg-success" />
+                      <div className="size-2 rounded-xs bg-primary" />
                       <span>{'Completed'}</span>
                     </div>
                     <div className="flex items-center gap-1">

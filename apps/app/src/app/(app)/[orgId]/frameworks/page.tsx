@@ -7,6 +7,7 @@ import { cache } from 'react';
 import { Overview } from './components/Overview';
 import { getAllFrameworkInstancesWithControls } from './data/getAllFrameworkInstancesWithControls';
 import { getFrameworkWithComplianceScores } from './data/getFrameworkWithComplianceScores';
+import { getDocumentsScore } from './lib/getDocuments';
 import { getPeopleScore } from './lib/getPeople';
 import { getPublishedPoliciesScore } from './lib/getPolicies';
 import { getDoneTasks } from './lib/getTasks';
@@ -79,6 +80,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
         organizationId={organizationId}
         publishedPoliciesScore={scores.publishedPoliciesScore}
         doneTasksScore={scores.doneTasksScore}
+        documentsScore={scores.documentsScore}
         peopleScore={scores.peopleScore}
         currentMember={member}
         onboardingTriggerJobId={onboarding?.triggerJobId ?? null}
@@ -109,6 +111,11 @@ const getScores = cache(async () => {
         doneTasks: 0,
         incompleteTasks: [],
       },
+      documentsScore: {
+        totalDocuments: 0,
+        completedDocuments: 0,
+        outstandingDocuments: 0,
+      },
       peopleScore: {
         totalMembers: 0,
         completedMembers: 0,
@@ -118,11 +125,13 @@ const getScores = cache(async () => {
 
   const publishedPoliciesScore = await getPublishedPoliciesScore(organizationId);
   const doneTasksScore = await getDoneTasks(organizationId);
+  const documentsScore = await getDocumentsScore(organizationId);
   const peopleScore = await getPeopleScore(organizationId);
 
   return {
     publishedPoliciesScore,
     doneTasksScore,
+    documentsScore,
     peopleScore,
   };
 });
@@ -149,6 +158,23 @@ const getControlTasks = cache(async () => {
     },
     include: {
       controls: true,
+      evidenceAutomations: {
+        select: {
+          isEnabled: true,
+          runs: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 1,
+            select: {
+              status: true,
+              success: true,
+              evaluationStatus: true,
+              createdAt: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -165,6 +191,12 @@ const getOrganizationFindings = cache(async (organizationId: string) => {
         select: {
           id: true,
           title: true,
+        },
+      },
+      evidenceSubmission: {
+        select: {
+          id: true,
+          formType: true,
         },
       },
     },

@@ -70,6 +70,8 @@ export async function OrganizationDashboard({
       host={host}
       deviceAgentStepEnabled={org.deviceAgentStepEnabled}
       securityTrainingStepEnabled={org.securityTrainingStepEnabled}
+      whistleblowerReportEnabled={org.whistleblowerReportEnabled}
+      accessRequestFormEnabled={org.accessRequestFormEnabled}
     />
   );
 }

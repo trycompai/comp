@@ -1,10 +1,12 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
+import { evidenceFormDefinitionList } from '@comp/company';
 import { Accordion } from '@comp/ui/accordion';
 import { Card, CardContent } from '@comp/ui/card';
 import type { EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
-import { PageHeader, PageLayout } from '@trycompai/design-system';
+import { Button } from '@trycompai/design-system';
+import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
 import useSWR from 'swr';
 import type { FleetPolicy, Host } from '../types';
@@ -12,14 +14,11 @@ import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
 import { PoliciesAccordionItem } from './tasks/PoliciesAccordionItem';
 
+const portalForms = evidenceFormDefinitionList.filter((f) => f.portalAccessible);
+
 type PolicyWithVersion = Policy & {
   currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
 };
-
-interface DeviceStatus {
-  id: string;
-  isCompliant: boolean;
-}
 
 interface EmployeeTasksListProps {
   organizationId: string;
@@ -30,6 +29,8 @@ interface EmployeeTasksListProps {
   host: Host | null;
   deviceAgentStepEnabled: boolean;
   securityTrainingStepEnabled: boolean;
+  whistleblowerReportEnabled: boolean;
+  accessRequestFormEnabled: boolean;
 }
 
 export const EmployeeTasksList = ({
@@ -37,69 +38,46 @@ export const EmployeeTasksList = ({
   policies,
   trainingVideos: trainingVideoCompletions,
   member,
-  fleetPolicies: initialFleetPolicies,
-  host: initialHost,
+  fleetPolicies,
+  host,
   deviceAgentStepEnabled,
   securityTrainingStepEnabled,
+  whistleblowerReportEnabled,
+  accessRequestFormEnabled,
 }: EmployeeTasksListProps) => {
-  // Fetch device-agent status filtered by current org
-  const { data: deviceData } = useSWR<{ devices: DeviceStatus[] }>(
-    `/api/device-agent/status?organizationId=${organizationId}`,
-    async (url: string) => {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Failed to fetch');
-      return res.json();
-    },
-    {
-      fallbackData: { devices: [] },
-      refreshInterval: 0,
-      revalidateOnFocus: false,
-      revalidateOnMount: true,
-    },
-  );
-
-  // Fetch fleet policies via SWR (only if member has a fleet device)
-  const hasFleetDevice = initialHost !== null;
   const {
-    data: fleetResponse,
-    isValidating: isFleetLoading,
+    data: response,
+    isValidating,
     mutate: fetchFleetPolicies,
   } = useSWR<{ device: Host | null; fleetPolicies: FleetPolicy[] }>(
-    hasFleetDevice ? `/api/fleet-policies?organizationId=${organizationId}` : null,
-    async (url: string) => {
+    `/api/fleet-policies?organizationId=${organizationId}`,
+    async (url) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch');
       return res.json();
     },
     {
-      fallbackData: { device: initialHost, fleetPolicies: initialFleetPolicies },
+      fallbackData: { device: host, fleetPolicies },
       refreshInterval: 0,
       revalidateOnFocus: false,
       revalidateOnMount: false,
     },
   );
 
-  const devices = deviceData?.devices ?? [];
-  const fleetPolicies = fleetResponse?.fleetPolicies ?? initialFleetPolicies;
-  const host = fleetResponse?.device ?? initialHost;
+  if (!response) {
+    return null;
+  }
 
   // Check completion status
   const hasAcceptedPolicies =
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
-
-  // Device-agent takes priority: if installed, only its compliance matters.
-  // Fleet is only checked when device-agent is not present.
-  const hasDeviceAgentDevices = devices.length > 0;
-  const allDeviceAgentCompliant = devices.length > 0 && devices.every((d) => d.isCompliant);
-  const hasInstalledFleetAgent = host !== null;
+  const hasInstalledAgent = response.device !== null;
   const allFleetPoliciesPass =
-    fleetPolicies.length === 0 || fleetPolicies.every((policy) => policy.response === 'pass');
+    response.fleetPolicies.length === 0 ||
+    response.fleetPolicies.every((policy) => policy.response === 'pass');
+  const hasCompletedDeviceSetup = hasInstalledAgent && allFleetPoliciesPass;
 
-  const hasCompletedDeviceSetup = hasDeviceAgentDevices
-    ? allDeviceAgentCompliant
-    : hasInstalledFleetAgent && allFleetPoliciesPass;
-
-  // Calculate general training completion
+  // Calculate general training completion (matching logic from GeneralTrainingAccordionItem)
   const generalTrainingVideoIds = trainingVideos
     .filter((video) => video.id.startsWith('sat-'))
     .map((video) => video.id);
@@ -120,7 +98,7 @@ export const EmployeeTasksList = ({
 
   const accordionItems = [
     {
-      title: 'Accept security policies',
+      title: 'Security Policies',
       content: <PoliciesAccordionItem policies={policies} member={member} />,
     },
     ...(deviceAgentStepEnabled
@@ -129,11 +107,10 @@ export const EmployeeTasksList = ({
             title: 'Download and install Comp AI Device Agent',
             content: (
               <DeviceAgentAccordionItem
-                organizationId={organizationId}
                 member={member}
-                host={host}
-                fleetPolicies={fleetPolicies}
-                isFleetLoading={isFleetLoading}
+                host={response.device}
+                fleetPolicies={response.fleetPolicies}
+                isLoading={isValidating}
                 fetchFleetPolicies={fetchFleetPolicies}
               />
             ),
@@ -153,6 +130,11 @@ export const EmployeeTasksList = ({
         ]
       : []),
   ];
+  const visiblePortalForms = portalForms.filter((form) => {
+    if (form.type === 'whistleblower-report') return whistleblowerReportEnabled;
+    if (form.type === 'access-request') return accessRequestFormEnabled;
+    return true;
+  });
 
   const allCompleted = completedCount === accordionItems.length;
 
@@ -173,27 +155,55 @@ export const EmployeeTasksList = ({
   }
 
   return (
-    <PageLayout padding="lg" header={<PageHeader title="Overview" />}>
-      <div className="space-y-4">
-        {/* Progress indicator */}
-        <div className="space-y-2">
-          <div className="text-muted-foreground text-sm">
-            {completedCount} of {accordionItems.length} tasks completed
-          </div>
-          <div className="w-full bg-muted rounded-full h-2.5">
-            <div
-              className="bg-primary h-full rounded-full"
-              style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
-            ></div>
-          </div>
+    <div className="space-y-4">
+      {/* Progress indicator */}
+      <div>
+        <div className="text-muted-foreground text-sm">
+          {completedCount} of {accordionItems.length} tasks completed
         </div>
-
-        <Accordion type="single" collapsible className="space-y-3">
-          {accordionItems.map((item, idx) => (
-            <div key={item.title ?? idx}>{item.content}</div>
-          ))}
-        </Accordion>
+        <div className="w-full bg-muted rounded-full h-2.5">
+          <div
+            className="bg-primary h-full rounded-full"
+            style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
+          ></div>
+        </div>
       </div>
-    </PageLayout>
+
+      <Accordion type="single" collapsible className="space-y-3">
+        {accordionItems.map((item, idx) => (
+          <div key={item.title ?? idx}>{item.content}</div>
+        ))}
+      </Accordion>
+
+      {/* Company forms */}
+      {visiblePortalForms.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Company Forms
+          </div>
+          {visiblePortalForms.map((form) => (
+            <div
+              key={form.type}
+              className="flex items-center justify-between rounded-md border border-border p-3"
+            >
+              <div>
+                <span className="text-sm font-medium">{form.title}</span>
+                <p className="text-xs text-muted-foreground">{form.description}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 ml-4">
+                {form.type === 'access-request' && (
+                  <Link href={`/${organizationId}/documents/${form.type}/submissions`}>
+                    <Button variant="ghost">My requests</Button>
+                  </Link>
+                )}
+                <Link href={`/${organizationId}/documents/${form.type}`}>
+                  <Button>Submit</Button>
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };

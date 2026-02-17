@@ -89,12 +89,14 @@ export function PendingInvitationRow({
 
         {/* ROLE */}
         <TableCell>
-          <div className="flex flex-wrap gap-1">
-            {roles.map((role: string) => (
-              <Badge key={role} variant="outline">
-                {role.charAt(0).toUpperCase() + role.slice(1)}
-              </Badge>
-            ))}
+          <div className="w-[160px]">
+            <div className="flex flex-wrap gap-1">
+              {roles.map((role: string) => (
+                <Badge key={role} variant="outline">
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </Badge>
+              ))}
+            </div>
           </div>
         </TableCell>
 

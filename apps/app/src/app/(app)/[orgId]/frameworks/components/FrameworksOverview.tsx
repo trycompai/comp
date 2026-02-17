@@ -17,6 +17,7 @@ export interface FrameworksOverviewProps {
   allFrameworks: FrameworkEditorFramework[];
   frameworksWithCompliance?: FrameworkInstanceWithComplianceScore[];
   organizationId?: string;
+  overallComplianceScore: number;
 }
 
 export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
@@ -58,6 +59,7 @@ export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
 export function FrameworksOverview({
   frameworksWithControls,
   frameworksWithCompliance,
+  overallComplianceScore,
   allFrameworks,
   organizationId,
 }: FrameworksOverviewProps) {
@@ -67,13 +69,6 @@ export function FrameworksOverview({
   const complianceMap = new Map(
     frameworksWithCompliance?.map((f) => [f.frameworkInstance.id, f.complianceScore]) ?? [],
   );
-
-  // Calculate overall compliance score from all frameworks
-  const overallComplianceScore =
-    frameworksWithCompliance && frameworksWithCompliance.length > 0
-      ? frameworksWithCompliance.reduce((sum, f) => sum + f.complianceScore, 0) /
-        frameworksWithCompliance.length
-      : 0;
 
   // Get available frameworks that can be added (not already in the organization)
   const availableFrameworksToAdd = allFrameworks.filter(
@@ -108,7 +103,7 @@ export function FrameworksOverview({
                   <div key={framework.id}>
                     <div className="flex items-start justify-between py-4 px-1">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <div className="flex-shrink-0 mt-1">
+                        <div className="shrink-0 mt-1">
                           {badgeSrc ? (
                             <Image
                               src={badgeSrc}

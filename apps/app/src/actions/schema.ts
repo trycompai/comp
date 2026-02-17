@@ -77,6 +77,14 @@ export const organizationSecurityTrainingStepSchema = z.object({
   securityTrainingStepEnabled: z.boolean(),
 });
 
+export const organizationWhistleblowerReportSchema = z.object({
+  whistleblowerReportEnabled: z.boolean(),
+});
+
+export const organizationAccessRequestFormSchema = z.object({
+  accessRequestFormEnabled: z.boolean(),
+});
+
 // Risks
 export const createRiskSchema = z.object({
   title: z

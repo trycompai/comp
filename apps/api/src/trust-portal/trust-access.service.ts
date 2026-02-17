@@ -25,7 +25,6 @@ import archiver from 'archiver';
 import { PassThrough, Readable } from 'stream';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
-
 @Injectable()
 export class TrustAccessService {
   /**
@@ -2522,7 +2521,9 @@ export class TrustAccessService {
       }
       return {
         ...vendor,
-        complianceBadges: this.formatComplianceBadgeLabels(vendor.complianceBadges),
+        complianceBadges: this.formatComplianceBadgeLabels(
+          vendor.complianceBadges,
+        ),
         trustPortalUrl,
       };
     });
@@ -2532,7 +2533,9 @@ export class TrustAccessService {
    * Format compliance badges as simple type + label pairs for external rendering.
    * Does NOT include branded icons to avoid implying vendors were certified through us.
    */
-  private formatComplianceBadgeLabels(badges: unknown): { type: string; label: string }[] {
+  private formatComplianceBadgeLabels(
+    badges: unknown,
+  ): { type: string; label: string }[] {
     if (!badges || !Array.isArray(badges)) {
       return [];
     }

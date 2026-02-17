@@ -2,7 +2,7 @@
 
 import type { EmployeeTrainingVideoCompletion } from '@db';
 import { Button } from '@trycompai/design-system';
-import { ArrowRight, Checkmark } from '@trycompai/design-system/icons';
+import { ArrowRight, Check, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 // Define our own TrainingVideo interface since we can't find the import
@@ -27,7 +27,6 @@ interface YoutubeEmbedProps {
   onNext?: () => void;
   allVideosCompleted: boolean;
   isMarkingComplete: boolean;
-  onWatchAgain: () => void;
 }
 
 export function YoutubeEmbed({
@@ -37,7 +36,6 @@ export function YoutubeEmbed({
   onNext,
   allVideosCompleted,
   isMarkingComplete,
-  onWatchAgain,
 }: YoutubeEmbedProps) {
   const [isRewatching, setIsRewatching] = useState(false);
 
@@ -53,14 +51,18 @@ export function YoutubeEmbed({
             variant={isCompleted ? 'secondary' : 'default'}
             onClick={onComplete}
             disabled={isCompleted}
-            loading={isMarkingComplete}
-            iconLeft={!isMarkingComplete ? <Checkmark size={16} /> : undefined}
           >
-            {isMarkingComplete
-              ? 'Marking as Complete...'
-              : isCompleted
-                ? 'Completed'
-                : 'Mark as Complete'}
+            {isMarkingComplete ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Marking as Complete...
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                {isCompleted ? 'Completed' : 'Mark as Complete'}
+              </>
+            )}
           </Button>
         )}
       </div>
@@ -68,15 +70,16 @@ export function YoutubeEmbed({
         {isCompleted && !isRewatching && (
           <div className="bg-background/80 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-xs">
             <div className="space-y-4 text-center">
-              <Checkmark size={48} className="text-primary mx-auto" />
+              <Check className="text-primary mx-auto h-12 w-12" />
               <h3 className="text-xl font-semibold">Video Completed</h3>
               <div className="flex justify-center gap-2">
                 <Button variant="outline" onClick={() => setIsRewatching(true)}>
                   Watch Again
                 </Button>
                 {onNext && (
-                  <Button onClick={onNext} iconRight={<ArrowRight size={16} />}>
+                  <Button onClick={onNext}>
                     Next Video
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 )}
               </div>

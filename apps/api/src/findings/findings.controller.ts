@@ -54,9 +54,15 @@ export class FindingsController {
   })
   @ApiQuery({
     name: 'taskId',
-    required: true,
+    required: false,
     description: 'Task ID to get findings for',
     example: 'tsk_abc123',
+  })
+  @ApiQuery({
+    name: 'evidenceSubmissionId',
+    required: false,
+    description: 'Evidence submission ID to get findings for',
+    example: 'evs_abc123',
   })
   @ApiResponse({
     status: 200,
@@ -72,14 +78,31 @@ export class FindingsController {
   })
   async getFindingsByTask(
     @Query('taskId') taskId: string,
+    @Query('evidenceSubmissionId') evidenceSubmissionId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    if (!taskId) {
-      throw new BadRequestException('taskId query parameter is required');
+    if (!taskId && !evidenceSubmissionId) {
+      throw new BadRequestException(
+        'Either taskId or evidenceSubmissionId query parameter is required',
+      );
     }
-    return await this.findingsService.findByTaskId(
+
+    if (taskId && evidenceSubmissionId) {
+      throw new BadRequestException(
+        'Provide only one target: taskId or evidenceSubmissionId',
+      );
+    }
+
+    if (taskId) {
+      return await this.findingsService.findByTaskId(
+        authContext.organizationId,
+        taskId,
+      );
+    }
+
+    return await this.findingsService.findByEvidenceSubmissionId(
       authContext.organizationId,
-      taskId,
+      evidenceSubmissionId,
     );
   }
 

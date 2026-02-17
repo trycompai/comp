@@ -509,7 +509,9 @@ export function TeamMembersClient({
             <TableRow>
               <TableHead>NAME</TableHead>
               <TableHead>STATUS</TableHead>
-              <TableHead>ROLE</TableHead>
+              <TableHead>
+                <div className="w-[160px]">ROLE</div>
+              </TableHead>
               <TableHead>TASKS</TableHead>
               <TableHead>ACTIONS</TableHead>
             </TableRow>

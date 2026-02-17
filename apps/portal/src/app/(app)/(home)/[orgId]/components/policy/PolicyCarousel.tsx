@@ -1,7 +1,7 @@
 'use client';
 
 import type { Member, Policy, PolicyVersion } from '@db';
-import { Button } from '@trycompai/design-system';
+import { Button, Text } from '@trycompai/design-system';
 import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useRef, useState } from 'react';
@@ -87,7 +87,7 @@ export function PolicyCarousel({
     <div className="w-full space-y-4">
       <div
         ref={scrollContainerRef}
-        className="flex snap-x snap-mandatory overflow-x-hidden scroll-smooth"
+        className="flex snap-x snap-mandatory overflow-x-auto scroll-smooth"
         onScroll={handleScroll}
       >
         {policies.map((policy) => (
@@ -112,9 +112,9 @@ export function PolicyCarousel({
         >
           <ChevronLeft size={16} />
         </Button>
-        <span className="text-muted-foreground text-sm">
+        <Text variant="muted" size="sm">
           Policy {currentIndex + 1} of {policies.length}
-        </span>
+        </Text>
         <Button
           variant="outline"
           size="icon"

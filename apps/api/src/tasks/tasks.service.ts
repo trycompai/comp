@@ -571,7 +571,10 @@ export class TasksService {
         approverMemberId: approverId,
       })
       .catch((error) => {
-        console.error('Failed to send evidence review request notifications:', error);
+        console.error(
+          'Failed to send evidence review request notifications:',
+          error,
+        );
       });
 
     return updatedTask;
@@ -652,7 +655,10 @@ export class TasksService {
         approverMemberId: approverId,
       })
       .catch((error) => {
-        console.error('Failed to send bulk evidence review request notifications:', error);
+        console.error(
+          'Failed to send bulk evidence review request notifications:',
+          error,
+        );
       });
 
     return { submittedCount: tasks.length };
@@ -772,9 +778,8 @@ export class TasksService {
       throw new ForbiddenException('User is not a member of this organization');
     }
 
-    const memberRoles = currentMember.role
-      ?.split(',')
-      .map((r: string) => r.trim()) ?? [];
+    const memberRoles =
+      currentMember.role?.split(',').map((r: string) => r.trim()) ?? [];
     const isAdminOrOwner =
       memberRoles.includes('admin') || memberRoles.includes('owner');
     const isApprover = task.approverId === currentMember.id;
@@ -801,7 +806,7 @@ export class TasksService {
       });
 
       const assigneeName = task.assignee
-        ? (task.assignee.user.name || task.assignee.user.email)
+        ? task.assignee.user.name || task.assignee.user.email
         : 'Unknown';
 
       await tx.auditLog.create({

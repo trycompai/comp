@@ -1,5 +1,6 @@
 import type { Control, Task } from '@db';
 import type { FrameworkInstanceWithControls } from '../types';
+import { countStrictlyCompletedTasks } from './taskEvidenceDocumentsScore';
 
 export interface FrameworkStats {
   totalPolicies: number;
@@ -12,7 +13,18 @@ export interface FrameworkStats {
 
 export function computeFrameworkStats(
   frameworkInstance: FrameworkInstanceWithControls,
-  tasks: (Task & { controls: Control[] })[],
+  tasks: (Task & {
+    controls: Control[];
+    evidenceAutomations?: Array<{
+      isEnabled: boolean;
+      runs?: Array<{
+        status: string;
+        success: boolean | null;
+        evaluationStatus: string | null;
+        createdAt: Date;
+      }>;
+    }>;
+  })[],
 ): FrameworkStats {
   const controls = frameworkInstance.controls ?? [];
   const controlsCount = controls.length;
@@ -30,11 +42,11 @@ export function computeFrameworkStats(
   const controlIds = controls.map((c) => c.id);
   const frameworkTasks = tasks.filter((t) => t.controls.some((c) => controlIds.includes(c.id)));
   // Deduplicate tasks by id to avoid double counting across multiple controls
-  const uniqueTaskMap = new Map<string, Task & { controls: Control[] }>();
+  const uniqueTaskMap = new Map<string, (typeof frameworkTasks)[number]>();
   for (const t of frameworkTasks) uniqueTaskMap.set(t.id, t);
   const uniqueTasks = Array.from(uniqueTaskMap.values());
   const totalTasks = uniqueTasks.length;
-  const doneTasks = uniqueTasks.filter((t) => t.status === 'done' || t.status === 'not_relevant').length;
+  const doneTasks = countStrictlyCompletedTasks(uniqueTasks);
   const taskRatio = totalTasks > 0 ? doneTasks / totalTasks : 1;
 
   const complianceScore = Math.round(((policyRatio + taskRatio) / 2) * 100);

@@ -32,8 +32,11 @@ interface Recipient {
 interface NotificationParams {
   organizationId: string;
   findingId: string;
-  taskId: string;
-  taskTitle: string;
+  taskId?: string;
+  taskTitle?: string;
+  evidenceSubmissionId?: string;
+  evidenceSubmissionFormType?: string;
+  evidenceSubmissionSubmittedById?: string | null;
   findingContent: string;
   findingType: FindingType;
   actorUserId: string;
@@ -84,6 +87,19 @@ function getAppUrl(): string {
   );
 }
 
+function getDocumentContextTitle(
+  formType?: string,
+  evidenceSubmissionId?: string,
+): string {
+  if (formType) {
+    return `Document submission (${formType})`;
+  }
+  if (evidenceSubmissionId) {
+    return `Document submission (${evidenceSubmissionId})`;
+  }
+  return 'Document submission';
+}
+
 // ============================================================================
 // Service
 // ============================================================================
@@ -107,29 +123,40 @@ export class FindingNotifierService {
       organizationId,
       taskId,
       taskTitle,
+      evidenceSubmissionId,
+      evidenceSubmissionFormType,
+      evidenceSubmissionSubmittedById,
       findingType,
       actorUserId,
       actorName,
     } = params;
 
-    const recipients = await this.getTaskAssigneeAndAdmins(
-      organizationId,
-      taskId,
-      actorUserId,
-    );
+    const recipients = taskId
+      ? await this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId)
+      : await this.getSubmissionSubmitterAndAdmins(
+          organizationId,
+          evidenceSubmissionId,
+          evidenceSubmissionSubmittedById,
+          actorUserId,
+        );
 
     if (recipients.length === 0) {
       this.logger.log('No recipients for finding created notification');
       return;
     }
 
+    const contextTitle =
+      taskTitle ??
+      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
+    const contextLabel = taskId ? 'task' : 'document submission';
+
     await this.sendNotifications({
       ...params,
       action: 'created',
       recipients,
-      subject: `New finding on task: ${taskTitle}`,
+      subject: `New finding on ${contextLabel}: ${contextTitle}`,
       heading: 'New Finding Created',
-      message: `${actorName} created a new ${TYPE_LABELS[findingType]} finding on the task "${taskTitle}".`,
+      message: `${actorName} created a new ${TYPE_LABELS[findingType]} finding on the ${contextLabel} "${contextTitle}".`,
     });
   }
 
@@ -143,6 +170,8 @@ export class FindingNotifierService {
     const {
       findingId,
       taskTitle,
+      evidenceSubmissionId,
+      evidenceSubmissionFormType,
       actorUserId,
       actorName,
       findingCreatorMemberId,
@@ -168,13 +197,17 @@ export class FindingNotifierService {
       `[notifyReadyForReview] Finding ${findingId}: Sending to ${recipients.length} recipient(s): ${recipients.map((r) => r.email).join(', ')}`,
     );
 
+    const contextTitle =
+      taskTitle ??
+      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
+
     await this.sendNotifications({
       ...params,
       action: 'ready_for_review',
       recipients,
-      subject: `Finding ready for review: ${taskTitle}`,
+      subject: `Finding ready for review: ${contextTitle}`,
       heading: 'Finding Ready for Review',
-      message: `${actorName} marked a finding on "${taskTitle}" as ready for your review.`,
+      message: `${actorName} marked a finding on "${contextTitle}" as ready for your review.`,
       newStatus: FindingStatus.ready_for_review,
     });
   }
@@ -184,27 +217,42 @@ export class FindingNotifierService {
    * Recipients: Task assignee + Organization admins/owners
    */
   async notifyNeedsRevision(params: NotificationParams): Promise<void> {
-    const { organizationId, taskId, taskTitle, actorUserId, actorName } =
-      params;
-
-    const recipients = await this.getTaskAssigneeAndAdmins(
+    const {
       organizationId,
       taskId,
+      taskTitle,
+      evidenceSubmissionId,
+      evidenceSubmissionFormType,
+      evidenceSubmissionSubmittedById,
       actorUserId,
-    );
+      actorName,
+    } = params;
+
+    const recipients = taskId
+      ? await this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId)
+      : await this.getSubmissionSubmitterAndAdmins(
+          organizationId,
+          evidenceSubmissionId,
+          evidenceSubmissionSubmittedById,
+          actorUserId,
+        );
 
     if (recipients.length === 0) {
       this.logger.log('No recipients for needs revision notification');
       return;
     }
 
+    const contextTitle =
+      taskTitle ??
+      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
+
     await this.sendNotifications({
       ...params,
       action: 'needs_revision',
       recipients,
-      subject: `Finding needs revision: ${taskTitle}`,
+      subject: `Finding needs revision: ${contextTitle}`,
       heading: 'Finding Needs Revision',
-      message: `${actorName} reviewed a finding on "${taskTitle}" and marked it as needing revision.`,
+      message: `${actorName} reviewed a finding on "${contextTitle}" and marked it as needing revision.`,
       newStatus: FindingStatus.needs_revision,
     });
   }
@@ -214,27 +262,42 @@ export class FindingNotifierService {
    * Recipients: Task assignee + Organization admins/owners
    */
   async notifyFindingClosed(params: NotificationParams): Promise<void> {
-    const { organizationId, taskId, taskTitle, actorUserId, actorName } =
-      params;
-
-    const recipients = await this.getTaskAssigneeAndAdmins(
+    const {
       organizationId,
       taskId,
+      taskTitle,
+      evidenceSubmissionId,
+      evidenceSubmissionFormType,
+      evidenceSubmissionSubmittedById,
       actorUserId,
-    );
+      actorName,
+    } = params;
+
+    const recipients = taskId
+      ? await this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId)
+      : await this.getSubmissionSubmitterAndAdmins(
+          organizationId,
+          evidenceSubmissionId,
+          evidenceSubmissionSubmittedById,
+          actorUserId,
+        );
 
     if (recipients.length === 0) {
       this.logger.log('No recipients for finding closed notification');
       return;
     }
 
+    const contextTitle =
+      taskTitle ??
+      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
+
     await this.sendNotifications({
       ...params,
       action: 'closed',
       recipients,
-      subject: `Finding closed: ${taskTitle}`,
+      subject: `Finding closed: ${contextTitle}`,
       heading: 'Finding Closed',
-      message: `${actorName} closed a finding on "${taskTitle}". The issue has been resolved.`,
+      message: `${actorName} closed a finding on "${contextTitle}". The issue has been resolved.`,
       newStatus: FindingStatus.closed,
     });
   }
@@ -255,6 +318,8 @@ export class FindingNotifierService {
       findingId,
       taskId,
       taskTitle,
+      evidenceSubmissionId,
+      evidenceSubmissionFormType,
       findingContent,
       findingType,
       action,
@@ -272,7 +337,13 @@ export class FindingNotifierService {
     });
     const organizationName = organization?.name ?? 'your organization';
 
-    const findingUrl = `${getAppUrl()}/${organizationId}/tasks/${taskId}`;
+    const contextTitle =
+      taskTitle ??
+      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
+    const findingUrl =
+      evidenceSubmissionId && evidenceSubmissionFormType
+        ? `${getAppUrl()}/${organizationId}/documents/${evidenceSubmissionFormType}/submissions/${evidenceSubmissionId}`
+        : `${getAppUrl()}/${organizationId}/tasks/${taskId}`;
     const typeLabel = TYPE_LABELS[findingType];
     const statusLabel = newStatus ? STATUS_LABELS[newStatus] : undefined;
 
@@ -285,7 +356,7 @@ export class FindingNotifierService {
           organizationName,
           findingId,
           taskId,
-          taskTitle,
+          taskTitle: contextTitle,
           findingContent,
           findingType: typeLabel,
           action,
@@ -307,7 +378,7 @@ export class FindingNotifierService {
     organizationId: string;
     organizationName: string;
     findingId: string;
-    taskId: string;
+    taskId?: string;
     taskTitle: string;
     findingContent: string;
     findingType: string;
@@ -460,7 +531,7 @@ export class FindingNotifierService {
     organizationId: string;
     organizationName: string;
     findingId: string;
-    taskId: string;
+    taskId?: string;
     taskTitle: string;
     findingType: string;
     findingContent: string;
@@ -599,6 +670,103 @@ export class FindingNotifierService {
     } catch (error) {
       this.logger.error(
         'Failed to get task assignee and admins:',
+        error instanceof Error ? error.message : 'Unknown error',
+      );
+      return [];
+    }
+  }
+
+  private async getSubmissionSubmitterAndAdmins(
+    organizationId: string,
+    evidenceSubmissionId: string | undefined,
+    submitterUserId: string | null | undefined,
+    excludeUserId: string,
+  ): Promise<Recipient[]> {
+    try {
+      const allMembers = await db.member.findMany({
+        where: {
+          organizationId,
+          deactivated: false,
+        },
+        select: {
+          role: true,
+          user: { select: { id: true, email: true, name: true } },
+        },
+      });
+
+      const adminMembers = allMembers.filter(
+        (member) =>
+          member.role.includes('admin') || member.role.includes('owner'),
+      );
+
+      const recipients: Recipient[] = [];
+      const addedUserIds = new Set<string>();
+
+      if (submitterUserId) {
+        const submitter = await db.user.findUnique({
+          where: { id: submitterUserId },
+          select: { id: true, email: true, name: true },
+        });
+
+        if (
+          submitter &&
+          submitter.id !== excludeUserId &&
+          submitter.email &&
+          !addedUserIds.has(submitter.id)
+        ) {
+          recipients.push({
+            userId: submitter.id,
+            email: submitter.email,
+            name: submitter.name || submitter.email,
+          });
+          addedUserIds.add(submitter.id);
+        }
+      } else if (evidenceSubmissionId) {
+        const submission = await db.evidenceSubmission.findUnique({
+          where: { id: evidenceSubmissionId },
+          select: {
+            submittedBy: {
+              select: { id: true, email: true, name: true },
+            },
+          },
+        });
+
+        const submitter = submission?.submittedBy;
+        if (
+          submitter &&
+          submitter.id !== excludeUserId &&
+          submitter.email &&
+          !addedUserIds.has(submitter.id)
+        ) {
+          recipients.push({
+            userId: submitter.id,
+            email: submitter.email,
+            name: submitter.name || submitter.email,
+          });
+          addedUserIds.add(submitter.id);
+        }
+      }
+
+      for (const member of adminMembers) {
+        const user = member.user;
+        if (
+          user.id !== excludeUserId &&
+          user.email &&
+          !addedUserIds.has(user.id)
+        ) {
+          recipients.push({
+            userId: user.id,
+            email: user.email,
+            name: user.name || user.email,
+          });
+          addedUserIds.add(user.id);
+        }
+      }
+
+      return recipients;
+    } catch (error) {
+      this.logger.error(
+        'Failed to get submission recipients:',
         error instanceof Error ? error.message : 'Unknown error',
       );
       return [];
