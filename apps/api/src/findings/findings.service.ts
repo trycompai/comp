@@ -114,6 +114,25 @@ export class FindingsService {
   }
 
   /**
+   * Get all findings for a specific evidence form type
+   */
+  async findByEvidenceFormType(
+    organizationId: string,
+    evidenceFormType: string,
+  ) {
+    const findings = await db.finding.findMany({
+      where: { evidenceFormType, organizationId },
+      include: this.findingInclude,
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    this.logger.log(
+      `Retrieved ${findings.length} findings for evidence form type ${evidenceFormType}`,
+    );
+    return findings;
+  }
+
+  /**
    * Get all findings for an organization
    */
   async findByOrganizationId(organizationId: string, status?: FindingStatus) {
@@ -161,31 +180,33 @@ export class FindingsService {
   ) {
     const hasTaskTarget = Boolean(createDto.taskId);
     const hasSubmissionTarget = Boolean(createDto.evidenceSubmissionId);
-    if (!hasTaskTarget && !hasSubmissionTarget) {
+    const hasFormTypeTarget = Boolean(createDto.evidenceFormType);
+    const targetCount =
+      (hasTaskTarget ? 1 : 0) +
+      (hasSubmissionTarget ? 1 : 0) +
+      (hasFormTypeTarget ? 1 : 0);
+
+    if (targetCount === 0) {
       throw new BadRequestException(
-        'Either taskId or evidenceSubmissionId is required',
+        'One of taskId, evidenceSubmissionId, or evidenceFormType is required',
       );
     }
-    if (hasTaskTarget && hasSubmissionTarget) {
+    if (targetCount > 1) {
       throw new BadRequestException(
-        'Provide only one target: taskId or evidenceSubmissionId',
+        'Provide only one target: taskId, evidenceSubmissionId, or evidenceFormType',
       );
     }
 
-    let task:
-      | {
-          id: string;
-          title: string;
-        }
-      | null = null;
-    let evidenceSubmission:
-      | {
-          id: string;
-          formType: string;
-          submittedAt: Date;
-          submittedById: string | null;
-        }
-      | null = null;
+    let task: {
+      id: string;
+      title: string;
+    } | null = null;
+    let evidenceSubmission: {
+      id: string;
+      formType: string;
+      submittedAt: Date;
+      submittedById: string | null;
+    } | null = null;
 
     if (createDto.taskId) {
       task = await db.task.findFirst({
@@ -231,10 +252,14 @@ export class FindingsService {
       }
     }
 
+    const resolvedFormType =
+      createDto.evidenceFormType ?? evidenceSubmission?.formType ?? undefined;
+
     const finding = await db.finding.create({
       data: {
         taskId: createDto.taskId ?? null,
         evidenceSubmissionId: createDto.evidenceSubmissionId ?? null,
+        evidenceFormType: createDto.evidenceFormType ?? null,
         type: createDto.type,
         content: createDto.content,
         templateId: createDto.templateId,
@@ -254,7 +279,7 @@ export class FindingsService {
       taskId: task?.id,
       taskTitle: task?.title,
       evidenceSubmissionId: evidenceSubmission?.id,
-      evidenceSubmissionFormType: evidenceSubmission?.formType,
+      evidenceSubmissionFormType: resolvedFormType,
       content: createDto.content,
       type: createDto.type ?? FindingType.soc2,
     });
@@ -270,7 +295,7 @@ export class FindingsService {
       taskId: task?.id,
       taskTitle: task?.title,
       evidenceSubmissionId: evidenceSubmission?.id,
-      evidenceSubmissionFormType: evidenceSubmission?.formType,
+      evidenceSubmissionFormType: resolvedFormType,
       evidenceSubmissionSubmittedById: evidenceSubmission?.submittedById,
       findingContent: createDto.content,
       findingType: createDto.type ?? FindingType.soc2,
@@ -280,7 +305,9 @@ export class FindingsService {
 
     const target = task
       ? `task ${task.id}`
-      : `evidence submission ${evidenceSubmission?.id}`;
+      : createDto.evidenceFormType
+        ? `evidence form type ${createDto.evidenceFormType}`
+        : `evidence submission ${evidenceSubmission?.id}`;
     this.logger.log(`Created finding ${finding.id} for ${target}`);
     return finding;
   }
@@ -436,7 +463,9 @@ export class FindingsService {
         taskId: finding.task?.id,
         taskTitle: finding.task?.title,
         evidenceSubmissionId: finding.evidenceSubmission?.id,
-        evidenceSubmissionFormType: finding.evidenceSubmission?.formType,
+        evidenceSubmissionFormType:
+          (finding as { evidenceFormType?: string | null }).evidenceFormType ??
+          finding.evidenceSubmission?.formType,
         evidenceSubmissionSubmittedById:
           finding.evidenceSubmission?.submittedById,
         findingContent: updatedFinding.content,
@@ -518,7 +547,9 @@ export class FindingsService {
       taskId: finding.task?.id,
       taskTitle: finding.task?.title,
       evidenceSubmissionId: finding.evidenceSubmission?.id,
-      evidenceSubmissionFormType: finding.evidenceSubmission?.formType,
+      evidenceSubmissionFormType:
+        (finding as { evidenceFormType?: string | null }).evidenceFormType ??
+        finding.evidenceSubmission?.formType,
       content: finding.content,
     });
 

@@ -6,6 +6,7 @@ import {
   type EvidenceFormType,
 } from '@/app/(app)/[orgId]/documents/forms';
 import { api } from '@/lib/api-client';
+import { useActiveMember } from '@/utils/auth-client';
 import { jwtManager } from '@/utils/jwt-manager';
 import {
   Badge,
@@ -33,6 +34,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
+import { DocumentFindingsSection } from './DocumentFindingsSection';
 import { StatusBadge, formatSubmissionDate } from './submission-utils';
 
 // ─── Types ───────────────────────────────────────────────────
@@ -90,13 +92,20 @@ function getMatrixRowCount(value: unknown): number {
 export function CompanyFormPageClient({
   organizationId,
   formType,
+  isPlatformAdmin,
 }: {
   organizationId: string;
   formType: EvidenceFormType;
+  isPlatformAdmin: boolean;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+
+  const { data: activeMember } = useActiveMember();
+  const memberRoles = activeMember?.role?.split(',').map((role: string) => role.trim()) || [];
+  const isAuditor = memberRoles.includes('auditor');
+  const isAdminOrOwner = memberRoles.includes('admin') || memberRoles.includes('owner');
 
   const isMeeting = formType === 'meeting';
   const formDefinition = evidenceFormDefinitions[formType];
@@ -407,6 +416,13 @@ export function CompanyFormPageClient({
           </Table>
         )}
       </div>
+
+      <DocumentFindingsSection
+        formType={formType}
+        isAuditor={isAuditor}
+        isPlatformAdmin={isPlatformAdmin}
+        isAdminOrOwner={isAdminOrOwner}
+      />
     </div>
   );
 }

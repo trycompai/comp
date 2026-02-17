@@ -9,9 +9,9 @@ import { useActiveMember } from '@/utils/auth-client';
 import {
   Button,
   Empty,
-  EmptyMedia,
   EmptyDescription,
   EmptyHeader,
+  EmptyMedia,
   EmptyTitle,
   Field,
   FieldLabel,
@@ -38,7 +38,6 @@ import {
   normalizeMatrixRows,
   renderSubmissionValue,
 } from './submission-utils';
-import { DocumentFindingsSection } from './DocumentFindingsSection';
 
 type EvidenceSubmissionRow = {
   id: string;
@@ -297,7 +296,9 @@ export function CompanySubmissionDetailPageClient({
                             <TableRow key={`${field.key}-row-${rowIndex}`}>
                               {field.columns.map((column) => (
                                 <TableCell key={`${field.key}-row-${rowIndex}-${column.key}`}>
-                                  <div className="whitespace-pre-wrap">{row[column.key] || '—'}</div>
+                                  <div className="whitespace-pre-wrap">
+                                    {row[column.key] || '—'}
+                                  </div>
                                 </TableCell>
                               ))}
                             </TableRow>
@@ -357,13 +358,6 @@ export function CompanySubmissionDetailPageClient({
             </div>
           </div>
         )}
-
-        <DocumentFindingsSection
-          submissionId={submissionId}
-          isAuditor={isAuditor}
-          isPlatformAdmin={isPlatformAdmin}
-          isAdminOrOwner={isAdminOrOwner}
-        />
       </div>
     </Section>
   );

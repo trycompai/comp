@@ -16,6 +16,7 @@ export interface Finding {
   updatedAt: string;
   taskId: string | null;
   evidenceSubmissionId: string | null;
+  evidenceFormType: string | null;
   templateId: string | null;
   createdById: string;
   organizationId: string;
@@ -58,6 +59,7 @@ export interface FindingTemplate {
 interface CreateFindingData {
   taskId?: string;
   evidenceSubmissionId?: string;
+  evidenceFormType?: string;
   type?: FindingType;
   templateId?: string;
   content: string;
@@ -126,6 +128,21 @@ export function useSubmissionFindings(
   const endpoint = evidenceSubmissionId
     ? `/v1/findings?evidenceSubmissionId=${evidenceSubmissionId}`
     : null;
+
+  return useApiSWR<Finding[]>(endpoint, {
+    ...options,
+    refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
+  });
+}
+
+/**
+ * Hook to fetch findings for a specific evidence form type
+ */
+export function useFormTypeFindings(
+  evidenceFormType: string | null,
+  options: UseFindingsOptions = {},
+) {
+  const endpoint = evidenceFormType ? `/v1/findings?evidenceFormType=${evidenceFormType}` : null;
 
   return useApiSWR<Finding[]>(endpoint, {
     ...options,

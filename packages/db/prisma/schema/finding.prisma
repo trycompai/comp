@@ -37,6 +37,7 @@ model Finding {
   task           Task?            @relation(fields: [taskId], references: [id], onDelete: Cascade)
   evidenceSubmissionId String?
   evidenceSubmission   EvidenceSubmission? @relation(fields: [evidenceSubmissionId], references: [id], onDelete: Cascade)
+  evidenceFormType     String?
   templateId     String?
   template       FindingTemplate? @relation(fields: [templateId], references: [id])
   createdById    String
@@ -46,5 +47,6 @@ model Finding {
 
   @@index([taskId])
   @@index([evidenceSubmissionId])
+  @@index([evidenceFormType])
   @@index([organizationId, status])
 }

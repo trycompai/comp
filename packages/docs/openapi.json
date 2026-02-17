@@ -11631,17 +11631,27 @@
               "example": "evs_abc123",
               "type": "string"
             }
+          },
+          {
+            "name": "evidenceFormType",
+            "required": false,
+            "in": "query",
+            "description": "Evidence form type to get findings for",
+            "schema": {
+              "example": "access-request",
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "List of findings for the task"
+            "description": "List of findings"
           },
           "401": {
             "description": "Unauthorized"
           },
           "404": {
-            "description": "Task not found"
+            "description": "Target not found"
           }
         },
         "security": [
@@ -19190,6 +19200,11 @@
             "type": "string",
             "description": "Evidence submission ID this finding is associated with",
             "example": "evs_abc123"
+          },
+          "evidenceFormType": {
+            "type": "string",
+            "description": "Evidence form type this finding is associated with (e.g., access-request, whistleblower-report)",
+            "example": "access-request"
           },
           "type": {
             "type": "string",

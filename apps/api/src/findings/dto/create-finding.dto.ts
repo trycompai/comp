@@ -28,6 +28,16 @@ export class CreateFindingDto {
   evidenceSubmissionId?: string;
 
   @ApiProperty({
+    description:
+      'Evidence form type this finding is associated with (e.g., access-request, whistleblower-report)',
+    example: 'access-request',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  evidenceFormType?: string;
+
+  @ApiProperty({
     description: 'Type of finding (SOC 2 or ISO 27001)',
     enum: FindingType,
     default: FindingType.soc2,

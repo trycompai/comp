@@ -8,12 +8,14 @@ import { CreateFindingSheet } from './CreateFindingSheet';
 interface CreateFindingButtonProps {
   taskId?: string;
   evidenceSubmissionId?: string;
+  evidenceFormType?: string;
   onSuccess?: () => void;
 }
 
 export function CreateFindingButton({
   taskId,
   evidenceSubmissionId,
+  evidenceFormType,
   onSuccess,
 }: CreateFindingButtonProps) {
   const [open, setOpen] = useState(false);
@@ -26,6 +28,7 @@ export function CreateFindingButton({
       <CreateFindingSheet
         taskId={taskId}
         evidenceSubmissionId={evidenceSubmissionId}
+        evidenceFormType={evidenceFormType}
         open={open}
         onOpenChange={setOpen}
         onSuccess={onSuccess}

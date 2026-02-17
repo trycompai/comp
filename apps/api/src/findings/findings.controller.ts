@@ -64,9 +64,15 @@ export class FindingsController {
     description: 'Evidence submission ID to get findings for',
     example: 'evs_abc123',
   })
+  @ApiQuery({
+    name: 'evidenceFormType',
+    required: false,
+    description: 'Evidence form type to get findings for',
+    example: 'access-request',
+  })
   @ApiResponse({
     status: 200,
-    description: 'List of findings for the task',
+    description: 'List of findings',
   })
   @ApiResponse({
     status: 401,
@@ -74,22 +80,25 @@ export class FindingsController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Task not found',
+    description: 'Target not found',
   })
   async getFindingsByTask(
     @Query('taskId') taskId: string,
     @Query('evidenceSubmissionId') evidenceSubmissionId: string,
+    @Query('evidenceFormType') evidenceFormType: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    if (!taskId && !evidenceSubmissionId) {
+    const targets = [taskId, evidenceSubmissionId, evidenceFormType].filter(
+      Boolean,
+    );
+    if (targets.length === 0) {
       throw new BadRequestException(
-        'Either taskId or evidenceSubmissionId query parameter is required',
+        'One of taskId, evidenceSubmissionId, or evidenceFormType query parameter is required',
       );
     }
-
-    if (taskId && evidenceSubmissionId) {
+    if (targets.length > 1) {
       throw new BadRequestException(
-        'Provide only one target: taskId or evidenceSubmissionId',
+        'Provide only one target: taskId, evidenceSubmissionId, or evidenceFormType',
       );
     }
 
@@ -97,6 +106,13 @@ export class FindingsController {
       return await this.findingsService.findByTaskId(
         authContext.organizationId,
         taskId,
+      );
+    }
+
+    if (evidenceFormType) {
+      return await this.findingsService.findByEvidenceFormType(
+        authContext.organizationId,
+        evidenceFormType,
       );
     }
 
