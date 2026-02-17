@@ -66,19 +66,39 @@ export const EmployeeTasksList = ({
     },
   );
 
+  // Poll agent device status so compliance updates appear without full reload
+  const { data: agentDeviceResponse } = useSWR<{ devices: Device[] }>(
+    deviceAgentStepEnabled
+      ? `/api/device-agent/status?organizationId=${organizationId}`
+      : null,
+    async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
+    {
+      fallbackData: agentDevice ? { devices: [agentDevice] } : { devices: [] },
+      refreshInterval: 30_000,
+      revalidateOnFocus: true,
+      revalidateOnMount: false,
+    },
+  );
+
   if (!response) {
     return null;
   }
+
+  const currentAgentDevice = agentDeviceResponse?.devices?.[0] ?? null;
 
   // Check completion status
   const hasAcceptedPolicies =
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
 
   // Device agent takes priority over Fleet for completion
-  const hasAgentDevice = agentDevice !== null;
+  const hasAgentDevice = currentAgentDevice !== null;
   const hasFleetDevice = response.device !== null;
   const hasCompletedDeviceSetup = hasAgentDevice
-    ? agentDevice.isCompliant
+    ? currentAgentDevice.isCompliant
     : hasFleetDevice &&
       (response.fleetPolicies.length === 0 ||
         response.fleetPolicies.every((policy) => policy.response === 'pass'));
@@ -115,7 +135,7 @@ export const EmployeeTasksList = ({
               <DeviceAgentAccordionItem
                 member={member}
                 host={response.device}
-                agentDevice={agentDevice}
+                agentDevice={currentAgentDevice}
                 fleetPolicies={response.fleetPolicies}
                 isLoading={isValidating}
                 fetchFleetPolicies={fetchFleetPolicies}
