@@ -1,9 +1,41 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { db } from '@trycompai/db';
-import { mergeDeviceLists } from '@trycompai/utils/devices';
 import { FleetService } from '../lib/fleet.service';
 import { DeviceResponseDto } from './dto/device-responses.dto';
 import type { MemberResponseDto } from './dto/member-responses.dto';
+
+/**
+ * Merges two device lists, deduplicating by serial number and hostname.
+ * Priority devices (first argument) take precedence over secondary devices.
+ */
+function mergeDeviceLists<T>(
+  priorityDevices: T[],
+  secondaryDevices: T[],
+  accessors: {
+    getSerialNumber: (device: T) => string | null | undefined;
+    getHostname: (device: T) => string | null | undefined;
+  },
+): T[] {
+  const knownSerials = new Set<string>();
+  const knownHostnames = new Set<string>();
+
+  for (const device of priorityDevices) {
+    const serial = accessors.getSerialNumber(device);
+    const hostname = accessors.getHostname(device);
+    if (serial) knownSerials.add(serial.toLowerCase());
+    if (hostname) knownHostnames.add(hostname.toLowerCase());
+  }
+
+  const uniqueSecondaryDevices = secondaryDevices.filter((device) => {
+    const serial = accessors.getSerialNumber(device);
+    const hostname = accessors.getHostname(device);
+    if (serial && knownSerials.has(serial.toLowerCase())) return false;
+    if (hostname && knownHostnames.has(hostname.toLowerCase())) return false;
+    return true;
+  });
+
+  return [...priorityDevices, ...uniqueSecondaryDevices];
+}
 
 /**
  * Hybrid device service that fetches from both FleetDM and the Device Agent database.
