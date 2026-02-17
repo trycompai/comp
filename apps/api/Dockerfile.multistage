@@ -92,7 +92,7 @@ ENV NODE_ENV=production
 ENV PORT=3333
 
 # Install Prisma CLI and regenerate client in production stage
-RUN npm install -g prisma@6.13.0 && \
+RUN npm install -g prisma@6.18.0 && \
     prisma generate --schema=./prisma/schema.prisma
 
 # Create non-root user
