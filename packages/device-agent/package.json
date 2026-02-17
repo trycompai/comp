@@ -1,7 +1,7 @@
 {
   "name": "@comp/device-agent",
   "version": "1.0.0",
-  "description": "Comp AI Device Agent - Device Compliance Checks",
+  "description": "Comp AI Device Agent - Endpoint Compliance",
   "author": "Comp AI <hello@trycomp.ai>",
   "homepage": "https://trycomp.ai",
   "private": true,
