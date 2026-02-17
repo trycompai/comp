@@ -64,24 +64,20 @@ export function OtpForm({ email }: OtpFormProps) {
 
   return (
     <Form {...form}>
-      <form className="grid gap-2" onSubmit={form.handleSubmit(onSubmit)}>
+      <form className="grid gap-4 place-items-center" onSubmit={form.handleSubmit(onSubmit)}>
         <FormField
           control={form.control}
           name="otp"
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <InputOTP
-                  maxLength={INPUT_LENGTH}
-                  {...field}
-                  render={({ slots }) => (
-                    <InputOTPGroup>
-                      {slots.map((slot, index) => (
-                        <InputOTPSlot key={index} {...slot} />
-                      ))}
-                    </InputOTPGroup>
-                  )}
-                />
+                <InputOTP maxLength={INPUT_LENGTH} {...field}>
+                  <InputOTPGroup>
+                    {Array.from({ length: INPUT_LENGTH }, (_, i) => (
+                      <InputOTPSlot key={i} index={i} />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
               </FormControl>
               <FormMessage />
             </FormItem>

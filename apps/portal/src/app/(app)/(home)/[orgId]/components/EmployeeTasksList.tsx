@@ -4,7 +4,7 @@ import { trainingVideos } from '@/lib/data/training-videos';
 import { evidenceFormDefinitionList } from '@comp/company';
 import { Accordion } from '@comp/ui/accordion';
 import { Card, CardContent } from '@comp/ui/card';
-import type { EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
+import type { Device, EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
 import { Button } from '@trycompai/design-system';
 import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
@@ -27,6 +27,7 @@ interface EmployeeTasksListProps {
   member: Member;
   fleetPolicies: FleetPolicy[];
   host: Host | null;
+  agentDevice: Device | null;
   deviceAgentStepEnabled: boolean;
   securityTrainingStepEnabled: boolean;
   whistleblowerReportEnabled: boolean;
@@ -40,6 +41,7 @@ export const EmployeeTasksList = ({
   member,
   fleetPolicies,
   host,
+  agentDevice,
   deviceAgentStepEnabled,
   securityTrainingStepEnabled,
   whistleblowerReportEnabled,
@@ -64,18 +66,50 @@ export const EmployeeTasksList = ({
     },
   );
 
+  // Poll agent device status so compliance updates appear without full reload
+  const { data: agentDeviceResponse } = useSWR<{ devices: Device[] }>(
+    deviceAgentStepEnabled
+      ? `/api/device-agent/status?organizationId=${organizationId}`
+      : null,
+    async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
+    {
+      fallbackData: agentDevice ? { devices: [agentDevice] } : { devices: [] },
+      refreshInterval: 30_000,
+      revalidateOnFocus: true,
+      revalidateOnMount: false,
+    },
+  );
+
   if (!response) {
     return null;
   }
 
+  // Pick the most recently checked-in device (matching page.tsx ordering: lastCheckIn desc, nulls last)
+  const currentAgentDevice =
+    agentDeviceResponse?.devices
+      ?.sort((a, b) => {
+        if (!a.lastCheckIn && !b.lastCheckIn) return 0;
+        if (!a.lastCheckIn) return 1;
+        if (!b.lastCheckIn) return -1;
+        return new Date(b.lastCheckIn).getTime() - new Date(a.lastCheckIn).getTime();
+      })[0] ?? null;
+
   // Check completion status
   const hasAcceptedPolicies =
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
-  const hasInstalledAgent = response.device !== null;
-  const allFleetPoliciesPass =
-    response.fleetPolicies.length === 0 ||
-    response.fleetPolicies.every((policy) => policy.response === 'pass');
-  const hasCompletedDeviceSetup = hasInstalledAgent && allFleetPoliciesPass;
+
+  // Device agent takes priority over Fleet for completion
+  const hasAgentDevice = currentAgentDevice !== null;
+  const hasFleetDevice = response.device !== null;
+  const hasCompletedDeviceSetup = hasAgentDevice
+    ? currentAgentDevice.isCompliant
+    : hasFleetDevice &&
+      (response.fleetPolicies.length === 0 ||
+        response.fleetPolicies.every((policy) => policy.response === 'pass'));
 
   // Calculate general training completion (matching logic from GeneralTrainingAccordionItem)
   const generalTrainingVideoIds = trainingVideos
@@ -109,6 +143,7 @@ export const EmployeeTasksList = ({
               <DeviceAgentAccordionItem
                 member={member}
                 host={response.device}
+                agentDevice={currentAgentDevice}
                 fleetPolicies={response.fleetPolicies}
                 isLoading={isValidating}
                 fetchFleetPolicies={fetchFleetPolicies}
