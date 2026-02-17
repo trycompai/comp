@@ -296,7 +296,7 @@ export function CompanyFormPageClient({
               <Catalog />
             </EmptyMedia>
             <EmptyHeader>
-              <EmptyTitle>No submissions yet.</EmptyTitle>
+              <EmptyTitle>No submissions yet</EmptyTitle>
               <EmptyDescription>
                 Start by creating a new submission, click the New Submission button above.
               </EmptyDescription>
