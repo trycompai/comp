@@ -63,7 +63,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
       memberId: member.id,
       organizationId: orgId,
     },
-    orderBy: { lastCheckIn: 'desc' },
+    orderBy: { lastCheckIn: { sort: 'desc', nulls: 'last' } },
   });
 
   return (
