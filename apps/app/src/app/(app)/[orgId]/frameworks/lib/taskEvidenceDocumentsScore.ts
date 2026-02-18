@@ -1,9 +1,30 @@
-import { evidenceFormDefinitionList, meetingSubTypeValues } from '@comp/company';
-import { db } from '@db';
+import {
+  evidenceFormDefinitionList,
+  meetingSubTypeValues,
+  type EvidenceFormType,
+} from '@comp/company';
+import { db, EvidenceFormType as DbEvidenceFormType } from '@db';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
 const MEETING_SUB_TYPES = meetingSubTypeValues;
+const EXTERNAL_TO_DB_FORM_TYPE: Record<EvidenceFormType, DbEvidenceFormType> = {
+  'board-meeting': DbEvidenceFormType.board_meeting,
+  'it-leadership-meeting': DbEvidenceFormType.it_leadership_meeting,
+  'risk-committee-meeting': DbEvidenceFormType.risk_committee_meeting,
+  meeting: DbEvidenceFormType.meeting,
+  'access-request': DbEvidenceFormType.access_request,
+  'whistleblower-report': DbEvidenceFormType.whistleblower_report,
+  'penetration-test': DbEvidenceFormType.penetration_test,
+  'rbac-matrix': DbEvidenceFormType.rbac_matrix,
+  'infrastructure-inventory': DbEvidenceFormType.infrastructure_inventory,
+  'employee-performance-evaluation':
+    DbEvidenceFormType.employee_performance_evaluation,
+};
+
+function toDbEvidenceFormType(formType: EvidenceFormType): DbEvidenceFormType {
+  return EXTERNAL_TO_DB_FORM_TYPE[formType];
+}
 
 export type DocumentFormStatuses = Record<string, { lastSubmittedAt: string | null }>;
 
@@ -65,7 +86,9 @@ export async function getDocumentFormStatusesForOrganization(
 
   const statuses: DocumentFormStatuses = {};
   for (const form of evidenceFormDefinitionList) {
-    const match = groupedStatuses.find((entry) => entry.formType === form.type);
+    const match = groupedStatuses.find(
+      (entry) => entry.formType === toDbEvidenceFormType(form.type),
+    );
     statuses[form.type] = {
       lastSubmittedAt: match?._max.submittedAt?.toISOString() ?? null,
     };
