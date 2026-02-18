@@ -88,7 +88,7 @@ async function evidenceFormFetcher([endpoint, orgId]: readonly [
   string,
   string,
 ]): Promise<EvidenceFormResponse> {
-  const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
+  const response = await api.get<EvidenceFormResponse>(endpoint);
   if (response.error || !response.data) {
     throw new Error(response.error ?? 'Failed to load submissions');
   }
