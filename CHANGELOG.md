@@ -1,3 +1,10 @@
+## [1.83.5](https://github.com/trycompai/comp/compare/v1.83.4...v1.83.5) (2026-02-18)
+
+
+### Bug Fixes
+
+* **api:** update Prisma version in Dockerfile to match project ([#2149](https://github.com/trycompai/comp/issues/2149)) ([c478509](https://github.com/trycompai/comp/commit/c478509ccd7a6eed72823825be9ff71bed2e6540))
+
 ## [1.83.4](https://github.com/trycompai/comp/compare/v1.83.3...v1.83.4) (2026-02-17)
 
 
