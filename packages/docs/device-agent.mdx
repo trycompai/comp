@@ -158,63 +158,13 @@ The portal updates automatically — it polls your device status every 30 second
   </Accordion>
 </AccordionGroup>
 
-### Uninstalling the Old Fleet Agent
+### Uninstalling the Old Agent
 
-If you previously had the old Fleet-based agent installed, you should uninstall it after setting up the new Comp AI Device Agent. The new agent fully replaces the old one.
+If your device previously had the old Fleet-based agent installed, you should uninstall it after setting up the new Comp AI Device Agent. The new agent fully replaces the old one, and having both running is unnecessary.
 
-The old setup consisted of two parts: a **setup script** (`run_me_first.command` on macOS / `run_me_first.bat` on Windows) that created marker files, and a **Fleet agent package** (`compai-device-agent.pkg` on macOS / `compai-device-agent.msi` on Windows). On macOS, MDM enrollment was also required.
+Follow the official FleetDM uninstall guide for your platform: [How to uninstall fleetd](https://fleetdm.com/guides/how-to-uninstall-fleetd)
 
-<AccordionGroup>
-  <Accordion title="macOS" icon="apple">
-    **1. Remove the MDM profile**
-
-    1. Open **System Settings** → **General** → **Device Management** (or **Profiles** on older macOS).
-    2. Find the **Comp AI** enrollment profile.
-    3. Click the profile, then click **Remove Profile** (or the minus `-` button).
-    4. Enter your password to confirm.
-
-    **2. Remove the Fleet Desktop app**
-
-    1. Look for the Fleet icon (an "F" made of dots) in your menu bar — if it's running, right-click and quit it.
-    2. Open **Finder** → **Applications** and drag **Fleet Desktop** to the Trash.
-
-    **3. Clean up marker files**
-
-    The old setup script created marker files in `/Users/Shared/.fleet/`. Open **Terminal** and run:
-    ```bash
-    sudo rm -rf /Users/Shared/.fleet
-    ```
-
-    **4. Restart** your Mac to ensure all Fleet processes are stopped.
-  </Accordion>
-
-  <Accordion title="Windows" icon="windows">
-    **1. Uninstall the Fleet agent**
-
-    1. Open **Settings** → **Apps** → **Apps & features** (or **Installed apps** on Windows 11).
-    2. Search for **CompAI Device Agent** or **Fleet osquery**.
-    3. Click **Uninstall** and follow the prompts.
-
-    **2. Clean up marker files and registry entries**
-
-    The old setup script created marker files and registry entries. Open **PowerShell as Administrator** and run:
-    ```powershell
-    # Remove marker files
-    Remove-Item -Recurse -Force "C:\ProgramData\CompAI\Fleet" -ErrorAction SilentlyContinue
-    Remove-Item -Recurse -Force "$env:PUBLIC\CompAI\Fleet" -ErrorAction SilentlyContinue
-
-    # Remove registry entries
-    Remove-Item -Path "HKLM:\SOFTWARE\CompAI\Device" -Recurse -ErrorAction SilentlyContinue
-    Remove-Item -Path "HKCU:\Software\CompAI\Device" -Recurse -ErrorAction SilentlyContinue
-    ```
-
-    **3. Restart** your computer.
-  </Accordion>
-</AccordionGroup>
-
-<Note>
-  After uninstalling the old agent, ask your IT administrator to remove the old Fleet device from your profile. They can do this from the admin dashboard using the "Remove Device" action.
-</Note>
+After uninstalling, ask your IT administrator to remove the old device from your profile using the "Remove Device" action in the admin dashboard.
 
 ### Manual Evidence Collection
 
