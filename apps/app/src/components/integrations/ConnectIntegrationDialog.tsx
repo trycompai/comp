@@ -551,12 +551,13 @@ export function ConnectIntegrationDialog({
                       </span>
                     )}
                   </div>
-                  {(conn.accountId || conn.regions?.length || conn.tenantId) && (
+                  {(conn.accountId || conn.regions?.length || conn.tenantId || conn.subscriptionId) && (
                     <div className="text-xs text-muted-foreground">
                       {[
                         conn.accountId && `Account: ${conn.accountId}`,
                         conn.regions?.length && `${conn.regions.length} regions`,
                         conn.tenantId && `Tenant: ${conn.tenantId}`,
+                        conn.subscriptionId && `Subscription: ${conn.subscriptionId}`,
                       ]
                         .filter(Boolean)
                         .join(' • ')}
