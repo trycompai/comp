@@ -1,21 +1,17 @@
 'use client';
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
-import { useApi } from '@/hooks/use-api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
+import { Label } from '@comp/ui/label';
 import MultipleSelector from '@comp/ui/multiple-selector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import {
-  Button,
-  Label,
-  PageHeader,
-  PageLayout,
-  Spinner,
-} from '@trycompai/design-system';
+import { Button, PageHeader, PageLayout, Spinner } from '@trycompai/design-system';
 import { ArrowLeft, CheckmarkFilled, Launch } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { connectCloudAction } from '../actions/connect-cloud';
+import { validateAwsCredentialsAction } from '../actions/validate-aws-credentials';
 
 type CloudProvider = 'aws' | 'gcp' | 'azure' | null;
 type Step = 'choose' | 'connect' | 'validate-aws' | 'success';
@@ -146,13 +142,17 @@ export function EmptyState({
   onConnected,
   initialProvider = null,
 }: EmptyStateProps) {
-  const api = useApi();
-  const initialIsAws = initialProvider === 'aws';
-  const [step, setStep] = useState<Step>(initialProvider && !initialIsAws ? 'connect' : 'choose');
-  const [selectedProvider, setSelectedProvider] = useState<CloudProvider>(
-    initialProvider && !initialIsAws ? initialProvider : null,
+  const initialUsesDialog = initialProvider === 'aws' || initialProvider === 'azure';
+  const [step, setStep] = useState<Step>(
+    initialProvider && !initialUsesDialog ? 'connect' : 'choose',
   );
-  const [showConnectDialog, setShowConnectDialog] = useState(initialIsAws);
+  const [selectedProvider, setSelectedProvider] = useState<CloudProvider>(
+    initialProvider && !initialUsesDialog ? initialProvider : null,
+  );
+  const [showConnectDialog, setShowConnectDialog] = useState(initialUsesDialog);
+  const [connectDialogProvider, setConnectDialogProvider] = useState<'aws' | 'azure'>(
+    initialProvider === 'azure' ? 'azure' : 'aws',
+  );
   const [credentials, setCredentials] = useState<Record<string, string | string[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isConnecting, setIsConnecting] = useState(false);
@@ -160,13 +160,15 @@ export function EmptyState({
   const [awsAccountId, setAwsAccountId] = useState<string>('');
 
   useEffect(() => {
-    if (initialProvider === 'aws') {
+    if (initialProvider === 'aws' || initialProvider === 'azure') {
+      setConnectDialogProvider(initialProvider);
       setShowConnectDialog(true);
     }
   }, [initialProvider]);
 
   const handleProviderSelect = (providerId: CloudProvider) => {
-    if (providerId === 'aws') {
+    if (providerId === 'aws' || providerId === 'azure') {
+      setConnectDialogProvider(providerId);
       setShowConnectDialog(true);
       return;
     }
@@ -235,11 +237,7 @@ export function EmptyState({
 
     try {
       setIsConnecting(true);
-      const result = await api.post<{
-        success: boolean;
-        accountId?: string;
-        regions?: { value: string; label: string }[];
-      }>('/v1/cloud-security/legacy/validate-aws', {
+      const result = await validateAwsCredentialsAction({
         accessKeyId: credentials.access_key_id,
         secretAccessKey: credentials.secret_access_key,
       });
@@ -255,7 +253,7 @@ export function EmptyState({
         setStep('validate-aws');
         toast.success('Credentials validated! Now select your regions.');
       } else {
-        toast.error(result?.error || 'Failed to validate credentials');
+        toast.error(result?.data?.error || 'Failed to validate credentials');
       }
     } catch (error) {
       console.error('Validation error:', error);
@@ -280,25 +278,26 @@ export function EmptyState({
 
     try {
       setIsConnecting(true);
-      const result = await api.post<{
-        success: boolean;
-        integrationId?: string;
-        error?: string;
-      }>('/v1/cloud-security/legacy/connect', {
-        provider: selectedProvider,
+      const result = await connectCloudAction({
+        cloudProvider: selectedProvider,
         credentials,
       });
 
       if (result?.data?.success) {
         setStep('success');
-        onConnected?.();
+        if (result.data?.trigger) {
+          onConnected?.(result.data.trigger);
+        }
+        if (result.data?.runErrors && result.data.runErrors.length > 0) {
+          toast.error(result.data.runErrors[0] || 'Initial scan reported an issue');
+        }
         if (onBack) {
           setTimeout(() => {
             onBack();
           }, 2000);
         }
       } else {
-        toast.error(result?.error || 'Failed to connect cloud provider');
+        toast.error(result?.data?.error || 'Failed to connect cloud provider');
       }
     } catch (error) {
       console.error('Connection error:', error);
@@ -347,7 +346,7 @@ export function EmptyState({
 
             <CardContent className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="region">
+                <Label htmlFor="region" className="text-sm font-medium">
                   Regions
                 </Label>
                 <MultipleSelector
@@ -422,9 +421,15 @@ export function EmptyState({
           <ConnectIntegrationDialog
             open={showConnectDialog}
             onOpenChange={(open) => setShowConnectDialog(open)}
-            integrationId="aws"
-            integrationName="Amazon Web Services"
-            integrationLogoUrl="https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ"
+            integrationId={connectDialogProvider}
+            integrationName={
+              connectDialogProvider === 'azure' ? 'Microsoft Azure' : 'Amazon Web Services'
+            }
+            integrationLogoUrl={
+              connectDialogProvider === 'azure'
+                ? 'https://img.logo.dev/azure.microsoft.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ'
+                : 'https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ'
+            }
             onConnected={() => {
               setShowConnectDialog(false);
               onConnected?.();
@@ -434,7 +439,8 @@ export function EmptyState({
 
         <div className="grid w-full gap-4 md:grid-cols-3">
           {CLOUD_PROVIDERS.filter(
-            (cp) => cp.id === 'aws' || !connectedProviders.includes(cp.id),
+            (cp) =>
+              cp.id === 'aws' || cp.id === 'azure' || !connectedProviders.includes(cp.id),
           ).map((cloudProvider) => (
             <Card
               key={cloudProvider.id}
@@ -523,7 +529,7 @@ export function EmptyState({
 
                 return (
                   <div key={field.id} className="space-y-2">
-                    <Label htmlFor={field.id}>
+                    <Label htmlFor={field.id} className="text-sm font-medium">
                       {field.label}
                     </Label>
                     {field.type === 'select' && options.length > 0 ? (
