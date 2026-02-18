@@ -2,20 +2,45 @@ import {
   Body,
   Controller,
   HttpCode,
+  InternalServerErrorException,
   Logger,
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiHeader, ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { TaskStatus } from '@db';
+import { IsEnum, IsString } from 'class-validator';
 import { InternalTokenGuard } from '../auth/internal-token.guard';
 import { TaskNotifierService } from './task-notifier.service';
 
+const TaskStatusValues: TaskStatus[] = [
+  'todo',
+  'in_progress',
+  'in_review',
+  'done',
+  'not_relevant',
+  'failed',
+];
+
 class NotifyStatusChangeDto {
+  @ApiProperty({ description: 'Organization ID' })
+  @IsString()
   organizationId: string;
+
+  @ApiProperty({ description: 'Task ID' })
+  @IsString()
   taskId: string;
+
+  @ApiProperty({ description: 'Task title' })
+  @IsString()
   taskTitle: string;
+
+  @ApiProperty({ description: 'Previous task status', enum: TaskStatusValues })
+  @IsEnum(TaskStatusValues)
   oldStatus: TaskStatus;
+
+  @ApiProperty({ description: 'New task status', enum: TaskStatusValues })
+  @IsEnum(TaskStatusValues)
   newStatus: TaskStatus;
 }
 
@@ -39,6 +64,7 @@ export class InternalTaskNotificationController {
       'Send task status change notifications (email + in-app) without a user actor (internal)',
   })
   @ApiResponse({ status: 200, description: 'Notifications sent' })
+  @ApiResponse({ status: 500, description: 'Notification delivery failed' })
   async notifyStatusChange(@Body() body: NotifyStatusChangeDto) {
     this.logger.log(
       `[notifyStatusChange] Received request for task ${body.taskId} (${body.oldStatus} -> ${body.newStatus})`,
@@ -60,7 +86,7 @@ export class InternalTaskNotificationController {
         error instanceof Error ? error.message : 'Unknown error',
       );
 
-      return { success: false };
+      throw new InternalServerErrorException('Failed to send notifications');
     }
   }
 }
