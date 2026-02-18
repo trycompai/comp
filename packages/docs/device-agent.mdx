@@ -160,7 +160,9 @@ The portal updates automatically — it polls your device status every 30 second
 
 ### Uninstalling the Old Fleet Agent
 
-If you previously had the old Fleet-based agent (FleetDM) installed, you should uninstall it after setting up the new Comp AI Device Agent. The new agent fully replaces the old one.
+If you previously had the old Fleet-based agent installed, you should uninstall it after setting up the new Comp AI Device Agent. The new agent fully replaces the old one.
+
+The old setup consisted of two parts: a **setup script** (`run_me_first.command` on macOS / `run_me_first.bat` on Windows) that created marker files, and a **Fleet agent package** (`compai-device-agent.pkg` on macOS / `compai-device-agent.msi` on Windows). On macOS, MDM enrollment was also required.
 
 <AccordionGroup>
   <Accordion title="macOS" icon="apple">
@@ -174,54 +176,39 @@ If you previously had the old Fleet-based agent (FleetDM) installed, you should 
     **2. Remove the Fleet Desktop app**
 
     1. Look for the Fleet icon (an "F" made of dots) in your menu bar — if it's running, right-click and quit it.
-    2. Open **Terminal** and run:
-       ```bash
-       sudo /opt/orbit/bin/orbit/orbit --remove
-       ```
-       If that doesn't work, manually remove the files:
-       ```bash
-       sudo rm -rf /opt/orbit
-       sudo rm -rf /usr/local/bin/osqueryd
-       sudo rm -f /Library/LaunchDaemons/com.fleetdm.orbit.plist
-       sudo launchctl bootout system/com.fleetdm.orbit 2>/dev/null
-       ```
-    3. Restart your Mac to ensure all Fleet processes are stopped.
+    2. Open **Finder** → **Applications** and drag **Fleet Desktop** to the Trash.
+
+    **3. Clean up marker files**
+
+    The old setup script created marker files in `/Users/Shared/.fleet/`. Open **Terminal** and run:
+    ```bash
+    sudo rm -rf /Users/Shared/.fleet
+    ```
+
+    **4. Restart** your Mac to ensure all Fleet processes are stopped.
   </Accordion>
 
   <Accordion title="Windows" icon="windows">
+    **1. Uninstall the Fleet agent**
+
     1. Open **Settings** → **Apps** → **Apps & features** (or **Installed apps** on Windows 11).
-    2. Search for **Fleet osquery** or **Orbit**.
+    2. Search for **CompAI Device Agent** or **Fleet osquery**.
     3. Click **Uninstall** and follow the prompts.
-    4. Restart your computer.
 
-    If the app doesn't appear in the list, open **PowerShell as Administrator** and run:
-    ```powershell
-    msiexec /x "{fleet-product-code}" /quiet
-    ```
-    Or manually remove:
-    ```powershell
-    Stop-Service -Name "orbit" -Force -ErrorAction SilentlyContinue
-    sc.exe delete "orbit"
-    Remove-Item -Recurse -Force "C:\Program Files\Orbit" -ErrorAction SilentlyContinue
-    ```
-  </Accordion>
+    **2. Clean up marker files and registry entries**
 
-  <Accordion title="Linux" icon="linux">
-    1. Stop the Fleet service:
-       ```bash
-       sudo systemctl stop orbit
-       sudo systemctl disable orbit
-       ```
-    2. Remove the package:
-       ```bash
-       sudo apt remove fleet-osquery   # Debian/Ubuntu
-       sudo rpm -e fleet-osquery       # RHEL/Fedora
-       ```
-    3. Clean up remaining files:
-       ```bash
-       sudo rm -rf /opt/orbit
-       sudo rm -rf /usr/local/bin/osqueryd
-       ```
+    The old setup script created marker files and registry entries. Open **PowerShell as Administrator** and run:
+    ```powershell
+    # Remove marker files
+    Remove-Item -Recurse -Force "C:\ProgramData\CompAI\Fleet" -ErrorAction SilentlyContinue
+    Remove-Item -Recurse -Force "$env:PUBLIC\CompAI\Fleet" -ErrorAction SilentlyContinue
+
+    # Remove registry entries
+    Remove-Item -Path "HKLM:\SOFTWARE\CompAI\Device" -Recurse -ErrorAction SilentlyContinue
+    Remove-Item -Path "HKCU:\Software\CompAI\Device" -Recurse -ErrorAction SilentlyContinue
+    ```
+
+    **3. Restart** your computer.
   </Accordion>
 </AccordionGroup>
 
