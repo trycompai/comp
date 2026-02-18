@@ -32,7 +32,7 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
   const { data: statuses } = useSWR<FormStatuses>(
     swrKey,
     async ([endpoint, orgId]: readonly [string, string]) => {
-      const response = await api.get<FormStatuses>(endpoint, orgId);
+      const response = await api.get<FormStatuses>(endpoint);
       if (response.error || !response.data) {
         throw new Error(response.error ?? 'Failed to load form statuses');
       }

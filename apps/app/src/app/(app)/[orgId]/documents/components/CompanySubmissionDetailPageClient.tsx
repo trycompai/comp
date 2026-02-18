@@ -87,7 +87,7 @@ export function CompanySubmissionDetailPageClient({
   const { data, isLoading, error, mutate } = useSWR<EvidenceSubmissionResponse>(
     swrKey,
     async ([path, orgId]: readonly [string, string]) => {
-      const response = await api.get<EvidenceSubmissionResponse>(path, orgId);
+      const response = await api.get<EvidenceSubmissionResponse>(path);
       if (response.error || !response.data) {
         throw new Error(response.error ?? 'Failed to load submission');
       }
@@ -113,7 +113,6 @@ export function CompanySubmissionDetailPageClient({
       const response = await api.patch(
         `/v1/evidence-forms/${formType}/submissions/${submissionId}/review`,
         { action, reason: reviewReason.trim() || undefined },
-        organizationId,
       );
 
       if (response.error) {

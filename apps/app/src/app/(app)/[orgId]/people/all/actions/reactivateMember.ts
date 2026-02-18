@@ -34,7 +34,7 @@ export const reactivateMember = authActionClient
       const currentUserMember = await db.member.findFirst({
         where: {
           organizationId: ctx.session.activeOrganizationId,
-          userId: ctx.user.id,
+          userId: ctx.user!.id,
           deactivated: false,
         },
       });

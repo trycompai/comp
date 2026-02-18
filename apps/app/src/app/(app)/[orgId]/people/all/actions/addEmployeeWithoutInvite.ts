@@ -110,10 +110,11 @@ export const addEmployeeWithoutInvite = async ({
     } else {
       // No existing member, create a new one
       member = await auth.api.addMember({
+        headers: await headers(),
         body: {
           userId: finalUserId,
           organizationId,
-          role: roles, // Auth API expects role or role array
+          role: roles.join(','),
         },
       });
     }

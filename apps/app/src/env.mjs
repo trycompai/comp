@@ -50,6 +50,7 @@ export const env = createEnv({
     RETOOL_COMP_API_SECRET: z.string().optional(),
     APP_AWS_ENDPOINT: z.string().optional(),
     BROWSERBASE_PROJECT_ID: z.string().optional(),
+    INTERNAL_API_TOKEN: z.string().optional(),
   },
 
   client: {
@@ -125,6 +126,7 @@ export const env = createEnv({
     RETOOL_COMP_API_SECRET: process.env.RETOOL_COMP_API_SECRET,
     APP_AWS_ENDPOINT: process.env.APP_AWS_ENDPOINT,
     BROWSERBASE_PROJECT_ID: process.env.BROWSERBASE_PROJECT_ID,
+    INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN,
     NEXT_PUBLIC_SELF_HOSTED: process.env.NEXT_PUBLIC_SELF_HOSTED,
     NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
   },

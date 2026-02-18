@@ -64,7 +64,7 @@ export const completeOnboarding = authActionClientWithoutOrg
       // Verify user has access to this organization
       const member = await db.member.findFirst({
         where: {
-          userId: ctx.user.id,
+          userId: ctx.user!.id,
           organizationId: parsedInput.organizationId,
           deactivated: false,
         },

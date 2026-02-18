@@ -98,7 +98,7 @@ export function CompanyFormPageClient({
   const { data, isLoading } = useSWR<EvidenceFormResponse>(
     swrKey,
     async ([endpoint, orgId]: readonly [string, string]) => {
-      const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
+      const response = await api.get<EvidenceFormResponse>(endpoint);
       if (response.error || !response.data) {
         throw new Error(response.error ?? 'Failed to load evidence form submissions');
       }

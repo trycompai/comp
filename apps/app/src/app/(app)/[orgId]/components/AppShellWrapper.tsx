@@ -120,7 +120,6 @@ function AppShellWrapperContent({
     isQuestionnaireEnabled,
     isTrustNdaEnabled,
     isAdvancedModeEnabled: organization.advancedModeEnabled,
-    permissions,
   });
 
   return (
