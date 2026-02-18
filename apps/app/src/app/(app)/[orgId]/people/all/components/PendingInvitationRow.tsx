@@ -119,7 +119,7 @@ export function PendingInvitationRow({
                 <OverflowMenuVertical />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem variant="destructive" onSelect={handleOpenCancelDialog}>
+                <DropdownMenuItem variant="destructive" onClick={handleOpenCancelDialog}>
                   <TrashCan size={16} />
                   Cancel Invitation
                 </DropdownMenuItem>
