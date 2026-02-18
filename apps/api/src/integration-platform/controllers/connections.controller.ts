@@ -384,6 +384,13 @@ export class ConnectionsController {
       if (typeof credentials.externalId === 'string') {
         metadata.externalId = credentials.externalId;
       }
+      // Store Azure tenant/subscription IDs in metadata for display and pre-filling
+      if (typeof credentials.tenantId === 'string') {
+        metadata.tenantId = credentials.tenantId;
+      }
+      if (typeof credentials.subscriptionId === 'string') {
+        metadata.subscriptionId = credentials.subscriptionId;
+      }
     }
 
     // Create connection (only after validation passes)

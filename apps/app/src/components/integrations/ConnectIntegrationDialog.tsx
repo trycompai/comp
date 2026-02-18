@@ -41,6 +41,8 @@ interface ExistingConnection {
   displayName: string;
   accountId?: string;
   regions?: string[];
+  tenantId?: string;
+  subscriptionId?: string;
   status: string;
   lastSyncAt?: string | null;
   isLegacy?: boolean;
@@ -215,6 +217,9 @@ export function ConnectIntegrationDialog({
               : conn.providerName || integrationName,
           accountId: typeof metadata.accountId === 'string' ? metadata.accountId : undefined,
           regions: Array.isArray(metadata.regions) ? (metadata.regions as string[]) : undefined,
+          tenantId: typeof metadata.tenantId === 'string' ? metadata.tenantId : undefined,
+          subscriptionId:
+            typeof metadata.subscriptionId === 'string' ? metadata.subscriptionId : undefined,
           status: conn.status,
           lastSyncAt: conn.lastSyncAt,
           isLegacy: false,
@@ -421,6 +426,13 @@ export function ConnectIntegrationDialog({
       if (Array.isArray(metadata.regions)) {
         prefillCredentials.regions = metadata.regions as string[];
       }
+      // Azure-specific metadata pre-fill
+      if (typeof metadata.tenantId === 'string') {
+        prefillCredentials.tenantId = metadata.tenantId;
+      }
+      if (typeof metadata.subscriptionId === 'string') {
+        prefillCredentials.subscriptionId = metadata.subscriptionId;
+      }
 
       setConfigureConnectionId(connectionId);
       setCredentials(prefillCredentials);
@@ -473,6 +485,13 @@ export function ConnectIntegrationDialog({
       }
       if (typeof credentials.externalId === 'string' && credentials.externalId.trim()) {
         metadataUpdates.externalId = credentials.externalId.trim();
+      }
+      // Azure-specific metadata updates
+      if (typeof credentials.tenantId === 'string' && credentials.tenantId.trim()) {
+        metadataUpdates.tenantId = credentials.tenantId.trim();
+      }
+      if (typeof credentials.subscriptionId === 'string' && credentials.subscriptionId.trim()) {
+        metadataUpdates.subscriptionId = credentials.subscriptionId.trim();
       }
 
       if (Object.keys(metadataUpdates).length > 0) {
@@ -532,11 +551,16 @@ export function ConnectIntegrationDialog({
                       </span>
                     )}
                   </div>
-                  {(conn.accountId || conn.regions?.length) && (
+                  {(conn.accountId || conn.regions?.length || conn.tenantId || conn.subscriptionId) && (
                     <div className="text-xs text-muted-foreground">
-                      {conn.accountId && <span>Account: {conn.accountId}</span>}
-                      {conn.accountId && conn.regions?.length ? ' • ' : ''}
-                      {conn.regions?.length && <span>{conn.regions.length} regions</span>}
+                      {[
+                        conn.accountId && `Account: ${conn.accountId}`,
+                        conn.regions?.length && `${conn.regions.length} regions`,
+                        conn.tenantId && `Tenant: ${conn.tenantId}`,
+                        conn.subscriptionId && `Subscription: ${conn.subscriptionId}`,
+                      ]
+                        .filter(Boolean)
+                        .join(' • ')}
                     </div>
                   )}
                 </div>

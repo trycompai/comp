@@ -1,5 +1,9 @@
 import type { IntegrationManifest } from '../../types';
-import { azureCredentialFields, azureSetupInstructions } from './credentials';
+import {
+  azureCredentialFields,
+  azureCredentialSchema,
+  azureSetupInstructions,
+} from './credentials';
 
 export const azureManifest: IntegrationManifest = {
   id: 'azure',
@@ -8,6 +12,7 @@ export const azureManifest: IntegrationManifest = {
   category: 'Cloud',
   logoUrl: 'https://img.logo.dev/azure.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   docsUrl: 'https://docs.microsoft.com/en-us/azure/defender-for-cloud/',
+  supportsMultipleConnections: true,
   isActive: true,
 
   auth: {
@@ -15,6 +20,7 @@ export const azureManifest: IntegrationManifest = {
     config: {
       description: 'Azure Service Principal - secure application access',
       credentialFields: azureCredentialFields,
+      validationSchema: azureCredentialSchema,
       setupInstructions: azureSetupInstructions,
     },
   },

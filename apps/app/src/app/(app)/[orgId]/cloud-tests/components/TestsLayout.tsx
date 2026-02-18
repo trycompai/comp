@@ -287,13 +287,13 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         needsConfiguration={needsVariableConfiguration}
       />
 
-      {/* CloudSettingsModal only for providers that do NOT support multiple connections */}
-      {/* AWS is managed via ConnectIntegrationDialog since it supports multiple connections */}
+      {/* CloudSettingsModal for single-connection providers AND legacy connections */}
+      {/* Legacy connections need this modal for disconnect since ConnectIntegrationDialog can't see them */}
       <CloudSettingsModal
         open={showSettings}
         onOpenChange={setShowSettings}
         connectedProviders={connectedProviders
-          .filter((p) => !p.supportsMultipleConnections)
+          .filter((p) => !p.supportsMultipleConnections || p.isLegacy)
           .map((p) => ({
             id: p.integrationId,
             connectionId: p.id,

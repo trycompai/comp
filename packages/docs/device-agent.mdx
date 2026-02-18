@@ -1,225 +1,303 @@
 ---
 title: "Comp AI Device Agent"
-description: "Device Agent & MDM User Setup Guide"
+description: "Install and use the Comp AI Device Agent to keep your device compliant with your organization's security policies"
 ---
 
-#### **About Comp AI device agent**
+### About Comp AI Device Agent
 
-Installing Comp AI Device Agent helps you and your security administrator keep your device protected against security threats.
+Comp AI Device Agent is a lightweight desktop application that runs in your system tray and automatically monitors your device's security compliance. It checks your device configuration every hour and reports the results to your organization's Comp AI portal.
 
-Comp AI Device Monitor is a lightweight agent that helps ensure your device meets security compliance requirements.
+The agent checks four security areas:
 
-It monitors device configuration, installed software, and security settings to help maintain a secure work environment.
+| Security Check | What It Verifies |
+|----------------|-----------------|
+| **Disk Encryption** | FileVault (macOS), BitLocker (Windows), or LUKS (Linux) is enabled |
+| **Antivirus** | Active antivirus protection (XProtect, Windows Defender, ClamAV, etc.) |
+| **Password Policy** | Minimum 8-character password enforced at the OS level |
+| **Screen Lock** | Automatic screen lock activates within 5 minutes of inactivity |
 
-**Security powered by Comp AI:** Your organization uses Comp AI to maintain security and compliance standards.
+Your device is **compliant** when all four checks pass.
 
-If you have questions, contact your IT administrator.
+<Note>
+  The agent runs silently in your system tray and uses minimal system resources. It does not collect personal data, browsing history, or file contents.
+</Note>
 
 ### System Requirements
 
-**Operating Systems:** macOS 10.14+, Windows 10+
+| Requirement | Details |
+|-------------|---------|
+| **Operating Systems** | macOS 14+, Windows 10+, Linux (Ubuntu 20.04+) |
+| **Memory** | 512MB RAM minimum |
+| **Storage** | 200MB available disk space |
 
-**Memory:** 512MB RAM minimum
+### Installation
 
-**Storage:** 200MB available disk space
+<AccordionGroup>
+  <Accordion title="Step 1: Download the Agent" icon="download">
+    Log in to your organization's [Employee Portal](https://portal.trycomp.ai) and navigate to the **Device Agent** task. Click **Download Agent** to get the installer for your operating system.
 
-<Note>
-  For OS not currently support by the Comp AI device agent, manual evidence will be required of the device's settings.
-</Note>
+    - **macOS**: Downloads a `.dmg` file. If you have an Apple Silicon Mac (M1/M2/M3/M4), the portal selects the correct version automatically. You can also switch between Apple Silicon and Intel using the dropdown.
+    - **Windows**: Downloads a `.exe` installer.
+    - **Linux**: Downloads a `.deb` package.
+  </Accordion>
 
-### Installation Guide
+  <Accordion title="Step 2: Install the Agent" icon="computer">
+    **macOS**: Double-click the downloaded `.dmg` file and drag the Comp AI Device Agent to your Applications folder.
 
-On your org's [portal](http://portal.trycomp.ai), click the "Download and Install Comp AI Device Agent" dropdown
+    **Windows**: Double-click the downloaded `.exe` file and follow the installation wizard.
 
-### Mac OS additional action
+    **Linux**: Install the downloaded `.deb` package using your package manager or by double-clicking it:
+    ```bash
+    sudo dpkg -i CompAI-Device-Agent-amd64.deb
+    ```
+  </Accordion>
 
-For Mac OS, users must enable MDM to complete the installation process:
+  <Accordion title="Step 3: Sign In" icon="user">
+    After installation, the agent opens a sign-in window. Log in with your work email using the same method you use for the Employee Portal (email OTP, Google, or Microsoft).
 
-<Accordion title="MDM User Guide" description="Enable MDM" icon="computer">
-  At the top of your screen, find the Fleet Desktop app which looks like an F made of dots. Click on it and click My Device:
+    <img
+      src="/images/device-agent-sign-in.png"
+      alt="Device Agent Sign In"
+      className="mx-auto"
+      style={{ width: "50%" }}
+    />
 
-  <img
-    src="/packages/docs/images/my-device.png"
-    alt="My Device Pn"
-    className="mx-auto"
-    style={{ width:"65%" }}
-  />
+    Once signed in, the agent automatically:
+    1. Registers your device with your organization(s)
+    2. Runs the first compliance check immediately
+    3. Starts checking every hour in the background
+  </Accordion>
+</AccordionGroup>
 
-  You should see a banner that asks you to enable MDM. Click the button:
+### Using the Device Agent
 
-  ![Enable Mdm Pn](/packages/docs/images/enable-mdm.png)
+After signing in, the agent lives in your system tray (menu bar on macOS, system tray on Windows/Linux). Click the tray icon to open the status window.
 
-  Click the Download button:
+<img
+  src="/images/device-agent-status.png"
+  alt="Device Agent Status Window"
+  className="mx-auto"
+  style={{ width: "55%" }}
+/>
 
-  <img
-    src="/packages/docs/images/click-download-button.png"
-    alt="Click Download Button Pn"
-    className="mx-auto"
-    style={{ width:"66%" }}
-  />
+The status window shows:
+- **Compliance status** — whether your device is compliant or needs attention
+- **Individual checks** — each of the four security checks with Pass/Fail status
+- **Remediation options** — for any failing check, the agent offers a way to fix it
 
-  Return to your Downloads folder and click on _fleet-mdm-enrollment-profile.mobileconfig:_
+#### Tray Icon Status
 
-  ![Downloads Folder Pn](/packages/docs/images/downloads-folder.png)
+| Icon Color | Meaning |
+|-----------|---------|
+| **Green** | Device is compliant — all checks passing |
+| **Red** | Device is non-compliant — one or more checks failing |
+| **Gray** | Agent is not signed in or checks are loading |
 
-  The following warning will appear, click OK:
+#### Fixing Failing Checks
 
-  <img
-    src="/packages/docs/images/click-ok.png"
-    alt="Click Ok Pn"
-    title="Click Ok Pn"
-    style={{ width:"55%" }}
-    className="mx-auto"
-  />
+When a check fails, the agent provides remediation options depending on what can be done automatically:
 
-  Click the Apple icon in the upper left corner and go to System Settings:
+| Option | Description |
+|--------|-------------|
+| **Fix** | The agent fixes the issue automatically |
+| **Fix (Admin)** | The agent fixes it but may prompt for your system password |
+| **Open Settings** | Opens the relevant OS settings pane so you can fix it manually |
+| **View Guide** | Shows step-by-step instructions to resolve the issue |
 
-  <img
-    src="/packages/docs/images/system-settings-icon.png"
-    alt="System Settings Icon Pn"
-    className="mx-auto"
-    style={{ width:"67%" }}
-  />
+<Tip>
+  After fixing a failing check, click **Run Checks Now** to verify the fix immediately instead of waiting for the next hourly check.
+</Tip>
 
-  In System Settings, locate and click ‘Profile Downloaded’ in the left-hand column. Double-click on the Comp AI enrollment on the right:
+#### Tray Menu Options
 
-  <img
-    src="/packages/docs/images/device-management.png"
-    alt="Device Management Pn"
-    title="Device Management Pn"
-    style={{ width:"73%" }}
-    className="mx-auto"
-  />
+Right-click (or click on macOS) the tray icon to access:
+- **Run Checks Now** — trigger an immediate compliance check
+- **View Details** — open the status window
+- **Start at Login** — toggle whether the agent launches automatically when you log in (enabled by default)
+- **Sign Out** — sign out of the agent
+- **Quit** — close the agent completely
 
-  Click Install…:
+<Warning>
+  If you quit or sign out of the agent, your device will stop reporting compliance status to your organization. Your security administrator may follow up if your device stops checking in.
+</Warning>
 
-  <img
-    src="/packages/docs/images/install-comp-ai.png"
-    alt="Install Comp Ai Pn"
-    title="Install Comp Ai Pn"
-    style={{ width:"56%" }}
-    className="mx-auto"
-  />
+### Verifying on the Portal
 
-  Click Install:
+After the agent runs its first check, you can verify your device compliance status on the Employee Portal. The **Device Agent** task shows your device name, platform, and whether all security checks are passing.
 
-  <img
-    src="/packages/docs/images/final-install.png"
-    alt="Final Install Pn"
-    title="Final Install Pn"
-    style={{ width:"56%" }}
-    className="mx-auto"
-  />
+The portal updates automatically — it polls your device status every 30 seconds while the page is open.
 
-  Enter Credentials and click Enrol:
+### Troubleshooting
 
-  <img
-    src="/packages/docs/images/enrol.png"
-    alt="Enrol Pn"
-    title="Enrol Pn"
-    style={{ width:"38%" }}
-    className="mx-auto"
-  />
+<AccordionGroup>
+  <Accordion title="Agent won't sign in">
+    - Make sure you're using the same email address you use for the Employee Portal
+    - Check your internet connection
+    - Try quitting the agent completely and reopening it
+    - If using Google or Microsoft sign-in, make sure popups are not blocked
+  </Accordion>
 
-  Enrollment is then complete:
+  <Accordion title="Checks are failing unexpectedly">
+    - Click **Run Checks Now** to refresh the results
+    - Review the failing check details — the agent shows what it detected
+    - Use the remediation option provided (Fix, Open Settings, or View Guide)
+    - Some changes (like enabling FileVault) require a restart to take effect
+  </Accordion>
 
-  <img
-    src="/packages/docs/images/enrollment-complete.png"
-    alt="Enrollment Complete Pn"
-    title="Enrollment Complete Pn"
-    style={{ width:"60%" }}
-    className="mx-auto"
-  />
-</Accordion>
+  <Accordion title="Agent is not visible in the system tray">
+    - **macOS**: Look in the menu bar at the top of your screen. The icon may be hidden — check the overflow area (click the `>>` or similar)
+    - **Windows**: Click the up arrow in the system tray to see hidden icons
+    - **Linux**: Check your desktop environment's system tray or notification area
+    - The agent may need to be reopened from your Applications folder
+  </Accordion>
 
-### Manual Evidence collection
+  <Accordion title="Portal shows device as non-compliant even though agent shows all checks passing">
+    - Wait up to 30 seconds for the portal to refresh
+    - Click **Run Checks Now** in the agent to trigger a fresh report
+    - Check that the agent is signed in (tray icon should be green, not gray)
+  </Accordion>
+</AccordionGroup>
 
-For users who do not wish to install the agent on their device, manual evidence of device settings is required. Below are the required pieces of evidence and where to obtain them.
+### Migrating from FleetDM
 
-<Accordion title="Windows Manual Evidence" description="Evidence to gather manually for unsupported windows devices" icon="sparkles">
-  ### **Windows 10 & 11**
+If your device previously had the FleetDM agent (fleetd) installed, you should uninstall it after setting up the new Comp AI Device Agent. The new agent fully replaces FleetDM, and having both running is unnecessary.
 
-  **Enable BitLocker**
+Follow the official uninstall guide for your platform: [How to uninstall fleetd](https://fleetdm.com/guides/how-to-uninstall-fleetd)
 
-  1. Press **Start** → type **Manage BitLocker** → open it.\
-     👉 **Take a screenshot of the BitLocker Drive Encryption window showing “On” for the C: drive.**
-  2. Select the drive (usually C:) → click **Turn on BitLocker**.
-  3. Save the recovery key to Microsoft Account / USB / secure location.
-  4. Restart if prompted.
+### Manual Evidence Collection
 
-  **Screen Lock after 5 Minutes**
+For users who cannot install the agent on their device, manual evidence of device settings is required. Below are the required pieces of evidence and where to obtain them.
 
-  1. Press **Start** → **Settings** → **Personalization** → **Lock screen**.
-  2. Scroll down → click **Screen timeout settings**.\
-     👉 **Take a screenshot showing the screen timeout set to 5 minutes.**
-  3. Set **Screen turns off** = 5 minutes.
-  4. In **Settings** → **Accounts** → **Sign-in options** → ensure **Require sign-in** is set to _“When PC wakes up from sleep”_.\
-     👉 **Take a screenshot of the Sign-in Options page showing this setting**
+<AccordionGroup>
+  <Accordion title="Windows Manual Evidence" icon="windows">
+    #### Windows 10 & 11
 
-  **Minimum Password Length (Local Policy)**
+    **Enable BitLocker**
 
-  1. Press Win + R, type secpol.msc, press Enter.
-  2. Go to **Account Policies** → **Password Policy**.
-  3. Set **Minimum password length** = 8+.\
-     👉 **Take a screenshot of the Password Policy window with “Minimum password length” = 8 or more.**\
-     _(If using Microsoft/AD/Azure, enforce via policy centrally and screenshot the policy compliance in the admin portal.)_
+    1. Press **Start** → type **Manage BitLocker** → open it.\
+       Take a screenshot of the BitLocker Drive Encryption window showing "On" for the C: drive.
+    2. Select the drive (usually C:) → click **Turn on BitLocker**.
+    3. Save the recovery key to Microsoft Account / USB / secure location.
+    4. Restart if prompted.
 
-  **Automatic Security Updates**
+    **Screen Lock after 5 Minutes**
 
-  1. **Settings** → **Update & Security** → **Windows Update**.
-  2. Select **Advanced options** → make sure Automatic updates are enabled.\
-     👉 **Take a screenshot of the Windows Update settings page showing automatic updates turned on.**
+    1. Press **Start** → **Settings** → **Personalization** → **Lock screen**.
+    2. Scroll down → click **Screen timeout settings**.\
+       Take a screenshot showing the screen timeout set to 5 minutes.
+    3. Set **Screen turns off** = 5 minutes.
+    4. In **Settings** → **Accounts** → **Sign-in options** → ensure **Require sign-in** is set to _"When PC wakes up from sleep"_.\
+       Take a screenshot of the Sign-in Options page showing this setting.
 
-  **Antivirus (Windows Defender)**
+    **Minimum Password Length (Local Policy)**
 
-  1. **Settings** → **Update & Security** → **Windows Security**.
-  2. Open **Virus & threat protection** → ensure **Real-time protection** is on.\
-     👉 **Take a screenshot of the Windows Security window showing Real-time protection is ON.**
+    1. Press Win + R, type `secpol.msc`, press Enter.
+    2. Go to **Account Policies** → **Password Policy**.
+    3. Set **Minimum password length** = 8+.\
+       Take a screenshot of the Password Policy window with "Minimum password length" = 8 or more.
 
-  <Note>
-    Evidence gathered manually will be uploaded as a comment + attachment to the "Secure Devices" & "Device List" tasks with the users email of the device the evidence is for.
-  </Note>
-</Accordion>
+    _(If using Microsoft/AD/Azure, enforce via policy centrally and screenshot the policy compliance in the admin portal.)_
 
-<Accordion title="Mac Manual Evidence" description="Evidence to gather manually for unsupported mac devices" icon="sparkles">
-  ### **macOS (Monterey, Ventura, Sonoma)**
+    **Automatic Security Updates**
 
-  **Enable FileVault**
+    1. **Settings** → **Update & Security** → **Windows Update**.
+    2. Select **Advanced options** → make sure Automatic updates are enabled.\
+       Take a screenshot of the Windows Update settings page showing automatic updates turned on.
 
-  1. Open **System Settings** (or **System Preferences** in older versions).
-  2. Go to **Privacy & Security** → **FileVault**.
-  3. Click **Turn On FileVault** → enter password.
-  4. Record recovery key.\
-     👉 **Take a screenshot of the FileVault settings page showing “FileVault is enabled for the disk.”**
+    **Antivirus (Windows Defender)**
 
-  **Screen Auto-lock (5 min)**
+    1. **Settings** → **Update & Security** → **Windows Security**.
+    2. Open **Virus & threat protection** → ensure **Real-time protection** is on.\
+       Take a screenshot of the Windows Security window showing Real-time protection is ON.
 
-  1. **System Settings** → **Lock Screen**.
-  2. Set **Start screen saver when inactive** = 5 minutes.\
-     👉 **Take a screenshot showing the setting at 5 minutes.**
-  3. Set **Require password after sleep or screen saver begins** = _Immediately_.\
-     👉 **Take a screenshot showing “Require password immediately” is selected.**
+    <Note>
+      Evidence gathered manually will be uploaded as a comment and attachment to the "Secure Devices" and "Device List" tasks with the user's email of the device the evidence is for.
+    </Note>
+  </Accordion>
 
-  **Minimum Password Length (Mac Lock Screen PW)**
+  <Accordion title="macOS Manual Evidence" icon="apple">
+    #### macOS (Monterey, Ventura, Sonoma, Sequoia)
 
-  1. Native macOS UI doesn’t enforce; requires **Terminal** or **MDM**.
-  2. `pwpolicy -setglobalpolicy "minChars=8"`
-  3. 👉 **If set via Terminal, take a screenshot of the command output confirming the policy.**
-  4. If enforced by MDM (Jamf, Intune, etc.), **screenshot the compliance screen from the MDM portal.**
+    **Enable FileVault**
 
-  **Automatic Security Updates**
+    1. Open **System Settings** (or **System Preferences** in older versions).
+    2. Go to **Privacy & Security** → **FileVault**.
+    3. Click **Turn On FileVault** → enter password.
+    4. Record recovery key.\
+       Take a screenshot of the FileVault settings page showing "FileVault is enabled for the disk."
 
-  1. **System Settings** → **General** → **Software Update**.
-  2. Click **Automatic Updates** → enable all options (Install Security Responses & System files, etc.).\
-     👉 **Take a screenshot of the Automatic Updates options screen with all toggles enabled.**
+    **Screen Auto-lock (5 min)**
 
-  **Antivirus (XProtect built-in)**
+    1. **System Settings** → **Lock Screen**.
+    2. Set **Start screen saver when inactive** = 5 minutes.\
+       Take a screenshot showing the setting at 5 minutes.
+    3. Set **Require password after sleep or screen saver begins** = _Immediately_.\
+       Take a screenshot showing "Require password immediately" is selected.
 
-  1. macOS automatically runs **XProtect** in the background.
-  2. Simply ensure macOS is **fully updated**.\
-     👉 **Take a screenshot of the Software Update page showing the Mac is up to date.**
+    **Minimum Password Length**
 
-  <Note>
-    Evidence gathered manually will be uploaded as a comment + attachment to the "Secure Devices" & "Device List" tasks with the users email of the device the evidence is for.
-  </Note>
-</Accordion>
+    1. Native macOS UI doesn't enforce this; requires **Terminal** or **MDM**.
+    2. `pwpolicy -setglobalpolicy "minChars=8"`
+    3. If set via Terminal, take a screenshot of the command output confirming the policy.
+    4. If enforced by MDM (Jamf, Intune, etc.), screenshot the compliance screen from the MDM portal.
+
+    **Automatic Security Updates**
+
+    1. **System Settings** → **General** → **Software Update**.
+    2. Click **Automatic Updates** → enable all options (Install Security Responses & System files, etc.).\
+       Take a screenshot of the Automatic Updates options screen with all toggles enabled.
+
+    **Antivirus (XProtect built-in)**
+
+    1. macOS automatically runs **XProtect** in the background.
+    2. Simply ensure macOS is **fully updated**.\
+       Take a screenshot of the Software Update page showing the Mac is up to date.
+
+    <Note>
+      Evidence gathered manually will be uploaded as a comment and attachment to the "Secure Devices" and "Device List" tasks with the user's email of the device the evidence is for.
+    </Note>
+  </Accordion>
+
+  <Accordion title="Linux Manual Evidence" icon="linux">
+    #### Ubuntu 20.04+ / Debian-based
+
+    **Enable LUKS Disk Encryption**
+
+    1. LUKS encryption is typically configured during OS installation.
+    2. To verify, run: `lsblk -o NAME,TYPE,FSTYPE | grep crypt`\
+       Take a screenshot showing the encrypted volume.
+
+    **Screen Lock (5 min)**
+
+    1. Open **Settings** → **Privacy** → **Screen Lock**.
+    2. Set **Automatic Screen Lock Delay** = 5 minutes.\
+       Take a screenshot showing the screen lock delay setting.
+
+    **Password Policy**
+
+    1. Check minimum password length: `grep PASS_MIN_LEN /etc/login.defs`
+    2. Ensure it's set to 8 or higher.\
+       Take a screenshot of the output.
+
+    **Antivirus**
+
+    1. Verify ClamAV or another antivirus is installed and running:
+       ```bash
+       systemctl status clamav-daemon
+       ```
+    2. Alternatively, show AppArmor or SELinux is enforcing:
+       ```bash
+       sudo aa-status    # AppArmor
+       getenforce         # SELinux
+       ```
+       Take a screenshot of the output showing active protection.
+
+    <Note>
+      Evidence gathered manually will be uploaded as a comment and attachment to the "Secure Devices" and "Device List" tasks with the user's email of the device the evidence is for.
+    </Note>
+  </Accordion>
+</AccordionGroup>
+
+### Support
+
+If you have questions or run into issues with the Device Agent, contact your IT administrator or reach out to us at [hello@trycomp.ai](mailto:hello@trycomp.ai).
