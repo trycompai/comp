@@ -107,6 +107,8 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     requiredVariables: string[];
     accountId?: string;
     regions?: string[];
+    tenantId?: string;
+    subscriptionId?: string;
     supportsMultipleConnections?: boolean;
   };
 
@@ -118,6 +120,9 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     const regions = Array.isArray(metadata.regions)
       ? metadata.regions.filter((region): region is string => typeof region === 'string')
       : undefined;
+    const tenantId = typeof metadata.tenantId === 'string' ? metadata.tenantId : undefined;
+    const subscriptionId =
+      typeof metadata.subscriptionId === 'string' ? metadata.subscriptionId : undefined;
     const manifest = getManifest(conn.provider.slug);
 
     return {
@@ -135,6 +140,8 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
       requiredVariables: getRequiredVariables(conn.provider.slug),
       accountId,
       regions,
+      tenantId,
+      subscriptionId,
       supportsMultipleConnections: manifest?.supportsMultipleConnections ?? false,
     };
   });
@@ -147,6 +154,9 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     const regions = Array.isArray(settings.regions)
       ? settings.regions.filter((region): region is string => typeof region === 'string')
       : undefined;
+    const tenantId = typeof settings.tenantId === 'string' ? settings.tenantId : undefined;
+    const subscriptionId =
+      typeof settings.subscriptionId === 'string' ? settings.subscriptionId : undefined;
     const manifest = getManifest(integration.integrationId);
 
     return {
@@ -164,6 +174,8 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
       requiredVariables: getRequiredVariables(integration.integrationId),
       accountId,
       regions,
+      tenantId,
+      subscriptionId,
       supportsMultipleConnections: manifest?.supportsMultipleConnections ?? false,
     };
   });

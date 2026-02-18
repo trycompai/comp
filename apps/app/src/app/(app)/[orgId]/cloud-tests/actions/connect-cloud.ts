@@ -92,6 +92,13 @@ export const connectCloudAction = authActionClient
           ? [credentials.region]
           : [];
 
+      const tenantId =
+        typeof credentials.tenantId === 'string' ? credentials.tenantId.trim() : undefined;
+      const subscriptionId =
+        typeof credentials.subscriptionId === 'string'
+          ? credentials.subscriptionId.trim()
+          : undefined;
+
       const settings =
         cloudProvider === 'aws'
           ? {
@@ -99,7 +106,13 @@ export const connectCloudAction = authActionClient
               connectionName,
               regions: regionValues,
             }
-          : {};
+          : cloudProvider === 'azure'
+            ? {
+                connectionName,
+                tenantId,
+                subscriptionId,
+              }
+            : {};
 
       // Create new integration (allow multiple per provider)
       const newIntegration = await db.integration.create({

@@ -5,6 +5,14 @@ import { z } from 'zod';
  */
 export const azureCredentialFields = [
   {
+    id: 'connectionName',
+    label: 'Connection Name',
+    type: 'text' as const,
+    required: true,
+    placeholder: 'Production Tenant',
+    helpText: 'A friendly name to identify this Azure tenant (e.g., "Production", "DevOps")',
+  },
+  {
     id: 'tenantId',
     label: 'Tenant ID (Directory ID)',
     type: 'text' as const,
@@ -42,6 +50,7 @@ export const azureCredentialFields = [
  * Validation schema for Azure credentials
  */
 export const azureCredentialSchema = z.object({
+  connectionName: z.string().min(1, 'Connection name is required'),
   tenantId: z
     .string()
     .uuid('Must be a valid UUID')

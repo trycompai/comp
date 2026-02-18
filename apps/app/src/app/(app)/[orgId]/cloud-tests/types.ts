@@ -28,6 +28,8 @@ export interface Provider {
   requiredVariables?: string[];
   accountId?: string;
   regions?: string[];
+  tenantId?: string;
+  subscriptionId?: string;
   supportsMultipleConnections?: boolean;
 }
 export type FailedIntegration = {

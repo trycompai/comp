@@ -142,12 +142,17 @@ export function EmptyState({
   onConnected,
   initialProvider = null,
 }: EmptyStateProps) {
-  const initialIsAws = initialProvider === 'aws';
-  const [step, setStep] = useState<Step>(initialProvider && !initialIsAws ? 'connect' : 'choose');
-  const [selectedProvider, setSelectedProvider] = useState<CloudProvider>(
-    initialProvider && !initialIsAws ? initialProvider : null,
+  const initialUsesDialog = initialProvider === 'aws' || initialProvider === 'azure';
+  const [step, setStep] = useState<Step>(
+    initialProvider && !initialUsesDialog ? 'connect' : 'choose',
   );
-  const [showConnectDialog, setShowConnectDialog] = useState(initialIsAws);
+  const [selectedProvider, setSelectedProvider] = useState<CloudProvider>(
+    initialProvider && !initialUsesDialog ? initialProvider : null,
+  );
+  const [showConnectDialog, setShowConnectDialog] = useState(initialUsesDialog);
+  const [connectDialogProvider, setConnectDialogProvider] = useState<'aws' | 'azure'>(
+    initialProvider === 'azure' ? 'azure' : 'aws',
+  );
   const [credentials, setCredentials] = useState<Record<string, string | string[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isConnecting, setIsConnecting] = useState(false);
@@ -155,13 +160,15 @@ export function EmptyState({
   const [awsAccountId, setAwsAccountId] = useState<string>('');
 
   useEffect(() => {
-    if (initialProvider === 'aws') {
+    if (initialProvider === 'aws' || initialProvider === 'azure') {
+      setConnectDialogProvider(initialProvider);
       setShowConnectDialog(true);
     }
   }, [initialProvider]);
 
   const handleProviderSelect = (providerId: CloudProvider) => {
-    if (providerId === 'aws') {
+    if (providerId === 'aws' || providerId === 'azure') {
+      setConnectDialogProvider(providerId);
       setShowConnectDialog(true);
       return;
     }
@@ -414,9 +421,15 @@ export function EmptyState({
           <ConnectIntegrationDialog
             open={showConnectDialog}
             onOpenChange={(open) => setShowConnectDialog(open)}
-            integrationId="aws"
-            integrationName="Amazon Web Services"
-            integrationLogoUrl="https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ"
+            integrationId={connectDialogProvider}
+            integrationName={
+              connectDialogProvider === 'azure' ? 'Microsoft Azure' : 'Amazon Web Services'
+            }
+            integrationLogoUrl={
+              connectDialogProvider === 'azure'
+                ? 'https://img.logo.dev/azure.microsoft.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ'
+                : 'https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ'
+            }
             onConnected={() => {
               setShowConnectDialog(false);
               onConnected?.();
@@ -426,7 +439,8 @@ export function EmptyState({
 
         <div className="grid w-full gap-4 md:grid-cols-3">
           {CLOUD_PROVIDERS.filter(
-            (cp) => cp.id === 'aws' || !connectedProviders.includes(cp.id),
+            (cp) =>
+              cp.id === 'aws' || cp.id === 'azure' || !connectedProviders.includes(cp.id),
           ).map((cloudProvider) => (
             <Card
               key={cloudProvider.id}
