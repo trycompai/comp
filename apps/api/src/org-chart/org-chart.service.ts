@@ -68,10 +68,7 @@ export class OrgChartService {
     }
   }
 
-  async upsertInteractive(
-    organizationId: string,
-    data: UpsertOrgChartDto,
-  ) {
+  async upsertInteractive(organizationId: string, data: UpsertOrgChartDto) {
     try {
       this.logger.log(
         `[OrgChart API] Saving for org ${organizationId}: nodes=${data.nodes?.length ?? 'null'}, edges=${data.edges?.length ?? 'null'}`,
@@ -121,10 +118,7 @@ export class OrgChartService {
     }
   }
 
-  async uploadImage(
-    organizationId: string,
-    data: UploadOrgChartDto,
-  ) {
+  async uploadImage(organizationId: string, data: UploadOrgChartDto) {
     if (!this.s3Client || !this.bucketName) {
       throw new InternalServerErrorException(
         'File upload service is not available',
@@ -143,9 +137,7 @@ export class OrgChartService {
       const fileBuffer = Buffer.from(data.fileData, 'base64');
 
       if (fileBuffer.length > this.MAX_FILE_SIZE_BYTES) {
-        throw new BadRequestException(
-          'File exceeds the 100MB size limit',
-        );
+        throw new BadRequestException('File exceeds the 100MB size limit');
       }
 
       // Delete old image if it exists
@@ -229,9 +221,7 @@ export class OrgChartService {
         where: { organizationId },
       });
 
-      this.logger.log(
-        `Deleted org chart for organization ${organizationId}`,
-      );
+      this.logger.log(`Deleted org chart for organization ${organizationId}`);
 
       return { message: 'Org chart deleted successfully' };
     } catch (error) {

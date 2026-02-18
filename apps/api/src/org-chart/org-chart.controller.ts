@@ -43,7 +43,9 @@ export class OrgChartController {
   }
 
   @Put()
-  @ApiOperation({ summary: 'Create or update an interactive organization chart' })
+  @ApiOperation({
+    summary: 'Create or update an interactive organization chart',
+  })
   @ApiResponse({ status: 200, description: 'The saved organization chart' })
   @UsePipes(new ValidationPipe({ whitelist: false, transform: false }))
   async upsertOrgChart(

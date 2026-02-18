@@ -7,7 +7,22 @@ import {
 } from './minutes-placeholders';
 import type { EvidenceFormDefinition } from './types';
 
+export const meetingMinutesPlaceholders: Record<string, string> = {
+  'board-meeting': boardMeetingMinutesPlaceholder,
+  'it-leadership-meeting': itLeadershipMinutesPlaceholder,
+  'risk-committee-meeting': riskCommitteeMinutesPlaceholder,
+};
+
 export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefinition> = {
+  meeting: {
+    type: 'meeting',
+    title: 'Meeting Minutes',
+    description: 'Record meeting minutes for board, IT leadership, or risk committee meetings.',
+    category: 'Governance',
+    submissionDateMode: 'custom',
+    portalAccessible: false,
+    fields: meetingFields(boardMeetingMinutesPlaceholder),
+  },
   'board-meeting': {
     type: 'board-meeting',
     title: 'Board Meeting',
@@ -16,6 +31,7 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
     category: 'Governance',
     submissionDateMode: 'custom',
     portalAccessible: false,
+    hidden: true,
     fields: meetingFields(boardMeetingMinutesPlaceholder),
   },
   'it-leadership-meeting': {
@@ -26,6 +42,7 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
     category: 'Governance',
     submissionDateMode: 'custom',
     portalAccessible: false,
+    hidden: true,
     fields: meetingFields(itLeadershipMinutesPlaceholder),
   },
   'risk-committee-meeting': {
@@ -36,6 +53,7 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
     category: 'Governance',
     submissionDateMode: 'custom',
     portalAccessible: false,
+    hidden: true,
     fields: meetingFields(riskCommitteeMinutesPlaceholder),
   },
   'access-request': {
@@ -102,6 +120,7 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
     category: 'Security',
     submissionDateMode: 'auto',
     portalAccessible: true,
+    optional: true,
     fields: [
       {
         key: 'incidentDate',

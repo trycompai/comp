@@ -2,81 +2,98 @@ import { z } from 'zod';
 import { evidenceFormFileSchema } from './file-schema';
 import type { EvidenceFormType } from './form-types';
 
+const required = (label?: string) => {
+  const msg = label ? `${label} is required` : 'This field is required';
+  return z.string({ error: msg }).min(1, msg);
+};
+
+const requiredTrimmed = (label?: string) => {
+  const msg = label ? `${label} is required` : 'This field is required';
+  return z.string({ error: msg }).trim().min(1, msg);
+};
+
 const meetingDataSchema = z.object({
-  submissionDate: z.string().min(1),
-  attendees: z.string().min(1),
-  date: z.string().min(1),
-  meetingMinutes: z.string().min(1),
-  meetingMinutesApprovedBy: z.string().min(1),
-  approvedDate: z.string().min(1),
+  submissionDate: required('Submission date'),
+  attendees: required('Attendees'),
+  date: required('Meeting date'),
+  meetingMinutes: required('Meeting minutes'),
+  meetingMinutesApprovedBy: required('Approved by'),
+  approvedDate: required('Approved date'),
 });
 
 const accessRequestDataSchema = z.object({
-  submissionDate: z.string().min(1),
-  userName: z.string().min(1),
-  accountsNeeded: z.string().min(1),
-  permissionsNeeded: z.enum(['read', 'write', 'admin']),
-  reasonForRequest: z.string().min(1),
-  accessGrantedBy: z.string().min(1),
-  dateAccessGranted: z.string().min(1),
+  submissionDate: required('Submission date'),
+  userName: required('User name'),
+  accountsNeeded: required('Accounts needed'),
+  permissionsNeeded: z.enum(['read', 'write', 'admin'], {
+    error: 'Please select a permissions level',
+  }),
+  reasonForRequest: required('Reason for request'),
+  accessGrantedBy: required('Access granted by'),
+  dateAccessGranted: required('Date access granted'),
 });
 
 const whistleblowerReportDataSchema = z.object({
-  submissionDate: z.string().min(1),
-  incidentDate: z.string().min(1),
-  complaintDetails: z.string().min(1),
-  individualsInvolved: z.string().min(1),
-  evidence: z.string().min(1),
+  submissionDate: required('Submission date'),
+  incidentDate: required('Incident date'),
+  complaintDetails: required('Complaint details'),
+  individualsInvolved: required('Individuals involved'),
+  evidence: required('Evidence'),
   evidenceFile: evidenceFormFileSchema.optional(),
 });
 
 const penetrationTestDataSchema = z.object({
-  submissionDate: z.string().min(1),
-  testDate: z.string().min(1),
-  vendorName: z.string().min(1),
-  summary: z.string().min(1),
+  submissionDate: required('Submission date'),
+  testDate: required('Test date'),
+  vendorName: required('Vendor name'),
+  summary: required('Summary of findings'),
   pentestReport: evidenceFormFileSchema,
 });
 
 const rbacMatrixRowSchema = z.object({
-  system: z.string().trim().min(1),
-  roleName: z.string().trim().min(1),
-  permissionsScope: z.string().trim().min(1),
-  approvedBy: z.string().trim().min(1),
-  lastReviewed: z.string().trim().min(1),
+  system: requiredTrimmed('System'),
+  roleName: requiredTrimmed('Role name'),
+  permissionsScope: requiredTrimmed('Permissions / Scope'),
+  approvedBy: requiredTrimmed('Approved by'),
+  lastReviewed: requiredTrimmed('Last reviewed'),
 });
 
 const rbacMatrixDataSchema = z.object({
-  submissionDate: z.string().min(1),
-  matrixRows: z.array(rbacMatrixRowSchema).min(1),
+  submissionDate: required('Submission date'),
+  matrixRows: z.array(rbacMatrixRowSchema).min(1, 'At least one RBAC entry is required'),
 });
 
 const infrastructureInventoryRowSchema = z.object({
-  assetId: z.string().trim().min(1),
-  systemType: z.string().trim().min(1),
-  environment: z.string().trim().min(1),
+  assetId: requiredTrimmed('Asset ID'),
+  systemType: requiredTrimmed('System type'),
+  environment: requiredTrimmed('Environment'),
   location: z.string().trim().optional(),
-  assignedOwner: z.string().trim().min(1),
-  lastReviewed: z.string().trim().min(1),
+  assignedOwner: requiredTrimmed('Assigned owner'),
+  lastReviewed: requiredTrimmed('Last reviewed'),
 });
 
 const infrastructureInventoryDataSchema = z.object({
-  submissionDate: z.string().min(1),
-  inventoryRows: z.array(infrastructureInventoryRowSchema).min(1),
+  submissionDate: required('Submission date'),
+  inventoryRows: z
+    .array(infrastructureInventoryRowSchema)
+    .min(1, 'At least one infrastructure asset is required'),
 });
 
 const employeePerformanceEvaluationDataSchema = z.object({
-  submissionDate: z.string().min(1),
-  employeeName: z.string().trim().min(1),
-  manager: z.string().trim().min(1),
-  reviewPeriodTo: z.string().min(1),
-  overallRating: z.enum(['needs-improvement', 'meets-expectations', 'exceeds-expectations']),
-  managerComments: z.string().trim().min(1),
-  managerSignature: z.string().trim().min(1),
-  managerSignatureDate: z.string().min(1),
+  submissionDate: required('Submission date'),
+  employeeName: requiredTrimmed('Employee name'),
+  manager: requiredTrimmed('Manager'),
+  reviewPeriodTo: required('Review period end date'),
+  overallRating: z.enum(['needs-improvement', 'meets-expectations', 'exceeds-expectations'], {
+    error: 'Please select an overall rating',
+  }),
+  managerComments: requiredTrimmed('Manager comments'),
+  managerSignature: requiredTrimmed('Manager signature'),
+  managerSignatureDate: required('Manager signature date'),
 });
 
 export const evidenceFormSubmissionSchemaMap = {
+  meeting: meetingDataSchema,
   'board-meeting': meetingDataSchema,
   'it-leadership-meeting': meetingDataSchema,
   'risk-committee-meeting': meetingDataSchema,

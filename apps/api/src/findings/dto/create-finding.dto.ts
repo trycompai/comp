@@ -3,10 +3,15 @@ import {
   IsString,
   IsNotEmpty,
   IsEnum,
+  IsIn,
   IsOptional,
   MaxLength,
 } from 'class-validator';
 import { FindingType } from '@trycompai/db';
+import {
+  evidenceFormTypeSchema,
+  type EvidenceFormType,
+} from '@/evidence-forms/evidence-forms.definitions';
 
 export class CreateFindingDto {
   @ApiProperty({
@@ -26,6 +31,17 @@ export class CreateFindingDto {
   @IsString()
   @IsOptional()
   evidenceSubmissionId?: string;
+
+  @ApiProperty({
+    description:
+      'Evidence form type this finding is associated with (e.g., access-request, whistleblower-report)',
+    example: 'access-request',
+    enum: evidenceFormTypeSchema.options,
+    required: false,
+  })
+  @IsIn(evidenceFormTypeSchema.options)
+  @IsOptional()
+  evidenceFormType?: EvidenceFormType;
 
   @ApiProperty({
     description: 'Type of finding (SOC 2 or ISO 27001)',

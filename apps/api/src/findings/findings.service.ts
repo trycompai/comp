@@ -5,11 +5,21 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { db, FindingStatus, FindingType } from '@trycompai/db';
+import {
+  db,
+  type EvidenceFormType as DbEvidenceFormType,
+  FindingStatus,
+  FindingType,
+} from '@trycompai/db';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { FindingAuditService } from './finding-audit.service';
 import { FindingNotifierService } from './finding-notifier.service';
+import { type EvidenceFormType } from '@/evidence-forms/evidence-forms.definitions';
+import {
+  toDbEvidenceFormType,
+  toExternalEvidenceFormType,
+} from '@/evidence-forms/evidence-form-type-map';
 
 @Injectable()
 export class FindingsService {
@@ -55,6 +65,28 @@ export class FindingsService {
     private readonly findingNotifierService: FindingNotifierService,
   ) {}
 
+  private normalizeFindingFormTypes<
+    T extends {
+      evidenceFormType: DbEvidenceFormType | null;
+      evidenceSubmission?: {
+        formType: DbEvidenceFormType;
+      } | null;
+    },
+  >(finding: T) {
+    return {
+      ...finding,
+      evidenceFormType: toExternalEvidenceFormType(finding.evidenceFormType),
+      evidenceSubmission: finding.evidenceSubmission
+        ? {
+            ...finding.evidenceSubmission,
+            formType:
+              toExternalEvidenceFormType(finding.evidenceSubmission.formType) ??
+              'meeting',
+          }
+        : null,
+    };
+  }
+
   /**
    * Get all findings for a specific task
    */
@@ -81,7 +113,7 @@ export class FindingsService {
     });
 
     this.logger.log(`Retrieved ${findings.length} findings for task ${taskId}`);
-    return findings;
+    return findings.map((finding) => this.normalizeFindingFormTypes(finding));
   }
 
   /**
@@ -110,7 +142,29 @@ export class FindingsService {
     this.logger.log(
       `Retrieved ${findings.length} findings for evidence submission ${evidenceSubmissionId}`,
     );
-    return findings;
+    return findings.map((finding) => this.normalizeFindingFormTypes(finding));
+  }
+
+  /**
+   * Get all findings for a specific evidence form type
+   */
+  async findByEvidenceFormType(
+    organizationId: string,
+    evidenceFormType: EvidenceFormType,
+  ) {
+    const findings = await db.finding.findMany({
+      where: {
+        evidenceFormType: toDbEvidenceFormType(evidenceFormType),
+        organizationId,
+      },
+      include: this.findingInclude,
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    this.logger.log(
+      `Retrieved ${findings.length} findings for evidence form type ${evidenceFormType}`,
+    );
+    return findings.map((finding) => this.normalizeFindingFormTypes(finding));
   }
 
   /**
@@ -129,7 +183,7 @@ export class FindingsService {
     this.logger.log(
       `Retrieved ${findings.length} findings for organization ${organizationId}`,
     );
-    return findings;
+    return findings.map((finding) => this.normalizeFindingFormTypes(finding));
   }
 
   /**
@@ -147,7 +201,7 @@ export class FindingsService {
       );
     }
 
-    return finding;
+    return this.normalizeFindingFormTypes(finding);
   }
 
   /**
@@ -161,31 +215,33 @@ export class FindingsService {
   ) {
     const hasTaskTarget = Boolean(createDto.taskId);
     const hasSubmissionTarget = Boolean(createDto.evidenceSubmissionId);
-    if (!hasTaskTarget && !hasSubmissionTarget) {
+    const hasFormTypeTarget = Boolean(createDto.evidenceFormType);
+    const targetCount =
+      (hasTaskTarget ? 1 : 0) +
+      (hasSubmissionTarget ? 1 : 0) +
+      (hasFormTypeTarget ? 1 : 0);
+
+    if (targetCount === 0) {
       throw new BadRequestException(
-        'Either taskId or evidenceSubmissionId is required',
+        'One of taskId, evidenceSubmissionId, or evidenceFormType is required',
       );
     }
-    if (hasTaskTarget && hasSubmissionTarget) {
+    if (targetCount > 1) {
       throw new BadRequestException(
-        'Provide only one target: taskId or evidenceSubmissionId',
+        'Provide only one target: taskId, evidenceSubmissionId, or evidenceFormType',
       );
     }
 
-    let task:
-      | {
-          id: string;
-          title: string;
-        }
-      | null = null;
-    let evidenceSubmission:
-      | {
-          id: string;
-          formType: string;
-          submittedAt: Date;
-          submittedById: string | null;
-        }
-      | null = null;
+    let task: {
+      id: string;
+      title: string;
+    } | null = null;
+    let evidenceSubmission: {
+      id: string;
+      formType: DbEvidenceFormType;
+      submittedAt: Date;
+      submittedById: string | null;
+    } | null = null;
 
     if (createDto.taskId) {
       task = await db.task.findFirst({
@@ -231,10 +287,18 @@ export class FindingsService {
       }
     }
 
+    const resolvedFormType =
+      createDto.evidenceFormType ??
+      toExternalEvidenceFormType(evidenceSubmission?.formType) ??
+      undefined;
+
     const finding = await db.finding.create({
       data: {
         taskId: createDto.taskId ?? null,
         evidenceSubmissionId: createDto.evidenceSubmissionId ?? null,
+        evidenceFormType: createDto.evidenceFormType
+          ? toDbEvidenceFormType(createDto.evidenceFormType)
+          : null,
         type: createDto.type,
         content: createDto.content,
         templateId: createDto.templateId,
@@ -254,7 +318,7 @@ export class FindingsService {
       taskId: task?.id,
       taskTitle: task?.title,
       evidenceSubmissionId: evidenceSubmission?.id,
-      evidenceSubmissionFormType: evidenceSubmission?.formType,
+      evidenceSubmissionFormType: resolvedFormType,
       content: createDto.content,
       type: createDto.type ?? FindingType.soc2,
     });
@@ -270,7 +334,7 @@ export class FindingsService {
       taskId: task?.id,
       taskTitle: task?.title,
       evidenceSubmissionId: evidenceSubmission?.id,
-      evidenceSubmissionFormType: evidenceSubmission?.formType,
+      evidenceSubmissionFormType: resolvedFormType,
       evidenceSubmissionSubmittedById: evidenceSubmission?.submittedById,
       findingContent: createDto.content,
       findingType: createDto.type ?? FindingType.soc2,
@@ -280,9 +344,11 @@ export class FindingsService {
 
     const target = task
       ? `task ${task.id}`
-      : `evidence submission ${evidenceSubmission?.id}`;
+      : createDto.evidenceFormType
+        ? `evidence form type ${createDto.evidenceFormType}`
+        : `evidence submission ${evidenceSubmission?.id}`;
     this.logger.log(`Created finding ${finding.id} for ${target}`);
-    return finding;
+    return this.normalizeFindingFormTypes(finding);
   }
 
   /**
@@ -436,7 +502,8 @@ export class FindingsService {
         taskId: finding.task?.id,
         taskTitle: finding.task?.title,
         evidenceSubmissionId: finding.evidenceSubmission?.id,
-        evidenceSubmissionFormType: finding.evidenceSubmission?.formType,
+        evidenceSubmissionFormType:
+          finding.evidenceFormType ?? finding.evidenceSubmission?.formType,
         evidenceSubmissionSubmittedById:
           finding.evidenceSubmission?.submittedById,
         findingContent: updatedFinding.content,
@@ -490,7 +557,7 @@ export class FindingsService {
     this.logger.log(
       `Updated finding ${findingId}: status=${updatedFinding.status}`,
     );
-    return updatedFinding;
+    return this.normalizeFindingFormTypes(updatedFinding);
   }
 
   /**
@@ -518,7 +585,8 @@ export class FindingsService {
       taskId: finding.task?.id,
       taskTitle: finding.task?.title,
       evidenceSubmissionId: finding.evidenceSubmission?.id,
-      evidenceSubmissionFormType: finding.evidenceSubmission?.formType,
+      evidenceSubmissionFormType:
+        finding.evidenceFormType ?? finding.evidenceSubmission?.formType,
       content: finding.content,
     });
 

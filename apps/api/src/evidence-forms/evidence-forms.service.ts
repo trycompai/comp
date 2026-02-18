@@ -1,6 +1,6 @@
 import { AttachmentsService } from '@/attachments/attachments.service';
 import type { AuthContext } from '@/auth/types';
-import { db } from '@trycompai/db';
+import { db, type EvidenceFormType as DbEvidenceFormType } from '@trycompai/db';
 import {
   BadRequestException,
   Injectable,
@@ -16,6 +16,10 @@ import {
   type EvidenceFormFieldDefinition,
   type EvidenceFormType,
 } from './evidence-forms.definitions';
+import {
+  toDbEvidenceFormType,
+  toExternalEvidenceFormType,
+} from './evidence-form-type-map';
 
 const listQuerySchema = z.object({
   search: z.string().trim().optional(),
@@ -106,6 +110,15 @@ function flattenMatrixRows(
     .join(' || ');
 }
 
+function normalizeSubmissionFormType<
+  T extends { formType: DbEvidenceFormType },
+>(submission: T): Omit<T, 'formType'> & { formType: EvidenceFormType } {
+  return {
+    ...submission,
+    formType: toExternalEvidenceFormType(submission.formType) ?? 'meeting',
+  };
+}
+
 @Injectable()
 export class EvidenceFormsService {
   constructor(private readonly attachmentsService: AttachmentsService) {}
@@ -177,7 +190,9 @@ export class EvidenceFormsService {
     const statuses: Record<string, { lastSubmittedAt: string | null }> = {};
 
     for (const form of evidenceFormDefinitionList) {
-      const match = results.find((r) => r.formType === form.type);
+      const match = results.find(
+        (r) => r.formType === toDbEvidenceFormType(form.type),
+      );
       statuses[form.type] = {
         lastSubmittedAt: match?._max.submittedAt?.toISOString() ?? null,
       };
@@ -215,7 +230,7 @@ export class EvidenceFormsService {
     const submissions = await db.evidenceSubmission.findMany({
       where: {
         organizationId,
-        formType: parsedType.data,
+        formType: toDbEvidenceFormType(parsedType.data),
       },
       include: {
         submittedBy: {
@@ -242,7 +257,7 @@ export class EvidenceFormsService {
 
     return {
       form: evidenceFormDefinitions[parsedType.data],
-      submissions: paginated,
+      submissions: paginated.map(normalizeSubmissionFormType),
       total: filtered.length,
     };
   }
@@ -264,7 +279,7 @@ export class EvidenceFormsService {
       where: {
         id: params.submissionId,
         organizationId: params.organizationId,
-        formType: parsedType.data,
+        formType: toDbEvidenceFormType(parsedType.data),
       },
       include: {
         submittedBy: {
@@ -290,7 +305,7 @@ export class EvidenceFormsService {
 
     return {
       form: evidenceFormDefinitions[parsedType.data],
-      submission,
+      submission: normalizeSubmissionFormType(submission),
     };
   }
 
@@ -329,26 +344,44 @@ export class EvidenceFormsService {
     const schema = evidenceFormSubmissionSchemaMap[parsedType.data];
     const parsedPayload = schema.safeParse(payloadObject);
     if (!parsedPayload.success) {
-      throw new BadRequestException(parsedPayload.error.flatten());
+      const flattened = parsedPayload.error.flatten();
+      const fieldErrors = Object.entries(flattened.fieldErrors)
+        .map(([field, messages]) => {
+          const msg =
+            Array.isArray(messages) && messages.length > 0
+              ? messages[0]
+              : 'is required';
+          return `${field}: ${msg}`;
+        })
+        .slice(0, 5);
+
+      const message =
+        fieldErrors.length > 0
+          ? `Please fix the following: ${fieldErrors.join('; ')}`
+          : 'Please fill in all required fields';
+
+      throw new BadRequestException(message);
     }
 
-    return await db.evidenceSubmission.create({
-      data: {
-        organizationId: params.organizationId,
-        formType: parsedType.data,
-        submittedById: params.authContext.userId,
-        data: parsedPayload.data,
-      },
-      include: {
-        submittedBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    return await db.evidenceSubmission
+      .create({
+        data: {
+          organizationId: params.organizationId,
+          formType: toDbEvidenceFormType(parsedType.data),
+          submittedById: params.authContext.userId,
+          data: parsedPayload.data,
+        },
+        include: {
+          submittedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      })
+      .then(normalizeSubmissionFormType);
   }
 
   async uploadFile(params: {
@@ -417,7 +450,7 @@ export class EvidenceFormsService {
     const submissions = await db.evidenceSubmission.findMany({
       where: {
         organizationId: params.organizationId,
-        formType,
+        formType: toDbEvidenceFormType(formType),
       },
       include: {
         submittedBy: {
@@ -522,7 +555,7 @@ export class EvidenceFormsService {
       where: {
         id: params.submissionId,
         organizationId: params.organizationId,
-        formType: parsedType.data,
+        formType: toDbEvidenceFormType(parsedType.data),
       },
     });
 
@@ -536,31 +569,33 @@ export class EvidenceFormsService {
       );
     }
 
-    return await db.evidenceSubmission.update({
-      where: { id: params.submissionId },
-      data: {
-        status: parsed.data.action,
-        reviewedById: reviewerUserId,
-        reviewedAt: new Date(),
-        reviewReason: parsed.data.reason ?? null,
-      },
-      include: {
-        submittedBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    return await db.evidenceSubmission
+      .update({
+        where: { id: params.submissionId },
+        data: {
+          status: parsed.data.action,
+          reviewedById: reviewerUserId,
+          reviewedAt: new Date(),
+          reviewReason: parsed.data.reason,
+        },
+        include: {
+          submittedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          reviewedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-        reviewedBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
+      })
+      .then(normalizeSubmissionFormType);
   }
 
   async getMySubmissions(params: {
@@ -580,24 +615,26 @@ export class EvidenceFormsService {
       if (!parsedType.success) {
         throw new BadRequestException('Unsupported form type');
       }
-      where.formType = parsedType.data;
+      where.formType = toDbEvidenceFormType(parsedType.data);
     }
 
-    return await db.evidenceSubmission.findMany({
-      where,
-      include: {
-        reviewedBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    return await db.evidenceSubmission
+      .findMany({
+        where,
+        include: {
+          reviewedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: {
-        submittedAt: 'desc',
-      },
-    });
+        orderBy: {
+          submittedAt: 'desc',
+        },
+      })
+      .then((submissions) => submissions.map(normalizeSubmissionFormType));
   }
 
   async getPendingSubmissionCount(params: {
