@@ -3,13 +3,14 @@ import { AttachmentsModule } from '../attachments/attachments.module';
 import { AuthModule } from '../auth/auth.module';
 import { AutomationsModule } from './automations/automations.module';
 import { NovuService } from '../notifications/novu.service';
+import { InternalTaskNotificationController } from './internal-task-notification.controller';
 import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
 import { TaskNotifierService } from './task-notifier.service';
 
 @Module({
   imports: [AuthModule, AttachmentsModule, forwardRef(() => AutomationsModule)],
-  controllers: [TasksController],
+  controllers: [TasksController, InternalTaskNotificationController],
   providers: [TasksService, TaskNotifierService, NovuService],
   exports: [TasksService, TaskNotifierService],
 })

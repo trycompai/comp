@@ -399,7 +399,7 @@ export class TaskNotifierService {
     taskTitle: string;
     oldStatus: TaskStatus;
     newStatus: TaskStatus;
-    changedByUserId: string;
+    changedByUserId?: string;
   }): Promise<void> {
     const {
       organizationId,
@@ -417,10 +417,12 @@ export class TaskNotifierService {
             where: { id: organizationId },
             select: { name: true },
           }),
-          db.user.findUnique({
-            where: { id: changedByUserId },
-            select: { name: true, email: true },
-          }),
+          changedByUserId
+            ? db.user.findUnique({
+                where: { id: changedByUserId },
+                select: { name: true, email: true },
+              })
+            : Promise.resolve(null),
           db.task.findUnique({
             where: { id: taskId },
             select: {
@@ -475,7 +477,7 @@ export class TaskNotifierService {
       const changedByName =
         changedByUser?.name?.trim() ||
         changedByUser?.email?.trim() ||
-        'Someone';
+        (changedByUserId ? 'Someone' : 'Automation');
       const oldStatusLabel = oldStatus.replace('_', ' ');
       const newStatusLabel = newStatus.replace('_', ' ');
 
