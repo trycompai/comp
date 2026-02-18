@@ -7,15 +7,17 @@ import { UpdateSecondaryFieldsForm } from './update-secondary-fields-form';
 export function SecondaryFields({
   vendor,
   assignees,
+  onUpdate,
 }: {
   vendor: Vendor & { assignee: { user: User | null } | null };
   assignees: (Member & { user: User })[];
+  onUpdate?: () => void;
 }) {
   return (
-      <Card>
+    <Card>
       <CardContent className="space-y-4 pt-6">
-          <UpdateSecondaryFieldsForm vendor={vendor} assignees={assignees} />
-        </CardContent>
-      </Card>
+        <UpdateSecondaryFieldsForm vendor={vendor} assignees={assignees} onUpdate={onUpdate} />
+      </CardContent>
+    </Card>
   );
 }

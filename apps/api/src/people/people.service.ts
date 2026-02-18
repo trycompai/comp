@@ -4,6 +4,7 @@ import {
   Logger,
   BadRequestException,
 } from '@nestjs/common';
+import { db } from '@trycompai/db';
 import { FleetService } from '../lib/fleet.service';
 import type { PeopleResponseDto } from './dto/people-responses.dto';
 import type { CreatePeopleDto } from './dto/create-people.dto';
@@ -316,6 +317,27 @@ export class PeopleService {
           );
           // Continue with unlinking the device even if FleetDM removal fails
         }
+      }
+
+      // Also delete device-agent Device records for this member
+      try {
+        const deleteResult = await db.device.deleteMany({
+          where: {
+            memberId,
+            organizationId,
+          },
+        });
+        if (deleteResult.count > 0) {
+          this.logger.log(
+            `Deleted ${deleteResult.count} device-agent device(s) for member ${memberId} in org ${organizationId}`,
+          );
+        }
+      } catch (deviceError) {
+        // Log but don't fail the operation
+        this.logger.error(
+          `Failed to delete device-agent devices for member ${memberId}:`,
+          deviceError,
+        );
       }
 
       const updatedMember = await MemberQueries.unlinkDevice(memberId);

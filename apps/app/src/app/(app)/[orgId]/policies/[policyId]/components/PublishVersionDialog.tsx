@@ -91,7 +91,7 @@ export function PublishVersionDialog({
               <Label htmlFor="changelog">Changelog (optional)</Label>
               <Textarea
                 id="changelog"
-                placeholder="Describe what changed in this version..."
+                placeholder="What changes will you make in this version?"
                 value={changelog}
                 onChange={(e) => setChangelog(e.target.value)}
                 rows={3}

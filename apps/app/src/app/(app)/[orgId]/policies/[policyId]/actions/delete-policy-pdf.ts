@@ -34,8 +34,9 @@ export const deletePolicyPdfAction = authActionClient
       // Verify policy belongs to organization
       const policy = await db.policy.findUnique({
         where: { id: policyId, organizationId },
-        select: { 
-          id: true, 
+        select: {
+          id: true,
+          status: true,
           pdfUrl: true,
           currentVersionId: true,
           pendingVersionId: true,
@@ -59,8 +60,9 @@ export const deletePolicyPdfAction = authActionClient
           return { success: false, error: 'Version not found' };
         }
 
-        // Don't allow deleting PDF from published or pending versions
-        if (version.id === policy.currentVersionId) {
+        // Don't allow deleting PDF from the current version unless policy is in draft
+        // This covers both 'published' and 'needs_review' states
+        if (version.id === policy.currentVersionId && policy.status !== 'draft') {
           return { success: false, error: 'Cannot delete PDF from the published version' };
         }
         if (version.id === policy.pendingVersionId) {

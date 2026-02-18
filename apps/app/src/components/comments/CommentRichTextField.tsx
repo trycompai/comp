@@ -1,17 +1,17 @@
 'use client';
 
+import { createMentionExtension, type MentionUser } from '@comp/ui/editor';
+import { defaultExtensions } from '@comp/ui/editor/extensions';
 import type { JSONContent } from '@tiptap/react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import { useMemo, useEffect, useCallback } from 'react';
+import { EditorContent, useEditor } from '@tiptap/react';
 import type { CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
 
 type EditorSizeStyle = CSSProperties & {
   '--editor-min-height': string;
   '--editor-height': string;
 };
-import { createMentionExtension, type MentionUser } from '@comp/ui/editor';
-import { useDebouncedCallback } from 'use-debounce';
-import { defaultExtensions } from '@comp/ui/editor/extensions';
 
 interface CommentRichTextFieldProps {
   value: JSONContent | null;
@@ -27,7 +27,7 @@ export function CommentRichTextField({
   onChange,
   members,
   disabled = false,
-  placeholder = 'Leave a comment... Mention users with @',
+  placeholder = 'Leave a comment (mention users with @)',
   onMentionSelect,
 }: CommentRichTextFieldProps) {
   const editorSizeStyles: EditorSizeStyle = useMemo(
@@ -42,7 +42,7 @@ export function CommentRichTextField({
   const searchMembers = useCallback(
     (query: string): MentionUser[] => {
       if (!members || members.length === 0) return [];
-      
+
       // Show first 20 members immediately when query is empty
       if (!query || query.trim() === '') {
         return members.slice(0, 20);
@@ -131,9 +131,11 @@ export function CommentRichTextField({
   }, [value, editor]);
 
   return (
-    <div className="rounded-md bg-background [&_.ProseMirror_p.is-empty::before]:text-muted-foreground/50" style={editorSizeStyles}>
+    <div
+      className="rounded-md bg-background [&_.ProseMirror_p.is-empty::before]:text-muted-foreground/50"
+      style={editorSizeStyles}
+    >
       <EditorContent editor={editor} />
     </div>
   );
 }
-

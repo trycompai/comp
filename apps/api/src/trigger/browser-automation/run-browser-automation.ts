@@ -1,8 +1,165 @@
 import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk';
 import { BrowserbaseService } from '../../browserbase/browserbase.service';
+import { sendEmail } from '../../email/resend';
+import { TaskStatusChangedEmail } from '../../email/templates/task-status-changed';
+import { isUserUnsubscribed } from '@trycompai/email';
 
 const browserbaseService = new BrowserbaseService();
+
+/**
+ * Send email notifications for task status change
+ */
+async function sendTaskStatusChangeEmails(params: {
+  organizationId: string;
+  taskId: string;
+  taskTitle: string;
+  oldStatus: string;
+  newStatus: 'done' | 'failed';
+}) {
+  const { organizationId, taskId, taskTitle, oldStatus, newStatus } = params;
+
+  try {
+    // Get organization, task assignee, and org owners
+    const [organization, task, allMembers] = await Promise.all([
+      db.organization.findUnique({
+        where: { id: organizationId },
+        select: { name: true },
+      }),
+      db.task.findUnique({
+        where: { id: taskId },
+        select: {
+          assignee: {
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      db.member.findMany({
+        where: {
+          organizationId,
+          deactivated: false,
+        },
+        select: {
+          role: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const organizationName = organization?.name ?? 'your organization';
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.BETTER_AUTH_URL ||
+      'https://app.trycomp.ai';
+    const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
+
+    // Filter for admins/owners
+    const adminMembers = allMembers.filter(
+      (member) =>
+        member.role &&
+        (member.role.includes('admin') || member.role.includes('owner')),
+    );
+
+    // Build recipient list: assignee + admins
+    const recipientMap = new Map<
+      string,
+      { id: string; name: string; email: string }
+    >();
+
+    // Add assignee
+    if (task?.assignee?.user?.id && task.assignee.user.email) {
+      recipientMap.set(task.assignee.user.id, {
+        id: task.assignee.user.id,
+        name:
+          task.assignee.user.name?.trim() ||
+          task.assignee.user.email?.trim() ||
+          'User',
+        email: task.assignee.user.email,
+      });
+    }
+
+    // Add admin members
+    for (const member of adminMembers) {
+      if (member.user?.id && member.user.email) {
+        recipientMap.set(member.user.id, {
+          id: member.user.id,
+          name: member.user.name?.trim() || member.user.email?.trim() || 'User',
+          email: member.user.email,
+        });
+      }
+    }
+
+    const recipients = Array.from(recipientMap.values());
+
+    // Send emails to each recipient
+    await Promise.allSettled(
+      recipients.map(async (recipient) => {
+        // Check if user is unsubscribed
+        const isUnsubscribed = await isUserUnsubscribed(
+          db,
+          recipient.email,
+          'taskAssignments',
+        );
+
+        if (isUnsubscribed) {
+          logger.info(
+            `Skipping notification: user ${recipient.email} is unsubscribed from task assignments`,
+          );
+          return;
+        }
+
+        try {
+          await sendEmail({
+            to: recipient.email,
+            subject: `Task "${taskTitle}" status changed to ${newStatus}`,
+            react: TaskStatusChangedEmail({
+              toName: recipient.name,
+              toEmail: recipient.email,
+              taskTitle,
+              oldStatus: oldStatus.charAt(0).toUpperCase() + oldStatus.slice(1),
+              newStatus: newStatus === 'failed' ? 'Failed' : 'Done',
+              changedByName: 'Automation',
+              organizationName,
+              taskUrl,
+            }),
+            system: true,
+          });
+
+          logger.info(`Status change email sent to ${recipient.email}`);
+        } catch (error) {
+          logger.error(
+            `Failed to send status change email to ${recipient.email}`,
+            {
+              error: error instanceof Error ? error.message : 'Unknown error',
+            },
+          );
+        }
+      }),
+    );
+
+    logger.info(
+      `Sent ${recipients.length} status change notifications for task ${taskId} (status: ${newStatus})`,
+    );
+  } catch (error) {
+    logger.error('Failed to send task status change emails', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}
 
 /**
  * Worker task that runs a single browser automation.
@@ -48,6 +205,13 @@ export const runBrowserAutomation = task({
       logger.info(`Automation ${automationId} is disabled, skipping`);
       return { success: false, error: 'Automation is disabled', skipped: true };
     }
+
+    // Get task details for email notifications
+    const taskDetails = await db.task.findUnique({
+      where: { id: taskId },
+      select: { title: true },
+    });
+    const taskTitle = taskDetails?.title ?? 'Unknown Task';
 
     // Check if org has browser context
     const context = await browserbaseService.getOrgContext(organizationId);
@@ -128,10 +292,32 @@ export const runBrowserAutomation = task({
 
       // Mark task as failed if auth issue
       if (result.needsReauth) {
+        // Get current status before updating
+        const taskBeforeUpdate = await db.task.findUnique({
+          where: { id: taskId },
+          select: { status: true },
+        });
+        const oldStatus = taskBeforeUpdate?.status ?? 'todo';
+
         await db.task.update({
           where: { id: taskId },
           data: { status: 'failed' },
         });
+
+        // Only send email notifications if status actually changed
+        if (oldStatus !== 'failed') {
+          await sendTaskStatusChangeEmails({
+            organizationId,
+            taskId,
+            taskTitle,
+            oldStatus,
+            newStatus: 'failed',
+          });
+        } else {
+          logger.info(
+            `Skipping notification: task ${taskId} was already in failed status`,
+          );
+        }
       }
     }
 

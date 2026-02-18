@@ -36,6 +36,7 @@ export interface Vendor {
   residualProbability: Likelihood;
   residualImpact: Impact;
   website: string | null;
+  isSubProcessor: boolean;
   organizationId: string;
   assigneeId: string | null;
   assignee?: VendorAssignee | null;
@@ -72,6 +73,7 @@ interface UpdateVendorData {
   category?: VendorCategory;
   status?: VendorStatus;
   website?: string;
+  isSubProcessor?: boolean;
   assigneeId?: string | null;
   inherentProbability?: Likelihood;
   inherentImpact?: Impact;

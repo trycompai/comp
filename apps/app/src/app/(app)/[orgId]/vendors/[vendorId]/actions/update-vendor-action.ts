@@ -17,7 +17,8 @@ export const updateVendorAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { id, name, description, category, assigneeId, status, website } = parsedInput;
+    const { id, name, description, category, assigneeId, status, website, isSubProcessor } =
+      parsedInput;
     const { session } = ctx;
     const normalizedWebsite = website === '' ? null : website;
 
@@ -38,6 +39,7 @@ export const updateVendorAction = authActionClient
           category,
           status,
           website: normalizedWebsite,
+          isSubProcessor,
         },
       });
 

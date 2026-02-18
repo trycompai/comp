@@ -2,6 +2,7 @@ import { PrismaInstrumentation } from '@prisma/instrumentation';
 import { syncVercelEnvVars } from '@trigger.dev/build/extensions/core';
 import { defineConfig } from '@trigger.dev/sdk';
 import { prismaExtension } from './customPrismaExtension';
+import { emailExtension } from './emailExtension';
 import { integrationPlatformExtension } from './integrationPlatformExtension';
 
 export default defineConfig({
@@ -16,6 +17,7 @@ export default defineConfig({
         dbPackageVersion: '^1.3.15', // Version of @trycompai/db package with compiled JS
       }),
       integrationPlatformExtension(),
+      emailExtension(),
       syncVercelEnvVars(),
     ],
   },

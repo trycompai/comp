@@ -82,7 +82,10 @@ export function redactSensitiveData(
         // Check if the key is sensitive (only for string keys)
         if (typeof key === 'string' && isSensitiveKey(key, sensitiveKeys)) {
           result.push([key, '[REDACTED]']);
-        } else if (typeof mapValue === 'string' && shouldRedactValue(mapValue, valuePatterns)) {
+        } else if (
+          typeof mapValue === 'string' &&
+          shouldRedactValue(mapValue, valuePatterns)
+        ) {
           result.push([key, '[REDACTED]']);
         } else {
           result.push([key, redact(mapValue)]);

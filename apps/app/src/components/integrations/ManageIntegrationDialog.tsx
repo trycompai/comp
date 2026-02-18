@@ -102,13 +102,19 @@ const validateTargetRepos = (
     return true;
   }
   for (const value of targetReposValue) {
-    const colonIndex = String(value).lastIndexOf(':');
-    if (colonIndex <= 0) {
+    const stringValue = String(value ?? '').trim();
+    if (!stringValue) {
       return false;
     }
-    const branch = String(value).substring(colonIndex + 1).trim();
-    if (!branch) {
+    const colonIndex = stringValue.lastIndexOf(':');
+    if (colonIndex === 0) {
       return false;
+    }
+    if (colonIndex > 0) {
+      const repo = stringValue.substring(0, colonIndex).trim();
+      if (!repo) {
+        return false;
+      }
     }
   }
   return true;
@@ -916,12 +922,15 @@ function MultiSelectWithBranches({
     }
 
     // For GitHub repos, preserve existing branches when repos are reselected
-    const newValues = selectedRepos.map((repo) => {
-      // Check if this repo already exists in current values
-      const existing = parsedConfigs.find((c) => c.repo === repo);
-      // Use existing branch, or empty string for new repos (user will type it)
-      return formatRepoBranch(repo, existing?.branch || '');
-    });
+    const newValues = selectedRepos
+      .map((repo) => repo.trim())
+      .filter(Boolean)
+      .map((repo) => {
+        // Check if this repo already exists in current values
+        const existing = parsedConfigs.find((c) => c.repo === repo);
+        // Use existing branch, or empty string for new repos (user will type it)
+        return formatRepoBranch(repo, existing?.branch || '');
+      });
     onChange(newValues);
   };
 
@@ -958,6 +967,7 @@ function MultiSelectWithBranches({
         defaultOptions={options.map((o) => ({ value: o.value, label: o.label }))}
         options={options.map((o) => ({ value: o.value, label: o.label }))}
         placeholder={`Select ${variable.label.toLowerCase()}...`}
+        creatable={isGitHubRepos}
         emptyIndicator={
           isLoadingOptions ? (
             <div className="flex items-center gap-2 py-2 px-3 text-sm text-muted-foreground">
@@ -974,10 +984,10 @@ function MultiSelectWithBranches({
       {isGitHubRepos && parsedConfigs.length > 0 && (
         <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
           <p className="text-xs font-medium text-muted-foreground">
-            Specify branches for each repository (comma-separated for multiple):
+            Optional: specify branches for each repository (comma-separated). Leave blank to use the
+            default branch (main).
           </p>
           {parsedConfigs.map((config) => {
-            const isEmpty = !config.branch.trim();
             return (
               <div key={config.repo} className="flex items-center gap-2">
                 <span className="shrink-0 rounded bg-secondary px-2 py-1 font-mono text-xs">
@@ -988,9 +998,7 @@ function MultiSelectWithBranches({
                   value={config.branch}
                   onChange={(e) => handleBranchChange(config.repo, e.target.value)}
                   placeholder="main, develop"
-                  className={`h-8 flex-1 font-mono text-sm ${
-                    isEmpty ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''
-                  }`}
+                  className="h-8 flex-1 font-mono text-sm"
                 />
                 <button
                   type="button"
@@ -1002,11 +1010,6 @@ function MultiSelectWithBranches({
               </div>
             );
           })}
-          {parsedConfigs.some((c) => !c.branch.trim()) && (
-            <p className="text-xs text-destructive">
-              Each repository must have at least one branch specified.
-            </p>
-          )}
         </div>
       )}
     </div>

@@ -1,6 +1,5 @@
 ---
-description: Use when building or modifying React components, styling, or working with the design system
-alwaysApply: false
+alwaysApply: true
 ---
 # UI Components
 

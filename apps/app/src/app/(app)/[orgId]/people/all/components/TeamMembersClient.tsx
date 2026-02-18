@@ -1,44 +1,63 @@
 'use client';
 
-import { Loader2, Mail, Search, UserPlus, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { parseAsString, useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { usePeopleActions } from '@/hooks/use-people-api';
 import { authClient } from '@/utils/auth-client';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent } from '@comp/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Separator } from '@comp/ui/separator';
 import type { Invitation, Role } from '@db';
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@trycompai/design-system';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Separator,
+  Stack,
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@trycompai/design-system';
+import { Search } from '@trycompai/design-system/icons';
 
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TeamMembersData } from './TeamMembers';
 
 // Import the server actions themselves to get their types
+import type { reactivateMember } from '../actions/reactivateMember';
 import type { removeMember } from '../actions/removeMember';
 import type { revokeInvitation } from '../actions/revokeInvitation';
 
-import { usePeopleActions } from '@/hooks/use-people-api';
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
-import { InviteMembersModal } from './InviteMembersModal';
 
 // Define prop types using typeof for the actions still used
 interface TeamMembersClientProps {
   data: TeamMembersData;
   organizationId: string;
   removeMemberAction: typeof removeMember;
+  reactivateMemberAction: typeof reactivateMember;
   revokeInvitationAction: typeof revokeInvitation;
   canManageMembers: boolean;
   canInviteUsers: boolean;
   isAuditor: boolean;
   isCurrentUserOwner: boolean;
   employeeSyncData: EmployeeSyncConnectionsData;
+  taskCompletionMap: Record<string, { completed: number; total: number }>;
+  memberIdsWithDeviceAgent: string[];
 }
 
 // Define a simplified type for merged list items
@@ -57,22 +76,24 @@ export function TeamMembersClient({
   data,
   organizationId,
   removeMemberAction,
+  reactivateMemberAction,
   revokeInvitationAction,
   canManageMembers,
   canInviteUsers,
   isAuditor,
   isCurrentUserOwner,
   employeeSyncData,
+  taskCompletionMap,
+  memberIdsWithDeviceAgent,
 }: TeamMembersClientProps) {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
-  const [roleFilter, setRoleFilter] = useQueryState('role', parseAsString.withDefault('all'));
-  const [statusFilter, setStatusFilter] = useQueryState('status', parseAsString.withDefault('all'));
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
 
   const { unlinkDevice } = usePeopleActions();
-
-  // Add state for the modal
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   // Employee sync hook with server-fetched initial data
   const {
@@ -111,17 +132,19 @@ export function TeamMembersClient({
             ? member.role
             : [member.role as Role];
 
+      const isInactive = member.deactivated || !member.isActive;
+
       return {
         ...member,
         type: 'member' as const,
         displayName: member.user.name || member.user.email || '',
         displayEmail: member.user.email || '',
         displayRole: member.role, // Keep original for filtering
-        displayStatus: member.deactivated ? ('deactivated' as const) : ('active' as const),
+        displayStatus: isInactive ? ('deactivated' as const) : ('active' as const),
         displayId: member.id,
         // Add processed roles for rendering
         processedRoles: roles,
-        isDeactivated: member.deactivated,
+        isDeactivated: isInactive,
       };
     }),
     ...data.pendingInvitations.map((invitation) => {
@@ -153,13 +176,13 @@ export function TeamMembersClient({
       item.displayEmail.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Check if the role filter matches any of the member's roles
-    const matchesRole = roleFilter === 'all' || item.processedRoles.includes(roleFilter as Role);
+    const matchesRole = !roleFilter || item.processedRoles.includes(roleFilter as Role);
 
     // Status filter: 'active' shows non-deactivated members + pending invitations
     // 'deactivated' shows only deactivated members
-    // 'all' shows everything
+    // empty shows everything
     const matchesStatus =
-      statusFilter === 'all' ||
+      !statusFilter ||
       (statusFilter === 'active' && item.displayStatus !== 'deactivated') ||
       (statusFilter === 'deactivated' && item.displayStatus === 'deactivated');
 
@@ -168,6 +191,14 @@ export function TeamMembersClient({
 
   const activeMembers = filteredItems.filter((item) => item.type === 'member');
   const pendingInvites = filteredItems.filter((item) => item.type === 'invitation');
+
+  // Combine all items for table display
+  const allDisplayItems = [...activeMembers, ...pendingInvites];
+  const totalItems = allDisplayItems.length;
+  const pageCount = Math.ceil(totalItems / perPage);
+  const paginatedItems = allDisplayItems.slice((page - 1) * perPage, page * perPage);
+
+  const pageSizeOptions = [10, 25, 50, 100];
 
   const handleCancelInvitation = async (invitationId: string) => {
     const result = await revokeInvitationAction({ invitationId });
@@ -197,6 +228,18 @@ export function TeamMembersClient({
       // Error case
       const errorMessage = result?.serverError || 'Failed to remove member';
       console.error('Remove Member Error:', errorMessage);
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleReactivateMember = async (memberId: string) => {
+    const result = await reactivateMemberAction({ memberId });
+    if (result?.data?.success) {
+      toast.success('Member has been reinstated');
+      router.refresh();
+    } else {
+      const errorMessage = result?.serverError || 'Failed to reinstate member';
+      console.error('Reactivate Member Error:', errorMessage);
       toast.error(errorMessage);
     }
   };
@@ -247,19 +290,10 @@ export function TeamMembersClient({
   };
 
   return (
-    <div className="">
-      {/* Render the Invite Modal */}
-      <InviteMembersModal
-        open={isInviteModalOpen}
-        onOpenChange={setIsInviteModalOpen}
-        organizationId={organizationId}
-        allowedRoles={
-          canManageMembers ? ['admin', 'auditor', 'employee', 'contractor'] : ['auditor']
-        }
-      />
-
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <div className="relative flex-1">
+    <Stack gap="4">
+      {/* Search and Filters */}
+      <div className="flex items-center gap-4">
+        <div className="w-full md:max-w-[300px]">
           <InputGroup>
             <InputGroupAddon>
               <Search size={16} />
@@ -267,59 +301,63 @@ export function TeamMembersClient({
             <InputGroupInput
               placeholder="Search people..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value || null)}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </InputGroup>
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute top-1 right-1 h-7 w-7 p-0"
-              onClick={() => setSearchQuery(null)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
         </div>
         {/* Status Filter Select */}
-        <Select
-          value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value === 'all' ? null : value)}
-        >
-          <SelectTrigger className="hidden w-[140px] sm:flex">
-            <SelectValue placeholder={'All People'} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{'All People'}</SelectItem>
-            <SelectItem value="active">{'Active'}</SelectItem>
-            <SelectItem value="deactivated">{'Deactivated'}</SelectItem>
-          </SelectContent>
-        </Select>
-        {/* Role Filter Select: Hidden on mobile, block on sm+ */}
-        <Select
-          value={roleFilter}
-          onValueChange={(value) => setRoleFilter(value === 'all' ? null : value)}
-        >
-          <SelectTrigger className="hidden w-[180px] sm:flex">
-            <SelectValue placeholder={'All Roles'} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{'All Roles'}</SelectItem>
-            <SelectItem value="owner">{'Owner'}</SelectItem>
-            <SelectItem value="admin">{'Admin'}</SelectItem>
-            <SelectItem value="auditor">{'Auditor'}</SelectItem>
-            <SelectItem value="employee">{'Employee'}</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="hidden w-[140px] sm:block">
+          <Select
+            value={statusFilter || undefined}
+            onValueChange={(value) => {
+              setStatusFilter(value === 'all' ? '' : (value ?? ''));
+              setPage(1);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All People" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All People</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="deactivated">Deactivated</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {/* Role Filter Select */}
+        <div className="hidden w-[180px] sm:block">
+          <Select
+            value={roleFilter || undefined}
+            onValueChange={(value) => {
+              setRoleFilter(value === 'all' ? '' : (value ?? ''));
+              setPage(1);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All Roles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="owner">Owner</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="auditor">Auditor</SelectItem>
+              <SelectItem value="employee">Employee</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         {hasAnyConnection && (
-          <div className="flex items-center gap-2">
+          <div className="w-[200px]">
             <Select
-              onValueChange={(value) =>
-                handleEmployeeSync(value as 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp')
-              }
+              onValueChange={(value) => {
+                if (value) {
+                  handleEmployeeSync(
+                    value as 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp',
+                  );
+                }
+              }}
               disabled={isSyncing || !canManageMembers}
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger>
                 {isSyncing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -361,7 +399,7 @@ export function TeamMembersClient({
                     'Select a provider to enable auto-sync'
                   )}
                 </div>
-                <Separator className="my-1" />
+                <Separator />
                 {googleWorkspaceConnectionId && (
                   <SelectItem value="google-workspace">
                     <div className="flex items-center gap-2">
@@ -438,62 +476,75 @@ export function TeamMembersClient({
             </Select>
           </div>
         )}
-        <Button onClick={() => setIsInviteModalOpen(true)} disabled={!canInviteUsers}>
-          <UserPlus className="h-4 w-4" />
-          {'Add User'}
-        </Button>
       </div>
-      <Card className="border">
-        <CardContent className="p-0">
-          <div className="divide-y">
-            {activeMembers.map((member) => (
-              <MemberRow
-                key={member.displayId}
-                member={member as MemberWithUser}
-                onRemove={handleRemoveMember}
-                onRemoveDevice={handleRemoveDevice}
-                onUpdateRole={handleUpdateRole}
-                canEdit={canManageMembers}
-                isCurrentUserOwner={isCurrentUserOwner}
-              />
-            ))}
-          </div>
 
-          {/* Conditionally render separator only if both sections have content */}
-          {activeMembers.length > 0 && pendingInvites.length > 0 && <Separator />}
-
-          {pendingInvites.length > 0 && (
-            <div className="divide-y">
-              {pendingInvites.map((invitation) => (
+      {/* Table */}
+      {totalItems === 0 ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>{searchQuery ? 'No people found' : 'No employees yet'}</EmptyTitle>
+            <EmptyDescription>
+              {searchQuery
+                ? 'Try adjusting your search or filters.'
+                : 'Get started by inviting your first team member.'}
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        <Table
+          variant="bordered"
+          pagination={{
+            page,
+            pageCount,
+            onPageChange: setPage,
+            pageSize: perPage,
+            pageSizeOptions,
+            onPageSizeChange: (size) => {
+              setPerPage(size);
+              setPage(1);
+            },
+          }}
+        >
+          <TableHeader>
+            <TableRow>
+              <TableHead>NAME</TableHead>
+              <TableHead>STATUS</TableHead>
+              <TableHead>
+                <div className="w-[160px]">ROLE</div>
+              </TableHead>
+              <TableHead>TASKS</TableHead>
+              <TableHead>ACTIONS</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedItems.map((item) =>
+              item.type === 'member' ? (
+                <MemberRow
+                  key={item.displayId}
+                  member={item as MemberWithUser}
+                  onRemove={handleRemoveMember}
+                  onRemoveDevice={handleRemoveDevice}
+                  onUpdateRole={handleUpdateRole}
+                  onReactivate={handleReactivateMember}
+                  canEdit={canManageMembers}
+                  isCurrentUserOwner={isCurrentUserOwner}
+                  taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}
+                  hasDeviceAgentDevice={memberIdsWithDeviceAgent.includes(
+                    (item as MemberWithUser).id,
+                  )}
+                />
+              ) : (
                 <PendingInvitationRow
-                  key={invitation.displayId}
-                  invitation={invitation as Invitation}
+                  key={item.displayId}
+                  invitation={item as Invitation}
                   onCancel={handleCancelInvitation}
                   canCancel={canManageMembers}
                 />
-              ))}
-            </div>
-          )}
-
-          {activeMembers.length === 0 && pendingInvites.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Mail className="text-muted-foreground/30 h-12 w-12" />
-              <h3 className="mt-4 text-lg font-medium">{'No employees yet'}</h3>
-              <p className="text-muted-foreground mt-2 max-w-xs text-sm">
-                {'Get started by inviting your first team member.'}
-              </p>
-              <Button
-                className="mt-4"
-                onClick={() => setIsInviteModalOpen(true)}
-                disabled={!canInviteUsers}
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                {'Add User'}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              ),
+            )}
+          </TableBody>
+        </Table>
+      )}
+    </Stack>
   );
 }

@@ -17,8 +17,10 @@ export class FindingAuditService {
    */
   async logFindingCreated(
     params: FindingAuditParams & {
-      taskId: string;
-      taskTitle: string;
+      taskId?: string;
+      taskTitle?: string;
+      evidenceSubmissionId?: string;
+      evidenceSubmissionFormType?: string;
       content: string;
       type: FindingType;
     },
@@ -37,6 +39,8 @@ export class FindingAuditService {
             findingId: params.findingId,
             taskId: params.taskId,
             taskTitle: params.taskTitle,
+            evidenceSubmissionId: params.evidenceSubmissionId,
+            evidenceSubmissionFormType: params.evidenceSubmissionFormType,
             content: params.content,
             type: params.type,
             status: FindingStatus.open,
@@ -147,8 +151,10 @@ export class FindingAuditService {
    */
   async logFindingDeleted(
     params: FindingAuditParams & {
-      taskId: string;
-      taskTitle: string;
+      taskId?: string;
+      taskTitle?: string;
+      evidenceSubmissionId?: string;
+      evidenceSubmissionFormType?: string;
       content: string;
     },
   ): Promise<void> {
@@ -166,6 +172,8 @@ export class FindingAuditService {
             findingId: params.findingId,
             taskId: params.taskId,
             taskTitle: params.taskTitle,
+            evidenceSubmissionId: params.evidenceSubmissionId,
+            evidenceSubmissionFormType: params.evidenceSubmissionFormType,
             content: params.content,
           },
         },

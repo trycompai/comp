@@ -5,7 +5,7 @@ import { getIntegrationHandler } from '@comp/integrations';
 import { db } from '@db';
 import { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
-import { cookies, headers } from 'next/headers';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 import { authActionClient } from '../../../../../actions/safe-action';
 import { runTests } from './run-tests';
@@ -113,11 +113,8 @@ export const connectCloudAction = authActionClient
       });
 
       // Trigger immediate scan for only this new connection
+      // runTests now waits for completion before returning
       const runResult = await runTests(newIntegration.id);
-
-      if (runResult.success && runResult.publicAccessToken) {
-        (await cookies()).set('publicAccessToken', runResult.publicAccessToken);
-      }
 
       // Revalidate the path
       const headersList = await headers();
@@ -130,7 +127,6 @@ export const connectCloudAction = authActionClient
         trigger: runResult.success
           ? {
               taskId: runResult.taskId ?? undefined,
-              publicAccessToken: runResult.publicAccessToken ?? undefined,
             }
           : undefined,
         runErrors: runResult.success ? undefined : (runResult.errors ?? undefined),

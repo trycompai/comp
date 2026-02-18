@@ -7,6 +7,8 @@ import { TaskBulkStatusChangedEmail } from '../email/templates/task-bulk-status-
 import { TaskBulkAssigneeChangedEmail } from '../email/templates/task-bulk-assignee-changed';
 import { TaskStatusChangedEmail } from '../email/templates/task-status-changed';
 import { TaskAssigneeChangedEmail } from '../email/templates/task-assignee-changed';
+import { EvidenceReviewRequestedEmail } from '../email/templates/evidence-review-requested';
+import { EvidenceBulkReviewRequestedEmail } from '../email/templates/evidence-bulk-review-requested';
 import { NovuService } from '../notifications/novu.service';
 
 const BULK_TASK_WORKFLOW_ID = 'evidence-bulk-updated';
@@ -27,60 +29,63 @@ export class TaskNotifierService {
     const { organizationId, taskIds, newStatus, changedByUserId } = params;
 
     try {
-      const [organization, changedByUser, tasks, allMembers] = await Promise.all([
-        db.organization.findUnique({
-          where: { id: organizationId },
-          select: { name: true },
-        }),
-        db.user.findUnique({
-          where: { id: changedByUserId },
-          select: { name: true, email: true },
-        }),
-        db.task.findMany({
-          where: {
-            id: { in: taskIds },
-            organizationId,
-          },
-          select: {
-            id: true,
-            title: true,
-            assigneeId: true,
-            assignee: {
-              select: {
-                id: true,
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
+      const [organization, changedByUser, tasks, allMembers] =
+        await Promise.all([
+          db.organization.findUnique({
+            where: { id: organizationId },
+            select: { name: true },
+          }),
+          db.user.findUnique({
+            where: { id: changedByUserId },
+            select: { name: true, email: true },
+          }),
+          db.task.findMany({
+            where: {
+              id: { in: taskIds },
+              organizationId,
+            },
+            select: {
+              id: true,
+              title: true,
+              assigneeId: true,
+              assignee: {
+                select: {
+                  id: true,
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
                   },
                 },
               },
             },
-          },
-        }),
-        db.member.findMany({
-          where: {
-            organizationId,
-            deactivated: false,
-          },
-          select: {
-            id: true,
-            role: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
+          }),
+          db.member.findMany({
+            where: {
+              organizationId,
+              deactivated: false,
+            },
+            select: {
+              id: true,
+              role: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
               },
             },
-          },
-        }),
-      ]);
+          }),
+        ]);
 
       // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
       const adminMembers = allMembers.filter(
-        (member) => member.role && (member.role.includes('admin') || member.role.includes('owner')),
+        (member) =>
+          member.role &&
+          (member.role.includes('admin') || member.role.includes('owner')),
       );
 
       this.logger.debug(
@@ -89,10 +94,15 @@ export class TaskNotifierService {
 
       const organizationName = organization?.name ?? 'your organization';
       const changedByName =
-        changedByUser?.name?.trim() || changedByUser?.email?.trim() || 'Someone';
+        changedByUser?.name?.trim() ||
+        changedByUser?.email?.trim() ||
+        'Someone';
 
       // Build recipient list: unique assignees + admins, excluding actor
-      const recipientMap = new Map<string, { id: string; name: string; email: string }>();
+      const recipientMap = new Map<
+        string,
+        { id: string; name: string; email: string }
+      >();
 
       // Add assignees from affected tasks
       for (const task of tasks) {
@@ -101,7 +111,10 @@ export class TaskNotifierService {
           if (userId !== changedByUserId) {
             recipientMap.set(userId, {
               id: userId,
-              name: task.assignee.user.name?.trim() || task.assignee.user.email?.trim() || 'User',
+              name:
+                task.assignee.user.name?.trim() ||
+                task.assignee.user.email?.trim() ||
+                'User',
               email: task.assignee.user.email,
             });
           }
@@ -115,7 +128,8 @@ export class TaskNotifierService {
           if (userId !== changedByUserId) {
             recipientMap.set(userId, {
               id: userId,
-              name: member.user.name?.trim() || member.user.email?.trim() || 'User',
+              name:
+                member.user.name?.trim() || member.user.email?.trim() || 'User',
               email: member.user.email,
             });
           }
@@ -187,7 +201,7 @@ export class TaskNotifierService {
           try {
             const title = `${taskCount} task${taskCount === 1 ? '' : 's'} status changed`;
             const message = `${changedByName} changed the status of ${taskCount} task${taskCount === 1 ? '' : 's'} to ${statusLabel} in ${organizationName}`;
-            
+
             await this.novuService.trigger({
               workflowId: BULK_TASK_WORKFLOW_ID,
               subscriberId: `${recipient.id}-${organizationId}`,
@@ -211,7 +225,10 @@ export class TaskNotifierService {
         }),
       );
     } catch (error) {
-      this.logger.error('Failed to send bulk status change notifications', error as Error);
+      this.logger.error(
+        'Failed to send bulk status change notifications',
+        error as Error,
+      );
     }
   }
 
@@ -224,7 +241,7 @@ export class TaskNotifierService {
     const { organizationId, taskIds, newAssigneeId, changedByUserId } = params;
 
     try {
-      const [organization, changedByUser, tasks, allMembers, newAssigneeMember] =
+      const [organization, changedByUser, tasks, newAssigneeMember] =
         await Promise.all([
           db.organization.findUnique({
             where: { id: organizationId },
@@ -244,23 +261,6 @@ export class TaskNotifierService {
               title: true,
             },
           }),
-          db.member.findMany({
-            where: {
-              organizationId,
-              deactivated: false,
-            },
-            select: {
-              id: true,
-              role: true,
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                },
-              },
-            },
-          }),
           newAssigneeId
             ? db.member.findUnique({
                 where: { id: newAssigneeId },
@@ -277,56 +277,32 @@ export class TaskNotifierService {
             : Promise.resolve(null),
         ]);
 
-      // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
-      const adminMembers = allMembers.filter(
-        (member) => member.role && (member.role.includes('admin') || member.role.includes('owner')),
-      );
-
-      this.logger.debug(
-        `[notifyBulkAssigneeChange] Found ${allMembers.length} total members, ${adminMembers.length} admins/owners for organization ${organizationId}`,
-      );
-
       const organizationName = organization?.name ?? 'your organization';
       const changedByName =
-        changedByUser?.name?.trim() || changedByUser?.email?.trim() || 'Someone';
+        changedByUser?.name?.trim() ||
+        changedByUser?.email?.trim() ||
+        'Someone';
       const newAssigneeName = newAssigneeMember?.user
         ? newAssigneeMember.user.name?.trim() ||
           newAssigneeMember.user.email?.trim() ||
           'Unassigned'
         : 'Unassigned';
 
-      // Build recipient list: new assignee + admins, excluding actor
-      const recipientMap = new Map<string, { id: string; name: string; email: string }>();
-
-      // Add new assignee if exists
+      // Notify only the new assignee (the person who was assigned the tasks), excluding the actor
+      const recipients: { id: string; name: string; email: string }[] = [];
       if (newAssigneeMember?.user?.id && newAssigneeMember.user.email) {
         const userId = newAssigneeMember.user.id;
         if (userId !== changedByUserId) {
-          recipientMap.set(userId, {
+          recipients.push({
             id: userId,
-            name: newAssigneeMember.user.name?.trim() ||
+            name:
+              newAssigneeMember.user.name?.trim() ||
               newAssigneeMember.user.email?.trim() ||
               'User',
             email: newAssigneeMember.user.email,
           });
         }
       }
-
-      // Add admin members
-      for (const member of adminMembers) {
-        if (member.user?.id && member.user.email) {
-          const userId = member.user.id;
-          if (userId !== changedByUserId) {
-            recipientMap.set(userId, {
-              id: userId,
-              name: member.user.name?.trim() || member.user.email?.trim() || 'User',
-              email: member.user.email,
-            });
-          }
-        }
-      }
-
-      const recipients = Array.from(recipientMap.values());
       const taskCount = tasks.length;
 
       const appUrl =
@@ -386,7 +362,7 @@ export class TaskNotifierService {
           try {
             const title = `${taskCount} task${taskCount === 1 ? '' : 's'} reassigned`;
             const message = `${changedByName} reassigned ${taskCount} task${taskCount === 1 ? '' : 's'} to ${newAssigneeName} in ${organizationName}`;
-            
+
             await this.novuService.trigger({
               workflowId: BULK_TASK_WORKFLOW_ID,
               subscriberId: `${recipient.id}-${organizationId}`,
@@ -410,7 +386,10 @@ export class TaskNotifierService {
         }),
       );
     } catch (error) {
-      this.logger.error('Failed to send bulk assignee change notifications', error as Error);
+      this.logger.error(
+        'Failed to send bulk assignee change notifications',
+        error as Error,
+      );
     }
   }
 
@@ -422,56 +401,67 @@ export class TaskNotifierService {
     newStatus: TaskStatus;
     changedByUserId: string;
   }): Promise<void> {
-    const { organizationId, taskId, taskTitle, oldStatus, newStatus, changedByUserId } = params;
+    const {
+      organizationId,
+      taskId,
+      taskTitle,
+      oldStatus,
+      newStatus,
+      changedByUserId,
+    } = params;
 
     try {
-      const [organization, changedByUser, task, allMembers] = await Promise.all([
-        db.organization.findUnique({
-          where: { id: organizationId },
-          select: { name: true },
-        }),
-        db.user.findUnique({
-          where: { id: changedByUserId },
-          select: { name: true, email: true },
-        }),
-        db.task.findUnique({
-          where: { id: taskId },
-          select: {
-            assignee: {
-              select: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
+      const [organization, changedByUser, task, allMembers] = await Promise.all(
+        [
+          db.organization.findUnique({
+            where: { id: organizationId },
+            select: { name: true },
+          }),
+          db.user.findUnique({
+            where: { id: changedByUserId },
+            select: { name: true, email: true },
+          }),
+          db.task.findUnique({
+            where: { id: taskId },
+            select: {
+              assignee: {
+                select: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
                   },
                 },
               },
             },
-          },
-        }),
-        db.member.findMany({
-          where: {
-            organizationId,
-            deactivated: false,
-          },
-          select: {
-            id: true,
-            role: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
+          }),
+          db.member.findMany({
+            where: {
+              organizationId,
+              deactivated: false,
+            },
+            select: {
+              id: true,
+              role: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
               },
             },
-          },
-        }),
-      ]);
+          }),
+        ],
+      );
 
       // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
       const adminMembers = allMembers.filter(
-        (member) => member.role && (member.role.includes('admin') || member.role.includes('owner')),
+        (member) =>
+          member.role &&
+          (member.role.includes('admin') || member.role.includes('owner')),
       );
 
       this.logger.debug(
@@ -483,12 +473,17 @@ export class TaskNotifierService {
 
       const organizationName = organization?.name ?? 'your organization';
       const changedByName =
-        changedByUser?.name?.trim() || changedByUser?.email?.trim() || 'Someone';
+        changedByUser?.name?.trim() ||
+        changedByUser?.email?.trim() ||
+        'Someone';
       const oldStatusLabel = oldStatus.replace('_', ' ');
       const newStatusLabel = newStatus.replace('_', ' ');
 
       // Build recipient list: assignee + admins, excluding actor
-      const recipientMap = new Map<string, { id: string; name: string; email: string }>();
+      const recipientMap = new Map<
+        string,
+        { id: string; name: string; email: string }
+      >();
 
       // Add assignee if exists
       if (task?.assignee?.user?.id && task.assignee.user.email) {
@@ -496,7 +491,10 @@ export class TaskNotifierService {
         if (userId !== changedByUserId) {
           recipientMap.set(userId, {
             id: userId,
-            name: task.assignee.user.name?.trim() || task.assignee.user.email?.trim() || 'User',
+            name:
+              task.assignee.user.name?.trim() ||
+              task.assignee.user.email?.trim() ||
+              'User',
             email: task.assignee.user.email,
           });
         }
@@ -509,7 +507,8 @@ export class TaskNotifierService {
           if (userId !== changedByUserId) {
             recipientMap.set(userId, {
               id: userId,
-              name: member.user.name?.trim() || member.user.email?.trim() || 'User',
+              name:
+                member.user.name?.trim() || member.user.email?.trim() || 'User',
               email: member.user.email,
             });
           }
@@ -562,7 +561,9 @@ export class TaskNotifierService {
               system: true,
             });
 
-            this.logger.log(`Status change email sent to ${recipient.email} (ID: ${id})`);
+            this.logger.log(
+              `Status change email sent to ${recipient.email} (ID: ${id})`,
+            );
           } catch (error) {
             this.logger.error(
               `Failed to send status change email to ${recipient.email}:`,
@@ -574,7 +575,7 @@ export class TaskNotifierService {
           try {
             const title = `Task status updated`;
             const message = `${changedByName} changed the status of "${taskTitle}" from ${oldStatusLabel} to ${newStatusLabel} in ${organizationName}`;
-            
+
             await this.novuService.trigger({
               workflowId: TASK_WORKFLOW_ID,
               subscriberId: `${recipient.id}-${organizationId}`,
@@ -586,7 +587,9 @@ export class TaskNotifierService {
               },
             });
 
-            this.logger.log(`[NOVU] Status change in-app notification sent to ${recipient.id}`);
+            this.logger.log(
+              `[NOVU] Status change in-app notification sent to ${recipient.id}`,
+            );
           } catch (error) {
             this.logger.error(
               `[NOVU] Failed to send status change in-app notification to ${recipient.id}:`,
@@ -596,7 +599,10 @@ export class TaskNotifierService {
         }),
       );
     } catch (error) {
-      this.logger.error('Failed to send status change notifications', error as Error);
+      this.logger.error(
+        'Failed to send status change notifications',
+        error as Error,
+      );
     }
   }
 
@@ -618,75 +624,55 @@ export class TaskNotifierService {
     } = params;
 
     try {
-      const [organization, changedByUser, oldAssigneeMember, newAssigneeMember, allMembers] =
-        await Promise.all([
-          db.organization.findUnique({
-            where: { id: organizationId },
-            select: { name: true },
-          }),
-          db.user.findUnique({
-            where: { id: changedByUserId },
-            select: { name: true, email: true },
-          }),
-          oldAssigneeId
-            ? db.member.findUnique({
-                where: { id: oldAssigneeId },
-                select: {
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                    },
+      const [
+        organization,
+        changedByUser,
+        oldAssigneeMember,
+        newAssigneeMember,
+      ] = await Promise.all([
+        db.organization.findUnique({
+          where: { id: organizationId },
+          select: { name: true },
+        }),
+        db.user.findUnique({
+          where: { id: changedByUserId },
+          select: { name: true, email: true },
+        }),
+        oldAssigneeId
+          ? db.member.findUnique({
+              where: { id: oldAssigneeId },
+              select: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
                   },
-                },
-              })
-            : Promise.resolve(null),
-          newAssigneeId
-            ? db.member.findUnique({
-                where: { id: newAssigneeId },
-                select: {
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                    },
-                  },
-                },
-              })
-            : Promise.resolve(null),
-          db.member.findMany({
-            where: {
-              organizationId,
-              deactivated: false,
-            },
-            select: {
-              id: true,
-              role: true,
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
                 },
               },
-            },
-          }),
-        ]);
-
-      // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
-      const adminMembers = allMembers.filter(
-        (member) => member.role && (member.role.includes('admin') || member.role.includes('owner')),
-      );
-
-      this.logger.debug(
-        `[notifyAssigneeChange] Found ${allMembers.length} total members, ${adminMembers.length} admins/owners for organization ${organizationId}`,
-      );
+            })
+          : Promise.resolve(null),
+        newAssigneeId
+          ? db.member.findUnique({
+              where: { id: newAssigneeId },
+              select: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            })
+          : Promise.resolve(null),
+      ]);
 
       const organizationName = organization?.name ?? 'your organization';
       const changedByName =
-        changedByUser?.name?.trim() || changedByUser?.email?.trim() || 'Someone';
+        changedByUser?.name?.trim() ||
+        changedByUser?.email?.trim() ||
+        'Someone';
       const oldAssigneeName = oldAssigneeMember?.user
         ? oldAssigneeMember.user.name?.trim() ||
           oldAssigneeMember.user.email?.trim() ||
@@ -698,29 +684,12 @@ export class TaskNotifierService {
           'Unassigned'
         : 'Unassigned';
 
-      // Build recipient list: old assignee + new assignee + admins, excluding actor
-      const recipientMap = new Map<string, { id: string; name: string; email: string }>();
-
-      // Add old assignee if exists
-      if (oldAssigneeMember?.user?.id && oldAssigneeMember.user.email) {
-        const userId = oldAssigneeMember.user.id;
-        if (userId !== changedByUserId) {
-          recipientMap.set(userId, {
-            id: userId,
-            name:
-              oldAssigneeMember.user.name?.trim() ||
-              oldAssigneeMember.user.email?.trim() ||
-              'User',
-            email: oldAssigneeMember.user.email,
-          });
-        }
-      }
-
-      // Add new assignee if exists
+      // Notify only the new assignee (the person who was assigned to the task), excluding the actor
+      const recipients: { id: string; name: string; email: string }[] = [];
       if (newAssigneeMember?.user?.id && newAssigneeMember.user.email) {
         const userId = newAssigneeMember.user.id;
         if (userId !== changedByUserId) {
-          recipientMap.set(userId, {
+          recipients.push({
             id: userId,
             name:
               newAssigneeMember.user.name?.trim() ||
@@ -730,22 +699,6 @@ export class TaskNotifierService {
           });
         }
       }
-
-      // Add admin members
-      for (const member of adminMembers) {
-        if (member.user?.id && member.user.email) {
-          const userId = member.user.id;
-          if (userId !== changedByUserId) {
-            recipientMap.set(userId, {
-              id: userId,
-              name: member.user.name?.trim() || member.user.email?.trim() || 'User',
-              email: member.user.email,
-            });
-          }
-        }
-      }
-
-      const recipients = Array.from(recipientMap.values());
 
       const appUrl =
         process.env.NEXT_PUBLIC_APP_URL ??
@@ -791,7 +744,9 @@ export class TaskNotifierService {
               system: true,
             });
 
-            this.logger.log(`Assignee change email sent to ${recipient.email} (ID: ${id})`);
+            this.logger.log(
+              `Assignee change email sent to ${recipient.email} (ID: ${id})`,
+            );
           } catch (error) {
             this.logger.error(
               `Failed to send assignee change email to ${recipient.email}:`,
@@ -803,7 +758,7 @@ export class TaskNotifierService {
           try {
             const title = `Task reassigned`;
             const message = `${changedByName} reassigned "${taskTitle}" from ${oldAssigneeName} to ${newAssigneeName} in ${organizationName}`;
-            
+
             await this.novuService.trigger({
               workflowId: TASK_WORKFLOW_ID,
               subscriberId: `${recipient.id}-${organizationId}`,
@@ -815,7 +770,9 @@ export class TaskNotifierService {
               },
             });
 
-            this.logger.log(`[NOVU] Assignee change in-app notification sent to ${recipient.id}`);
+            this.logger.log(
+              `[NOVU] Assignee change in-app notification sent to ${recipient.id}`,
+            );
           } catch (error) {
             this.logger.error(
               `[NOVU] Failed to send assignee change in-app notification to ${recipient.id}:`,
@@ -825,7 +782,318 @@ export class TaskNotifierService {
         }),
       );
     } catch (error) {
-      this.logger.error('Failed to send assignee change notifications', error as Error);
+      this.logger.error(
+        'Failed to send assignee change notifications',
+        error as Error,
+      );
+    }
+  }
+
+  async notifyEvidenceReviewRequested(params: {
+    organizationId: string;
+    taskId: string;
+    taskTitle: string;
+    submittedByUserId: string;
+    approverMemberId: string;
+  }): Promise<void> {
+    const {
+      organizationId,
+      taskId,
+      taskTitle,
+      submittedByUserId,
+      approverMemberId,
+    } = params;
+
+    try {
+      const [organization, submittedByUser, approverMember] = await Promise.all(
+        [
+          db.organization.findUnique({
+            where: { id: organizationId },
+            select: { name: true },
+          }),
+          db.user.findUnique({
+            where: { id: submittedByUserId },
+            select: { name: true, email: true },
+          }),
+          db.member.findUnique({
+            where: { id: approverMemberId },
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          }),
+        ],
+      );
+
+      const organizationName = organization?.name ?? 'your organization';
+      const submittedByName =
+        submittedByUser?.name?.trim() ||
+        submittedByUser?.email?.trim() ||
+        'Someone';
+
+      if (!approverMember?.user?.id || !approverMember.user.email) {
+        this.logger.warn(
+          'Approver not found, skipping review request notification',
+        );
+        return;
+      }
+
+      if (approverMember.user.id === submittedByUserId) {
+        this.logger.log('Approver is the submitter, skipping notification');
+        return;
+      }
+
+      const recipient = {
+        id: approverMember.user.id,
+        name:
+          approverMember.user.name?.trim() ||
+          approverMember.user.email?.trim() ||
+          'User',
+        email: approverMember.user.email,
+      };
+
+      const isUnsubscribed = await isUserUnsubscribed(
+        db,
+        recipient.email,
+        'taskAssignments',
+      );
+
+      if (isUnsubscribed) {
+        this.logger.log(
+          `Skipping notification: user ${recipient.email} is unsubscribed from task assignments`,
+        );
+        return;
+      }
+
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ??
+        process.env.BETTER_AUTH_URL ??
+        'https://app.trycomp.ai';
+      const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
+
+      // Send email notification
+      try {
+        const { id } = await sendEmail({
+          to: recipient.email,
+          subject: `Evidence review requested: "${taskTitle}"`,
+          react: EvidenceReviewRequestedEmail({
+            toName: recipient.name,
+            toEmail: recipient.email,
+            taskTitle,
+            submittedByName,
+            organizationName,
+            taskUrl,
+          }),
+          system: true,
+        });
+
+        this.logger.log(
+          `Evidence review request email sent to ${recipient.email} (ID: ${id})`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to send evidence review request email to ${recipient.email}:`,
+          error instanceof Error ? error.message : 'Unknown error',
+        );
+      }
+
+      // Send in-app notification
+      try {
+        const title = 'Evidence review requested';
+        const message = `${submittedByName} submitted evidence for "${taskTitle}" and requested your approval in ${organizationName}`;
+
+        await this.novuService.trigger({
+          workflowId: TASK_WORKFLOW_ID,
+          subscriberId: `${recipient.id}-${organizationId}`,
+          email: recipient.email,
+          payload: {
+            title,
+            message,
+            url: taskUrl,
+          },
+        });
+
+        this.logger.log(
+          `[NOVU] Evidence review request in-app notification sent to ${recipient.id}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `[NOVU] Failed to send evidence review request in-app notification to ${recipient.id}:`,
+          error instanceof Error ? error.message : 'Unknown error',
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        'Failed to send evidence review request notifications',
+        error as Error,
+      );
+    }
+  }
+
+  async notifyBulkEvidenceReviewRequested(params: {
+    organizationId: string;
+    taskIds: string[];
+    taskCount: number;
+    submittedByUserId: string;
+    approverMemberId: string;
+  }): Promise<void> {
+    const {
+      organizationId,
+      taskIds,
+      taskCount,
+      submittedByUserId,
+      approverMemberId,
+    } = params;
+
+    try {
+      const [organization, submittedByUser, approverMember, tasks] =
+        await Promise.all([
+          db.organization.findUnique({
+            where: { id: organizationId },
+            select: { name: true },
+          }),
+          db.user.findUnique({
+            where: { id: submittedByUserId },
+            select: { name: true, email: true },
+          }),
+          db.member.findUnique({
+            where: { id: approverMemberId },
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          }),
+          db.task.findMany({
+            where: {
+              id: { in: taskIds },
+              organizationId,
+            },
+            select: {
+              id: true,
+              title: true,
+            },
+          }),
+        ]);
+
+      const organizationName = organization?.name ?? 'your organization';
+      const submittedByName =
+        submittedByUser?.name?.trim() ||
+        submittedByUser?.email?.trim() ||
+        'Someone';
+
+      if (!approverMember?.user?.id || !approverMember.user.email) {
+        this.logger.warn(
+          'Approver not found, skipping bulk review notification',
+        );
+        return;
+      }
+
+      if (approverMember.user.id === submittedByUserId) {
+        this.logger.log('Approver is the submitter, skipping notification');
+        return;
+      }
+
+      const recipient = {
+        id: approverMember.user.id,
+        name:
+          approverMember.user.name?.trim() ||
+          approverMember.user.email?.trim() ||
+          'User',
+        email: approverMember.user.email,
+      };
+
+      const isUnsubscribed = await isUserUnsubscribed(
+        db,
+        recipient.email,
+        'taskAssignments',
+      );
+
+      if (isUnsubscribed) {
+        this.logger.log(
+          `Skipping notification: user ${recipient.email} is unsubscribed from task assignments`,
+        );
+        return;
+      }
+
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ??
+        process.env.BETTER_AUTH_URL ??
+        'https://app.trycomp.ai';
+      const tasksUrl = `${appUrl}/${organizationId}/tasks`;
+      const taskText = taskCount === 1 ? 'task' : 'tasks';
+
+      const taskItems = tasks.map((task) => ({
+        title: task.title ?? 'Untitled task',
+        url: `${appUrl}/${organizationId}/tasks/${task.id}`,
+      }));
+
+      // Send email notification
+      try {
+        const { id } = await sendEmail({
+          to: recipient.email,
+          subject: `${taskCount} ${taskText} submitted for your review`,
+          react: EvidenceBulkReviewRequestedEmail({
+            toName: recipient.name,
+            toEmail: recipient.email,
+            taskCount,
+            submittedByName,
+            organizationName,
+            tasksUrl,
+            tasks: taskItems,
+          }),
+          system: true,
+        });
+
+        this.logger.log(
+          `Bulk evidence review request email sent to ${recipient.email} (ID: ${id})`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to send bulk evidence review request email to ${recipient.email}:`,
+          error instanceof Error ? error.message : 'Unknown error',
+        );
+      }
+
+      // Send in-app notification
+      try {
+        const title = `${taskCount} ${taskText} submitted for review`;
+        const message = `${submittedByName} submitted ${taskCount} ${taskText} for your review in ${organizationName}`;
+
+        await this.novuService.trigger({
+          workflowId: BULK_TASK_WORKFLOW_ID,
+          subscriberId: `${recipient.id}-${organizationId}`,
+          email: recipient.email,
+          payload: {
+            title,
+            message,
+            url: tasksUrl,
+          },
+        });
+
+        this.logger.log(
+          `[NOVU] Bulk evidence review request in-app notification sent to ${recipient.id}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `[NOVU] Failed to send bulk evidence review request in-app notification to ${recipient.id}:`,
+          error instanceof Error ? error.message : 'Unknown error',
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        'Failed to send bulk evidence review request notifications',
+        error as Error,
+      );
     }
   }
 }

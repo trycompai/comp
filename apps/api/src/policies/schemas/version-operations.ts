@@ -6,6 +6,11 @@ export const VERSION_OPERATIONS: Record<string, ApiOperationOptions> = {
     description:
       'Returns all versions for a policy in descending order. Supports both API key authentication and session authentication.',
   },
+  getPolicyVersionById: {
+    summary: 'Get policy version by ID',
+    description:
+      'Returns a single policy version by its ID, including content and metadata.',
+  },
   createPolicyVersion: {
     summary: 'Create policy version',
     description:

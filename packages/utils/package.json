@@ -6,6 +6,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./devices": "./src/devices.ts",
     "./envs": "./src/envs.ts",
     "./format": "./src/format.ts"
   },

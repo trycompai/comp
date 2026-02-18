@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
 import type { EmployeeTrainingVideoCompletion } from '@db';
+import { Button } from '@trycompai/design-system';
 import { ArrowRight, Check, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -27,7 +27,6 @@ interface YoutubeEmbedProps {
   onNext?: () => void;
   allVideosCompleted: boolean;
   isMarkingComplete: boolean;
-  onWatchAgain: () => void;
 }
 
 export function YoutubeEmbed({
@@ -37,7 +36,6 @@ export function YoutubeEmbed({
   onNext,
   allVideosCompleted,
   isMarkingComplete,
-  onWatchAgain,
 }: YoutubeEmbedProps) {
   const [isRewatching, setIsRewatching] = useState(false);
 
@@ -53,7 +51,6 @@ export function YoutubeEmbed({
             variant={isCompleted ? 'secondary' : 'default'}
             onClick={onComplete}
             disabled={isCompleted}
-            className="gap-2"
           >
             {isMarkingComplete ? (
               <>
@@ -76,13 +73,13 @@ export function YoutubeEmbed({
               <Check className="text-primary mx-auto h-12 w-12" />
               <h3 className="text-xl font-semibold">Video Completed</h3>
               <div className="flex justify-center gap-2">
-                <Button variant="outline" onClick={() => setIsRewatching(true)} className="gap-2">
+                <Button variant="outline" onClick={() => setIsRewatching(true)}>
                   Watch Again
                 </Button>
                 {onNext && (
-                  <Button onClick={onNext} className="gap-2">
+                  <Button onClick={onNext}>
                     Next Video
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 )}
               </div>

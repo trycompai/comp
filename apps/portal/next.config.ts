@@ -4,7 +4,12 @@ import './src/env.mjs';
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const config = {
-  transpilePackages: ['@trycompai/db'],
+  transpilePackages: [
+    '@trycompai/db',
+    '@trycompai/design-system',
+    '@carbon/icons-react',
+    '@comp/company',
+  ],
   images: {
     remotePatterns: [
       {

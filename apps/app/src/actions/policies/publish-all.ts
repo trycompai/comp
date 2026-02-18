@@ -1,7 +1,7 @@
 'use server';
 
 import { sendPublishAllPoliciesEmail } from '@/trigger/tasks/email/publish-all-policies-email';
-import { db, PolicyStatus, Role } from '@db';
+import { db, PolicyStatus, Role, type Prisma } from '@db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -62,8 +62,12 @@ export const publishAllPoliciesAction = authActionClient
     }
 
     try {
+      // Get all policies that are not published (draft or needs_review)
       const policies = await db.policy.findMany({
-        where: { organizationId: parsedInput.organizationId, status: PolicyStatus.draft },
+        where: {
+          organizationId: parsedInput.organizationId,
+          status: { in: [PolicyStatus.draft, PolicyStatus.needs_review] },
+        },
       });
 
       if (!policies || policies.length === 0) {
@@ -75,14 +79,61 @@ export const publishAllPoliciesAction = authActionClient
 
       for (const policy of policies) {
         try {
-          const updatedPolicy = await db.policy.update({
-            where: { id: policy.id },
-            data: {
-              status: PolicyStatus.published,
-              assigneeId: member.id,
-              reviewDate: new Date(new Date().setDate(new Date().getDate() + 90)),
-            },
-          });
+          // Check if policy has a current version, if not create version 1
+          if (!policy.currentVersionId) {
+            // Use transaction to prevent orphaned versions on partial failure
+            await db.$transaction(async (tx) => {
+              // Create version 1 from current policy content
+              const newVersion = await tx.policyVersion.create({
+                data: {
+                  policyId: policy.id,
+                  version: 1,
+                  content: (policy.content as Prisma.InputJsonValue[]) || [],
+                  pdfUrl: policy.pdfUrl,
+                  publishedById: member.id,
+                  changelog: 'Initial published version',
+                },
+              });
+
+              // Update policy with the new version and publish
+              await tx.policy.update({
+                where: { id: policy.id },
+                data: {
+                  status: PolicyStatus.published,
+                  currentVersionId: newVersion.id,
+                  assigneeId: member.id,
+                  reviewDate: new Date(new Date().setDate(new Date().getDate() + 90)),
+                  lastPublishedAt: new Date(),
+                  draftContent: (policy.content as Prisma.InputJsonValue[]) || [],
+                  // Clear approval fields (in case policy was in needs_review)
+                  approverId: null,
+                  pendingVersionId: null,
+                },
+              });
+            });
+          } else {
+            // Policy already has a version, just update status
+            // Get the current version content to sync draftContent
+            const currentVersion = await db.policyVersion.findUnique({
+              where: { id: policy.currentVersionId },
+              select: { content: true },
+            });
+
+            await db.policy.update({
+              where: { id: policy.id },
+              data: {
+                status: PolicyStatus.published,
+                assigneeId: member.id,
+                reviewDate: new Date(new Date().setDate(new Date().getDate() + 90)),
+                lastPublishedAt: new Date(),
+                // Sync draftContent with the published version content
+                draftContent: (currentVersion?.content as Prisma.InputJsonValue[]) || (policy.content as Prisma.InputJsonValue[]) || [],
+                // Clear approval fields (in case policy was in needs_review)
+                approverId: null,
+                pendingVersionId: null,
+              },
+            });
+          }
         } catch (policyError) {
           console.error(`[publish-all-policies] Failed to update policy ${policy.id}:`, {
             error: policyError,

@@ -53,9 +53,10 @@ export const submitVersionForApprovalAction = authActionClient
       return { success: false, error: 'Version not found' };
     }
 
-    // Cannot submit the already-active version for approval
-    if (versionId === policy.currentVersionId) {
-      return { success: false, error: 'Cannot submit the currently published version for approval' };
+    // Cannot submit the already-published version for approval
+    // Only block if the policy is already published AND this is the current version
+    if (versionId === policy.currentVersionId && policy.status === PolicyStatus.published) {
+      return { success: false, error: 'This version is already published' };
     }
 
     // Verify approver exists and belongs to organization

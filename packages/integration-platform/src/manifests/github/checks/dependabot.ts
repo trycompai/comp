@@ -67,8 +67,22 @@ export const dependabotCheck: IntegrationCheck = {
       const orgs = await ctx.fetch<GitHubOrg[]>('/user/orgs');
       repos = [];
       for (const org of orgs) {
-        const orgRepos = await ctx.fetchAllPages<GitHubRepo>(`/orgs/${org.login}/repos`);
-        repos.push(...orgRepos);
+        try {
+          const orgRepos = await ctx.fetchAllPages<GitHubRepo>(`/orgs/${org.login}/repos`);
+          repos.push(...orgRepos);
+        } catch (error) {
+          const errorStr = String(error);
+          // Skip orgs with SAML SSO that haven't been authorized, or permission errors
+          if (
+            errorStr.includes('403') ||
+            errorStr.includes('SAML') ||
+            errorStr.includes('Forbidden')
+          ) {
+            ctx.log(`Skipping organization ${org.login} (SAML SSO or permission denied)`);
+            continue;
+          }
+          throw error;
+        }
       }
     }
 

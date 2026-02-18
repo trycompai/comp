@@ -51,9 +51,9 @@ export const denyRequestedPolicyChangesAction = authActionClient
       }
 
       // Update policy status
-      // If there's a current published version, keep status as published
-      // Otherwise, set to draft
-      const newStatus = policy.currentVersionId ? PolicyStatus.published : PolicyStatus.draft;
+      // If the policy was previously published (has lastPublishedAt), keep status as published
+      // Otherwise, set to draft (the policy was never published)
+      const newStatus = policy.lastPublishedAt ? PolicyStatus.published : PolicyStatus.draft;
       
       await db.policy.update({
         where: {

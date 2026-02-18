@@ -92,6 +92,13 @@ export class PeopleResponseDto {
   department: Departments;
 
   @ApiProperty({
+    description: 'Job title for the member',
+    example: 'Software Engineer',
+    nullable: true,
+  })
+  jobTitle: string | null;
+
+  @ApiProperty({
     description: 'Whether member is active',
     example: true,
   })

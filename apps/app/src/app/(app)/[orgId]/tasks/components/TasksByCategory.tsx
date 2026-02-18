@@ -53,6 +53,7 @@ interface CategoryGroup {
 const statusPalette = {
   todo: { indicator: 'bg-border', dot: 'bg-border', label: 'text-muted-foreground' },
   in_progress: { indicator: 'bg-blue-400/70', dot: 'bg-blue-400', label: 'text-blue-400' },
+  in_review: { indicator: 'bg-orange-400/70', dot: 'bg-orange-400', label: 'text-orange-400' },
   done: { indicator: 'bg-primary/70', dot: 'bg-primary', label: 'text-primary' },
   failed: { indicator: 'bg-red-500/70', dot: 'bg-red-500', label: 'text-red-500' },
   not_relevant: { indicator: 'bg-border', dot: 'bg-border', label: 'text-muted-foreground' },

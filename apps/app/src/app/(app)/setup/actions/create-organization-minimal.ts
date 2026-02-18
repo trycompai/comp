@@ -2,6 +2,7 @@
 
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
+import { env } from '@/env.mjs';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
@@ -42,14 +43,26 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       const userEmail = session.user.email;
       const isTryCompEmail = userEmail?.endsWith('@trycomp.ai') ?? false;
 
+      // Check if self-hosted
+      const isSelfHosted = env.NEXT_PUBLIC_SELF_HOSTED === 'true';
+
+      // Resolve framework IDs to display names (e.g. "SOC 2", "ISO 27001")
+      const frameworks = await db.frameworkEditorFramework.findMany({
+        where: { id: { in: parsedInput.frameworkIds } },
+        select: { name: true },
+      });
+      const frameworkNames = frameworks.map((f) => f.name).join(', ');
+
       // Create a new organization
       const newOrg = await db.organization.create({
         data: {
           name: parsedInput.organizationName,
           website: parsedInput.website,
           onboardingCompleted: false, // Explicitly set to false
-          // Auto-enable for trycomp.ai emails or local development
-          ...((process.env.NEXT_PUBLIC_APP_ENV !== 'production' || isTryCompEmail) && {
+          // Auto-enable for trycomp.ai emails, local development, or self-hosted instances
+          ...((process.env.NEXT_PUBLIC_APP_ENV !== 'production' ||
+            isTryCompEmail ||
+            isSelfHosted) && {
             hasAccess: true,
           }),
           members: {
@@ -62,7 +75,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
           context: {
             create: {
               question: 'Which compliance frameworks do you need?',
-              answer: parsedInput.frameworkIds.join(', '),
+              answer: frameworkNames || parsedInput.frameworkIds.join(', '),
               tags: ['onboarding'],
             },
           },

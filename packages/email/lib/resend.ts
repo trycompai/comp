@@ -6,7 +6,8 @@ export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND
 function maskEmail(value: string): string {
   const [name = '', domain = ''] = value.toLowerCase().split('@');
   if (!domain) return 'invalid-email';
-  const safeName = name.length <= 2 ? name[0] ?? '' : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
+  const safeName =
+    name.length <= 2 ? (name[0] ?? '') : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
   return `${safeName}@${domain}`;
 }
 

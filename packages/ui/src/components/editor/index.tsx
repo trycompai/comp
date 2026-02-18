@@ -102,7 +102,7 @@ export const Editor = ({
   if (!initialContent && !editor) return null;
 
   return (
-    <div className="bg-background relative w-full p-4">
+    <div className={`relative w-full pb-4 ${readOnly ? 'bg-muted/50' : 'bg-background'}`}>
       <div className="relative flex flex-col gap-4">
         {showToolbar && !readOnly && editor && (
           <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
@@ -134,7 +134,7 @@ export const Editor = ({
         )}
         <EditorContent
           editor={editor}
-          className="bg-background relative w-full overflow-x-hidden overflow-y-auto p-2"
+          className="relative w-full overflow-x-hidden overflow-y-auto px-4 py-2 bg-transparent"
           style={{ minHeight, maxHeight }}
         />
       </div>

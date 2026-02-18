@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class CreateVersionDto {
@@ -23,7 +24,8 @@ export class CreateVersionDto {
 
 export class UpdateVersionContentDto {
   @ApiProperty({
-    description: 'Content of the policy version as TipTap JSON (array of nodes)',
+    description:
+      'Content of the policy version as TipTap JSON (array of nodes)',
     example: [
       {
         type: 'heading',
@@ -35,6 +37,7 @@ export class UpdateVersionContentDto {
     items: { type: 'object', additionalProperties: true },
   })
   @IsArray()
+  @Transform(({ value }) => value)
   content: unknown[];
 }
 

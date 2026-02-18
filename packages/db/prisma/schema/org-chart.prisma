@@ -1,0 +1,14 @@
+model OrganizationChart {
+  id               String       @id @default(dbgenerated("generate_prefixed_cuid('och'::text)"))
+  organizationId   String       @unique
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name             String       @default("Organization Chart")
+  type             String       @default("interactive") // "interactive" or "uploaded"
+  nodes            Json         @default("[]")
+  edges            Json         @default("[]")
+  uploadedImageUrl String? // S3 key when type="uploaded"
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([organizationId])
+}

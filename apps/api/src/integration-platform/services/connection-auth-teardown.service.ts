@@ -31,7 +31,9 @@ export class ConnectionAuthTeardownService {
     const credentials =
       await this.credentialVaultService.getDecryptedCredentials(connectionId);
     const accessToken =
-      typeof credentials?.access_token === 'string' ? credentials.access_token : undefined;
+      typeof credentials?.access_token === 'string'
+        ? credentials.access_token
+        : undefined;
 
     if (providerSlug && accessToken) {
       try {

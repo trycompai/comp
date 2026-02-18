@@ -228,37 +228,40 @@ export class CloudSecurityService {
     const passedCount = findings.filter((f) => f.passed).length;
     const failedCount = findings.filter((f) => !f.passed).length;
 
-    // Create a scan run record
-    const scanRun = await db.integrationCheckRun.create({
-      data: {
-        connectionId,
-        checkId: `${provider}-security-scan`,
-        checkName: `${provider.toUpperCase()} Security Scan`,
-        status: 'success',
-        startedAt: new Date(),
-        completedAt: new Date(),
-        totalChecked: findings.length,
-        passedCount,
-        failedCount,
-      },
-    });
-
-    // Store each finding as a check result
-    if (findings.length > 0) {
-      await db.integrationCheckResult.createMany({
-        data: findings.map((finding) => ({
-          checkRunId: scanRun.id,
-          passed: finding.passed ?? false,
-          resourceType: finding.resourceType,
-          resourceId: finding.resourceId,
-          title: finding.title,
-          description: finding.description,
-          severity: finding.passed ? 'info' : finding.severity, // Passed checks are info level
-          remediation: finding.remediation,
-          evidence: (finding.evidence || {}) as object,
-          collectedAt: new Date(finding.createdAt),
-        })),
+    // Use a transaction to ensure atomicity - both run and results are created together
+    await db.$transaction(async (tx) => {
+      // Create a scan run record
+      const scanRun = await tx.integrationCheckRun.create({
+        data: {
+          connectionId,
+          checkId: `${provider}-security-scan`,
+          checkName: `${provider.toUpperCase()} Security Scan`,
+          status: 'success',
+          startedAt: new Date(),
+          completedAt: new Date(),
+          totalChecked: findings.length,
+          passedCount,
+          failedCount,
+        },
       });
-    }
+
+      // Store each finding as a check result
+      if (findings.length > 0) {
+        await tx.integrationCheckResult.createMany({
+          data: findings.map((finding) => ({
+            checkRunId: scanRun.id,
+            passed: finding.passed ?? false,
+            resourceType: finding.resourceType,
+            resourceId: finding.resourceId,
+            title: finding.title,
+            description: finding.description ?? '',
+            severity: finding.passed ? 'info' : finding.severity,
+            remediation: finding.remediation ?? null,
+            evidence: (finding.evidence || {}) as object,
+            collectedAt: new Date(finding.createdAt),
+          })),
+        });
+      }
+    });
   }
 }

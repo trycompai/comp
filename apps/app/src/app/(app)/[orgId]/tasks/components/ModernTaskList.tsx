@@ -1,7 +1,7 @@
 'use client';
 
 import type { Member, Task, User } from '@db';
-import { Check, Circle, Loader2, XCircle } from 'lucide-react';
+import { Check, Circle, Eye, Loader2, XCircle } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import { ModernSingleStatusTaskList } from './ModernSingleStatusTaskList';
@@ -25,17 +25,19 @@ interface ModernTaskListProps {
   })[];
   members: (Member & { user: User })[];
   statusFilter?: string | null;
+  evidenceApprovalEnabled?: boolean;
 }
 
 const statusConfig = {
   todo: { icon: Circle, label: 'Todo', color: 'text-slate-400' },
   in_progress: { icon: Loader2, label: 'In Progress', color: 'text-blue-500' },
+  in_review: { icon: Eye, label: 'In Review', color: 'text-orange-500' },
   done: { icon: Check, label: 'Done', color: 'text-emerald-500' },
   failed: { icon: XCircle, label: 'Failed', color: 'text-red-500' },
   not_relevant: { icon: Circle, label: 'Not Relevant', color: 'text-slate-500' },
 } as const;
 
-export function ModernTaskList({ tasks, members, statusFilter }: ModernTaskListProps) {
+export function ModernTaskList({ tasks, members, statusFilter, evidenceApprovalEnabled = false }: ModernTaskListProps) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -44,6 +46,7 @@ export function ModernTaskList({ tasks, members, statusFilter }: ModernTaskListP
     const grouped: Record<string, typeof tasks> = {
       todo: [],
       in_progress: [],
+      in_review: [],
       done: [],
       failed: [],
       not_relevant: [],
@@ -68,6 +71,7 @@ export function ModernTaskList({ tasks, members, statusFilter }: ModernTaskListP
   };
 
   const statusOrder: Array<keyof typeof statusConfig> = [
+    'in_review',
     'todo',
     'in_progress',
     'done',
@@ -94,7 +98,7 @@ export function ModernTaskList({ tasks, members, statusFilter }: ModernTaskListP
         const config = statusConfig[status];
 
         return (
-          <ModernSingleStatusTaskList key={status} config={config} tasks={statusTasks} members={members} handleTaskClick={handleTaskClick} />
+          <ModernSingleStatusTaskList key={status} config={config} tasks={statusTasks} members={members} handleTaskClick={handleTaskClick} evidenceApprovalEnabled={evidenceApprovalEnabled} />
         );
       })}
     </div>

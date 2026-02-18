@@ -171,7 +171,9 @@ export class CredentialVaultService {
 
       if (Array.isArray(value)) {
         const encryptedItems = await Promise.all(
-          value.map((item) => (typeof item === 'string' ? this.encrypt(item) : item)),
+          value.map((item) =>
+            typeof item === 'string' ? this.encrypt(item) : item,
+          ),
         );
         encryptedPayload[key] = encryptedItems;
         continue;
@@ -289,7 +291,9 @@ export class CredentialVaultService {
    */
   async getRefreshToken(connectionId: string): Promise<string | null> {
     const credentials = await this.getDecryptedCredentials(connectionId);
-    return typeof credentials?.refresh_token === 'string' ? credentials.refresh_token : null;
+    return typeof credentials?.refresh_token === 'string'
+      ? credentials.refresh_token
+      : null;
   }
 
   /**
@@ -414,6 +418,8 @@ export class CredentialVaultService {
 
     // Get current credentials
     const credentials = await this.getDecryptedCredentials(connectionId);
-    return typeof credentials?.access_token === 'string' ? credentials.access_token : null;
+    return typeof credentials?.access_token === 'string'
+      ? credentials.access_token
+      : null;
   }
 }

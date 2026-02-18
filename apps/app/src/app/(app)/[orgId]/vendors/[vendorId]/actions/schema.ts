@@ -45,13 +45,14 @@ export const createVendorSchema = z.object({
 export const updateVendorSchema = z.object({
   id: z.string(),
   name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
   category: z.nativeEnum(VendorCategory),
   status: z.nativeEnum(VendorStatus),
   assigneeId: z.string().nullable(),
   website: z
     .union([z.string().url('Must be a valid URL (include https://)'), z.literal('')])
     .optional(),
+  isSubProcessor: z.boolean().optional(),
 });
 
 export const createVendorCommentSchema = z.object({

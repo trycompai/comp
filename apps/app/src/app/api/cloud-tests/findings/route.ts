@@ -136,8 +136,16 @@ export async function GET(request: NextRequest) {
 
     // ====================================================================
     // Fetch findings from OLD platform (IntegrationResult)
+    // Only show results from the most recent scan for each integration
     // ====================================================================
     const legacyIntegrationIds = activeLegacyIntegrations.map((i) => i.id);
+
+    // Create a map of integration ID to lastRunAt for filtering
+    const integrationLastRunMap = new Map(
+      activeLegacyIntegrations
+        .filter((i) => i.lastRunAt)
+        .map((i) => [i.id, i.lastRunAt!]),
+    );
 
     const legacyResults =
       legacyIntegrationIds.length > 0
@@ -159,17 +167,43 @@ export async function GET(request: NextRequest) {
                 select: {
                   integrationId: true,
                   id: true,
+                  lastRunAt: true,
                 },
               },
             },
             orderBy: {
               completedAt: 'desc',
             },
-            take: 500,
           })
         : [];
 
-    const legacyFindings = legacyResults.map((result) => ({
+    // Filter to only include results from the most recent scan
+    // Results are considered from the "latest scan" if they were completed
+    // within 10 minutes BEFORE the integration's lastRunAt (one-sided window)
+    // This matches the maxDuration of the sendIntegrationResults task (10 minutes)
+    // This prevents including results from previous scans
+    const SCAN_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
+    const filteredLegacyResults = legacyResults.filter((result) => {
+      const lastRunAt = integrationLastRunMap.get(result.integration.id);
+      
+      // If no lastRunAt (old integration or never scanned), show all results with completedAt
+      // This preserves backward compatibility
+      if (!lastRunAt) {
+        return result.completedAt !== null;
+      }
+      
+      if (!result.completedAt) return false;
+
+      const lastRunTime = lastRunAt.getTime();
+      const completedTime = result.completedAt.getTime();
+
+      // Include if completed within the scan window BEFORE lastRunAt
+      // (results should be from the scan that just completed, not future or old scans)
+      return completedTime <= lastRunTime && completedTime >= lastRunTime - SCAN_WINDOW_MS;
+    });
+
+    const legacyFindings = filteredLegacyResults.map((result) => ({
       id: result.id,
       title: result.title,
       description: result.description,

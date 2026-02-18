@@ -1,32 +1,43 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Form } from '@comp/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import type { Departments, Member, User } from '@db';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Section, Stack } from '@trycompai/design-system';
-import { Save } from 'lucide-react';
+import {
+  Button,
+  Calendar,
+  Grid,
+  HStack,
+  Input,
+  Label,
+  Section,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Stack,
+} from '@trycompai/design-system';
+import { ChevronDown } from '@trycompai/design-system/icons';
+import { format } from 'date-fns';
 import { useAction } from 'next-safe-action/hooks';
-import { useForm } from 'react-hook-form';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { z } from 'zod';
 import { updateEmployee } from '../actions/update-employee';
-import { Department } from './Fields/Department';
-import { Email } from './Fields/Email';
-import { JoinDate } from './Fields/JoinDate';
-import { Name } from './Fields/Name';
-import { Status } from './Fields/Status';
 
-// Define form schema with Zod
-const employeeFormSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address'),
-  department: z.enum(['admin', 'gov', 'hr', 'it', 'itsm', 'qms', 'none'] as const),
-  status: z.enum(['active', 'inactive'] as const),
-  createdAt: z.date(),
-});
+const DEPARTMENTS: { value: string; label: string }[] = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'gov', label: 'Governance' },
+  { value: 'hr', label: 'HR' },
+  { value: 'it', label: 'IT' },
+  { value: 'itsm', label: 'IT Service Management' },
+  { value: 'qms', label: 'Quality Management' },
+  { value: 'none', label: 'None' },
+];
 
-export type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
+const STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+];
 
 export const EmployeeDetails = ({
   employee,
@@ -37,17 +48,12 @@ export const EmployeeDetails = ({
   };
   canEdit: boolean;
 }) => {
-  const form = useForm<EmployeeFormValues>({
-    resolver: zodResolver(employeeFormSchema),
-    defaultValues: {
-      name: employee.user.name ?? '',
-      email: employee.user.email ?? '',
-      department: employee.department as Departments,
-      status: employee.isActive ? 'active' : 'inactive',
-      createdAt: new Date(employee.createdAt),
-    },
-    mode: 'onChange',
-  });
+  const [name, setName] = useState(employee.user.name ?? '');
+  const [jobTitle, setJobTitle] = useState(employee.jobTitle ?? '');
+  const [department, setDepartment] = useState<string>(employee.department ?? 'none');
+  const [status, setStatus] = useState<string>(employee.isActive ? 'active' : 'inactive');
+  const [joinDate, setJoinDate] = useState<Date>(new Date(employee.createdAt));
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const { execute, status: actionStatus } = useAction(updateEmployee, {
     onSuccess: (res) => {
@@ -62,75 +68,188 @@ export const EmployeeDetails = ({
     },
   });
 
-  const onSubmit = async (values: EmployeeFormValues) => {
-    // Prepare update data
+  const hasChanges = useMemo(() => {
+    const nameChanged = name !== (employee.user.name ?? '');
+    const jobTitleChanged = jobTitle !== (employee.jobTitle ?? '');
+    const departmentChanged = department !== (employee.department ?? 'none');
+    const statusChanged = status !== (employee.isActive ? 'active' : 'inactive');
+    const dateChanged = joinDate.toISOString() !== new Date(employee.createdAt).toISOString();
+
+    return nameChanged || jobTitleChanged || departmentChanged || statusChanged || dateChanged;
+  }, [name, jobTitle, department, status, joinDate, employee]);
+
+  const isLoading = actionStatus === 'executing';
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!name.trim()) {
+      toast.error('Name is required');
+      return;
+    }
+
     const updateData: {
       employeeId: string;
       name?: string;
-      email?: string;
       department?: string;
       isActive?: boolean;
       createdAt?: Date;
+      jobTitle?: string;
     } = { employeeId: employee.id };
 
-    // Only include changed fields
-    if (values.name !== employee.user.name) {
-      updateData.name = values.name;
+    if (name !== (employee.user.name ?? '')) {
+      updateData.name = name;
     }
-    if (values.email !== employee.user.email) {
-      updateData.email = values.email;
+    if (jobTitle !== (employee.jobTitle ?? '')) {
+      updateData.jobTitle = jobTitle;
     }
-    if (values.department !== employee.department) {
-      updateData.department = values.department;
+    if (department !== employee.department) {
+      updateData.department = department;
     }
-    if (values.createdAt && values.createdAt.toISOString() !== employee.createdAt.toISOString()) {
-      updateData.createdAt = values.createdAt;
+    if (joinDate.toISOString() !== new Date(employee.createdAt).toISOString()) {
+      updateData.createdAt = joinDate;
     }
 
-    const isActive = values.status === 'active';
+    const isActive = status === 'active';
     if (isActive !== employee.isActive) {
       updateData.isActive = isActive;
     }
 
-    // Execute the update only if there are changes
     if (Object.keys(updateData).length > 1) {
-      await execute(updateData);
+      execute(updateData);
     } else {
-      // No changes were made
       toast.info('No changes to save');
     }
   };
 
   return (
     <Section>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <Stack gap="lg">
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <Name control={form.control} disabled={!canEdit} />
-              <Email control={form.control} disabled={true} />
-              <Department control={form.control} disabled={!canEdit} />
-              <Status control={form.control} disabled={!canEdit} />
-              <JoinDate control={form.control} disabled={!canEdit} />
-            </div>
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                disabled={
-                  !form.formState.isDirty ||
-                  form.formState.isSubmitting ||
-                  actionStatus === 'executing'
-                }
+      <form onSubmit={handleSubmit}>
+        <Stack gap="md">
+          <Grid cols={{ base: '1', md: '2' }} gap="4">
+            {/* Name Field */}
+            <Stack gap="sm">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Employee name"
+                disabled={!canEdit}
+              />
+            </Stack>
+
+            {/* Email Field (read-only) */}
+            <Stack gap="sm">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={employee.user.email ?? ''}
+                disabled
+                readOnly
+              />
+            </Stack>
+
+            {/* Job Title Field */}
+            <Stack gap="sm">
+              <Label htmlFor="jobTitle">Job Title</Label>
+              <Input
+                id="jobTitle"
+                value={jobTitle}
+                onChange={(e) => setJobTitle(e.target.value)}
+                placeholder="e.g. Software Engineer"
+                disabled={!canEdit}
+              />
+            </Stack>
+
+            {/* Department Field */}
+            <Stack gap="sm">
+              <Label htmlFor="department">Department</Label>
+              <Select
+                value={department}
+                disabled={!canEdit}
+                onValueChange={(value) => value && setDepartment(value)}
               >
-                {!(form.formState.isSubmitting || actionStatus === 'executing') && (
-                  <Save className="h-4 w-4" />
-                )}
-                {form.formState.isSubmitting || actionStatus === 'executing' ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
-          </Stack>
-        </form>
-      </Form>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department">
+                    {DEPARTMENTS.find((d) => d.value === department)?.label ?? 'None'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {DEPARTMENTS.map((dept) => (
+                    <SelectItem key={dept.value} value={dept.value}>
+                      {dept.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Stack>
+
+            {/* Status Field */}
+            <Stack gap="sm">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={status}
+                disabled={!canEdit}
+                onValueChange={(value) => value && setStatus(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status">
+                    {STATUS_OPTIONS.find((s) => s.value === status)?.label ?? 'Active'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Stack>
+
+            {/* Join Date Field */}
+            <Stack gap="sm">
+              <Label htmlFor="joinDate">Join Date</Label>
+              <Popover
+                open={!canEdit ? false : datePickerOpen}
+                onOpenChange={!canEdit ? undefined : setDatePickerOpen}
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={!canEdit}
+                    className="border-border bg-background text-foreground hover:bg-muted flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {joinDate ? format(joinDate, 'PPP') : 'Pick a date'}
+                    <ChevronDown size={16} />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={joinDate}
+                    onSelect={(date) => date && setJoinDate(date)}
+                    captionLayout="dropdown"
+                    disabled={(date) => date > new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+            </Stack>
+          </Grid>
+
+          <HStack justify="end">
+            <Button
+              type="submit"
+              disabled={!hasChanges || isLoading || !canEdit}
+              loading={isLoading}
+            >
+              Save
+            </Button>
+          </HStack>
+        </Stack>
+      </form>
     </Section>
   );
 };

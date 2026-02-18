@@ -22,6 +22,7 @@ export const STATUS_TYPES = [
 
   // Task
   'todo',
+  'in_review',
   'done',
   'not_relevant',
   'failed',
@@ -49,6 +50,9 @@ export const STATUS_COLORS: Record<StatusType, string> = {
   pending: 'bg-yellow-500 dark:bg-yellow-400',
   in_progress: 'bg-yellow-500 dark:bg-yellow-400',
 
+  // In Review - Orange
+  in_review: 'bg-orange-500 dark:bg-orange-400',
+
   // Warning/Error - Red
   needs_review: 'bg-red-600 dark:bg-red-400',
   not_started: 'bg-red-600 dark:bg-red-400',
@@ -67,6 +71,8 @@ export const getStatusTranslation = (status: StatusType) => {
       return 'Todo';
     case 'in_progress':
       return 'In Progress';
+    case 'in_review':
+      return 'In Review';
     case 'done':
       return 'Done';
     case 'published':

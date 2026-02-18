@@ -12,6 +12,7 @@ import {
   type UnassignedItem,
 } from '@comp/email';
 import { getFleetInstance } from '@/lib/fleet';
+import { removeMemberFromOrgChart } from '@/lib/org-chart';
 
 const removeMemberSchema = z.object({
   memberId: z.string(),
@@ -235,6 +236,9 @@ export const removeMember = authActionClient
           },
         }),
       ]);
+
+      // Remove the member from the org chart (if present)
+      await removeMemberFromOrgChart(ctx.session.activeOrganizationId, memberId);
 
       // Mark the member as deactivated instead of deleting
       await db.member.update({

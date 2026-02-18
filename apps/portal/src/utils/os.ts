@@ -1,4 +1,4 @@
-export type SupportedOS = 'macos' | 'windows' | 'macos-intel';
+export type SupportedOS = 'macos' | 'windows' | 'macos-intel' | 'linux';
 
 const isSafariUA = (ua: string) =>
   ua.includes('safari') &&
@@ -13,6 +13,10 @@ const hasArmIndicators = (ua: string) =>
 export async function detectOSFromUserAgent(): Promise<SupportedOS | null> {
   try {
     const ua = navigator.userAgent.toLowerCase();
+
+    if (ua.includes('linux') && !ua.includes('android')) {
+      return 'linux';
+    }
 
     if (ua.includes('win')) {
       return 'windows';

@@ -1,3 +1,80 @@
+## [1.83.4](https://github.com/trycompai/comp/compare/v1.83.3...v1.83.4) (2026-02-17)
+
+
+### Bug Fixes
+
+* use primary color for device agent icons and center OTP form ([#2155](https://github.com/trycompai/comp/issues/2155)) ([780bd3d](https://github.com/trycompai/comp/commit/780bd3df6dccf83eaffde1c5c736fb1d26bd8bf9))
+
+## [1.83.3](https://github.com/trycompai/comp/compare/v1.83.2...v1.83.3) (2026-02-17)
+
+
+### Bug Fixes
+
+* **portal:** recognize device agent compliance for task completion ([#2152](https://github.com/trycompai/comp/issues/2152)) ([b1b072e](https://github.com/trycompai/comp/commit/b1b072e95d351a3624ee34bf8bbbaf6bbc926fe6))
+
+## [1.83.2](https://github.com/trycompai/comp/compare/v1.83.1...v1.83.2) (2026-02-17)
+
+
+### Bug Fixes
+
+* **api:** add @comp/company package to Dockerfile ([#2148](https://github.com/trycompai/comp/issues/2148)) ([d91bcaa](https://github.com/trycompai/comp/commit/d91bcaa5a92557a1b47a12ec6b396715744fca7f))
+* **api:** inline mergeDeviceLists to fix production runtime crash ([#2146](https://github.com/trycompai/comp/issues/2146)) ([04ef343](https://github.com/trycompai/comp/commit/04ef343011defa91609ba9ba69b85776063198db))
+
+## [1.83.1](https://github.com/trycompai/comp/compare/v1.83.0...v1.83.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* **ci:** fix Linux artifact names and consolidate all CI fixes ([#2144](https://github.com/trycompai/comp/issues/2144)) ([cbcf420](https://github.com/trycompai/comp/commit/cbcf420217c268fdfb35d9c03631a56d8822a028))
+* **ci:** handle pre-release tags in device agent version detection ([#2137](https://github.com/trycompai/comp/issues/2137)) ([b37f225](https://github.com/trycompai/comp/commit/b37f2252e9bf220600b2eb229364c4b6964b7cf0))
+* **ci:** pin Windows code signing to stable sslcom/esigner-codesign@v1.3.2 ([#2141](https://github.com/trycompai/comp/issues/2141)) ([5f35e35](https://github.com/trycompai/comp/commit/5f35e3500bbc6670464d83fb3c9eb7c5c3f4ec29))
+* **ci:** replace broken sslcom/esigner-codesign action with direct CodeSignTool invocation ([#2143](https://github.com/trycompai/comp/issues/2143)) ([884e0d2](https://github.com/trycompai/comp/commit/884e0d23dfce128b0359b3f5ad66d88aaba0c866))
+
+# [1.83.0](https://github.com/trycompai/comp/compare/v1.82.3...v1.83.0) (2026-02-13)
+
+
+### Features
+
+* **automation:** add enterprise feature check and user guidance ([#2131](https://github.com/trycompai/comp/issues/2131)) ([80489af](https://github.com/trycompai/comp/commit/80489af57b94790a5ae67956658cdc9cb1a1043f))
+
+## [1.82.3](https://github.com/trycompai/comp/compare/v1.82.2...v1.82.3) (2026-02-12)
+
+
+### Bug Fixes
+
+* **app:** check DNS records using Node's built-in DNS instead of using external APIs ([#2126](https://github.com/trycompai/comp/issues/2126)) ([5fab9bd](https://github.com/trycompai/comp/commit/5fab9bd703d1d42925b609631acf9e0f058cdf4f))
+* **app:** enable capitalized text for role in csv when adding users ([#2123](https://github.com/trycompai/comp/issues/2123)) ([5fdb448](https://github.com/trycompai/comp/commit/5fdb4482ddd414b31aebb6278cf5d4a82a5b8bc9))
+* **automation:** clarify automation agent's data retrieval capabilities ([#2129](https://github.com/trycompai/comp/issues/2129)) ([eb2957f](https://github.com/trycompai/comp/commit/eb2957fe9f52ea3c97b0b091e304bc4804bb6c95))
+* policy version API content bug + published version protection ([#2130](https://github.com/trycompai/comp/issues/2130)) ([7f79351](https://github.com/trycompai/comp/commit/7f793512731cecf873b765b535d28bc1c5da4fea))
+
+## [1.82.2](https://github.com/trycompai/comp/compare/v1.82.1...v1.82.2) (2026-02-11)
+
+
+### Bug Fixes
+
+* **api:** add email package build process and extension integration ([#2122](https://github.com/trycompai/comp/issues/2122)) ([fdbfc74](https://github.com/trycompai/comp/commit/fdbfc7408ff03b2aa0a7d09975d40bf9fdc22c93))
+
+## [1.82.1](https://github.com/trycompai/comp/compare/v1.82.0...v1.82.1) (2026-02-05)
+
+
+### Bug Fixes
+
+* **api:** send task-assignee email to only new assignee, not to all admins ([#2107](https://github.com/trycompai/comp/issues/2107)) ([57593a6](https://github.com/trycompai/comp/commit/57593a6253f4768d02aad4eef8ca91bad1e967f3))
+
+# [1.82.0](https://github.com/trycompai/comp/compare/v1.81.0...v1.82.0) (2026-02-03)
+
+
+### Bug Fixes
+
+* make S2 onboarding phone optional ([#2088](https://github.com/trycompai/comp/issues/2088)) ([3a37196](https://github.com/trycompai/comp/commit/3a37196b28c27a9b0c3c4c2073afc440fa9743ff))
+
+
+### Features
+
+* **cloud-security:** implement transaction for scan run and results creation ([#2101](https://github.com/trycompai/comp/issues/2101)) ([0cfbce6](https://github.com/trycompai/comp/commit/0cfbce682050386ee25b64681fabe8a4079b0cbf))
+* **cloud-tests:** enhance legacy integration filtering and add suppo… ([#2100](https://github.com/trycompai/comp/issues/2100)) ([3f33e84](https://github.com/trycompai/comp/commit/3f33e842c5a9fb04cf31e550ef192a28fd32312c))
+* **settings:** moved AddSecretDialog to settings header for secrets page to conform with UI pattern ([#2098](https://github.com/trycompai/comp/issues/2098)) ([ee568f6](https://github.com/trycompai/comp/commit/ee568f6877f70405d2b3224527943f5955c2b401))
+
 # [1.81.0](https://github.com/trycompai/comp/compare/v1.80.0...v1.81.0) (2026-01-30)
 
 

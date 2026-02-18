@@ -1,5 +1,6 @@
 'use client';
 
+import '@/styles/editor.css';
 import type { JSONContent } from '@tiptap/react';
 import { useState } from 'react';
 import AdvancedEditor from './AdvancedEditor';

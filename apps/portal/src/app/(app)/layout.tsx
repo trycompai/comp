@@ -8,20 +8,15 @@ export default async function Layout({ children }: { children: React.ReactNode }
     headers: await headers(),
   });
 
-  console.log('session', session);
-
   if (!session?.user) {
-    console.log('no session');
     redirect('/auth');
   }
 
   return (
     <div className="flex min-h-dvh">
       <div className="flex flex-1 flex-col">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <Header />
-        </div>
-        <main className="w-full flex-1 px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+        <Header />
+        <main className="w-full min-w-0 flex-1 px-3 pt-4 sm:px-4 sm:pt-6 lg:px-6">{children}</main>
       </div>
     </div>
   );

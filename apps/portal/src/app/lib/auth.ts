@@ -4,7 +4,7 @@ import { db } from '@db';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
-import { emailOTP, multiSession, organization } from 'better-auth/plugins';
+import { bearer, emailOTP, multiSession, organization } from 'better-auth/plugins';
 import { ac, admin, auditor, contractor, employee, owner } from './permissions';
 
 export const auth = betterAuth({
@@ -18,7 +18,9 @@ export const auth = betterAuth({
       generateId: false,
     },
   },
-  trustedOrigins: ['http://localhost:3000', 'https://*.trycomp.ai'],
+  trustedOrigins: process.env.AUTH_TRUSTED_ORIGINS
+    ? process.env.AUTH_TRUSTED_ORIGINS.split(',').map((o) => o.trim())
+    : ['http://localhost:3000', 'https://*.trycomp.ai', 'http://localhost:3002'],
   secret: env.AUTH_SECRET!,
   plugins: [
     organization({
@@ -71,6 +73,7 @@ export const auth = betterAuth({
     }),
     nextCookies(),
     multiSession(),
+    bearer(),
   ],
   socialProviders: {
     google: {

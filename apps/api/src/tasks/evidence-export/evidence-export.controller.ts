@@ -238,13 +238,10 @@ export class AuditorEvidenceExportController {
     @Query('includeJson') includeJson: string,
     @Res() res: Response,
   ) {
-    this.logger.log(
-      'Auditor exporting all evidence',
-      {
-        organizationId,
-        includeJson: includeJson === 'true',
-      },
-    );
+    this.logger.log('Auditor exporting all evidence', {
+      organizationId,
+      includeJson: includeJson === 'true',
+    });
 
     const result =
       await this.evidenceExportService.exportOrganizationEvidenceZip(

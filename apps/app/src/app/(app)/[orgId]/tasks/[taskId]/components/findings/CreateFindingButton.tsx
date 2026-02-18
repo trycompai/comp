@@ -1,16 +1,24 @@
 'use client';
 
+import type { EvidenceFormType } from '@comp/company';
 import { Button } from '@trycompai/design-system';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { CreateFindingSheet } from './CreateFindingSheet';
 
 interface CreateFindingButtonProps {
-  taskId: string;
+  taskId?: string;
+  evidenceSubmissionId?: string;
+  evidenceFormType?: EvidenceFormType;
   onSuccess?: () => void;
 }
 
-export function CreateFindingButton({ taskId, onSuccess }: CreateFindingButtonProps) {
+export function CreateFindingButton({
+  taskId,
+  evidenceSubmissionId,
+  evidenceFormType,
+  onSuccess,
+}: CreateFindingButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -20,6 +28,8 @@ export function CreateFindingButton({ taskId, onSuccess }: CreateFindingButtonPr
       </Button>
       <CreateFindingSheet
         taskId={taskId}
+        evidenceSubmissionId={evidenceSubmissionId}
+        evidenceFormType={evidenceFormType}
         open={open}
         onOpenChange={setOpen}
         onSuccess={onSuccess}

@@ -6,7 +6,7 @@ model Trust {
   domainVerified     Boolean      @default(false)
   isVercelDomain     Boolean      @default(false)
   vercelVerification String?
-  status             TrustStatus  @default(draft)
+  status             TrustStatus  @default(published)
   contactEmail       String?
 
   /// Domains that bypass NDA signing when requesting trust portal access
@@ -35,6 +35,14 @@ model Trust {
   hipaa_status     FrameworkStatus @default(started)
   pci_dss_status   FrameworkStatus @default(started)
   iso9001_status   FrameworkStatus @default(started)
+
+  // Overview section for public trust portal
+  overviewTitle   String?
+  overviewContent String? // Markdown content with links
+  showOverview    Boolean @default(false)
+
+  // Favicon for trust portal (stored in S3)
+  favicon String?
 
   @@id([status, organizationId])
   @@unique([organizationId])
@@ -221,4 +229,23 @@ model TrustDocument {
 
   @@index([organizationId])
   @@index([organizationId, isActive])
+}
+
+model TrustCustomLink {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('tcl'::text)"))
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  url         String
+  order       Int     @default(0)
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, isActive, order])
 }

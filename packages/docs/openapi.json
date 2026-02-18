@@ -6100,6 +6100,107 @@
       }
     },
     "/v1/policies/{id}/versions/{versionId}": {
+      "get": {
+        "description": "Returns a single policy version by its ID, including content and metadata.",
+        "operationId": "PoliciesController_getPolicyVersionById_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "type": "string",
+              "example": "pol_abc123def456"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "description": "Policy version ID",
+            "schema": {
+              "type": "string",
+              "example": "pv_abc123def456"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy version retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "object"
+                    },
+                    "currentVersionId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "pendingVersionId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Resource not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get policy version by ID",
+        "tags": [
+          "Policies"
+        ]
+      },
       "patch": {
         "description": "Updates content for a non-published, non-pending version. Published and pending versions are immutable.",
         "operationId": "PoliciesController_updateVersionContent_v1",
@@ -7024,6 +7125,7 @@
                     "enum": [
                       "todo",
                       "in_progress",
+                      "in_review",
                       "done",
                       "not_relevant",
                       "failed"
@@ -7225,6 +7327,71 @@
         ]
       }
     },
+    "/v1/tasks/bulk/submit-for-review": {
+      "post": {
+        "description": "Submit multiple tasks for review with a single approver",
+        "operationId": "TasksController_bulkSubmitForReview_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "taskIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "tsk_abc123",
+                      "tsk_def456"
+                    ]
+                  },
+                  "approverId": {
+                    "type": "string",
+                    "example": "mem_abc123",
+                    "description": "Member ID of the approver"
+                  }
+                },
+                "required": [
+                  "taskIds",
+                  "approverId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tasks submitted for review"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Bulk submit tasks for review",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
     "/v1/tasks/{taskId}": {
       "get": {
         "description": "Retrieve a specific task by its ID",
@@ -7297,7 +7464,7 @@
         ]
       },
       "patch": {
-        "description": "Update an existing task (status, assignee, frequency, department, reviewDate)",
+        "description": "Update an existing task (status, assignee, approver, frequency, department, reviewDate)",
         "operationId": "TasksController_updateTask_v1",
         "parameters": [
           {
@@ -7332,6 +7499,7 @@
                     "enum": [
                       "todo",
                       "in_progress",
+                      "in_review",
                       "done",
                       "not_relevant",
                       "failed"
@@ -7343,6 +7511,12 @@
                     "nullable": true,
                     "example": "mem_abc123",
                     "description": "Assignee member ID, or null to unassign"
+                  },
+                  "approverId": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "mem_abc123",
+                    "description": "Approver member ID, or null to unassign"
                   },
                   "frequency": {
                     "type": "string",
@@ -7402,6 +7576,224 @@
           }
         ],
         "summary": "Update a task",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/activity": {
+      "get": {
+        "description": "Retrieve audit log activity for a specific task with pagination",
+        "operationId": "TasksController_getTaskActivity_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "skip",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity retrieved successfully"
+          },
+          "400": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task activity",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/submit-for-review": {
+      "post": {
+        "description": "Move task status to in_review and assign an approver.",
+        "operationId": "TasksController_submitForReview_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "approverId": {
+                    "type": "string",
+                    "example": "mem_abc123",
+                    "description": "Member ID of the approver"
+                  }
+                },
+                "required": [
+                  "approverId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task submitted for review"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Submit task for review",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/approve": {
+      "post": {
+        "description": "Approve a task that is in review. Only the assigned approver can approve. Moves status to done and creates an audit comment.",
+        "operationId": "TasksController_approveTask_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task approved successfully"
+          },
+          "400": {
+            "description": "Task is not in review"
+          },
+          "403": {
+            "description": "Not the assigned approver"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Approve a task",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/reject": {
+      "post": {
+        "description": "Reject a task that is in review. Only the assigned approver can reject. Reverts status to the previous status and creates an audit comment.",
+        "operationId": "TasksController_rejectTask_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task rejected successfully"
+          },
+          "400": {
+            "description": "Task is not in review"
+          },
+          "403": {
+            "description": "Not the assigned approver"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Reject a task review",
         "tags": [
           "Tasks"
         ]
@@ -9340,6 +9732,320 @@
         ]
       }
     },
+    "/v1/trust-portal/overview": {
+      "post": {
+        "operationId": "TrustPortalController_updateOverview_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Overview updated successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update trust portal overview section",
+        "tags": [
+          "Trust Portal"
+        ]
+      },
+      "get": {
+        "operationId": "TrustPortalController_getOverview_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get trust portal overview",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/custom-links": {
+      "post": {
+        "operationId": "TrustPortalController_createCustomLink_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Custom link created successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a custom link for trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      },
+      "get": {
+        "operationId": "TrustPortalController_listCustomLinks_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List custom links for trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/custom-links/{linkId}": {
+      "post": {
+        "operationId": "TrustPortalController_updateCustomLink_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "linkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Custom link updated successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update a custom link",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/custom-links/{linkId}/delete": {
+      "post": {
+        "operationId": "TrustPortalController_deleteCustomLink_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "linkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Custom link deleted successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete a custom link",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/custom-links/reorder": {
+      "post": {
+        "operationId": "TrustPortalController_reorderCustomLinks_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Custom links reordered successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Reorder custom links",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/vendors/{vendorId}/trust-settings": {
+      "post": {
+        "operationId": "TrustPortalController_updateVendorTrustSettings_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendor settings updated successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update vendor trust portal settings",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/vendors": {
+      "get": {
+        "operationId": "TrustPortalController_listPublicVendors_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List vendors configured for trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
     "/v1/trust-access/{friendlyUrl}/requests": {
       "post": {
         "description": "External users submit request for data access from trust site",
@@ -10212,6 +10918,124 @@
         ]
       }
     },
+    "/v1/trust-access/{friendlyUrl}/overview": {
+      "get": {
+        "description": "Retrieve the overview/mission text for a published trust portal.",
+        "operationId": "TrustAccessController_getPublicOverview_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Overview retrieved successfully"
+          }
+        },
+        "summary": "Get overview section for a trust portal",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/{friendlyUrl}/custom-links": {
+      "get": {
+        "description": "Retrieve the custom external links configured for the trust portal.",
+        "operationId": "TrustAccessController_getPublicCustomLinks_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Custom links retrieved successfully"
+          }
+        },
+        "summary": "Get custom links for a trust portal",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/{friendlyUrl}/favicon": {
+      "get": {
+        "description": "Retrieve the favicon URL for the trust portal.",
+        "operationId": "TrustAccessController_getPublicFavicon_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Favicon URL retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "faviconUrl": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Signed URL to the favicon, or null if not set"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get favicon URL for a trust portal",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/{friendlyUrl}/vendors": {
+      "get": {
+        "description": "Retrieve the list of vendors configured to display on the trust portal.",
+        "operationId": "TrustAccessController_getPublicVendors_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendors retrieved successfully"
+          }
+        },
+        "summary": "Get vendors/subprocessors for a trust portal",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/framework-editor/task-template": {
       "get": {
         "description": "Retrieve all framework editor task templates",
@@ -10790,24 +11614,55 @@
           },
           {
             "name": "taskId",
-            "required": true,
+            "required": false,
             "in": "query",
             "description": "Task ID to get findings for",
             "schema": {
               "example": "tsk_abc123",
               "type": "string"
             }
+          },
+          {
+            "name": "evidenceSubmissionId",
+            "required": false,
+            "in": "query",
+            "description": "Evidence submission ID to get findings for",
+            "schema": {
+              "example": "evs_abc123",
+              "type": "string"
+            }
+          },
+          {
+            "name": "evidenceFormType",
+            "required": false,
+            "in": "query",
+            "description": "Evidence form type to get findings for",
+            "schema": {
+              "enum": [
+                "board-meeting",
+                "it-leadership-meeting",
+                "risk-committee-meeting",
+                "meeting",
+                "access-request",
+                "whistleblower-report",
+                "penetration-test",
+                "rbac-matrix",
+                "infrastructure-inventory",
+                "employee-performance-evaluation"
+              ],
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "List of findings for the task"
+            "description": "List of findings"
           },
           "401": {
             "description": "Unauthorized"
           },
           "404": {
-            "description": "Task not found"
+            "description": "Target not found"
           }
         },
         "security": [
@@ -14873,6 +15728,530 @@
           "Training"
         ]
       }
+    },
+    "/v1/org-chart": {
+      "get": {
+        "operationId": "OrgChartController_getOrgChart_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The organization chart"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get the organization chart",
+        "tags": [
+          "Org Chart"
+        ]
+      },
+      "put": {
+        "operationId": "OrgChartController_upsertOrgChart_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The saved organization chart"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create or update an interactive organization chart",
+        "tags": [
+          "Org Chart"
+        ]
+      },
+      "delete": {
+        "operationId": "OrgChartController_deleteOrgChart_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deletion confirmation"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete the organization chart",
+        "tags": [
+          "Org Chart"
+        ]
+      }
+    },
+    "/v1/org-chart/upload": {
+      "post": {
+        "operationId": "OrgChartController_uploadOrgChart_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadOrgChartDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The uploaded organization chart"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload an image as the organization chart",
+        "tags": [
+          "Org Chart"
+        ]
+      }
+    },
+    "/v1/evidence-forms": {
+      "get": {
+        "description": "List all available pre-built evidence forms",
+        "operationId": "EvidenceFormsController_listForms_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List evidence forms",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/statuses": {
+      "get": {
+        "description": "Returns the latest submission date per form type for the active organization",
+        "operationId": "EvidenceFormsController_getFormStatuses_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get submission statuses for all forms",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/my-submissions": {
+      "get": {
+        "description": "Returns all evidence form submissions by the authenticated user for the active organization",
+        "operationId": "EvidenceFormsController_getMySubmissions_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get current user submissions",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/my-submissions/pending-count": {
+      "get": {
+        "description": "Returns the count of pending evidence submissions for the authenticated user",
+        "operationId": "EvidenceFormsController_getPendingSubmissionCount_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get pending submission count for current user",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}": {
+      "get": {
+        "description": "Fetch a specific form definition with submissions for the active organization",
+        "operationId": "EvidenceFormsController_getFormWithSubmissions_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get form definition and submissions",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}/submissions/{submissionId}": {
+      "get": {
+        "description": "Fetch one evidence form submission for the active organization",
+        "operationId": "EvidenceFormsController_getSubmission_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "submissionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a single submission",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}/submissions": {
+      "post": {
+        "description": "Create a new organization-scoped evidence form submission using Zod-validated payloads",
+        "operationId": "EvidenceFormsController_submitForm_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Submit evidence form entry",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}/submissions/{submissionId}/review": {
+      "patch": {
+        "description": "Approve or reject an evidence form submission with an optional reason",
+        "operationId": "EvidenceFormsController_reviewSubmission_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "submissionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Review a submission",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/uploads": {
+      "post": {
+        "description": "Upload a file for evidence form fields and return file metadata for submission payload",
+        "operationId": "EvidenceFormsController_uploadFile_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload evidence form file",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}/export.csv": {
+      "get": {
+        "description": "Export all form submissions for an organization as CSV",
+        "operationId": "EvidenceFormsController_exportCsv_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export form submissions to CSV",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
     }
   },
   "info": {
@@ -15004,6 +16383,12 @@
             ],
             "example": "it"
           },
+          "jobTitle": {
+            "type": "object",
+            "description": "Job title for the member",
+            "example": "Software Engineer",
+            "nullable": true
+          },
           "isActive": {
             "type": "boolean",
             "description": "Whether member is active",
@@ -15031,6 +16416,7 @@
           "role",
           "createdAt",
           "department",
+          "jobTitle",
           "isActive",
           "fleetDmLabelId",
           "user"
@@ -15072,6 +16458,11 @@
             "type": "number",
             "description": "FleetDM label ID for member devices",
             "example": 123
+          },
+          "jobTitle": {
+            "type": "string",
+            "description": "Job title for the member",
+            "example": "Software Engineer"
           }
         },
         "required": [
@@ -15145,6 +16536,11 @@
             "type": "number",
             "description": "FleetDM label ID for member devices",
             "example": 123
+          },
+          "jobTitle": {
+            "type": "string",
+            "description": "Job title for the member",
+            "example": "Software Engineer"
           }
         }
       },
@@ -15522,6 +16918,11 @@
             "description": "Vendor website URL",
             "example": "https://www.cloudtechsolutions.com"
           },
+          "isSubProcessor": {
+            "type": "boolean",
+            "description": "Whether the vendor is a sub-processor",
+            "default": false
+          },
           "assigneeId": {
             "type": "string",
             "description": "ID of the user assigned to manage this vendor",
@@ -15635,6 +17036,11 @@
             "type": "string",
             "description": "Vendor website URL",
             "example": "https://www.cloudtechsolutions.com"
+          },
+          "isSubProcessor": {
+            "type": "boolean",
+            "description": "Whether the vendor is a sub-processor",
+            "default": false
           },
           "assigneeId": {
             "type": "string",
@@ -15912,9 +17318,17 @@
             "example": "2024-01-10T00:00:00Z"
           },
           "id": {
-            "type": "number",
-            "description": "Device ID",
-            "example": 123
+            "description": "Device ID (numeric for Fleet devices, string UUID for device-agent devices)",
+            "oneOf": [
+              {
+                "type": "number",
+                "example": 123
+              },
+              {
+                "type": "string",
+                "example": "clx1abc123"
+              }
+            ]
           },
           "detail_updated_at": {
             "type": "string",
@@ -16217,6 +17631,15 @@
             "type": "string",
             "description": "Display name",
             "example": "John's MacBook Pro"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source system that reported this device",
+            "example": "fleet",
+            "enum": [
+              "fleet",
+              "device_agent"
+            ]
           }
         },
         "required": [
@@ -17784,6 +19207,28 @@
             "description": "Task ID this finding is associated with",
             "example": "tsk_abc123"
           },
+          "evidenceSubmissionId": {
+            "type": "string",
+            "description": "Evidence submission ID this finding is associated with",
+            "example": "evs_abc123"
+          },
+          "evidenceFormType": {
+            "type": "string",
+            "description": "Evidence form type this finding is associated with (e.g., access-request, whistleblower-report)",
+            "example": "access-request",
+            "enum": [
+              "board-meeting",
+              "it-leadership-meeting",
+              "risk-committee-meeting",
+              "meeting",
+              "access-request",
+              "whistleblower-report",
+              "penetration-test",
+              "rbac-matrix",
+              "infrastructure-inventory",
+              "employee-performance-evaluation"
+            ]
+          },
           "type": {
             "type": "string",
             "description": "Type of finding (SOC 2 or ISO 27001)",
@@ -17806,7 +19251,6 @@
           }
         },
         "required": [
-          "taskId",
           "type",
           "content"
         ]
@@ -18637,6 +20081,28 @@
         },
         "required": [
           "sent"
+        ]
+      },
+      "UploadOrgChartDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "description": "Original file name"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file (e.g. image/png)"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64-encoded file data"
+          }
+        },
+        "required": [
+          "fileName",
+          "fileType",
+          "fileData"
         ]
       }
     }

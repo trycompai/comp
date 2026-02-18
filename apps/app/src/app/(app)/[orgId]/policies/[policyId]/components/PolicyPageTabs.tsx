@@ -4,7 +4,7 @@ import type { Control, Member, Policy, PolicyVersion, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { Stack, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Comments } from '../../../../../../components/comments/Comments';
 import type { AuditLogWithRelations } from '../data';
 import { PolicyContentManager } from '../editor/components/PolicyDetails';
@@ -15,6 +15,7 @@ import { PolicyControlMappings } from './PolicyControlMappings';
 import { PolicyDeleteDialog } from './PolicyDeleteDialog';
 import { PolicyOverviewSheet } from './PolicyOverviewSheet';
 import { PolicySettingsCard } from './PolicySettingsCard';
+import { PolicyVersionsTab } from './PolicyVersionsTab';
 import { RecentAuditLogs } from './RecentAuditLogs';
 
 type PolicyVersionWithPublisher = PolicyVersion & {
@@ -68,6 +69,31 @@ export function PolicyPageTabs({
   const isPendingApproval = policy ? !!policy.approverId : initialIsPendingApproval;
 
   const isDeleteDialogOpen = searchParams.get('delete-policy') === 'true';
+  const tabFromUrl = searchParams.get('tab') || 'overview';
+  const versionIdFromUrl = searchParams.get('versionId');
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+
+  // Sync activeTab with URL param
+  useEffect(() => {
+    setActiveTab(tabFromUrl);
+  }, [tabFromUrl]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === 'overview') {
+      params.delete('tab');
+      params.delete('versionId');
+    } else {
+      params.set('tab', value);
+      // Keep versionId if switching to content tab
+      if (value !== 'content') {
+        params.delete('versionId');
+      }
+    }
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  };
 
   const handleCloseDeleteDialog = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -81,11 +107,12 @@ export function PolicyPageTabs({
       {/* Alerts always visible above tabs */}
       <PolicyAlerts policy={policy} isPendingApproval={isPendingApproval} onMutate={mutate} />
 
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <Stack gap="lg">
           <TabsList variant="underline">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="versions">Versions</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>
           </TabsList>
@@ -96,7 +123,6 @@ export function PolicyPageTabs({
                 policy={policy}
                 assignees={assignees}
                 isPendingApproval={isPendingApproval}
-                versions={versions}
                 onMutate={mutate}
               />
               <PolicyControlMappings
@@ -140,8 +166,24 @@ export function PolicyPageTabs({
               currentVersionId={policy?.currentVersionId ?? null}
               pendingVersionId={policy?.pendingVersionId ?? null}
               versions={versions}
+              policyStatus={policy?.status}
+              lastPublishedAt={policy?.lastPublishedAt}
+              assignees={assignees}
+              initialVersionId={versionIdFromUrl || undefined}
               onMutate={mutate}
             />
+          </TabsContent>
+
+          <TabsContent value="versions">
+            {policy && (
+              <PolicyVersionsTab
+                policy={policy}
+                versions={versions}
+                assignees={assignees}
+                isPendingApproval={isPendingApproval}
+                onMutate={mutate}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="activity">
