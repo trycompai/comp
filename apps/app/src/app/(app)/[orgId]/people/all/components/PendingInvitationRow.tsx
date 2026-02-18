@@ -10,14 +10,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  Avatar,
-  AvatarFallback,
   Badge,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  HStack,
   TableCell,
   TableRow,
   Text,
@@ -80,14 +77,9 @@ export function PendingInvitationRow({
       <TableRow>
         {/* NAME */}
         <TableCell>
-          <HStack gap="3" align="center">
-            <Avatar>
-              <AvatarFallback>{invitation.email.charAt(0).toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <Text>{invitation.email}</Text>
-            </div>
-          </HStack>
+          <div className="min-w-0">
+            <Text>{invitation.email}</Text>
+          </div>
         </TableCell>
 
         {/* STATUS */}
@@ -97,37 +89,44 @@ export function PendingInvitationRow({
 
         {/* ROLE */}
         <TableCell>
-          <div className="flex flex-wrap gap-1">
-            {roles.map((role: string) => (
-              <Badge key={role} variant="outline">
-                {role.charAt(0).toUpperCase() + role.slice(1)}
-              </Badge>
-            ))}
+          <div className="w-[160px]">
+            <div className="flex flex-wrap gap-1">
+              {roles.map((role: string) => (
+                <Badge key={role} variant="outline">
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </Badge>
+              ))}
+            </div>
           </div>
         </TableCell>
 
-        {/* ACTIONS - hidden entirely when user cannot cancel */}
-        {canCancel && (
-          <TableCell>
-            <div className="flex justify-center">
-              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-                <DropdownMenuTrigger
-                  variant="ellipsis"
-                  disabled={isCancelling}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <OverflowMenuVertical />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem variant="destructive" onSelect={handleOpenCancelDialog}>
-                    <TrashCan size={16} />
-                    Cancel Invitation
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </TableCell>
-        )}
+        {/* TASKS */}
+        <TableCell>
+          <Text size="sm" variant="muted">
+            —
+          </Text>
+        </TableCell>
+
+        {/* ACTIONS */}
+        <TableCell>
+          <div className="flex justify-center">
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+              <DropdownMenuTrigger
+                variant="ellipsis"
+                disabled={isCancelling || !canCancel}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <OverflowMenuVertical />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem variant="destructive" onSelect={handleOpenCancelDialog}>
+                  <TrashCan size={16} />
+                  Cancel Invitation
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </TableCell>
       </TableRow>
 
       <AlertDialog open={isCancelDialogOpen} onOpenChange={handleCancelDialogOpenChange}>

@@ -1,0 +1,37 @@
+model Device {
+  id            String         @id @default(dbgenerated("generate_prefixed_cuid('dev'::text)"))
+  name          String
+  hostname      String
+  platform      DevicePlatform
+  osVersion     String
+  serialNumber  String?
+  hardwareModel String?
+
+  memberId       String
+  member         Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  isCompliant           Boolean  @default(false)
+  diskEncryptionEnabled Boolean  @default(false)
+  antivirusEnabled      Boolean  @default(false)
+  passwordPolicySet     Boolean  @default(false)
+  screenLockEnabled     Boolean  @default(false)
+  checkDetails          Json?
+
+  lastCheckIn  DateTime?
+  agentVersion String?
+  installedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([serialNumber, organizationId])
+  @@index([memberId])
+  @@index([organizationId])
+  @@index([isCompliant])
+}
+
+enum DevicePlatform {
+  macos
+  windows
+  linux
+}

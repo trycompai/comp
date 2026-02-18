@@ -14,6 +14,8 @@ export default async function PortalSettingsPage({
     select: {
       deviceAgentStepEnabled: true,
       securityTrainingStepEnabled: true,
+      whistleblowerReportEnabled: true,
+      accessRequestFormEnabled: true,
     },
   });
 
@@ -21,6 +23,8 @@ export default async function PortalSettingsPage({
     <PortalSettings
       deviceAgentStepEnabled={organization?.deviceAgentStepEnabled ?? true}
       securityTrainingStepEnabled={organization?.securityTrainingStepEnabled ?? true}
+      whistleblowerReportEnabled={organization?.whistleblowerReportEnabled ?? true}
+      accessRequestFormEnabled={organization?.accessRequestFormEnabled ?? true}
     />
   );
 }

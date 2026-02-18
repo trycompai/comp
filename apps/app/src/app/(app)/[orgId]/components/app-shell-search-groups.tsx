@@ -1,4 +1,5 @@
 import {
+  Catalog,
   Chemistry,
   Dashboard,
   Document,
@@ -13,8 +14,6 @@ import {
   TaskComplete,
   Warning,
 } from '@carbon/icons-react';
-import type { UserPermissions } from '@/lib/permissions';
-import { canAccessRoute } from '@/lib/permissions';
 import type { CommandSearchGroup } from '@trycompai/design-system';
 import type { ReactNode } from 'react';
 
@@ -28,7 +27,6 @@ interface AppShellSearchGroupsParams {
   isQuestionnaireEnabled: boolean;
   isTrustNdaEnabled: boolean;
   isAdvancedModeEnabled: boolean;
-  permissions: UserPermissions;
 }
 
 interface NavigationItemParams {
@@ -61,25 +59,21 @@ export const getAppShellSearchGroups = ({
   organizationId,
   router,
   hasAuditorRole,
+  isOnlyAuditor,
   isQuestionnaireEnabled,
   isTrustNdaEnabled,
   isAdvancedModeEnabled,
-  permissions,
 }: AppShellSearchGroupsParams): CommandSearchGroup[] => {
   const baseItems = [
-    ...(canAccessRoute(permissions, 'frameworks')
-      ? [
-          createNavItem({
-            id: 'overview',
-            label: 'Overview',
-            icon: <Dashboard size={16} />,
-            path: `/${organizationId}/frameworks`,
-            keywords: ['dashboard', 'home', 'frameworks'],
-            router,
-          }),
-        ]
-      : []),
-    ...(hasAuditorRole && canAccessRoute(permissions, 'auditor')
+    createNavItem({
+      id: 'overview',
+      label: 'Overview',
+      icon: <Dashboard size={16} />,
+      path: `/${organizationId}/frameworks`,
+      keywords: ['dashboard', 'home', 'frameworks'],
+      router,
+    }),
+    ...(hasAuditorRole
       ? [
           createNavItem({
             id: 'auditor',
@@ -91,7 +85,7 @@ export const getAppShellSearchGroups = ({
           }),
         ]
       : []),
-    ...(isAdvancedModeEnabled && canAccessRoute(permissions, 'controls')
+    ...(isAdvancedModeEnabled
       ? [
           createNavItem({
             id: 'controls',
@@ -103,31 +97,23 @@ export const getAppShellSearchGroups = ({
           }),
         ]
       : []),
-    ...(canAccessRoute(permissions, 'policies')
-      ? [
-          createNavItem({
-            id: 'policies',
-            label: 'Policies',
-            icon: <Policy size={16} />,
-            path: `/${organizationId}/policies`,
-            keywords: ['policy', 'documents'],
-            router,
-          }),
-        ]
-      : []),
-    ...(canAccessRoute(permissions, 'tasks')
-      ? [
-          createNavItem({
-            id: 'evidence',
-            label: 'Evidence',
-            icon: <ListChecked size={16} />,
-            path: `/${organizationId}/tasks`,
-            keywords: ['tasks', 'evidence', 'artifacts'],
-            router,
-          }),
-        ]
-      : []),
-    ...(isTrustNdaEnabled && canAccessRoute(permissions, 'trust')
+    createNavItem({
+      id: 'policies',
+      label: 'Policies',
+      icon: <Policy size={16} />,
+      path: `/${organizationId}/policies`,
+      keywords: ['policy', 'documents'],
+      router,
+    }),
+    createNavItem({
+      id: 'evidence',
+      label: 'Evidence',
+      icon: <ListChecked size={16} />,
+      path: `/${organizationId}/tasks`,
+      keywords: ['tasks', 'evidence', 'artifacts'],
+      router,
+    }),
+    ...(isTrustNdaEnabled
       ? [
           createNavItem({
             id: 'trust',
@@ -139,43 +125,39 @@ export const getAppShellSearchGroups = ({
           }),
         ]
       : []),
-    ...(canAccessRoute(permissions, 'people')
-      ? [
-          createNavItem({
-            id: 'people',
-            label: 'People',
-            icon: <Group size={16} />,
-            path: `/${organizationId}/people/all`,
-            keywords: ['users', 'team', 'members', 'employees'],
-            router,
-          }),
-        ]
-      : []),
-    ...(canAccessRoute(permissions, 'risk')
-      ? [
-          createNavItem({
-            id: 'risks',
-            label: 'Risks',
-            icon: <Warning size={16} />,
-            path: `/${organizationId}/risk`,
-            keywords: ['risk management', 'assessment'],
-            router,
-          }),
-        ]
-      : []),
-    ...(canAccessRoute(permissions, 'vendors')
-      ? [
-          createNavItem({
-            id: 'vendors',
-            label: 'Vendors',
-            icon: <ShoppingBag size={16} />,
-            path: `/${organizationId}/vendors`,
-            keywords: ['suppliers', 'third party'],
-            router,
-          }),
-        ]
-      : []),
-    ...(isQuestionnaireEnabled && canAccessRoute(permissions, 'questionnaire')
+    createNavItem({
+      id: 'documents',
+      label: 'Documents',
+      icon: <Catalog size={16} />,
+      path: `/${organizationId}/documents`,
+      keywords: ['company', 'tasks', 'forms', 'evidence submissions', 'documents'],
+      router,
+    }),
+    createNavItem({
+      id: 'people',
+      label: 'People',
+      icon: <Group size={16} />,
+      path: `/${organizationId}/people/all`,
+      keywords: ['users', 'team', 'members', 'employees'],
+      router,
+    }),
+    createNavItem({
+      id: 'risks',
+      label: 'Risks',
+      icon: <Warning size={16} />,
+      path: `/${organizationId}/risk`,
+      keywords: ['risk management', 'assessment'],
+      router,
+    }),
+    createNavItem({
+      id: 'vendors',
+      label: 'Vendors',
+      icon: <ShoppingBag size={16} />,
+      path: `/${organizationId}/vendors`,
+      keywords: ['suppliers', 'third party'],
+      router,
+    }),
+    ...(isQuestionnaireEnabled
       ? [
           createNavItem({
             id: 'questionnaire',
@@ -187,7 +169,7 @@ export const getAppShellSearchGroups = ({
           }),
         ]
       : []),
-    ...(canAccessRoute(permissions, 'integrations')
+    ...(!isOnlyAuditor
       ? [
           createNavItem({
             id: 'integrations',
@@ -199,18 +181,14 @@ export const getAppShellSearchGroups = ({
           }),
         ]
       : []),
-    ...(canAccessRoute(permissions, 'cloud-tests')
-      ? [
-          createNavItem({
-            id: 'cloud-tests',
-            label: 'Cloud Tests',
-            icon: <Chemistry size={16} />,
-            path: `/${organizationId}/cloud-tests`,
-            keywords: ['testing', 'cloud', 'infrastructure'],
-            router,
-          }),
-        ]
-      : []),
+    createNavItem({
+      id: 'cloud-tests',
+      label: 'Cloud Tests',
+      icon: <Chemistry size={16} />,
+      path: `/${organizationId}/cloud-tests`,
+      keywords: ['testing', 'cloud', 'infrastructure'],
+      router,
+    }),
   ];
 
   return [
@@ -219,7 +197,7 @@ export const getAppShellSearchGroups = ({
       label: 'Navigation',
       items: baseItems,
     },
-    ...(canAccessRoute(permissions, 'settings')
+    ...(!isOnlyAuditor
       ? [
           {
             id: 'settings',

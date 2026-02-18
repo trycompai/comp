@@ -9,6 +9,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  Button,
   Card,
   CardContent,
   CardHeader,
@@ -27,11 +28,14 @@ import {
   Upload,
 } from '@trycompai/design-system/icons';
 import { Loader2 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import Dropzone from 'react-dropzone';
 import { toast } from 'sonner';
-import { useApi } from '@/hooks/use-api';
-import { useApiSWR } from '@/hooks/use-api-swr';
+import { getPolicyPdfUrlAction } from '../actions/get-policy-pdf-url';
+import { uploadPolicyPdfAction } from '../actions/upload-policy-pdf';
+import { deletePolicyPdfAction } from '../actions/delete-policy-pdf';
 
 interface PdfViewerProps {
   policyId: string;
@@ -47,32 +51,76 @@ interface PdfViewerProps {
   onMutate?: () => void;
 }
 
-export function PdfViewer({
-  policyId,
-  versionId,
-  pdfUrl,
-  isPendingApproval,
-  isVersionReadOnly = false,
+export function PdfViewer({ 
+  policyId, 
+  versionId, 
+  pdfUrl, 
+  isPendingApproval, 
+  isVersionReadOnly = false, 
   isViewingActiveVersion = false,
   isViewingPendingVersion = false,
-  onMutate
+  onMutate 
 }: PdfViewerProps) {
   // Combine both checks - can't modify if pending approval OR version is read-only
   const isReadOnly = isPendingApproval || isVersionReadOnly;
-  const { post, delete: apiDelete } = useApi();
-  const [isUploading, setIsUploading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
+  const [files, setFiles] = useState<File[]>([]);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [isUrlLoading, setUrlLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { execute: getUrl } = useAction(getPolicyPdfUrlAction, {
+    onSuccess: (result) => {
+      const url = result?.data?.data ?? null;
+      if (result?.data?.success && url) {
+        setSignedUrl(url);
+      } else {
+        setSignedUrl(null);
+      }
+    },
+    onError: () => toast.error('Could not load the policy document.'),
+    onSettled: () => setUrlLoading(false),
+  });
+
   // Fetch the secure, temporary URL when the component loads with an S3 key.
-  const signedUrlEndpoint = pdfUrl
-    ? `/v1/policies/${policyId}/pdf/signed-url${versionId ? `?versionId=${versionId}` : ''}`
-    : null;
-  const { data: signedUrlResponse, isLoading: isUrlLoading, mutate: mutateSignedUrl } = useApiSWR<{ url: string }>(
-    signedUrlEndpoint,
-  );
-  const signedUrl = signedUrlResponse?.data?.url ?? null;
+  useEffect(() => {
+    if (pdfUrl) {
+      setUrlLoading(true);
+      setSignedUrl(null); // Reset before fetching
+      getUrl({ policyId, versionId });
+    } else {
+      // No PDF for this version - reset state
+      setSignedUrl(null);
+      setUrlLoading(false);
+    }
+  }, [pdfUrl, policyId, versionId, getUrl]);
+
+  const { execute: upload, status: uploadStatus } = useAction(uploadPolicyPdfAction, {
+    onSuccess: (result) => {
+      if (result?.data?.success) {
+        toast.success('PDF uploaded successfully.');
+        setFiles([]);
+        onMutate?.();
+      } else {
+        toast.error(result?.data?.error || 'Failed to upload PDF.');
+      }
+    },
+    onError: (error) => toast.error(error.error.serverError || 'Failed to upload PDF.'),
+  });
+
+  const { execute: deletePdf, status: deleteStatus } = useAction(deletePolicyPdfAction, {
+    onSuccess: (result) => {
+      if (result?.data?.success) {
+        toast.success('PDF deleted successfully.');
+        setSignedUrl(null);
+        onMutate?.();
+      } else {
+        toast.error(result?.data?.error || 'Failed to delete PDF.');
+      }
+    },
+    onError: (error) => toast.error(error.error.serverError || 'Failed to delete PDF.'),
+  });
 
   const handleReplaceClick = () => {
     fileInputRef.current?.click();
@@ -101,45 +149,17 @@ export function PdfViewer({
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = async () => {
+    reader.onload = () => {
       const base64Data = (reader.result as string).split(',')[1];
-      setIsUploading(true);
-      try {
-        const response = await post(`/v1/policies/${policyId}/pdf/upload`, {
-          versionId,
-          fileName: file.name,
-          fileType: file.type,
-          fileData: base64Data,
-        });
-        if (response.error) throw new Error(response.error);
-        toast.success('PDF uploaded successfully.');
-        onMutate?.();
-      } catch {
-        toast.error('Failed to upload PDF.');
-      } finally {
-        setIsUploading(false);
-      }
+      upload({
+        policyId,
+        versionId,
+        fileName: file.name,
+        fileType: file.type,
+        fileData: base64Data,
+      });
     };
     reader.onerror = () => toast.error('Failed to read the file for uploading.');
-  };
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    setIsDeleteDialogOpen(false);
-    try {
-      const params = new URLSearchParams();
-      if (versionId) params.set('versionId', versionId);
-      const qs = params.toString();
-      const response = await apiDelete(`/v1/policies/${policyId}/pdf${qs ? `?${qs}` : ''}`);
-      if (response.error) throw new Error(response.error);
-      toast.success('PDF deleted successfully.');
-      mutateSignedUrl(undefined);
-      onMutate?.();
-    } catch {
-      toast.error('Failed to delete PDF.');
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   // Handle direct drop on main card area
@@ -162,6 +182,9 @@ export function PdfViewer({
 
     handleUpload(acceptedFiles);
   };
+
+  const isUploading = uploadStatus === 'executing';
+  const isDeleting = deleteStatus === 'executing';
 
   const fileName = pdfUrl?.split('/').pop() || '';
   const MAX_FILENAME_LENGTH = 50;
@@ -234,7 +257,7 @@ export function PdfViewer({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
+              
               <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                   <AlertDialogHeader>
@@ -247,7 +270,10 @@ export function PdfViewer({
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={handleDelete}
+                      onClick={() => {
+                        deletePdf({ policyId, versionId });
+                        setIsDeleteDialogOpen(false);
+                      }}
                       variant="destructive"
                       loading={isDeleting}
                     >

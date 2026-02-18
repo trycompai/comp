@@ -1,45 +1,19 @@
-import { serverApi } from '@/lib/api-server';
+import { auth } from '@/utils/auth';
+
 import {
   type TrainingVideo,
   trainingVideos as trainingVideosData,
 } from '@/lib/data/training-videos';
-import type {
-  EmployeeTrainingVideoCompletion,
-  Member,
-  Organization,
-  Policy,
-  User,
-} from '@db';
-import { PageHeader, PageLayout } from '@trycompai/design-system';
+import { getFleetInstance } from '@/lib/fleet';
+import type { EmployeeTrainingVideoCompletion, Member, User } from '@db';
+import { db } from '@db';
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import type { FleetPolicy, Host } from '../devices/types';
+import type { CheckDetails, DeviceWithChecks } from '../devices/types';
 import { Employee } from './components/Employee';
 
-interface PeopleMember {
-  id: string;
-  organizationId: string;
-  userId: string;
-  role: string;
-  fleetDmLabelId: number | null;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    image: string | null;
-  };
-}
-
-interface PeopleDetailResponse extends PeopleMember {
-  authType: string;
-  authenticatedUser?: { id: string; email: string };
-}
-
-interface PeopleListResponse {
-  data: PeopleMember[];
-  count: number;
-  authenticatedUser?: { id: string; email: string };
-}
+const MDM_POLICY_ID = -9999;
 
 export default async function EmployeeDetailsPage({
   params,
@@ -48,88 +22,57 @@ export default async function EmployeeDetailsPage({
 }) {
   const { employeeId, orgId } = await params;
 
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const currentUserMember = await db.member.findFirst({
+    where: {
+      organizationId: orgId,
+      userId: session?.user?.id,
+    },
+  });
+
+  const canEditMembers =
+    currentUserMember?.role.includes('owner') || currentUserMember?.role.includes('admin') || false;
+
   if (!orgId) {
     redirect('/');
   }
 
-  const [employeeResponse, membersResponse, policiesRes, trainingRes, fleetRes] =
-    await Promise.all([
-      serverApi.get<PeopleDetailResponse>(`/v1/people/${employeeId}`),
-      serverApi.get<PeopleListResponse>('/v1/people'),
-      serverApi.get<{ data: Policy[] }>(
-        '/v1/policies?status=published&isRequiredToSign=true&isArchived=false',
-      ),
-      serverApi.get<{ data: EmployeeTrainingVideoCompletion[] }>(
-        `/v1/people/${employeeId}/training-videos`,
-      ),
-      serverApi.get<{ fleetPolicies: FleetPolicy[]; device: Host | null }>(
-        `/v1/people/${employeeId}/fleet-compliance`,
-      ),
-    ]);
+  const policies = await getPoliciesTasks(employeeId);
+  const employeeTrainingVideos = await getTrainingVideos(employeeId);
+  const employee = await getEmployee(employeeId);
 
-  if (!employeeResponse.data) {
+  // If employee doesn't exist, show 404 page
+  if (!employee) {
     notFound();
   }
 
-  const employee = employeeResponse.data as unknown as Member & { user: User };
-  const currentUserId = membersResponse.data?.authenticatedUser?.id;
-  const currentUserMember = (membersResponse.data?.data ?? []).find(
-    (m) => m.userId === currentUserId,
-  );
+  // Get organization for certificate generation
+  const organization = await db.organization.findUnique({
+    where: { id: orgId },
+  });
 
-  const canEditMembers =
-    currentUserMember?.role.includes('owner') ||
-    currentUserMember?.role.includes('admin') ||
-    false;
+  if (!organization) {
+    notFound();
+  }
 
-  const policies = Array.isArray(policiesRes.data?.data)
-    ? policiesRes.data.data
-    : [];
-
-  // Map training video DB records to include metadata
-  const rawTrainingVideos = Array.isArray(trainingRes.data?.data)
-    ? trainingRes.data.data
-    : [];
-  const employeeTrainingVideos = rawTrainingVideos
-    .map((dbVideo) => {
-      const videoMetadata = trainingVideosData.find(
-        (metadataVideo) => metadataVideo.id === dbVideo.videoId,
-      );
-      if (videoMetadata) {
-        return { ...dbVideo, metadata: videoMetadata };
-      }
-      return null;
-    })
-    .filter(
-      (video): video is EmployeeTrainingVideoCompletion & { metadata: TrainingVideo } =>
-        video !== null,
-    );
-
-  const fleetPolicies = fleetRes.data?.fleetPolicies ?? [];
-  const device = (fleetRes.data?.device ?? null) as Host;
+  const { fleetPolicies, device } = await getFleetPolicies(employee);
+  const memberDevice = await getMemberDevice(employee.id, orgId);
 
   return (
-    <PageLayout
-      header={
-        <PageHeader
-          title={employee.user.name ?? 'Employee'}
-          breadcrumbs={[
-            { label: 'People', href: `/${orgId}/people` },
-            { label: employee.user.name ?? 'Employee', isCurrent: true },
-          ]}
-        />
-      }
-    >
-      <Employee
-        employee={employee}
-        policies={policies}
-        trainingVideos={employeeTrainingVideos}
-        fleetPolicies={fleetPolicies}
-        host={device}
-        canEdit={canEditMembers}
-        organization={{ id: orgId } as Organization}
-      />
-    </PageLayout>
+    <Employee
+      employee={employee}
+      policies={policies}
+      trainingVideos={employeeTrainingVideos}
+      fleetPolicies={fleetPolicies}
+      host={device}
+      canEdit={canEditMembers}
+      organization={organization}
+      memberDevice={memberDevice}
+      orgId={orgId}
+    />
   );
 }
 
@@ -138,3 +81,222 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'Employee Details',
   };
 }
+
+const getEmployee = async (employeeId: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const organizationId = session?.session.activeOrganizationId;
+
+  if (!organizationId) {
+    redirect('/');
+  }
+
+  const employee = await db.member.findFirst({
+    where: {
+      id: employeeId,
+      organizationId,
+    },
+    include: {
+      user: true,
+    },
+  });
+
+  return employee;
+};
+
+const getPoliciesTasks = async (employeeId: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const organizationId = session?.session.activeOrganizationId;
+
+  if (!organizationId) {
+    redirect('/');
+  }
+
+  const policies = await db.policy.findMany({
+    where: {
+      organizationId: organizationId,
+      status: 'published',
+      isRequiredToSign: true,
+      isArchived: false,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+
+  return policies;
+};
+
+const getTrainingVideos = async (employeeId: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const organizationId = session?.session.activeOrganizationId;
+
+  if (!organizationId) {
+    redirect('/');
+  }
+
+  const employeeTrainingVideos = await db.employeeTrainingVideoCompletion.findMany({
+    where: {
+      memberId: employeeId,
+    },
+    orderBy: {
+      videoId: 'asc',
+    },
+  });
+
+  // Map the db records to include the matching metadata from the training videos data
+  // Filter out any videos where metadata is not found to ensure type safety
+  return employeeTrainingVideos
+    .map((dbVideo) => {
+      // Find the training video metadata with the matching ID
+      const videoMetadata = trainingVideosData.find(
+        (metadataVideo) => metadataVideo.id === dbVideo.videoId,
+      );
+
+      // Only return videos that have matching metadata
+      if (videoMetadata) {
+        return {
+          ...dbVideo,
+          metadata: videoMetadata,
+        };
+      }
+      return null;
+    })
+    .filter(
+      (
+        video,
+      ): video is EmployeeTrainingVideoCompletion & {
+        metadata: TrainingVideo;
+      } => video !== null,
+    );
+};
+
+const getFleetPolicies = async (member: Member & { user: User }) => {
+  const fleet = await getFleetInstance();
+
+  // Only show device if the employee has their own specific fleetDmLabelId
+  if (!member.fleetDmLabelId) {
+    console.log(
+      `No individual fleetDmLabelId found for member: ${member.id}, member email: ${member.user?.email}. No device will be shown.`,
+    );
+    return { fleetPolicies: [], device: null };
+  }
+
+  try {
+    const deviceResponse = await fleet.get(`/labels/${member.fleetDmLabelId}/hosts`);
+    const device = deviceResponse.data.hosts?.[0];
+
+    if (!device) {
+      console.log(
+        `No device found for fleetDmLabelId: ${member.fleetDmLabelId} for member: ${member.id}`,
+      );
+      return { fleetPolicies: [], device: null };
+    }
+
+    const deviceWithPolicies = await fleet.get(`/hosts/${device.id}`);
+    const host = deviceWithPolicies.data.host;
+
+    const results = await db.fleetPolicyResult.findMany({
+      where: {
+        organizationId: member.organizationId,
+        userId: member.userId,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const platform = host.platform?.toLowerCase();
+    const osVersion = host.os_version?.toLowerCase();
+    const isMacOS =
+      platform === 'darwin' ||
+      platform === 'macos' ||
+      platform === 'osx' ||
+      osVersion?.includes('mac');
+
+    return {
+      fleetPolicies: [
+        ...(host.policies || []),
+        ...(isMacOS
+          ? [
+              {
+                id: MDM_POLICY_ID,
+                name: 'MDM Enabled',
+                response: host.mdm.connected_to_fleet ? 'pass' : 'fail',
+              },
+            ]
+          : []),
+      ].map((policy) => {
+        const policyResult = results.find((result) => result.fleetPolicyId === policy.id);
+        return {
+          ...policy,
+          response:
+            policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass'
+              ? 'pass'
+              : 'fail',
+          attachments: policyResult?.attachments || [],
+        };
+      }),
+      device: host,
+    };
+  } catch (error) {
+    console.error(
+      `Failed to get device using individual fleet label for member: ${member.id}`,
+      error,
+    );
+    return { fleetPolicies: [], device: null };
+  }
+};
+
+const getMemberDevice = async (
+  memberId: string,
+  organizationId: string,
+): Promise<DeviceWithChecks | null> => {
+  const device = await db.device.findFirst({
+    where: { memberId, organizationId },
+    include: {
+      member: {
+        include: {
+          user: {
+            select: { name: true, email: true },
+          },
+        },
+      },
+    },
+    orderBy: { installedAt: 'desc' },
+  });
+
+  if (!device) {
+    return null;
+  }
+
+  return {
+    id: device.id,
+    name: device.name,
+    hostname: device.hostname,
+    platform: device.platform as 'macos' | 'windows' | 'linux',
+    osVersion: device.osVersion,
+    serialNumber: device.serialNumber,
+    hardwareModel: device.hardwareModel,
+    isCompliant: device.isCompliant,
+    diskEncryptionEnabled: device.diskEncryptionEnabled,
+    antivirusEnabled: device.antivirusEnabled,
+    passwordPolicySet: device.passwordPolicySet,
+    screenLockEnabled: device.screenLockEnabled,
+    checkDetails: (device.checkDetails as CheckDetails) ?? null,
+    lastCheckIn: device.lastCheckIn?.toISOString() ?? null,
+    agentVersion: device.agentVersion,
+    installedAt: device.installedAt.toISOString(),
+    user: {
+      name: device.member.user.name,
+      email: device.member.user.email,
+    },
+    source: 'device_agent' as const,
+  };
+};

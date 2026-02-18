@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+@import '@trycompai/design-system/globals.css';
+
+/* Scan DS component source files so Tailwind includes their utility classes */
+@source "../../../../node_modules/@trycompai/design-system/src/**/*.tsx";
+
+@layer base {
+  body {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}

@@ -1119,11 +1119,14 @@ export class TrustPortalService {
     }
   }
 
-  async updateOverview(organizationId: string, data: {
-    overviewTitle?: string | null;
-    overviewContent?: string | null;
-    showOverview?: boolean;
-  }) {
+  async updateOverview(
+    organizationId: string,
+    data: {
+      overviewTitle?: string | null;
+      overviewContent?: string | null;
+      showOverview?: boolean;
+    },
+  ) {
     const trust = await db.trust.findUnique({
       where: { organizationId },
     });
@@ -1159,11 +1162,14 @@ export class TrustPortalService {
     return trust;
   }
 
-  async createCustomLink(organizationId: string, data: {
-    title: string;
-    description?: string | null;
-    url: string;
-  }) {
+  async createCustomLink(
+    organizationId: string,
+    data: {
+      title: string;
+      description?: string | null;
+      url: string;
+    },
+  ) {
     const maxOrder = await db.trustCustomLink.findFirst({
       where: { organizationId },
       orderBy: { order: 'desc' },
@@ -1183,12 +1189,16 @@ export class TrustPortalService {
     });
   }
 
-  async updateCustomLink(linkId: string, data: {
-    title?: string;
-    description?: string | null;
-    url?: string;
-    isActive?: boolean;
-  }, organizationId: string) {
+  async updateCustomLink(
+    linkId: string,
+    data: {
+      title?: string;
+      description?: string | null;
+      url?: string;
+      isActive?: boolean;
+    },
+    organizationId: string,
+  ) {
     const link = await db.trustCustomLink.findUnique({
       where: { id: linkId },
     });
@@ -1198,7 +1208,9 @@ export class TrustPortalService {
     }
 
     if (link.organizationId !== organizationId) {
-      throw new BadRequestException('You can only modify custom links belonging to your organization');
+      throw new BadRequestException(
+        'You can only modify custom links belonging to your organization',
+      );
     }
 
     return db.trustCustomLink.update({
@@ -1217,7 +1229,9 @@ export class TrustPortalService {
     }
 
     if (link.organizationId !== organizationId) {
-      throw new BadRequestException('You can only delete custom links belonging to your organization');
+      throw new BadRequestException(
+        'You can only delete custom links belonging to your organization',
+      );
     }
 
     await db.trustCustomLink.delete({
@@ -1236,7 +1250,9 @@ export class TrustPortalService {
     const invalidIds = linkIds.filter((id) => !linkIdSet.has(id));
 
     if (invalidIds.length > 0) {
-      throw new BadRequestException('Some link IDs do not belong to this organization');
+      throw new BadRequestException(
+        'Some link IDs do not belong to this organization',
+      );
     }
 
     await db.$transaction(
@@ -1604,10 +1620,7 @@ export class TrustPortalService {
         isSubProcessor: true,
         showOnTrustPortal: true,
       },
-      orderBy: [
-        { trustPortalOrder: 'asc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ trustPortalOrder: 'asc' }, { name: 'asc' }],
       select: {
         id: true,
         name: true,
@@ -1619,12 +1632,16 @@ export class TrustPortalService {
     });
   }
 
-  async updateVendorTrustSettings(vendorId: string, data: {
-    logoUrl?: string | null;
-    showOnTrustPortal?: boolean;
-    trustPortalOrder?: number | null;
-    complianceBadges?: any;
-  }, organizationId: string) {
+  async updateVendorTrustSettings(
+    vendorId: string,
+    data: {
+      logoUrl?: string | null;
+      showOnTrustPortal?: boolean;
+      trustPortalOrder?: number | null;
+      complianceBadges?: any;
+    },
+    organizationId: string,
+  ) {
     const vendor = await db.vendor.findUnique({
       where: { id: vendorId },
     });
@@ -1634,7 +1651,9 @@ export class TrustPortalService {
     }
 
     if (vendor.organizationId !== organizationId) {
-      throw new BadRequestException('You can only modify vendors belonging to your organization');
+      throw new BadRequestException(
+        'You can only modify vendors belonging to your organization',
+      );
     }
 
     return db.vendor.update({

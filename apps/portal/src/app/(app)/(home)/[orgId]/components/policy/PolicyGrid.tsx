@@ -1,8 +1,7 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import type { Member, Policy, PolicyVersion } from '@db';
-import { Check } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, Text } from '@trycompai/design-system';
 
 type PolicyWithVersion = Policy & {
   currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
@@ -23,15 +22,13 @@ export function PolicyGrid({ policies, onPolicyClick, member }: PolicyGridProps)
     <div className="space-y-6">
       {!noPoliciesFound && allPoliciesCompleted && (
         <div className="flex w-full flex-col items-center justify-center space-y-2 py-8">
-          <h2 className="text-2xl font-semibold">All Policies Completed!</h2>
-          <p className="text-muted-foreground text-center">
-            You're all done, now your manager won't pester you!
-          </p>
+          <Text weight="medium">All Policies Completed!</Text>
+          <Text variant="muted">You're all done, now your manager won't pester you!</Text>
         </div>
       )}
       {noPoliciesFound && (
         <div className="flex w-full flex-col items-center justify-center space-y-2 py-8">
-          <p className="text-muted-foreground text-center">You don't have any policies to sign!</p>
+          <Text variant="muted">You don't have any policies to sign!</Text>
         </div>
       )}
       {!noPoliciesFound && (
@@ -39,33 +36,37 @@ export function PolicyGrid({ policies, onPolicyClick, member }: PolicyGridProps)
           {policies.map((policy, index) => {
             const isCompleted = policy.signedBy.includes(member.id);
             return (
-              <Card
+              <div
                 key={policy.id}
-                className="relative flex h-[280px] cursor-pointer flex-col transition-shadow hover:shadow-lg"
+                className="relative flex min-h-[220px] cursor-pointer flex-col transition-shadow hover:shadow-lg md:min-h-[260px]"
                 onClick={() => onPolicyClick(index)}
               >
-                {isCompleted && (
-                  <div className="bg-background/60 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[2px]">
-                    <Check className="text-primary h-12 w-12" />
-                  </div>
-                )}
-                <CardHeader>
-                  <CardTitle className="text-xl">{policy.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <p className="text-muted-foreground line-clamp-4">{policy.description}</p>
-                  <div className="absolute right-6 bottom-6 left-6">
-                    <p className="text-muted-foreground text-sm">
-                      Status: {policy.status}
-                      {policy.updatedAt && (
-                        <span className="ml-2">
-                          (Updated: {new Date(policy.updatedAt).toLocaleDateString()})
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                <Card>
+                  {isCompleted && (
+                    <div className="bg-background/60 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[2px]">
+                      <Text weight="medium">Completed</Text>
+                    </div>
+                  )}
+                  <CardHeader>
+                    <CardTitle>{policy.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex min-h-[120px] flex-col justify-between gap-4">
+                      <p className="text-muted-foreground line-clamp-4">{policy.description}</p>
+                      <div>
+                        <Text variant="muted" size="sm">
+                          Status: {policy.status}
+                          {policy.updatedAt && (
+                            <span className="ml-2">
+                              (Updated: {new Date(policy.updatedAt).toLocaleDateString()})
+                            </span>
+                          )}
+                        </Text>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             );
           })}
         </div>

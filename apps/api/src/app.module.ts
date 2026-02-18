@@ -33,12 +33,10 @@ import { CloudSecurityModule } from './cloud-security/cloud-security.module';
 import { BrowserbaseModule } from './browserbase/browserbase.module';
 import { TaskManagementModule } from './task-management/task-management.module';
 import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
+import { OrgChartModule } from './org-chart/org-chart.module';
 import { TrainingModule } from './training/training.module';
+import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
 import { RolesModule } from './roles/roles.module';
-import { ControlsModule } from './controls/controls.module';
-import { FrameworksModule } from './frameworks/frameworks.module';
-import { AuditModule } from './audit/audit.module';
-import { SecretsModule } from './secrets/secrets.module';
 
 @Module({
   imports: [
@@ -58,7 +56,6 @@ import { SecretsModule } from './secrets/secrets.module';
       },
     ]),
     AuthModule,
-    RolesModule,
     OrganizationModule,
     PeopleModule,
     RisksModule,
@@ -86,10 +83,9 @@ import { SecretsModule } from './secrets/secrets.module';
     TaskManagementModule,
     AssistantChatModule,
     TrainingModule,
-    ControlsModule,
-    FrameworksModule,
-    AuditModule,
-    SecretsModule,
+    OrgChartModule,
+    EvidenceFormsModule,
+    RolesModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,7 +1,16 @@
-import { serverApi } from '@/lib/api-server';
+import { auth } from '@/utils/auth';
+import { db } from '@db';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 import { Overview } from './components/Overview';
+import { getAllFrameworkInstancesWithControls } from './data/getAllFrameworkInstancesWithControls';
+import { getFrameworkWithComplianceScores } from './data/getFrameworkWithComplianceScores';
+import { getDocumentsScore } from './lib/getDocuments';
+import { getPeopleScore } from './lib/getPeople';
+import { getPublishedPoliciesScore } from './lib/getPolicies';
+import { getDoneTasks } from './lib/getTasks';
 
 export async function generateMetadata() {
   return {
@@ -9,49 +18,58 @@ export async function generateMetadata() {
   };
 }
 
-export default async function DashboardPage({
-  params,
-}: {
-  params: Promise<{ orgId: string }>;
-}) {
+export default async function DashboardPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId: organizationId } = await params;
 
-  const [frameworksRes, availableRes, scoresRes, findingsRes] =
-    await Promise.all([
-      serverApi.get<{ data: any[]; count: number }>(
-        '/v1/frameworks?includeControls=true&includeScores=true',
-      ),
-      serverApi.get<{ data: any[]; count: number }>('/v1/frameworks/available'),
-      serverApi.get<{
-        policies: {
-          total: number;
-          published: number;
-          draftPolicies: any[];
-          policiesInReview: any[];
-          unpublishedPolicies: any[];
-        };
-        tasks: { total: number; done: number; incompleteTasks: any[] };
-        people: { total: number; completed: number };
-        onboardingTriggerJobId: string | null;
-        currentMember: { id: string; role: string } | null;
-      }>('/v1/frameworks/scores'),
-      serverApi.get<{ data: any[] }>('/v1/findings/organization'),
-    ]);
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-  if (!frameworksRes.data || !scoresRes.data) {
+  if (!session) {
     redirect('/login');
   }
 
-  const frameworksWithControls = frameworksRes.data.data ?? [];
-  const allFrameworks = availableRes.data?.data ?? [];
-  const scores = scoresRes.data;
-  const findings = findingsRes.data?.data ?? [];
+  const org = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: { onboardingCompleted: true },
+  });
 
-  // Transform API response to match component interfaces
-  const frameworksWithCompliance = frameworksWithControls.map((fw: any) => ({
-    frameworkInstance: fw,
-    complianceScore: fw.complianceScore ?? 0,
-  }));
+  if (org && org.onboardingCompleted === false) {
+    redirect(`/onboarding/${organizationId}`);
+  }
+
+  // Get onboarding status to check if it's still running
+  const onboarding = await db.onboarding.findUnique({
+    where: { organizationId },
+    select: { triggerJobId: true },
+  });
+
+  const member = await db.member.findFirst({
+    where: {
+      userId: session.user.id,
+      organizationId,
+      deactivated: false,
+    },
+  });
+
+  const tasks = await getControlTasks();
+  const frameworksWithControls = await getAllFrameworkInstancesWithControls({
+    organizationId,
+  });
+
+  const frameworksWithCompliance = await getFrameworkWithComplianceScores({
+    frameworksWithControls,
+    tasks,
+  });
+
+  const allFrameworks = await db.frameworkEditorFramework.findMany({
+    where: {
+      visible: true,
+    },
+  });
+
+  const scores = await getScores();
+  const findings = await getOrganizationFindings(organizationId);
 
   return (
     <PageLayout header={<PageHeader title="Overview" />}>
@@ -60,26 +78,130 @@ export default async function DashboardPage({
         frameworksWithCompliance={frameworksWithCompliance}
         allFrameworks={allFrameworks}
         organizationId={organizationId}
-        publishedPoliciesScore={{
-          totalPolicies: scores.policies.total,
-          publishedPolicies: scores.policies.published,
-          draftPolicies: scores.policies.draftPolicies,
-          policiesInReview: scores.policies.policiesInReview,
-          unpublishedPolicies: scores.policies.unpublishedPolicies,
-        }}
-        doneTasksScore={{
-          totalTasks: scores.tasks.total,
-          doneTasks: scores.tasks.done,
-          incompleteTasks: scores.tasks.incompleteTasks,
-        }}
-        peopleScore={{
-          totalMembers: scores.people.total,
-          completedMembers: scores.people.completed,
-        }}
-        currentMember={scores.currentMember}
-        onboardingTriggerJobId={scores.onboardingTriggerJobId}
+        publishedPoliciesScore={scores.publishedPoliciesScore}
+        doneTasksScore={scores.doneTasksScore}
+        documentsScore={scores.documentsScore}
+        peopleScore={scores.peopleScore}
+        currentMember={member}
+        onboardingTriggerJobId={onboarding?.triggerJobId ?? null}
         findings={findings}
       />
     </PageLayout>
   );
 }
+
+const getScores = cache(async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const organizationId = session?.session.activeOrganizationId;
+
+  if (!organizationId) {
+    return {
+      publishedPoliciesScore: {
+        totalPolicies: 0,
+        publishedPolicies: 0,
+        draftPolicies: [],
+        policiesInReview: [],
+        unpublishedPolicies: [],
+      },
+      doneTasksScore: {
+        totalTasks: 0,
+        doneTasks: 0,
+        incompleteTasks: [],
+      },
+      documentsScore: {
+        totalDocuments: 0,
+        completedDocuments: 0,
+        outstandingDocuments: 0,
+      },
+      peopleScore: {
+        totalMembers: 0,
+        completedMembers: 0,
+      },
+    };
+  }
+
+  const publishedPoliciesScore = await getPublishedPoliciesScore(organizationId);
+  const doneTasksScore = await getDoneTasks(organizationId);
+  const documentsScore = await getDocumentsScore(organizationId);
+  const peopleScore = await getPeopleScore(organizationId);
+
+  return {
+    publishedPoliciesScore,
+    doneTasksScore,
+    documentsScore,
+    peopleScore,
+  };
+});
+
+const getControlTasks = cache(async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const organizationId = session?.session.activeOrganizationId;
+
+  if (!organizationId) {
+    return [];
+  }
+
+  const tasks = await db.task.findMany({
+    where: {
+      organizationId,
+      controls: {
+        some: {
+          organizationId,
+        },
+      },
+    },
+    include: {
+      controls: true,
+      evidenceAutomations: {
+        select: {
+          isEnabled: true,
+          runs: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 1,
+            select: {
+              status: true,
+              success: true,
+              evaluationStatus: true,
+              createdAt: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return tasks;
+});
+
+const getOrganizationFindings = cache(async (organizationId: string) => {
+  const findings = await db.finding.findMany({
+    where: {
+      organizationId,
+    },
+    include: {
+      task: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
+      evidenceSubmission: {
+        select: {
+          id: true,
+          formType: true,
+        },
+      },
+    },
+    orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+  });
+
+  return findings;
+});

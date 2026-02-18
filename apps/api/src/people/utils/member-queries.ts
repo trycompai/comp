@@ -17,6 +17,7 @@ export class MemberQueries {
     role: true,
     createdAt: true,
     department: true,
+    jobTitle: true,
     isActive: true,
     fleetDmLabelId: true,
     user: {
@@ -83,6 +84,7 @@ export class MemberQueries {
         department: createData.department || 'none',
         isActive: createData.isActive ?? true,
         fleetDmLabelId: createData.fleetDmLabelId || null,
+        jobTitle: createData.jobTitle || null,
       },
       select: this.MEMBER_SELECT,
     });
@@ -225,6 +227,7 @@ export class MemberQueries {
       department: member.department || 'none',
       isActive: member.isActive ?? true,
       fleetDmLabelId: member.fleetDmLabelId || null,
+      jobTitle: member.jobTitle || null,
     }));
 
     // Perform bulk insert

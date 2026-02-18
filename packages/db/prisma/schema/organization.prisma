@@ -13,6 +13,8 @@ model Organization {
   evidenceApprovalEnabled         Boolean     @default(false)
   deviceAgentStepEnabled          Boolean     @default(true)
   securityTrainingStepEnabled     Boolean     @default(true)
+  whistleblowerReportEnabled      Boolean     @default(true)
+  accessRequestFormEnabled        Boolean     @default(true)
 
   // FleetDM
   fleetDmLabelId        Int?
@@ -36,6 +38,7 @@ model Organization {
   taskItems                          TaskItem[]
   comments                           Comment[]
   attachments                        Attachment[]
+  evidenceSubmissions                EvidenceSubmission[]
   trust                              Trust[]
   context                            Context[]
   secrets                            Secret[]
@@ -62,11 +65,15 @@ model Organization {
   // Findings
   findings Finding[]
 
-  // Custom roles for dynamic access control
-  organizationRoles OrganizationRole[]
+  // Device Agent
+  devices Device[]
 
-  // Role-based notification settings
-  roleNotificationSettings RoleNotificationSetting[]
+  // Org Chart
+  organizationChart OrganizationChart?
+
+  // RBAC
+  organizationRoles          OrganizationRole[]
+  roleNotificationSettings   RoleNotificationSetting[]
 
   @@index([slug])
 }

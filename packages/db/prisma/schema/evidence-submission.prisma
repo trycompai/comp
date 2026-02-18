@@ -1,0 +1,23 @@
+model EvidenceSubmission {
+  id             String   @id @default(dbgenerated("generate_prefixed_cuid('evs'::text)"))
+  organizationId String
+  formType       String
+  submittedById  String?
+  submittedAt    DateTime @default(now())
+  data           Json
+  status         String   @default("pending")
+  reviewedById   String?
+  reviewedAt     DateTime?
+  reviewReason   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  submittedBy  User?        @relation("EvidenceSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
+  reviewedBy   User?        @relation("EvidenceReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  findings     Finding[]
+
+  @@index([organizationId, formType, submittedAt])
+  @@index([organizationId, formType])
+  @@index([submittedById, status])
+}

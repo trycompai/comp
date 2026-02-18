@@ -18,6 +18,8 @@ model User {
   members            Member[]
   sessions           Session[]
   fleetPolicyResults FleetPolicyResult[]
+  evidenceSubmissions EvidenceSubmission[] @relation("EvidenceSubmitter")
+  evidenceReviews     EvidenceSubmission[] @relation("EvidenceReviewer")
 
   @@unique([email])
 }
@@ -97,6 +99,7 @@ model Member {
   createdAt      DateTime     @default(now())
 
   department                      Departments                       @default(none)
+  jobTitle                        String?
   isActive                        Boolean                           @default(true)
   deactivated                     Boolean                           @default(false)
   employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
@@ -119,6 +122,7 @@ model Member {
   createdFindings        Finding[]            @relation("FindingCreatedBy")
   publishedPolicyVersions PolicyVersion[]     @relation("PolicyVersionPublisher")
   approvedTasks           Task[]               @relation("TaskApprover")
+  devices                 Device[]
 }
 
 model Invitation {

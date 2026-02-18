@@ -1,7 +1,22 @@
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+  PageLayout,
+} from '@trycompai/design-system';
+
 export default async function Unauthorized() {
   return (
-    <div>
-      <h1>We couldn't find an organization for you. Please contact your administrator.</h1>
-    </div>
+    <PageLayout>
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>Organization not found</EmptyTitle>
+          <EmptyDescription>
+            We couldn't find an organization for your account. Please contact your administrator.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    </PageLayout>
   );
 }

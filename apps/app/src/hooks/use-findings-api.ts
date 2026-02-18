@@ -14,7 +14,8 @@ export interface Finding {
   revisionNote: string | null;
   createdAt: string;
   updatedAt: string;
-  taskId: string;
+  taskId: string | null;
+  evidenceSubmissionId: string | null;
   templateId: string | null;
   createdById: string;
   organizationId: string;
@@ -35,7 +36,13 @@ export interface Finding {
   task: {
     id: string;
     title: string;
-  };
+  } | null;
+  evidenceSubmission: {
+    id: string;
+    formType: string;
+    submittedAt: string;
+    submittedById: string | null;
+  } | null;
 }
 
 export interface FindingTemplate {
@@ -49,7 +56,8 @@ export interface FindingTemplate {
 }
 
 interface CreateFindingData {
-  taskId: string;
+  taskId?: string;
+  evidenceSubmissionId?: string;
   type?: FindingType;
   templateId?: string;
   content: string;
@@ -101,6 +109,23 @@ export interface UseFindingsOptions extends UseApiSWROptions<Finding[]> {
  */
 export function useTaskFindings(taskId: string | null, options: UseFindingsOptions = {}) {
   const endpoint = taskId ? `/v1/findings?taskId=${taskId}` : null;
+
+  return useApiSWR<Finding[]>(endpoint, {
+    ...options,
+    refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
+  });
+}
+
+/**
+ * Hook to fetch findings for a specific evidence submission
+ */
+export function useSubmissionFindings(
+  evidenceSubmissionId: string | null,
+  options: UseFindingsOptions = {},
+) {
+  const endpoint = evidenceSubmissionId
+    ? `/v1/findings?evidenceSubmissionId=${evidenceSubmissionId}`
+    : null;
 
   return useApiSWR<Finding[]>(endpoint, {
     ...options,

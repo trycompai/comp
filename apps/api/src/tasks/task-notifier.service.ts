@@ -574,45 +574,49 @@ export class TaskNotifierService {
     } = params;
 
     try {
-      const [organization, changedByUser, oldAssigneeMember, newAssigneeMember] =
-        await Promise.all([
-          db.organization.findUnique({
-            where: { id: organizationId },
-            select: { name: true },
-          }),
-          db.user.findUnique({
-            where: { id: changedByUserId },
-            select: { name: true, email: true },
-          }),
-          oldAssigneeId
-            ? db.member.findUnique({
-                where: { id: oldAssigneeId },
-                select: {
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                    },
+      const [
+        organization,
+        changedByUser,
+        oldAssigneeMember,
+        newAssigneeMember,
+      ] = await Promise.all([
+        db.organization.findUnique({
+          where: { id: organizationId },
+          select: { name: true },
+        }),
+        db.user.findUnique({
+          where: { id: changedByUserId },
+          select: { name: true, email: true },
+        }),
+        oldAssigneeId
+          ? db.member.findUnique({
+              where: { id: oldAssigneeId },
+              select: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
                   },
                 },
-              })
-            : Promise.resolve(null),
-          newAssigneeId
-            ? db.member.findUnique({
-                where: { id: newAssigneeId },
-                select: {
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                    },
+              },
+            })
+          : Promise.resolve(null),
+        newAssigneeId
+          ? db.member.findUnique({
+              where: { id: newAssigneeId },
+              select: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
                   },
                 },
-              })
-            : Promise.resolve(null),
-        ]);
+              },
+            })
+          : Promise.resolve(null),
+      ]);
 
       const organizationName = organization?.name ?? 'your organization';
       const changedByName =
@@ -743,31 +747,39 @@ export class TaskNotifierService {
     submittedByUserId: string;
     approverMemberId: string;
   }): Promise<void> {
-    const { organizationId, taskId, taskTitle, submittedByUserId, approverMemberId } = params;
+    const {
+      organizationId,
+      taskId,
+      taskTitle,
+      submittedByUserId,
+      approverMemberId,
+    } = params;
 
     try {
-      const [organization, submittedByUser, approverMember] = await Promise.all([
-        db.organization.findUnique({
-          where: { id: organizationId },
-          select: { name: true },
-        }),
-        db.user.findUnique({
-          where: { id: submittedByUserId },
-          select: { name: true, email: true },
-        }),
-        db.member.findUnique({
-          where: { id: approverMemberId },
-          select: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
+      const [organization, submittedByUser, approverMember] = await Promise.all(
+        [
+          db.organization.findUnique({
+            where: { id: organizationId },
+            select: { name: true },
+          }),
+          db.user.findUnique({
+            where: { id: submittedByUserId },
+            select: { name: true, email: true },
+          }),
+          db.member.findUnique({
+            where: { id: approverMemberId },
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
               },
             },
-          },
-        }),
-      ]);
+          }),
+        ],
+      );
 
       const organizationName = organization?.name ?? 'your organization';
       const submittedByName =
@@ -776,7 +788,9 @@ export class TaskNotifierService {
         'Someone';
 
       if (!approverMember?.user?.id || !approverMember.user.email) {
-        this.logger.warn('Approver not found, skipping review request notification');
+        this.logger.warn(
+          'Approver not found, skipping review request notification',
+        );
         return;
       }
 
@@ -787,7 +801,10 @@ export class TaskNotifierService {
 
       const recipient = {
         id: approverMember.user.id,
-        name: approverMember.user.name?.trim() || approverMember.user.email?.trim() || 'User',
+        name:
+          approverMember.user.name?.trim() ||
+          approverMember.user.email?.trim() ||
+          'User',
         email: approverMember.user.email,
       };
 
@@ -876,41 +893,48 @@ export class TaskNotifierService {
     submittedByUserId: string;
     approverMemberId: string;
   }): Promise<void> {
-    const { organizationId, taskIds, taskCount, submittedByUserId, approverMemberId } = params;
+    const {
+      organizationId,
+      taskIds,
+      taskCount,
+      submittedByUserId,
+      approverMemberId,
+    } = params;
 
     try {
-      const [organization, submittedByUser, approverMember, tasks] = await Promise.all([
-        db.organization.findUnique({
-          where: { id: organizationId },
-          select: { name: true },
-        }),
-        db.user.findUnique({
-          where: { id: submittedByUserId },
-          select: { name: true, email: true },
-        }),
-        db.member.findUnique({
-          where: { id: approverMemberId },
-          select: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
+      const [organization, submittedByUser, approverMember, tasks] =
+        await Promise.all([
+          db.organization.findUnique({
+            where: { id: organizationId },
+            select: { name: true },
+          }),
+          db.user.findUnique({
+            where: { id: submittedByUserId },
+            select: { name: true, email: true },
+          }),
+          db.member.findUnique({
+            where: { id: approverMemberId },
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
               },
             },
-          },
-        }),
-        db.task.findMany({
-          where: {
-            id: { in: taskIds },
-            organizationId,
-          },
-          select: {
-            id: true,
-            title: true,
-          },
-        }),
-      ]);
+          }),
+          db.task.findMany({
+            where: {
+              id: { in: taskIds },
+              organizationId,
+            },
+            select: {
+              id: true,
+              title: true,
+            },
+          }),
+        ]);
 
       const organizationName = organization?.name ?? 'your organization';
       const submittedByName =
@@ -919,7 +943,9 @@ export class TaskNotifierService {
         'Someone';
 
       if (!approverMember?.user?.id || !approverMember.user.email) {
-        this.logger.warn('Approver not found, skipping bulk review notification');
+        this.logger.warn(
+          'Approver not found, skipping bulk review notification',
+        );
         return;
       }
 
@@ -930,7 +956,10 @@ export class TaskNotifierService {
 
       const recipient = {
         id: approverMember.user.id,
-        name: approverMember.user.name?.trim() || approverMember.user.email?.trim() || 'User',
+        name:
+          approverMember.user.name?.trim() ||
+          approverMember.user.email?.trim() ||
+          'User',
         email: approverMember.user.email,
       };
 

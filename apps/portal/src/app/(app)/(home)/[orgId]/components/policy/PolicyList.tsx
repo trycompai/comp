@@ -13,9 +13,5 @@ interface PolicyListProps {
 }
 
 export function PolicyList({ policies, member }: PolicyListProps) {
-  return (
-    <div className="mx-auto w-full max-w-[1400px]">
-      <PolicyContainer policies={policies} member={member} />
-    </div>
-  );
+  return <PolicyContainer policies={policies} member={member} />;
 }

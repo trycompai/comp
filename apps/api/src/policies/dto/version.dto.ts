@@ -38,6 +38,7 @@ export class UpdateVersionContentDto {
   })
   @Transform(({ value }) => value) // Preserve raw JSON, don't let class-transformer mangle it
   @IsArray()
+  @Transform(({ value }) => value)
   content: unknown[];
 }
 

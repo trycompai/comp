@@ -47,7 +47,8 @@ const createFindingSchema = z.object({
 });
 
 interface CreateFindingSheetProps {
-  taskId: string;
+  taskId?: string;
+  evidenceSubmissionId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -55,6 +56,7 @@ interface CreateFindingSheetProps {
 
 export function CreateFindingSheet({
   taskId,
+  evidenceSubmissionId,
   open,
   onOpenChange,
   onSuccess,
@@ -105,6 +107,7 @@ export function CreateFindingSheet({
         
         await createFinding({
           taskId,
+          evidenceSubmissionId,
           type: data.type,
           templateId: templateId || undefined,
           content: data.content,
@@ -119,7 +122,7 @@ export function CreateFindingSheet({
         setIsSubmitting(false);
       }
     },
-    [createFinding, taskId, onOpenChange, form, onSuccess],
+    [createFinding, taskId, evidenceSubmissionId, onOpenChange, form, onSuccess],
   );
 
   const handleTemplateChange = useCallback(

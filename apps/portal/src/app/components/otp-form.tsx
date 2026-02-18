@@ -71,17 +71,13 @@ export function OtpForm({ email }: OtpFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <InputOTP
-                  maxLength={INPUT_LENGTH}
-                  {...field}
-                  render={({ slots }) => (
-                    <InputOTPGroup>
-                      {slots.map((slot, index) => (
-                        <InputOTPSlot key={index} {...slot} />
-                      ))}
-                    </InputOTPGroup>
-                  )}
-                />
+                <InputOTP maxLength={INPUT_LENGTH} {...field}>
+                  <InputOTPGroup>
+                    {Array.from({ length: INPUT_LENGTH }, (_, i) => (
+                      <InputOTPSlot key={i} index={i} />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
               </FormControl>
               <FormMessage />
             </FormItem>
