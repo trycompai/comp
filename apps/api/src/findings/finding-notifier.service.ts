@@ -343,7 +343,9 @@ export class FindingNotifierService {
     const findingUrl =
       evidenceSubmissionId && evidenceSubmissionFormType
         ? `${getAppUrl()}/${organizationId}/documents/${evidenceSubmissionFormType}/submissions/${evidenceSubmissionId}`
-        : `${getAppUrl()}/${organizationId}/tasks/${taskId}`;
+        : evidenceSubmissionFormType
+          ? `${getAppUrl()}/${organizationId}/documents/${evidenceSubmissionFormType}`
+          : `${getAppUrl()}/${organizationId}/tasks/${taskId}`;
     const typeLabel = TYPE_LABELS[findingType];
     const statusLabel = newStatus ? STATUS_LABELS[newStatus] : undefined;
 
