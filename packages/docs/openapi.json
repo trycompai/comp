@@ -8212,6 +8212,44 @@
         ]
       }
     },
+    "/v1/internal/tasks/notify-status-change": {
+      "post": {
+        "operationId": "InternalTaskNotificationController_notifyStatusChange_v1",
+        "parameters": [
+          {
+            "name": "X-Internal-Token",
+            "in": "header",
+            "description": "Internal service token (required in production)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotifyStatusChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notifications sent"
+          },
+          "500": {
+            "description": "Notification delivery failed"
+          }
+        },
+        "summary": "Send task status change notifications (email + in-app) without a user actor (internal)",
+        "tags": [
+          "Internal - Tasks"
+        ]
+      }
+    },
     "/v1/tasks/{taskId}/automations": {
       "get": {
         "description": "Retrieve all automations for a specific task",
@@ -18503,6 +18541,54 @@
           "fileName",
           "fileType",
           "fileData"
+        ]
+      },
+      "NotifyStatusChangeDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID"
+          },
+          "taskId": {
+            "type": "string",
+            "description": "Task ID"
+          },
+          "taskTitle": {
+            "type": "string",
+            "description": "Task title"
+          },
+          "oldStatus": {
+            "type": "string",
+            "description": "Previous task status",
+            "enum": [
+              "todo",
+              "in_progress",
+              "in_review",
+              "done",
+              "not_relevant",
+              "failed"
+            ]
+          },
+          "newStatus": {
+            "type": "string",
+            "description": "New task status",
+            "enum": [
+              "todo",
+              "in_progress",
+              "in_review",
+              "done",
+              "not_relevant",
+              "failed"
+            ]
+          }
+        },
+        "required": [
+          "organizationId",
+          "taskId",
+          "taskTitle",
+          "oldStatus",
+          "newStatus"
         ]
       },
       "UpdateAutomationDto": {
