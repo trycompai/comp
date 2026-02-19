@@ -124,18 +124,12 @@ export function CompanySubmissionWizard({
     () => visibleFields.filter((f) => f.type === 'textarea'),
     [visibleFields],
   );
-  const fileFields = useMemo(
-    () => visibleFields.filter((f) => f.type === 'file'),
-    [visibleFields],
-  );
+  const fileFields = useMemo(() => visibleFields.filter((f) => f.type === 'file'), [visibleFields]);
   const extendedFields = useMemo(
     () => visibleFields.filter((f) => f.type === 'textarea' || f.type === 'file'),
     [visibleFields],
   );
-  const step3Fields = useMemo(
-    () => [...fileFields, ...matrixFields],
-    [fileFields, matrixFields],
-  );
+  const step3Fields = useMemo(() => [...fileFields, ...matrixFields], [fileFields, matrixFields]);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -282,6 +276,63 @@ export function CompanySubmissionWizard({
     return true;
   };
 
+  const runAiAnalysis = async (targetStep: Step) => {
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
+    setAnalysisError(null);
+    setAnalysisSkipped(false);
+    setStep(targetStep);
+    try {
+      let analyzeBody: Record<string, unknown>;
+      if (isMeeting) {
+        analyzeBody = {
+          formType: 'meeting',
+          meetingMinutes: String(getValues('meetingMinutes' as never) ?? ''),
+          meetingType: selectedMeetingType,
+        };
+      } else {
+        const attendeeRows = normalizeMatrixRows(getValues('attendees' as never));
+        const actionItemRows = normalizeMatrixRows(getValues('actionItems' as never));
+        analyzeBody = {
+          formType: 'tabletop-exercise',
+          scenarioDescription: String(getValues('scenarioDescription' as never) ?? ''),
+          sessionNotes: String(getValues('sessionNotes' as never) ?? ''),
+          attendees: attendeeRows
+            .map((r) => `${r.name ?? ''} — ${r.roleTitle ?? ''}, ${r.department ?? ''}`)
+            .join('\n'),
+          actionItems: actionItemRows
+            .map(
+              (r) =>
+                `Finding: ${r.finding ?? ''} | Action: ${r.improvementAction ?? ''} | Owner: ${r.assignedOwner ?? ''} | Due: ${r.dueDate ?? ''}`,
+            )
+            .join('\n'),
+        };
+      }
+      const response = await fetch('/api/evidence-forms/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Organization-Id': organizationId,
+        },
+        body: JSON.stringify(analyzeBody),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        setAnalysisError(
+          (errorData as { error?: string } | null)?.error ??
+            'AI analysis unavailable. You may submit without analysis.',
+        );
+        return;
+      }
+      const result = (await response.json()) as EvidenceFormAnalysisResult;
+      setAnalysisResult(result);
+    } catch {
+      setAnalysisError('AI analysis unavailable. You may submit without analysis.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const goToStepTwo = async () => {
     const keys: string[] = [];
     if (activeFormDefinition.submissionDateMode === 'custom') keys.push('submissionDate');
@@ -298,7 +349,8 @@ export function CompanySubmissionWizard({
   const goToStepThree = async () => {
     if (useFourSteps) {
       const keys = textareaFields.map((f) => f.key);
-      const isValid = keys.length === 0 ? true : await trigger(keys as never, { shouldFocus: true });
+      const isValid =
+        keys.length === 0 ? true : await trigger(keys as never, { shouldFocus: true });
       if (!isValid) {
         toast.error('Complete required fields before continuing');
         return;
@@ -319,60 +371,7 @@ export function CompanySubmissionWizard({
       return;
     }
     if (hasAiAnalysis) {
-      setIsAnalyzing(true);
-      setAnalysisResult(null);
-      setAnalysisError(null);
-      setAnalysisSkipped(false);
-      setStep(3);
-      try {
-        let analyzeBody: Record<string, unknown>;
-        if (isMeeting) {
-          analyzeBody = {
-            formType: 'meeting',
-            meetingMinutes: String(getValues('meetingMinutes' as never) ?? ''),
-            meetingType: selectedMeetingType,
-          };
-        } else {
-          const attendeeRows = normalizeMatrixRows(getValues('attendees' as never));
-          const actionItemRows = normalizeMatrixRows(getValues('actionItems' as never));
-          analyzeBody = {
-            formType: 'tabletop-exercise',
-            scenarioDescription: String(getValues('scenarioDescription' as never) ?? ''),
-            sessionNotes: String(getValues('sessionNotes' as never) ?? ''),
-            attendees: attendeeRows
-              .map((r) => `${r.name ?? ''} — ${r.roleTitle ?? ''}, ${r.department ?? ''}`)
-              .join('\n'),
-            actionItems: actionItemRows
-              .map(
-                (r) =>
-                  `Finding: ${r.finding ?? ''} | Action: ${r.improvementAction ?? ''} | Owner: ${r.assignedOwner ?? ''} | Due: ${r.dueDate ?? ''}`,
-              )
-              .join('\n'),
-          };
-        }
-        const response = await fetch('/api/evidence-forms/analyze', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Organization-Id': organizationId,
-          },
-          body: JSON.stringify(analyzeBody),
-        });
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => null);
-          setAnalysisError(
-            (errorData as { error?: string } | null)?.error ??
-              'AI analysis unavailable. You may submit without analysis.',
-          );
-          return;
-        }
-        const result = (await response.json()) as EvidenceFormAnalysisResult;
-        setAnalysisResult(result);
-      } catch {
-        setAnalysisError('AI analysis unavailable. You may submit without analysis.');
-      } finally {
-        setIsAnalyzing(false);
-      }
+      await runAiAnalysis(3);
     } else {
       setStep(3);
     }
@@ -389,65 +388,7 @@ export function CompanySubmissionWizard({
     }
 
     if (hasAiAnalysis) {
-      setIsAnalyzing(true);
-      setAnalysisResult(null);
-      setAnalysisError(null);
-      setAnalysisSkipped(false);
-      setStep(4);
-
-      try {
-        let analyzeBody: Record<string, unknown>;
-
-        if (isMeeting) {
-          analyzeBody = {
-            formType: 'meeting',
-            meetingMinutes: String(getValues('meetingMinutes' as never) ?? ''),
-            meetingType: selectedMeetingType,
-          };
-        } else {
-          const attendeeRows = normalizeMatrixRows(getValues('attendees' as never));
-          const actionItemRows = normalizeMatrixRows(getValues('actionItems' as never));
-          analyzeBody = {
-            formType: 'tabletop-exercise',
-            scenarioDescription: String(getValues('scenarioDescription' as never) ?? ''),
-            sessionNotes: String(getValues('sessionNotes' as never) ?? ''),
-            attendees: attendeeRows
-              .map((r) => `${r.name ?? ''} — ${r.roleTitle ?? ''}, ${r.department ?? ''}`)
-              .join('\n'),
-            actionItems: actionItemRows
-              .map(
-                (r) =>
-                  `Finding: ${r.finding ?? ''} | Action: ${r.improvementAction ?? ''} | Owner: ${r.assignedOwner ?? ''} | Due: ${r.dueDate ?? ''}`,
-              )
-              .join('\n'),
-          };
-        }
-
-        const response = await fetch('/api/evidence-forms/analyze', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Organization-Id': organizationId,
-          },
-          body: JSON.stringify(analyzeBody),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => null);
-          setAnalysisError(
-            (errorData as { error?: string } | null)?.error ??
-              'AI analysis unavailable. You may submit without analysis.',
-          );
-          return;
-        }
-
-        const result = (await response.json()) as EvidenceFormAnalysisResult;
-        setAnalysisResult(result);
-      } catch {
-        setAnalysisError('AI analysis unavailable. You may submit without analysis.');
-      } finally {
-        setIsAnalyzing(false);
-      }
+      await runAiAnalysis(4);
     } else {
       setStep(4);
     }
@@ -731,10 +672,13 @@ export function CompanySubmissionWizard({
                                           }
                                           if (trimmed === '.txt') return ['text/plain', []];
                                           if (trimmed === '.svg') return ['image/svg+xml', []];
-                                          if (trimmed === '.vsdx') return ['application/vnd.visio', []];
+                                          if (trimmed === '.vsdx')
+                                            return ['application/vnd.visio', []];
                                           return null;
                                         })
-                                        .filter((entry): entry is [string, string[]] => entry !== null),
+                                        .filter(
+                                          (entry): entry is [string, string[]] => entry !== null,
+                                        ),
                                     )
                                   : { 'application/pdf': [], 'image/*': [], 'text/*': [] }
                               }
@@ -756,9 +700,10 @@ export function CompanySubmissionWizard({
                               typeof (controllerField.value as { fileName?: unknown }).fileName ===
                                 'string' && (
                                 <Text size="sm" variant="muted">
-                                  Uploaded: {(controllerField.value as { fileName: string }).fileName}
+                                  Uploaded:{' '}
+                                  {(controllerField.value as { fileName: string }).fileName}
                                 </Text>
-                            )}
+                              )}
                           </div>
                         )}
                         <FieldError errors={[fieldState.error]} />
@@ -812,7 +757,12 @@ export function CompanySubmissionWizard({
                                     id={`${field.key}-${rowIndex}-${column.key}`}
                                     value={row[column.key] ?? ''}
                                     onChange={(event) =>
-                                      updateMatrixCell(field, rowIndex, column.key, event.target.value)
+                                      updateMatrixCell(
+                                        field,
+                                        rowIndex,
+                                        column.key,
+                                        event.target.value,
+                                      )
                                     }
                                     placeholder={column.placeholder}
                                   />
@@ -821,7 +771,11 @@ export function CompanySubmissionWizard({
                             </div>
                           </div>
                         ))}
-                        <Button type="button" variant="secondary" onClick={() => addMatrixRow(field)}>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => addMatrixRow(field)}
+                        >
                           {field.addRowLabel ?? 'Add row'}
                         </Button>
                       </div>
@@ -992,7 +946,9 @@ export function CompanySubmissionWizard({
               <div className="rounded-md border border-border p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <Text size="sm" weight="medium">
-                    {isTabletopExercise ? 'Exercise completeness analysis' : 'Security topic analysis'}
+                    {isTabletopExercise
+                      ? 'Exercise completeness analysis'
+                      : 'Security topic analysis'}
                   </Text>
                   {isAnalyzing && (
                     <span className="text-xs text-muted-foreground animate-pulse">

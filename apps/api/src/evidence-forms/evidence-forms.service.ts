@@ -2,8 +2,8 @@ import { AttachmentsService } from '@/attachments/attachments.service';
 import type { AuthContext } from '@/auth/types';
 import { db, EvidenceFormType as DbEvidenceFormType } from '@trycompai/db';
 import {
-  toDbEvidenceFormTypeValue,
-  toExternalEvidenceFormTypeValue,
+  toDbEvidenceFormType,
+  toExternalEvidenceFormType,
 } from '@comp/company';
 import {
   BadRequestException,
@@ -42,17 +42,6 @@ const reviewSchema = z.object({
 const EVIDENCE_FORM_REVIEWER_ROLES = ['owner', 'admin', 'auditor'] as const;
 const MAX_UPLOAD_FILE_SIZE_BYTES = 100 * 1024 * 1024;
 const MAX_UPLOAD_BASE64_LENGTH = Math.ceil(MAX_UPLOAD_FILE_SIZE_BYTES / 3) * 4;
-
-function toDbEvidenceFormType(formType: EvidenceFormType): DbEvidenceFormType {
-  return DbEvidenceFormType[toDbEvidenceFormTypeValue(formType)];
-}
-
-function toExternalEvidenceFormType(
-  formType: DbEvidenceFormType | null | undefined,
-): EvidenceFormType | null {
-  if (!formType) return null;
-  return toExternalEvidenceFormTypeValue(formType);
-}
 
 function toCsvRow(values: string[]): string {
   return values.map((value) => `"${value.replace(/"/g, '""')}"`).join(',');

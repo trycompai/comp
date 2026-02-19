@@ -12,25 +12,14 @@ import {
   FindingType,
 } from '@trycompai/db';
 import {
-  toDbEvidenceFormTypeValue,
-  toExternalEvidenceFormTypeValue,
+  toDbEvidenceFormType,
+  toExternalEvidenceFormType,
 } from '@comp/company';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { FindingAuditService } from './finding-audit.service';
 import { FindingNotifierService } from './finding-notifier.service';
 import { type EvidenceFormType } from '@/evidence-forms/evidence-forms.definitions';
-
-function toDbEvidenceFormType(formType: EvidenceFormType): DbEvidenceFormType {
-  return DbEvidenceFormType[toDbEvidenceFormTypeValue(formType)];
-}
-
-function toExternalEvidenceFormType(
-  formType: DbEvidenceFormType | null | undefined,
-): EvidenceFormType | null {
-  if (!formType) return null;
-  return toExternalEvidenceFormTypeValue(formType);
-}
 
 @Injectable()
 export class FindingsService {

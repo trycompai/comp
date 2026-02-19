@@ -1,18 +1,13 @@
 import {
   evidenceFormDefinitionList,
   meetingSubTypeValues,
-  toDbEvidenceFormTypeValue,
-  type EvidenceFormType,
+  toDbEvidenceFormType,
 } from '@comp/company';
-import { db, EvidenceFormType as DbEvidenceFormType } from '@db';
+import { db } from '@db';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
 const MEETING_SUB_TYPES = meetingSubTypeValues;
-
-function toDbEvidenceFormType(formType: EvidenceFormType): DbEvidenceFormType {
-  return DbEvidenceFormType[toDbEvidenceFormTypeValue(formType)];
-}
 
 export type DocumentFormStatuses = Record<string, { lastSubmittedAt: string | null }>;
 

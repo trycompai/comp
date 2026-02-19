@@ -1,3 +1,4 @@
+import { EvidenceFormType as DbEvidenceFormType } from '@trycompai/db';
 import type { EvidenceFormType } from './form-types';
 
 export const EXTERNAL_TO_DB_EVIDENCE_FORM_TYPE = {
@@ -41,4 +42,15 @@ export function toExternalEvidenceFormTypeValue(
 ): EvidenceFormType | null {
   if (!formType) return null;
   return DB_TO_EXTERNAL_EVIDENCE_FORM_TYPE[formType];
+}
+
+export function toDbEvidenceFormType(formType: EvidenceFormType): DbEvidenceFormType {
+  return DbEvidenceFormType[toDbEvidenceFormTypeValue(formType)];
+}
+
+export function toExternalEvidenceFormType(
+  formType: DbEvidenceFormType | null | undefined,
+): EvidenceFormType | null {
+  if (!formType) return null;
+  return toExternalEvidenceFormTypeValue(formType);
 }
