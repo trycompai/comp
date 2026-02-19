@@ -13,14 +13,7 @@ import { IsBoolean, IsEnum, IsInt, IsString, Min } from 'class-validator';
 import { InternalTokenGuard } from '../auth/internal-token.guard';
 import { TaskNotifierService } from './task-notifier.service';
 
-const TaskStatusValues: TaskStatus[] = [
-  'todo',
-  'in_progress',
-  'in_review',
-  'done',
-  'not_relevant',
-  'failed',
-];
+const TaskStatusValues = Object.values(TaskStatus);
 
 class NotifyAutomationFailuresDto {
   @ApiProperty({ description: 'Organization ID' })
