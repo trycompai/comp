@@ -1,3 +1,10 @@
+## [1.83.7](https://github.com/trycompai/comp/compare/v1.83.6...v1.83.7) (2026-02-19)
+
+
+### Bug Fixes
+
+* **app:** resolve 504 timeout on cloud security scans for new platform connections ([#2168](https://github.com/trycompai/comp/issues/2168)) ([82ccec8](https://github.com/trycompai/comp/commit/82ccec8b48d60f05ba8410108e217129ca0f1752))
+
 ## [1.83.6](https://github.com/trycompai/comp/compare/v1.83.5...v1.83.6) (2026-02-18)
 
 
