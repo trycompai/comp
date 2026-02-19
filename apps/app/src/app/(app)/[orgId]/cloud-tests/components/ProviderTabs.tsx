@@ -1,5 +1,4 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import type { Finding, Provider } from '../types';
@@ -185,12 +184,16 @@ export function ProviderTabs({
                 <div className="mb-3 flex items-center justify-between">
                   <Select
                     value={activeConnId}
-                    onValueChange={(value) => onConnectionTabChange(providerType, value)}
+                    onValueChange={(value) => {
+                      if (value) onConnectionTabChange(providerType, value);
+                    }}
                   >
-                    <SelectTrigger className="h-9 w-[240px] rounded-lg">
-                      <SelectValue placeholder="Select connection" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-64 overflow-y-auto">
+                    <div className="w-[240px]">
+                      <SelectTrigger size="sm">
+                        <SelectValue placeholder="Select connection" />
+                      </SelectTrigger>
+                    </div>
+                    <SelectContent>
                       {connections.map((connection) => (
                         <SelectItem key={connection.id} value={connection.id}>
                           {connection.displayName || connection.name}

@@ -1,7 +1,6 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/design-system';
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Settings } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FindingsTable } from './FindingsTable';
@@ -91,8 +90,7 @@ export function ResultsView({
             </div>
           </div>
           <div className="mt-3 ml-8">
-            <Button size="sm" variant="outline" onClick={onConfigure}>
-              <Settings className="h-4 w-4 mr-2" />
+            <Button size="sm" variant="outline" onClick={onConfigure} iconLeft={<Settings className="h-4 w-4" />}>
               Configure
             </Button>
           </div>
@@ -124,33 +122,37 @@ export function ResultsView({
       <div className="flex items-center justify-between">
         {findings.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={selectedSeverity} onValueChange={setSelectedSeverity}>
-              <SelectTrigger className="h-9 w-[160px] rounded-lg border-dashed">
-                <SelectValue placeholder="All Severities" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Severities</SelectItem>
-                {uniqueSeverities.map((severity) => (
-                  <SelectItem key={severity} value={severity}>
-                    {severity}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="w-[160px]">
+              <Select value={selectedSeverity} onValueChange={(v) => { if (v) setSelectedSeverity(v); }}>
+                <SelectTrigger size="sm">
+                  <SelectValue placeholder="All Severities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Severities</SelectItem>
+                  {uniqueSeverities.map((severity) => (
+                    <SelectItem key={severity} value={severity}>
+                      {severity}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="h-9 w-[160px] rounded-lg border-dashed">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                {uniqueStatuses.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="w-[160px]">
+              <Select value={selectedStatus} onValueChange={(v) => { if (v) setSelectedStatus(v); }}>
+                <SelectTrigger size="sm">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {uniqueStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {(selectedSeverity !== 'all' || selectedStatus !== 'all') && (
               <p className="text-muted-foreground ml-2 text-sm">
@@ -166,9 +168,9 @@ export function ResultsView({
           <Button
             onClick={handleRunScan}
             disabled={isScanning}
-            className="cursor-pointer gap-2 rounded-lg text-white"
+            loading={isScanning}
+            iconLeft={!isScanning ? <RefreshCw className="h-4 w-4" /> : undefined}
           >
-            <RefreshCw className={`h-4 w-4 ${isScanning ? 'animate-spin' : ''}`} />
             {isScanning ? 'Scanning...' : 'Run Scan'}
           </Button>
         )}

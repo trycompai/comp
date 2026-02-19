@@ -6,8 +6,8 @@ import {
   meetingSubTypeValues,
   type EvidenceFormType,
 } from '@/app/(app)/[orgId]/documents/forms';
+import { usePermissions } from '@/hooks/use-permissions';
 import { api } from '@/lib/api-client';
-import { useActiveMember } from '@/utils/auth-client';
 import { jwtManager } from '@/utils/jwt-manager';
 import {
   Badge,
@@ -100,20 +100,18 @@ async function evidenceFormFetcher([endpoint, orgId]: readonly [
 export function CompanyFormPageClient({
   organizationId,
   formType,
-  isPlatformAdmin,
 }: {
   organizationId: string;
   formType: EvidenceFormType;
-  isPlatformAdmin: boolean;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [isExporting, setIsExporting] = useState(false);
 
-  const { data: activeMember } = useActiveMember();
-  const memberRoles = activeMember?.role?.split(',').map((role: string) => role.trim()) || [];
-  const isAuditor = memberRoles.includes('auditor');
-  const isAdminOrOwner = memberRoles.includes('admin') || memberRoles.includes('owner');
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('evidence', 'create');
+  const canRead = hasPermission('evidence', 'read');
+  const canUpdate = hasPermission('evidence', 'update');
 
   const isMeeting = formType === 'meeting';
   const formDefinition = evidenceFormDefinitions[formType];
@@ -254,18 +252,22 @@ export function CompanyFormPageClient({
         title={formDefinition.title}
         actions={
           <div className="flex items-center gap-2">
-            <Link href={`/${organizationId}/documents/${formType}/new`}>
-              <Button iconLeft={<Add size={16} />}>New Submission</Button>
-            </Link>
-            <Button
-              type="button"
-              variant="secondary"
-              iconLeft={<Download size={16} />}
-              onClick={handleExportCsv}
-              disabled={isExporting}
-            >
-              {isExporting ? 'Exporting...' : 'Export CSV'}
-            </Button>
+            {canCreate && (
+              <Link href={`/${organizationId}/documents/${formType}/new`}>
+                <Button iconLeft={<Add size={16} />}>New Submission</Button>
+              </Link>
+            )}
+            {canRead && (
+              <Button
+                type="button"
+                variant="secondary"
+                iconLeft={<Download size={16} />}
+                onClick={handleExportCsv}
+                disabled={isExporting}
+              >
+                {isExporting ? 'Exporting...' : 'Export CSV'}
+              </Button>
+            )}
           </div>
         }
       />
@@ -410,9 +412,6 @@ export function CompanyFormPageClient({
 
       <DocumentFindingsSection
         formType={formType}
-        isAuditor={isAuditor}
-        isPlatformAdmin={isPlatformAdmin}
-        isAdminOrOwner={isAdminOrOwner}
       />
     </div>
   );

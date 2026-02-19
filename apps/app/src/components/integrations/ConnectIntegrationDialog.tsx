@@ -6,7 +6,7 @@ import {
   useIntegrationMutations,
   useIntegrationProviders,
 } from '@/hooks/use-integration-platform';
-import { Button } from '@comp/ui/button';
+import { usePermissions } from '@/hooks/use-permissions';
 import { ComboboxDropdown } from '@comp/ui/combobox-dropdown';
 import {
   Dialog,
@@ -15,11 +15,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
 import MultipleSelector from '@comp/ui/multiple-selector';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Textarea } from '@comp/ui/textarea';
+import {
+  Button,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+} from '@trycompai/design-system';
 import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Settings, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
@@ -64,13 +71,14 @@ function CredentialInput({
   if (field.type === 'password') {
     return (
       <div className="relative">
-        <Input
-          type={showPassword ? 'text' : 'password'}
-          value={stringValue}
-          onChange={handleChange}
-          placeholder={field.placeholder}
-          className="pr-10"
-        />
+        <div className="[&_input]:pr-10">
+          <Input
+            type={showPassword ? 'text' : 'password'}
+            value={stringValue}
+            onChange={handleChange}
+            placeholder={field.placeholder}
+          />
+        </div>
         <button
           type="button"
           onClick={() => setShowPassword((s) => !s)}
@@ -88,14 +96,13 @@ function CredentialInput({
         value={stringValue}
         onChange={handleChange}
         placeholder={field.placeholder}
-        rows={4}
       />
     );
   }
 
   if (field.type === 'select') {
     return (
-      <Select value={stringValue} onValueChange={onChange}>
+      <Select value={stringValue} onValueChange={(v) => { if (v) onChange(v); }}>
         <SelectTrigger>
           <SelectValue placeholder={field.placeholder || 'Select...'} />
         </SelectTrigger>
@@ -176,6 +183,10 @@ export function ConnectIntegrationDialog({
   onConnected,
 }: ConnectIntegrationDialogProps) {
   const { orgId } = useParams<{ orgId: string }>();
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('integration', 'create');
+  const canUpdate = hasPermission('integration', 'update');
+  const canDelete = hasPermission('integration', 'delete');
   const {
     startOAuth,
     createConnection,
@@ -563,38 +574,32 @@ export function ConnectIntegrationDialog({
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {!conn.isLegacy && (
+                  {!conn.isLegacy && canUpdate && (
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="icon-sm"
                       onClick={() => handleConfigure(conn.id)}
-                      className="cursor-pointer"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
+                      iconLeft={<Settings className="h-4 w-4" />}
+                    />
                   )}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDisconnect(conn.id)}
-                    disabled={isDisconnecting === conn.id}
-                    className="cursor-pointer"
-                  >
-                    {isDisconnecting === conn.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-white" />
-                    ) : (
-                      <Trash2 className="h-4 w-4 text-white" />
-                    )}
-                  </Button>
+                  {canDelete && (
+                    <Button
+                      variant="destructive"
+                      size="icon-sm"
+                      onClick={() => handleDisconnect(conn.id)}
+                      disabled={isDisconnecting === conn.id}
+                      loading={isDisconnecting === conn.id}
+                      iconLeft={isDisconnecting !== conn.id ? <Trash2 className="h-4 w-4" /> : undefined}
+                    />
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {(supportsMultipleConnections || existingConnections.length === 0) && (
-          <Button onClick={() => setView('form')} className="w-full">
-            <Plus className="h-4 w-4 mr-2" />
+        {canCreate && (supportsMultipleConnections || existingConnections.length === 0) && (
+          <Button onClick={() => setView('form')} width="full" iconLeft={<Plus className="h-4 w-4" />}>
             {existingConnections.length > 0 ? 'Add Account' : 'Add Connection'}
           </Button>
         )}
@@ -610,23 +615,17 @@ export function ConnectIntegrationDialog({
         return (
           <div className="space-y-3">
             {showBackButton && (
-              <Button variant="ghost" size="sm" onClick={() => setView('list')} className="mb-2">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to connections
-              </Button>
+              <div className="mb-2">
+                <Button variant="ghost" size="sm" onClick={() => setView('list')} iconLeft={<ArrowLeft className="h-4 w-4" />}>
+                  Back to connections
+                </Button>
+              </div>
             )}
             <p className="text-sm text-muted-foreground">
               This integration uses OAuth to securely connect to your {integrationName} account.
             </p>
-            <Button onClick={handleOAuthConnect} disabled={connecting} className="w-full">
-              {connecting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Connecting...
-                </>
-              ) : (
-                <>Continue with {integrationName}</>
-              )}
+            <Button onClick={handleOAuthConnect} disabled={connecting || !canCreate} width="full" loading={connecting}>
+              {connecting ? 'Connecting...' : `Continue with ${integrationName}`}
             </Button>
           </div>
         );
@@ -647,8 +646,7 @@ export function ConnectIntegrationDialog({
         return (
           <div className="space-y-4">
             {showBackButton && (
-              <Button variant="ghost" size="sm" onClick={() => setView('list')} className="-mt-2">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+              <Button variant="ghost" size="sm" onClick={() => setView('list')} iconLeft={<ArrowLeft className="h-4 w-4" />}>
                 Back to connections
               </Button>
             )}
@@ -674,15 +672,8 @@ export function ConnectIntegrationDialog({
                 {errors[field.id] && <p className="text-xs text-destructive">{errors[field.id]}</p>}
               </div>
             ))}
-            <Button onClick={handleCredentialConnect} disabled={connecting} className="w-full">
-              {connecting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Connecting...
-                </>
-              ) : (
-                'Connect'
-              )}
+            <Button onClick={handleCredentialConnect} disabled={connecting || !canCreate} width="full" loading={connecting}>
+              {connecting ? 'Connecting...' : 'Connect'}
             </Button>
           </div>
         );
@@ -701,8 +692,7 @@ export function ConnectIntegrationDialog({
 
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => setView('list')} className="-mt-2">
-          <ArrowLeft className="h-4 w-4 mr-2" />
+        <Button variant="ghost" size="sm" onClick={() => setView('list')} iconLeft={<ArrowLeft className="h-4 w-4" />}>
           Back to connections
         </Button>
 
@@ -727,15 +717,8 @@ export function ConnectIntegrationDialog({
           </div>
         ))}
 
-        <Button onClick={handleSaveCredentials} disabled={savingCredentials} className="w-full">
-          {savingCredentials ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            'Update Connection'
-          )}
+        <Button onClick={handleSaveCredentials} disabled={savingCredentials || !canUpdate} width="full" loading={savingCredentials}>
+          {savingCredentials ? 'Saving...' : 'Update Connection'}
         </Button>
       </div>
     );

@@ -3,8 +3,6 @@
 import { useApi } from '@/hooks/use-api';
 import { useIntegrationMutations } from '@/hooks/use-integration-platform';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
 import {
   Dialog,
   DialogContent,
@@ -13,8 +11,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { Loader2, Trash2 } from 'lucide-react';
+import {
+  Button,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  cn,
+} from '@trycompai/design-system';
+import { TrashCan } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -124,10 +129,7 @@ export function CloudSettingsModal({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList
-            className="grid w-full"
-            style={{ gridTemplateColumns: `repeat(${connectedProviders.length}, 1fr)` }}
-          >
+          <TabsList variant="default">
             {connectedProviders.map((provider) => (
               <TabsTrigger key={provider.connectionId} value={provider.connectionId}>
                 {provider.name}
@@ -139,8 +141,8 @@ export function CloudSettingsModal({
             <TabsContent
               key={provider.connectionId}
               value={provider.connectionId}
-              className="space-y-4"
             >
+            <div className="space-y-4">
               <div className="bg-muted/50 rounded-lg border p-4">
                 <p className="text-muted-foreground text-sm">
                   {provider.name} is connected. Credentials are securely stored and encrypted at
@@ -167,27 +169,20 @@ export function CloudSettingsModal({
                 </p>
               </div>
 
-              <DialogFooter className="flex justify-end">
+              <DialogFooter>
                 {canDelete && (
                 <Button
                   variant="destructive"
                   onClick={() => handleDisconnect(provider)}
                   disabled={isDeleting}
+                  loading={isDeleting}
+                  iconLeft={!isDeleting ? <TrashCan size={16} /> : undefined}
                 >
-                  {isDeleting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Disconnecting...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Disconnect
-                    </>
-                  )}
+                  {isDeleting ? 'Disconnecting...' : 'Disconnect'}
                 </Button>
                 )}
               </DialogFooter>
+            </div>
             </TabsContent>
           ))}
         </Tabs>

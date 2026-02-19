@@ -40,6 +40,11 @@ vi.mock('@/lib/evidence-download', () => ({
   downloadAllEvidenceZip: vi.fn(),
 }));
 
+// Mock UpdateOrganizationEvidenceApproval
+vi.mock('@/components/forms/organization/update-organization-evidence-approval', () => ({
+  UpdateOrganizationEvidenceApproval: () => <div data-testid="evidence-approval-settings" />,
+}));
+
 // Mock design system components
 vi.mock('@trycompai/design-system', () => ({
   Button: ({
@@ -90,6 +95,9 @@ vi.mock('@trycompai/design-system', () => ({
   PopoverTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   PopoverTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Switch: () => <input type="checkbox" />,
+  Tabs: ({ children, defaultValue: _dv, onValueChange: _ovc }: { children: React.ReactNode; defaultValue?: string; onValueChange?: (v: string) => void }) => <div>{children}</div>,
+  TabsList: ({ children, variant: _v }: { children: React.ReactNode; variant?: string }) => <div>{children}</div>,
+  TabsTrigger: ({ children, value: _val }: { children: React.ReactNode; value: string }) => <div>{children}</div>,
 }));
 
 vi.mock('@trycompai/design-system/icons', () => ({
@@ -108,6 +116,7 @@ const defaultProps = {
   orgId: 'org_123',
   organizationName: 'Test Org',
   hasEvidenceExportAccess: false,
+  evidenceApprovalEnabled: false,
 };
 
 describe('TasksPageClient permission gating', () => {

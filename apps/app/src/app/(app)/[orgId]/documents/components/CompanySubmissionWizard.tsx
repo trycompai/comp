@@ -289,6 +289,7 @@ export function CompanySubmissionWizard({
             'Content-Type': 'application/json',
             'X-Organization-Id': organizationId,
           },
+          credentials: 'include',
           body: JSON.stringify({
             meetingMinutes,
             meetingType: selectedMeetingType,

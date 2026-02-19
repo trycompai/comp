@@ -22,6 +22,8 @@ export interface CloudProvider {
   requiredVariables: string[];
   accountId?: string;
   regions?: string[];
+  tenantId?: string;
+  subscriptionId?: string;
   supportsMultipleConnections?: boolean;
 }
 
@@ -116,6 +118,14 @@ export class CloudSecurityQueryService {
               (r): r is string => typeof r === 'string',
             )
           : undefined,
+        tenantId:
+          typeof metadata.tenantId === 'string'
+            ? metadata.tenantId
+            : undefined,
+        subscriptionId:
+          typeof metadata.subscriptionId === 'string'
+            ? metadata.subscriptionId
+            : undefined,
         supportsMultipleConnections:
           manifest?.supportsMultipleConnections ?? false,
       };
@@ -150,6 +160,14 @@ export class CloudSecurityQueryService {
               (r): r is string => typeof r === 'string',
             )
           : undefined,
+        tenantId:
+          typeof settings.tenantId === 'string'
+            ? settings.tenantId
+            : undefined,
+        subscriptionId:
+          typeof settings.subscriptionId === 'string'
+            ? settings.subscriptionId
+            : undefined,
         supportsMultipleConnections:
           manifest?.supportsMultipleConnections ?? false,
       };
