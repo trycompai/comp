@@ -77,6 +77,7 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
         type: 'textarea',
         required: true,
         description: 'Systems or platforms access is needed for',
+        placeholder: `e.g. AWS Console (read-only), Salesforce (Sales role), GitHub (org: engineering)`,
       },
       {
         key: 'permissionsNeeded',
@@ -96,6 +97,7 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
         type: 'textarea',
         required: true,
         description: 'Business justification for access request',
+        placeholder: `e.g. New hire joining the Sales team; needs access to CRM and email to perform account management duties. Access requested by hiring manager.`,
       },
       {
         key: 'accessGrantedBy',
@@ -135,6 +137,7 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
         type: 'textarea',
         required: true,
         description: 'Detailed description of the complaint or concern',
+        placeholder: `Describe what happened, when and where it occurred, and the nature of the concern. Include any relevant facts or circumstances.`,
       },
       {
         key: 'individualsInvolved',
@@ -142,6 +145,7 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
         type: 'textarea',
         required: true,
         description: 'Names or roles of people involved in the incident',
+        placeholder: `e.g. John Smith (Manager, Sales), Jane Doe (HR), or describe by role if names are unknown`,
       },
       {
         key: 'evidence',
@@ -149,6 +153,7 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
         type: 'textarea',
         required: true,
         description: 'Any supporting evidence or documentation',
+        placeholder: `Describe any documents, emails, messages, or other materials that support this report. You may also attach files below.`,
       },
       {
         key: 'evidenceFile',
@@ -189,6 +194,9 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
         type: 'textarea',
         required: true,
         description: 'High-level summary of test scope, findings, and remediation status',
+        placeholder: `Scope: e.g. External perimeter, web application, API endpoints.
+Findings: Summarize critical/high findings and how they were identified.
+Remediation: Status of fixes (e.g. 3 of 5 critical findings remediated; 2 in progress with target dates).`,
       },
       {
         key: 'pentestReport',
@@ -368,6 +376,200 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
         type: 'textarea',
         required: true,
         description: "Manager's written performance feedback and observations",
+        placeholder: `Summarize strengths, areas for improvement, and key accomplishments during the review period. Include specific examples where helpful.`,
+      },
+    ],
+  },
+  'network-diagram': {
+    type: 'network-diagram',
+    title: 'Network Diagram',
+    description:
+      'Provide either a link to your network diagram or upload a file (at least one required). Optional—include if you have a current diagram of your infrastructure.',
+    category: 'Security',
+    submissionDateMode: 'custom',
+    portalAccessible: false,
+    fields: [
+      {
+        key: 'diagramUrl',
+        label: 'Link to diagram (optional if you upload a file)',
+        type: 'text',
+        required: false,
+        description: 'URL to a hosted diagram (e.g. Lucidchart, draw.io, Confluence)',
+        placeholder: 'https://...',
+      },
+      {
+        key: 'diagramFile',
+        label: 'Or upload file (optional if you add a link above)',
+        type: 'file',
+        required: false,
+        accept: '.pdf,.png,.jpg,.jpeg,.svg,.vsdx',
+        description: 'PDF, image, or Visio file',
+      },
+    ],
+  },
+  'tabletop-exercise': {
+    type: 'tabletop-exercise',
+    title: 'Incident Response Tabletop Exercise',
+    description:
+      'Conduct a periodic tabletop exercise to test the effectiveness of your incident response plan. Simulate a security incident to ensure all team members understand their roles, communication channels, and procedures during a real event.',
+    category: 'Security',
+    submissionDateMode: 'custom',
+    portalAccessible: false,
+    fields: [
+      {
+        key: 'exerciseDate',
+        label: 'Exercise date',
+        type: 'date',
+        required: true,
+        description: 'Date the tabletop exercise was conducted',
+      },
+      {
+        key: 'facilitator',
+        label: 'Facilitator',
+        type: 'text',
+        required: true,
+        description: 'Name and title of the person who facilitated the exercise',
+        placeholder: 'e.g. Jane Doe, CISO',
+      },
+      {
+        key: 'scenarioType',
+        label: 'Scenario type',
+        type: 'select',
+        required: true,
+        description: 'Category of the simulated incident',
+        options: [
+          { label: 'Data Breach', value: 'data-breach' },
+          { label: 'Ransomware', value: 'ransomware' },
+          { label: 'Insider Threat', value: 'insider-threat' },
+          { label: 'Phishing Attack', value: 'phishing' },
+          { label: 'DDoS Attack', value: 'ddos' },
+          { label: 'Third-Party / Supply Chain Breach', value: 'third-party-breach' },
+          { label: 'Natural Disaster / BCP', value: 'natural-disaster' },
+          { label: 'Custom', value: 'custom' },
+        ],
+      },
+      {
+        key: 'scenarioDescription',
+        label: 'Scenario description',
+        type: 'textarea',
+        required: true,
+        description:
+          'Describe the simulated incident scenario in detail. Include the threat vector, affected systems, timeline of events, and any injects (new information introduced during the exercise).',
+        placeholder: `Scenario: Ransomware attack via phishing email
+
+Timeline:
+- 09:00 — An employee in the finance department clicks a link in a phishing email and unknowingly downloads malware.
+- 09:15 — The malware begins encrypting files on the employee's workstation and mapped network drives.
+- 09:30 — IT helpdesk receives reports of inaccessible files from multiple users.
+- 09:45 — Security team identifies ransomware indicators and initiates incident response.
+- 10:00 — A ransom note is discovered demanding payment in cryptocurrency.
+
+Affected systems: Finance file server, shared network drives, employee workstations
+Threat vector: Phishing email with malicious attachment
+Injects: At 10:30, media contacts the company about the incident.`,
+      },
+      {
+        key: 'attendees',
+        label: 'Attendees',
+        type: 'matrix',
+        required: true,
+        description:
+          'List all participants with their name, role or title, and department. Include anyone who would be involved in a real incident response.',
+        addRowLabel: 'Add attendee',
+        columns: [
+          {
+            key: 'name',
+            label: 'Name',
+            required: true,
+            placeholder: 'e.g. Jane Doe',
+          },
+          {
+            key: 'roleTitle',
+            label: 'Role / Title',
+            required: true,
+            placeholder: 'e.g. Incident Commander',
+          },
+          {
+            key: 'department',
+            label: 'Department',
+            required: true,
+            placeholder: 'e.g. Information Security',
+          },
+        ],
+      },
+      {
+        key: 'sessionNotes',
+        label: 'Session notes',
+        type: 'textarea',
+        required: true,
+        description:
+          'Document the key discussion points, decisions made, communication steps taken, and observations during the exercise. Note how each team member responded to the scenario.',
+        placeholder: `1. Initial Detection and Triage
+- IT helpdesk escalated to security team within 15 minutes of first report.
+- Security analyst confirmed ransomware indicators using EDR tooling.
+- Incident Commander was notified and activated the IR plan.
+
+2. Containment
+- Decision made to isolate affected network segment immediately.
+- Discussed whether to shut down the finance file server vs. disconnect from network.
+- Team agreed on network isolation to preserve forensic evidence.
+
+3. Communication
+- Internal: Slack channel created for incident coordination; VP of Engineering notified.
+- External: Legal counsel advised on breach notification requirements.
+- Media: Communications team prepared a holding statement.
+
+4. Recovery
+- Backup restoration timeline estimated at 4-6 hours.
+- Team identified that backup verification had not been tested in 3 months.
+
+5. Observations
+- Gap identified: No documented procedure for media inquiries during an incident.
+- Positive: Team demonstrated clear understanding of escalation paths.`,
+      },
+      {
+        key: 'actionItems',
+        label: 'After-action report',
+        type: 'matrix',
+        required: true,
+        description:
+          'List findings from the exercise with improvement actions, assigned owners, and target due dates.',
+        addRowLabel: 'Add finding',
+        columns: [
+          {
+            key: 'finding',
+            label: 'Finding',
+            required: true,
+            placeholder: 'e.g. No documented media response procedure',
+          },
+          {
+            key: 'improvementAction',
+            label: 'Improvement Action',
+            required: true,
+            placeholder: 'e.g. Create media response playbook',
+          },
+          {
+            key: 'assignedOwner',
+            label: 'Assigned Owner',
+            required: true,
+            placeholder: 'e.g. Jane Doe, Comms Lead',
+          },
+          {
+            key: 'dueDate',
+            label: 'Due Date',
+            required: true,
+            placeholder: 'YYYY-MM-DD',
+          },
+        ],
+      },
+      {
+        key: 'evidenceFile',
+        label: 'Supporting evidence',
+        type: 'file',
+        required: false,
+        accept: '.pdf,.doc,.docx,.png,.jpg,.jpeg',
+        description:
+          'Optionally upload additional evidence such as slides, agendas, or sign-in sheets',
       },
     ],
   },

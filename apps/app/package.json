@@ -145,6 +145,7 @@
         "postcss": "^8.5.4",
         "raw-loader": "^4.0.2",
         "tailwindcss": "^4.1.8",
+        "trigger.dev": "4.0.6",
         "typescript": "^5.8.3",
         "vite-tsconfig-paths": "^5.1.4",
         "vitest": "^3.2.4"
@@ -170,7 +171,7 @@
         "db:getschema": "node ../../packages/db/scripts/combine-schemas.js && cp ../../packages/db/dist/schema.prisma prisma/schema.prisma",
         "db:migrate": "cd ../../packages/db && bunx prisma migrate dev && cd ../../apps/app",
         "deploy:trigger-prod": "npx trigger.dev@4.0.6 deploy",
-        "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bunx trigger.dev@4.0.6 dev\"",
+        "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"trigger dev\"",
         "lint": "eslint . && prettier --check .",
         "prebuild": "bun run db:generate",
         "postinstall": "prisma generate --schema=./prisma/schema.prisma || exit 0",

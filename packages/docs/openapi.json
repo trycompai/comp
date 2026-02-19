@@ -8250,6 +8250,44 @@
         ]
       }
     },
+    "/v1/internal/tasks/notify-automation-failures": {
+      "post": {
+        "operationId": "InternalTaskNotificationController_notifyAutomationFailures_v1",
+        "parameters": [
+          {
+            "name": "X-Internal-Token",
+            "in": "header",
+            "description": "Internal service token (required in production)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotifyAutomationFailuresDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notifications sent"
+          },
+          "500": {
+            "description": "Notification delivery failed"
+          }
+        },
+        "summary": "Send automation failure notifications (email + in-app) when one or more automations fail (internal)",
+        "tags": [
+          "Internal - Tasks"
+        ]
+      }
+    },
     "/v1/tasks/{taskId}/automations": {
       "get": {
         "description": "Retrieve all automations for a specific task",
@@ -11686,7 +11724,9 @@
                 "penetration-test",
                 "rbac-matrix",
                 "infrastructure-inventory",
-                "employee-performance-evaluation"
+                "employee-performance-evaluation",
+                "network-diagram",
+                "tabletop-exercise"
               ],
               "type": "string"
             }
@@ -18591,6 +18631,43 @@
           "newStatus"
         ]
       },
+      "NotifyAutomationFailuresDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID"
+          },
+          "taskId": {
+            "type": "string",
+            "description": "Task ID"
+          },
+          "taskTitle": {
+            "type": "string",
+            "description": "Task title"
+          },
+          "failedCount": {
+            "type": "number",
+            "description": "Number of failed automations"
+          },
+          "totalCount": {
+            "type": "number",
+            "description": "Total number of automations"
+          },
+          "taskStatusChanged": {
+            "type": "boolean",
+            "description": "Whether task status was changed to failed"
+          }
+        },
+        "required": [
+          "organizationId",
+          "taskId",
+          "taskTitle",
+          "failedCount",
+          "totalCount",
+          "taskStatusChanged"
+        ]
+      },
       "UpdateAutomationDto": {
         "type": "object",
         "properties": {
@@ -19312,7 +19389,9 @@
               "penetration-test",
               "rbac-matrix",
               "infrastructure-inventory",
-              "employee-performance-evaluation"
+              "employee-performance-evaluation",
+              "network-diagram",
+              "tabletop-exercise"
             ]
           },
           "type": {

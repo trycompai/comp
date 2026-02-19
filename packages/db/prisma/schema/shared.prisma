@@ -63,6 +63,8 @@ enum EvidenceFormType {
   rbac_matrix                     @map("rbac-matrix")
   infrastructure_inventory        @map("infrastructure-inventory")
   employee_performance_evaluation @map("employee-performance-evaluation")
+  network_diagram                 @map("network-diagram")
+  tabletop_exercise               @map("tabletop-exercise")
 }
 
 model GlobalVendors {

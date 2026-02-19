@@ -92,6 +92,56 @@ const employeePerformanceEvaluationDataSchema = z.object({
   managerSignatureDate: required('Manager signature date'),
 });
 
+const networkDiagramDataSchema = z
+  .object({
+    submissionDate: required('Submission date'),
+    diagramUrl: z.string().trim().optional(),
+    diagramFile: evidenceFormFileSchema.optional(),
+  })
+  .refine((data) => (data.diagramUrl && data.diagramUrl.length > 0) || data.diagramFile, {
+    message: 'Provide either a link to the diagram or upload a file',
+    path: ['diagramFile'],
+  });
+
+const tabletopExerciseAttendeeRowSchema = z.object({
+  name: requiredTrimmed('Name'),
+  roleTitle: requiredTrimmed('Role / Title'),
+  department: requiredTrimmed('Department'),
+});
+
+const tabletopExerciseActionItemRowSchema = z.object({
+  finding: requiredTrimmed('Finding'),
+  improvementAction: requiredTrimmed('Improvement action'),
+  assignedOwner: requiredTrimmed('Assigned owner'),
+  dueDate: requiredTrimmed('Due date'),
+});
+
+const tabletopExerciseDataSchema = z.object({
+  submissionDate: required('Submission date'),
+  exerciseDate: required('Exercise date'),
+  facilitator: requiredTrimmed('Facilitator'),
+  scenarioType: z.enum(
+    [
+      'data-breach',
+      'ransomware',
+      'insider-threat',
+      'phishing',
+      'ddos',
+      'third-party-breach',
+      'natural-disaster',
+      'custom',
+    ],
+    { error: 'Please select a scenario type' },
+  ),
+  scenarioDescription: required('Scenario description'),
+  attendees: z.array(tabletopExerciseAttendeeRowSchema).min(1, 'At least one attendee is required'),
+  sessionNotes: required('Session notes'),
+  actionItems: z
+    .array(tabletopExerciseActionItemRowSchema)
+    .min(1, 'At least one after-action finding is required'),
+  evidenceFile: evidenceFormFileSchema.optional(),
+});
+
 export const evidenceFormSubmissionSchemaMap = {
   meeting: meetingDataSchema,
   'board-meeting': meetingDataSchema,
@@ -103,4 +153,6 @@ export const evidenceFormSubmissionSchemaMap = {
   'rbac-matrix': rbacMatrixDataSchema,
   'infrastructure-inventory': infrastructureInventoryDataSchema,
   'employee-performance-evaluation': employeePerformanceEvaluationDataSchema,
+  'network-diagram': networkDiagramDataSchema,
+  'tabletop-exercise': tabletopExerciseDataSchema,
 } as const satisfies Record<EvidenceFormType, z.ZodTypeAny>;
