@@ -5,6 +5,7 @@ import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/trigger/tasks/onboarding/onboard-organization';
+import { runWebsiteChecksForOrg } from '@/trigger/tasks/website-checks/run-website-checks-for-org';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
@@ -108,6 +109,24 @@ export const createOrganization = authActionClientWithoutOrg
         });
       }
 
+      // Auto-connect website integration if website is provided
+      if (parsedInput.website) {
+        const websiteProvider = await db.integrationProvider.findUnique({
+          where: { slug: 'website' },
+        });
+        if (websiteProvider) {
+          await db.integrationConnection.create({
+            data: {
+              providerId: websiteProvider.id,
+              organizationId: orgId,
+              status: 'active',
+              authStrategy: 'custom',
+              variables: { website: parsedInput.website },
+            },
+          });
+        }
+      }
+
       // Set new org as active
       await auth.api.setActiveOrganization({
         headers: await headers(),
@@ -151,6 +170,13 @@ export const createOrganization = authActionClientWithoutOrg
       await tasks.trigger<typeof createFleetLabelForOrg>('create-fleet-label-for-org', {
         organizationId: orgId,
       });
+
+      // Run website compliance checks (TLS, policies, contact info)
+      if (parsedInput.website) {
+        await tasks.trigger<typeof runWebsiteChecksForOrg>('run-website-checks-for-org', {
+          organizationId: orgId,
+        });
+      }
 
       return {
         success: true,

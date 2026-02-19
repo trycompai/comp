@@ -29,11 +29,43 @@ export const updateOrganizationWebsiteAction = authActionClient
     }
 
     try {
-      await db.$transaction(async () => {
-        await db.organization.update({
+      await db.$transaction(async (tx) => {
+        await tx.organization.update({
           where: { id: activeOrganizationId ?? '' },
           data: { website },
         });
+
+        // Keep website integration connection in sync
+        const websiteProvider = await tx.integrationProvider.findUnique({
+          where: { slug: 'website' },
+        });
+        if (websiteProvider) {
+          const existing = await tx.integrationConnection.findFirst({
+            where: {
+              providerId: websiteProvider.id,
+              organizationId: activeOrganizationId,
+            },
+          });
+          if (existing) {
+            await tx.integrationConnection.update({
+              where: { id: existing.id },
+              data: {
+                status: 'active',
+                variables: { website },
+              },
+            });
+          } else {
+            await tx.integrationConnection.create({
+              data: {
+                providerId: websiteProvider.id,
+                organizationId: activeOrganizationId,
+                status: 'active',
+                authStrategy: 'custom',
+                variables: { website },
+              },
+            });
+          }
+        }
       });
 
       revalidatePath('/settings');

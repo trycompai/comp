@@ -17,6 +17,7 @@ import { manifest as jumpcloudManifest } from '../manifests/jumpcloud';
 import { rampManifest } from '../manifests/ramp';
 import { ripplingManifest } from '../manifests/rippling';
 import { vercelManifest } from '../manifests/vercel';
+import { manifest as websiteManifest } from '../manifests/website';
 
 // ============================================================================
 // Registry Implementation
@@ -109,6 +110,7 @@ const allManifests: IntegrationManifest[] = [
   rampManifest,
   vercelManifest,
   aikidoManifest,
+  websiteManifest,
 ];
 
 // Create and export the registry singleton

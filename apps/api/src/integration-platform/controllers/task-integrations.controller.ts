@@ -259,35 +259,49 @@ export class TaskIntegrationsController {
       throw new HttpException('Manifest not found', HttpStatus.NOT_FOUND);
     }
 
-    // Get credentials
-    const credentials =
-      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+    // Website integration: credentials come from the org record, not the vault
+    let credentials: Record<string, string | string[]>;
+    if (provider.slug === 'website') {
+      const org = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { website: true },
+      });
+      if (!org?.website) {
+        throw new HttpException(
+          'Organization has no website URL configured',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      credentials = { website: org.website };
+    } else {
+      const vaultCredentials =
+        await this.credentialVaultService.getDecryptedCredentials(connectionId);
 
-    // Validate credentials based on auth type
-    if (!credentials) {
-      throw new HttpException(
-        'No credentials found for connection',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+      if (!vaultCredentials) {
+        throw new HttpException(
+          'No credentials found for connection',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
-    // For OAuth, require access_token. For custom auth (like AWS), check for required fields
-    if (manifest.auth.type === 'oauth2' && !credentials.access_token) {
-      throw new HttpException(
-        'No valid OAuth credentials found. Please reconnect.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+      if (manifest.auth.type === 'oauth2' && !vaultCredentials.access_token) {
+        throw new HttpException(
+          'No valid OAuth credentials found. Please reconnect.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
-    // For custom auth, the credentials are the form field values directly
-    if (
-      manifest.auth.type === 'custom' &&
-      Object.keys(credentials).length === 0
-    ) {
-      throw new HttpException(
-        'No valid credentials found for custom integration',
-        HttpStatus.BAD_REQUEST,
-      );
+      if (
+        manifest.auth.type === 'custom' &&
+        Object.keys(vaultCredentials).length === 0
+      ) {
+        throw new HttpException(
+          'No valid credentials found for custom integration',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      credentials = vaultCredentials;
     }
 
     const variables =

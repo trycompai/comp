@@ -4,8 +4,10 @@ import { initializeOrganization } from '@/actions/organization/lib/initialize-or
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { env } from '@/env.mjs';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
+import { runWebsiteChecksForOrg } from '@/trigger/tasks/website-checks/run-website-checks-for-org';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
@@ -113,6 +115,24 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
         });
       }
 
+      // Auto-connect website integration if website is provided
+      if (parsedInput.website) {
+        const websiteProvider = await db.integrationProvider.findUnique({
+          where: { slug: 'website' },
+        });
+        if (websiteProvider) {
+          await db.integrationConnection.create({
+            data: {
+              providerId: websiteProvider.id,
+              organizationId: orgId,
+              status: 'active',
+              authStrategy: 'custom',
+              variables: { website: parsedInput.website },
+            },
+          });
+        }
+      }
+
       // Set new org as active
       await auth.api.setActiveOrganization({
         headers: await headers(),
@@ -130,7 +150,13 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       revalidatePath('/');
       revalidatePath('/setup');
 
-      // NO JOB TRIGGERS - that happens after payment in complete-onboarding
+      // Run website compliance checks (TLS, policies, contact info) --
+      // lightweight background task, safe to fire before payment.
+      if (parsedInput.website) {
+        await tasks.trigger<typeof runWebsiteChecksForOrg>('run-website-checks-for-org', {
+          organizationId: orgId,
+        });
+      }
 
       return {
         success: true,
