@@ -63,6 +63,8 @@ export const runPlatformScan = async (connectionId: string) => {
         if (run.isSuccess) {
           const output = run.output as {
             success?: boolean;
+            skipped?: boolean;
+            reason?: string;
             error?: string;
             findingsCount?: number;
             provider?: string;
@@ -73,6 +75,13 @@ export const runPlatformScan = async (connectionId: string) => {
             return {
               success: false,
               error: output.error || 'Scan completed with errors',
+            };
+          }
+
+          if (output?.skipped) {
+            return {
+              success: false,
+              error: output.reason || 'Scan was skipped — connection may be inactive',
             };
           }
 
