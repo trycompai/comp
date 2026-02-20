@@ -71,8 +71,6 @@ const font = localFont({
   variable: '--font-general-sans',
 });
 
-export const preferredRegion = ['auto'];
-
 if (env.NEXT_PUBLIC_POSTHOG_KEY && env.NEXT_PUBLIC_POSTHOG_HOST) {
   initializeServer({
     apiKey: env.NEXT_PUBLIC_POSTHOG_KEY,
