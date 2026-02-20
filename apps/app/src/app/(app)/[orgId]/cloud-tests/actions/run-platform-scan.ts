@@ -89,7 +89,7 @@ export const runPlatformScan = async (connectionId: string) => {
           provider?: string;
           scannedAt?: string;
         } | null;
-      }>(`/v1/cloud-security/runs/${runId}`, authHeaders);
+      }>(`/v1/cloud-security/runs/${runId}?connectionId=${connectionId}`, authHeaders);
 
       if (statusResponse.error) {
         return {

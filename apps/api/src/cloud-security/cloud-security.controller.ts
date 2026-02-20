@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Param,
+  Query,
   Headers,
   Logger,
   HttpException,
@@ -11,7 +12,10 @@ import {
 } from '@nestjs/common';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { OrganizationId } from '../auth/auth-context.decorator';
-import { CloudSecurityService } from './cloud-security.service';
+import {
+  CloudSecurityService,
+  ConnectionNotFoundError,
+} from './cloud-security.service';
 
 @Controller({ path: 'cloud-security', version: '1' })
 export class CloudSecurityController {
@@ -85,14 +89,26 @@ export class CloudSecurityController {
   @UseGuards(HybridAuthGuard)
   async getRunStatus(
     @Param('runId') runId: string,
+    @Query('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
   ) {
+    if (!connectionId) {
+      throw new HttpException(
+        'connectionId query parameter is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     try {
       return await this.cloudSecurityService.getRunStatus(
         runId,
+        connectionId,
         organizationId,
       );
     } catch (error) {
+      if (error instanceof ConnectionNotFoundError) {
+        throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+      }
       const message =
         error instanceof Error ? error.message : 'Failed to get run status';
       throw new HttpException(message, HttpStatus.INTERNAL_SERVER_ERROR);
