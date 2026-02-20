@@ -1,7 +1,9 @@
 import {
   Controller,
   Post,
+  Get,
   Param,
+  Body,
   Headers,
   Logger,
   HttpException,
@@ -52,5 +54,45 @@ export class CloudSecurityController {
       findingsCount: result.findings.length,
       scannedAt: result.scannedAt,
     };
+  }
+
+  @Post('trigger/:connectionId')
+  async triggerScan(
+    @Param('connectionId') connectionId: string,
+    @Body('organizationId') organizationId: string,
+  ) {
+    if (!organizationId) {
+      throw new HttpException(
+        'Organization ID required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    this.logger.log(
+      `Cloud security scan trigger requested for connection ${connectionId}`,
+    );
+
+    try {
+      const result = await this.cloudSecurityService.triggerScan(
+        connectionId,
+        organizationId,
+      );
+      return result;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to trigger scan';
+      throw new HttpException(message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Get('runs/:runId')
+  async getRunStatus(@Param('runId') runId: string) {
+    try {
+      return await this.cloudSecurityService.getRunStatus(runId);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to get run status';
+      throw new HttpException(message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

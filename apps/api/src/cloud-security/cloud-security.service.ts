@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
 import { getManifest } from '@comp/integration-platform';
+import { runs, tasks } from '@trigger.dev/sdk';
 import { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import { OAuthCredentialsService } from '../integration-platform/services/oauth-credentials.service';
 import { GCPSecurityService } from './providers/gcp-security.service';
@@ -218,6 +219,50 @@ export class CloudSecurityService {
         error: errorMessage,
       };
     }
+  }
+
+  async triggerScan(
+    connectionId: string,
+    organizationId: string,
+  ): Promise<{ runId: string }> {
+    // Validate connection exists and is active
+    const connection = await db.integrationConnection.findFirst({
+      where: {
+        id: connectionId,
+        organizationId,
+        status: 'active',
+      },
+    });
+
+    if (!connection) {
+      throw new Error('Connection not found or inactive');
+    }
+
+    const handle = await tasks.trigger('run-cloud-security-scan', {
+      connectionId,
+      organizationId,
+      providerSlug: 'platform',
+      connectionName: connectionId,
+    });
+
+    this.logger.log(`Triggered cloud security scan task`, {
+      connectionId,
+      runId: handle.id,
+    });
+
+    return { runId: handle.id };
+  }
+
+  async getRunStatus(
+    runId: string,
+  ): Promise<{ completed: boolean; success: boolean; output: unknown }> {
+    const run = await runs.retrieve(runId);
+
+    return {
+      completed: run.isCompleted,
+      success: run.isCompleted ? run.isSuccess : false,
+      output: run.isCompleted ? run.output : null,
+    };
   }
 
   private async storeFindings(
