@@ -55,7 +55,6 @@ export const login = createSafeActionClient({ handleServerError })
         email: parsedInput.email,
         otp: parsedInput.otp,
       },
-      asResponse: true,
     });
 
     return {

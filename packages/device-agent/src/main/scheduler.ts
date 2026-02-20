@@ -10,14 +10,23 @@ let isRunning = false;
 
 type CheckCallback = (results: CheckResult[], isCompliant: boolean) => void;
 type SessionExpiredCallback = () => void;
+type DevicesNotFoundCallback = () => void;
 
 let onSessionExpired: SessionExpiredCallback | null = null;
+let onDevicesNotFound: DevicesNotFoundCallback | null = null;
 
 /**
  * Registers a callback for when the session token is rejected (401).
  */
 export function setSessionExpiredHandler(handler: SessionExpiredCallback): void {
   onSessionExpired = handler;
+}
+
+/**
+ * Registers a callback for when all device IDs return 404 (stale registrations).
+ */
+export function setDevicesNotFoundHandler(handler: DevicesNotFoundCallback): void {
+  onDevicesNotFound = handler;
 }
 
 /**
@@ -82,11 +91,17 @@ async function runChecksAndReport(onCheckComplete: CheckCallback): Promise<void>
     setLastCheckResults(results);
 
     // Report to all organizations
-    const { isCompliant, sessionExpired } = await reportCheckResults(results);
+    const { isCompliant, sessionExpired, allDevicesNotFound } = await reportCheckResults(results);
 
     if (sessionExpired) {
       log('Session expired during check-in, triggering re-authentication');
       onSessionExpired?.();
+      return;
+    }
+
+    if (allDevicesNotFound) {
+      log('All device IDs returned 404, triggering re-registration');
+      onDevicesNotFound?.();
       return;
     }
 

@@ -7,7 +7,13 @@ import { performLogin, performLogout } from './auth';
 import { initAutoLaunch } from './auto-launch';
 import { getDeviceInfo } from './device-info';
 import { log } from './logger';
-import { runChecksNow, setSessionExpiredHandler, startScheduler, stopScheduler } from './scheduler';
+import {
+  runChecksNow,
+  setDevicesNotFoundHandler,
+  setSessionExpiredHandler,
+  startScheduler,
+  stopScheduler,
+} from './scheduler';
 import { clearAuth, getAuth, getLastCheckResults } from './store';
 import {
   createTray,
@@ -49,8 +55,11 @@ if (process.platform === 'darwin') {
 
 let currentStatus: TrayStatus = 'unauthenticated';
 let currentResults: CheckResult[] = [];
+let isSigningIn = false;
 
-// Handle session expiry: clear auth, update UI, and re-prompt login
+// Handle session expiry: clear auth, update UI, and re-prompt login.
+// stopScheduler() is called BEFORE triggerSignIn() so no periodic checks
+// can re-trigger the expired handler during the sign-in flow.
 setSessionExpiredHandler(async () => {
   log('Session expired — clearing auth and prompting re-login');
   stopScheduler();
@@ -59,23 +68,46 @@ setSessionExpiredHandler(async () => {
   currentResults = [];
   setStatus('unauthenticated');
   notifyRenderer(IPC_CHANNELS.AUTH_STATE_CHANGED, false);
-  // Auto-open sign-in so the user can re-authenticate immediately
+  triggerSignIn();
+});
+
+// Handle stale device IDs: all orgs returned 404 for the stored device IDs.
+// This happens when devices are deleted from the portal. Re-login to re-register.
+setDevicesNotFoundHandler(async () => {
+  log('All devices returned 404 — clearing auth and re-registering');
+  stopScheduler();
+  await performLogout();
+  clearAuth();
+  currentResults = [];
+  setStatus('unauthenticated');
+  notifyRenderer(IPC_CHANNELS.AUTH_STATE_CHANGED, false);
   triggerSignIn();
 });
 
 async function triggerSignIn(): Promise<void> {
-  log('Sign-in flow triggered');
-  const deviceInfo = getDeviceInfo();
-  const auth = await performLogin(deviceInfo);
+  if (isSigningIn) {
+    log('Sign-in already in progress, skipping duplicate request');
+    return;
+  }
 
-  if (auth) {
-    const orgNames = auth.organizations.map((o) => o.organizationName).join(', ');
-    log(`Login successful: ${auth.organizations.length} org(s) — ${orgNames}`);
-    notifyRenderer(IPC_CHANNELS.AUTH_STATE_CHANGED, true);
-    setStatus('checking');
-    startScheduler(handleCheckComplete);
-  } else {
-    log('Login cancelled or failed');
+  isSigningIn = true;
+  log('Sign-in flow triggered');
+
+  try {
+    const deviceInfo = getDeviceInfo();
+    const auth = await performLogin(deviceInfo);
+
+    if (auth) {
+      const orgNames = auth.organizations.map((o) => o.organizationName).join(', ');
+      log(`Login successful: ${auth.organizations.length} org(s) — ${orgNames}`);
+      notifyRenderer(IPC_CHANNELS.AUTH_STATE_CHANGED, true);
+      setStatus('checking');
+      startScheduler(handleCheckComplete);
+    } else {
+      log('Login cancelled or failed');
+    }
+  } finally {
+    isSigningIn = false;
   }
 }
 
