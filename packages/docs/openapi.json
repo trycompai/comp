@@ -14390,6 +14390,52 @@
         ]
       }
     },
+    "/v1/cloud-security/trigger/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_triggerScan_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/runs/{runId}": {
+      "get": {
+        "operationId": "CloudSecurityController_getRunStatus_v1",
+        "parameters": [
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
     "/v1/browserbase/org-context": {
       "post": {
         "description": "Gets the existing browser context for the org or creates a new one",

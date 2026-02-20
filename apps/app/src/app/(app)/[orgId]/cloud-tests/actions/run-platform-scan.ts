@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@/utils/auth';
-import { runs, tasks } from '@trigger.dev/sdk';
+import { serverApi } from '@/lib/server-api-client';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 
@@ -9,8 +9,30 @@ const MAX_POLL_ATTEMPTS = 150; // Max 5 minutes (150 * 2 seconds)
 const POLL_INTERVAL_MS = 2000;
 
 /**
+ * Get auth headers for calling guarded API endpoints server-side.
+ * Uses Better Auth's jwt plugin to generate a Bearer token from the session cookie.
+ */
+async function getAuthHeaders(organizationId: string): Promise<Record<string, string>> {
+  const reqHeaders = await headers();
+  const authHeaders: Record<string, string> = {
+    'X-Organization-Id': organizationId,
+  };
+
+  // Get a JWT from Better Auth using the session cookie
+  const tokenResponse = await auth.api.getToken({
+    headers: reqHeaders,
+  });
+
+  if (tokenResponse?.token) {
+    authHeaders['Authorization'] = `Bearer ${tokenResponse.token}`;
+  }
+
+  return authHeaders;
+}
+
+/**
  * Run cloud security scan for a new platform connection.
- * Triggers a Trigger.dev background task and polls for completion,
+ * Triggers a background task via the NestJS API and polls for completion,
  * avoiding ALB/gateway timeouts on long-running scans.
  *
  * @param connectionId - The IntegrationConnection ID (icn_...) to scan
@@ -36,38 +58,59 @@ export const runPlatformScan = async (connectionId: string) => {
   }
 
   try {
-    // Trigger the scan as a background task (same pattern as legacy runTests)
-    // This avoids ALB/gateway timeouts on long-running Azure/AWS scans
-    const handle = await tasks.trigger('run-cloud-security-scan', {
-      connectionId,
-      organizationId: orgId,
-      providerSlug: 'platform',
-      connectionName: connectionId,
-    });
+    const authHeaders = await getAuthHeaders(orgId);
+
+    // Trigger the scan via API (task is defined in the API's trigger.dev project)
+    const triggerResponse = await serverApi.post<{ runId: string }>(
+      `/v1/cloud-security/trigger/${connectionId}`,
+      undefined,
+      authHeaders,
+    );
+
+    if (triggerResponse.error || !triggerResponse.data?.runId) {
+      return {
+        success: false,
+        error: triggerResponse.error || 'Failed to trigger scan',
+      };
+    }
+
+    const { runId } = triggerResponse.data;
 
     // Poll for completion
     let attempts = 0;
     while (attempts < MAX_POLL_ATTEMPTS) {
-      const run = await runs.retrieve(handle.id);
+      const statusResponse = await serverApi.get<{
+        completed: boolean;
+        success: boolean;
+        output: {
+          success?: boolean;
+          error?: string;
+          findingsCount?: number;
+          provider?: string;
+          scannedAt?: string;
+        } | null;
+      }>(`/v1/cloud-security/runs/${runId}?connectionId=${connectionId}`, authHeaders);
 
-      if (run.isCompleted) {
+      if (statusResponse.error) {
+        return {
+          success: false,
+          error: statusResponse.error,
+        };
+      }
+
+      if (statusResponse.data?.completed) {
         // Revalidate cache
         const headersList = await headers();
-        let path = headersList.get('x-pathname') || headersList.get('referer') || '';
+        let path =
+          headersList.get('x-pathname') || headersList.get('referer') || '';
         path = path.replace(/\/[a-z]{2}\//, '/');
         if (path) {
           revalidatePath(path);
         }
         revalidatePath(`/${orgId}/cloud-tests`);
 
-        if (run.isSuccess) {
-          const output = run.output as {
-            success?: boolean;
-            error?: string;
-            findingsCount?: number;
-            provider?: string;
-            scannedAt?: string;
-          } | null;
+        if (statusResponse.data.success) {
+          const output = statusResponse.data.output;
 
           if (output?.success === false) {
             return {
@@ -100,7 +143,8 @@ export const runPlatformScan = async (connectionId: string) => {
 
     return {
       success: false,
-      error: 'Scan is taking longer than expected. Results will appear when complete.',
+      error:
+        'Scan is taking longer than expected. Results will appear when complete.',
     };
   } catch (error) {
     console.error('Error running platform scan:', error);
