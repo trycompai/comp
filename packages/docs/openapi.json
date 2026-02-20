@@ -14424,6 +14424,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
