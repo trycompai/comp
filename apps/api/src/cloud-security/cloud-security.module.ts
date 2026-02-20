@@ -5,9 +5,10 @@ import { GCPSecurityService } from './providers/gcp-security.service';
 import { AWSSecurityService } from './providers/aws-security.service';
 import { AzureSecurityService } from './providers/azure-security.service';
 import { IntegrationPlatformModule } from '../integration-platform/integration-platform.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [IntegrationPlatformModule],
+  imports: [IntegrationPlatformModule, AuthModule],
   controllers: [CloudSecurityController],
   providers: [
     CloudSecurityService,

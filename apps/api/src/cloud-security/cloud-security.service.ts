@@ -33,6 +33,15 @@ export interface ScanResult {
 export class CloudSecurityService {
   private readonly logger = new Logger(CloudSecurityService.name);
 
+  // Track which organization owns each trigger.dev run for authorization
+  private readonly runOwnership = new Map<
+    string,
+    { organizationId: string; createdAt: number }
+  >();
+
+  // Clean up stale entries older than 10 minutes
+  private readonly RUN_OWNERSHIP_TTL_MS = 10 * 60 * 1000;
+
   constructor(
     private readonly credentialVaultService: CredentialVaultService,
     private readonly oauthCredentialsService: OAuthCredentialsService,
@@ -250,19 +259,47 @@ export class CloudSecurityService {
       runId: handle.id,
     });
 
+    // Track ownership for authorization on status checks
+    this.runOwnership.set(handle.id, {
+      organizationId,
+      createdAt: Date.now(),
+    });
+    this.cleanupStaleRuns();
+
     return { runId: handle.id };
   }
 
   async getRunStatus(
     runId: string,
+    organizationId: string,
   ): Promise<{ completed: boolean; success: boolean; output: unknown }> {
+    // Verify the caller's organization owns this run
+    const ownership = this.runOwnership.get(runId);
+    if (!ownership || ownership.organizationId !== organizationId) {
+      throw new Error('Run not found');
+    }
+
     const run = await runs.retrieve(runId);
+
+    // Clean up completed runs from the ownership map
+    if (run.isCompleted) {
+      this.runOwnership.delete(runId);
+    }
 
     return {
       completed: run.isCompleted,
       success: run.isCompleted ? run.isSuccess : false,
       output: run.isCompleted ? run.output : null,
     };
+  }
+
+  private cleanupStaleRuns(): void {
+    const now = Date.now();
+    for (const [runId, entry] of this.runOwnership) {
+      if (now - entry.createdAt > this.RUN_OWNERSHIP_TTL_MS) {
+        this.runOwnership.delete(runId);
+      }
+    }
   }
 
   private async storeFindings(

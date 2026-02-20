@@ -3,12 +3,14 @@ import {
   Post,
   Get,
   Param,
-  Body,
   Headers,
   Logger,
   HttpException,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
+import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { OrganizationId } from '../auth/auth-context.decorator';
 import { CloudSecurityService } from './cloud-security.service';
 
 @Controller({ path: 'cloud-security', version: '1' })
@@ -57,17 +59,11 @@ export class CloudSecurityController {
   }
 
   @Post('trigger/:connectionId')
+  @UseGuards(HybridAuthGuard)
   async triggerScan(
     @Param('connectionId') connectionId: string,
-    @Body('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
   ) {
-    if (!organizationId) {
-      throw new HttpException(
-        'Organization ID required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     this.logger.log(
       `Cloud security scan trigger requested for connection ${connectionId}`,
     );
@@ -86,9 +82,16 @@ export class CloudSecurityController {
   }
 
   @Get('runs/:runId')
-  async getRunStatus(@Param('runId') runId: string) {
+  @UseGuards(HybridAuthGuard)
+  async getRunStatus(
+    @Param('runId') runId: string,
+    @OrganizationId() organizationId: string,
+  ) {
     try {
-      return await this.cloudSecurityService.getRunStatus(runId);
+      return await this.cloudSecurityService.getRunStatus(
+        runId,
+        organizationId,
+      );
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to get run status';

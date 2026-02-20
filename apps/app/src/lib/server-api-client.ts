@@ -11,6 +11,7 @@ interface ApiResponse<T = unknown> {
 interface CallOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  headers?: Record<string, string>;
 }
 
 /**
@@ -21,7 +22,7 @@ async function call<T = unknown>(
   endpoint: string,
   options: CallOptions = {},
 ): Promise<ApiResponse<T>> {
-  const { method = 'GET', body } = options;
+  const { method = 'GET', body, headers: customHeaders } = options;
 
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -31,6 +32,11 @@ async function call<T = unknown>(
   const cookieHeader = (await headers()).get('cookie');
   if (cookieHeader) {
     requestHeaders['Cookie'] = cookieHeader;
+  }
+
+  // Apply custom headers (e.g. Authorization, X-Organization-Id)
+  if (customHeaders) {
+    Object.assign(requestHeaders, customHeaders);
   }
 
   try {
@@ -67,16 +73,18 @@ async function call<T = unknown>(
 }
 
 export const serverApi = {
-  get: <T = unknown>(endpoint: string) => call<T>(endpoint, { method: 'GET' }),
+  get: <T = unknown>(endpoint: string, headers?: Record<string, string>) =>
+    call<T>(endpoint, { method: 'GET', headers }),
 
-  post: <T = unknown>(endpoint: string, body?: unknown) =>
-    call<T>(endpoint, { method: 'POST', body }),
+  post: <T = unknown>(endpoint: string, body?: unknown, headers?: Record<string, string>) =>
+    call<T>(endpoint, { method: 'POST', body, headers }),
 
-  put: <T = unknown>(endpoint: string, body?: unknown) =>
-    call<T>(endpoint, { method: 'PUT', body }),
+  put: <T = unknown>(endpoint: string, body?: unknown, headers?: Record<string, string>) =>
+    call<T>(endpoint, { method: 'PUT', body, headers }),
 
-  patch: <T = unknown>(endpoint: string, body?: unknown) =>
-    call<T>(endpoint, { method: 'PATCH', body }),
+  patch: <T = unknown>(endpoint: string, body?: unknown, headers?: Record<string, string>) =>
+    call<T>(endpoint, { method: 'PATCH', body, headers }),
 
-  delete: <T = unknown>(endpoint: string) => call<T>(endpoint, { method: 'DELETE' }),
+  delete: <T = unknown>(endpoint: string, headers?: Record<string, string>) =>
+    call<T>(endpoint, { method: 'DELETE', headers }),
 };

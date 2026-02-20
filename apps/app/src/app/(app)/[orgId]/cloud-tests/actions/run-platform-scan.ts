@@ -9,6 +9,28 @@ const MAX_POLL_ATTEMPTS = 150; // Max 5 minutes (150 * 2 seconds)
 const POLL_INTERVAL_MS = 2000;
 
 /**
+ * Get auth headers for calling guarded API endpoints server-side.
+ * Uses Better Auth's jwt plugin to generate a Bearer token from the session cookie.
+ */
+async function getAuthHeaders(organizationId: string): Promise<Record<string, string>> {
+  const reqHeaders = await headers();
+  const authHeaders: Record<string, string> = {
+    'X-Organization-Id': organizationId,
+  };
+
+  // Get a JWT from Better Auth using the session cookie
+  const tokenResponse = await auth.api.getToken({
+    headers: reqHeaders,
+  });
+
+  if (tokenResponse?.token) {
+    authHeaders['Authorization'] = `Bearer ${tokenResponse.token}`;
+  }
+
+  return authHeaders;
+}
+
+/**
  * Run cloud security scan for a new platform connection.
  * Triggers a background task via the NestJS API and polls for completion,
  * avoiding ALB/gateway timeouts on long-running scans.
@@ -36,10 +58,13 @@ export const runPlatformScan = async (connectionId: string) => {
   }
 
   try {
+    const authHeaders = await getAuthHeaders(orgId);
+
     // Trigger the scan via API (task is defined in the API's trigger.dev project)
     const triggerResponse = await serverApi.post<{ runId: string }>(
       `/v1/cloud-security/trigger/${connectionId}`,
-      { organizationId: orgId },
+      undefined,
+      authHeaders,
     );
 
     if (triggerResponse.error || !triggerResponse.data?.runId) {
@@ -64,7 +89,7 @@ export const runPlatformScan = async (connectionId: string) => {
           provider?: string;
           scannedAt?: string;
         } | null;
-      }>(`/v1/cloud-security/runs/${runId}`);
+      }>(`/v1/cloud-security/runs/${runId}`, authHeaders);
 
       if (statusResponse.error) {
         return {
