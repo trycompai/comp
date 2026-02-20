@@ -33,7 +33,8 @@ export async function getPeopleScore(organizationId: string) {
     where: { id: organizationId },
     select: { securityTrainingStepEnabled: true },
   });
-  const securityTrainingStepEnabled = org?.securityTrainingStepEnabled ?? true;
+  // Match TeamMembers: only explicit true enables training; null/undefined = disabled
+  const securityTrainingStepEnabled = org?.securityTrainingStepEnabled === true;
 
   // Get all required policies (published, required to sign, not archived)
   const requiredPolicies = await db.policy.findMany({
