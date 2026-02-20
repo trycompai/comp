@@ -120,21 +120,25 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
         authWindow.hide();
       }
 
-      // Wait for cookies to settle
-      await new Promise((r) => setTimeout(r, 500));
-
       try {
-        const authData = await extractAuthAndRegisterAll(deviceInfo);
+        const authData = await extractAuthAndRegisterAll(portalUrl, deviceInfo);
         if (authData) {
           setAuth(authData);
           log(`Auth complete: ${authData.organizations.length} org(s) registered`);
           finish(authData);
         } else {
-          log('Auth extraction returned null, closing window');
+          // extractAuthAndRegisterAll already showed an error dialog
           finish(null);
         }
       } catch (error) {
         log(`Auth extraction failed: ${error}`, 'ERROR');
+        dialog.showMessageBoxSync({
+          type: 'error',
+          title: 'Sign-In Failed',
+          message: 'An unexpected error occurred during sign-in.',
+          detail: `${error}`,
+          buttons: ['OK'],
+        });
         finish(null);
       }
     };
@@ -158,23 +162,55 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
 }
 
 /**
+ * Waits for the session cookie to appear in the Electron session.
+ * Retries up to maxAttempts times with a delay between attempts.
+ */
+async function waitForSessionCookie(
+  portalUrl: string,
+  maxAttempts = 10,
+  delayMs = 500,
+): Promise<Electron.Cookie | null> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    await new Promise((r) => setTimeout(r, delayMs));
+
+    const cookies = await session.defaultSession.cookies.get({ url: portalUrl });
+    const sessionCookie = cookies.find(
+      (c) =>
+        c.name === 'better-auth.session_token' || c.name === '__Secure-better-auth.session_token',
+    );
+
+    if (sessionCookie) {
+      log(`Session cookie found on attempt ${attempt}/${maxAttempts}`);
+      return sessionCookie;
+    }
+
+    log(`Session cookie not found yet (attempt ${attempt}/${maxAttempts})`, 'WARN');
+  }
+
+  return null;
+}
+
+/**
  * After login, fetches the user's orgs and registers the device for all of them.
- * Shows an error dialog if the user has no organizations.
+ * Shows error dialogs on failure so the user knows what went wrong.
  */
 async function extractAuthAndRegisterAll(
+  portalUrl: string,
   deviceInfo: DeviceInfo,
 ): Promise<StoredAuth | null> {
-  const portalUrl = getPortalUrl();
-
-  // 1. Get session cookie
-  const cookies = await session.defaultSession.cookies.get({ url: portalUrl });
-  const sessionCookie = cookies.find(
-    (c) =>
-      c.name === 'better-auth.session_token' || c.name === '__Secure-better-auth.session_token',
-  );
+  // 1. Wait for session cookie with retries
+  const sessionCookie = await waitForSessionCookie(portalUrl);
 
   if (!sessionCookie) {
-    log('No session cookie found after login', 'WARN');
+    log('No session cookie found after login (exhausted retries)', 'ERROR');
+    dialog.showMessageBoxSync({
+      type: 'error',
+      title: 'Sign-In Failed',
+      message: 'Could not complete sign-in.',
+      detail:
+        'The session cookie was not set after authentication. Please try again. If the problem persists, restart the app.',
+      buttons: ['OK'],
+    });
     return null;
   }
 
@@ -188,6 +224,13 @@ async function extractAuthAndRegisterAll(
 
   if (!sessionResponse.ok) {
     log(`Session fetch failed: ${sessionResponse.status}`, 'ERROR');
+    dialog.showMessageBoxSync({
+      type: 'error',
+      title: 'Sign-In Failed',
+      message: 'Could not verify your session.',
+      detail: `The server returned status ${sessionResponse.status}. Please try signing in again.`,
+      buttons: ['OK'],
+    });
     return null;
   }
 
@@ -195,7 +238,14 @@ async function extractAuthAndRegisterAll(
   const userId = sessionData?.user?.id;
 
   if (!userId) {
-    log('No userId in session', 'ERROR');
+    log('No userId in session response', 'ERROR');
+    dialog.showMessageBoxSync({
+      type: 'error',
+      title: 'Sign-In Failed',
+      message: 'Could not retrieve your user information.',
+      detail: 'The session is missing user data. Please try signing in again.',
+      buttons: ['OK'],
+    });
     return null;
   }
 
@@ -208,6 +258,13 @@ async function extractAuthAndRegisterAll(
 
   if (!orgsResponse.ok) {
     log(`Failed to fetch organizations: ${orgsResponse.status}`, 'ERROR');
+    dialog.showMessageBoxSync({
+      type: 'error',
+      title: 'Sign-In Failed',
+      message: 'Could not fetch your organizations.',
+      detail: `The server returned status ${orgsResponse.status}. Please try signing in again.`,
+      buttons: ['OK'],
+    });
     return null;
   }
 
