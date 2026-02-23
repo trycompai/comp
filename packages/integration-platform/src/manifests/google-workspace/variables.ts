@@ -54,15 +54,15 @@ export const includeSuspendedVariable: CheckVariable = {
  */
 export const syncUserFilterModeVariable: CheckVariable = {
   id: 'sync_user_filter_mode',
-  label: 'Employee Sync Filter Mode',
-  helpText: 'Choose how Google Workspace users should be filtered during employee sync',
+  label: 'Employee Sync Mode',
+  helpText: 'Choose which Google Workspace users Comp should sync',
   type: 'select',
   required: false,
   default: 'all',
   options: [
-    { value: 'all', label: 'All users' },
-    { value: 'exclude', label: 'Exclude specific inboxes' },
-    { value: 'include', label: 'Include only specific inboxes' },
+    { value: 'all', label: 'Sync all users' },
+    { value: 'exclude', label: 'Sync all except matching users' },
+    { value: 'include', label: 'Sync only matching users' },
   ],
 };
 
@@ -71,9 +71,9 @@ export const syncUserFilterModeVariable: CheckVariable = {
  */
 export const syncExcludedEmailsVariable: CheckVariable = {
   id: 'sync_excluded_emails',
-  label: 'Exclude Inboxes (Emails)',
+  label: 'Exclude from Sync',
   helpText:
-    'Used when filter mode is "Exclude specific inboxes". Enter comma/newline-separated full emails, domains (for example @company.com), or partial matches.',
+    'Used only in "Sync all except matching users" mode. Enter comma/newline-separated full emails, domains (@company.com or company.com), or partial text. Matching users stay active and are skipped during sync.',
   type: 'text',
   required: false,
   placeholder: 'support@company.com, @company.com, support@',
@@ -84,9 +84,9 @@ export const syncExcludedEmailsVariable: CheckVariable = {
  */
 export const syncIncludedEmailsVariable: CheckVariable = {
   id: 'sync_included_emails',
-  label: 'Include Inboxes (Emails)',
+  label: 'Include in Sync',
   helpText:
-    'Used when filter mode is "Include only specific inboxes". Enter comma/newline-separated full emails, domains (for example @company.com), or partial matches.',
+    'Used only in "Sync only matching users" mode. Enter comma/newline-separated full emails, domains (@company.com or company.com), or partial text. Only matching users are imported/reactivated. If empty, sync falls back to all users.',
   type: 'text',
   required: false,
   placeholder: 'alice@company.com, @company.com, support@',
