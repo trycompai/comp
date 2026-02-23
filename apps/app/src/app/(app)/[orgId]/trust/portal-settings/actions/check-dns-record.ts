@@ -119,7 +119,8 @@ export const checkDnsRecordAction = authActionClient
       expectedVercelTxtValue ?? null,
     );
 
-    const isVerified = isCnameVerified && isTxtVerified && isVercelTxtVerified;
+    const requiresVercelTxt = isVercelDomain?.isVercelDomain === true;
+    const isVerified = isCnameVerified && isTxtVerified && (!requiresVercelTxt || isVercelTxtVerified);
 
     if (!isVerified) {
       return {
