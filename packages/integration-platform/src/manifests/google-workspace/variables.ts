@@ -73,10 +73,10 @@ export const syncExcludedEmailsVariable: CheckVariable = {
   id: 'sync_excluded_emails',
   label: 'Exclude Inboxes (Emails)',
   helpText:
-    'Used when filter mode is "Exclude specific inboxes". Enter comma or newline-separated emails.',
+    'Used when filter mode is "Exclude specific inboxes". Enter comma/newline-separated full emails, domains (for example @company.com), or partial matches.',
   type: 'text',
   required: false,
-  placeholder: 'support@company.com, info@company.com',
+  placeholder: 'support@company.com, @company.com, support@',
 };
 
 /**
@@ -86,8 +86,8 @@ export const syncIncludedEmailsVariable: CheckVariable = {
   id: 'sync_included_emails',
   label: 'Include Inboxes (Emails)',
   helpText:
-    'Used when filter mode is "Include only specific inboxes". Enter comma or newline-separated emails.',
+    'Used when filter mode is "Include only specific inboxes". Enter comma/newline-separated full emails, domains (for example @company.com), or partial matches.',
   type: 'text',
   required: false,
-  placeholder: 'alice@company.com, bob@company.com',
+  placeholder: 'alice@company.com, @company.com, support@',
 };

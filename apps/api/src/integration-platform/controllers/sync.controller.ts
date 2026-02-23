@@ -58,29 +58,41 @@ type GoogleWorkspaceSyncFilterMode = 'all' | 'exclude' | 'include';
 const GOOGLE_WORKSPACE_SYNC_FILTER_MODES =
   new Set<GoogleWorkspaceSyncFilterMode>(['all', 'exclude', 'include']);
 
-const isValidEmail = (value: string): boolean =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const parseSyncFilterTerms = (value: unknown): string[] => {
+  const rawValues = Array.isArray(value)
+    ? value.map((item) => String(item))
+    : typeof value === 'string'
+      ? [value]
+      : [];
 
-const parseEmailListVariable = (value: unknown): Set<string> => {
-  if (Array.isArray(value)) {
-    return new Set(
-      value
-        .map((item) => String(item).trim().toLowerCase())
-        .filter((item) => item.length > 0 && isValidEmail(item)),
-    );
-  }
-
-  if (typeof value !== 'string') {
-    return new Set();
-  }
-
-  return new Set(
-    value
-      .split(/[\n,;]+/)
-      .map((item) => item.trim().toLowerCase())
-      .filter((item) => item.length > 0 && isValidEmail(item)),
+  return Array.from(
+    new Set(
+      rawValues
+        .flatMap((item) => item.split(/[\n,;]+/))
+        .map((item) => item.trim().toLowerCase())
+        .filter((item) => item.length > 0),
+    ),
   );
 };
+
+const matchesSyncFilterTerm = (email: string, term: string): boolean => {
+  if (email === term) {
+    return true;
+  }
+
+  if (term.startsWith('@')) {
+    return email.endsWith(term);
+  }
+
+  if (term.includes('@')) {
+    return email.includes(term);
+  }
+
+  return email.endsWith(`@${term}`) || email.includes(term);
+};
+
+const matchesSyncFilterTerms = (email: string, terms: string[]): boolean =>
+  terms.some((term) => matchesSyncFilterTerm(email, term));
 
 @Controller({ path: 'integrations/sync', version: '1' })
 export class SyncController {
@@ -266,15 +278,15 @@ export class SyncController {
       )
         ? (rawSyncFilterMode as GoogleWorkspaceSyncFilterMode)
         : 'all';
-    const excludedEmails = parseEmailListVariable(
+    const excludedTerms = parseSyncFilterTerms(
       syncVariables.sync_excluded_emails,
     );
-    const includedEmails = parseEmailListVariable(
+    const includedTerms = parseSyncFilterTerms(
       syncVariables.sync_included_emails,
     );
 
     let effectiveSyncFilterMode = syncFilterMode;
-    if (syncFilterMode === 'include' && includedEmails.size === 0) {
+    if (syncFilterMode === 'include' && includedTerms.length === 0) {
       this.logger.warn(
         `Google Workspace sync for org ${organizationId} is set to include mode, but include list is empty. Falling back to all users.`,
       );
@@ -284,12 +296,12 @@ export class SyncController {
     const filteredUsers = users.filter((user) => {
       const email = user.primaryEmail.toLowerCase();
 
-      if (effectiveSyncFilterMode === 'exclude' && excludedEmails.size > 0) {
-        return !excludedEmails.has(email);
+      if (effectiveSyncFilterMode === 'exclude' && excludedTerms.length > 0) {
+        return !matchesSyncFilterTerms(email, excludedTerms);
       }
 
       if (effectiveSyncFilterMode === 'include') {
-        return includedEmails.has(email);
+        return matchesSyncFilterTerms(email, includedTerms);
       }
 
       return true;
@@ -462,6 +474,15 @@ export class SyncController {
 
       // Only check members whose email domain matches the Google Workspace domain
       if (!memberDomain || !deactivationGwDomains.has(memberDomain)) {
+        continue;
+      }
+
+      // In exclude mode we keep excluded users unchanged and only stop syncing them.
+      if (
+        effectiveSyncFilterMode === 'exclude' &&
+        excludedTerms.length > 0 &&
+        matchesSyncFilterTerms(memberEmail, excludedTerms)
+      ) {
         continue;
       }
 
