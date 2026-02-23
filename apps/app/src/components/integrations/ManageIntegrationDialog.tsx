@@ -20,7 +20,7 @@ import { Label } from '@comp/ui/label';
 import MultipleSelector from '@comp/ui/multiple-selector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { Key, Loader2, Settings, Trash2, Unplug, X } from 'lucide-react';
+import { Key, Loader2, Settings, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -150,9 +150,7 @@ export function ManageIntegrationDialog({
 
   // Credentials state (for custom auth integrations)
   const [credentialFields, setCredentialFields] = useState<CredentialField[]>([]);
-  const [credentialValues, setCredentialValues] = useState<
-    Record<string, string | string[]>
-  >({});
+  const [credentialValues, setCredentialValues] = useState<Record<string, string | string[]>>({});
   const [savingCredentials, setSavingCredentials] = useState(false);
   const [authStrategy, setAuthStrategy] = useState<string>('');
 
@@ -483,10 +481,35 @@ function ConfigurationContent({
     );
   }
 
+  const syncModeVariable = variables.find((variable) => variable.id === 'sync_user_filter_mode');
+  const rawSyncMode = variableValues.sync_user_filter_mode ?? syncModeVariable?.default ?? 'all';
+  const effectiveSyncMode = String(rawSyncMode).toLowerCase();
+  const hasSyncScopedFields = variables.some(
+    (variable) => variable.id === 'sync_excluded_emails' || variable.id === 'sync_included_emails',
+  );
+
+  const shouldShowVariable = (variable: CheckVariable): boolean => {
+    if (variable.id === 'sync_excluded_emails') {
+      return effectiveSyncMode === 'exclude';
+    }
+
+    if (variable.id === 'sync_included_emails') {
+      return effectiveSyncMode === 'include';
+    }
+
+    return true;
+  };
+
   const variablesContent = hasVariables && (
     <div className="space-y-4">
       {!showTabs && <h4 className="text-sm font-medium">Configuration</h4>}
-      {variables.map((variable) => {
+      {hasSyncScopedFields && effectiveSyncMode === 'all' && (
+        <p className="text-xs text-muted-foreground">
+          Employee sync is set to all users. Include and exclude fields are hidden because they are
+          not used in this mode.
+        </p>
+      )}
+      {variables.filter(shouldShowVariable).map((variable) => {
         const options = dynamicOptions[variable.id] || variable.options || [];
         const isLoadingOptions = loadingDynamicOptions[variable.id];
 
@@ -719,16 +742,16 @@ function ConfigurationContent({
                     setCredentialValues((prev) => ({ ...prev, [field.id]: val }))
                   }
                 >
-              <SelectTrigger>
-                <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
-              </SelectTrigger>
-              <SelectContent>
-                {field.options.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+                  <SelectTrigger>
+                    <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {field.options.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               );
             })()
