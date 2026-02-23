@@ -44,5 +44,5 @@ export const syncExcludedUsersVariable: CheckVariable = {
   required: false,
   placeholder: 'Type a value and press Enter',
   helpText:
-    'Add full emails, domains (@company.com or company.com), or partial text. Matching users are skipped during JumpCloud employee sync.',
+    'Add full emails, domains (@company.com or company.com), or partial text. Matching users are skipped during JumpCloud employee sync. Suspended/deleted users can still be deactivated.',
 };

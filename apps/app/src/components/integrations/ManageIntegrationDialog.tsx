@@ -507,18 +507,22 @@ function ConfigurationContent({
   }
 
   const syncModeVariable = variables.find((variable) => variable.id === 'sync_user_filter_mode');
+  const hasSyncModeVariable = Boolean(syncModeVariable);
   const rawSyncMode = variableValues.sync_user_filter_mode ?? syncModeVariable?.default ?? 'all';
   const effectiveSyncMode = String(rawSyncMode).toLowerCase();
-  const hasSyncScopedFields = variables.some(
-    (variable) => variable.id === 'sync_excluded_emails' || variable.id === 'sync_included_emails',
-  );
+  const hasSyncScopedFields =
+    hasSyncModeVariable &&
+    variables.some(
+      (variable) =>
+        variable.id === 'sync_excluded_emails' || variable.id === 'sync_included_emails',
+    );
 
   const shouldShowVariable = (variable: CheckVariable): boolean => {
-    if (variable.id === 'sync_excluded_emails') {
+    if (variable.id === 'sync_excluded_emails' && hasSyncModeVariable) {
       return effectiveSyncMode === 'exclude';
     }
 
-    if (variable.id === 'sync_included_emails') {
+    if (variable.id === 'sync_included_emails' && hasSyncModeVariable) {
       return effectiveSyncMode === 'include';
     }
 
