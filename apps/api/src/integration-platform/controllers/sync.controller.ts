@@ -299,19 +299,27 @@ export class SyncController {
       `Google Workspace sync filter mode "${effectiveSyncFilterMode}" kept ${filteredUsers.length}/${users.length} users`,
     );
 
-    // Separate active and suspended users after applying sync filter
+    // Active users to import/reactivate are based on the selected filter mode
     const activeUsers = filteredUsers.filter((u) => !u.suspended);
-    const suspendedEmails = new Set(
+    const filteredSuspendedEmails = new Set(
       filteredUsers
         .filter((u) => u.suspended)
         .map((u) => u.primaryEmail.toLowerCase()),
     );
-    const activeEmails = new Set(
+    const filteredActiveEmails = new Set(
       activeUsers.map((u) => u.primaryEmail.toLowerCase()),
+    );
+    const allSuspendedEmails = new Set(
+      users.filter((u) => u.suspended).map((u) => u.primaryEmail.toLowerCase()),
+    );
+    const allActiveEmails = new Set(
+      users
+        .filter((u) => !u.suspended)
+        .map((u) => u.primaryEmail.toLowerCase()),
     );
 
     this.logger.log(
-      `Found ${activeUsers.length} active users and ${suspendedEmails.size} suspended users in Google Workspace`,
+      `Found ${activeUsers.length} active users and ${filteredSuspendedEmails.size} suspended users in Google Workspace after sync filtering`,
     );
 
     // Import users into the organization
@@ -431,25 +439,37 @@ export class SyncController {
       },
     });
 
-    // Get the domains from all filtered users (including suspended) to track which domains Google Workspace manages
-    // This ensures members get deactivated even when an entire domain has no active users
-    const gwDomains = new Set(
-      filteredUsers.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()),
-    );
+    const deactivationGwDomains =
+      effectiveSyncFilterMode === 'include'
+        ? new Set(users.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()))
+        : new Set(
+            filteredUsers.map((u) =>
+              u.primaryEmail.split('@')[1]?.toLowerCase(),
+            ),
+          );
+    const deactivationSuspendedEmails =
+      effectiveSyncFilterMode === 'include'
+        ? allSuspendedEmails
+        : filteredSuspendedEmails;
+    const deactivationActiveEmails =
+      effectiveSyncFilterMode === 'include'
+        ? allActiveEmails
+        : filteredActiveEmails;
 
     for (const member of allOrgMembers) {
       const memberEmail = member.user.email.toLowerCase();
       const memberDomain = memberEmail.split('@')[1];
 
       // Only check members whose email domain matches the Google Workspace domain
-      if (!memberDomain || !gwDomains.has(memberDomain)) {
+      if (!memberDomain || !deactivationGwDomains.has(memberDomain)) {
         continue;
       }
 
       // If this member's email is suspended OR not in the active list, deactivate them
-      const isSuspended = suspendedEmails.has(memberEmail);
+      const isSuspended = deactivationSuspendedEmails.has(memberEmail);
       const isDeleted =
-        !activeEmails.has(memberEmail) && !suspendedEmails.has(memberEmail);
+        !deactivationActiveEmails.has(memberEmail) &&
+        !deactivationSuspendedEmails.has(memberEmail);
 
       if (isSuspended || isDeleted) {
         try {
@@ -478,7 +498,7 @@ export class SyncController {
     return {
       success: true,
       totalFound: activeUsers.length,
-      totalSuspended: suspendedEmails.size,
+      totalSuspended: filteredSuspendedEmails.size,
       ...results,
     };
   }
