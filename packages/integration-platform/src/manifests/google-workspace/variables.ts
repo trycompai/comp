@@ -46,3 +46,48 @@ export const includeSuspendedVariable: CheckVariable = {
     { value: 'true', label: 'Yes - Include suspended users' },
   ],
 };
+
+/**
+ * Employee sync filtering mode
+ * Controls whether sync should include all users, exclude selected inboxes,
+ * or include only selected inboxes.
+ */
+export const syncUserFilterModeVariable: CheckVariable = {
+  id: 'sync_user_filter_mode',
+  label: 'Employee Sync Filter Mode',
+  helpText: 'Choose how Google Workspace users should be filtered during employee sync',
+  type: 'select',
+  required: false,
+  default: 'all',
+  options: [
+    { value: 'all', label: 'All users' },
+    { value: 'exclude', label: 'Exclude specific inboxes' },
+    { value: 'include', label: 'Include only specific inboxes' },
+  ],
+};
+
+/**
+ * Comma/newline-separated list of inbox emails to exclude from employee sync.
+ */
+export const syncExcludedEmailsVariable: CheckVariable = {
+  id: 'sync_excluded_emails',
+  label: 'Exclude Inboxes (Emails)',
+  helpText:
+    'Used when filter mode is "Exclude specific inboxes". Enter comma or newline-separated emails.',
+  type: 'text',
+  required: false,
+  placeholder: 'support@company.com, info@company.com',
+};
+
+/**
+ * Comma/newline-separated list of inbox emails to include in employee sync.
+ */
+export const syncIncludedEmailsVariable: CheckVariable = {
+  id: 'sync_included_emails',
+  label: 'Include Inboxes (Emails)',
+  helpText:
+    'Used when filter mode is "Include only specific inboxes". Enter comma or newline-separated emails.',
+  type: 'text',
+  required: false,
+  placeholder: 'alice@company.com, bob@company.com',
+};

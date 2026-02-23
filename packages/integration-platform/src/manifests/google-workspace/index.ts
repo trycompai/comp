@@ -1,5 +1,10 @@
 import type { IntegrationManifest } from '../../types';
 import { employeeAccessCheck, twoFactorAuthCheck } from './checks';
+import {
+  syncExcludedEmailsVariable,
+  syncIncludedEmailsVariable,
+  syncUserFilterModeVariable,
+} from './variables';
 
 export const googleWorkspaceManifest: IntegrationManifest = {
   id: 'google-workspace',
@@ -46,6 +51,8 @@ Note: The user authorizing must be a Google Workspace admin.`,
   },
 
   capabilities: ['checks', 'sync'],
+
+  variables: [syncUserFilterModeVariable, syncExcludedEmailsVariable, syncIncludedEmailsVariable],
 
   checks: [twoFactorAuthCheck, employeeAccessCheck],
 };

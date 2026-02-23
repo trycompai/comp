@@ -53,6 +53,35 @@ interface RampUsersResponse {
   };
 }
 
+type GoogleWorkspaceSyncFilterMode = 'all' | 'exclude' | 'include';
+
+const GOOGLE_WORKSPACE_SYNC_FILTER_MODES =
+  new Set<GoogleWorkspaceSyncFilterMode>(['all', 'exclude', 'include']);
+
+const isValidEmail = (value: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+const parseEmailListVariable = (value: unknown): Set<string> => {
+  if (Array.isArray(value)) {
+    return new Set(
+      value
+        .map((item) => String(item).trim().toLowerCase())
+        .filter((item) => item.length > 0 && isValidEmail(item)),
+    );
+  }
+
+  if (typeof value !== 'string') {
+    return new Set();
+  }
+
+  return new Set(
+    value
+      .split(/[\n,;]+/)
+      .map((item) => item.trim().toLowerCase())
+      .filter((item) => item.length > 0 && isValidEmail(item)),
+  );
+};
+
 @Controller({ path: 'integrations/sync', version: '1' })
 export class SyncController {
   private readonly logger = new Logger(SyncController.name);
@@ -225,10 +254,57 @@ export class SyncController {
       );
     }
 
-    // Separate active and suspended users
-    const activeUsers = users.filter((u) => !u.suspended);
+    const syncVariables = (connection.variables || {}) as Record<
+      string,
+      unknown
+    >;
+    const rawSyncFilterMode = syncVariables.sync_user_filter_mode;
+    const syncFilterMode: GoogleWorkspaceSyncFilterMode =
+      typeof rawSyncFilterMode === 'string' &&
+      GOOGLE_WORKSPACE_SYNC_FILTER_MODES.has(
+        rawSyncFilterMode as GoogleWorkspaceSyncFilterMode,
+      )
+        ? (rawSyncFilterMode as GoogleWorkspaceSyncFilterMode)
+        : 'all';
+    const excludedEmails = parseEmailListVariable(
+      syncVariables.sync_excluded_emails,
+    );
+    const includedEmails = parseEmailListVariable(
+      syncVariables.sync_included_emails,
+    );
+
+    let effectiveSyncFilterMode = syncFilterMode;
+    if (syncFilterMode === 'include' && includedEmails.size === 0) {
+      this.logger.warn(
+        `Google Workspace sync for org ${organizationId} is set to include mode, but include list is empty. Falling back to all users.`,
+      );
+      effectiveSyncFilterMode = 'all';
+    }
+
+    const filteredUsers = users.filter((user) => {
+      const email = user.primaryEmail.toLowerCase();
+
+      if (effectiveSyncFilterMode === 'exclude' && excludedEmails.size > 0) {
+        return !excludedEmails.has(email);
+      }
+
+      if (effectiveSyncFilterMode === 'include') {
+        return includedEmails.has(email);
+      }
+
+      return true;
+    });
+
+    this.logger.log(
+      `Google Workspace sync filter mode "${effectiveSyncFilterMode}" kept ${filteredUsers.length}/${users.length} users`,
+    );
+
+    // Separate active and suspended users after applying sync filter
+    const activeUsers = filteredUsers.filter((u) => !u.suspended);
     const suspendedEmails = new Set(
-      users.filter((u) => u.suspended).map((u) => u.primaryEmail.toLowerCase()),
+      filteredUsers
+        .filter((u) => u.suspended)
+        .map((u) => u.primaryEmail.toLowerCase()),
     );
     const activeEmails = new Set(
       activeUsers.map((u) => u.primaryEmail.toLowerCase()),
@@ -355,10 +431,10 @@ export class SyncController {
       },
     });
 
-    // Get the domains from ALL users (including suspended) to track which domains Google Workspace manages
+    // Get the domains from all filtered users (including suspended) to track which domains Google Workspace manages
     // This ensures members get deactivated even when an entire domain has no active users
     const gwDomains = new Set(
-      users.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()),
+      filteredUsers.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()),
     );
 
     for (const member of allOrgMembers) {
