@@ -120,6 +120,27 @@ const validateTargetRepos = (
   return true;
 };
 
+const normalizeMultiSelectValue = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return Array.from(
+      new Set(value.map((item) => String(item).trim()).filter((item) => item.length > 0)),
+    );
+  }
+
+  if (typeof value === 'string') {
+    return Array.from(
+      new Set(
+        value
+          .split(/[\n,;]+/)
+          .map((item) => item.trim())
+          .filter((item) => item.length > 0),
+      ),
+    );
+  }
+
+  return [];
+};
+
 export function ManageIntegrationDialog({
   open,
   onOpenChange,
@@ -200,7 +221,11 @@ export function ManageIntegrationDialog({
         const values: Record<string, string | number | boolean | string[]> = {};
         for (const v of vars) {
           if (v.currentValue !== undefined) {
-            values[v.id] = v.currentValue;
+            if (v.type === 'multi-select') {
+              values[v.id] = normalizeMultiSelectValue(v.currentValue);
+            } else {
+              values[v.id] = v.currentValue;
+            }
           }
         }
         setVariableValues(values);
@@ -919,11 +944,14 @@ function MultiSelectWithBranches({
   onLoadOptions: () => void;
 }) {
   const selectedValues = Array.isArray(value) ? value : [];
+  const normalizedSelectedValues = selectedValues
+    .map((item) => String(item).trim())
+    .filter((item) => item.length > 0);
   const hasLoadedRef = useRef(false);
 
   // For target_repos, parse values to extract repos and branches
   const isGitHubRepos = variable.id === 'target_repos';
-  const parsedConfigs = isGitHubRepos ? selectedValues.map(parseRepoBranch) : [];
+  const parsedConfigs = isGitHubRepos ? normalizedSelectedValues.map(parseRepoBranch) : [];
 
   useEffect(() => {
     if (
@@ -959,7 +987,7 @@ function MultiSelectWithBranches({
 
   // Handle branch change for a specific repo
   const handleBranchChange = (repo: string, branch: string) => {
-    const newValues = selectedValues.map((v) => {
+    const newValues = normalizedSelectedValues.map((v) => {
       const parsed = parseRepoBranch(v);
       if (parsed.repo === repo) {
         // Allow empty string during editing - will default to main on save if empty
@@ -972,12 +1000,15 @@ function MultiSelectWithBranches({
 
   // Handle removing a repo
   const handleRemoveRepo = (repo: string) => {
-    const newValues = selectedValues.filter((v) => parseRepoBranch(v).repo !== repo);
+    const newValues = normalizedSelectedValues.filter((v) => parseRepoBranch(v).repo !== repo);
     onChange(newValues);
   };
 
   // Get repos from values for display in multi-select
-  const reposForSelector = isGitHubRepos ? parsedConfigs.map((c) => c.repo) : selectedValues;
+  const reposForSelector = isGitHubRepos
+    ? parsedConfigs.map((c) => c.repo)
+    : normalizedSelectedValues;
+  const isCreatable = isGitHubRepos || options.length === 0;
 
   return (
     <div className="space-y-3">
@@ -989,14 +1020,18 @@ function MultiSelectWithBranches({
         onChange={(selected) => handleRepoSelectionChange(selected.map((s) => s.value))}
         defaultOptions={options.map((o) => ({ value: o.value, label: o.label }))}
         options={options.map((o) => ({ value: o.value, label: o.label }))}
-        placeholder={`Select ${variable.label.toLowerCase()}...`}
-        creatable={isGitHubRepos}
+        placeholder={variable.placeholder || `Select ${variable.label.toLowerCase()}...`}
+        creatable={isCreatable}
         emptyIndicator={
           isLoadingOptions ? (
             <div className="flex items-center gap-2 py-2 px-3 text-sm text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
               Loading options...
             </div>
+          ) : isCreatable ? (
+            <p className="text-center text-sm text-muted-foreground">
+              Type a value and press Enter
+            </p>
           ) : (
             <p className="text-center text-sm text-muted-foreground">No options available</p>
           )

@@ -73,10 +73,10 @@ export const syncExcludedEmailsVariable: CheckVariable = {
   id: 'sync_excluded_emails',
   label: 'Exclude from Sync',
   helpText:
-    'Enter comma/newline-separated full emails, domains (@company.com or company.com), or partial text. Matching users stay active and are skipped during sync.',
-  type: 'text',
+    'Add full emails, domains (@company.com or company.com), or partial text. Press Enter after each value. Matching users stay active and are skipped during sync.',
+  type: 'multi-select',
   required: false,
-  placeholder: 'support@company.com, @company.com, support@',
+  placeholder: 'Type a value and press Enter',
 };
 
 /**
@@ -86,8 +86,8 @@ export const syncIncludedEmailsVariable: CheckVariable = {
   id: 'sync_included_emails',
   label: 'Include in Sync',
   helpText:
-    'Enter comma/newline-separated full emails, domains (@company.com or company.com), or partial text. Only matching users are imported/reactivated. If empty, sync falls back to all users.',
-  type: 'text',
+    'Add full emails, domains (@company.com or company.com), or partial text. Press Enter after each value. Only matching users are imported/reactivated. If empty, sync falls back to all users.',
+  type: 'multi-select',
   required: false,
-  placeholder: 'alice@company.com, @company.com, support@',
+  placeholder: 'Type a value and press Enter',
 };
