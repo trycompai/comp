@@ -75,6 +75,9 @@ const parseSyncFilterTerms = (value: unknown): string[] => {
   );
 };
 
+const isFullEmailTerm = (term: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(term);
+
 const matchesSyncFilterTerm = (email: string, term: string): boolean => {
   if (email === term) {
     return true;
@@ -82,6 +85,10 @@ const matchesSyncFilterTerm = (email: string, term: string): boolean => {
 
   if (term.startsWith('@')) {
     return email.endsWith(term);
+  }
+
+  if (isFullEmailTerm(term)) {
+    return false;
   }
 
   if (term.includes('@')) {
