@@ -478,9 +478,21 @@ export class SyncController {
     for (const member of allOrgMembers) {
       const memberEmail = member.user.email.toLowerCase();
       const memberDomain = memberEmail.split('@')[1];
+      const memberRoles = member.role
+        .split(',')
+        .map((role) => role.trim().toLowerCase());
 
       // Only check members whose email domain matches the Google Workspace domain
       if (!memberDomain || !deactivationGwDomains.has(memberDomain)) {
+        continue;
+      }
+
+      // Safety guard: never auto-deactivate privileged members via sync.
+      if (
+        memberRoles.includes('owner') ||
+        memberRoles.includes('admin') ||
+        memberRoles.includes('auditor')
+      ) {
         continue;
       }
 
@@ -1793,9 +1805,22 @@ export class SyncController {
     for (const member of allOrgMembers) {
       const memberEmail = member.user.email.toLowerCase();
       const memberDomain = memberEmail.split('@')[1];
+      const memberRoles = member.role
+        .split(',')
+        .map((role) => role.trim().toLowerCase());
 
       // Only check members whose email domain matches the JumpCloud domain
       if (!memberDomain || !jcDomains.has(memberDomain)) {
+        continue;
+      }
+
+      // Safety guard: never auto-deactivate privileged members via sync.
+      // This prevents org lockouts when identity data is partial/misaligned.
+      if (
+        memberRoles.includes('owner') ||
+        memberRoles.includes('admin') ||
+        memberRoles.includes('auditor')
+      ) {
         continue;
       }
 
