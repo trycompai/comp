@@ -2,10 +2,11 @@ import { trainingVideos } from '@/lib/data/training-videos';
 import { db } from '@db';
 
 export async function getPeopleScore(organizationId: string) {
-  // Get all active members (employees and contractors)
+  // Get all active members (employees and contractors); exclude inactive/deactivated
   const allMembers = await db.member.findMany({
     where: {
       organizationId,
+      isActive: true,
       deactivated: false,
     },
     include: {
