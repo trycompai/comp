@@ -3,7 +3,7 @@
 import { Button } from '@comp/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
 import { ShieldX, ShieldCheck, Loader2, XCircle } from 'lucide-react';
-import { Member, User } from '@db';
+import type { Member, User } from '@db';
 
 interface SOAPendingApprovalAlertProps {
   approver?: (Member & { user: User }) | null;

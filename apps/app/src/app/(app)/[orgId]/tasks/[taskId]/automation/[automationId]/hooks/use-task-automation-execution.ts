@@ -53,7 +53,7 @@ export function useTaskAutomationExecution({
     const pollRunStatus = async () => {
       try {
         const url = `${process.env.NEXT_PUBLIC_ENTERPRISE_API_URL}/api/tasks-automations/runs/${runId}`;
-        const response = await fetch(url);
+        const response = await fetch(url, { credentials: 'include' });
         const data = await response.json();
 
         if (!response.ok) {

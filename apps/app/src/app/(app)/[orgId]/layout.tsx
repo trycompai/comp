@@ -2,7 +2,7 @@ import { getFeatureFlags } from '@/app/posthog';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
 import { serverApi } from '@/lib/api-server';
-import { canAccessApp } from '@/lib/permissions';
+import { canAccessApp, parseRolesString } from '@/lib/permissions';
 import type { OrganizationFromMe } from '@/types';
 import { resolveUserPermissions } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
@@ -13,15 +13,6 @@ import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppShellWrapper } from './components/AppShellWrapper';
-
-// Helper to safely parse comma-separated roles string (used for UI display only)
-function parseRolesString(rolesStr: string | null | undefined): Role[] {
-  if (!rolesStr) return [];
-  return rolesStr
-    .split(',')
-    .map((r) => r.trim())
-    .filter((r) => r in Role) as Role[];
-}
 
 const HotKeys = dynamic(() => import('@/components/hot-keys').then((mod) => mod.HotKeys), {
   ssr: true,

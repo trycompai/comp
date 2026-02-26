@@ -1,5 +1,6 @@
 'use client';
 
+import { parseRolesString } from '@/lib/permissions';
 import type { Role } from '@db';
 import * as React from 'react';
 
@@ -77,7 +78,7 @@ export function MultiRoleCombobox({
   // Process selected roles to handle comma-separated values
   const selectedRoles = React.useMemo(() => {
     return inputSelectedRoles.flatMap((role) =>
-      typeof role === 'string' && role.includes(',') ? (role.split(',') as Role[]) : [role],
+      typeof role === 'string' && role.includes(',') ? parseRolesString(role) : [role],
     );
   }, [inputSelectedRoles]);
 

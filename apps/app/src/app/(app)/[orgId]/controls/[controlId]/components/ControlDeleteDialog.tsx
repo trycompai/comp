@@ -19,6 +19,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { useControls } from '../../hooks/useControls';
+import { usePermissions } from '@/hooks/use-permissions';
 
 const formSchema = z.object({
   comment: z.string().optional(),
@@ -34,6 +35,7 @@ interface ControlDeleteDialogProps {
 
 export function ControlDeleteDialog({ isOpen, onClose, control }: ControlDeleteDialogProps) {
   const { deleteControl } = useControls();
+  const { hasPermission } = usePermissions();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -72,7 +74,7 @@ export function ControlDeleteDialog({ isOpen, onClose, control }: ControlDeleteD
               <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" variant="destructive" disabled={isSubmitting} className="gap-2">
+              <Button type="submit" variant="destructive" disabled={isSubmitting || !hasPermission('control', 'delete')} className="gap-2">
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />

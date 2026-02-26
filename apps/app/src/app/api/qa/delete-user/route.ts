@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import { db } from '@db';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
 
   const token = authHeader?.split(' ')[1];
 
-  if (!token || token !== qaSecret) {
+  if (!token || token.length !== qaSecret.length || !timingSafeEqual(Buffer.from(token), Buffer.from(qaSecret))) {
     return NextResponse.json(
       {
         success: false,

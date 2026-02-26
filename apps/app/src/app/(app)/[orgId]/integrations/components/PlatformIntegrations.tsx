@@ -294,6 +294,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
       fetch('/api/integrations/relevant-tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           integrationName: selectedCustomIntegration.name,
           integrationDescription: selectedCustomIntegration.description,

@@ -20,6 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
+import { parseRolesString } from '@/lib/permissions';
 import type { Role } from '@db';
 import {
   Avatar,
@@ -85,10 +86,7 @@ function getRoleLabel(role: string): string {
 
 function parseRoles(role: Role | Role[] | string): Role[] {
   if (Array.isArray(role)) return role as Role[];
-  if (typeof role === 'string' && role.includes(',')) {
-    return role.split(',').map((r) => r.trim()) as Role[];
-  }
-  return [role as Role];
+  return parseRolesString(role);
 }
 
 export function MemberRow({

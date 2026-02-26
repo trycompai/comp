@@ -66,6 +66,7 @@ export function CreateVendorForm({
         fetch('/api/vendors/research', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ website }),
         }).catch(() => {});
       }

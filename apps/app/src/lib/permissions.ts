@@ -1,10 +1,23 @@
 import { allRoles, type RoleName } from '@comp/auth';
+import { Role } from '@db';
 
 /**
  * Effective user permissions — flat map of resource -> actions[].
  * Example: { control: ['read', 'export'], policy: ['read', 'update'] }
  */
 export type UserPermissions = Record<string, string[]>;
+
+/**
+ * Parse a comma-separated role string into a validated Role[] array.
+ * Only includes values that are valid members of the Role enum.
+ */
+export function parseRolesString(rolesStr: string | null | undefined): Role[] {
+  if (!rolesStr) return [];
+  return rolesStr
+    .split(',')
+    .map((r) => r.trim())
+    .filter((r) => r in Role) as Role[];
+}
 
 // ─── Checker functions ───────────────────────────────────────────────
 

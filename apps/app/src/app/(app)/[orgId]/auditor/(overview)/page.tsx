@@ -1,17 +1,10 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { serverApi } from '@/lib/api-server';
+import { parseRolesString } from '@/lib/permissions';
 import { Role } from '@db';
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { AuditorView } from './components/AuditorView';
-
-function parseRolesString(rolesStr: string | null | undefined): Role[] {
-  if (!rolesStr) return [];
-  return rolesStr
-    .split(',')
-    .map((r) => r.trim())
-    .filter((r) => r in Role) as Role[];
-}
 
 interface PeopleMember {
   userId: string;

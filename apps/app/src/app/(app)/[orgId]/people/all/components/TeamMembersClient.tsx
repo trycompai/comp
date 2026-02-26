@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { usePeopleActions } from '@/hooks/use-people-api';
+import { parseRolesString } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
 import type { Invitation, Role } from '@db';
 import {
@@ -125,12 +126,7 @@ export function TeamMembersClient({
   const allItems: DisplayItem[] = [
     ...data.members.map((member) => {
       // Process the role to handle comma-separated values
-      const roles =
-        typeof member.role === 'string' && member.role.includes(',')
-          ? (member.role.split(',') as Role[])
-          : Array.isArray(member.role)
-            ? member.role
-            : [member.role as Role];
+      const roles = parseRolesString(member.role);
 
       const isInactive = member.deactivated || !member.isActive;
 
@@ -149,12 +145,7 @@ export function TeamMembersClient({
     }),
     ...data.pendingInvitations.map((invitation) => {
       // Process the role to handle comma-separated values
-      const roles =
-        typeof invitation.role === 'string' && invitation.role.includes(',')
-          ? (invitation.role.split(',') as Role[])
-          : Array.isArray(invitation.role)
-            ? invitation.role
-            : [invitation.role as Role];
+      const roles = parseRolesString(invitation.role);
 
       return {
         ...invitation,
@@ -256,7 +247,7 @@ export function TeamMembersClient({
     const member = data.members.find((m) => m.id === memberId);
 
     // Client-side check (optional, robust check should be server-side in authClient)
-    const memberRoles = member?.role?.split(',').map((r) => r.trim()) ?? [];
+    const memberRoles = parseRolesString(member?.role);
     if (member && memberRoles.includes('owner') && !rolesArray.includes('owner')) {
       // Show toast error directly, no need to return an error object
       toast.error('The Owner role cannot be removed.');

@@ -45,6 +45,7 @@ export function useQuestionnaireParse({
         const res = await fetch('/api/questionnaire/trigger-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ taskId: 'vendor-questionnaire-orchestrator' }),
         });
         const data = await res.json();

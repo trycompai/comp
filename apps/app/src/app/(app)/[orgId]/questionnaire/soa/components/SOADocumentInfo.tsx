@@ -3,7 +3,7 @@
 import { Card } from '@comp/ui';
 import { Button } from '@comp/ui/button';
 import { Zap, Loader2, ShieldCheck } from 'lucide-react';
-import { Member, User } from '@db';
+import type { Member, User } from '@db';
 
 type Document = {
   id: string;

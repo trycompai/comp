@@ -11,7 +11,7 @@ import {
 } from '@comp/ui/dialog';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { Loader2 } from 'lucide-react';
-import { Member, User } from '@db';
+import type { Member, User } from '@db';
 
 interface SubmitApprovalDialogProps {
   open: boolean;

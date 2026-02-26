@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { db } from '@db';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
 
   const token = authHeader?.split(' ')[1];
 
-  if (!token || token !== retoolApiSecret) {
+  if (!token || token.length !== retoolApiSecret.length || !timingSafeEqual(Buffer.from(token), Buffer.from(retoolApiSecret))) {
     return NextResponse.json(
       {
         success: false,

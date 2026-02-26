@@ -18,9 +18,12 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
+import { usePermissions } from '@/hooks/use-permissions';
 
 export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
   const { updateTask } = useTaskMutations();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('task', 'update');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateTaskSchema>>({
@@ -62,6 +65,7 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
                     value={field.value ?? ''}
                     onValueChange={field.onChange}
                     onOpenChange={() => form.handleSubmit(onSubmit)}
+                    disabled={!canUpdate}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={'Select assignee'} />
@@ -87,7 +91,7 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
               <FormItem>
                 <FormLabel>{'Status'}</FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select value={field.value} onValueChange={field.onChange} disabled={!canUpdate}>
                     <SelectTrigger>
                       <SelectValue placeholder={'Select a status'}>
                         {field.value && <StatusIndicator status={field.value} />}
@@ -133,7 +137,7 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) => date <= new Date()}
+                      disabled={!canUpdate ? true : (date) => date <= new Date()}
                       initialFocus
                     />
                   </PopoverContent>
@@ -144,7 +148,7 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
           />
         </div>
         <div className="mt-4 flex justify-end">
-          <Button type="submit" variant="default" disabled={isSubmitting}>
+          <Button type="submit" variant="default" disabled={!canUpdate || isSubmitting}>
             {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (

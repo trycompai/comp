@@ -9,6 +9,8 @@ interface UpdateOrganizationData {
   evidenceApprovalEnabled?: boolean;
   deviceAgentStepEnabled?: boolean;
   securityTrainingStepEnabled?: boolean;
+  whistleblowerReportEnabled?: boolean;
+  accessRequestFormEnabled?: boolean;
 }
 
 interface UploadLogoData {

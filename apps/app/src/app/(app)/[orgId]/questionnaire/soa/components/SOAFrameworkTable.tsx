@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useSOAAutoFill } from '../hooks/useSOAAutoFill';
 import { useSOADocument } from '../../hooks/useSOADocument';
-import { Member, User } from '@db';
+import type { Member, User } from '@db';
 import { SOADocumentInfo } from './SOADocumentInfo';
 import { SOAPendingApprovalAlert } from './SOAPendingApprovalAlert';
 import { SubmitApprovalDialog } from './SubmitApprovalDialog';

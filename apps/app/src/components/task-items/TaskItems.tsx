@@ -1,6 +1,6 @@
 'use client';
 
-import { useTaskItems, useTaskItemsStats, type TaskItemSortBy, type TaskItemSortOrder, type TaskItemFilters } from '@/hooks/use-task-items';
+import { useTaskItems, useTaskItemsStats, type TaskItemSortBy, type TaskItemSortOrder, type TaskItemFilters, type TaskItemStatus, type TaskItemPriority } from '@/hooks/use-task-items';
 import { Card, CardContent, CardHeader } from '@comp/ui/card';
 import type { TaskItemEntityType } from '@/hooks/use-task-items';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -71,10 +71,10 @@ export const TaskItems = ({
   // Filter members to only show owner and admin roles for assignee filter
   // Always include currently filtered assignee even if they're not owner/admin (to preserve active filter)
   const assignableMembers = useMemo(() => {
-    if (!members) return [];
-    const currentAssigneeId: string | null = 
-      filters.assigneeId && filters.assigneeId !== '__unassigned__' 
-        ? (filters.assigneeId as string) 
+    if (!members || !Array.isArray(members)) return [];
+    const currentAssigneeId: string | null =
+      filters.assigneeId && filters.assigneeId !== '__unassigned__'
+        ? filters.assigneeId
         : null;
     return filterMembersByOwnerOrAdmin({ members, currentAssigneeId });
   }, [members, filters.assigneeId]);
@@ -91,12 +91,13 @@ export const TaskItems = ({
       const newFilters = { ...prev };
       if (value === null || value === 'all') {
         delete newFilters[filterType];
-      } else if (filterType === 'assigneeId' && value === 'unassigned') {
-        // Special handling for unassigned - we'll need to handle this in the backend
-        // For now, set a special value that backend can interpret
-        newFilters[filterType] = '__unassigned__' as any;
+      } else if (filterType === 'assigneeId') {
+        // assigneeId accepts string values including the special '__unassigned__' sentinel
+        newFilters.assigneeId = value === 'unassigned' ? '__unassigned__' : value;
+      } else if (filterType === 'status') {
+        newFilters.status = value as TaskItemStatus;
       } else {
-        newFilters[filterType] = value as any;
+        newFilters.priority = value as TaskItemPriority;
       }
       return newFilters;
     });
