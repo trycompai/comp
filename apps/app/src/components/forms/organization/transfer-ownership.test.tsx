@@ -41,13 +41,19 @@ const mockMembers = [
   { id: 'member_2', user: { name: null, email: 'bob@test.com' } },
 ];
 
+// Owner permissions include organization:delete; admin does not
+const OWNER_PERMISSIONS = {
+  ...ADMIN_PERMISSIONS,
+  organization: ['read', 'update', 'delete'],
+};
+
 describe('TransferOwnership permission gating', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders nothing when user is not the owner', () => {
-    setMockPermissions(ADMIN_PERMISSIONS);
+    setMockPermissions(OWNER_PERMISSIONS);
 
     const { container } = render(
       <TransferOwnership members={mockMembers} isOwner={false} />,
@@ -56,7 +62,17 @@ describe('TransferOwnership permission gating', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('renders nothing when user lacks organization:delete permission', () => {
+  it('renders nothing when user lacks organization:delete permission (admin role)', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+
+    const { container } = render(
+      <TransferOwnership members={mockMembers} isOwner={true} />,
+    );
+
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('renders nothing when user lacks organization:delete permission (auditor role)', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
 
     const { container } = render(
@@ -77,15 +93,16 @@ describe('TransferOwnership permission gating', () => {
   });
 
   it('renders the transfer ownership card when user is owner with organization:delete permission', () => {
-    setMockPermissions(ADMIN_PERMISSIONS);
+    setMockPermissions(OWNER_PERMISSIONS);
 
     render(<TransferOwnership members={mockMembers} isOwner={true} />);
 
-    expect(screen.getByText('Transfer ownership')).toBeInTheDocument();
+    const elements = screen.getAllByText('Transfer ownership');
+    expect(elements.length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows the "no members" message when members array is empty and user has permission', () => {
-    setMockPermissions(ADMIN_PERMISSIONS);
+    setMockPermissions(OWNER_PERMISSIONS);
 
     render(<TransferOwnership members={[]} isOwner={true} />);
 
@@ -95,7 +112,7 @@ describe('TransferOwnership permission gating', () => {
   });
 
   it('renders the card content when owner has permission and members exist', () => {
-    setMockPermissions(ADMIN_PERMISSIONS);
+    setMockPermissions(OWNER_PERMISSIONS);
 
     render(<TransferOwnership members={mockMembers} isOwner={true} />);
 

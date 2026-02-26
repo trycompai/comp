@@ -109,8 +109,13 @@ describe('TrustPortalAdditionalDocumentsSection permission gating', () => {
   it('hides delete buttons for documents when user lacks trust:update permission', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
     render(<TrustPortalAdditionalDocumentsSection {...defaultProps} />);
-    // No delete buttons should be rendered
-    const buttons = screen.queryAllByRole('button');
-    expect(buttons.length).toBe(0);
+    // The document download rows (role="button") still render, but actual
+    // <Button> delete buttons should not be present. The delete buttons use
+    // the Trash2 icon; without permission, the entire block is not rendered.
+    // There should be no actual <button> elements (only div[role="button"] for download).
+    const realButtons = screen.queryAllByRole('button').filter(
+      (el) => el.tagName === 'BUTTON',
+    );
+    expect(realButtons.length).toBe(0);
   });
 });

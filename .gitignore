@@ -91,4 +91,4 @@ packages/*/dist
 scripts/sync-release-branch.sh
 /.vscode
 
-.claude/projects/-Users-marfuen-code-comp/
+.claude/projects/-Users-marfuen-code-comp/.claude/audit-findings.md

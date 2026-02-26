@@ -41,6 +41,18 @@ vi.mock('sonner', () => ({
 
 import { TrustPortalDomain } from './TrustPortalDomain';
 
+// Mock localStorage for jsdom
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: vi.fn((key: string) => store[key] ?? null),
+    setItem: vi.fn((key: string, value: string) => { store[key] = value; }),
+    removeItem: vi.fn((key: string) => { delete store[key]; }),
+    clear: vi.fn(() => { store = {}; }),
+  };
+})();
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
+
 describe('TrustPortalDomain permission gating', () => {
   const defaultProps = {
     domain: 'trust.example.com',
@@ -52,6 +64,7 @@ describe('TrustPortalDomain permission gating', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorageMock.clear();
   });
 
   it('renders title and description regardless of permissions', () => {
