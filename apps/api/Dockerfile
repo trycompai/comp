@@ -1,8 +1,8 @@
 # Use Node.js runtime for production
-FROM node:20-alpine
+FROM node:20-slim
 
 # Install required packages (wget for healthcheck, curl/bash for bun install, libc compat for prisma)
-RUN apk add --no-cache wget curl bash libc6-compat openssl
+RUN apt-get update && apt-get install -y --no-install-recommends wget curl openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ ENV NODE_ENV=production
 ENV PORT=3333
 
 # Create a non-root user for security
-RUN addgroup --system nestjs && adduser --system --ingroup nestjs nestjs \
+RUN groupadd --system nestjs && useradd --system --gid nestjs nestjs \
   && chown -R nestjs:nestjs /app
 
 USER nestjs
