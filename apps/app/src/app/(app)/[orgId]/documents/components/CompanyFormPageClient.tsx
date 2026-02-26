@@ -109,7 +109,7 @@ async function evidenceFormFetcher([endpoint, orgId]: readonly [
   string,
   string,
 ]): Promise<EvidenceFormResponse> {
-  const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
+  const response = await api.get<EvidenceFormResponse>(endpoint);
   if (response.error || !response.data) {
     throw new Error(response.error ?? 'Failed to load submissions');
   }
@@ -125,7 +125,7 @@ export function CompanyFormPageClient({
 }: {
   organizationId: string;
   formType: EvidenceFormType;
-  isPlatformAdmin: boolean;
+  isPlatformAdmin?: boolean;
 }) {
   const router = useRouter();
   const { mutate: globalMutate } = useSWRConfig();
@@ -289,7 +289,6 @@ export function CompanyFormPageClient({
           fileType: selectedFile.type || 'application/octet-stream',
           fileData,
         },
-        organizationId,
       );
 
       if (response.error) {
@@ -485,9 +484,6 @@ export function CompanyFormPageClient({
 
       <DocumentFindingsSection
         formType={formType}
-        isAuditor={isAuditor}
-        isPlatformAdmin={isPlatformAdmin}
-        isAdminOrOwner={isAdminOrOwner}
       />
 
       <Dialog
