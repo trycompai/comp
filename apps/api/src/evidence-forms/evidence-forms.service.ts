@@ -1,6 +1,10 @@
 import { AttachmentsService } from '@/attachments/attachments.service';
 import type { AuthContext } from '@/auth/types';
-import { db, type EvidenceFormType as DbEvidenceFormType } from '@trycompai/db';
+import { db, EvidenceFormType as DbEvidenceFormType } from '@trycompai/db';
+import {
+  toDbEvidenceFormType,
+  toExternalEvidenceFormType,
+} from '@comp/company';
 import {
   BadRequestException,
   Injectable,
@@ -16,10 +20,6 @@ import {
   type EvidenceFormFieldDefinition,
   type EvidenceFormType,
 } from './evidence-forms.definitions';
-import {
-  toDbEvidenceFormType,
-  toExternalEvidenceFormType,
-} from './evidence-form-type-map';
 
 const listQuerySchema = z.object({
   search: z.string().trim().optional(),
@@ -29,6 +29,12 @@ const listQuerySchema = z.object({
 
 const uploadSchema = z.object({
   formType: evidenceFormTypeSchema,
+  fileName: z.string().min(1),
+  fileType: z.string().min(1),
+  fileData: z.string().min(1),
+});
+
+const uploadSubmissionBodySchema = z.object({
   fileName: z.string().min(1),
   fileType: z.string().min(1),
   fileData: z.string().min(1),
@@ -430,6 +436,77 @@ export class EvidenceFormsService {
       fileKey,
       downloadUrl,
     };
+  }
+
+  async uploadSubmission(params: {
+    organizationId: string;
+    formType: string;
+    authContext: AuthContext;
+    payload: unknown;
+  }) {
+    const parsedType = evidenceFormTypeSchema.safeParse(params.formType);
+    if (!parsedType.success) {
+      throw new BadRequestException('Unsupported form type');
+    }
+
+    const userId = this.requireJwtUser(params.authContext);
+
+    const parsed = uploadSubmissionBodySchema.safeParse(params.payload);
+    if (!parsed.success) {
+      throw new BadRequestException(parsed.error.flatten());
+    }
+
+    if (parsed.data.fileData.length > MAX_UPLOAD_BASE64_LENGTH) {
+      throw new BadRequestException(
+        `File exceeds the ${MAX_UPLOAD_FILE_SIZE_BYTES / (1024 * 1024)}MB limit`,
+      );
+    }
+
+    const fileBuffer = this.decodeBase64File(parsed.data.fileData);
+    if (fileBuffer.length > MAX_UPLOAD_FILE_SIZE_BYTES) {
+      throw new BadRequestException(
+        `File exceeds the ${MAX_UPLOAD_FILE_SIZE_BYTES / (1024 * 1024)}MB limit`,
+      );
+    }
+
+    const fileKey = await this.attachmentsService.uploadToS3(
+      fileBuffer,
+      parsed.data.fileName,
+      parsed.data.fileType,
+      params.organizationId,
+      'evidence-forms',
+      parsedType.data,
+    );
+
+    const downloadUrl =
+      await this.attachmentsService.getPresignedDownloadUrl(fileKey);
+
+    return await db.evidenceSubmission
+      .create({
+        data: {
+          organizationId: params.organizationId,
+          formType: toDbEvidenceFormType(parsedType.data),
+          submittedById: userId,
+          data: {
+            submissionDate: new Date().toISOString(),
+            evidenceFile: {
+              fileName: parsed.data.fileName,
+              fileKey,
+              downloadUrl,
+            },
+          },
+        },
+        include: {
+          submittedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      })
+      .then(normalizeSubmissionFormType);
   }
 
   async exportCsv(params: {

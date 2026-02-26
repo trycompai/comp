@@ -1,3 +1,36 @@
+## [1.85.1](https://github.com/trycompai/comp/compare/v1.85.0...v1.85.1) (2026-02-23)
+
+
+### Bug Fixes
+
+* **sync:** prevent privileged member auto-deactivation in GW and JumpCloud ([#2184](https://github.com/trycompai/comp/issues/2184)) ([00d26f6](https://github.com/trycompai/comp/commit/00d26f6b9a6054ac495f49048b197cb66a92894e))
+
+# [1.85.0](https://github.com/trycompai/comp/compare/v1.84.0...v1.85.0) (2026-02-23)
+
+
+### Features
+
+* **sync:** add Google Workspace inbox filtering for employee sync ([#2180](https://github.com/trycompai/comp/issues/2180)) ([dc484d8](https://github.com/trycompai/comp/commit/dc484d8ffeb80362b381f88cf38f87e1d8d62232))
+
+# [1.84.0](https://github.com/trycompai/comp/compare/v1.83.7...v1.84.0) (2026-02-20)
+
+
+### Bug Fixes
+
+* resolve device agent sign-in loop and improve auth robustness ([#2177](https://github.com/trycompai/comp/issues/2177)) ([7de133f](https://github.com/trycompai/comp/commit/7de133f9feb862e03563c520f76e5ad6ed04dca4))
+
+
+### Features
+
+* **cloud-security:** add endpoints to trigger scans and get run status ([#2176](https://github.com/trycompai/comp/issues/2176)) ([4f1e87a](https://github.com/trycompai/comp/commit/4f1e87a4fb01af415b76daabd96732691dbebfb2))
+
+## [1.83.7](https://github.com/trycompai/comp/compare/v1.83.6...v1.83.7) (2026-02-19)
+
+
+### Bug Fixes
+
+* **app:** resolve 504 timeout on cloud security scans for new platform connections ([#2168](https://github.com/trycompai/comp/issues/2168)) ([82ccec8](https://github.com/trycompai/comp/commit/82ccec8b48d60f05ba8410108e217129ca0f1752))
+
 ## [1.83.6](https://github.com/trycompai/comp/compare/v1.83.5...v1.83.6) (2026-02-18)
 
 

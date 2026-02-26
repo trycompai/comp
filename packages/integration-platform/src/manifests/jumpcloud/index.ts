@@ -11,6 +11,7 @@
 
 import type { IntegrationManifest } from '../../types';
 import { employeeSyncCheck } from './checks';
+import { syncExcludedUsersVariable } from './variables';
 
 export const manifest: IntegrationManifest = {
   id: 'jumpcloud',
@@ -50,6 +51,8 @@ export const manifest: IntegrationManifest = {
 
   // Supports both checks and sync capabilities
   capabilities: ['checks', 'sync'],
+
+  variables: [syncExcludedUsersVariable],
 
   // Employee sync check
   checks: [employeeSyncCheck],

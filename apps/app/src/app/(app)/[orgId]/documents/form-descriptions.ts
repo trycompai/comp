@@ -10,4 +10,7 @@ export const conciseFormDescriptions: Record<string, string> = {
   'rbac-matrix': 'Document role-based access by system, role, and approval.',
   'infrastructure-inventory': 'Track infrastructure assets, ownership, and review dates.',
   'employee-performance-evaluation': 'Capture structured employee review outcomes and sign-off.',
+  'network-diagram': 'Upload or link to a current network diagram.',
+  'tabletop-exercise':
+    'Conduct a tabletop exercise and document findings, attendees, and action items.',
 };

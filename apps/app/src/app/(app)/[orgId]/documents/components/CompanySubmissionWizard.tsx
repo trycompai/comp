@@ -10,7 +10,7 @@ import {
   type EvidenceFormType,
   type MeetingSubType,
 } from '@/app/(app)/[orgId]/documents/forms';
-import type { MeetingMinutesAnalysisResult } from '@/app/api/evidence-forms/analyze/route';
+import type { EvidenceFormAnalysisResult } from '@/app/api/evidence-forms/analyze/route';
 import { FileUploader } from '@/components/file-uploader';
 import { api } from '@/lib/api-client';
 import { meetingFields } from '@comp/company';
@@ -44,7 +44,7 @@ import {
   type MatrixRowValue,
 } from './submission-utils';
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 async function fileToBase64(file: File): Promise<string> {
   return await new Promise((resolve, reject) => {
@@ -75,8 +75,12 @@ export function CompanySubmissionWizard({
   const [uploadingField, setUploadingField] = useState<string | null>(null);
 
   const isMeeting = formType === 'meeting';
+  const isTabletopExercise = formType === 'tabletop-exercise';
+  const hasAiAnalysis = isMeeting || isTabletopExercise;
+  const useFourSteps = formType === 'tabletop-exercise';
+  const isReviewStep = step === 4 || (step === 3 && !useFourSteps);
   const [selectedMeetingType, setSelectedMeetingType] = useState<MeetingSubType>('board-meeting');
-  const [analysisResult, setAnalysisResult] = useState<MeetingMinutesAnalysisResult | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<EvidenceFormAnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisSkipped, setAnalysisSkipped] = useState(false);
@@ -97,18 +101,35 @@ export function CompanySubmissionWizard({
   );
   const matrixFields = useMemo(() => visibleFields.filter(isMatrixField), [visibleFields]);
 
+  const step2OnlyFieldKeys = useMemo(
+    () => (formType === 'network-diagram' ? ['diagramUrl'] : []),
+    [formType],
+  );
+  const step2OnlyFields = useMemo(
+    () => visibleFields.filter((f) => step2OnlyFieldKeys.includes(f.key)),
+    [visibleFields, step2OnlyFieldKeys],
+  );
+
   const compactFields = useMemo(() => {
     const compact = visibleFields.filter(
-      (f) => f.type === 'text' || f.type === 'date' || f.type === 'select',
+      (f) =>
+        (f.type === 'text' || f.type === 'date' || f.type === 'select') &&
+        !step2OnlyFieldKeys.includes(f.key),
     );
     const dateFields = compact.filter((f) => f.type === 'date');
     const nonDateFields = compact.filter((f) => f.type !== 'date');
     return [...dateFields, ...nonDateFields];
-  }, [visibleFields]);
+  }, [visibleFields, step2OnlyFieldKeys]);
+  const textareaFields = useMemo(
+    () => visibleFields.filter((f) => f.type === 'textarea'),
+    [visibleFields],
+  );
+  const fileFields = useMemo(() => visibleFields.filter((f) => f.type === 'file'), [visibleFields]);
   const extendedFields = useMemo(
     () => visibleFields.filter((f) => f.type === 'textarea' || f.type === 'file'),
     [visibleFields],
   );
+  const step3Fields = useMemo(() => [...fileFields, ...matrixFields], [fileFields, matrixFields]);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -121,6 +142,9 @@ export function CompanySubmissionWizard({
     for (const field of activeFormDefinition.fields) {
       if (field.type === 'date' && field.key !== 'submissionDate') {
         defaults[field.key] = today;
+      }
+      if (field.type === 'textarea' && field.placeholder) {
+        defaults[field.key] = field.placeholder;
       }
     }
 
@@ -160,6 +184,7 @@ export function CompanySubmissionWizard({
           fileType: file.type || 'application/octet-stream',
           fileData,
         },
+        organizationId,
       );
 
       if (response.error || !response.data) {
@@ -251,6 +276,63 @@ export function CompanySubmissionWizard({
     return true;
   };
 
+  const runAiAnalysis = async (targetStep: Step) => {
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
+    setAnalysisError(null);
+    setAnalysisSkipped(false);
+    setStep(targetStep);
+    try {
+      let analyzeBody: Record<string, unknown>;
+      if (isMeeting) {
+        analyzeBody = {
+          formType: 'meeting',
+          meetingMinutes: String(getValues('meetingMinutes' as never) ?? ''),
+          meetingType: selectedMeetingType,
+        };
+      } else {
+        const attendeeRows = normalizeMatrixRows(getValues('attendees' as never));
+        const actionItemRows = normalizeMatrixRows(getValues('actionItems' as never));
+        analyzeBody = {
+          formType: 'tabletop-exercise',
+          scenarioDescription: String(getValues('scenarioDescription' as never) ?? ''),
+          sessionNotes: String(getValues('sessionNotes' as never) ?? ''),
+          attendees: attendeeRows
+            .map((r) => `${r.name ?? ''} — ${r.roleTitle ?? ''}, ${r.department ?? ''}`)
+            .join('\n'),
+          actionItems: actionItemRows
+            .map(
+              (r) =>
+                `Finding: ${r.finding ?? ''} | Action: ${r.improvementAction ?? ''} | Owner: ${r.assignedOwner ?? ''} | Due: ${r.dueDate ?? ''}`,
+            )
+            .join('\n'),
+        };
+      }
+      const response = await fetch('/api/evidence-forms/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Organization-Id': organizationId,
+        },
+        body: JSON.stringify(analyzeBody),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        setAnalysisError(
+          (errorData as { error?: string } | null)?.error ??
+            'AI analysis unavailable. You may submit without analysis.',
+        );
+        return;
+      }
+      const result = (await response.json()) as EvidenceFormAnalysisResult;
+      setAnalysisResult(result);
+    } catch {
+      setAnalysisError('AI analysis unavailable. You may submit without analysis.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const goToStepTwo = async () => {
     const keys: string[] = [];
     if (activeFormDefinition.submissionDateMode === 'custom') keys.push('submissionDate');
@@ -265,55 +347,50 @@ export function CompanySubmissionWizard({
   };
 
   const goToStepThree = async () => {
+    if (useFourSteps) {
+      const keys = textareaFields.map((f) => f.key);
+      const isValid =
+        keys.length === 0 ? true : await trigger(keys as never, { shouldFocus: true });
+      if (!isValid) {
+        toast.error('Complete required fields before continuing');
+        return;
+      }
+      setStep(3);
+      return;
+    }
+
+    if (!validateRequiredMatrixCells()) return;
+    const keys = [
+      ...step2OnlyFields.map((f) => f.key),
+      ...extendedFields.map((f) => f.key),
+      ...matrixFields.map((f) => f.key),
+    ];
+    const isValid = keys.length === 0 ? true : await trigger(keys as never, { shouldFocus: true });
+    if (!isValid) {
+      toast.error('Complete required fields before reviewing');
+      return;
+    }
+    if (hasAiAnalysis) {
+      await runAiAnalysis(3);
+    } else {
+      setStep(3);
+    }
+  };
+
+  const goToStepFour = async () => {
     if (!validateRequiredMatrixCells()) return;
 
-    const keys = [...extendedFields.map((f) => f.key), ...matrixFields.map((f) => f.key)];
+    const keys = [...fileFields.map((f) => f.key), ...matrixFields.map((f) => f.key)];
     const isValid = keys.length === 0 ? true : await trigger(keys as never, { shouldFocus: true });
     if (!isValid) {
       toast.error('Complete required fields before reviewing');
       return;
     }
 
-    if (isMeeting) {
-      setIsAnalyzing(true);
-      setAnalysisResult(null);
-      setAnalysisError(null);
-      setAnalysisSkipped(false);
-      setStep(3);
-
-      try {
-        const meetingMinutes = String(getValues('meetingMinutes' as never) ?? '');
-        const response = await fetch('/api/evidence-forms/analyze', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Organization-Id': organizationId,
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            meetingMinutes,
-            meetingType: selectedMeetingType,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => null);
-          setAnalysisError(
-            (errorData as { error?: string } | null)?.error ??
-              'AI analysis unavailable. You may submit without analysis.',
-          );
-          return;
-        }
-
-        const result = (await response.json()) as MeetingMinutesAnalysisResult;
-        setAnalysisResult(result);
-      } catch {
-        setAnalysisError('AI analysis unavailable. You may submit without analysis.');
-      } finally {
-        setIsAnalyzing(false);
-      }
+    if (hasAiAnalysis) {
+      await runAiAnalysis(4);
     } else {
-      setStep(3);
+      setStep(4);
     }
   };
 
@@ -328,6 +405,7 @@ export function CompanySubmissionWizard({
     const response = await api.post(
       `/v1/evidence-forms/${submitFormType}/submissions`,
       payload,
+      organizationId,
     );
 
     if (response.error) {
@@ -459,10 +537,263 @@ export function CompanySubmissionWizard({
 
         {step === 2 && (
           <FieldGroup>
-            {extendedFields.length === 0 && matrixFields.length === 0 && (
-              <Text variant="muted">No additional fields required for this form.</Text>
+            {useFourSteps ? (
+              <>
+                {textareaFields.length === 0 && (
+                  <Text variant="muted">No additional fields required for this step.</Text>
+                )}
+                {textareaFields.map((field) => (
+                  <Controller
+                    key={field.key}
+                    name={field.key as never}
+                    control={control}
+                    render={({ field: controllerField, fieldState }) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.key}>{field.label}</FieldLabel>
+                        {field.description && (
+                          <Text size="sm" variant="muted">
+                            {field.description}
+                          </Text>
+                        )}
+                        <div className="space-y-3">
+                          <Textarea
+                            id={field.key}
+                            style={{
+                              width: '100%',
+                              maxWidth: 'none',
+                              maxHeight: '350px',
+                              minHeight: '350px',
+                            }}
+                            value={String(controllerField.value ?? '')}
+                            onChange={controllerField.onChange}
+                            placeholder={field.placeholder}
+                            rows={12}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            {String(controllerField.value ?? '').length}/10,000 characters &bull;
+                            Markdown supported
+                          </p>
+                        </div>
+                        <FieldError errors={[fieldState.error]} />
+                      </Field>
+                    )}
+                  />
+                ))}
+              </>
+            ) : (
+              <>
+                {step2OnlyFields.length === 0 &&
+                  extendedFields.length === 0 &&
+                  matrixFields.length === 0 && (
+                    <Text variant="muted">No additional fields required for this form.</Text>
+                  )}
+                {step2OnlyFields.map((field) => (
+                  <Controller
+                    key={field.key}
+                    name={field.key as never}
+                    control={control}
+                    render={({ field: controllerField, fieldState }) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.key}>{field.label}</FieldLabel>
+                        {field.description && (
+                          <Text size="sm" variant="muted">
+                            {field.description}
+                          </Text>
+                        )}
+                        <Input
+                          id={field.key}
+                          type="text"
+                          value={String(controllerField.value ?? '')}
+                          onChange={controllerField.onChange}
+                          placeholder={field.placeholder}
+                        />
+                        <FieldError errors={[fieldState.error]} />
+                      </Field>
+                    )}
+                  />
+                ))}
+                {extendedFields.map((field) => (
+                  <Controller
+                    key={field.key}
+                    name={field.key as never}
+                    control={control}
+                    render={({ field: controllerField, fieldState }) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.key}>{field.label}</FieldLabel>
+                        {field.description && (
+                          <Text size="sm" variant="muted">
+                            {field.description}
+                          </Text>
+                        )}
+                        {field.type === 'textarea' && (
+                          <div className="space-y-3">
+                            <Textarea
+                              id={field.key}
+                              style={{
+                                width: '100%',
+                                maxWidth: 'none',
+                                maxHeight: '350px',
+                                minHeight: '350px',
+                              }}
+                              value={String(controllerField.value ?? '')}
+                              onChange={controllerField.onChange}
+                              placeholder={field.placeholder}
+                              rows={12}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {String(controllerField.value ?? '').length}/10,000 characters &bull;
+                              Markdown supported
+                            </p>
+                          </div>
+                        )}
+                        {field.type === 'file' && (
+                          <div className="space-y-2">
+                            <FileUploader
+                              maxFileCount={1}
+                              maxSize={100 * 1024 * 1024}
+                              accept={
+                                field.accept
+                                  ? Object.fromEntries(
+                                      field.accept
+                                        .split(',')
+                                        .map((ext): [string, string[]] | null => {
+                                          const trimmed = ext.trim().toLowerCase();
+                                          if (trimmed === '.pdf') return ['application/pdf', []];
+                                          if (trimmed === '.doc') return ['application/msword', []];
+                                          if (trimmed === '.docx') {
+                                            return [
+                                              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                              [],
+                                            ];
+                                          }
+                                          if (trimmed === '.png') return ['image/png', []];
+                                          if (trimmed === '.jpg' || trimmed === '.jpeg') {
+                                            return ['image/jpeg', []];
+                                          }
+                                          if (trimmed === '.txt') return ['text/plain', []];
+                                          if (trimmed === '.svg') return ['image/svg+xml', []];
+                                          if (trimmed === '.vsdx')
+                                            return ['application/vnd.visio', []];
+                                          return null;
+                                        })
+                                        .filter(
+                                          (entry): entry is [string, string[]] => entry !== null,
+                                        ),
+                                    )
+                                  : { 'application/pdf': [], 'image/*': [], 'text/*': [] }
+                              }
+                              disabled={uploadingField === field.key}
+                              onUpload={async (files) => {
+                                const file = files[0];
+                                if (!file) return;
+                                await handleFileUpload(field.key, file);
+                              }}
+                            />
+                            {uploadingField === field.key && (
+                              <Text size="sm" variant="muted">
+                                Uploading file...
+                              </Text>
+                            )}
+                            {controllerField.value &&
+                              typeof controllerField.value === 'object' &&
+                              'fileName' in controllerField.value &&
+                              typeof (controllerField.value as { fileName?: unknown }).fileName ===
+                                'string' && (
+                                <Text size="sm" variant="muted">
+                                  Uploaded:{' '}
+                                  {(controllerField.value as { fileName: string }).fileName}
+                                </Text>
+                              )}
+                          </div>
+                        )}
+                        <FieldError errors={[fieldState.error]} />
+                      </Field>
+                    )}
+                  />
+                ))}
+                {matrixFields.map((field) => {
+                  const rows = normalizeMatrixRows(watch(field.key as never));
+                  const rowValues = rows.length > 0 ? rows : [createEmptyMatrixRow(field.columns)];
+                  const matrixError = errors[field.key as keyof typeof errors];
+                  return (
+                    <Field key={field.key}>
+                      <FieldLabel>{field.label}</FieldLabel>
+                      {field.description && (
+                        <Text size="sm" variant="muted">
+                          {field.description}
+                        </Text>
+                      )}
+                      <div className="space-y-3">
+                        {rowValues.map((row, rowIndex) => (
+                          <div
+                            key={`${field.key}-${rowIndex}`}
+                            className="rounded-md border border-border p-3"
+                          >
+                            <div className="mb-3 flex items-center justify-between">
+                              <Text size="sm" weight="medium">
+                                Row {rowIndex + 1}
+                              </Text>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => removeMatrixRow(field, rowIndex)}
+                                disabled={rowValues.length <= 1}
+                              >
+                                Remove row
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                              {field.columns.map((column) => (
+                                <Field key={`${field.key}-${rowIndex}-${column.key}`}>
+                                  <FieldLabel htmlFor={`${field.key}-${rowIndex}-${column.key}`}>
+                                    {column.label}
+                                  </FieldLabel>
+                                  {column.description && (
+                                    <Text size="sm" variant="muted">
+                                      {column.description}
+                                    </Text>
+                                  )}
+                                  <Input
+                                    id={`${field.key}-${rowIndex}-${column.key}`}
+                                    value={row[column.key] ?? ''}
+                                    onChange={(event) =>
+                                      updateMatrixCell(
+                                        field,
+                                        rowIndex,
+                                        column.key,
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder={column.placeholder}
+                                  />
+                                </Field>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => addMatrixRow(field)}
+                        >
+                          {field.addRowLabel ?? 'Add row'}
+                        </Button>
+                      </div>
+                      <FieldError errors={[matrixError as never]} />
+                    </Field>
+                  );
+                })}
+              </>
             )}
-            {extendedFields.map((field) => (
+          </FieldGroup>
+        )}
+
+        {step === 3 && useFourSteps && (
+          <FieldGroup>
+            {step3Fields.length === 0 && (
+              <Text variant="muted">No additional fields required for this step.</Text>
+            )}
+            {fileFields.map((field) => (
               <Controller
                 key={field.key}
                 name={field.key as never}
@@ -475,83 +806,60 @@ export function CompanySubmissionWizard({
                         {field.description}
                       </Text>
                     )}
-
-                    {field.type === 'textarea' && (
-                      <div className="space-y-3">
-                        <Textarea
-                          id={field.key}
-                          style={{
-                            width: '100%',
-                            maxWidth: 'none',
-                            maxHeight: '350px',
-                            minHeight: '350px',
-                          }}
-                          value={String(controllerField.value ?? '')}
-                          onChange={controllerField.onChange}
-                          placeholder={field.placeholder}
-                          rows={12}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {String(controllerField.value ?? '').length}/10,000 characters &bull;
-                          Markdown supported
-                        </p>
-                      </div>
-                    )}
-
-                    {field.type === 'file' && (
-                      <div className="space-y-2">
-                        <FileUploader
-                          maxFileCount={1}
-                          maxSize={100 * 1024 * 1024}
-                          accept={
-                            field.accept
-                              ? Object.fromEntries(
-                                  field.accept
-                                    .split(',')
-                                    .map((ext): [string, string[]] | null => {
-                                      const trimmed = ext.trim().toLowerCase();
-                                      if (trimmed === '.pdf') return ['application/pdf', []];
-                                      if (trimmed === '.doc') return ['application/msword', []];
-                                      if (trimmed === '.docx') {
-                                        return [
-                                          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                          [],
-                                        ];
-                                      }
-                                      if (trimmed === '.png') return ['image/png', []];
-                                      if (trimmed === '.jpg' || trimmed === '.jpeg') {
-                                        return ['image/jpeg', []];
-                                      }
-                                      if (trimmed === '.txt') return ['text/plain', []];
-                                      return null;
-                                    })
-                                    .filter((entry): entry is [string, string[]] => entry !== null),
-                                )
-                              : { 'application/pdf': [], 'image/*': [], 'text/*': [] }
-                          }
-                          disabled={uploadingField === field.key}
-                          onUpload={async (files) => {
-                            const file = files[0];
-                            if (!file) return;
-                            await handleFileUpload(field.key, file);
-                          }}
-                        />
-                        {uploadingField === field.key && (
+                    <div className="space-y-2">
+                      <FileUploader
+                        maxFileCount={1}
+                        maxSize={100 * 1024 * 1024}
+                        accept={
+                          field.accept
+                            ? Object.fromEntries(
+                                field.accept
+                                  .split(',')
+                                  .map((ext): [string, string[]] | null => {
+                                    const trimmed = ext.trim().toLowerCase();
+                                    if (trimmed === '.pdf') return ['application/pdf', []];
+                                    if (trimmed === '.doc') return ['application/msword', []];
+                                    if (trimmed === '.docx') {
+                                      return [
+                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                        [],
+                                      ];
+                                    }
+                                    if (trimmed === '.png') return ['image/png', []];
+                                    if (trimmed === '.jpg' || trimmed === '.jpeg') {
+                                      return ['image/jpeg', []];
+                                    }
+                                    if (trimmed === '.txt') return ['text/plain', []];
+                                    if (trimmed === '.svg') return ['image/svg+xml', []];
+                                    if (trimmed === '.vsdx') return ['application/vnd.visio', []];
+                                    return null;
+                                  })
+                                  .filter((entry): entry is [string, string[]] => entry !== null),
+                              )
+                            : { 'application/pdf': [], 'image/*': [], 'text/*': [] }
+                        }
+                        disabled={uploadingField === field.key}
+                        onUpload={async (files) => {
+                          const file = files[0];
+                          if (!file) return;
+                          await handleFileUpload(field.key, file);
+                        }}
+                      />
+                      {uploadingField === field.key && (
+                        <Text size="sm" variant="muted">
+                          Uploading file...
+                        </Text>
+                      )}
+                      {controllerField.value &&
+                        typeof controllerField.value === 'object' &&
+                        'fileName' in controllerField.value &&
+                        typeof (controllerField.value as { fileName?: unknown }).fileName ===
+                          'string' && (
                           <Text size="sm" variant="muted">
-                            Uploading file...
+                            Uploaded: {(controllerField.value as { fileName: string }).fileName}
                           </Text>
                         )}
-                        {controllerField.value &&
-                          typeof controllerField.value === 'object' &&
-                          'fileName' in controllerField.value &&
-                          typeof (controllerField.value as { fileName?: unknown }).fileName ===
-                            'string' && (
-                            <Text size="sm" variant="muted">
-                              Uploaded: {(controllerField.value as { fileName: string }).fileName}
-                            </Text>
-                          )}
-                      </div>
-                    )}
+                    </div>
                     <FieldError errors={[fieldState.error]} />
                   </Field>
                 )}
@@ -628,17 +936,19 @@ export function CompanySubmissionWizard({
           </FieldGroup>
         )}
 
-        {step === 3 && (
+        {isReviewStep && (
           <div className="space-y-4">
             <Text size="sm" variant="muted">
               Review your submission before saving.
             </Text>
 
-            {isMeeting && (
+            {hasAiAnalysis && (
               <div className="rounded-md border border-border p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <Text size="sm" weight="medium">
-                    Security topic analysis
+                    {isTabletopExercise
+                      ? 'Exercise completeness analysis'
+                      : 'Security topic analysis'}
                   </Text>
                   {isAnalyzing && (
                     <span className="text-xs text-muted-foreground animate-pulse">
@@ -774,12 +1084,17 @@ export function CompanySubmissionWizard({
             )}
             {step === 2 && (
               <Button type="button" onClick={goToStepThree}>
+                {useFourSteps ? 'Continue' : 'Review'}
+              </Button>
+            )}
+            {step === 3 && useFourSteps && (
+              <Button type="button" onClick={goToStepFour}>
                 Review
               </Button>
             )}
-            {step === 3 && (
+            {(step === 3 && !useFourSteps) || (step === 4 && useFourSteps) ? (
               <>
-                {isMeeting &&
+                {hasAiAnalysis &&
                   !analysisResult?.overallPass &&
                   !analysisError &&
                   !analysisSkipped &&
@@ -794,7 +1109,7 @@ export function CompanySubmissionWizard({
                   disabled={
                     isSubmitting ||
                     isAnalyzing ||
-                    (isMeeting &&
+                    (hasAiAnalysis &&
                       !analysisResult?.overallPass &&
                       !analysisError &&
                       !analysisSkipped &&
@@ -808,7 +1123,7 @@ export function CompanySubmissionWizard({
                       : 'Submit evidence'}
                 </Button>
               </>
-            )}
+            ) : null}
           </div>
         </div>
       </form>

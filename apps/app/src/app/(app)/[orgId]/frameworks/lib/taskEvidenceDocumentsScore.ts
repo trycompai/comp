@@ -1,4 +1,8 @@
-import { evidenceFormDefinitionList, meetingSubTypeValues } from '@comp/company';
+import {
+  evidenceFormDefinitionList,
+  meetingSubTypeValues,
+  toDbEvidenceFormType,
+} from '@comp/company';
 import { db } from '@db';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
@@ -65,7 +69,9 @@ export async function getDocumentFormStatusesForOrganization(
 
   const statuses: DocumentFormStatuses = {};
   for (const form of evidenceFormDefinitionList) {
-    const match = groupedStatuses.find((entry) => entry.formType === form.type);
+    const match = groupedStatuses.find(
+      (entry) => entry.formType === toDbEvidenceFormType(form.type),
+    );
     statuses[form.type] = {
       lastSubmittedAt: match?._max.submittedAt?.toISOString() ?? null,
     };

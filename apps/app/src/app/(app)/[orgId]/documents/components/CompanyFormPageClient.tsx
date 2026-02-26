@@ -6,8 +6,8 @@ import {
   meetingSubTypeValues,
   type EvidenceFormType,
 } from '@/app/(app)/[orgId]/documents/forms';
-import { usePermissions } from '@/hooks/use-permissions';
 import { api } from '@/lib/api-client';
+import { useActiveMember } from '@/utils/auth-client';
 import { jwtManager } from '@/utils/jwt-manager';
 import {
   Badge,
@@ -29,12 +29,20 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Add, Catalog, Download, Search } from '@trycompai/design-system/icons';
+import { Add, Catalog, Download, Search, Upload } from '@trycompai/design-system/icons';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@comp/ui/dialog';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { DocumentFindingsSection } from './DocumentFindingsSection';
 import { StatusBadge, formatSubmissionDate } from './submission-utils';
 
@@ -84,11 +92,24 @@ function getMatrixRowCount(value: unknown): number {
   return value.filter((row) => row && typeof row === 'object').length;
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(',')[1] ?? '';
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 async function evidenceFormFetcher([endpoint, orgId]: readonly [
   string,
   string,
 ]): Promise<EvidenceFormResponse> {
-  const response = await api.get<EvidenceFormResponse>(endpoint);
+  const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
   if (response.error || !response.data) {
     throw new Error(response.error ?? 'Failed to load submissions');
   }
@@ -100,18 +121,25 @@ async function evidenceFormFetcher([endpoint, orgId]: readonly [
 export function CompanyFormPageClient({
   organizationId,
   formType,
+  isPlatformAdmin,
 }: {
   organizationId: string;
   formType: EvidenceFormType;
+  isPlatformAdmin: boolean;
 }) {
   const router = useRouter();
+  const { mutate: globalMutate } = useSWRConfig();
   const [search, setSearch] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { hasPermission } = usePermissions();
-  const canCreate = hasPermission('evidence', 'create');
-  const canRead = hasPermission('evidence', 'read');
-  const canUpdate = hasPermission('evidence', 'update');
+  const { data: activeMember } = useActiveMember();
+  const memberRoles = activeMember?.role?.split(',').map((role: string) => role.trim()) || [];
+  const isAuditor = memberRoles.includes('auditor');
+  const isAdminOrOwner = memberRoles.includes('admin') || memberRoles.includes('owner');
 
   const isMeeting = formType === 'meeting';
   const formDefinition = evidenceFormDefinitions[formType];
@@ -246,28 +274,73 @@ export function CompanyFormPageClient({
     }
   };
 
+  const handleUploadEvidence = useCallback(async () => {
+    if (!selectedFile) return;
+
+    setIsUploading(true);
+    try {
+      const fileData = await fileToBase64(selectedFile);
+      const submitFormType = isMeeting ? MEETING_SUB_TYPES[0] : formType;
+
+      const response = await api.post(
+        `/v1/evidence-forms/${submitFormType}/upload-submission`,
+        {
+          fileName: selectedFile.name,
+          fileType: selectedFile.type || 'application/octet-stream',
+          fileData,
+        },
+        organizationId,
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      toast.success('Evidence uploaded');
+      setIsUploadOpen(false);
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+
+      if (isMeeting) {
+        for (const subType of MEETING_SUB_TYPES) {
+          globalMutate([`/v1/evidence-forms/${subType}${query}`, organizationId]);
+        }
+      } else {
+        globalMutate([`/v1/evidence-forms/${formType}${query}`, organizationId]);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  }, [selectedFile, isMeeting, formType, organizationId, query, globalMutate]);
+
   return (
     <div className="space-y-6">
       <PageHeader
         title={formDefinition.title}
         actions={
           <div className="flex items-center gap-2">
-            {canCreate && (
-              <Link href={`/${organizationId}/documents/${formType}/new`}>
-                <Button iconLeft={<Add size={16} />}>New Submission</Button>
-              </Link>
-            )}
-            {canRead && (
-              <Button
-                type="button"
-                variant="secondary"
-                iconLeft={<Download size={16} />}
-                onClick={handleExportCsv}
-                disabled={isExporting}
-              >
-                {isExporting ? 'Exporting...' : 'Export CSV'}
-              </Button>
-            )}
+            <Link href={`/${organizationId}/documents/${formType}/new`}>
+              <Button iconLeft={<Add size={16} />}>New Submission</Button>
+            </Link>
+            <Button
+              type="button"
+              variant="secondary"
+              iconLeft={<Upload size={16} />}
+              onClick={() => setIsUploadOpen(true)}
+            >
+              Upload Evidence
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              iconLeft={<Download size={16} />}
+              onClick={handleExportCsv}
+              disabled={isExporting}
+            >
+              {isExporting ? 'Exporting...' : 'Export CSV'}
+            </Button>
           </div>
         }
       />
@@ -412,7 +485,62 @@ export function CompanyFormPageClient({
 
       <DocumentFindingsSection
         formType={formType}
+        isAuditor={isAuditor}
+        isPlatformAdmin={isPlatformAdmin}
+        isAdminOrOwner={isAdminOrOwner}
       />
+
+      <Dialog
+        open={isUploadOpen}
+        onOpenChange={(open) => {
+          setIsUploadOpen(open);
+          if (!open) {
+            setSelectedFile(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Evidence</DialogTitle>
+            <DialogDescription>
+              Upload a PDF or image as evidence for this document.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg"
+              onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+              className="block w-full text-sm text-foreground file:mr-4 file:rounded-md file:border-0 file:bg-muted file:px-4 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:bg-muted/80 file:cursor-pointer cursor-pointer"
+            />
+            {selectedFile && (
+              <Text size="sm" variant="muted">
+                {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+              </Text>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsUploadOpen(false)}
+              disabled={isUploading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleUploadEvidence}
+              disabled={!selectedFile || isUploading}
+              loading={isUploading}
+            >
+              Upload
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

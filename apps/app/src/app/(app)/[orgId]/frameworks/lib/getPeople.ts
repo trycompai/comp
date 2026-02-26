@@ -15,7 +15,9 @@ export async function getPeopleScore(organizationId: string) {
 
   // Filter to only employees and contractors
   const employees = allMembers.filter((member) => {
-    const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
+    const roles = member.role.includes(',')
+      ? member.role.split(',').map((r) => r.trim())
+      : [member.role];
     return roles.includes('employee') || roles.includes('contractor');
   });
 
@@ -25,6 +27,14 @@ export async function getPeopleScore(organizationId: string) {
       completedMembers: 0,
     };
   }
+
+  // Align with People page: respect org security training setting
+  const org = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: { securityTrainingStepEnabled: true },
+  });
+  // Match TeamMembers: only explicit true enables training; null/undefined = disabled
+  const securityTrainingStepEnabled = org?.securityTrainingStepEnabled === true;
 
   // Get all required policies (published, required to sign, not archived)
   const requiredPolicies = await db.policy.findMany({
@@ -36,17 +46,21 @@ export async function getPeopleScore(organizationId: string) {
     },
   });
 
-  // Get all training video completions for these employees
-  const trainingVideoCompletions = await db.employeeTrainingVideoCompletion.findMany({
-    where: {
-      memberId: {
-        in: employees.map((e) => e.id),
-      },
-    },
-  });
+  // Get training video completions only when training step is enabled (same as TeamMembers)
+  const trainingVideoCompletions = securityTrainingStepEnabled
+    ? await db.employeeTrainingVideoCompletion.findMany({
+        where: {
+          memberId: {
+            in: employees.map((e) => e.id),
+          },
+        },
+      })
+    : [];
 
-  // Get required training video IDs (sat-1 through sat-5)
-  const requiredTrainingVideoIds = trainingVideos.map((video) => video.id);
+  // Get required training video IDs when training is enabled (sat-1 through sat-5)
+  const requiredTrainingVideoIds = securityTrainingStepEnabled
+    ? trainingVideos.map((video) => video.id)
+    : [];
 
   // Get fleet instance for device checks
   // const fleet = await getFleetInstance();

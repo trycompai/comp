@@ -1,3 +1,4 @@
+export * from './db-form-type-map';
 export * from './definitions';
 export * from './field-builders';
 export * from './file-schema';

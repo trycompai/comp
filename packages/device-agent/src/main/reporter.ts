@@ -8,6 +8,8 @@ export interface ReportResult {
   isCompliant: boolean;
   /** True if ANY org returned 401 — session has expired */
   sessionExpired: boolean;
+  /** True if ALL orgs returned 404 — stored device IDs are stale */
+  allDevicesNotFound: boolean;
 }
 
 /**
@@ -18,7 +20,7 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
   const auth = getAuth();
   if (!auth) {
     log('Cannot report check results: not authenticated', 'ERROR');
-    return { allSucceeded: false, isCompliant: false, sessionExpired: false };
+    return { allSucceeded: false, isCompliant: false, sessionExpired: false, allDevicesNotFound: false };
   }
 
   const portalUrl = getPortalUrl();
@@ -28,6 +30,7 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
   let allSucceeded = true;
   let anyNonCompliant = false;
   let sessionExpired = false;
+  let notFoundCount = 0;
 
   for (const org of auth.organizations) {
     const payload: CheckInRequest = {
@@ -59,6 +62,9 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
           sessionExpired = true;
           break; // No point trying other orgs with the same expired token
         }
+        if (response.status === 404) {
+          notFoundCount++;
+        }
         continue;
       }
 
@@ -80,5 +86,6 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
     allSucceeded,
     isCompliant: !anyNonCompliant && allSucceeded,
     sessionExpired,
+    allDevicesNotFound: notFoundCount > 0 && notFoundCount === auth.organizations.length,
   };
 }

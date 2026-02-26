@@ -33,3 +33,16 @@ export const departmentFilterVariable: CheckVariable = {
   placeholder: 'e.g., Engineering',
   helpText: 'Only include users from this department (leave empty for all)',
 };
+
+/**
+ * Exclude specific accounts from employee sync.
+ */
+export const syncExcludedUsersVariable: CheckVariable = {
+  id: 'sync_excluded_emails',
+  label: 'Exclude from Sync',
+  type: 'multi-select',
+  required: false,
+  placeholder: 'Type a value and press Enter',
+  helpText:
+    'Add full emails, domains (@company.com or company.com), or partial text. Matching users are skipped during JumpCloud employee sync. Suspended/deleted users can still be deactivated.',
+};

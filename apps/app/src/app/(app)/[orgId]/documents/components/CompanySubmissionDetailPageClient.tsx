@@ -284,6 +284,17 @@ export function CompanySubmissionDetailPageClient({
                 </div>
               </div>
             ))}
+            {Boolean(submission.data.evidenceFile) &&
+              !fields.some((f) => f.key === 'evidenceFile') && (
+                <div className="grid grid-cols-1 gap-2 p-4 lg:grid-cols-3">
+                  <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Uploaded Evidence
+                  </div>
+                  <div className="lg:col-span-2 text-sm">
+                    {renderSubmissionValue(submission.data.evidenceFile)}
+                  </div>
+                </div>
+              )}
             {matrixFields.map((field) => {
               const rows = normalizeMatrixRows(submission.data[field.key]);
               return (

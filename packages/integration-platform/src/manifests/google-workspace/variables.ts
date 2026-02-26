@@ -46,3 +46,48 @@ export const includeSuspendedVariable: CheckVariable = {
     { value: 'true', label: 'Yes - Include suspended users' },
   ],
 };
+
+/**
+ * Employee sync filtering mode
+ * Controls whether sync should include all users, exclude selected inboxes,
+ * or include only selected inboxes.
+ */
+export const syncUserFilterModeVariable: CheckVariable = {
+  id: 'sync_user_filter_mode',
+  label: 'Employee Sync Mode',
+  helpText: 'Choose which Google Workspace users Comp should sync',
+  type: 'select',
+  required: false,
+  default: 'all',
+  options: [
+    { value: 'all', label: 'Sync all users' },
+    { value: 'exclude', label: 'Sync all except matching users' },
+    { value: 'include', label: 'Sync only matching users' },
+  ],
+};
+
+/**
+ * Comma/newline-separated list of inbox emails to exclude from employee sync.
+ */
+export const syncExcludedEmailsVariable: CheckVariable = {
+  id: 'sync_excluded_emails',
+  label: 'Exclude from Sync',
+  helpText:
+    'Add full emails, domains (@company.com or company.com), or partial text. Press Enter after each value. Matching users stay active and are skipped during sync.',
+  type: 'multi-select',
+  required: false,
+  placeholder: 'Type a value and press Enter',
+};
+
+/**
+ * Comma/newline-separated list of inbox emails to include in employee sync.
+ */
+export const syncIncludedEmailsVariable: CheckVariable = {
+  id: 'sync_included_emails',
+  label: 'Include in Sync',
+  helpText:
+    'Add full emails, domains (@company.com or company.com), or partial text. Press Enter after each value. Only matching users are imported/reactivated. If empty, sync falls back to all users.',
+  type: 'multi-select',
+  required: false,
+  placeholder: 'Type a value and press Enter',
+};

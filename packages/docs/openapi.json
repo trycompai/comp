@@ -8212,6 +8212,82 @@
         ]
       }
     },
+    "/v1/internal/tasks/notify-status-change": {
+      "post": {
+        "operationId": "InternalTaskNotificationController_notifyStatusChange_v1",
+        "parameters": [
+          {
+            "name": "X-Internal-Token",
+            "in": "header",
+            "description": "Internal service token (required in production)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotifyStatusChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notifications sent"
+          },
+          "500": {
+            "description": "Notification delivery failed"
+          }
+        },
+        "summary": "Send task status change notifications (email + in-app) without a user actor (internal)",
+        "tags": [
+          "Internal - Tasks"
+        ]
+      }
+    },
+    "/v1/internal/tasks/notify-automation-failures": {
+      "post": {
+        "operationId": "InternalTaskNotificationController_notifyAutomationFailures_v1",
+        "parameters": [
+          {
+            "name": "X-Internal-Token",
+            "in": "header",
+            "description": "Internal service token (required in production)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotifyAutomationFailuresDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notifications sent"
+          },
+          "500": {
+            "description": "Notification delivery failed"
+          }
+        },
+        "summary": "Send automation failure notifications (email + in-app) when one or more automations fail (internal)",
+        "tags": [
+          "Internal - Tasks"
+        ]
+      }
+    },
     "/v1/tasks/{taskId}/automations": {
       "get": {
         "description": "Retrieve all automations for a specific task",
@@ -11648,7 +11724,9 @@
                 "penetration-test",
                 "rbac-matrix",
                 "infrastructure-inventory",
-                "employee-performance-evaluation"
+                "employee-performance-evaluation",
+                "network-diagram",
+                "tabletop-exercise"
               ],
               "type": "string"
             }
@@ -14312,6 +14390,60 @@
         ]
       }
     },
+    "/v1/cloud-security/trigger/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_triggerScan_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/runs/{runId}": {
+      "get": {
+        "operationId": "CloudSecurityController_getRunStatus_v1",
+        "parameters": [
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
     "/v1/browserbase/org-context": {
       "post": {
         "description": "Gets the existing browser context for the org or creates a new one",
@@ -16131,6 +16263,45 @@
           }
         ],
         "summary": "Submit evidence form entry",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}/upload-submission": {
+      "post": {
+        "description": "Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation",
+        "operationId": "EvidenceFormsController_uploadSubmission_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload a file as an evidence submission",
         "tags": [
           "Evidence Forms"
         ]
@@ -18505,6 +18676,91 @@
           "fileData"
         ]
       },
+      "NotifyStatusChangeDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID"
+          },
+          "taskId": {
+            "type": "string",
+            "description": "Task ID"
+          },
+          "taskTitle": {
+            "type": "string",
+            "description": "Task title"
+          },
+          "oldStatus": {
+            "type": "string",
+            "description": "Previous task status",
+            "enum": [
+              "todo",
+              "in_progress",
+              "in_review",
+              "done",
+              "not_relevant",
+              "failed"
+            ]
+          },
+          "newStatus": {
+            "type": "string",
+            "description": "New task status",
+            "enum": [
+              "todo",
+              "in_progress",
+              "in_review",
+              "done",
+              "not_relevant",
+              "failed"
+            ]
+          }
+        },
+        "required": [
+          "organizationId",
+          "taskId",
+          "taskTitle",
+          "oldStatus",
+          "newStatus"
+        ]
+      },
+      "NotifyAutomationFailuresDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID"
+          },
+          "taskId": {
+            "type": "string",
+            "description": "Task ID"
+          },
+          "taskTitle": {
+            "type": "string",
+            "description": "Task title"
+          },
+          "failedCount": {
+            "type": "number",
+            "description": "Number of failed automations"
+          },
+          "totalCount": {
+            "type": "number",
+            "description": "Total number of automations"
+          },
+          "taskStatusChanged": {
+            "type": "boolean",
+            "description": "Whether task status was changed to failed"
+          }
+        },
+        "required": [
+          "organizationId",
+          "taskId",
+          "taskTitle",
+          "failedCount",
+          "totalCount",
+          "taskStatusChanged"
+        ]
+      },
       "UpdateAutomationDto": {
         "type": "object",
         "properties": {
@@ -19226,7 +19482,9 @@
               "penetration-test",
               "rbac-matrix",
               "infrastructure-inventory",
-              "employee-performance-evaluation"
+              "employee-performance-evaluation",
+              "network-diagram",
+              "tabletop-exercise"
             ]
           },
           "type": {

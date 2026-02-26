@@ -1,65 +1,40 @@
 import {
   Controller,
-  Get,
   Post,
-  Delete,
+  Get,
   Param,
-  Body,
+  Query,
+  Headers,
   Logger,
   HttpException,
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import { ApiSecurity, ApiTags } from '@nestjs/swagger';
-import { CloudSecurityService } from './cloud-security.service';
-import { CloudSecurityQueryService } from './cloud-security-query.service';
-import { CloudSecurityLegacyService } from './cloud-security-legacy.service';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
-import { PermissionGuard } from '../auth/permission.guard';
-import { RequirePermission } from '../auth/require-permission.decorator';
 import { OrganizationId } from '../auth/auth-context.decorator';
+import {
+  CloudSecurityService,
+  ConnectionNotFoundError,
+} from './cloud-security.service';
 
 @Controller({ path: 'cloud-security', version: '1' })
-@UseGuards(HybridAuthGuard, PermissionGuard)
-@ApiTags('Cloud Security')
-@ApiSecurity('apikey')
 export class CloudSecurityController {
   private readonly logger = new Logger(CloudSecurityController.name);
 
-  constructor(
-    private readonly cloudSecurityService: CloudSecurityService,
-    private readonly queryService: CloudSecurityQueryService,
-    private readonly legacyService: CloudSecurityLegacyService,
-  ) {}
-
-  // ============================================================
-  // Read endpoints
-  // ============================================================
-
-  @Get('providers')
-  @RequirePermission('cloud-security', 'read')
-  async getProviders(@OrganizationId() organizationId: string) {
-    const data = await this.queryService.getProviders(organizationId);
-    return { data, count: data.length };
-  }
-
-  @Get('findings')
-  @RequirePermission('cloud-security', 'read')
-  async getFindings(@OrganizationId() organizationId: string) {
-    const data = await this.queryService.getFindings(organizationId);
-    return { data, count: data.length };
-  }
-
-  // ============================================================
-  // Scan endpoint (existing)
-  // ============================================================
+  constructor(private readonly cloudSecurityService: CloudSecurityService) {}
 
   @Post('scan/:connectionId')
-  @RequirePermission('cloud-security', 'update')
   async scan(
     @Param('connectionId') connectionId: string,
-    @OrganizationId() organizationId: string,
+    @Headers('x-organization-id') organizationId: string,
   ) {
+    if (!organizationId) {
+      throw new HttpException(
+        'Organization ID required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     this.logger.log(
       `Cloud security scan requested for connection ${connectionId}`,
     );
@@ -87,57 +62,56 @@ export class CloudSecurityController {
     };
   }
 
-  // ============================================================
-  // Legacy integration endpoints
-  // ============================================================
-
-  @Post('legacy/connect')
-  @RequirePermission('cloud-security', 'create')
-  async connectLegacy(
+  @Post('trigger/:connectionId')
+  @UseGuards(HybridAuthGuard)
+  async triggerScan(
+    @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
-    @Body()
-    body: {
-      provider: 'aws' | 'gcp' | 'azure';
-      credentials: Record<string, string | string[]>;
-    },
   ) {
-    if (!['aws', 'gcp', 'azure'].includes(body.provider)) {
-      throw new HttpException('Invalid provider', HttpStatus.BAD_REQUEST);
+    this.logger.log(
+      `Cloud security scan trigger requested for connection ${connectionId}`,
+    );
+
+    try {
+      const result = await this.cloudSecurityService.triggerScan(
+        connectionId,
+        organizationId,
+      );
+      return result;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to trigger scan';
+      throw new HttpException(message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Get('runs/:runId')
+  @UseGuards(HybridAuthGuard)
+  async getRunStatus(
+    @Param('runId') runId: string,
+    @Query('connectionId') connectionId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    if (!connectionId) {
+      throw new HttpException(
+        'connectionId query parameter is required',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
-    const result = await this.legacyService.connectLegacy(
-      organizationId,
-      body.provider,
-      body.credentials,
-    );
-
-    return { success: true, integrationId: result.integrationId };
-  }
-
-  @Delete('legacy/:id')
-  @RequirePermission('cloud-security', 'delete')
-  async disconnectLegacy(
-    @Param('id') id: string,
-    @OrganizationId() organizationId: string,
-  ) {
-    await this.legacyService.disconnectLegacy(id, organizationId);
-    return { success: true };
-  }
-
-  @Post('legacy/validate-aws')
-  @RequirePermission('cloud-security', 'read')
-  async validateAwsCredentials(
-    @Body() body: { accessKeyId: string; secretAccessKey: string },
-  ) {
-    const result = await this.legacyService.validateAwsAccessKeys(
-      body.accessKeyId,
-      body.secretAccessKey,
-    );
-
-    return {
-      success: true,
-      accountId: result.accountId,
-      regions: result.regions,
-    };
+    try {
+      return await this.cloudSecurityService.getRunStatus(
+        runId,
+        connectionId,
+        organizationId,
+      );
+    } catch (error) {
+      if (error instanceof ConnectionNotFoundError) {
+        throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+      }
+      const message =
+        error instanceof Error ? error.message : 'Failed to get run status';
+      throw new HttpException(message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

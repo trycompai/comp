@@ -7,19 +7,19 @@ import {
 } from '@nestjs/common';
 import {
   db,
-  type EvidenceFormType as DbEvidenceFormType,
+  EvidenceFormType as DbEvidenceFormType,
   FindingStatus,
   FindingType,
 } from '@trycompai/db';
+import {
+  toDbEvidenceFormType,
+  toExternalEvidenceFormType,
+} from '@comp/company';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { FindingAuditService } from './finding-audit.service';
 import { FindingNotifierService } from './finding-notifier.service';
 import { type EvidenceFormType } from '@/evidence-forms/evidence-forms.definitions';
-import {
-  toDbEvidenceFormType,
-  toExternalEvidenceFormType,
-} from '@/evidence-forms/evidence-form-type-map';
 
 @Injectable()
 export class FindingsService {

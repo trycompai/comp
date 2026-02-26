@@ -157,6 +157,26 @@ export class EvidenceFormsController {
     });
   }
 
+  @Post(':formType/upload-submission')
+  @ApiOperation({
+    summary: 'Upload a file as an evidence submission',
+    description:
+      'Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation',
+  })
+  async uploadSubmission(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Param('formType') formType: string,
+    @Body() body: unknown,
+  ) {
+    return this.evidenceFormsService.uploadSubmission({
+      organizationId,
+      formType,
+      authContext,
+      payload: body,
+    });
+  }
+
   @Patch(':formType/submissions/:submissionId/review')
   @RequirePermission('evidence', 'update')
   @ApiOperation({
