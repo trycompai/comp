@@ -38,7 +38,7 @@ import {
   Text,
   ThemeSwitcher,
 } from '@trycompai/design-system';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@comp/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { useAction } from 'next-safe-action/hooks';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
@@ -310,27 +310,31 @@ function StableShellAIChatTrigger() {
   }, []);
 
   return (
-    <Tooltip>
-      <TooltipTrigger id="app-shell-ai-chat-trigger" asChild>
-        <button
-          type="button"
-          onClick={toggleAIChat}
-          className={`inline-flex items-center gap-2 h-8 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-            aiChatOpen ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-accent text-foreground'
-          }`}
-          aria-label={aiChatOpen ? 'Close AI Chat' : 'Open AI Chat'}
-        >
-          <MagicWand className="size-4" />
-          <span className="hidden sm:inline">Ask AI</span>
-          <span className="hidden sm:inline-flex ml-1 opacity-60 text-xs bg-foreground/10 px-1.5 py-0.5 rounded">
-            {mounted ? (navigator.platform.includes('Mac') ? '⌘' : 'Ctrl+') : '⌘'}J
-          </span>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent id="app-shell-ai-chat-content" side="bottom">
-        {aiChatOpen ? 'Close AI Chat' : 'Open AI Chat'}
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger id="app-shell-ai-chat-trigger" asChild>
+          <button
+            type="button"
+            onClick={toggleAIChat}
+            className={`inline-flex items-center gap-2 h-8 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+              aiChatOpen
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted hover:bg-accent text-foreground'
+            }`}
+            aria-label={aiChatOpen ? 'Close AI Chat' : 'Open AI Chat'}
+          >
+            <MagicWand className="size-4" />
+            <span className="hidden sm:inline">Ask AI</span>
+            <span className="hidden sm:inline-flex ml-1 opacity-60 text-xs bg-foreground/10 px-1.5 py-0.5 rounded">
+              {mounted ? (navigator.platform.includes('Mac') ? '⌘' : 'Ctrl+') : '⌘'}J
+            </span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent id="app-shell-ai-chat-content" side="bottom">
+          {aiChatOpen ? 'Close AI Chat' : 'Open AI Chat'}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -349,19 +353,21 @@ function ShellRailNavItem({
 
   return (
     <Link href={href}>
-      <Tooltip>
-        <TooltipTrigger asChild id={railItemId}>
-          <AppShellRailItem
-            isActive={isActive}
-            icon={icon}
-            aria-label={label}
-            id={`rail-item-button-${railItemId}`}
-          />
-        </TooltipTrigger>
-        <TooltipContent id={`rail-item-content-${railItemId}`} side="right" sideOffset={8}>
-          {label}
-        </TooltipContent>
-      </Tooltip>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild id={railItemId}>
+            <AppShellRailItem
+              isActive={isActive}
+              icon={icon}
+              aria-label={label}
+              id={`rail-item-button-${railItemId}`}
+            />
+          </TooltipTrigger>
+          <TooltipContent id={`rail-item-content-${railItemId}`} side="right" sideOffset={8}>
+            {label}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </Link>
   );
 }
