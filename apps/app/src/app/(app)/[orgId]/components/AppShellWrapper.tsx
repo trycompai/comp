@@ -7,7 +7,7 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
 import { authClient } from '@/utils/auth-client';
-import { CertificateCheck, CloudAuditing, Logout, Security, Settings } from '@carbon/icons-react';
+import { CertificateCheck, CloudAuditing, Logout, MagicWand, Security, Settings } from '@carbon/icons-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,9 +17,9 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Onboarding, Organization } from '@db';
+import { useAppShell } from '@trycompai/design-system';
 import {
   AppShell,
-  AppShellAIChatTrigger,
   AppShellBody,
   AppShellContent,
   AppShellMain,
@@ -38,6 +38,7 @@ import {
   Text,
   ThemeSwitcher,
 } from '@trycompai/design-system';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@comp/ui/tooltip';
 import { useAction } from 'next-safe-action/hooks';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
@@ -159,10 +160,13 @@ function AppShellWrapperContent({
         centerContent={<CommandSearch groups={searchGroups} placeholder="Search..." />}
         endContent={
           <AppShellUserMenu>
-            <AppShellAIChatTrigger />
+            <StableShellAIChatTrigger />
             <NotificationBell />
             <DropdownMenu>
-              <DropdownMenuTrigger className="inline-flex size-7 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted">
+              <DropdownMenuTrigger
+                id="app-shell-user-menu-trigger"
+                className="inline-flex size-7 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted"
+              >
                 <Avatar>
                   {user.image && <AvatarImage src={user.image} />}
                   <AvatarFallback>
@@ -170,7 +174,11 @@ function AppShellWrapperContent({
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" style={{ minWidth: '200px' }}>
+              <DropdownMenuContent
+                id="app-shell-user-menu-content"
+                align="end"
+                style={{ minWidth: '200px' }}
+              >
                 <div className="px-2 py-1.5">
                   <Text size="sm" weight="medium">
                     {user.name}
@@ -221,37 +229,33 @@ function AppShellWrapperContent({
       />
       <AppShellBody>
         <AppShellRail>
-          <Link href={`/${organization.id}/frameworks`}>
-            <AppShellRailItem
-              isActive={!isSettingsActive && !isTrustActive && !isSecurityActive}
-              icon={<CertificateCheck className="size-5" />}
-              label="Compliance"
-            />
-          </Link>
+          <ShellRailNavItem
+            href={`/${organization.id}/frameworks`}
+            isActive={!isSettingsActive && !isTrustActive && !isSecurityActive}
+            icon={<CertificateCheck className="size-5" />}
+            label="Compliance"
+          />
           {isTrustNdaEnabled && (
-            <Link href={`/${organization.id}/trust`}>
-              <AppShellRailItem
-                isActive={isTrustActive}
-                icon={<CloudAuditing className="size-5" />}
-                label="Trust"
-              />
-            </Link>
-          )}
-          <Link href={`/${organization.id}/security`}>
-            <AppShellRailItem
-              isActive={isSecurityActive}
-              icon={<Security className="size-5" />}
-              label="Security"
+            <ShellRailNavItem
+              href={`/${organization.id}/trust`}
+              isActive={isTrustActive}
+              icon={<CloudAuditing className="size-5" />}
+              label="Trust"
             />
-          </Link>
+          )}
+          <ShellRailNavItem
+            href={`/${organization.id}/security`}
+            isActive={isSecurityActive}
+            icon={<Security className="size-5" />}
+            label="Security"
+          />
           {!isOnlyAuditor && (
-            <Link href={`/${organization.id}/settings`}>
-              <AppShellRailItem
-                isActive={isSettingsActive}
-                icon={<Settings className="size-5" />}
-                label="Settings"
-              />
-            </Link>
+            <ShellRailNavItem
+              href={`/${organization.id}/settings`}
+              isActive={isSettingsActive}
+              icon={<Settings className="size-5" />}
+              label="Settings"
+            />
           )}
         </AppShellRail>
         <AppShellMain>
@@ -294,5 +298,70 @@ function AppShellWrapperContent({
         </Suspense>
       </AppShellBody>
     </AppShell>
+  );
+}
+
+function StableShellAIChatTrigger() {
+  const { aiChatOpen, toggleAIChat } = useAppShell();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  return (
+    <Tooltip>
+      <TooltipTrigger id="app-shell-ai-chat-trigger" asChild>
+        <button
+          type="button"
+          onClick={toggleAIChat}
+          className={`inline-flex items-center gap-2 h-8 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+            aiChatOpen ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-accent text-foreground'
+          }`}
+          aria-label={aiChatOpen ? 'Close AI Chat' : 'Open AI Chat'}
+        >
+          <MagicWand className="size-4" />
+          <span className="hidden sm:inline">Ask AI</span>
+          <span className="hidden sm:inline-flex ml-1 opacity-60 text-xs bg-foreground/10 px-1.5 py-0.5 rounded">
+            {mounted ? (navigator.platform.includes('Mac') ? '⌘' : 'Ctrl+') : '⌘'}J
+          </span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent id="app-shell-ai-chat-content" side="bottom">
+        {aiChatOpen ? 'Close AI Chat' : 'Open AI Chat'}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ShellRailNavItem({
+  href,
+  isActive,
+  icon,
+  label,
+}: {
+  href: string;
+  isActive: boolean;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  const railItemId = `app-shell-rail-${label.toLowerCase()}`;
+
+  return (
+    <Link href={href}>
+      <Tooltip>
+        <TooltipTrigger asChild id={railItemId}>
+          <AppShellRailItem
+            isActive={isActive}
+            icon={icon}
+            aria-label={label}
+            id={`rail-item-button-${railItemId}`}
+          />
+        </TooltipTrigger>
+        <TooltipContent id={`rail-item-content-${railItemId}`} side="right" sideOffset={8}>
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    </Link>
   );
 }
