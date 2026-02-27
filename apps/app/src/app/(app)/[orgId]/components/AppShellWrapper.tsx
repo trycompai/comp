@@ -7,7 +7,7 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
 import { authClient } from '@/utils/auth-client';
-import { CertificateCheck, CloudAuditing, Logout, MagicWand, Security, Settings } from '@carbon/icons-react';
+import { CertificateCheck, CloudAuditing, Logout, Security, Settings } from '@carbon/icons-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,6 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Onboarding, Organization } from '@db';
-import { useAppShell } from '@trycompai/design-system';
 import {
   AppShell,
   AppShellBody,
@@ -25,6 +24,7 @@ import {
   AppShellMain,
   AppShellNavbar,
   AppShellRail,
+  AppShellAIChatTrigger,
   AppShellRailItem,
   AppShellSidebar,
   AppShellSidebarHeader,
@@ -38,7 +38,6 @@ import {
   Text,
   ThemeSwitcher,
 } from '@trycompai/design-system';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { useAction } from 'next-safe-action/hooks';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
@@ -160,7 +159,7 @@ function AppShellWrapperContent({
         centerContent={<CommandSearch groups={searchGroups} placeholder="Search..." />}
         endContent={
           <AppShellUserMenu>
-            <StableShellAIChatTrigger />
+            <AppShellAIChatTrigger />
             <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -301,43 +300,6 @@ function AppShellWrapperContent({
   );
 }
 
-function StableShellAIChatTrigger() {
-  const { aiChatOpen, toggleAIChat } = useAppShell();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger id="app-shell-ai-chat-trigger" asChild>
-          <button
-            type="button"
-            onClick={toggleAIChat}
-            className={`inline-flex items-center gap-2 h-8 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-              aiChatOpen
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted hover:bg-accent text-foreground'
-            }`}
-            aria-label={aiChatOpen ? 'Close AI Chat' : 'Open AI Chat'}
-          >
-            <MagicWand className="size-4" />
-            <span className="hidden sm:inline">Ask AI</span>
-            <span className="hidden sm:inline-flex ml-1 opacity-60 text-xs bg-foreground/10 px-1.5 py-0.5 rounded">
-              {mounted ? (navigator.platform.includes('Mac') ? '⌘' : 'Ctrl+') : '⌘'}J
-            </span>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent id="app-shell-ai-chat-content" side="bottom">
-          {aiChatOpen ? 'Close AI Chat' : 'Open AI Chat'}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
-
 function ShellRailNavItem({
   href,
   isActive,
@@ -353,21 +315,12 @@ function ShellRailNavItem({
 
   return (
     <Link href={href}>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild id={railItemId}>
-            <AppShellRailItem
-              isActive={isActive}
-              icon={icon}
-              aria-label={label}
-              id={`rail-item-button-${railItemId}`}
-            />
-          </TooltipTrigger>
-          <TooltipContent id={`rail-item-content-${railItemId}`} side="right" sideOffset={8}>
-            {label}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <AppShellRailItem
+        isActive={isActive}
+        icon={icon}
+        id={railItemId}
+        label={label}
+      />
     </Link>
   );
 }
