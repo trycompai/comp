@@ -91,11 +91,8 @@ COPY --from=builder /app/node_modules ./node_modules
 ENV NODE_ENV=production
 ENV PORT=3333
 
-# Install build tools, rebuild native modules, then clean up
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && \
-    npm rebuild && \
-    npx prisma generate --schema=./prisma/schema.prisma && \
-    apt-get purge -y python3 make g++ && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+# Regenerate Prisma client for this runtime environment
+RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Create non-root user
 RUN groupadd --system nestjs && useradd --system --gid nestjs nestjs \
