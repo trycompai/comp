@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 export default async function SecurityPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
-  redirect(`/${orgId}/security/penetration-tests`);
+  redirect(`/${orgId}/security/vulnerability-reports`);
 }
 
 export async function generateMetadata(): Promise<Metadata> {
