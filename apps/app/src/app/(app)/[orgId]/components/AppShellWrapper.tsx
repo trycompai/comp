@@ -252,12 +252,14 @@ function AppShellWrapperContent({
                 label="Trust"
               />
             )}
-            <ShellRailNavItem
-              href={`/${organization.id}/security`}
-              isActive={isSecurityActive}
-              icon={<Security className="size-5" />}
-              label="Security"
-            />
+            {isSecurityEnabled ? (
+              <ShellRailNavItem
+                href={`/${organization.id}/security`}
+                isActive={isSecurityActive}
+                icon={<Security className="size-5" />}
+                label="Security"
+              />
+            ) : null}
             {!isOnlyAuditor && (
               <ShellRailNavItem
                 href={`/${organization.id}/settings`}
@@ -284,7 +286,7 @@ function AppShellWrapperContent({
                 <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} />
               ) : isTrustActive ? (
                 <TrustSidebar orgId={organization.id} />
-              ) : isSecurityActive ? (
+              ) : isSecurityActive && isSecurityEnabled ? (
                 <SecuritySidebar orgId={organization.id} />
               ) : (
                 <AppSidebar

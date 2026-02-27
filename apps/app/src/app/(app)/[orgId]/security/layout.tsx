@@ -10,7 +10,7 @@ export default async function SecurityLayout({
   children: React.ReactNode;
   params: Promise<{ orgId: string }>;
 }) {
-  await params;
+  const { orgId: _orgId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -26,6 +26,8 @@ export default async function SecurityLayout({
   if (!isSecurityEnabled) {
     return notFound();
   }
+
+  void _orgId;
 
   return <>{children}</>;
 }
