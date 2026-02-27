@@ -7,7 +7,7 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
 import { authClient } from '@/utils/auth-client';
-import { CertificateCheck, CloudAuditing, Logout, Settings } from '@carbon/icons-react';
+import { CertificateCheck, CloudAuditing, Logout, Security, Settings } from '@carbon/icons-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,8 +42,9 @@ import { useAction } from 'next-safe-action/hooks';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Suspense, useCallback, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { SettingsSidebar } from '../settings/components/SettingsSidebar';
+import { SecuritySidebar } from '../security/components/SecuritySidebar';
 import { TrustSidebar } from '../trust/components/TrustSidebar';
 import { getAppShellSearchGroups } from './app-shell-search-groups';
 import { AppSidebar } from './AppSidebar';
@@ -96,8 +97,10 @@ function AppShellWrapperContent({
   const router = useRouter();
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const previousIsCollapsedRef = useRef(isCollapsed);
+  const [logoVariant, setLogoVariant] = useState<'dark' | 'light'>('dark');
   const isSettingsActive = pathname?.startsWith(`/${organization.id}/settings`);
   const isTrustActive = pathname?.startsWith(`/${organization.id}/trust`);
+  const isSecurityActive = pathname?.startsWith(`/${organization.id}/security`);
 
   const { execute } = useAction(updateSidebarState, {
     onError: () => {
@@ -125,6 +128,10 @@ function AppShellWrapperContent({
     isAdvancedModeEnabled: organization.advancedModeEnabled,
   });
 
+  useEffect(() => {
+    setLogoVariant(resolvedTheme === 'dark' ? 'light' : 'dark');
+  }, [resolvedTheme]);
+
   return (
     <AppShell
       showAIChat
@@ -138,7 +145,7 @@ function AppShellWrapperContent({
             <Link href="/">
               <Logo
                 style={{ height: 22, width: 'auto' }}
-                variant={resolvedTheme === 'dark' ? 'light' : 'dark'}
+                variant={logoVariant}
               />
             </Link>
             <span className="pl-3 pr-1 text-muted-foreground">/</span>
@@ -216,7 +223,7 @@ function AppShellWrapperContent({
         <AppShellRail>
           <Link href={`/${organization.id}/frameworks`}>
             <AppShellRailItem
-              isActive={!isSettingsActive && !isTrustActive}
+              isActive={!isSettingsActive && !isTrustActive && !isSecurityActive}
               icon={<CertificateCheck className="size-5" />}
               label="Compliance"
             />
@@ -230,6 +237,13 @@ function AppShellWrapperContent({
               />
             </Link>
           )}
+          <Link href={`/${organization.id}/security`}>
+            <AppShellRailItem
+              isActive={isSecurityActive}
+              icon={<Security className="size-5" />}
+              label="Security"
+            />
+          </Link>
           {!isOnlyAuditor && (
             <Link href={`/${organization.id}/settings`}>
               <AppShellRailItem
@@ -248,6 +262,8 @@ function AppShellWrapperContent({
                   ? 'Settings'
                   : isTrustActive
                     ? 'Trust'
+                    : isSecurityActive
+                      ? 'Security'
                     : 'Compliance'
               }
             />
@@ -255,6 +271,8 @@ function AppShellWrapperContent({
               <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} />
             ) : isTrustActive ? (
               <TrustSidebar orgId={organization.id} />
+            ) : isSecurityActive ? (
+              <SecuritySidebar orgId={organization.id} />
             ) : (
               <AppSidebar
                 organization={organization}
