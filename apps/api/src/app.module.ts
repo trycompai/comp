@@ -36,6 +36,7 @@ import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
 import { OrgChartModule } from './org-chart/org-chart.module';
 import { TrainingModule } from './training/training.module';
 import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
+import { SecurityVulnerabilityReportsModule } from './security-vulnerability-reports/security-vulnerability-reports.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
     TrainingModule,
     OrgChartModule,
     EvidenceFormsModule,
+    SecurityVulnerabilityReportsModule,
   ],
   controllers: [AppController],
   providers: [
