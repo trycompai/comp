@@ -36,6 +36,7 @@ import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
 import { OrgChartModule } from './org-chart/org-chart.module';
 import { TrainingModule } from './training/training.module';
 import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
+import { FrameworksModule } from './frameworks/frameworks.module';
 import { RolesModule } from './roles/roles.module';
 
 @Module({
@@ -85,6 +86,7 @@ import { RolesModule } from './roles/roles.module';
     TrainingModule,
     OrgChartModule,
     EvidenceFormsModule,
+    FrameworksModule,
     RolesModule,
   ],
   controllers: [AppController],

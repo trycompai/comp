@@ -10,7 +10,7 @@ import {
 import { ApiHeader, ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { TaskStatus } from '@db';
 import { IsBoolean, IsEnum, IsInt, IsString, Min } from 'class-validator';
-import { InternalTokenGuard } from '../auth/internal-token.guard';
+import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { TaskNotifierService } from './task-notifier.service';
 
 const TaskStatusValues = Object.values(TaskStatus);
@@ -67,7 +67,7 @@ class NotifyStatusChangeDto {
 
 @ApiTags('Internal - Tasks')
 @Controller({ path: 'internal/tasks', version: '1' })
-@UseGuards(InternalTokenGuard)
+@UseGuards(HybridAuthGuard)
 @ApiHeader({
   name: 'X-Internal-Token',
   description: 'Internal service token (required in production)',

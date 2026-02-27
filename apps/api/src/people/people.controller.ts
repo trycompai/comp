@@ -442,7 +442,7 @@ export class PeopleController {
 
     return this.peopleService.updateEmailPreferences(
       authContext.userId,
-      body.preferences,
+      { ...body.preferences },
     );
   }
 }

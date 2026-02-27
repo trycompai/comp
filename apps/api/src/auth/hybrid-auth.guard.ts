@@ -5,9 +5,12 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { db } from '@trycompai/db';
 import { ApiKeyService } from './api-key.service';
 import { auth } from './auth.server';
+import { IS_PUBLIC_KEY } from './public.decorator';
+import { SKIP_ORG_CHECK_KEY } from './skip-org-check.decorator';
 import { resolveServiceByToken } from './service-token.config';
 import { AuthenticatedRequest } from './types';
 
@@ -15,9 +18,17 @@ import { AuthenticatedRequest } from './types';
 export class HybridAuthGuard implements CanActivate {
   private readonly logger = new Logger(HybridAuthGuard.name);
 
-  constructor(private readonly apiKeyService: ApiKeyService) {}
+  constructor(
+    private readonly apiKeyService: ApiKeyService,
+    private readonly reflector: Reflector,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
     // Try API Key authentication first (for external customers)
@@ -33,7 +44,11 @@ export class HybridAuthGuard implements CanActivate {
     }
 
     // Try session-based authentication (bearer token or cookies)
-    return this.handleSessionAuth(request);
+    const skipOrgCheck = this.reflector.getAllAndOverride<boolean>(SKIP_ORG_CHECK_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    return this.handleSessionAuth(request, skipOrgCheck);
   }
 
   private async handleApiKeyAuth(
@@ -95,6 +110,7 @@ export class HybridAuthGuard implements CanActivate {
 
   private async handleSessionAuth(
     request: AuthenticatedRequest,
+    skipOrgCheck = false,
   ): Promise<boolean> {
     try {
       // Build headers for better-auth SDK
@@ -132,47 +148,51 @@ export class HybridAuthGuard implements CanActivate {
       }
 
       const organizationId = sessionData.activeOrganizationId;
-      if (!organizationId) {
+      if (!organizationId && !skipOrgCheck) {
         throw new UnauthorizedException(
           'No active organization. Please select an organization.',
         );
       }
 
       // Fetch member data for role and department info
-      const member = await db.member.findFirst({
-        where: {
-          userId: user.id,
-          organizationId,
-          deactivated: false,
-        },
-        select: {
-          id: true,
-          role: true,
-          department: true,
-          user: {
-            select: {
-              isPlatformAdmin: true,
+      // Skip if no active org (e.g., /auth/me during onboarding)
+      let userRoles: string[] | null = null;
+      if (organizationId) {
+        const member = await db.member.findFirst({
+          where: {
+            userId: user.id,
+            organizationId,
+            deactivated: false,
+          },
+          select: {
+            id: true,
+            role: true,
+            department: true,
+            user: {
+              select: {
+                isPlatformAdmin: true,
+              },
             },
           },
-        },
-      });
+        });
 
-      if (!member) {
-        throw new UnauthorizedException(
-          `User is not a member of the active organization`,
-        );
+        if (!member) {
+          throw new UnauthorizedException(
+            `User is not a member of the active organization`,
+          );
+        }
+
+        userRoles = member.role ? member.role.split(',') : null;
+        request.memberId = member.id;
+        request.memberDepartment = member.department;
+        request.isPlatformAdmin = member.user?.isPlatformAdmin ?? false;
       }
-
-      const userRoles = member.role ? member.role.split(',') : null;
 
       // Set request context for session auth
       request.userId = user.id;
       request.userEmail = user.email;
       request.userRoles = userRoles;
-      request.memberId = member.id;
-      request.memberDepartment = member.department;
-      request.isPlatformAdmin = member.user?.isPlatformAdmin ?? false;
-      request.organizationId = organizationId;
+      request.organizationId = organizationId ?? '';
       request.authType = 'session';
       request.isApiKey = false;
 

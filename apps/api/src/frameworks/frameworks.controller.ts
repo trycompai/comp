@@ -12,6 +12,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
+import { SkipOrgCheck } from '../auth/skip-org-check.decorator';
 import { OrganizationId, UserId } from '../auth/auth-context.decorator';
 import { FrameworksService } from './frameworks.service';
 import { AddFrameworksDto } from './dto/add-frameworks.dto';
@@ -41,8 +42,8 @@ export class FrameworksController {
   }
 
   @Get('available')
-  @RequirePermission('framework', 'read')
-  @ApiOperation({ summary: 'List available frameworks to add' })
+  @SkipOrgCheck()
+  @ApiOperation({ summary: 'List available frameworks (requires session, no active org needed — used during onboarding)' })
   async findAvailable() {
     const data = await this.frameworksService.findAvailable();
     return { data, count: data.length };

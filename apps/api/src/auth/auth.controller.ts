@@ -15,6 +15,7 @@ import { PermissionGuard } from './permission.guard';
 import { RequirePermission } from './require-permission.decorator';
 import { AuthContext } from './auth-context.decorator';
 import { HybridAuthGuard } from './hybrid-auth.guard';
+import { SkipOrgCheck } from './skip-org-check.decorator';
 import type { AuthContext as AuthContextType } from './types';
 
 @ApiTags('Auth')
@@ -23,6 +24,7 @@ import type { AuthContext as AuthContextType } from './types';
 @ApiSecurity('apikey')
 export class AuthController {
   @Get('me')
+  @SkipOrgCheck()
   @ApiOperation({ summary: 'Get current user info, organizations, and pending invitations' })
   async getMe(@AuthContext() authContext: AuthContextType) {
     const userId = authContext.userId;

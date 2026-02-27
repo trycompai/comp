@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Browserbase from '@browserbasehq/sdk';
-import { Stagehand } from '@browserbasehq/stagehand';
+// Lazy-imported in createStagehand() to avoid Node v25 crash
+// (SlowBuffer.prototype was removed — @browserbasehq/stagehand bundles buffer-equal-constant-time which uses it)
+type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 import { db } from '@trycompai/db';
 import { z } from 'zod';
 import {
@@ -196,6 +198,7 @@ export class BrowserbaseService {
   // ===== Stagehand helpers =====
 
   private async createStagehand(sessionId: string): Promise<Stagehand> {
+    const { Stagehand } = await import('@browserbasehq/stagehand');
     const stagehand = new Stagehand({
       env: 'BROWSERBASE',
       apiKey: process.env.BROWSERBASE_API_KEY,
