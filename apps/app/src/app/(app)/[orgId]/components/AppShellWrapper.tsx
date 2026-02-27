@@ -61,6 +61,7 @@ interface AppShellWrapperProps {
   isQuestionnaireEnabled: boolean;
   isTrustNdaEnabled: boolean;
   isWebAutomationsEnabled: boolean;
+  isSecurityEnabled: boolean;
   hasAuditorRole: boolean;
   isOnlyAuditor: boolean;
   user: {
@@ -89,6 +90,7 @@ function AppShellWrapperContent({
   isQuestionnaireEnabled,
   isTrustNdaEnabled,
   isWebAutomationsEnabled,
+  isSecurityEnabled,
   hasAuditorRole,
   isOnlyAuditor,
   user,
@@ -134,6 +136,7 @@ function AppShellWrapperContent({
     isOnlyAuditor,
     isQuestionnaireEnabled,
     isTrustNdaEnabled,
+    isSecurityEnabled,
     isAdvancedModeEnabled: organization.advancedModeEnabled,
   });
 
@@ -248,12 +251,14 @@ function AppShellWrapperContent({
                 label="Trust"
               />
             )}
-            <ShellRailNavItem
-              href={`/${organization.id}/security`}
-              isActive={isSecurityActive}
-              icon={<Security className="size-5" />}
-              label="Security"
-            />
+            {isSecurityEnabled ? (
+              <ShellRailNavItem
+                href={`/${organization.id}/security`}
+                isActive={isSecurityActive}
+                icon={<Security className="size-5" />}
+                label="Security"
+              />
+            ) : null}
             {!isOnlyAuditor && (
               <ShellRailNavItem
                 href={`/${organization.id}/settings`}
@@ -280,7 +285,7 @@ function AppShellWrapperContent({
                 <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} />
               ) : isTrustActive ? (
                 <TrustSidebar orgId={organization.id} />
-              ) : isSecurityActive ? (
+              ) : isSecurityActive && isSecurityEnabled ? (
                 <SecuritySidebar orgId={organization.id} />
               ) : (
                 <AppSidebar

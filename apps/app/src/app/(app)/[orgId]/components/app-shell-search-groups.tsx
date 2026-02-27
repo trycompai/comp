@@ -26,6 +26,7 @@ interface AppShellSearchGroupsParams {
   isOnlyAuditor: boolean;
   isQuestionnaireEnabled: boolean;
   isTrustNdaEnabled: boolean;
+  isSecurityEnabled: boolean;
   isAdvancedModeEnabled: boolean;
 }
 
@@ -62,6 +63,7 @@ export const getAppShellSearchGroups = ({
   isOnlyAuditor,
   isQuestionnaireEnabled,
   isTrustNdaEnabled,
+  isSecurityEnabled,
   isAdvancedModeEnabled,
 }: AppShellSearchGroupsParams): CommandSearchGroup[] => {
   const baseItems = [
@@ -125,14 +127,18 @@ export const getAppShellSearchGroups = ({
           }),
         ]
       : []),
-    createNavItem({
-      id: 'security',
-      label: 'Security',
-      icon: <Security size={16} />,
-      path: `/${organizationId}/security`,
-      keywords: ['security', 'vulnerability', 'reports'],
-      router,
-    }),
+    ...(isSecurityEnabled
+      ? [
+          createNavItem({
+            id: 'security',
+            label: 'Security',
+            icon: <Security size={16} />,
+            path: `/${organizationId}/security`,
+            keywords: ['security', 'vulnerability', 'reports'],
+            router,
+          }),
+        ]
+      : []),
     createNavItem({
       id: 'documents',
       label: 'Documents',
