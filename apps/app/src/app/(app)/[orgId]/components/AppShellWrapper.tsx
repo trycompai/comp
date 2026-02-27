@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
+import { TooltipProvider } from '@comp/ui/tooltip';
 import type { Onboarding, Organization } from '@db';
 import {
   AppShell,
@@ -100,10 +101,18 @@ function AppShellWrapperContent({
   const router = useRouter();
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const previousIsCollapsedRef = useRef(isCollapsed);
-  const [logoVariant, setLogoVariant] = useState<'dark' | 'light'>('dark');
   const isSettingsActive = pathname?.startsWith(`/${organization.id}/settings`);
   const isTrustActive = pathname?.startsWith(`/${organization.id}/trust`);
   const isSecurityActive = pathname?.startsWith(`/${organization.id}/security`);
+  const [logoVariant, setLogoVariant] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    if (!resolvedTheme) {
+      return;
+    }
+
+    setLogoVariant(resolvedTheme === 'light' ? 'dark' : 'light');
+  }, [resolvedTheme]);
 
   const { execute } = useAction(updateSidebarState, {
     onError: () => {
@@ -132,160 +141,129 @@ function AppShellWrapperContent({
     isAdvancedModeEnabled: organization.advancedModeEnabled,
   });
 
-  useEffect(() => {
-    setLogoVariant(resolvedTheme === 'dark' ? 'light' : 'dark');
-  }, [resolvedTheme]);
-
   return (
-    <AppShell
-      showAIChat
-      aiChatContent={<Chat />}
-      sidebarOpen={!isCollapsed}
-      onSidebarOpenChange={handleSidebarOpenChange}
-    >
-      <AppShellNavbar
-        startContent={
-          <HStack gap="xs" align="center">
-            <Link href="/">
-              <Logo
-                style={{ height: 22, width: 'auto' }}
-                variant={logoVariant}
-              />
-            </Link>
-            <span className="pl-3 pr-1 text-muted-foreground">/</span>
-            <OrganizationSwitcher
-              organizations={organizations}
-              organization={organization}
-              logoUrls={logoUrls}
-            />
-          </HStack>
-        }
-        centerContent={<CommandSearch groups={searchGroups} placeholder="Search..." />}
-        endContent={
-          <AppShellUserMenu>
-            <AppShellAIChatTrigger />
-            <NotificationBell />
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                id="app-shell-user-menu-trigger"
-                className="inline-flex size-7 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted"
-              >
-                <Avatar>
-                  {user.image && <AvatarImage src={user.image} />}
-                  <AvatarFallback>
-                    {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                id="app-shell-user-menu-content"
-                align="end"
-                style={{ minWidth: '200px' }}
-              >
-                <div className="px-2 py-1.5">
-                  <Text size="sm" weight="medium">
-                    {user.name}
-                  </Text>
-                  <Text size="xs" variant="muted">
-                    {user.email}
-                  </Text>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <Link href={`/${organization.id}/settings`}>
-                    <DropdownMenuItem>
-                      <Settings size={16} />
-                      Settings
-                    </DropdownMenuItem>
-                  </Link>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <div className="flex items-center justify-between px-2 py-1.5">
-                  <Text size="sm">Theme</Text>
-                  <ThemeSwitcher
-                    size="sm"
-                    value={(theme ?? 'system') as 'light' | 'dark' | 'system'}
-                    defaultValue="system"
-                    onChange={(value) => setTheme(value)}
-                    showSystem
-                  />
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={async () => {
-                    await authClient.signOut({
-                      fetchOptions: {
-                        onSuccess: () => {
-                          router.push('/auth');
-                        },
-                      },
-                    });
-                  }}
-                >
-                  <Logout size={16} />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </AppShellUserMenu>
-        }
-      />
-      <AppShellBody>
-        <AppShellRail>
-          <ShellRailNavItem
-            href={`/${organization.id}/frameworks`}
-            isActive={!isSettingsActive && !isTrustActive && !isSecurityActive}
-            icon={<CertificateCheck className="size-5" />}
-            label="Compliance"
-          />
-          {isTrustNdaEnabled && (
-            <ShellRailNavItem
-              href={`/${organization.id}/trust`}
-              isActive={isTrustActive}
-              icon={<CloudAuditing className="size-5" />}
-              label="Trust"
-            />
-          )}
-          <ShellRailNavItem
-            href={`/${organization.id}/security`}
-            isActive={isSecurityActive}
-            icon={<Security className="size-5" />}
-            label="Security"
-          />
-          {!isOnlyAuditor && (
-            <ShellRailNavItem
-              href={`/${organization.id}/settings`}
-              isActive={isSettingsActive}
-              icon={<Settings className="size-5" />}
-              label="Settings"
-            />
-          )}
-        </AppShellRail>
-        <AppShellMain>
-          <AppShellSidebar collapsible>
-            <AppShellSidebarHeader
-              title={
-                isSettingsActive
-                  ? 'Settings'
-                  : isTrustActive
-                    ? 'Trust'
-                    : isSecurityActive
-                      ? 'Security'
-                    : 'Compliance'
-              }
-            />
-            {isSettingsActive ? (
-              <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} />
-            ) : isTrustActive ? (
-              <TrustSidebar orgId={organization.id} />
-            ) : isSecurityActive ? (
-              <SecuritySidebar orgId={organization.id} />
-            ) : (
-              <AppSidebar
+    <TooltipProvider>
+      <AppShell
+        showAIChat
+        aiChatContent={<Chat />}
+        sidebarOpen={!isCollapsed}
+        onSidebarOpenChange={handleSidebarOpenChange}
+      >
+        <AppShellNavbar
+          startContent={
+            <HStack gap="xs" align="center">
+              <Link href="/">
+                <Logo
+                  style={{ height: 22, width: 'auto' }}
+                  variant={logoVariant}
+                />
+              </Link>
+              <span className="pl-3 pr-1 text-muted-foreground">/</span>
+              <OrganizationSwitcher
+                organizations={organizations}
                 organization={organization}
-                isQuestionnaireEnabled={isQuestionnaireEnabled}
-                hasAuditorRole={hasAuditorRole}
-                isOnlyAuditor={isOnlyAuditor}
+                logoUrls={logoUrls}
+              />
+            </HStack>
+          }
+          centerContent={<CommandSearch groups={searchGroups} placeholder="Search..." />}
+          endContent={
+            <AppShellUserMenu>
+              <AppShellAIChatTrigger />
+              <NotificationBell />
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  id="app-shell-user-menu-trigger"
+                  className="inline-flex size-7 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted"
+                >
+                  <Avatar>
+                    {user.image && <AvatarImage src={user.image} />}
+                    <AvatarFallback>
+                      {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  id="app-shell-user-menu-content"
+                  align="end"
+                  style={{ minWidth: '200px' }}
+                >
+                  <div className="px-2 py-1.5">
+                    <Text size="sm" weight="medium">
+                      {user.name}
+                    </Text>
+                    <Text size="xs" variant="muted">
+                      {user.email}
+                    </Text>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <Link href={`/${organization.id}/settings`}>
+                      <DropdownMenuItem>
+                        <Settings size={16} />
+                        Settings
+                      </DropdownMenuItem>
+                    </Link>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <div className="flex items-center justify-between px-2 py-1.5">
+                    <Text size="sm">Theme</Text>
+                    <ThemeSwitcher
+                      size="sm"
+                      value={(theme ?? 'system') as 'light' | 'dark' | 'system'}
+                      defaultValue="system"
+                      onChange={(value) => setTheme(value)}
+                      showSystem
+                    />
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      await authClient.signOut({
+                        fetchOptions: {
+                          onSuccess: () => {
+                            router.push('/auth');
+                          },
+                        },
+                      });
+                    }}
+                  >
+                    <Logout size={16} />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </AppShellUserMenu>
+          }
+        />
+        <AppShellBody>
+          <AppShellRail>
+            <ShellRailNavItem
+              href={`/${organization.id}/frameworks`}
+              isActive={!isSettingsActive && !isTrustActive && !isSecurityActive}
+              icon={<CertificateCheck className="size-5" />}
+              label="Compliance"
+            />
+            {isTrustNdaEnabled && (
+              <ShellRailNavItem
+                href={`/${organization.id}/trust`}
+                isActive={isTrustActive}
+                icon={<CloudAuditing className="size-5" />}
+                label="Trust"
+              />
+            )}
+            <ShellRailNavItem
+              href={`/${organization.id}/security`}
+              isActive={isSecurityActive}
+              icon={<Security className="size-5" />}
+              label="Security"
+            />
+            {!isOnlyAuditor && (
+              <ShellRailNavItem
+                href={`/${organization.id}/settings`}
+                isActive={isSettingsActive}
+                icon={<Settings className="size-5" />}
+                label="Settings"
               />
             )}
           </AppShellRail>
@@ -306,7 +284,7 @@ function AppShellWrapperContent({
                 <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} />
               ) : isTrustActive ? (
                 <TrustSidebar orgId={organization.id} />
-              ) : isSecurityActive && isSecurityEnabled ? (
+              ) : isSecurityActive ? (
                 <SecuritySidebar orgId={organization.id} />
               ) : (
                 <AppSidebar
@@ -330,31 +308,6 @@ function AppShellWrapperContent({
         </AppShellBody>
       </AppShell>
     </TooltipProvider>
-  );
-}
-
-function ShellRailNavItem({
-  href,
-  isActive,
-  icon,
-  label,
-}: {
-  href: string;
-  isActive: boolean;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  const railItemId = `app-shell-rail-${label.toLowerCase()}`;
-
-  return (
-    <Link href={href}>
-      <AppShellRailItem
-        isActive={isActive}
-        icon={icon}
-        id={railItemId}
-        label={label}
-      />
-    </Link>
   );
 }
 
