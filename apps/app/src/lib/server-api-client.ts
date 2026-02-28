@@ -48,15 +48,26 @@ async function call<T = unknown>(
     });
 
     let data = null;
+    let parseError: string | undefined;
     if (response.status !== 204) {
       const text = await response.text();
       if (text) {
         try {
           data = JSON.parse(text);
         } catch {
+          if (response.ok) {
+            parseError = 'Invalid JSON received from backend API';
+          }
           data = { message: text };
         }
       }
+    }
+
+    if (parseError) {
+      return {
+        error: parseError,
+        status: 502,
+      };
     }
 
     return {

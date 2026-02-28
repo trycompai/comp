@@ -20668,15 +20668,14 @@
             "type": "string",
             "description": "Optional webhook URL to notify when report generation completes"
           },
-          "includeArtifacts": {
+          "testMode": {
             "type": "boolean",
-            "description": "Whether to use sandbox/testing mode during pentest creation",
+            "description": "Whether to run the pentest in simulation mode",
             "default": false
           }
         },
         "required": [
-          "targetUrl",
-          "repoUrl"
+          "targetUrl"
         ]
       }
     }
