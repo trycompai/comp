@@ -27,8 +27,8 @@
 
 ## Feature docs
 
-- Security penetration tests integration:
-  - `src/security-penetration-tests/README.md`
+- Security vulnerability reports integration:
+  - `src/security-vulnerability-reports/README.md`
 
 ## Project setup
 
