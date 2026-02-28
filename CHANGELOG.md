@@ -1,3 +1,10 @@
+## [1.86.1](https://github.com/trycompai/comp/compare/v1.86.0...v1.86.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* **api:** allow API key auth for task status updates ([#2200](https://github.com/trycompai/comp/issues/2200)) ([fa37281](https://github.com/trycompai/comp/commit/fa372817867d46c476a0b7eb8134b6c93b652e56))
+
 # [1.86.0](https://github.com/trycompai/comp/compare/v1.85.1...v1.86.0) (2026-02-26)
 
 

@@ -13,6 +13,37 @@ export class TasksService {
   constructor(private readonly taskNotifierService: TaskNotifierService) {}
 
   /**
+   * Resolve a user actor for API-key authenticated requests.
+   * We attribute changes to an active organization owner to preserve audit trail requirements.
+   */
+  async getApiKeyActorUserId(organizationId: string): Promise<string> {
+    const ownerMember = await db.member.findFirst({
+      where: {
+        organizationId,
+        deactivated: false,
+        isActive: true,
+        role: {
+          contains: 'owner',
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    if (!ownerMember?.userId) {
+      throw new BadRequestException(
+        'No active organization owner found. API key task updates require an active owner member.',
+      );
+    }
+
+    return ownerMember.userId;
+  }
+
+  /**
    * Get all tasks for an organization
    */
   async getTasks(organizationId: string): Promise<TaskResponseDto[]> {

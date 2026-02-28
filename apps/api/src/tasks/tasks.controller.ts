@@ -50,6 +50,22 @@ export class TasksController {
     private readonly attachmentsService: AttachmentsService,
   ) {}
 
+  private async resolveTaskMutationUserId(
+    authContext: AuthContextType,
+    organizationId: string,
+    missingUserMessage: string,
+  ): Promise<string> {
+    if (authContext.userId) {
+      return authContext.userId;
+    }
+
+    if (authContext.isApiKey) {
+      return this.tasksService.getApiKeyActorUserId(organizationId);
+    }
+
+    throw new BadRequestException(missingUserMessage);
+  }
+
   // ==================== TASKS ====================
 
   @Get()
@@ -171,13 +187,11 @@ export class TasksController {
       }
     }
 
-    // Get userId from auth context
-    if (!authContext.userId) {
-      throw new BadRequestException(
-        'User ID is required. Bulk operations require authenticated user session.',
-      );
-    }
-    const userId = authContext.userId;
+    const userId = await this.resolveTaskMutationUserId(
+      authContext,
+      organizationId,
+      'User ID is required. Bulk operations require authenticated user session.',
+    );
 
     return await this.tasksService.updateTasksStatus(
       organizationId,
@@ -241,13 +255,11 @@ export class TasksController {
       throw new BadRequestException('taskIds must be a non-empty array');
     }
 
-    // Get userId from auth context
-    if (!authContext.userId) {
-      throw new BadRequestException(
-        'User ID is required. Bulk operations require authenticated user session.',
-      );
-    }
-    const userId = authContext.userId;
+    const userId = await this.resolveTaskMutationUserId(
+      authContext,
+      organizationId,
+      'User ID is required. Bulk operations require authenticated user session.',
+    );
 
     return await this.tasksService.updateTasksAssignee(
       organizationId,
@@ -517,13 +529,11 @@ export class TasksController {
       reviewDate?: string;
     },
   ): Promise<TaskResponseDto> {
-    // Get userId from auth context
-    if (!authContext.userId) {
-      throw new BadRequestException(
-        'User ID is required. Task updates require authenticated user session.',
-      );
-    }
-    const userId = authContext.userId;
+    const userId = await this.resolveTaskMutationUserId(
+      authContext,
+      organizationId,
+      'User ID is required. Task updates require authenticated user session.',
+    );
 
     let parsedReviewDate: Date | null | undefined;
     if (body.reviewDate !== undefined) {
