@@ -10,10 +10,10 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test-utils/setup.ts'],
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    exclude: ['node_modules', 'dist', '.next', 'e2e'],
+      exclude: ['node_modules', 'dist', '.next', 'e2e'],
     coverage: {
       reporter: ['text', 'json', 'html'],
-      include: ['src/app/(app)/*/security/penetration-tests/**/*.{ts,tsx}'],
+      include: ['src/app/(app)/*/security/vulnerability-reports/**/*.{ts,tsx}'],
       exclude: [
         'node_modules/',
         'src/test-utils/',

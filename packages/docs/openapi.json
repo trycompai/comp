@@ -16424,10 +16424,10 @@
         ]
       }
     },
-    "/v1/security-penetration-tests": {
+    "/v1/security-vulnerability-reports": {
       "get": {
-        "description": "Returns all penetration tests created for the organization.",
-        "operationId": "SecurityPenetrationTestsController_list_v1",
+        "description": "Returns all vulnerability reports created for the organization.",
+        "operationId": "SecurityVulnerabilityReportsController_list_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -16441,7 +16441,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Penetration tests returned"
+            "description": "Vulnerability reports returned"
           }
         },
         "security": [
@@ -16449,14 +16449,14 @@
             "apikey": []
           }
         ],
-        "summary": "List penetration test runs",
+        "summary": "List vulnerability report runs",
         "tags": [
-          "Security Penetration Tests"
+          "Security Vulnerability Reports"
         ]
       },
       "post": {
-        "description": "Creates a new penetration test run and returns the run metadata.",
-        "operationId": "SecurityPenetrationTestsController_create_v1",
+        "description": "Creates a new vulnerability report run and returns the report run metadata.",
+        "operationId": "SecurityVulnerabilityReportsController_create_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -16473,14 +16473,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreatePenetrationTestDto"
+                "$ref": "#/components/schemas/CreateVulnerabilityReportDto"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Penetration test created"
+            "description": "Vulnerability report created"
           },
           "400": {
             "description": "Invalid request payload"
@@ -16491,16 +16491,16 @@
             "apikey": []
           }
         ],
-        "summary": "Create penetration test",
+        "summary": "Create vulnerability report",
         "tags": [
-          "Security Penetration Tests"
+          "Security Vulnerability Reports"
         ]
       }
     },
-    "/v1/security-penetration-tests/{id}": {
+    "/v1/security-vulnerability-reports/{id}": {
       "get": {
-        "description": "Returns a penetration test run with progress metadata.",
-        "operationId": "SecurityPenetrationTestsController_getById_v1",
+        "description": "Returns a vulnerability report with progress metadata.",
+        "operationId": "SecurityVulnerabilityReportsController_getById_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -16522,10 +16522,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Penetration test returned"
+            "description": "Vulnerability report returned"
           },
           "404": {
-            "description": "Penetration test not found"
+            "description": "Vulnerability report not found"
           }
         },
         "security": [
@@ -16533,16 +16533,16 @@
             "apikey": []
           }
         ],
-        "summary": "Get penetration test status",
+        "summary": "Get vulnerability report status",
         "tags": [
-          "Security Penetration Tests"
+          "Security Vulnerability Reports"
         ]
       }
     },
-    "/v1/security-penetration-tests/{id}/progress": {
+    "/v1/security-vulnerability-reports/{id}/progress": {
       "get": {
         "description": "Returns detailed progress for an in-flight report run.",
-        "operationId": "SecurityPenetrationTestsController_getProgress_v1",
+        "operationId": "SecurityVulnerabilityReportsController_getProgress_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -16572,16 +16572,16 @@
             "apikey": []
           }
         ],
-        "summary": "Get penetration test progress",
+        "summary": "Get vulnerability report progress",
         "tags": [
-          "Security Penetration Tests"
+          "Security Vulnerability Reports"
         ]
       }
     },
-    "/v1/security-penetration-tests/{id}/report": {
+    "/v1/security-vulnerability-reports/{id}/report": {
       "get": {
         "description": "Returns the markdown report output for a completed run.",
-        "operationId": "SecurityPenetrationTestsController_getReport_v1",
+        "operationId": "SecurityVulnerabilityReportsController_getReport_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -16611,16 +16611,16 @@
             "apikey": []
           }
         ],
-        "summary": "Get penetration test output",
+        "summary": "Get vulnerability report output",
         "tags": [
-          "Security Penetration Tests"
+          "Security Vulnerability Reports"
         ]
       }
     },
-    "/v1/security-penetration-tests/{id}/pdf": {
+    "/v1/security-vulnerability-reports/{id}/pdf": {
       "get": {
         "description": "Returns the PDF version of a completed report.",
-        "operationId": "SecurityPenetrationTestsController_getPdf_v1",
+        "operationId": "SecurityVulnerabilityReportsController_getPdf_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -16650,53 +16650,21 @@
             "apikey": []
           }
         ],
-        "summary": "Get penetration test PDF",
+        "summary": "Get vulnerability report PDF",
         "tags": [
-          "Security Penetration Tests"
+          "Security Vulnerability Reports"
         ]
       }
     },
-    "/v1/security-penetration-tests/webhook": {
+    "/v1/security-vulnerability-reports/webhook": {
       "post": {
-        "description": "Receives callback payloads from the penetration test provider when a report is updated. Per-run webhook token validation is enforced when handshake state exists.",
-        "operationId": "SecurityPenetrationTestsController_handleWebhook_v1",
+        "description": "Receives callback payloads from the vulnerability provider when a report is updated.",
+        "operationId": "SecurityVulnerabilityReportsController_handleWebhook_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
             "in": "header",
             "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "webhookToken",
-            "required": false,
-            "in": "query",
-            "description": "Per-job webhook token used for handshake validation when callbacks are sent to Comp.",
-            "schema": {}
-          },
-          {
-            "name": "orgId",
-            "required": false,
-            "in": "query",
-            "description": "Organization context for webhook processing when X-Organization-Id is not provided.",
-            "schema": {}
-          },
-          {
-            "name": "X-Webhook-Token",
-            "in": "header",
-            "description": "Optional webhook token header. Query param webhookToken is also accepted.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-Webhook-Id",
-            "in": "header",
-            "description": "Optional provider event identifier used for idempotency detection.",
             "required": false,
             "schema": {
               "type": "string"
@@ -16716,9 +16684,9 @@
             "apikey": []
           }
         ],
-        "summary": "Receive penetration test webhook events",
+        "summary": "Receive vulnerability report webhook events",
         "tags": [
-          "Security Penetration Tests"
+          "Security Vulnerability Reports"
         ]
       }
     }
@@ -20661,12 +20629,12 @@
           "fileData"
         ]
       },
-      "CreatePenetrationTestDto": {
+      "CreateVulnerabilityReportDto": {
         "type": "object",
         "properties": {
           "targetUrl": {
             "type": "string",
-            "description": "Target URL for the penetration test scan",
+            "description": "Target URL for the vulnerability report scan",
             "example": "https://app.example.com"
           },
           "repoUrl": {
@@ -20700,14 +20668,15 @@
             "type": "string",
             "description": "Optional webhook URL to notify when report generation completes"
           },
-          "testMode": {
+          "includeArtifacts": {
             "type": "boolean",
-            "description": "Whether to run the pentest in simulation mode",
+            "description": "Whether to use sandbox/testing mode during pentest creation",
             "default": false
           }
         },
         "required": [
-          "targetUrl"
+          "targetUrl",
+          "repoUrl"
         ]
       }
     }
