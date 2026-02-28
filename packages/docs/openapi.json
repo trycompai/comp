@@ -16423,6 +16423,272 @@
           "Evidence Forms"
         ]
       }
+    },
+    "/v1/security-vulnerability-reports": {
+      "get": {
+        "description": "Returns all vulnerability reports created for the organization.",
+        "operationId": "SecurityVulnerabilityReportsController_list_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vulnerability reports returned"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List vulnerability report runs",
+        "tags": [
+          "Security Vulnerability Reports"
+        ]
+      },
+      "post": {
+        "description": "Creates a new vulnerability report run and returns the report run metadata.",
+        "operationId": "SecurityVulnerabilityReportsController_create_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVulnerabilityReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Vulnerability report created"
+          },
+          "400": {
+            "description": "Invalid request payload"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create vulnerability report",
+        "tags": [
+          "Security Vulnerability Reports"
+        ]
+      }
+    },
+    "/v1/security-vulnerability-reports/{id}": {
+      "get": {
+        "description": "Returns a vulnerability report with progress metadata.",
+        "operationId": "SecurityVulnerabilityReportsController_getById_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vulnerability report returned"
+          },
+          "404": {
+            "description": "Vulnerability report not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get vulnerability report status",
+        "tags": [
+          "Security Vulnerability Reports"
+        ]
+      }
+    },
+    "/v1/security-vulnerability-reports/{id}/progress": {
+      "get": {
+        "description": "Returns detailed progress for an in-flight report run.",
+        "operationId": "SecurityVulnerabilityReportsController_getProgress_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Progress returned"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get vulnerability report progress",
+        "tags": [
+          "Security Vulnerability Reports"
+        ]
+      }
+    },
+    "/v1/security-vulnerability-reports/{id}/report": {
+      "get": {
+        "description": "Returns the markdown report output for a completed run.",
+        "operationId": "SecurityVulnerabilityReportsController_getReport_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Markdown report output"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get vulnerability report output",
+        "tags": [
+          "Security Vulnerability Reports"
+        ]
+      }
+    },
+    "/v1/security-vulnerability-reports/{id}/pdf": {
+      "get": {
+        "description": "Returns the PDF version of a completed report.",
+        "operationId": "SecurityVulnerabilityReportsController_getPdf_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF report artifact"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get vulnerability report PDF",
+        "tags": [
+          "Security Vulnerability Reports"
+        ]
+      }
+    },
+    "/v1/security-vulnerability-reports/webhook": {
+      "post": {
+        "description": "Receives callback payloads from the vulnerability provider when a report is updated.",
+        "operationId": "SecurityVulnerabilityReportsController_handleWebhook_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook handled"
+          },
+          "400": {
+            "description": "Invalid webhook payload"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Receive vulnerability report webhook events",
+        "tags": [
+          "Security Vulnerability Reports"
+        ]
+      }
     }
   },
   "info": {
@@ -20361,6 +20627,56 @@
           "fileName",
           "fileType",
           "fileData"
+        ]
+      },
+      "CreateVulnerabilityReportDto": {
+        "type": "object",
+        "properties": {
+          "targetUrl": {
+            "type": "string",
+            "description": "Target URL for the vulnerability report scan",
+            "example": "https://app.example.com"
+          },
+          "repoUrl": {
+            "type": "string",
+            "description": "Repository URL containing the target application code",
+            "example": "https://github.com/org/repo"
+          },
+          "githubToken": {
+            "type": "string",
+            "description": "GitHub token used for cloning private repositories"
+          },
+          "configYaml": {
+            "type": "string",
+            "description": "Optional YAML configuration for the pentest run"
+          },
+          "pipelineTesting": {
+            "type": "boolean",
+            "description": "Whether to enable pipeline testing mode",
+            "default": false
+          },
+          "workspace": {
+            "type": "string",
+            "description": "Workspace identifier used by the pentest engine"
+          },
+          "mockCheckout": {
+            "type": "boolean",
+            "description": "Set false to reject non-mocked checkout flows for strict behavior",
+            "default": true
+          },
+          "webhookUrl": {
+            "type": "string",
+            "description": "Optional webhook URL to notify when report generation completes"
+          },
+          "includeArtifacts": {
+            "type": "boolean",
+            "description": "Whether to use sandbox/testing mode during pentest creation",
+            "default": false
+          }
+        },
+        "required": [
+          "targetUrl",
+          "repoUrl"
         ]
       }
     }

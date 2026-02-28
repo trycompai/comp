@@ -16,7 +16,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { TooltipProvider } from '@comp/ui/tooltip';
 import type { Onboarding, Organization } from '@db';
 import {
   AppShell,
@@ -30,6 +29,7 @@ import {
   AppShellSidebar,
   AppShellSidebarHeader,
   AppShellUserMenu,
+  TooltipProvider,
   Avatar,
   AvatarFallback,
   AvatarImage,
