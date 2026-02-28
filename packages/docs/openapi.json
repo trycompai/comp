@@ -16658,13 +16658,45 @@
     },
     "/v1/security-vulnerability-reports/webhook": {
       "post": {
-        "description": "Receives callback payloads from the vulnerability provider when a report is updated.",
+        "description": "Receives callback payloads from the vulnerability provider when a report is updated. Per-run webhook token validation is enforced when handshake state exists.",
         "operationId": "SecurityVulnerabilityReportsController_handleWebhook_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
             "in": "header",
             "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "webhookToken",
+            "required": false,
+            "in": "query",
+            "description": "Per-job webhook token used for handshake validation when callbacks are sent to Comp.",
+            "schema": {}
+          },
+          {
+            "name": "orgId",
+            "required": false,
+            "in": "query",
+            "description": "Organization context for webhook processing when X-Organization-Id is not provided.",
+            "schema": {}
+          },
+          {
+            "name": "X-Webhook-Token",
+            "in": "header",
+            "description": "Optional webhook token header. Query param webhookToken is also accepted.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Webhook-Id",
+            "in": "header",
+            "description": "Optional provider event identifier used for idempotency detection.",
             "required": false,
             "schema": {
               "type": "string"
