@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
             hostname,
             memberId: member.id,
             organizationId,
-            serialNumber: { startsWith: 'fallback:' },
+            serialNumber: { startsWith: `fallback:${serialNumber}:` },
           },
         });
 
