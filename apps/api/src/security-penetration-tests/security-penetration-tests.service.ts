@@ -136,18 +136,34 @@ export class SecurityPenetrationTestsService {
     if (
       resolvedWebhookUrl &&
       this.isCompWebhookUrl(resolvedWebhookUrl) &&
+      !webhookToken
+    ) {
+      throw new HttpException(
+        {
+          error:
+            'Penetration test was created at provider but webhook handshake token was missing',
+        },
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+
+    if (
+      resolvedWebhookUrl &&
+      this.isCompWebhookUrl(resolvedWebhookUrl) &&
       webhookToken
     ) {
-      try {
-        await this.persistWebhookHandshake(
-          organizationId,
-          providerRunId,
-          webhookToken,
-        );
-      } catch (error) {
-        this.logger.error(
-          `Unable to persist webhook handshake for report ${providerRunId}`,
-          error instanceof Error ? error.message : String(error),
+      const handshakePersisted = await this.persistWebhookHandshakeWithRetry(
+        organizationId,
+        providerRunId,
+        webhookToken,
+      );
+      if (!handshakePersisted) {
+        throw new HttpException(
+          {
+            error:
+              'Penetration test was created at provider but webhook handshake could not be persisted',
+          },
+          HttpStatus.BAD_GATEWAY,
         );
       }
     }
@@ -179,7 +195,7 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     id: string,
   ): Promise<PentestProgress> {
-    await this.getReport(organizationId, id);
+    await this.assertRunOwnership(organizationId, id);
     return this.macedClient.getPentestProgress(id);
   }
 
@@ -618,6 +634,26 @@ export class SecurityPenetrationTestsService {
         lastUsedAt: null,
       },
     });
+  }
+
+  private async persistWebhookHandshakeWithRetry(
+    organizationId: string,
+    reportId: string,
+    webhookToken: string,
+  ): Promise<boolean> {
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        await this.persistWebhookHandshake(organizationId, reportId, webhookToken);
+        return true;
+      } catch (error) {
+        this.logger.error(
+          `Unable to persist webhook handshake for report ${reportId} (attempt ${attempt}/3)`,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
+
+    return false;
   }
 
   private async verifyAndRecordWebhookHandshake(params: {
