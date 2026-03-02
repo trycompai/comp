@@ -9,7 +9,7 @@ import {
 import { db } from '@trycompai/db';
 import { createHash, timingSafeEqual } from 'node:crypto';
 
-import type { CreateVulnerabilityReportDto } from './dto/create-vulnerability-report.dto';
+import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
 import { MacedClient, type MacedPentestProgress } from './maced-client';
 
 export type PentestReportStatus =
@@ -22,9 +22,8 @@ export type PentestReportStatus =
 
 export type PentestProgress = MacedPentestProgress;
 
-export interface SecurityVulnerabilityReport {
+export interface SecurityPenetrationTest {
   id: string;
-  runId?: string;
   sandboxId: string;
   workflowId: string;
   sessionId: string;
@@ -50,7 +49,7 @@ export interface BinaryArtifact {
 }
 
 interface PentestCompletedWebhookPayload {
-  runId: string;
+  id: string;
   report: {
     markdown: string;
     costUsd: number;
@@ -60,7 +59,7 @@ interface PentestCompletedWebhookPayload {
 }
 
 interface PentestFailedWebhookPayload {
-  runId: string;
+  id: string;
   error: string;
   failedAt: string;
 }
@@ -81,14 +80,14 @@ interface PersistedWebhookHandshake {
 }
 
 @Injectable()
-export class SecurityVulnerabilityReportsService {
-  private readonly logger = new Logger(SecurityVulnerabilityReportsService.name);
+export class SecurityPenetrationTestsService {
+  private readonly logger = new Logger(SecurityPenetrationTestsService.name);
   private readonly macedClient = new MacedClient();
   private get defaultWebhookBase() {
-    return process.env.SECURITY_VULNERABILITY_REPORTS_WEBHOOK_URL;
+    return process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL;
   }
 
-  async listReports(organizationId: string): Promise<SecurityVulnerabilityReport[]> {
+  async listReports(organizationId: string): Promise<SecurityPenetrationTest[]> {
     const ownedRunIds = await this.listOwnedRunIds(organizationId);
     if (ownedRunIds.size === 0) {
       return [];
@@ -96,13 +95,15 @@ export class SecurityVulnerabilityReportsService {
 
     const reports = await this.macedClient.listPentests();
 
-    return reports.filter((report) => ownedRunIds.has(report.id)) as SecurityVulnerabilityReport[];
+    return reports.filter((report) => {
+      return ownedRunIds.has(report.id);
+    }) as SecurityPenetrationTest[];
   }
 
   async createReport(
     organizationId: string,
-    payload: CreateVulnerabilityReportDto,
-  ): Promise<SecurityVulnerabilityReport> {
+    payload: CreatePenetrationTestDto,
+  ): Promise<SecurityPenetrationTest> {
     const resolvedWebhookUrl = this.resolveWebhookUrl(
       organizationId,
       payload.webhookUrl,
@@ -122,11 +123,11 @@ export class SecurityVulnerabilityReportsService {
 
     const createdReport = await this.macedClient.createPentest(sanitizedPayload);
 
-    const providerRunId = createdReport.id ?? createdReport.runId;
+    const providerRunId = createdReport.id;
 
     if (!providerRunId) {
       throw new HttpException(
-        { error: 'Create response missing run identifier' },
+        { error: 'Create response missing report identifier' },
         HttpStatus.BAD_GATEWAY,
       );
     }
@@ -156,18 +157,22 @@ export class SecurityVulnerabilityReportsService {
       providerRunId,
     );
     if (!ownershipPersisted) {
-      this.logger.error(
-        `Run ${providerRunId} was created at provider but ownership mapping could not be persisted`,
+      throw new HttpException(
+        {
+          error:
+            'Penetration test was created at provider but ownership mapping could not be persisted',
+        },
+        HttpStatus.BAD_GATEWAY,
       );
     }
 
-    return createdReport as SecurityVulnerabilityReport;
+    return createdReport as SecurityPenetrationTest;
   }
 
-  async getReport(organizationId: string, id: string): Promise<SecurityVulnerabilityReport> {
+  async getReport(organizationId: string, id: string): Promise<SecurityPenetrationTest> {
     await this.assertRunOwnership(organizationId, id);
     const report = await this.macedClient.getPentest(id);
-    return report as SecurityVulnerabilityReport;
+    return report as SecurityPenetrationTest;
   }
 
   async getReportProgress(
@@ -200,7 +205,7 @@ export class SecurityVulnerabilityReportsService {
       contentType: response.headers.get('Content-Type') || 'application/pdf',
       contentDisposition:
         response.headers.get('Content-Disposition') ||
-        `attachment; filename="vulnerability-report-${id}.pdf"`,
+        `attachment; filename="penetration-test-${id}.pdf"`,
     };
   }
 
@@ -234,13 +239,12 @@ export class SecurityVulnerabilityReportsService {
     const failedEvent = this.extractFailedWebhookPayload(payload);
 
     const payloadReportId =
-      completedEvent?.runId ??
-      failedEvent?.runId ??
-      this.extractStringField(payload, 'id') ??
-      this.extractStringField(payload, 'runId');
+      completedEvent?.id ??
+      failedEvent?.id ??
+      this.extractStringField(payload, 'id');
 
     if (!payloadReportId) {
-      throw new BadRequestException('Webhook payload must include a run id');
+      throw new BadRequestException('Webhook payload must include a report id');
     }
 
     const duplicate = await this.verifyAndRecordWebhookHandshake({
@@ -378,11 +382,11 @@ export class SecurityVulnerabilityReportsService {
       return null;
     }
 
-    const runId = this.extractStringField(payload, 'runId');
+    const reportId = this.extractStringField(payload, 'id');
     const reportValue = payload.report;
     const isReportRecord = this.isRecord(reportValue);
 
-    if (!runId || !isReportRecord) {
+    if (!reportId || !isReportRecord) {
       return null;
     }
 
@@ -403,7 +407,7 @@ export class SecurityVulnerabilityReportsService {
     }
 
     return {
-      runId,
+      id: reportId,
       report: {
         markdown,
         costUsd,
@@ -420,16 +424,16 @@ export class SecurityVulnerabilityReportsService {
       return null;
     }
 
-    const runId = this.extractStringField(payload, 'runId');
+    const reportId = this.extractStringField(payload, 'id');
     const error = this.extractStringField(payload, 'error');
     const failedAt = this.extractStringField(payload, 'failedAt');
 
-    if (!runId || !error || !failedAt) {
+    if (!reportId || !error || !failedAt) {
       return null;
     }
 
     return {
-      runId,
+      id: reportId,
       error,
       failedAt,
     };
@@ -451,7 +455,7 @@ export class SecurityVulnerabilityReportsService {
   }
 
   private webhookHandshakeSecretName(reportId: string): string {
-    return `security_vulnerability_report_webhook_${reportId}`;
+    return `security_penetration_test_webhook_${reportId}`;
   }
 
   private async persistRunOwnership(
@@ -638,30 +642,8 @@ export class SecurityVulnerabilityReportsService {
       },
     });
 
-    const fallbackSharedToken =
-      process.env.SECURITY_VULNERABILITY_REPORTS_WEBHOOK_SECRET?.trim();
-
     if (!storedHandshake) {
-      if (!params.webhookToken) {
-        throw new ForbiddenException('Missing webhook token');
-      }
-
-      if (!fallbackSharedToken) {
-        throw new ForbiddenException(
-          'Missing webhook handshake and shared webhook secret',
-        );
-      }
-
-      if (
-        !this.hashesEqual(
-          this.hashValue(params.webhookToken),
-          this.hashValue(fallbackSharedToken),
-        )
-      ) {
-        throw new ForbiddenException('Invalid webhook token');
-      }
-
-      return false;
+      throw new ForbiddenException('Webhook handshake not found for report');
     }
 
     const handshakeState = this.parseWebhookHandshake(storedHandshake.value);

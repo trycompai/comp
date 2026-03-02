@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { PentestRun } from '@/lib/security/penetration-tests-client';
-import { VulnerabilityReportsPageClient } from './vulnerability-reports-page-client';
+import { PenetrationTestsPageClient } from './penetration-tests-page-client';
 
 const useSearchParamsMock = vi.fn();
 const replaceMock = vi.fn();
@@ -41,11 +41,11 @@ vi.mock('sonner', () => ({
   },
 }));
 
-vi.mock('./hooks/use-vulnerability-reports', () => ({
-  useVulnerabilityReports: (...args: never[]) => reportHookMock(...args),
-  useCreateVulnerabilityReport: (...args: never[]) => createHookMock(...args),
-  useVulnerabilityReport: vi.fn(),
-  useVulnerabilityReportProgress: vi.fn(),
+vi.mock('./hooks/use-penetration-tests', () => ({
+  usePenetrationTests: (...args: never[]) => reportHookMock(...args),
+  useCreatePenetrationTest: (...args: never[]) => createHookMock(...args),
+  usePenetrationTest: vi.fn(),
+  usePenetrationTestProgress: vi.fn(),
 }));
 
 vi.mock('@comp/ui/input', () => ({
@@ -144,7 +144,7 @@ const reportRows: PentestRun[] = [
   },
 ];
 
-describe('VulnerabilityReportsPageClient', () => {
+describe('PenetrationTestsPageClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useSearchParamsMock.mockReturnValue(new URLSearchParams());
@@ -162,7 +162,7 @@ describe('VulnerabilityReportsPageClient', () => {
     createReportMock.mockResolvedValue({
       checkoutMode: 'mock',
       checkoutUrl: 'https://checkout.local/example',
-      runId: 'run_new',
+      id: 'run_new',
     });
 
     createHookMock.mockReturnValue({
@@ -195,7 +195,7 @@ describe('VulnerabilityReportsPageClient', () => {
   });
 
   it('renders an empty state and call-to-action when no reports exist', () => {
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getAllByText('No reports yet')).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Create your first report' })).toBeInTheDocument();
@@ -209,7 +209,7 @@ describe('VulnerabilityReportsPageClient', () => {
       resetError: vi.fn(),
     });
 
-    const { getByText } = render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    const { getByText } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     fireEvent.click(getByText('Create your first report'));
 
@@ -227,7 +227,7 @@ describe('VulnerabilityReportsPageClient', () => {
       completedReports: [reportRows[1]],
     });
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('1 completed report')).toBeInTheDocument();
   });
@@ -242,7 +242,7 @@ describe('VulnerabilityReportsPageClient', () => {
       completedReports: [reportRows[1], { ...reportRows[1], id: 'run_completed_2' }],
     });
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('2 reports in progress')).toBeInTheDocument();
   });
@@ -257,7 +257,7 @@ describe('VulnerabilityReportsPageClient', () => {
       completedReports: [{ ...reportRows[1], id: 'run_completed_2' }, reportRows[1]],
     });
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('2 completed reports')).toBeInTheDocument();
   });
@@ -322,7 +322,7 @@ describe('VulnerabilityReportsPageClient', () => {
       completedReports: [],
     });
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('In progress (0/2)')).toBeInTheDocument();
   });
@@ -337,7 +337,7 @@ describe('VulnerabilityReportsPageClient', () => {
       completedReports: [reportRows[1]],
     });
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('https://running.example.com')).toBeInTheDocument();
     expect(screen.getByText('https://completed.example.com')).toBeInTheDocument();
@@ -405,7 +405,7 @@ describe('VulnerabilityReportsPageClient', () => {
       completedReports: [],
     });
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('https://no-repo.example.com')).toBeInTheDocument();
     expect(screen.getByText('—')).toBeInTheDocument();
@@ -421,9 +421,9 @@ describe('VulnerabilityReportsPageClient', () => {
       activeReports: [],
       completedReports: [],
     });
-    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success&runId=run_99'));
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success&reportId=run_99'));
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     return waitFor(() => {
       expect(refreshReports).toHaveBeenCalled();
@@ -444,9 +444,9 @@ describe('VulnerabilityReportsPageClient', () => {
       activeReports: [],
       completedReports: [],
     });
-    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success&runId=run_22'));
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success&reportId=run_22'));
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await waitFor(() => {
       expect(refreshReports).toHaveBeenCalledTimes(1);
@@ -463,12 +463,12 @@ describe('VulnerabilityReportsPageClient', () => {
       completedReports: [],
     });
 
-    const { container } = render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    const { container } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(container.querySelector('.animate-spin')).toBeTruthy();
   });
 
-  it('shows generic checkout success message when runId is missing', () => {
+  it('shows generic checkout success message when reportId is missing', () => {
     reportHookMock.mockReturnValue({
       reports: [],
       isLoading: false,
@@ -479,7 +479,7 @@ describe('VulnerabilityReportsPageClient', () => {
     });
     useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success'));
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(toastSuccessMock).toHaveBeenCalledWith('Checkout completed. Your report has been queued.');
     expect(replaceMock).toHaveBeenCalledWith('/org_123/security/penetration-tests');
@@ -496,7 +496,7 @@ describe('VulnerabilityReportsPageClient', () => {
     });
     useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=error'));
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(toastErrorMock).toHaveBeenCalledWith('Checkout did not complete. Try again.');
     expect(replaceMock).toHaveBeenCalledWith('/org_123/security/penetration-tests');
@@ -512,9 +512,9 @@ describe('VulnerabilityReportsPageClient', () => {
       activeReports: [],
       completedReports: [],
     });
-    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success&runId=run_77&foo=bar'));
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success&reportId=run_77&foo=bar'));
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     return waitFor(() => {
       expect(refreshReports).toHaveBeenCalled();
@@ -585,7 +585,7 @@ describe('VulnerabilityReportsPageClient', () => {
       completedReports: [],
     });
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('scan (1/2)')).toBeInTheDocument();
   });
@@ -646,14 +646,14 @@ describe('VulnerabilityReportsPageClient', () => {
       completedReports: [],
     });
 
-    render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('initializing')).toBeInTheDocument();
     expect(screen.queryByText('(n/a/n/a)')).toBeNull();
   });
 
   it('creates a report and redirects to checkout when submitted', async () => {
-    const { getByText, getByLabelText } = render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await act(async () => {
       fireEvent.click(getByText('Create Report'));
@@ -684,7 +684,7 @@ describe('VulnerabilityReportsPageClient', () => {
   });
 
   it('requires target URL before submitting report request', async () => {
-    const { getByText } = render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    const { getByText } = render(<PenetrationTestsPageClient orgId="org_123" />);
     const submitForm = screen.getByText('Continue to checkout').closest('form');
 
     await act(async () => {
@@ -698,7 +698,7 @@ describe('VulnerabilityReportsPageClient', () => {
   });
 
   it('creates a report without repository URL when only target is provided', async () => {
-    const { getByText, getByLabelText } = render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await act(async () => {
       fireEvent.click(getByText('Create Report'));
@@ -724,7 +724,7 @@ describe('VulnerabilityReportsPageClient', () => {
   it('surfaces errors when checkout creation fails', async () => {
     createReportMock.mockRejectedValue(new Error('Could not start checkout'));
 
-    const { getByText, getByLabelText } = render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await act(async () => {
       fireEvent.click(getByText('Create Report'));
@@ -752,7 +752,7 @@ describe('VulnerabilityReportsPageClient', () => {
   it('surfaces a generic error message when checkout creation fails with non-error value', async () => {
     createReportMock.mockRejectedValue('service-down');
 
-    const { getByText, getByLabelText } = render(<VulnerabilityReportsPageClient orgId="org_123" />);
+    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await act(async () => {
       fireEvent.click(getByText('Create Report'));

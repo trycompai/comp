@@ -9,11 +9,11 @@ import { Button } from '@trycompai/design-system';
 import { toast } from 'sonner';
 import { isReportInProgress, formatReportDate, statusLabel, statusVariant } from '../lib';
 import {
-  useVulnerabilityReport,
-  useVulnerabilityReportProgress,
-} from '../hooks/use-vulnerability-reports';
+  usePenetrationTest,
+  usePenetrationTestProgress,
+} from '../hooks/use-penetration-tests';
 
-interface VulnerabilityReportPageClientProps {
+interface PenetrationTestPageClientProps {
   orgId: string;
   reportId: string;
 }
@@ -45,10 +45,10 @@ const toSafeExternalHttpUrl = (value: string): string | null => {
   }
 };
 
-export function VulnerabilityReportPageClient({ orgId, reportId }: VulnerabilityReportPageClientProps) {
+export function PenetrationTestPageClient({ orgId, reportId }: PenetrationTestPageClientProps) {
   const router = useRouter();
-  const { report, isLoading, error } = useVulnerabilityReport(orgId, reportId);
-  const { progress } = useVulnerabilityReportProgress(orgId, reportId, report?.status);
+  const { report, isLoading, error } = usePenetrationTest(orgId, reportId);
+  const { progress } = usePenetrationTestProgress(orgId, reportId, report?.status);
 
   if (isLoading && !report) {
     return (
@@ -210,7 +210,7 @@ export function VulnerabilityReportPageClient({ orgId, reportId }: Vulnerability
               onClick={() =>
                 void openArtifact(
                   `/v1/security-penetration-tests/${encodeURIComponent(report.id)}/pdf`,
-                  `vulnerability-report-${report.id}.pdf`,
+                  `penetration-test-${report.id}.pdf`,
                 )
               }
             >

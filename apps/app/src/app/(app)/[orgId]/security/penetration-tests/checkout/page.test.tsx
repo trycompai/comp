@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { redirect } from 'next/navigation';
 
-import VulnerabilityReportCheckoutPage, { generateMetadata } from './page';
+import PenetrationTestCheckoutPage, { generateMetadata } from './page';
 
 const authGetSessionMock = vi.fn();
 const dbFindFirstMock = vi.fn();
@@ -47,9 +47,9 @@ describe('Penetration test checkout page', () => {
   });
 
   it('renders checkout call-to-action when session and membership are valid', async () => {
-    const page = await VulnerabilityReportCheckoutPage({
+    const page = await PenetrationTestCheckoutPage({
       params: Promise.resolve({ orgId: 'org_1' }),
-      searchParams: Promise.resolve({ runId: 'run_1' }),
+      searchParams: Promise.resolve({ reportId: 'run_1' }),
     });
 
     render(page);
@@ -61,7 +61,7 @@ describe('Penetration test checkout page', () => {
     expect(purchaseButton).toBeInTheDocument();
     expect(purchaseForm).toHaveAttribute(
       'action',
-      '/org_1/security/penetration-tests?checkout=success&runId=run_1',
+      '/org_1/security/penetration-tests?checkout=success&reportId=run_1',
     );
     expect(redirect).not.toHaveBeenCalled();
   });
@@ -70,9 +70,9 @@ describe('Penetration test checkout page', () => {
     authGetSessionMock.mockResolvedValue(null);
 
     await expect(
-      VulnerabilityReportCheckoutPage({
+      PenetrationTestCheckoutPage({
         params: Promise.resolve({ orgId: 'org_1' }),
-        searchParams: Promise.resolve({ runId: 'run_1' }),
+        searchParams: Promise.resolve({ reportId: 'run_1' }),
       }),
     ).rejects.toThrow('NEXT_REDIRECT');
 
@@ -83,18 +83,18 @@ describe('Penetration test checkout page', () => {
     dbFindFirstMock.mockResolvedValue(null);
 
     await expect(
-      VulnerabilityReportCheckoutPage({
+      PenetrationTestCheckoutPage({
         params: Promise.resolve({ orgId: 'org_1' }),
-        searchParams: Promise.resolve({ runId: 'run_1' }),
+        searchParams: Promise.resolve({ reportId: 'run_1' }),
       }),
     ).rejects.toThrow('NEXT_REDIRECT');
 
     expect(redirect).toHaveBeenCalledWith('/');
   });
 
-  it('redirects back to report list when runId is missing', async () => {
+  it('redirects back to report list when reportId is missing', async () => {
     await expect(
-      VulnerabilityReportCheckoutPage({
+      PenetrationTestCheckoutPage({
         params: Promise.resolve({ orgId: 'org_1' }),
         searchParams: Promise.resolve({}),
       }),

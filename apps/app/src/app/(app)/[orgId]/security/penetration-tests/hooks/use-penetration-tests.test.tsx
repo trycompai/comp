@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ReactNode } from 'react';
 import {
-  useCreateVulnerabilityReport,
-  useVulnerabilityReport,
-  useVulnerabilityReportProgress,
-  useVulnerabilityReports,
-} from './use-vulnerability-reports';
+  useCreatePenetrationTest,
+  usePenetrationTest,
+  usePenetrationTestProgress,
+  usePenetrationTests,
+} from './use-penetration-tests';
 
 const createJsonResponse = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
@@ -32,7 +32,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
   </SWRConfig>
 );
 
-describe('use-vulnerability-reports hooks', () => {
+describe('use-penetration-tests hooks', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -82,7 +82,7 @@ describe('use-vulnerability-reports hooks', () => {
       ]),
     );
 
-    const { result } = renderHook(() => useVulnerabilityReports('org_123'), { wrapper });
+    const { result } = renderHook(() => usePenetrationTests('org_123'), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -92,7 +92,7 @@ describe('use-vulnerability-reports hooks', () => {
   });
 
   it('uses no list call when organization id is missing', () => {
-    const { result } = renderHook(() => useVulnerabilityReports(''), { wrapper });
+    const { result } = renderHook(() => usePenetrationTests(''), { wrapper });
 
     expect(result.current.reports).toEqual([]);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -108,7 +108,7 @@ describe('use-vulnerability-reports hooks', () => {
       ),
     );
 
-    const { result } = renderHook(() => useVulnerabilityReports('org_123'), { wrapper });
+    const { result } = renderHook(() => usePenetrationTests('org_123'), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.error).toEqual(expect.any(Error));
@@ -147,13 +147,13 @@ describe('use-vulnerability-reports hooks', () => {
         }),
       );
 
-    const { result } = renderHook(() => useVulnerabilityReport('org_123', 'run_running'), { wrapper });
+    const { result } = renderHook(() => usePenetrationTest('org_123', 'run_running'), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.report?.id).toBe('run_running');
 
     const progress = renderHook(
-      () => useVulnerabilityReportProgress('org_123', 'run_running', result.current.report?.status),
+      () => usePenetrationTestProgress('org_123', 'run_running', result.current.report?.status),
       { wrapper },
     );
 
@@ -163,7 +163,7 @@ describe('use-vulnerability-reports hooks', () => {
   });
 
   it('loads a report detail for empty id only when both identifiers are present', async () => {
-    const { result } = renderHook(() => useVulnerabilityReport('org_123', ''), { wrapper });
+    const { result } = renderHook(() => usePenetrationTest('org_123', ''), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.report).toBeUndefined();
@@ -171,7 +171,7 @@ describe('use-vulnerability-reports hooks', () => {
   });
 
   it('skips progress polling when report is completed', () => {
-    const { result } = renderHook(() => useVulnerabilityReportProgress('org_123', 'run_completed', 'completed'), {
+    const { result } = renderHook(() => usePenetrationTestProgress('org_123', 'run_completed', 'completed'), {
       wrapper,
     });
 
@@ -181,7 +181,7 @@ describe('use-vulnerability-reports hooks', () => {
 
   it('skips progress polling while report status is unknown', () => {
     const { result } = renderHook(
-      () => useVulnerabilityReportProgress('org_123', 'run_unknown', undefined),
+      () => usePenetrationTestProgress('org_123', 'run_unknown', undefined),
       { wrapper },
     );
 
@@ -194,11 +194,11 @@ describe('use-vulnerability-reports hooks', () => {
       createJsonResponse({
         checkoutMode: 'mock',
         checkoutUrl: 'https://checkout.test/route',
-        runId: 'run_123',
+        id: 'run_123',
       }),
     );
 
-    const { result } = renderHook(() => useCreateVulnerabilityReport('org_123'), { wrapper });
+    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
 
     await act(async () => {
       await expect(
@@ -213,7 +213,7 @@ describe('use-vulnerability-reports hooks', () => {
       ).resolves.toMatchObject({
         checkoutMode: 'mock',
         checkoutUrl: 'https://checkout.test/route',
-        runId: 'run_123',
+        id: 'run_123',
       });
     });
 
@@ -231,11 +231,11 @@ describe('use-vulnerability-reports hooks', () => {
       createJsonResponse({
         checkoutMode: 'mock',
         checkoutUrl: 'https://checkout.test/route',
-        runId: 'run_black_box',
+        id: 'run_black_box',
       }),
     );
 
-    const { result } = renderHook(() => useCreateVulnerabilityReport('org_123'), { wrapper });
+    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
 
     await act(async () => {
       await expect(
@@ -243,7 +243,7 @@ describe('use-vulnerability-reports hooks', () => {
           targetUrl: 'https://app.example.com',
         }),
       ).resolves.toMatchObject({
-        runId: 'run_black_box',
+        id: 'run_black_box',
       });
     });
 
@@ -258,11 +258,11 @@ describe('use-vulnerability-reports hooks', () => {
       createJsonResponse({
         checkoutMode: 'mock',
         checkoutUrl: 'https://checkout.test/route',
-        runId: 'run_456',
+        id: 'run_456',
       }),
     );
 
-    const { result } = renderHook(() => useCreateVulnerabilityReport('org_123'), { wrapper });
+    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
 
     await act(async () => {
       await expect(
@@ -273,7 +273,7 @@ describe('use-vulnerability-reports hooks', () => {
       ).resolves.toMatchObject({
         checkoutMode: 'mock',
         checkoutUrl: 'https://checkout.test/route',
-        runId: 'run_456',
+        id: 'run_456',
       });
     });
 
@@ -287,11 +287,11 @@ describe('use-vulnerability-reports hooks', () => {
     fetchMock.mockResolvedValueOnce(
       createJsonResponse({
         checkoutMode: 'stripe',
-        runId: 'run_stripe_no_url',
+        id: 'run_stripe_no_url',
       }),
     );
 
-    const { result } = renderHook(() => useCreateVulnerabilityReport('org_123'), { wrapper });
+    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
 
     await act(async () => {
       await expect(
@@ -314,7 +314,7 @@ describe('use-vulnerability-reports hooks', () => {
       ),
     );
 
-    const { result } = renderHook(() => useCreateVulnerabilityReport('org_123'), { wrapper });
+    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
 
     await act(async () => {
       await expect(
@@ -331,7 +331,7 @@ describe('use-vulnerability-reports hooks', () => {
   it('surfaces a request-level error when create returns non-json text', async () => {
     fetchMock.mockResolvedValueOnce(new Response('service unavailable', { status: 503 }));
 
-    const { result } = renderHook(() => useCreateVulnerabilityReport('org_123'), { wrapper });
+    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
 
     await act(async () => {
       await expect(
@@ -355,7 +355,7 @@ describe('use-vulnerability-reports hooks', () => {
       ),
     );
 
-    const { result } = renderHook(() => useCreateVulnerabilityReport('org_123'), { wrapper });
+    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
 
     await act(async () => {
       await expect(
@@ -379,7 +379,7 @@ describe('use-vulnerability-reports hooks', () => {
       ),
     );
 
-    const { result } = renderHook(() => useCreateVulnerabilityReport('org_123'), { wrapper });
+    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
 
     await act(async () => {
       await expect(
@@ -396,7 +396,7 @@ describe('use-vulnerability-reports hooks', () => {
   it('falls back to a generic error when the transport failure is not an Error', async () => {
     fetchMock.mockRejectedValueOnce('network offline');
 
-    const { result } = renderHook(() => useCreateVulnerabilityReport('org_123'), { wrapper });
+    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
 
     await act(async () => {
       await expect(
@@ -413,7 +413,7 @@ describe('use-vulnerability-reports hooks', () => {
   it('treats empty create error payload as status based message', async () => {
     fetchMock.mockResolvedValueOnce(new Response('', { status: 400 }));
 
-    const { result } = renderHook(() => useCreateVulnerabilityReport('org_123'), { wrapper });
+    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
 
     await act(async () => {
       await expect(
@@ -430,7 +430,7 @@ describe('use-vulnerability-reports hooks', () => {
   it('returns an empty object when report detail API response body is empty', async () => {
     fetchMock.mockResolvedValueOnce(new Response('', { status: 200 }));
 
-    const { result } = renderHook(() => useVulnerabilityReport('org_123', 'run_123'), { wrapper });
+    const { result } = renderHook(() => usePenetrationTest('org_123', 'run_123'), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 

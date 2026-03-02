@@ -2,7 +2,7 @@
 
 import { api } from '@/lib/api-client';
 import type {
-  CreateVulnerabilityReportResponse,
+  CreatePenetrationTestResponse,
   PentestCreateRequest,
   PentestProgress,
   PentestReportStatus,
@@ -53,7 +53,7 @@ interface CreatePayload {
 
 type CreateReportApiPayload = PentestCreateRequest;
 
-interface UseVulnerabilityReportsReturn {
+interface UsePenetrationTestsReturn {
   reports: PentestRun[];
   isLoading: boolean;
   error: Error | undefined;
@@ -62,28 +62,28 @@ interface UseVulnerabilityReportsReturn {
   completedReports: PentestRun[];
 }
 
-interface UseVulnerabilityReportReturn {
+interface UsePenetrationTestReturn {
   report: PentestRun | undefined;
   isLoading: boolean;
   error: Error | undefined;
   mutate: () => Promise<PentestRun | undefined>;
 }
 
-interface UseVulnerabilityReportProgressReturn {
+interface UsePenetrationTestProgressReturn {
   progress: PentestProgress | null | undefined;
   isLoading: boolean;
 }
 
-interface UseCreateVulnerabilityReportReturn {
-  createReport: (payload: CreatePayload) => Promise<CreateVulnerabilityReportResponse>;
+interface UseCreatePenetrationTestReturn {
+  createReport: (payload: CreatePayload) => Promise<CreatePenetrationTestResponse>;
   isCreating: boolean;
   error: string | null;
   resetError: () => void;
 }
 
-export function useVulnerabilityReports(
+export function usePenetrationTests(
   organizationId: string,
-): UseVulnerabilityReportsReturn {
+): UsePenetrationTestsReturn {
   const shouldFetchReports = Boolean(organizationId);
   const { data, error, mutate } = useSWR<PentestRun[]>(
     shouldFetchReports ? reportListKey(organizationId) : null,
@@ -120,10 +120,10 @@ export function useVulnerabilityReports(
   };
 }
 
-export function useVulnerabilityReport(
+export function usePenetrationTest(
   organizationId: string,
   reportId: string,
-): UseVulnerabilityReportReturn {
+): UsePenetrationTestReturn {
   const shouldFetchReport = Boolean(organizationId && reportId);
   const { data, error, mutate } = useSWR<PentestRun>(
     shouldFetchReport ? reportKey(organizationId, reportId) : null,
@@ -148,7 +148,7 @@ export function useVulnerabilityReport(
   };
 }
 
-export function useVulnerabilityReportProgress(
+export function usePenetrationTestProgress(
   organizationId: string,
   reportId: string,
   status: PentestReportStatus | undefined,
@@ -169,18 +169,18 @@ export function useVulnerabilityReportProgress(
   return {
     progress: data,
     isLoading: shouldFetch && data === undefined,
-  } satisfies UseVulnerabilityReportProgressReturn;
+  } satisfies UsePenetrationTestProgressReturn;
 }
 
-export function useCreateVulnerabilityReport(
+export function useCreatePenetrationTest(
   organizationId: string,
-): UseCreateVulnerabilityReportReturn {
+): UseCreatePenetrationTestReturn {
   const { mutate } = useSWRConfig();
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const createReport = useCallback(
-    async (payload: CreatePayload): Promise<CreateVulnerabilityReportResponse> => {
+    async (payload: CreatePayload): Promise<CreatePenetrationTestResponse> => {
       setIsCreating(true);
       setError(null);
       try {
@@ -188,7 +188,6 @@ export function useCreateVulnerabilityReport(
 
         const response = await api.post<{
           id?: string;
-          runId?: string;
           checkoutMode?: 'mock' | 'stripe';
           checkoutUrl?: string;
           status?: string;
@@ -211,14 +210,14 @@ export function useCreateVulnerabilityReport(
           throw new Error(response.error ?? `Request failed with status ${response.status}`);
         }
 
-        const runId = response.data?.id ?? response.data?.runId;
-        if (!runId) {
+        const reportId = response.data?.id;
+        if (!reportId) {
           throw new Error('Could not resolve report ID from create response.');
         }
 
         const checkoutMode =
           response.data?.checkoutMode ?? (requestedMockCheckout ? 'mock' : 'stripe');
-        const fallbackCheckoutUrl = `/${organizationId}/security/penetration-tests/checkout?runId=${encodeURIComponent(runId)}`;
+        const fallbackCheckoutUrl = `/${organizationId}/security/penetration-tests/checkout?reportId=${encodeURIComponent(reportId)}`;
         let checkoutUrl: string;
         if (checkoutMode === 'stripe') {
           const stripeCheckoutUrl = response.data?.checkoutUrl;
@@ -230,10 +229,9 @@ export function useCreateVulnerabilityReport(
           checkoutUrl = response.data?.checkoutUrl ?? fallbackCheckoutUrl;
         }
 
-        const data: CreateVulnerabilityReportResponse = {
+        const data: CreatePenetrationTestResponse = {
           checkoutMode,
-          runId,
-          id: response.data?.id ?? runId,
+          id: reportId,
           status: response.data?.status,
           checkoutUrl,
         };

@@ -19,19 +19,18 @@ This module exposes Comp API endpoints under `/v1/security-penetration-tests` an
 ## Optional environment variables
 
 - `MACED_API_BASE_URL`: Defaults to `https://api.maced.ai`.
-- `SECURITY_VULNERABILITY_REPORTS_WEBHOOK_URL`: Base callback URL for Comp webhook endpoint.
-- `SECURITY_VULNERABILITY_REPORTS_WEBHOOK_SECRET`: Shared fallback secret for webhook validation when no per-job handshake exists.
+- `SECURITY_PENETRATION_TESTS_WEBHOOK_URL`: Base callback URL for Comp webhook endpoint.
 
 ## Webhook handshake model
 
 1. On create (`POST /v1/security-penetration-tests`), Maced issues a per-job `webhookToken` and returns it in the create response.
 2. Comp does not send a user-provided `webhookToken` upstream; the value is reserved for provider issuance.
 3. If callback target resolves to Comp webhook route and Maced returns `webhookToken`, Comp persists a handshake record in `secrets` using name:
-   - `security_vulnerability_report_webhook_<runId>`
+   - `security_penetration_test_webhook_<reportId>`
 4. On webhook receive, Comp:
    - resolves org context (`X-Organization-Id` or `orgId`/`organizationId` query),
    - resolves token (`webhookToken` query or `X-Webhook-Token` header),
-   - verifies token against persisted per-job hash,
+   - requires a persisted per-job handshake and verifies token hash match,
    - tracks idempotency (`X-Webhook-Id`/`X-Request-Id`, plus payload hash fallback),
    - returns `duplicate: true` for replayed webhook events.
 

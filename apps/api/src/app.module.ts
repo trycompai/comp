@@ -36,7 +36,7 @@ import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
 import { OrgChartModule } from './org-chart/org-chart.module';
 import { TrainingModule } from './training/training.module';
 import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
-import { SecurityVulnerabilityReportsModule } from './security-vulnerability-reports/security-vulnerability-reports.module';
+import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
 
 @Module({
   imports: [
@@ -85,7 +85,7 @@ import { SecurityVulnerabilityReportsModule } from './security-vulnerability-rep
     TrainingModule,
     OrgChartModule,
     EvidenceFormsModule,
-    SecurityVulnerabilityReportsModule,
+    SecurityPenetrationTestsModule,
   ],
   controllers: [AppController],
   providers: [

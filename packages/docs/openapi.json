@@ -16427,7 +16427,7 @@
     "/v1/security-penetration-tests": {
       "get": {
         "description": "Returns all penetration tests created for the organization.",
-        "operationId": "SecurityVulnerabilityReportsController_list_v1",
+        "operationId": "SecurityPenetrationTestsController_list_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -16441,7 +16441,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Vulnerability reports returned"
+            "description": "Penetration tests returned"
           }
         },
         "security": [
@@ -16456,7 +16456,7 @@
       },
       "post": {
         "description": "Creates a new penetration test run and returns the run metadata.",
-        "operationId": "SecurityVulnerabilityReportsController_create_v1",
+        "operationId": "SecurityPenetrationTestsController_create_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -16473,14 +16473,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateVulnerabilityReportDto"
+                "$ref": "#/components/schemas/CreatePenetrationTestDto"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Vulnerability report created"
+            "description": "Penetration test created"
           },
           "400": {
             "description": "Invalid request payload"
@@ -16500,7 +16500,7 @@
     "/v1/security-penetration-tests/{id}": {
       "get": {
         "description": "Returns a penetration test run with progress metadata.",
-        "operationId": "SecurityVulnerabilityReportsController_getById_v1",
+        "operationId": "SecurityPenetrationTestsController_getById_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -16522,10 +16522,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Vulnerability report returned"
+            "description": "Penetration test returned"
           },
           "404": {
-            "description": "Vulnerability report not found"
+            "description": "Penetration test not found"
           }
         },
         "security": [
@@ -16542,7 +16542,7 @@
     "/v1/security-penetration-tests/{id}/progress": {
       "get": {
         "description": "Returns detailed progress for an in-flight report run.",
-        "operationId": "SecurityVulnerabilityReportsController_getProgress_v1",
+        "operationId": "SecurityPenetrationTestsController_getProgress_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -16581,7 +16581,7 @@
     "/v1/security-penetration-tests/{id}/report": {
       "get": {
         "description": "Returns the markdown report output for a completed run.",
-        "operationId": "SecurityVulnerabilityReportsController_getReport_v1",
+        "operationId": "SecurityPenetrationTestsController_getReport_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -16620,7 +16620,7 @@
     "/v1/security-penetration-tests/{id}/pdf": {
       "get": {
         "description": "Returns the PDF version of a completed report.",
-        "operationId": "SecurityVulnerabilityReportsController_getPdf_v1",
+        "operationId": "SecurityPenetrationTestsController_getPdf_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -16658,8 +16658,8 @@
     },
     "/v1/security-penetration-tests/webhook": {
       "post": {
-        "description": "Receives callback payloads from the vulnerability provider when a report is updated. Per-run webhook token validation is enforced when handshake state exists.",
-        "operationId": "SecurityVulnerabilityReportsController_handleWebhook_v1",
+        "description": "Receives callback payloads from the penetration test provider when a report is updated. Per-run webhook token validation is enforced when handshake state exists.",
+        "operationId": "SecurityPenetrationTestsController_handleWebhook_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -20661,7 +20661,7 @@
           "fileData"
         ]
       },
-      "CreateVulnerabilityReportDto": {
+      "CreatePenetrationTestDto": {
         "type": "object",
         "properties": {
           "targetUrl": {

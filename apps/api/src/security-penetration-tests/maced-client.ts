@@ -27,7 +27,6 @@ const macedPentestProgressSchema = z.object({
 const macedPentestRunSchema = z
   .object({
     id: z.string().min(1),
-    runId: z.string().min(1).optional(),
     sandboxId: z.string().min(1),
     workflowId: z.string().min(1),
     sessionId: z.string().min(1),
@@ -132,7 +131,7 @@ export class MacedClient {
         error instanceof Error ? error.message : String(error),
       );
       throw new HttpException(
-        { error: 'Unable to reach vulnerability provider' },
+        { error: 'Unable to reach penetration test provider' },
         HttpStatus.BAD_GATEWAY,
       );
     }
@@ -164,7 +163,7 @@ export class MacedClient {
         error instanceof Error ? error.message : String(error),
       );
       throw new HttpException(
-        { error: 'Invalid response received from vulnerability provider' },
+        { error: 'Invalid response received from penetration test provider' },
         HttpStatus.BAD_GATEWAY,
       );
     }
@@ -176,7 +175,7 @@ export class MacedClient {
         validated.error.message,
       );
       throw new HttpException(
-        { error: 'Invalid response received from vulnerability provider' },
+        { error: 'Invalid response received from penetration test provider' },
         HttpStatus.BAD_GATEWAY,
       );
     }
@@ -224,7 +223,7 @@ export class MacedClient {
         validatedPayload.error.message,
       );
       throw new HttpException(
-        { error: 'Invalid request payload for vulnerability provider' },
+        { error: 'Invalid request payload for penetration test provider' },
         HttpStatus.BAD_REQUEST,
       );
     }

@@ -1,7 +1,7 @@
 import { IsBoolean, IsOptional, IsString, IsUrl } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class CreateVulnerabilityReportDto {
+export class CreatePenetrationTestDto {
   @ApiProperty({
     description: 'Target URL for the penetration test scan',
     example: 'https://app.example.com',

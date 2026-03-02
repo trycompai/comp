@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 
 import type { PentestRun } from '@/lib/security/penetration-tests-client';
-import { VulnerabilityReportPageClient } from './vulnerability-report-page-client';
+import { PenetrationTestPageClient } from './penetration-test-page-client';
 
-const useVulnerabilityReportMock = vi.fn();
-const useVulnerabilityReportProgressMock = vi.fn();
+const usePenetrationTestMock = vi.fn();
+const usePenetrationTestProgressMock = vi.fn();
 const pushMock = vi.fn();
 
 vi.mock('next/link', () => ({
@@ -17,9 +17,9 @@ vi.mock('next/link', () => ({
   ),
 }));
 
-vi.mock('../hooks/use-vulnerability-reports', () => ({
-  useVulnerabilityReport: (...args: never[]) => useVulnerabilityReportMock(...args),
-  useVulnerabilityReportProgress: (...args: never[]) => useVulnerabilityReportProgressMock(...args),
+vi.mock('../hooks/use-penetration-tests', () => ({
+  usePenetrationTest: (...args: never[]) => usePenetrationTestMock(...args),
+  usePenetrationTestProgress: (...args: never[]) => usePenetrationTestProgressMock(...args),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -31,10 +31,10 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-const reportMock = useVulnerabilityReportMock as ReturnType<typeof vi.fn>;
-const progressMock = useVulnerabilityReportProgressMock as ReturnType<typeof vi.fn>;
+const reportMock = usePenetrationTestMock as ReturnType<typeof vi.fn>;
+const progressMock = usePenetrationTestProgressMock as ReturnType<typeof vi.fn>;
 
-describe('VulnerabilityReportPageClient', () => {
+describe('PenetrationTestPageClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -51,7 +51,7 @@ describe('VulnerabilityReportPageClient', () => {
       isLoading: false,
     });
 
-    const { container } = render(<VulnerabilityReportPageClient orgId="org_123" reportId="run_1" />);
+    const { container } = render(<PenetrationTestPageClient orgId="org_123" reportId="run_1" />);
 
     expect(container.querySelector('.animate-spin')).toBeTruthy();
   });
@@ -68,7 +68,7 @@ describe('VulnerabilityReportPageClient', () => {
       isLoading: false,
     });
 
-    render(<VulnerabilityReportPageClient orgId="org_123" reportId="run_1" />);
+    render(<PenetrationTestPageClient orgId="org_123" reportId="run_1" />);
 
     expect(screen.getByText('Unable to load report')).toBeInTheDocument();
     expect(screen.getByText('Not found')).toBeInTheDocument();
@@ -86,7 +86,7 @@ describe('VulnerabilityReportPageClient', () => {
       isLoading: false,
     });
 
-    render(<VulnerabilityReportPageClient orgId="org_123" reportId="run_1" />);
+    render(<PenetrationTestPageClient orgId="org_123" reportId="run_1" />);
 
     expect(screen.getByText('Unable to load report')).toBeInTheDocument();
     expect(screen.getByText('No report found for this organization.')).toBeInTheDocument();
@@ -121,7 +121,7 @@ describe('VulnerabilityReportPageClient', () => {
       isLoading: false,
     });
 
-    render(<VulnerabilityReportPageClient orgId="org_123" reportId="run_1" />);
+    render(<PenetrationTestPageClient orgId="org_123" reportId="run_1" />);
 
     expect(screen.getByText('Completed')).toBeInTheDocument();
     expect(screen.getByText('https://example.com')).toBeInTheDocument();
@@ -160,7 +160,7 @@ describe('VulnerabilityReportPageClient', () => {
       isLoading: false,
     });
 
-    render(<VulnerabilityReportPageClient orgId="org_123" reportId="run_5" />);
+    render(<PenetrationTestPageClient orgId="org_123" reportId="run_5" />);
 
     expect(screen.getByText('—')).toBeInTheDocument();
   });
@@ -194,7 +194,7 @@ describe('VulnerabilityReportPageClient', () => {
       isLoading: false,
     });
 
-    render(<VulnerabilityReportPageClient orgId="org_123" reportId="run_6" />);
+    render(<PenetrationTestPageClient orgId="org_123" reportId="run_6" />);
 
     expect(screen.getByText('Repository')).toBeInTheDocument();
     expect(screen.getByText('—')).toBeInTheDocument();
@@ -236,7 +236,7 @@ describe('VulnerabilityReportPageClient', () => {
       isLoading: false,
     });
 
-    render(<VulnerabilityReportPageClient orgId="org_123" reportId="run_2" />);
+    render(<PenetrationTestPageClient orgId="org_123" reportId="run_2" />);
 
     expect(screen.getByText('Running')).toBeInTheDocument();
     expect(screen.getByText('Current progress')).toBeInTheDocument();
@@ -280,7 +280,7 @@ describe('VulnerabilityReportPageClient', () => {
       isLoading: false,
     });
 
-    render(<VulnerabilityReportPageClient orgId="org_123" reportId="run_4" />);
+    render(<PenetrationTestPageClient orgId="org_123" reportId="run_4" />);
 
     expect(screen.getByText('Current progress')).toBeInTheDocument();
     expect(screen.getByText('In progress')).toBeInTheDocument();
@@ -315,7 +315,7 @@ describe('VulnerabilityReportPageClient', () => {
       isLoading: false,
     });
 
-    render(<VulnerabilityReportPageClient orgId="org_123" reportId="run_3" />);
+    render(<PenetrationTestPageClient orgId="org_123" reportId="run_3" />);
 
     expect(screen.getByText('Failed')).toBeInTheDocument();
     expect(screen.getByText('Scan failed due to provider timeout')).toBeInTheDocument();

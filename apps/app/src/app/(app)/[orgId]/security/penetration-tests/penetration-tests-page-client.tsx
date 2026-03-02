@@ -26,12 +26,12 @@ import { FormEvent, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { formatReportDate, isReportInProgress, statusLabel, statusVariant } from './lib';
 import {
-  useCreateVulnerabilityReport,
-  useVulnerabilityReports,
-} from './hooks/use-vulnerability-reports';
+  useCreatePenetrationTest,
+  usePenetrationTests,
+} from './hooks/use-penetration-tests';
 import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
 
-interface VulnerabilityReportsPageClientProps {
+interface PenetrationTestsPageClientProps {
   orgId: string;
 }
 
@@ -53,7 +53,7 @@ const normalizeTargetUrl = (value: string): string | null => {
   }
 };
 
-export function VulnerabilityReportsPageClient({ orgId }: VulnerabilityReportsPageClientProps) {
+export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -62,16 +62,16 @@ export function VulnerabilityReportsPageClient({ orgId }: VulnerabilityReportsPa
   const [repoUrl, setRepoUrl] = useState('');
 
   const { reports, isLoading, activeReports, completedReports, mutate: refreshReports } =
-    useVulnerabilityReports(orgId);
+    usePenetrationTests(orgId);
 
   const {
     createReport,
     isCreating,
-  } = useCreateVulnerabilityReport(orgId);
+  } = useCreatePenetrationTest(orgId);
 
   useEffect(() => {
     const checkoutStatus = searchParams.get('checkout');
-    const checkoutRunId = searchParams.get('runId');
+    const checkoutRunId = searchParams.get('reportId');
 
     if (!checkoutStatus) {
       return;
@@ -88,7 +88,7 @@ export function VulnerabilityReportsPageClient({ orgId }: VulnerabilityReportsPa
 
     const cleanedSearchParams = new URLSearchParams(searchParams.toString());
     cleanedSearchParams.delete('checkout');
-    cleanedSearchParams.delete('runId');
+    cleanedSearchParams.delete('reportId');
 
     const cleanQuery = cleanedSearchParams.toString();
     router.replace(`/${orgId}/security/penetration-tests${cleanQuery ? `?${cleanQuery}` : ''}`);

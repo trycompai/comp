@@ -6,11 +6,12 @@ jest.mock('../auth/hybrid-auth.guard', () => ({
   },
 }));
 
-import { SecurityVulnerabilityReportsController } from './security-vulnerability-reports.controller';
-import type { SecurityVulnerabilityReportsService } from './security-vulnerability-reports.service';
+import { SecurityPenetrationTestsController } from './security-penetration-tests.controller';
+import type { SecurityPenetrationTestsService } from './security-penetration-tests.service';
+import type { Request as ExpressRequest } from 'express';
 
-describe('SecurityVulnerabilityReportsController', () => {
-  const originalWebhookBase = process.env.SECURITY_VULNERABILITY_REPORTS_WEBHOOK_URL;
+describe('SecurityPenetrationTestsController', () => {
+  const originalWebhookBase = process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL;
   const createReportMock = jest.fn();
   const listReportsMock = jest.fn();
   const getReportMock = jest.fn();
@@ -20,7 +21,7 @@ describe('SecurityVulnerabilityReportsController', () => {
   const validateWebhookOrganizationMock = jest.fn();
   const handleWebhookMock = jest.fn();
 
-  const serviceMock: jest.Mocked<SecurityVulnerabilityReportsService> = {
+  const serviceMock: jest.Mocked<SecurityPenetrationTestsService> = {
     createReport: createReportMock,
     listReports: listReportsMock,
     getReport: getReportMock,
@@ -29,17 +30,17 @@ describe('SecurityVulnerabilityReportsController', () => {
     getReportPdf: getReportPdfMock,
     validateWebhookOrganization: validateWebhookOrganizationMock,
     handleWebhook: handleWebhookMock,
-  } as unknown as jest.Mocked<SecurityVulnerabilityReportsService>;
+  } as unknown as jest.Mocked<SecurityPenetrationTestsService>;
 
-  const controller = new SecurityVulnerabilityReportsController(serviceMock);
+  const controller = new SecurityPenetrationTestsController(serviceMock);
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.SECURITY_VULNERABILITY_REPORTS_WEBHOOK_URL = 'https://callback.example.com/webhook';
+    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL = 'https://callback.example.com/webhook';
   });
 
   afterAll(() => {
-    process.env.SECURITY_VULNERABILITY_REPORTS_WEBHOOK_URL = originalWebhookBase;
+    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL = originalWebhookBase;
   });
 
   it('lists reports for the organization', async () => {
@@ -133,7 +134,7 @@ describe('SecurityVulnerabilityReportsController', () => {
     expect(getReportPdfMock).toHaveBeenCalledWith('org_123', 'run_1');
     expect(responseMock.set).toHaveBeenCalledWith({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="vulnerability-report-run_1.pdf"',
+      'Content-Disposition': 'attachment; filename="penetration-test-run_1.pdf"',
       'Cache-Control': 'no-store',
     });
     expect(output).toBeDefined();
@@ -145,7 +146,7 @@ describe('SecurityVulnerabilityReportsController', () => {
         orgId: 'from-query',
       },
       headers: {},
-    } as unknown as Request;
+    } as unknown as ExpressRequest;
     const webhookPayload = { id: 'run_2', status: 'completed' };
     validateWebhookOrganizationMock.mockResolvedValueOnce('org_from_payload');
     handleWebhookMock.mockResolvedValueOnce({
@@ -172,7 +173,7 @@ describe('SecurityVulnerabilityReportsController', () => {
         organizationId: 'from-organization-query',
       },
       headers: {},
-    } as unknown as Request;
+    } as unknown as ExpressRequest;
     const webhookPayload = { id: 'run_3', status: 'completed' };
     validateWebhookOrganizationMock.mockResolvedValueOnce('org_from_organization_query');
     handleWebhookMock.mockResolvedValueOnce({
@@ -199,7 +200,7 @@ describe('SecurityVulnerabilityReportsController', () => {
         orgId: ['from-array', 'ignored'],
       },
       headers: {},
-    } as unknown as Request;
+    } as unknown as ExpressRequest;
     const webhookPayload = { id: 'run_4', status: 'completed' };
     validateWebhookOrganizationMock.mockResolvedValueOnce('org_from_array_query');
     handleWebhookMock.mockResolvedValueOnce({
@@ -229,7 +230,7 @@ describe('SecurityVulnerabilityReportsController', () => {
       headers: {
         'x-webhook-id': 'evt_123',
       },
-    } as unknown as Request;
+    } as unknown as ExpressRequest;
     const webhookPayload = { id: 'run_5', status: 'completed' };
     validateWebhookOrganizationMock.mockResolvedValueOnce('org_from_query');
     handleWebhookMock.mockResolvedValueOnce({

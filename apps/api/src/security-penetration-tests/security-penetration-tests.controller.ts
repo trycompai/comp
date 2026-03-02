@@ -23,8 +23,8 @@ import type { Request } from 'express';
 import type { Response } from 'express';
 import { OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
-import { CreateVulnerabilityReportDto } from './dto/create-vulnerability-report.dto';
-import { SecurityVulnerabilityReportsService } from './security-vulnerability-reports.service';
+import { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
+import { SecurityPenetrationTestsService } from './security-penetration-tests.service';
 
 @ApiTags('Security Penetration Tests')
 @Controller({ path: 'security-penetration-tests', version: '1' })
@@ -34,9 +34,9 @@ import { SecurityVulnerabilityReportsService } from './security-vulnerability-re
   description: 'Organization ID (required for session auth, optional for API key auth)',
   required: false,
 })
-export class SecurityVulnerabilityReportsController {
+export class SecurityPenetrationTestsController {
   constructor(
-    private readonly service: SecurityVulnerabilityReportsService,
+    private readonly service: SecurityPenetrationTestsService,
   ) {}
 
   @Get()
@@ -72,7 +72,7 @@ export class SecurityVulnerabilityReportsController {
   })
   async create(
     @OrganizationId() organizationId: string,
-    @Body() body: CreateVulnerabilityReportDto,
+    @Body() body: CreatePenetrationTestDto,
   ) {
     return this.service.createReport(organizationId, body);
   }
@@ -158,7 +158,7 @@ export class SecurityVulnerabilityReportsController {
       'Content-Type': output.contentType,
       'Content-Disposition':
         output.contentDisposition ??
-        `attachment; filename="vulnerability-report-${id}.pdf"`,
+        `attachment; filename="penetration-test-${id}.pdf"`,
       'Cache-Control': 'no-store',
     });
 

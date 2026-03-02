@@ -40,10 +40,9 @@ export interface PentestCreateRequest {
   mockCheckout?: boolean;
 }
 
-export interface CreateVulnerabilityReportResponse {
+export interface CreatePenetrationTestResponse {
   checkoutMode?: 'mock' | 'stripe';
-  runId?: string;
-  id?: string;
+  id: string;
   status?: string;
   checkoutUrl: string;
 }
