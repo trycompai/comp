@@ -20,7 +20,7 @@ export function SecuritySidebar({ orgId }: SecuritySidebarProps) {
   const items: SecurityNavItem[] = [
     {
       id: 'vulnerability-reports',
-      label: 'Vulnerability Reports',
+      label: 'Penetration Tests',
       path: `/${orgId}/security/vulnerability-reports`,
     },
   ];
