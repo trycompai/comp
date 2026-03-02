@@ -85,6 +85,11 @@ export class SecurityPenetrationTestsService {
   private readonly macedClient = new MacedClient();
   private readonly canonicalWebhookPath = '/v1/security-penetration-tests/webhook';
   private readonly defaultWebhookBaseUrl = 'https://api.trycomp.ai';
+  private readonly defaultCompWebhookHosts = new Set([
+    'api.trycomp.ai',
+    'api.staging.trycomp.ai',
+    'localhost:3333',
+  ]);
 
   private get defaultWebhookBase() {
     return (
@@ -577,17 +582,42 @@ export class SecurityPenetrationTestsService {
   }
 
   private isCompWebhookUrl(value: string): boolean {
-    if (!/^https?:\/\//.test(value)) {
-      const [rawPath] = value.split('?');
-      return this.isWebhookPath(this.trimTrailingSlashes(rawPath));
-    }
-
     try {
       const parsed = new URL(value);
-      return this.isWebhookPath(this.trimTrailingSlashes(parsed.pathname));
+      const normalizedPath = this.trimTrailingSlashes(parsed.pathname);
+      if (!this.isWebhookPath(normalizedPath)) {
+        return false;
+      }
+
+      return this.trustedCompWebhookHosts().has(parsed.host.toLowerCase());
     } catch {
       return false;
     }
+  }
+
+  private trustedCompWebhookHosts(): Set<string> {
+    const hosts = new Set(this.defaultCompWebhookHosts);
+    const configuredUrls = [
+      process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL,
+      process.env.BASE_URL,
+      process.env.APP_URL,
+      process.env.NEXT_PUBLIC_APP_URL,
+    ];
+
+    for (const configuredUrl of configuredUrls) {
+      const candidate = configuredUrl?.trim();
+      if (!candidate) {
+        continue;
+      }
+
+      try {
+        hosts.add(new URL(candidate).host.toLowerCase());
+      } catch {
+        this.logger.warn(`Ignoring invalid trusted webhook host URL: ${candidate}`);
+      }
+    }
+
+    return hosts;
   }
 
   private parseWebhookHandshake(
