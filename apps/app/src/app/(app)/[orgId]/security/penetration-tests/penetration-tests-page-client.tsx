@@ -71,14 +71,14 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
 
   useEffect(() => {
     const checkoutStatus = searchParams.get('checkout');
-    const checkoutReportId = searchParams.get('reportId');
+    const checkoutRunId = searchParams.get('reportId');
 
     if (!checkoutStatus) {
       return;
     }
 
-    if (checkoutStatus === 'success' && checkoutReportId) {
-      toast.success(`Checkout completed. Your report ${checkoutReportId} is now in the queue.`);
+    if (checkoutStatus === 'success' && checkoutRunId) {
+      toast.success(`Checkout completed. Your report ${checkoutRunId} is now in the queue.`);
     } else if (checkoutStatus === 'success') {
       toast.success('Checkout completed. Your report has been queued.');
     } else if (checkoutStatus === 'error') {

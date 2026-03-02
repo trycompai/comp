@@ -18,6 +18,7 @@ describe('SecurityPenetrationTestsController', () => {
   const getReportProgressMock = jest.fn();
   const getReportOutputMock = jest.fn();
   const getReportPdfMock = jest.fn();
+  const validateWebhookOrganizationMock = jest.fn();
   const handleWebhookMock = jest.fn();
 
   const serviceMock: jest.Mocked<SecurityPenetrationTestsService> = {
@@ -27,6 +28,7 @@ describe('SecurityPenetrationTestsController', () => {
     getReportProgress: getReportProgressMock,
     getReportOutput: getReportOutputMock,
     getReportPdf: getReportPdfMock,
+    validateWebhookOrganization: validateWebhookOrganizationMock,
     handleWebhook: handleWebhookMock,
   } as unknown as jest.Mocked<SecurityPenetrationTestsService>;
 
@@ -146,14 +148,44 @@ describe('SecurityPenetrationTestsController', () => {
       headers: {},
     } as unknown as ExpressRequest;
     const webhookPayload = { id: 'run_2', status: 'completed' };
+    validateWebhookOrganizationMock.mockResolvedValueOnce('org_from_payload');
     handleWebhookMock.mockResolvedValueOnce({
       success: true,
-      organizationId: 'org_123',
+      organizationId: 'org_from_payload',
     });
 
-    await controller.handleWebhook(requestMock, webhookPayload);
+    await controller.handleWebhook('org-header-value', requestMock, webhookPayload);
 
+    expect(validateWebhookOrganizationMock).toHaveBeenCalledWith('org-header-value');
     expect(handleWebhookMock).toHaveBeenCalledWith(
+      'org_from_payload',
+      webhookPayload,
+      {
+        webhookToken: undefined,
+        eventId: undefined,
+      },
+    );
+  });
+
+  it('prefers organization query param when header is missing', async () => {
+    const requestMock = {
+      query: {
+        organizationId: 'from-organization-query',
+      },
+      headers: {},
+    } as unknown as ExpressRequest;
+    const webhookPayload = { id: 'run_3', status: 'completed' };
+    validateWebhookOrganizationMock.mockResolvedValueOnce('org_from_organization_query');
+    handleWebhookMock.mockResolvedValueOnce({
+      success: true,
+      organizationId: 'org_from_organization_query',
+    });
+
+    await controller.handleWebhook(undefined, requestMock, webhookPayload);
+
+    expect(validateWebhookOrganizationMock).toHaveBeenCalledWith('from-organization-query');
+    expect(handleWebhookMock).toHaveBeenCalledWith(
+      'org_from_organization_query',
       webhookPayload,
       {
         webhookToken: undefined,
@@ -165,22 +197,25 @@ describe('SecurityPenetrationTestsController', () => {
   it('accepts first query value from array form in webhook extraction', async () => {
     const requestMock = {
       query: {
-        webhookToken: ['query-token', 'ignored'],
+        orgId: ['from-array', 'ignored'],
       },
       headers: {},
     } as unknown as ExpressRequest;
-    const webhookPayload = { id: 'run_3', status: 'completed' };
+    const webhookPayload = { id: 'run_4', status: 'completed' };
+    validateWebhookOrganizationMock.mockResolvedValueOnce('org_from_array_query');
     handleWebhookMock.mockResolvedValueOnce({
       success: true,
-      organizationId: 'org_123',
+      organizationId: 'org_from_array_query',
     });
 
-    await controller.handleWebhook(requestMock, webhookPayload);
+    await controller.handleWebhook(undefined, requestMock, webhookPayload);
 
+    expect(validateWebhookOrganizationMock).toHaveBeenCalledWith('from-array');
     expect(handleWebhookMock).toHaveBeenCalledWith(
+      'org_from_array_query',
       webhookPayload,
       {
-        webhookToken: 'query-token',
+        webhookToken: undefined,
         eventId: undefined,
       },
     );
@@ -188,20 +223,25 @@ describe('SecurityPenetrationTestsController', () => {
 
   it('passes webhook token and event id metadata into service handler', async () => {
     const requestMock = {
-      query: { webhookToken: 'query-token' },
+      query: {
+        orgId: 'from-query',
+        webhookToken: 'query-token',
+      },
       headers: {
         'x-webhook-id': 'evt_123',
       },
     } as unknown as ExpressRequest;
-    const webhookPayload = { id: 'run_4', status: 'completed' };
+    const webhookPayload = { id: 'run_5', status: 'completed' };
+    validateWebhookOrganizationMock.mockResolvedValueOnce('org_from_query');
     handleWebhookMock.mockResolvedValueOnce({
       success: true,
-      organizationId: 'org_123',
+      organizationId: 'org_from_query',
     });
 
-    await controller.handleWebhook(requestMock, webhookPayload);
+    await controller.handleWebhook(undefined, requestMock, webhookPayload);
 
     expect(handleWebhookMock).toHaveBeenCalledWith(
+      'org_from_query',
       webhookPayload,
       {
         webhookToken: 'query-token',

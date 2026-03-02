@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Headers,
   HttpCode,
   Body,
   Param,
@@ -183,6 +184,12 @@ export class SecurityPenetrationTestsController {
     required: false,
   })
   @ApiQuery({
+    name: 'orgId',
+    required: false,
+    description:
+      'Organization context for webhook processing when X-Organization-Id is not provided.',
+  })
+  @ApiQuery({
     name: 'webhookToken',
     required: false,
     description:
@@ -198,9 +205,18 @@ export class SecurityPenetrationTestsController {
   })
   @HttpCode(200)
   async handleWebhook(
+    @Headers('x-organization-id') headerOrganizationId: string | undefined,
     @Req() request: Request,
     @Body() body: Record<string, unknown>,
   ) {
+    const organizationId =
+      headerOrganizationId ??
+      this.extractStringFromQuery(request, 'orgId') ??
+      this.extractStringFromQuery(request, 'organizationId');
+
+    const validatedOrganizationId =
+      await this.service.validateWebhookOrganization(organizationId);
+
     const webhookToken =
       this.extractStringFromQuery(request, 'webhookToken') ??
       this.extractStringFromHeader(request, 'x-webhook-token');
@@ -208,7 +224,7 @@ export class SecurityPenetrationTestsController {
       this.extractStringFromHeader(request, 'x-webhook-id') ??
       this.extractStringFromHeader(request, 'x-request-id');
 
-    return this.service.handleWebhook(body, {
+    return this.service.handleWebhook(validatedOrganizationId, body, {
       webhookToken,
       eventId,
     });
