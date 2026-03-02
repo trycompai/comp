@@ -107,7 +107,7 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   it('creates report payload with resolved webhook URL', async () => {
-    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL = 'https://report-callback.example.com/webhook';
+    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL = 'https://api.trycomp.ai/webhook';
     const expectedPayload = {
       id: 'run_456',
       status: 'provisioning',
@@ -130,7 +130,7 @@ describe('SecurityPenetrationTestsService', () => {
     const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
 
     expect(requestBody.webhookUrl).toBe(
-      'https://report-callback.example.com/webhook/v1/security-penetration-tests/webhook',
+      'https://api.trycomp.ai/webhook/v1/security-penetration-tests/webhook',
     );
     expect(requestBody.targetUrl).toBe(payload.targetUrl);
     expect(requestBody.repoUrl).toBe(payload.repoUrl);
@@ -169,7 +169,7 @@ describe('SecurityPenetrationTestsService', () => {
 
   it('returns 502 when provider create response omits webhook token for Comp webhook callbacks', async () => {
     process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL =
-      'https://report-callback.example.com/webhook';
+      'https://api.trycomp.ai/webhook';
 
     fetchMock.mockResolvedValueOnce(
       new Response(
@@ -202,7 +202,7 @@ describe('SecurityPenetrationTestsService', () => {
 
   it('returns 502 when webhook handshake persistence fails', async () => {
     process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL =
-      'https://report-callback.example.com/webhook';
+      'https://api.trycomp.ai/webhook';
     mockedDb.secret.upsert.mockRejectedValue(new Error('db unavailable'));
 
     fetchMock.mockResolvedValueOnce(
@@ -379,6 +379,39 @@ describe('SecurityPenetrationTestsService', () => {
     const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
 
     expect(requestBody.webhookUrl).toBe('https://app.company.test/v1/security-penetration-tests/webhook');
+  });
+
+  it('allows third-party webhook URLs without requiring provider webhook token', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'run_external_callback',
+          status: 'provisioning',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await expect(
+      service.createReport('org_123', {
+        targetUrl: 'https://app.example.com',
+        repoUrl: 'https://github.com/org/repo',
+        webhookUrl: 'https://external-webhook.example.com/callback',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'run_external_callback',
+      }),
+    );
+
+    const [, options] = fetchMock.mock.calls[0];
+    const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
+
+    expect(requestBody.webhookUrl).toBe(
+      'https://external-webhook.example.com/callback/v1/security-penetration-tests/webhook',
+    );
+    expect(mockedDb.secret.upsert).not.toHaveBeenCalled();
+    expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledTimes(1);
   });
 
   it('normalizes legacy /api/security/penetration-tests/webhook route to canonical v1 route', async () => {

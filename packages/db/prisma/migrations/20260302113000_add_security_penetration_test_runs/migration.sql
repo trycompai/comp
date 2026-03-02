@@ -10,13 +10,10 @@ CREATE TABLE "public"."security_penetration_test_runs" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "security_penetration_test_runs_organization_id_provider_run_id_key" ON "public"."security_penetration_test_runs"("organization_id", "provider_run_id");
+CREATE UNIQUE INDEX "security_penetration_test_runs_provider_run_id_key" ON "public"."security_penetration_test_runs"("provider_run_id");
 
 -- CreateIndex
 CREATE INDEX "security_penetration_test_runs_organization_id_idx" ON "public"."security_penetration_test_runs"("organization_id");
-
--- CreateIndex
-CREATE INDEX "security_penetration_test_runs_provider_run_id_idx" ON "public"."security_penetration_test_runs"("provider_run_id");
 
 -- AddForeignKey
 ALTER TABLE "public"."security_penetration_test_runs" ADD CONSTRAINT "security_penetration_test_runs_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
