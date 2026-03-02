@@ -1,3 +1,10 @@
+# [1.87.0](https://github.com/trycompai/comp/compare/v1.86.1...v1.87.0) (2026-03-02)
+
+
+### Features
+
+* **security:** launch Penetration Tests epic across app, API lifecycle, and provider integration ([#2193](https://github.com/trycompai/comp/issues/2193)) ([5c6e34e](https://github.com/trycompai/comp/commit/5c6e34e8d6f64c84da6d740866eeda7b9dea464a))
+
 ## [1.86.1](https://github.com/trycompai/comp/compare/v1.86.0...v1.86.1) (2026-02-27)
 
 
