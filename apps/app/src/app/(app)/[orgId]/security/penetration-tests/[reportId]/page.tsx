@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { PenetrationTestPageClient } from './penetration-test-page-client';
+import { VulnerabilityReportPageClient } from './vulnerability-report-page-client';
 
 interface ReportPageProps {
   params: Promise<{
@@ -14,7 +14,7 @@ interface ReportPageProps {
   }>;
 }
 
-export default async function PenetrationTestPage({ params }: ReportPageProps) {
+export default async function VulnerabilityReportPage({ params }: ReportPageProps) {
   const { orgId, reportId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -39,7 +39,7 @@ export default async function PenetrationTestPage({ params }: ReportPageProps) {
   return (
     <PageLayout>
       <PageHeader title="Penetration Test">Review details for this report generation.</PageHeader>
-      <PenetrationTestPageClient orgId={orgId} reportId={reportId} />
+      <VulnerabilityReportPageClient orgId={orgId} reportId={reportId} />
     </PageLayout>
   );
 }

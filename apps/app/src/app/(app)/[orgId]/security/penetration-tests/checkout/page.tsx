@@ -12,16 +12,16 @@ interface CheckoutPageProps {
     orgId: string;
   }>;
   searchParams: Promise<{
-    reportId?: string;
+    runId?: string;
   }>;
 }
 
-export default async function PenetrationTestCheckoutPage({
+export default async function VulnerabilityReportCheckoutPage({
   params,
   searchParams,
 }: CheckoutPageProps) {
   const { orgId } = await params;
-  const { reportId } = await searchParams;
+  const { runId } = await searchParams;
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -42,11 +42,11 @@ export default async function PenetrationTestCheckoutPage({
     redirect('/');
   }
 
-  if (!reportId) {
+  if (!runId) {
     redirect(`/${orgId}/security/penetration-tests`);
   }
 
-  const successUrl = `/${orgId}/security/penetration-tests?checkout=success&reportId=${encodeURIComponent(reportId)}`;
+  const successUrl = `/${orgId}/security/penetration-tests?checkout=success&runId=${encodeURIComponent(runId)}`;
 
   return (
     <PageLayout>

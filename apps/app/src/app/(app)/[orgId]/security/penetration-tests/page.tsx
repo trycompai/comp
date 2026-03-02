@@ -4,9 +4,9 @@ import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
-import { PenetrationTestsPageClient } from './penetration-tests-page-client';
+import { VulnerabilityReportsPageClient } from './vulnerability-reports-page-client';
 
-export default async function PenetrationTestsPage({
+export default async function VulnerabilityReportsPage({
   params,
 }: {
   params: Promise<{ orgId: string }>;
@@ -32,7 +32,7 @@ export default async function PenetrationTestsPage({
     redirect('/');
   }
 
-  return <PenetrationTestsPageClient orgId={orgId} />;
+  return <VulnerabilityReportsPageClient orgId={orgId} />;
 }
 
 export async function generateMetadata(): Promise<Metadata> {

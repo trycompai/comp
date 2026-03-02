@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { redirect } from 'next/navigation';
 
-import PenetrationTestPage, { generateMetadata } from './page';
+import VulnerabilityReportPage, { generateMetadata } from './page';
 
 const authGetSessionMock = vi.fn();
 const dbFindFirstMock = vi.fn();
@@ -34,11 +34,11 @@ vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
 }));
 
-vi.mock('./penetration-test-page-client', () => ({
-  PenetrationTestPageClient: ({ orgId, reportId }: { orgId: string; reportId: string }) => {
+vi.mock('./vulnerability-report-page-client', () => ({
+  VulnerabilityReportPageClient: ({ orgId, reportId }: { orgId: string; reportId: string }) => {
     childMock({ orgId, reportId });
     return (
-      <div data-testid="penetration-test-page-client">
+      <div data-testid="vulnerability-report-page-client">
         {orgId}:{reportId}
       </div>
     );
@@ -59,13 +59,13 @@ describe('Penetration Test detail page', () => {
   });
 
   it('renders the detail client component for authorized members', async () => {
-    const page = await PenetrationTestPage({
+    const page = await VulnerabilityReportPage({
       params: Promise.resolve({ orgId: 'org_1', reportId: 'run_1' }),
     });
 
     render(page);
 
-    expect(screen.getByTestId('penetration-test-page-client')).toHaveTextContent('org_1:run_1');
+    expect(screen.getByTestId('vulnerability-report-page-client')).toHaveTextContent('org_1:run_1');
     expect(childMock).toHaveBeenCalledWith({ orgId: 'org_1', reportId: 'run_1' });
     expect(redirect).not.toHaveBeenCalled();
   });
@@ -74,7 +74,7 @@ describe('Penetration Test detail page', () => {
     authGetSessionMock.mockResolvedValue(null);
 
     await expect(
-      PenetrationTestPage({ params: Promise.resolve({ orgId: 'org_1', reportId: 'run_1' }) }),
+      VulnerabilityReportPage({ params: Promise.resolve({ orgId: 'org_1', reportId: 'run_1' }) }),
     ).rejects.toThrow('NEXT_REDIRECT');
 
     expect(redirect).toHaveBeenCalledWith('/auth');
@@ -85,7 +85,7 @@ describe('Penetration Test detail page', () => {
     dbFindFirstMock.mockResolvedValue(null);
 
     await expect(
-      PenetrationTestPage({ params: Promise.resolve({ orgId: 'org_1', reportId: 'run_1' }) }),
+      VulnerabilityReportPage({ params: Promise.resolve({ orgId: 'org_1', reportId: 'run_1' }) }),
     ).rejects.toThrow('NEXT_REDIRECT');
 
     expect(redirect).toHaveBeenCalledWith('/');

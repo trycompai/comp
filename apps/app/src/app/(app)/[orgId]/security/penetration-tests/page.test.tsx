@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { redirect } from 'next/navigation';
 
-import PenetrationTestsPage, { generateMetadata } from './page';
+import VulnerabilityReportsPage, { generateMetadata } from './page';
 
 const authGetSessionMock = vi.fn();
 const dbFindFirstMock = vi.fn();
@@ -34,10 +34,10 @@ vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
 }));
 
-vi.mock('./penetration-tests-page-client', () => ({
-  PenetrationTestsPageClient: ({ orgId }: { orgId: string }) => {
+vi.mock('./vulnerability-reports-page-client', () => ({
+  VulnerabilityReportsPageClient: ({ orgId }: { orgId: string }) => {
     childMock(orgId);
-    return <div data-testid="penetration-tests-page-client">{orgId}</div>;
+    return <div data-testid="vulnerability-page-client">{orgId}</div>;
   },
 }));
 
@@ -55,11 +55,11 @@ describe('Penetration Tests page', () => {
   });
 
   it('renders the client page for authorized members', async () => {
-    const page = await PenetrationTestsPage({ params: Promise.resolve({ orgId: 'org_1' }) });
+    const page = await VulnerabilityReportsPage({ params: Promise.resolve({ orgId: 'org_1' }) });
 
     render(page);
 
-    expect(screen.getByTestId('penetration-tests-page-client')).toHaveTextContent('org_1');
+    expect(screen.getByTestId('vulnerability-page-client')).toHaveTextContent('org_1');
     expect(childMock).toHaveBeenCalledWith('org_1');
     expect(redirect).not.toHaveBeenCalled();
   });
@@ -67,7 +67,7 @@ describe('Penetration Tests page', () => {
   it('redirects when user is unauthenticated', async () => {
     authGetSessionMock.mockResolvedValue(null);
 
-    await expect(PenetrationTestsPage({ params: Promise.resolve({ orgId: 'org_1' }) })).rejects.toThrow(
+    await expect(VulnerabilityReportsPage({ params: Promise.resolve({ orgId: 'org_1' }) })).rejects.toThrow(
       'NEXT_REDIRECT',
     );
 
@@ -79,7 +79,7 @@ describe('Penetration Tests page', () => {
   it('redirects when member cannot be found', async () => {
     dbFindFirstMock.mockResolvedValue(null);
 
-    await expect(PenetrationTestsPage({ params: Promise.resolve({ orgId: 'org_1' }) })).rejects.toThrow(
+    await expect(VulnerabilityReportsPage({ params: Promise.resolve({ orgId: 'org_1' }) })).rejects.toThrow(
       'NEXT_REDIRECT',
     );
 
