@@ -362,8 +362,13 @@ export function CompanyFormPageClient({
         for (const subType of MEETING_SUB_TYPES) {
           globalMutate([`/v1/evidence-forms/${subType}${query}`, organizationId]);
         }
+        for (const subType of MEETING_SUB_TYPES) {
+          globalMutate([`/v1/findings?evidenceFormType=${subType}`, organizationId]);
+        }
+        globalMutate([`/v1/findings?evidenceFormType=meeting`, organizationId]);
       } else {
         globalMutate([`/v1/evidence-forms/${formType}${query}`, organizationId]);
+        globalMutate([`/v1/findings?evidenceFormType=${formType}`, organizationId]);
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to delete submission');
