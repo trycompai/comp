@@ -140,6 +140,74 @@ describe('SecurityPenetrationTestsService', () => {
     expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledTimes(1);
   });
 
+  it('returns 502 when provider create response omits webhook token for Comp webhook callbacks', async () => {
+    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL =
+      'https://report-callback.example.com/webhook';
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'run_missing_token',
+          status: 'provisioning',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await expect(
+      service.createReport('org_123', {
+        targetUrl: 'https://app.example.com',
+        repoUrl: 'https://github.com/org/repo',
+      }),
+    ).rejects.toEqual(
+      expect.objectContaining({
+        status: HttpStatus.BAD_GATEWAY,
+        response: {
+          error:
+            'Penetration test was created at provider but webhook handshake token was missing',
+        },
+      }),
+    );
+
+    expect(mockedDb.secret.upsert).not.toHaveBeenCalled();
+    expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
+  });
+
+  it('returns 502 when webhook handshake persistence fails', async () => {
+    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL =
+      'https://report-callback.example.com/webhook';
+    mockedDb.secret.upsert.mockRejectedValue(new Error('db unavailable'));
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'run_handshake_retry',
+          status: 'provisioning',
+          webhookToken: 'provider-issued-token',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await expect(
+      service.createReport('org_123', {
+        targetUrl: 'https://app.example.com',
+        repoUrl: 'https://github.com/org/repo',
+      }),
+    ).rejects.toEqual(
+      expect.objectContaining({
+        status: HttpStatus.BAD_GATEWAY,
+        response: {
+          error:
+            'Penetration test was created at provider but webhook handshake could not be persisted',
+        },
+      }),
+    );
+
+    expect(mockedDb.secret.upsert).toHaveBeenCalledTimes(3);
+    expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
+  });
+
   it('persists ownership using create response id', async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
@@ -681,16 +749,6 @@ describe('SecurityPenetrationTestsService', () => {
 
   it('maps empty get progress response to bad gateway', async () => {
     fetchMock.mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          id: 'run_123',
-          organizationId: 'org_123',
-          status: 'running',
-        }),
-        { status: 200 },
-      ),
-    );
-    fetchMock.mockResolvedValueOnce(
       new Response('', { status: 200 }),
     );
 
@@ -705,16 +763,6 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   it('maps invalid report progress payload to bad gateway', async () => {
-    fetchMock.mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          id: 'run_123',
-          organizationId: 'org_123',
-          status: 'running',
-        }),
-        { status: 200 },
-      ),
-    );
     fetchMock.mockResolvedValueOnce(
       new Response('nope', { status: 200 }),
     );
