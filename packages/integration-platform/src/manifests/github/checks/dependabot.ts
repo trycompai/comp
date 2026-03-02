@@ -173,14 +173,41 @@ export const dependabotCheck: IntegrationCheck = {
     };
 
     for (const repo of repos) {
-      const dependabotStatus = repo.security_and_analysis?.dependabot_security_updates?.status;
+      // Use the dedicated endpoint to check Dependabot security updates status.
+      // The security_and_analysis field on the repo object does not include
+      // dependabot_security_updates — the correct endpoint is /automated-security-fixes.
+      // status: 'enabled' | 'paused' | 'disabled' | 'unknown'
+      let dependabotStatus: 'enabled' | 'paused' | 'disabled' | 'unknown' = 'unknown';
+      try {
+        const securityFixes = await ctx.fetch<{ enabled: boolean; paused: boolean }>(
+          `/repos/${repo.full_name}/automated-security-fixes`,
+        );
+        if (securityFixes.enabled && securityFixes.paused) {
+          dependabotStatus = 'paused';
+        } else if (securityFixes.enabled) {
+          dependabotStatus = 'enabled';
+        } else {
+          dependabotStatus = 'disabled';
+        }
+      } catch (error) {
+        const errorStr = String(error);
+        if (errorStr.includes('404')) {
+          // 404 means Dependabot security updates are not enabled for this repo
+          dependabotStatus = 'disabled';
+        } else {
+          // 403 or other errors mean we couldn't determine the status
+          ctx.log(
+            `Could not check Dependabot status for ${repo.full_name} (may lack admin access)`,
+          );
+        }
+      }
 
       // Fetch alert counts regardless of Dependabot status
       const alertCounts = await fetchAlertCounts(repo.full_name);
 
       // Build hierarchical evidence: { "owner/repo": { data } }
       const repoEvidence: Record<string, unknown> = {
-        security_and_analysis: repo.security_and_analysis,
+        dependabot_security_updates: { status: dependabotStatus },
         ...(alertCounts && {
           alerts: {
             open: alertCounts.open,
@@ -193,11 +220,11 @@ export const dependabotCheck: IntegrationCheck = {
         checked_at: new Date().toISOString(),
       };
 
-      if (dependabotStatus === 'enabled') {
-        const alertSummary = alertCounts
-          ? `\n\nAlert Summary: ${formatAlertSummary(alertCounts)}`
-          : '';
+      const alertSummary = alertCounts
+        ? `\n\nAlert Summary: ${formatAlertSummary(alertCounts)}`
+        : '';
 
+      if (dependabotStatus === 'enabled') {
         ctx.pass({
           title: `Dependabot enabled on ${repo.name}`,
           description: `Dependabot security updates are enabled and will automatically create pull requests to fix vulnerable dependencies.${alertSummary}`,
@@ -207,11 +234,17 @@ export const dependabotCheck: IntegrationCheck = {
             [repo.full_name]: repoEvidence,
           },
         });
-      } else {
-        const alertSummary = alertCounts
-          ? `\n\nAlert Summary: ${formatAlertSummary(alertCounts)}`
-          : '';
-
+      } else if (dependabotStatus === 'paused') {
+        ctx.pass({
+          title: `Dependabot enabled on ${repo.name} (paused)`,
+          description: `Dependabot security updates are enabled but currently paused due to inactivity. Dependabot will resume automatically when new alerts are detected.${alertSummary}`,
+          resourceType: 'repository',
+          resourceId: repo.full_name,
+          evidence: {
+            [repo.full_name]: repoEvidence,
+          },
+        });
+      } else if (dependabotStatus === 'disabled') {
         ctx.fail({
           title: `Dependabot not enabled on ${repo.name}`,
           description: `Dependabot security updates are not enabled, leaving the repository vulnerable to known dependency exploits.${alertSummary}`,
@@ -219,6 +252,19 @@ export const dependabotCheck: IntegrationCheck = {
           resourceId: repo.full_name,
           severity: 'medium',
           remediation: `1. Go to ${repo.html_url}/settings/security_analysis\n2. Enable "Dependabot security updates"\n3. Optionally enable "Dependabot version updates" for proactive updates`,
+          evidence: {
+            [repo.full_name]: repoEvidence,
+          },
+        });
+      } else {
+        // Could not determine status (e.g., insufficient permissions)
+        ctx.fail({
+          title: `Unable to check Dependabot status on ${repo.name}`,
+          description: `Could not determine whether Dependabot security updates are enabled. The GitHub integration may lack admin access to this repository.${alertSummary}`,
+          resourceType: 'repository',
+          resourceId: repo.full_name,
+          severity: 'medium',
+          remediation: `1. Ensure the GitHub integration has admin access to ${repo.full_name}\n2. Or manually verify at ${repo.html_url}/settings/security_analysis`,
           evidence: {
             [repo.full_name]: repoEvidence,
           },
