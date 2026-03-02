@@ -1,4 +1,4 @@
-import { type PentestReportStatus, type PentestRun } from '@/lib/security/vulnerability-reports-client';
+import { type PentestReportStatus, type PentestRun } from '@/lib/security/penetration-tests-client';
 
 export const statusLabel: Record<PentestReportStatus, string> = {
   provisioning: 'Queued',

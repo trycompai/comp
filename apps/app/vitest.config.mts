@@ -13,7 +13,7 @@ export default defineConfig({
       exclude: ['node_modules', 'dist', '.next', 'e2e'],
     coverage: {
       reporter: ['text', 'json', 'html'],
-      include: ['src/app/(app)/*/security/vulnerability-reports/**/*.{ts,tsx}'],
+      include: ['src/app/(app)/*/security/penetration-tests/**/*.{ts,tsx}'],
       exclude: [
         'node_modules/',
         'src/test-utils/',

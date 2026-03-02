@@ -43,10 +43,10 @@ export default async function VulnerabilityReportCheckoutPage({
   }
 
   if (!runId) {
-    redirect(`/${orgId}/security/vulnerability-reports`);
+    redirect(`/${orgId}/security/penetration-tests`);
   }
 
-  const successUrl = `/${orgId}/security/vulnerability-reports?checkout=success&runId=${encodeURIComponent(runId)}`;
+  const successUrl = `/${orgId}/security/penetration-tests?checkout=success&runId=${encodeURIComponent(runId)}`;
 
   return (
     <PageLayout>

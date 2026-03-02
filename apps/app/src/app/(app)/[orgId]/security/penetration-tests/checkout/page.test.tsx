@@ -61,7 +61,7 @@ describe('Penetration test checkout page', () => {
     expect(purchaseButton).toBeInTheDocument();
     expect(purchaseForm).toHaveAttribute(
       'action',
-      '/org_1/security/vulnerability-reports?checkout=success&runId=run_1',
+      '/org_1/security/penetration-tests?checkout=success&runId=run_1',
     );
     expect(redirect).not.toHaveBeenCalled();
   });
@@ -100,7 +100,7 @@ describe('Penetration test checkout page', () => {
       }),
     ).rejects.toThrow('NEXT_REDIRECT');
 
-    expect(redirect).toHaveBeenCalledWith('/org_1/security/vulnerability-reports');
+    expect(redirect).toHaveBeenCalledWith('/org_1/security/penetration-tests');
   });
 
   it('returns the correct metadata title', async () => {

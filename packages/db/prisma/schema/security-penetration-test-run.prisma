@@ -1,0 +1,14 @@
+model SecurityPenetrationTestRun {
+  id           String   @id @default(dbgenerated("generate_prefixed_cuid('ptr'::text)"))
+  organizationId String @map("organization_id")
+  providerRunId String  @map("provider_run_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, providerRunId])
+  @@index([organizationId])
+  @@index([providerRunId])
+  @@map("security_penetration_test_runs")
+}
