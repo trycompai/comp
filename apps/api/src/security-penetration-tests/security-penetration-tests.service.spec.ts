@@ -63,7 +63,7 @@ describe('SecurityPenetrationTestsService', () => {
     global.fetch = fetchMock as unknown as typeof fetch;
     mockedDb.securityPenetrationTestRun.upsert.mockResolvedValue({});
     mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
-      id: 'ptr_1',
+      organizationId: 'org_123',
     });
     mockedDb.securityPenetrationTestRun.findMany.mockResolvedValue([
       { providerRunId: 'run_123' },
@@ -130,7 +130,7 @@ describe('SecurityPenetrationTestsService', () => {
     const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
 
     expect(requestBody.webhookUrl).toBe(
-      'https://report-callback.example.com/webhook/v1/security-penetration-tests/webhook?orgId=org_123',
+      'https://report-callback.example.com/webhook/v1/security-penetration-tests/webhook',
     );
     expect(requestBody.targetUrl).toBe(payload.targetUrl);
     expect(requestBody.repoUrl).toBe(payload.repoUrl);
@@ -138,6 +138,33 @@ describe('SecurityPenetrationTestsService', () => {
     expect(requestBody).not.toHaveProperty('webhookUrl', 'https://report-callback.example.com/webhook');
     expect(mockedDb.secret.upsert).toHaveBeenCalledTimes(1);
     expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses production webhook default when webhook URL is not provided or configured', async () => {
+    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL = '';
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'run_default_webhook',
+          status: 'provisioning',
+          webhookToken: 'provider-issued-token',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await service.createReport('org_123', {
+      targetUrl: 'https://app.example.com',
+      repoUrl: 'https://github.com/org/repo',
+    });
+
+    const [, options] = fetchMock.mock.calls[0];
+    const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
+
+    expect(requestBody.webhookUrl).toBe(
+      'https://api.trycomp.ai/v1/security-penetration-tests/webhook',
+    );
   });
 
   it('returns 502 when provider create response omits webhook token for Comp webhook callbacks', async () => {
@@ -227,10 +254,7 @@ describe('SecurityPenetrationTestsService', () => {
     expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          organizationId_providerRunId: {
-            organizationId: 'org_123',
-            providerRunId: 'run_from_id_field',
-          },
+          providerRunId: 'run_from_id_field',
         },
       }),
     );
@@ -329,10 +353,11 @@ describe('SecurityPenetrationTestsService', () => {
     );
   });
 
-  it('passes existing webhook URL through when it already targets the expected route', async () => {
+  it('normalizes unversioned webhook route to canonical v1 webhook route', async () => {
     const expectedPayload = {
       id: 'run_789',
       status: 'provisioning',
+      webhookToken: 'provider-token',
     };
     const webhookUrl = 'https://app.company.test/security-penetration-tests/webhook';
 
@@ -353,10 +378,37 @@ describe('SecurityPenetrationTestsService', () => {
     const [, options] = fetchMock.mock.calls[0];
     const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
 
-    expect(requestBody.webhookUrl).toBe(`${webhookUrl}?orgId=org_123`);
+    expect(requestBody.webhookUrl).toBe('https://app.company.test/v1/security-penetration-tests/webhook');
   });
 
-  it('keeps provided webhook route plus query params and appends organization id', async () => {
+  it('normalizes legacy /api/security/penetration-tests/webhook route to canonical v1 route', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'run_api_legacy',
+          status: 'provisioning',
+          webhookToken: 'provider-token',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await service.createReport('org_123', {
+      targetUrl: 'https://app.example.com',
+      repoUrl: 'https://github.com/org/repo',
+      webhookUrl:
+        'https://app.company.test/api/security/penetration-tests/webhook?foo=bar',
+    });
+
+    const [, options] = fetchMock.mock.calls[0];
+    const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
+
+    expect(requestBody.webhookUrl).toBe(
+      'https://app.company.test/v1/security-penetration-tests/webhook?foo=bar',
+    );
+  });
+
+  it('keeps provided webhook route plus query params', async () => {
     const expectedPayload = {
       id: 'run_qp',
       status: 'provisioning',
@@ -377,7 +429,7 @@ describe('SecurityPenetrationTestsService', () => {
     const [, options] = fetchMock.mock.calls[0];
     const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
 
-    expect(requestBody.webhookUrl).toBe('https://app.company.test/v1/security-penetration-tests/webhook?foo=bar&orgId=org_123');
+    expect(requestBody.webhookUrl).toBe('https://app.company.test/v1/security-penetration-tests/webhook?foo=bar');
   });
 
   it('supports absolute webhook URLs that require appending the expected endpoint', async () => {
@@ -399,7 +451,7 @@ describe('SecurityPenetrationTestsService', () => {
     const [, options] = fetchMock.mock.calls[0];
     const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
 
-    expect(requestBody.webhookUrl).toBe('https://callback.example.com/hook/v1/security-penetration-tests/webhook?orgId=org_123');
+    expect(requestBody.webhookUrl).toBe('https://callback.example.com/hook/v1/security-penetration-tests/webhook');
   });
 
   it('strips webhookToken query parameter before forwarding webhook URL to provider', async () => {
@@ -425,7 +477,7 @@ describe('SecurityPenetrationTestsService', () => {
     const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
 
     expect(requestBody.webhookUrl).toBe(
-      'https://callback.example.com/hook/v1/security-penetration-tests/webhook?foo=bar&orgId=org_123',
+      'https://callback.example.com/hook/v1/security-penetration-tests/webhook?foo=bar',
     );
   });
 
@@ -444,7 +496,6 @@ describe('SecurityPenetrationTestsService', () => {
 
   it('reads webhook status and report id from provider payload', () => {
     const webhookResult = service.handleWebhook(
-      'org_123',
       {
         id: 'run_webhook',
         status: 'completed',
@@ -473,7 +524,6 @@ describe('SecurityPenetrationTestsService', () => {
     });
 
     const webhookResult = await service.handleWebhook(
-      'org_123',
       {
         id: 'run_webhook',
         status: 'completed',
@@ -517,7 +567,6 @@ describe('SecurityPenetrationTestsService', () => {
     });
 
     const webhookResult = await service.handleWebhook(
-      'org_123',
       {
         id: 'run_webhook',
         status: 'completed',
@@ -538,13 +587,24 @@ describe('SecurityPenetrationTestsService', () => {
     });
   });
 
-  it('requires an organization for webhook handling', async () => {
-    await expect(service.validateWebhookOrganization(undefined)).rejects.toThrow(HttpException);
+  it('rejects webhook when run ownership mapping does not exist', async () => {
+    mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce(null);
+
+    await expect(
+      service.handleWebhook(
+        {
+          id: 'run_missing',
+          status: 'completed',
+        },
+        {
+          webhookToken: defaultWebhookToken,
+        },
+      ),
+    ).rejects.toThrow(HttpException);
   });
 
   it('uses reportStatus when id status fields are absent in webhook payload', () => {
     const webhookResult = service.handleWebhook(
-      'org_123',
       {
         id: 'run_from_run_id',
         reportStatus: 'queued',
@@ -565,7 +625,6 @@ describe('SecurityPenetrationTestsService', () => {
 
   it('maps Maced completion webhook payload to completed status with report summary', () => {
     const webhookResult = service.handleWebhook(
-      'org_123',
       {
         id: 'run_completed',
         report: {
@@ -597,7 +656,6 @@ describe('SecurityPenetrationTestsService', () => {
 
   it('maps Maced failed webhook payload to failed status with failure details', () => {
     const webhookResult = service.handleWebhook(
-      'org_123',
       {
         id: 'run_failed',
         error: 'Workflow exited early',

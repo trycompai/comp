@@ -83,8 +83,14 @@ interface PersistedWebhookHandshake {
 export class SecurityPenetrationTestsService {
   private readonly logger = new Logger(SecurityPenetrationTestsService.name);
   private readonly macedClient = new MacedClient();
+  private readonly canonicalWebhookPath = '/v1/security-penetration-tests/webhook';
+  private readonly defaultWebhookBaseUrl = 'https://api.trycomp.ai';
+
   private get defaultWebhookBase() {
-    return process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL;
+    return (
+      process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL?.trim() ||
+      this.defaultWebhookBaseUrl
+    );
   }
 
   async listReports(organizationId: string): Promise<SecurityPenetrationTest[]> {
@@ -104,10 +110,7 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     payload: CreatePenetrationTestDto,
   ): Promise<SecurityPenetrationTest> {
-    const resolvedWebhookUrl = this.resolveWebhookUrl(
-      organizationId,
-      payload.webhookUrl,
-    );
+    const resolvedWebhookUrl = this.resolveWebhookUrl(payload.webhookUrl);
 
     const sanitizedPayload = {
       targetUrl: payload.targetUrl,
@@ -226,7 +229,6 @@ export class SecurityPenetrationTestsService {
   }
 
   async handleWebhook(
-    organizationId: string,
     payload: unknown,
     metadata: WebhookRequestMetadata = {},
   ): Promise<{
@@ -262,6 +264,8 @@ export class SecurityPenetrationTestsService {
     if (!payloadReportId) {
       throw new BadRequestException('Webhook payload must include a report id');
     }
+
+    const organizationId = await this.resolveOrganizationForRun(payloadReportId);
 
     const duplicate = await this.verifyAndRecordWebhookHandshake({
       organizationId,
@@ -326,30 +330,39 @@ export class SecurityPenetrationTestsService {
 
   private normalizeWebhookPath(path: string): string {
     const normalizedPath = this.trimTrailingSlashes(path);
-    if (this.isWebhookPath(normalizedPath)) {
+    if (normalizedPath.endsWith(this.canonicalWebhookPath)) {
       return normalizedPath;
     }
 
-    if (normalizedPath === '/') {
-      return '/v1/security-penetration-tests/webhook';
+    const legacySuffixes = [
+      '/security-penetration-tests/webhook',
+      '/api/security/penetration-tests/webhook',
+    ] as const;
+
+    for (const suffix of legacySuffixes) {
+      if (normalizedPath.endsWith(suffix)) {
+        const basePath = normalizedPath.slice(0, normalizedPath.length - suffix.length);
+        return basePath
+          ? `${basePath}${this.canonicalWebhookPath}`
+          : this.canonicalWebhookPath;
+      }
     }
 
-    return `${normalizedPath}/v1/security-penetration-tests/webhook`;
+    if (normalizedPath === '/') {
+      return this.canonicalWebhookPath;
+    }
+
+    return `${normalizedPath}${this.canonicalWebhookPath}`;
   }
 
   private isWebhookPath(path: string): boolean {
-    return (
-      path.endsWith('/security-penetration-tests/webhook') ||
-      path.endsWith('/v1/security-penetration-tests/webhook') ||
-      path.endsWith('/api/security/penetration-tests/webhook')
-    );
+    return path.endsWith(this.canonicalWebhookPath);
   }
 
   private resolveWebhookUrl(
-    organizationId: string,
     providedUrl?: string,
   ): string | undefined {
-    const baseUrl = (providedUrl ?? this.defaultWebhookBase)?.trim();
+    const baseUrl = providedUrl?.trim() || this.defaultWebhookBase;
     if (!baseUrl) {
       return undefined;
     }
@@ -361,7 +374,6 @@ export class SecurityPenetrationTestsService {
       throw new BadRequestException('webhookUrl must be a valid absolute URL');
     }
     webhookUrl.pathname = this.normalizeWebhookPath(webhookUrl.pathname);
-    webhookUrl.searchParams.set('orgId', organizationId);
     webhookUrl.searchParams.delete('webhookToken');
 
     return webhookUrl.toString();
@@ -480,10 +492,7 @@ export class SecurityPenetrationTestsService {
   ): Promise<void> {
     await db.securityPenetrationTestRun.upsert({
       where: {
-        organizationId_providerRunId: {
-          organizationId,
-          providerRunId: reportId,
-        },
+        providerRunId: reportId,
       },
       create: {
         organizationId,
@@ -518,24 +527,40 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     reportId: string,
   ): Promise<void> {
-    const marker = await db.securityPenetrationTestRun.findUnique({
-      where: {
-        organizationId_providerRunId: {
-          organizationId,
-          providerRunId: reportId,
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
+    const ownerOrganizationId = await this.resolveOrganizationForRun(
+      reportId,
+      new HttpException(
+        { error: 'Report not found' },
+        HttpStatus.NOT_FOUND,
+      ),
+    );
 
-    if (!marker) {
+    if (ownerOrganizationId !== organizationId) {
       throw new HttpException(
         { error: 'Report not found' },
         HttpStatus.NOT_FOUND,
       );
     }
+  }
+
+  private async resolveOrganizationForRun(
+    reportId: string,
+    notFoundError: Error = new ForbiddenException('Run ownership mapping not found'),
+  ): Promise<string> {
+    const marker = await db.securityPenetrationTestRun.findUnique({
+      where: {
+        providerRunId: reportId,
+      },
+      select: {
+        organizationId: true,
+      },
+    });
+
+    if (!marker) {
+      throw notFoundError;
+    }
+
+    return marker.organizationId;
   }
 
   private async listOwnedRunIds(organizationId: string): Promise<Set<string>> {
@@ -663,8 +688,6 @@ export class SecurityPenetrationTestsService {
     webhookToken?: string;
     eventId?: string;
   }): Promise<boolean> {
-    await this.assertRunOwnership(params.organizationId, params.reportId);
-
     const storedHandshake = await db.secret.findUnique({
       where: {
         organizationId_name: {
@@ -725,14 +748,5 @@ export class SecurityPenetrationTestsService {
     });
 
     return duplicate;
-  }
-
-  async validateWebhookOrganization(
-    organizationId: string | undefined,
-  ): Promise<string> {
-    if (!organizationId) {
-      throw new ForbiddenException('Organization context is required for webhook payload');
-    }
-    return organizationId;
   }
 }

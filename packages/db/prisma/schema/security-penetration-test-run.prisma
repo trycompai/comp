@@ -7,8 +7,7 @@ model SecurityPenetrationTestRun {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  @@unique([organizationId, providerRunId])
+  @@unique([providerRunId])
   @@index([organizationId])
-  @@index([providerRunId])
   @@map("security_penetration_test_runs")
 }
