@@ -158,6 +158,7 @@ export function CompanyFormPageClient({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [submissionToDelete, setSubmissionToDelete] = useState<EvidenceSubmissionRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: activeMember } = useActiveMember();
   const memberRoles = activeMember?.role?.split(',').map((role: string) => role.trim()) || [];
@@ -337,6 +338,39 @@ export function CompanyFormPageClient({
       setIsUploading(false);
     }
   }, [selectedFile, isMeeting, formType, organizationId, query, globalMutate]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!submissionToDelete) return;
+
+    const submissionFormType = (submissionToDelete.formType ?? formType) as EvidenceFormType;
+    setIsDeleting(true);
+    try {
+      const response = await api.delete<{ success: boolean; id: string }>(
+        `/v1/evidence-forms/${submissionFormType}/submissions/${submissionToDelete.id}`,
+        organizationId,
+      );
+
+      if (response.error || !response.data?.success) {
+        throw new Error(response.error ?? 'Failed to delete submission');
+      }
+
+      toast.success('Submission deleted');
+      setDeleteDialogOpen(false);
+      setSubmissionToDelete(null);
+
+      if (isMeeting) {
+        for (const subType of MEETING_SUB_TYPES) {
+          globalMutate([`/v1/evidence-forms/${subType}${query}`, organizationId]);
+        }
+      } else {
+        globalMutate([`/v1/evidence-forms/${formType}${query}`, organizationId]);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete submission');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [submissionToDelete, formType, isMeeting, organizationId, query, globalMutate]);
 
   return (
     <div className="space-y-6">
@@ -609,15 +643,13 @@ export function CompanyFormPageClient({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={() => {
-                setDeleteDialogOpen(false);
-                setSubmissionToDelete(null);
-              }}
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
