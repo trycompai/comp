@@ -11,7 +11,6 @@ import { useActiveMember } from '@/utils/auth-client';
 import { jwtManager } from '@/utils/jwt-manager';
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -653,13 +652,15 @@ export function CompanyFormPageClient({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
+              type="button"
               variant="destructive"
               onClick={handleConfirmDelete}
               disabled={isDeleting}
+              loading={isDeleting}
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
