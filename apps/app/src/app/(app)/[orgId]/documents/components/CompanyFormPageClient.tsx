@@ -459,7 +459,7 @@ export function CompanyFormPageClient({
               <col style={{ width: submittedByColumnWidth }} />
               {formType === 'access-request' && <col style={{ width: statusColumnWidth }} />}
               {showSummaryColumn && <col style={{ width: summaryColumnWidth }} />}
-              <col style={{ width: actionsColumnWidth }} />
+              {isAdminOrOwner && <col style={{ width: actionsColumnWidth }} />}
             </colgroup>
             <TableHeader>
               <TableRow>
@@ -480,9 +480,11 @@ export function CompanyFormPageClient({
                   </TableHead>
                 )}
                 {showSummaryColumn && <TableHead>Summary</TableHead>}
-                <TableHead>
-                  <div className="whitespace-nowrap">Actions</div>
-                </TableHead>
+                {isAdminOrOwner && (
+                  <TableHead>
+                    <div className="whitespace-nowrap">Actions</div>
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -541,31 +543,33 @@ export function CompanyFormPageClient({
                         </span>
                       </TableCell>
                     )}
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <div className="flex justify-center">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            variant="ellipsis"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <OverflowMenuVertical />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSubmissionToDelete(submission);
-                                setDeleteDialogOpen(true);
-                              }}
+                    {isAdminOrOwner && (
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              variant="ellipsis"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <TrashCan size={16} />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
+                              <OverflowMenuVertical />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSubmissionToDelete(submission);
+                                  setDeleteDialogOpen(true);
+                                }}
+                              >
+                                <TrashCan size={16} />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}
