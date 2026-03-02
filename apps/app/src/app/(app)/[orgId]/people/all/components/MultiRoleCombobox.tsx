@@ -54,12 +54,12 @@ export interface CustomRoleOption {
 }
 
 interface MultiRoleComboboxProps {
-  selectedRoles: Role[];
-  onSelectedRolesChange: (roles: Role[]) => void;
+  selectedRoles: string[];
+  onSelectedRolesChange: (roles: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
-  lockedRoles?: Role[]; // Roles that cannot be deselected
-  allowedRoles?: Role[];
+  lockedRoles?: string[]; // Roles that cannot be deselected
+  allowedRoles?: string[];
   customRoles?: CustomRoleOption[]; // Custom roles from the organization
 }
 
@@ -99,7 +99,7 @@ export function MultiRoleCombobox({
     );
   }, [isOwner, normalizedAllowedRoles]);
 
-  const handleSelect = (roleValue: Role) => {
+  const handleSelect = (roleValue: string) => {
     // Never allow owner role to be changed
     if (roleValue === 'owner') {
       return;
@@ -117,7 +117,7 @@ export function MultiRoleCombobox({
     onSelectedRolesChange(newSelectedRoles);
   };
 
-  const getRoleLabel = (roleValue: Role) => {
+  const getRoleLabel = (roleValue: string) => {
     // Check if it's a custom role
     const customRole = customRoles.find((r) => r.name === roleValue);
     if (customRole) {

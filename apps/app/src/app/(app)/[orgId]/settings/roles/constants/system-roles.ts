@@ -25,12 +25,12 @@ export const SYSTEM_ROLES: SystemRole[] = [
   {
     name: 'Employee',
     key: 'employee',
-    description: 'Assigned tasks, evidence uploads, and employee portal',
+    description: 'Employee portal with compliance tasks: sign policies, training videos, and device agent',
   },
   {
     name: 'Contractor',
     key: 'contractor',
-    description: 'External contractor access, similar to employee',
+    description: 'External contractor with compliance tasks, similar to employee',
   },
 ];
 

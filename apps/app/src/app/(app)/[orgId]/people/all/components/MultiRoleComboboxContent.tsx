@@ -21,8 +21,8 @@ interface MultiRoleComboboxContentProps {
   filteredRoles: Array<{ value: Role }>; // Role objects, labels derived via t()
   filteredCustomRoles?: CustomRoleOption[]; // Custom roles from the organization
   handleSelect: (roleValue: Role) => void;
-  lockedRoles: Role[];
-  selectedRoles: Role[];
+  lockedRoles: string[];
+  selectedRoles: string[];
   onCloseDialog: () => void;
 }
 

@@ -857,8 +857,11 @@ export class PoliciesService {
       throw new NotFoundException('Version not found');
     }
 
-    // Cannot submit the already-active version for approval
-    if (versionId === policy.currentVersionId) {
+    // Cannot re-submit the already-published version for approval
+    if (
+      versionId === policy.currentVersionId &&
+      policy.status === PolicyStatus.published
+    ) {
       throw new BadRequestException(
         'Cannot submit the currently published version for approval',
       );
@@ -892,6 +895,103 @@ export class PoliciesService {
       versionId: version.id,
       version: version.version,
     };
+  }
+
+  async acceptChanges(
+    policyId: string,
+    organizationId: string,
+    dto: { approverId: string; comment?: string },
+    userId?: string,
+  ) {
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    if (!policy.pendingVersionId) {
+      throw new BadRequestException('No pending version to approve');
+    }
+
+    if (policy.approverId !== dto.approverId) {
+      throw new BadRequestException('Only the assigned approver can accept changes');
+    }
+
+    const version = await db.policyVersion.findUnique({
+      where: { id: policy.pendingVersionId },
+    });
+
+    if (!version) {
+      throw new NotFoundException('Pending version not found');
+    }
+
+    const memberId = await this.getMemberId(organizationId, userId);
+
+    await db.$transaction(async (tx) => {
+      // Update the version with the publisher
+      await tx.policyVersion.update({
+        where: { id: version.id },
+        data: { publishedById: memberId },
+      });
+
+      // Publish the pending version
+      await tx.policy.update({
+        where: { id: policyId },
+        data: {
+          currentVersionId: version.id,
+          content: version.content as Prisma.InputJsonValue[],
+          draftContent: version.content as Prisma.InputJsonValue[],
+          status: PolicyStatus.published,
+          lastPublishedAt: new Date(),
+          pendingVersionId: null,
+          approverId: null,
+          // Clear signatures — employees must re-acknowledge new content
+          signedBy: [],
+        },
+      });
+    });
+
+    return { versionId: version.id, version: version.version };
+  }
+
+  async denyChanges(
+    policyId: string,
+    organizationId: string,
+    dto: { approverId: string; comment?: string },
+  ) {
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    if (!policy.pendingVersionId) {
+      throw new BadRequestException('No pending version to deny');
+    }
+
+    if (policy.approverId !== dto.approverId) {
+      throw new BadRequestException('Only the assigned approver can deny changes');
+    }
+
+    // Revert policy to previous state (draft if never published, published if it was)
+    const newStatus = policy.lastPublishedAt
+      ? PolicyStatus.published
+      : PolicyStatus.draft;
+
+    await db.policy.update({
+      where: { id: policyId },
+      data: {
+        status: newStatus,
+        pendingVersionId: null,
+        approverId: null,
+      },
+    });
+
+    return { status: newStatus };
   }
 
   private async getMemberId(

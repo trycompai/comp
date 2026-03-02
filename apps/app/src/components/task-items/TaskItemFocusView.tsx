@@ -25,7 +25,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import { TaskItemActivityTimeline } from './TaskItemActivityTimeline';
+import { RecentAuditLogs } from '@/components/RecentAuditLogs';
+import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { TaskItemFocusSidebar } from './TaskItemFocusSidebar';
 import { getTaskIdShort } from './task-item-utils';
 import { Comments } from '../comments/Comments';
@@ -66,7 +67,10 @@ export function TaskItemFocusView({
   const [isDeleting, setIsDeleting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedTaskId, setCopiedTaskId] = useState(false);
-  const [refreshActivity, setRefreshActivity] = useState<(() => void) | null>(null);
+  const { logs: activityLogs, mutate: refreshActivity } = useAuditLogs({
+    entityType: 'task',
+    entityId: taskItem.id,
+  });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const pathname = usePathname();
@@ -95,7 +99,7 @@ export function TaskItemFocusView({
     try {
       await optimisticUpdate(taskItem.id, updates);
       // Refresh activity timeline
-      refreshActivity?.();
+      refreshActivity();
     } finally {
       setIsUpdating(false);
     }
@@ -109,7 +113,7 @@ export function TaskItemFocusView({
       toast.success('Status updated');
       onStatusOrPriorityChange?.();
       // Refresh activity timeline
-      refreshActivity?.();
+      refreshActivity();
     } catch (error) {
       toast.error('Failed to update status');
     }
@@ -123,7 +127,7 @@ export function TaskItemFocusView({
       toast.success('Priority updated');
       onStatusOrPriorityChange?.();
       // Refresh activity timeline
-      refreshActivity?.();
+      refreshActivity();
     } catch (error) {
       toast.error('Failed to update priority');
     }
@@ -186,10 +190,7 @@ export function TaskItemFocusView({
           {/* Divider */}
           <div className="border-t border-border" />
 
-          <TaskItemActivityTimeline 
-            taskItem={taskItem}
-            onActivityLoaded={(mutate) => setRefreshActivity(() => mutate)}
-          />
+          <RecentAuditLogs logs={activityLogs} />
 
           {/* Divider */}
           <div className="border-t border-border" />
@@ -219,7 +220,7 @@ export function TaskItemFocusView({
           onAssigneeChange={async (newAssigneeId) => {
             await optimisticUpdate(taskItem.id, { assigneeId: newAssigneeId });
             // Refresh activity timeline
-            refreshActivity?.();
+            refreshActivity();
           }}
           onStatusOrPriorityChange={onStatusOrPriorityChange}
         />

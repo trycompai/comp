@@ -38,6 +38,8 @@ export const statement = {
   // App access resources
   app: ['read'], // Main app access
   trust: ['read', 'update'], // Trust center access
+  // Compliance obligation — members with this permission must complete compliance tasks
+  compliance: ['required'],
 } as const;
 
 export const ac = createAccessControl(statement);
@@ -133,6 +135,7 @@ export const auditor = ac.newRole({
 export const employee = ac.newRole({
   // Portal access only — can read policies to sign them
   policy: ['read'],
+  compliance: ['required'],
 });
 
 /**
@@ -143,6 +146,7 @@ export const employee = ac.newRole({
 export const contractor = ac.newRole({
   // Portal access only — can read policies to sign them
   policy: ['read'],
+  compliance: ['required'],
 });
 
 /**

@@ -1,5 +1,5 @@
 import { Button, Text } from '@trycompai/design-system';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
 
 interface CarouselControlsProps {
   currentIndex: number;

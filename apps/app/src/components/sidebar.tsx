@@ -13,14 +13,8 @@ import { OrganizationSwitcher } from './organization-switcher';
 import { SidebarCollapseButton } from './sidebar-collapse-button';
 import { SidebarLogo } from './sidebar-logo';
 
-// Helper to safely parse comma-separated roles string
-function parseRolesString(rolesStr: string | null | undefined): Role[] {
-  if (!rolesStr) return [];
-  return rolesStr
-    .split(',')
-    .map((r) => r.trim())
-    .filter((r) => r in Role) as Role[];
-}
+// Use shared parseRolesString from permissions lib
+import { parseRolesString } from '@/lib/permissions';
 
 export async function Sidebar({
   organization,

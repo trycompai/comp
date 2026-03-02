@@ -102,6 +102,7 @@ async function triggerSignIn(): Promise<void> {
       log(`Login successful: ${auth.organizations.length} org(s) — ${orgNames}`);
       notifyRenderer(IPC_CHANNELS.AUTH_STATE_CHANGED, true);
       setStatus('checking');
+      openStatusWindow();
       startScheduler(handleCheckComplete);
     } else {
       log('Login cancelled or failed');

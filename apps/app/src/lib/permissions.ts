@@ -1,5 +1,4 @@
 import { allRoles, type RoleName } from '@comp/auth';
-import { Role } from '@db';
 
 /**
  * Effective user permissions — flat map of resource -> actions[].
@@ -7,16 +6,26 @@ import { Role } from '@db';
  */
 export type UserPermissions = Record<string, string[]>;
 
+/** Built-in role names derived from @comp/auth */
+const BUILT_IN_ROLE_NAMES_SET = new Set<string>(Object.keys(allRoles));
+
 /**
- * Parse a comma-separated role string into a validated Role[] array.
- * Only includes values that are valid members of the Role enum.
+ * Parse a comma-separated role string into a string[] array.
+ * Includes both built-in and custom role names.
  */
-export function parseRolesString(rolesStr: string | null | undefined): Role[] {
+export function parseRolesString(rolesStr: string | null | undefined): string[] {
   if (!rolesStr) return [];
   return rolesStr
     .split(',')
     .map((r) => r.trim())
-    .filter((r) => r in Role) as Role[];
+    .filter((r) => r.length > 0);
+}
+
+/**
+ * Check if a role name is a built-in role.
+ */
+export function isBuiltInRole(role: string): role is RoleName {
+  return BUILT_IN_ROLE_NAMES_SET.has(role);
 }
 
 // ─── Checker functions ───────────────────────────────────────────────
@@ -107,19 +116,19 @@ export function getDefaultRoute(permissions: UserPermissions, orgId: string): st
 
 /**
  * Check if user can access the main app (as opposed to portal-only).
- * True if user has explicit `app:read` OR has any permission that maps
- * to at least one app route. This way custom roles with e.g. `policy:read`
- * automatically get app access without needing a separate meta-permission.
+ * Only users with explicit `app:read` permission can access the app.
+ * Employees and contractors are portal-only — they have `policy:read` but NOT `app:read`.
  */
 export function canAccessApp(permissions: UserPermissions): boolean {
-  if (hasPermission(permissions, 'app', 'read')) return true;
+  return hasPermission(permissions, 'app', 'read');
+}
 
-  // Check if user has any permission that grants access to any app route
-  for (const checks of Object.values(ROUTE_PERMISSIONS)) {
-    if (hasAnyPermission(permissions, checks)) return true;
-  }
-
-  return false;
+/**
+ * Check if user has the compliance:required permission,
+ * meaning they must complete compliance tasks (policy signing, training, etc.).
+ */
+export function requiresCompliance(permissions: UserPermissions): boolean {
+  return hasPermission(permissions, 'compliance', 'required');
 }
 
 // ─── Permission resolver (no server-only imports) ────────────────────

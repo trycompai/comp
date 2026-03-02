@@ -1,4 +1,5 @@
 import { db } from '@trycompai/db';
+import { filterComplianceMembers } from '../utils/compliance-filters';
 
 const TRAINING_VIDEO_IDS = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
 
@@ -34,11 +35,8 @@ export async function getOverviewScores(organizationId: string) {
     (t) => t.status === 'todo' || t.status === 'in_progress',
   );
 
-  // People score
-  const activeEmployees = employees.filter((m) => {
-    const roles = m.role.includes(',') ? m.role.split(',') : [m.role];
-    return roles.includes('employee') || roles.includes('contractor');
-  });
+  // People score — filter to members with compliance:required permission
+  const activeEmployees = await filterComplianceMembers(employees, organizationId);
 
   let completedMembers = 0;
 

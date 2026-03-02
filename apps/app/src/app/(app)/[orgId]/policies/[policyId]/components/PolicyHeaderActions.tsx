@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { generatePolicyPDF } from '@/lib/pdf-generator';
 import { Button } from '@comp/ui/button';
 import { useSWRConfig } from 'swr';
@@ -53,6 +54,11 @@ export function PolicyHeaderActions({
     organizationId,
   });
 
+  const { logs: auditLogs } = useAuditLogs({
+    entityType: 'policy',
+    entityId: policy?.id ?? '',
+  });
+
   // Real-time task tracking
   const [runInfo, setRunInfo] = useState<{
     runId: string;
@@ -70,7 +76,7 @@ export function PolicyHeaderActions({
     if (!policy) return;
     globalMutate(policyKey(policy.id, organizationId));
     globalMutate(policyVersionsKey(policy.id, organizationId));
-    globalMutate(auditLogsKey(policy.id, organizationId));
+    globalMutate(auditLogsKey('policy', policy.id));
   };
 
   // Handle run completion
@@ -168,14 +174,17 @@ export function PolicyHeaderActions({
       }
 
       // Generate and download the PDF
-      generatePolicyPDF(policyContent, [], policy.name || 'Policy Document');
+      const approvalLogs = auditLogs.filter((log) =>
+        log.description?.toLowerCase().includes('approved'),
+      );
+      generatePolicyPDF(policyContent, approvalLogs, policy.name || 'Policy Document');
     } catch (error) {
       console.error('Error downloading policy PDF:', error);
       toast.error('Failed to generate policy PDF');
     } finally {
       setIsDownloading(false);
       // Revalidate audit logs so the activity tab reflects the download
-      globalMutate(auditLogsKey(policy.id, organizationId));
+      globalMutate(auditLogsKey('policy', policy.id));
     }
   };
 
@@ -199,7 +208,7 @@ export function PolicyHeaderActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {canUpdate && (
+          {canUpdate && policy?.policyTemplateId && (
             <DropdownMenuItem
               onClick={() => setRegenerateConfirmOpen(true)}
               disabled={isPendingApproval || isRegenerating}

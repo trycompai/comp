@@ -2,18 +2,18 @@
 
 import { trainingVideos } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion } from '@db';
-import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { markVideoAsCompleted } from '../../../actions/markVideoAsCompleted';
+import { toast } from 'sonner';
 import { CarouselControls } from './CarouselControls';
 import { YoutubeEmbed } from './YoutubeEmbed';
 
 interface VideoCarouselProps {
   videos: EmployeeTrainingVideoCompletion[];
+  onVideoComplete?: (videoId: string) => void;
 }
 
-export function VideoCarousel({ videos }: VideoCarouselProps) {
+export function VideoCarousel({ videos, onVideoComplete }: VideoCarouselProps) {
   // Create a map of completion records by their videoId for efficient lookup
   // videoId in the DB record corresponds to the id in the metadata
   const completionRecordsMap = new Map(videos.map((record) => [record.videoId, record]));
@@ -44,6 +44,7 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
   })();
 
   const [currentIndex, setCurrentIndex] = useState(lastCompletedIndex);
+  const [isExecuting, setIsExecuting] = useState(false);
 
   // Local state to track completed videos in the UI (using metadata IDs)
   const initialCompletedVideoIds = new Set(
@@ -51,26 +52,6 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
   );
 
   const [completedVideoIds, setCompletedVideoIds] = useState<Set<string>>(initialCompletedVideoIds);
-
-  const { execute: executeMarkComplete, isExecuting } = useAction(markVideoAsCompleted, {
-    onSuccess: (data) => {
-      // Update local UI state immediately upon successful action
-      const completedMetadataId = mergedVideos[currentIndex].id;
-      setCompletedVideoIds((prev) => new Set([...prev, completedMetadataId]));
-
-      // If a new record was created, update our completion records map
-      if (data.data && !completionRecordsMap.get(completedMetadataId)) {
-        const newMap = new Map(completionRecordsMap);
-        newMap.set(completedMetadataId, data.data);
-        // Note: We're not updating the map state because it's not stateful
-        // The next page refresh will have the updated records
-      }
-    },
-    onError: (error) => {
-      console.error('Failed to mark video as completed:', error);
-      // TODO: Consider showing a user-facing toast notification
-    },
-  });
 
   // Effect to synchronize local UI state with changes in DB records (props)
   useEffect(() => {
@@ -107,9 +88,25 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
       return;
     }
 
-    // Execute the action with the metadata video ID (like 'sat-1')
-    // The action will create the record if it doesn't exist
-    executeMarkComplete({ videoId: metadataVideoId, organizationId: orgId });
+    setIsExecuting(true);
+    try {
+      const res = await fetch('/api/portal/mark-video-completed', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId: metadataVideoId, organizationId: orgId }),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to mark video as completed');
+      }
+      // Update local UI state immediately upon successful action
+      setCompletedVideoIds((prev) => new Set([...prev, metadataVideoId]));
+      onVideoComplete?.(metadataVideoId);
+    } catch (error) {
+      toast.error('Failed to mark video as completed');
+    } finally {
+      setIsExecuting(false);
+    }
   };
 
   // Determine completion based on the local UI state (using metadata ID)

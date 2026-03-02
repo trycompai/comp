@@ -6,9 +6,11 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useApi } from '@/hooks/use-api';
 import { usePeopleActions } from '@/hooks/use-people-api';
 import { parseRolesString } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
+import useSWR from 'swr';
 import type { Invitation, Role } from '@db';
 import {
   Empty,
@@ -69,7 +71,7 @@ interface DisplayItem extends Partial<MemberWithUser>, Partial<Invitation> {
   displayRole: string | string[]; // Simplified role display, could be comma-separated
   displayStatus: 'active' | 'pending' | 'deactivated';
   displayId: string; // Use member.id or invitation.id
-  processedRoles: Role[];
+  processedRoles: string[];
   isDeactivated?: boolean;
 }
 
@@ -95,6 +97,21 @@ export function TeamMembersClient({
   const [perPage, setPerPage] = useState(25);
 
   const { unlinkDevice } = usePeopleActions();
+  const api = useApi();
+
+  // Fetch custom roles for the role combobox
+  const { data: rolesData } = useSWR(
+    `/v1/roles`,
+    async (endpoint: string) => {
+      const res = await api.get<{ customRoles: Array<{ id: string; name: string; permissions: Record<string, string[]> }> }>(endpoint);
+      return res.data?.customRoles ?? [];
+    },
+  );
+  const customRoles = (rolesData ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    permissions: r.permissions,
+  }));
 
   // Employee sync hook with server-fetched initial data
   const {
@@ -167,7 +184,7 @@ export function TeamMembersClient({
       item.displayEmail.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Check if the role filter matches any of the member's roles
-    const matchesRole = !roleFilter || item.processedRoles.includes(roleFilter as Role);
+    const matchesRole = !roleFilter || item.processedRoles.includes(roleFilter);
 
     // Status filter: 'active' shows non-deactivated members + pending invitations
     // 'deactivated' shows only deactivated members
@@ -242,7 +259,7 @@ export function TeamMembersClient({
   };
 
   // Update handleUpdateRole to use authClient and add toasts
-  const handleUpdateRole = async (memberId: string, roles: Role[]) => {
+  const handleUpdateRole = async (memberId: string, roles: string[]) => {
     const rolesArray = Array.isArray(roles) ? roles : [roles];
     const member = data.members.find((m) => m.id === memberId);
 
@@ -519,6 +536,7 @@ export function TeamMembersClient({
                   onReactivate={handleReactivateMember}
                   canEdit={canManageMembers}
                   isCurrentUserOwner={isCurrentUserOwner}
+                  customRoles={customRoles}
                   taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}
                   hasDeviceAgentDevice={memberIdsWithDeviceAgent.includes(
                     (item as MemberWithUser).id,

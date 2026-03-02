@@ -2,12 +2,10 @@
 
 import { trainingVideos } from '@/lib/data/training-videos';
 import { evidenceFormDefinitionList } from '@comp/company';
-import { Accordion } from '@comp/ui/accordion';
-import { Card, CardContent } from '@comp/ui/card';
 import type { Device, EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
-import { Button } from '@trycompai/design-system';
+import { Accordion, Button, Card, CardContent } from '@trycompai/design-system';
+import { CheckmarkFilled } from '@trycompai/design-system/icons';
 import Link from 'next/link';
-import { CheckCircle2 } from 'lucide-react';
 import useSWR from 'swr';
 import type { FleetPolicy, Host } from '../types';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
@@ -54,7 +52,7 @@ export const EmployeeTasksList = ({
   } = useSWR<{ device: Host | null; fleetPolicies: FleetPolicy[] }>(
     `/api/fleet-policies?organizationId=${organizationId}`,
     async (url) => {
-      const res = await fetch(url);
+      const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch');
       return res.json();
     },
@@ -72,7 +70,7 @@ export const EmployeeTasksList = ({
       ? `/api/device-agent/status?organizationId=${organizationId}`
       : null,
     async (url) => {
-      const res = await fetch(url);
+      const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch');
       return res.json();
     },
@@ -80,7 +78,7 @@ export const EmployeeTasksList = ({
       fallbackData: agentDevice ? { devices: [agentDevice] } : { devices: [] },
       refreshInterval: 30_000,
       revalidateOnFocus: true,
-      revalidateOnMount: false,
+      revalidateOnMount: true,
     },
   );
 
@@ -177,12 +175,16 @@ export const EmployeeTasksList = ({
     return (
       <div className="space-y-4">
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <CheckCircle2 className="h-12 w-12 text-primary mb-4" />
-            <h2 className="text-xl font-semibold mb-2">You're all set!</h2>
-            <p className="text-muted-foreground text-sm max-w-md">
-              You've completed all required tasks. No further action is needed at this time.
-            </p>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="text-primary mb-4">
+                <CheckmarkFilled size={48} />
+              </div>
+              <h2 className="text-xl font-semibold mb-2">You're all set!</h2>
+              <p className="text-muted-foreground text-sm max-w-md">
+                You've completed all required tasks. No further action is needed at this time.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -204,11 +206,13 @@ export const EmployeeTasksList = ({
         </div>
       </div>
 
-      <Accordion type="single" collapsible className="space-y-3">
-        {accordionItems.map((item, idx) => (
-          <div key={item.title ?? idx}>{item.content}</div>
-        ))}
-      </Accordion>
+      <div className="space-y-3">
+        <Accordion>
+          {accordionItems.map((item, idx) => (
+            <div key={item.title ?? idx}>{item.content}</div>
+          ))}
+        </Accordion>
+      </div>
 
       {/* Company forms */}
       {visiblePortalForms.length > 0 && (

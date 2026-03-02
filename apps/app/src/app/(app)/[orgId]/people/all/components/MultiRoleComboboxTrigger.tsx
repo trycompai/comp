@@ -9,12 +9,12 @@ import { ChevronsUpDown, Lock, X } from 'lucide-react';
 import type { CustomRoleOption } from './MultiRoleCombobox';
 
 interface MultiRoleComboboxTriggerProps {
-  selectedRoles: Role[];
-  lockedRoles: Role[];
+  selectedRoles: string[];
+  lockedRoles: string[];
   triggerText: string;
   disabled?: boolean;
-  handleSelect: (role: Role) => void; // For badge click to deselect/select
-  getRoleLabel: (role: Role) => string;
+  handleSelect: (role: string) => void; // For badge click to deselect/select
+  getRoleLabel: (role: string) => string;
   onClick?: () => void;
   ariaExpanded?: boolean;
   customRoles?: CustomRoleOption[]; // Custom roles from the organization
@@ -32,7 +32,7 @@ export function MultiRoleComboboxTrigger({
   customRoles = [],
 }: MultiRoleComboboxTriggerProps) {
   // Check if a role is a custom role (not a built-in one)
-  const isCustomRole = (role: Role): boolean => {
+  const isCustomRole = (role: string): boolean => {
     const builtInRoles = ['owner', 'admin', 'auditor', 'employee', 'contractor'];
     return !builtInRoles.includes(role);
   };

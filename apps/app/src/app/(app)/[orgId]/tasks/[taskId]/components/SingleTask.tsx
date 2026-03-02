@@ -39,7 +39,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Comments } from '../../../../../../components/comments/Comments';
 import { useTask } from '../hooks/use-task';
-import { useTaskActivity } from '../hooks/use-task-activity';
+import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 import { BrowserAutomations } from './BrowserAutomations';
 import { FindingHistoryPanel } from './findings/FindingHistoryPanel';
@@ -49,7 +49,7 @@ import { TaskAutomationStatusBadge } from './TaskAutomationStatusBadge';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskIntegrationChecks } from './TaskIntegrationChecks';
 import { TaskMainContent } from './TaskMainContent';
-import { TaskActivityFull } from './TaskActivity';
+import { RecentAuditLogs } from '@/components/RecentAuditLogs';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 
 type AutomationWithRuns = EvidenceAutomation & {
@@ -75,6 +75,7 @@ export function SingleTask({
 }: SingleTaskProps) {
   const params = useParams();
   const orgId = params.orgId as string;
+  const taskId = params.taskId as string;
 
   const {
     task,
@@ -91,7 +92,7 @@ export function SingleTask({
   const { automations } = useTaskAutomations({
     initialData: initialAutomations,
   });
-  const { mutate: mutateActivity } = useTaskActivity();
+  const { mutate: mutateActivity } = useAuditLogs({ entityType: 'task', entityId: taskId });
 
   const { data: activeMember } = useActiveMember();
   const { hasPermission } = usePermissions();
@@ -469,9 +470,7 @@ export function SingleTask({
         </TabsContent>
 
         <TabsContent value="activity">
-          <div className="mt-6">
-          <TaskActivityFull />
-          </div>
+          <TaskActivitySection taskId={taskId} />
         </TabsContent>
       </Tabs>
 
@@ -560,4 +559,9 @@ export function SingleTask({
       </Dialog>
     </div>
   );
+}
+
+function TaskActivitySection({ taskId }: { taskId: string }) {
+  const { logs } = useAuditLogs({ entityType: 'task', entityId: taskId });
+  return <RecentAuditLogs logs={logs} />;
 }

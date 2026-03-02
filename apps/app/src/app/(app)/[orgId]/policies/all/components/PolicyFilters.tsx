@@ -97,9 +97,9 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
 
   const statusLabel = STATUS_OPTIONS.find((opt) => opt.value === statusFilter)?.label ?? 'Status';
 
-  const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  const formatDepartment = (str: string) => str.toUpperCase();
   const departmentLabel =
-    departmentFilter === 'all' ? 'All Departments' : capitalize(departmentFilter);
+    departmentFilter === 'all' ? 'All Departments' : formatDepartment(departmentFilter);
 
   return (
     <Stack gap="md">
@@ -145,7 +145,7 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
                 <SelectItem value="all">All Departments</SelectItem>
                 {departments.map((dept) => (
                   <SelectItem key={dept} value={dept}>
-                    {capitalize(dept)}
+                    {formatDepartment(dept)}
                   </SelectItem>
                 ))}
               </SelectContent>

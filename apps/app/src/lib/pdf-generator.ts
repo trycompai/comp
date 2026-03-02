@@ -504,13 +504,13 @@ export function generatePolicyPDF(jsonContent: TipTapJSONContent[], logs: AuditL
   // Add title if provided
   if (policyTitle) {
     const cleanTitle = cleanTextForPDF(policyTitle);
-    
+
     config.doc.setFontSize(16);
     config.doc.setFont('helvetica', 'bold');
     config.doc.text(cleanTitle, config.margin, config.yPosition);
     config.yPosition += config.lineHeight * 2;
   }
-  
+
   // Process the main content
   processContent(config, internalContent);
   

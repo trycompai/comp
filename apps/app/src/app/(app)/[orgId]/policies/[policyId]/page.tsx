@@ -1,4 +1,5 @@
 import { getFeatureFlags } from '@/app/posthog';
+import { filterAppAccessMembers } from '@/lib/compliance';
 import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
 import type {
@@ -53,7 +54,7 @@ export default async function PolicyDetails({
         `/v1/policies/${policyId}/controls`,
       ),
       serverApi.get<{ data: AuditLogWithRelations[] }>(
-        `/v1/policies/${policyId}/activity`,
+        `/v1/audit-logs?entityType=policy&entityId=${policyId}`,
       ),
       serverApi.get<{
         data: {
@@ -68,13 +69,9 @@ export default async function PolicyDetails({
   const allMembers = Array.isArray(membersRes.data?.data)
     ? membersRes.data.data
     : [];
-  // Filter to assignable members (exclude employee, contractor, deactivated)
-  const assignees = allMembers.filter(
-    (m) =>
-      !m.deactivated &&
-      !m.role.includes('employee') &&
-      !m.role.includes('contractor'),
-  );
+  // Filter to assignable members (only those with app access, exclude deactivated)
+  const activeMembers = allMembers.filter((m) => !m.deactivated);
+  const assignees = await filterAppAccessMembers(activeMembers, orgId);
   const mappedControls = controlsRes.data?.mappedControls ?? [];
   const allControls = controlsRes.data?.allControls ?? [];
   const logs = Array.isArray(activityRes.data?.data)
@@ -111,7 +108,7 @@ export default async function PolicyDetails({
           <h1 className="text-2xl font-semibold tracking-tight">
             {policy?.name ?? 'Policy'}
           </h1>
-          {policy && <PolicyStatusBadge status={policy.status} />}
+          {policy && <PolicyStatusBadge status={policy.status} isArchived={policy.isArchived} />}
         </div>
         <PolicyHeaderActions policy={policy} organizationId={orgId} />
       </div>

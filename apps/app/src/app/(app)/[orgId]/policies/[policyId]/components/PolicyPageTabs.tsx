@@ -7,7 +7,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Comments } from '../../../../../../components/comments/Comments';
-import type { AuditLogWithRelations } from '../data';
+import type { AuditLogWithRelations } from '@/hooks/use-audit-logs';
 import { PolicyContentManager } from '../editor/components/PolicyDetails';
 import { useAuditLogs } from '../hooks/useAuditLogs';
 import { usePolicy } from '../hooks/usePolicy';
@@ -71,8 +71,8 @@ export function PolicyPageTabs({
 
   // Use SWR for audit logs with initial data from server
   const { logs: auditLogs, mutate: mutateAuditLogs } = useAuditLogs({
-    policyId,
-    organizationId,
+    entityType: 'policy',
+    entityId: policyId,
     initialData: logs,
   });
 
@@ -85,10 +85,7 @@ export function PolicyPageTabs({
   const updateVersionContent = (versionId: string, newContent: JSONContent[]) => {
     mutateVersions(
       (currentVersions) => {
-        // Ensure we always return an array, never undefined
-        if (!currentVersions || !Array.isArray(currentVersions)) {
-          return [];
-        }
+        if (!currentVersions || !Array.isArray(currentVersions)) return currentVersions;
         return currentVersions.map((v) =>
           v.id === versionId ? { ...v, content: newContent } : v
         );
@@ -119,6 +116,10 @@ export function PolicyPageTabs({
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    // Refresh audit logs when switching to activity tab
+    if (value === 'activity') {
+      mutateAuditLogs();
+    }
     const params = new URLSearchParams(searchParams.toString());
     if (value === 'overview') {
       params.delete('tab');

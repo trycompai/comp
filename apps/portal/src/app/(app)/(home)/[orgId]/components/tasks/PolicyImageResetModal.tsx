@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 
-import { Button } from '@comp/ui/button';
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Loader2 } from 'lucide-react';
+  Spinner,
+} from '@trycompai/design-system';
 import { toast } from 'sonner';
 
 interface PolicyImageResetModalProps {
@@ -34,7 +34,7 @@ export function PolicyImageResetModal({
     setIsDeleting(true);
     try {
       const params = new URLSearchParams({ organizationId, policyId: String(policyId) });
-      const res = await fetch(`/api/fleet-policy?${params}`, { method: 'DELETE' });
+      const res = await fetch(`/api/fleet-policy?${params}`, { method: 'DELETE', credentials: 'include' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error ?? 'Failed to remove images');
@@ -73,7 +73,7 @@ export function PolicyImageResetModal({
             No
           </Button>
           <Button type="button" onClick={handleConfirm} disabled={isDeleting}>
-            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes'}
+            {isDeleting ? <Spinner size="sm" /> : 'Yes'}
           </Button>
         </DialogFooter>
       </DialogContent>

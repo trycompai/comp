@@ -1,5 +1,6 @@
 'use client';
 
+import { apiClient } from '@/lib/api-client';
 import { SelectPills } from '@comp/ui/select-pills';
 import type { Control } from '@db';
 import { Section } from '@trycompai/design-system';
@@ -8,10 +9,16 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { usePolicy } from '../hooks/usePolicy';
 import { usePermissions } from '@/hooks/use-permissions';
+import useSWR from 'swr';
+
+interface ControlsResponse {
+  mappedControls: Pick<Control, 'id' | 'name' | 'description'>[];
+  allControls: Pick<Control, 'id' | 'name' | 'description'>[];
+}
 
 export const PolicyControlMappings = ({
-  mappedControls,
-  allControls,
+  mappedControls: initialMapped,
+  allControls: initialAll,
   isPendingApproval,
   onMutate,
 }: {
@@ -24,6 +31,25 @@ export const PolicyControlMappings = ({
   const [loading, setLoading] = useState(false);
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('policy', 'update');
+
+  const { data, mutate: mutateControls } = useSWR(
+    [`/v1/policies/${policyId}/controls`, orgId],
+    async () => {
+      const res = await apiClient.get<ControlsResponse>(
+        `/v1/policies/${policyId}/controls`,
+      );
+      if (res.error) throw new Error(res.error);
+      return res.data;
+    },
+    {
+      fallbackData: { mappedControls: initialMapped, allControls: initialAll },
+      revalidateOnMount: false,
+      revalidateOnFocus: false,
+    },
+  );
+
+  const mappedControls = data?.mappedControls ?? initialMapped;
+  const allControls = data?.allControls ?? initialAll;
 
   const { addControlMappings, removeControlMapping } = usePolicy({
     policyId,
@@ -51,6 +77,7 @@ export const PolicyControlMappings = ({
         await removeControlMapping(removed[0].id);
         toast.success('Controls unmapped successfully');
       }
+      await mutateControls();
       onMutate?.();
     } catch {
       toast.error('Failed to update controls');

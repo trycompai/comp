@@ -51,22 +51,28 @@ export function usePolicyVersions({
     },
     {
       fallbackData: initialData,
-      revalidateOnMount: false,
+      revalidateOnMount: !initialData,
       revalidateOnFocus: false,
     },
   );
 
-  // Track if this is the first render to avoid unnecessary updates
-  const isFirstRender = useRef(true);
+  // Seed the SWR cache with initial data on mount.
+  // fallbackData is per-hook (not written to the global cache), so other hooks
+  // sharing this key (e.g., PolicyContentManager) won't see it. Writing to the
+  // cache ensures mutate(fn) updaters receive real data instead of undefined.
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (!seeded.current && initialData) {
+      seeded.current = true;
+      mutate(initialData, false);
+    }
+  }, [initialData, mutate]);
+
+  // Track previous initialData to detect real changes (not just re-renders)
   const prevInitialDataRef = useRef(initialData);
 
-  // Sync initialData to SWR cache when it changes
+  // Sync initialData to SWR cache when it changes (e.g., server re-render)
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
     const prevLength = prevInitialDataRef.current?.length ?? 0;
     const newLength = initialData?.length ?? 0;
     const prevFirstId = prevInitialDataRef.current?.[0]?.id;
@@ -127,10 +133,12 @@ export function usePolicyVersions({
         { content },
       );
       if (response.error) throw new Error(response.error);
-      // Optimistically update the version content in cache
+      // Optimistically update the version content in cache.
+      // If cache is empty/undefined, trigger a full revalidation instead of
+      // caching [] which would wipe out fallbackData for other hooks.
       mutate(
         (currentVersions) => {
-          if (!currentVersions || !Array.isArray(currentVersions)) return [];
+          if (!currentVersions || !Array.isArray(currentVersions)) return currentVersions;
           return currentVersions.map((v) =>
             v.id === versionId ? { ...v, content } : v,
           );

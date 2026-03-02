@@ -1,125 +1,130 @@
-import { env } from '@/env.mjs';
-import { OTPVerificationEmail, sendEmail, sendInviteMemberEmail } from '@comp/email';
-import { db } from '@db';
-import { betterAuth } from 'better-auth';
-import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { nextCookies } from 'better-auth/next-js';
-import { bearer, emailOTP, multiSession, organization } from 'better-auth/plugins';
-import { ac, admin, auditor, contractor, employee, owner } from './permissions';
+/**
+ * Server-side auth utilities for the Portal.
+ *
+ * This module provides server-side session validation by calling the NestJS API's
+ * auth endpoints. The actual auth server runs on the API — this app only
+ * consumes auth services.
+ *
+ * For browser-side auth (login, logout, hooks), use auth-client.ts instead.
+ */
 
-export const auth = betterAuth({
-  database: prismaAdapter(db, {
-    provider: 'postgresql',
-  }),
-  advanced: {
-    database: {
-      // This will enable us to fall back to DB for ID generation.
-      // It's important so we can use custom IDs specified in Prisma Schema.
-      generateId: false,
-    },
-  },
-  trustedOrigins: process.env.AUTH_TRUSTED_ORIGINS
-    ? process.env.AUTH_TRUSTED_ORIGINS.split(',').map((o) => o.trim())
-    : ['http://localhost:3000', 'https://*.trycomp.ai', 'http://localhost:3002'],
-  secret: env.AUTH_SECRET!,
-  plugins: [
-    organization({
-      membershipLimit: 100000000000,
-      async sendInvitationEmail(data) {
-        console.log(
-          'process.env.NEXT_PUBLIC_BETTER_AUTH_URL',
-          process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
-        );
+import type { ReadonlyHeaders } from 'next/dist/server/web/spec-extension/adapters/headers';
 
-        const isLocalhost = process.env.NODE_ENV === 'development';
-        const protocol = isLocalhost ? 'http' : 'https';
-        const domain = isLocalhost ? 'localhost:3000' : process.env.NEXT_PUBLIC_BETTER_AUTH_URL!;
-        const inviteLink = `${protocol}://${domain}/invite/${data.invitation.id}`;
+const API_URL =
+  process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
-        const url = `${protocol}://${domain}/auth`;
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 
-        await sendInviteMemberEmail({
-          inviteeEmail: data.email,
-          inviteLink,
-          organizationName: data.organization.name,
-        });
-      },
-      ac,
-      roles: {
-        owner,
-        admin,
-        auditor,
-        employee,
-        contractor,
-      },
-      schema: {
-        organization: {
-          modelName: 'Organization',
-        },
-      },
-    }),
-    emailOTP({
-      otpLength: 6,
-      expiresIn: 10 * 60,
-      // Prevent automatic user creation on OTP sign-in
-      disableSignUp: true,
-      async sendVerificationOTP({ email, otp }) {
-        await sendEmail({
-          to: email,
-          subject: 'One-Time Password for Comp AI',
-          react: OTPVerificationEmail({ email, otp }),
-        });
-      },
-    }),
-    nextCookies(),
-    multiSession(),
-    bearer(),
-  ],
-  socialProviders: {
-    google: {
-      clientId: process.env.AUTH_GOOGLE_ID!,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
-    },
-    ...(process.env.AUTH_MICROSOFT_CLIENT_ID && process.env.AUTH_MICROSOFT_CLIENT_SECRET
-      ? {
-          microsoft: {
-            clientId: process.env.AUTH_MICROSOFT_CLIENT_ID,
-            clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
-            tenantId: 'common',
-            prompt: 'select_account',
-          },
-        }
-      : {}),
-  },
-  user: {
-    modelName: 'User',
-  },
-  organization: {
-    modelName: 'Organization',
-  },
-  member: {
-    modelName: 'Member',
-  },
-  invitation: {
-    modelName: 'Invitation',
-  },
+/**
+ * Session type matching better-auth's session structure
+ */
+export interface Session {
   session: {
-    modelName: 'Session',
-  },
-  account: {
-    modelName: 'Account',
-    accountLinking: {
-      enabled: true,
-      trustedProviders: ['google', 'microsoft'],
-    },
-  },
-  verification: {
-    modelName: 'Verification',
-  },
-});
+    id: string;
+    userId: string;
+    expiresAt: Date;
+    token: string;
+    createdAt: Date;
+    updatedAt: Date;
+    ipAddress?: string | null;
+    userAgent?: string | null;
+    activeOrganizationId?: string | null;
+  };
+  user: {
+    id: string;
+    email: string;
+    emailVerified: boolean;
+    name: string;
+    image?: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+}
 
-export type Session = typeof auth.$Infer.Session;
-export type ActiveOrganization = typeof auth.$Infer.ActiveOrganization;
-export type Member = typeof auth.$Infer.Member;
-export type Organization = typeof auth.$Infer.Organization;
-export type Invitation = typeof auth.$Infer.Invitation;
+export interface ActiveOrganization {
+  id: string;
+  name: string;
+  slug?: string | null;
+  logo?: string | null;
+  createdAt: Date;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface Member {
+  id: string;
+  organizationId: string;
+  userId: string;
+  role: string;
+  createdAt: Date;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug?: string | null;
+  logo?: string | null;
+  createdAt: Date;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface Invitation {
+  id: string;
+  organizationId: string;
+  email: string;
+  role: string;
+  status: string;
+  expiresAt: Date;
+  inviterId: string;
+}
+
+/**
+ * Convert Headers to a plain object for fetch
+ */
+function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, string> {
+  const obj: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    if (key.toLowerCase() === 'cookie' || key.toLowerCase().startsWith('x-')) {
+      obj[key] = value;
+    }
+  });
+  return obj;
+}
+
+/**
+ * Get the current session from the API.
+ */
+async function getSession(options: { headers: ReadonlyHeaders | Headers }): Promise<Session | null> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/get-session`, {
+      method: 'GET',
+      headers: {
+        ...headersToObject(options.headers),
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return data as Session;
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to get session:', error);
+    }
+    return null;
+  }
+}
+
+/**
+ * Auth object matching the interface used throughout the portal.
+ * All methods call the NestJS API — no local better-auth instance.
+ */
+export const auth = {
+  api: {
+    getSession,
+  },
+};
+
+// Type exports for backwards compatibility with files that imported from better-auth types
+export type { Session as SessionType };

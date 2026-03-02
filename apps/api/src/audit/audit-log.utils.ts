@@ -89,6 +89,7 @@ export function extractVersionDescription(
   path: string,
   method: string,
   responseBody: unknown,
+  requestBody?: Record<string, unknown>,
 ): string | null {
   const isVersionPath = /\/versions(?:\/|$)/.test(path);
   const isApprovalPath = /\/(accept|deny)-changes\/?$/.test(path);
@@ -175,6 +176,18 @@ export function extractPolicyActionDescription(
   // POST /v1/policies/:id/regenerate
   if (/\/regenerate\/?$/.test(path) && method === 'POST') {
     return 'Regenerated policy';
+  }
+
+  const pathWithoutQuery = path.split('?')[0];
+
+  // POST /v1/policies/:id/pdf (upload)
+  if (/\/pdf\/?$/.test(pathWithoutQuery) && method === 'POST') {
+    return 'Uploaded policy PDF';
+  }
+
+  // DELETE /v1/policies/:id/pdf (delete)
+  if (/\/pdf\/?$/.test(pathWithoutQuery) && method === 'DELETE') {
+    return 'Deleted policy PDF';
   }
 
   // PATCH /v1/policies/:id with isArchived field

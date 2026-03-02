@@ -1,3 +1,4 @@
+import { filterComplianceMembers } from '@/lib/compliance';
 import { auth } from '@/utils/auth';
 import { s3Client, BUCKET_NAME } from '@/app/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -56,11 +57,8 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
     },
   });
 
-  // Check if there are employees to show the Employee Tasks tab
-  const employees = membersWithUsers.filter((member) => {
-    const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
-    return roles.includes('employee') || roles.includes('contractor');
-  });
+  // Check if there are members with compliance obligations
+  const employees = await filterComplianceMembers(membersWithUsers, orgId);
 
   const showEmployeeTasks = employees.length > 0;
 

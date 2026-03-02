@@ -39,16 +39,18 @@ import { toast } from 'sonner';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 import { RemoveDeviceAlert } from './RemoveDeviceAlert';
 import { RemoveMemberAlert } from './RemoveMemberAlert';
+import type { CustomRoleOption } from './MultiRoleCombobox';
 import type { MemberWithUser } from './TeamMembers';
 
 interface MemberRowProps {
   member: MemberWithUser;
   onRemove: (memberId: string) => void;
   onRemoveDevice: (memberId: string) => void;
-  onUpdateRole: (memberId: string, roles: Role[]) => void;
+  onUpdateRole: (memberId: string, roles: string[]) => void;
   onReactivate: (memberId: string) => void;
   canEdit: boolean;
   isCurrentUserOwner: boolean;
+  customRoles?: CustomRoleOption[];
   taskCompletion?: { completed: number; total: number };
   hasDeviceAgentDevice?: boolean;
 }
@@ -68,24 +70,19 @@ function getInitials(name?: string | null, email?: string | null): string {
 }
 
 function getRoleLabel(role: string): string {
-  switch (role) {
-    case 'owner':
-      return 'Owner';
-    case 'admin':
-      return 'Admin';
-    case 'auditor':
-      return 'Auditor';
-    case 'employee':
-      return 'Employee';
-    case 'contractor':
-      return 'Contractor';
-    default:
-      return '???';
-  }
+  const builtInLabels: Record<string, string> = {
+    owner: 'Owner',
+    admin: 'Admin',
+    auditor: 'Auditor',
+    employee: 'Employee',
+    contractor: 'Contractor',
+  };
+  // Built-in roles get their known label; custom roles display their name as-is
+  return builtInLabels[role] ?? role.charAt(0).toUpperCase() + role.slice(1);
 }
 
-function parseRoles(role: Role | Role[] | string): Role[] {
-  if (Array.isArray(role)) return role as Role[];
+function parseRoles(role: Role | Role[] | string): string[] {
+  if (Array.isArray(role)) return role as string[];
   return parseRolesString(role);
 }
 
@@ -97,6 +94,7 @@ export function MemberRow({
   onReactivate,
   canEdit,
   isCurrentUserOwner,
+  customRoles = [],
   taskCompletion,
   hasDeviceAgentDevice,
 }: MemberRowProps) {
@@ -106,7 +104,7 @@ export function MemberRow({
   const [isRemoveDeviceAlertOpen, setIsRemoveDeviceAlertOpen] = useState(false);
   const [isUpdateRolesOpen, setIsUpdateRolesOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectedRoles, setSelectedRoles] = useState<Role[]>(() => parseRoles(member.role));
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(() => parseRoles(member.role));
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isRemovingDevice, setIsRemovingDevice] = useState(false);
@@ -340,6 +338,7 @@ export function MemberRow({
                 onSelectedRolesChange={setSelectedRoles}
                 placeholder="Select a role"
                 lockedRoles={isOwner ? ['owner'] : []}
+                customRoles={customRoles}
               />
               {isOwner && (
                 <p className="text-muted-foreground mt-1 text-xs">

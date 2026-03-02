@@ -3,9 +3,16 @@
 import {
   RadioGroup,
   RadioGroupItem,
+  Switch,
   Text,
 } from '@trycompai/design-system';
 import { statement } from '@comp/auth';
+
+/** Access toggles — binary on/off permissions shown as switches above the matrix */
+const ACCESS_TOGGLES = [
+  { key: 'app', label: 'App Access', description: 'Can access the main compliance dashboard. Without this, the user can only access the employee portal.' },
+  { key: 'compliance', label: 'Employee Compliance', description: 'Must complete compliance tasks: sign policies, watch training videos, and install device agent.' },
+];
 
 /** UI labels for permission resources. Keys kept in display order. */
 const RESOURCE_LABELS: Record<string, { label: string; description: string }> = {
@@ -23,7 +30,7 @@ const RESOURCE_LABELS: Record<string, { label: string; description: string }> = 
   questionnaire: { label: 'Questionnaires', description: 'Manage security questionnaires' },
   integration: { label: 'Integrations', description: 'Manage third-party integrations' },
   apiKey: { label: 'API Keys', description: 'Manage API keys for programmatic access' },
-  trust: { label: 'Trust Center', description: 'Manage trust portal and access requests' },
+  trust: { label: 'Trust Center', description: 'Manage trust portal settings and access requests' },
 };
 
 /**
@@ -147,7 +154,49 @@ function PermissionRow({
   );
 }
 
+function AccessToggle({
+  toggle,
+  enabled,
+  onToggle,
+  disabled,
+}: {
+  toggle: { key: string; label: string; description: string };
+  enabled: boolean;
+  onToggle: (enabled: boolean) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between py-3 px-3 border-b last:border-b-0">
+      <div>
+        <Text size="sm" weight="medium">
+          {toggle.label}
+        </Text>
+        <Text size="xs" variant="muted">
+          {toggle.description}
+        </Text>
+      </div>
+      <Switch
+        checked={enabled}
+        onCheckedChange={onToggle}
+        disabled={disabled}
+      />
+    </div>
+  );
+}
+
 export function PermissionMatrix({ value, onChange, disabled = false }: PermissionMatrixProps) {
+  const handleToggleChange = (resourceKey: string, enabled: boolean) => {
+    const newPermissions = { ...value };
+    if (enabled) {
+      // app only has 'read', trust has 'read' and 'update'
+      const actions = statement[resourceKey as keyof typeof statement];
+      newPermissions[resourceKey] = actions ? [...actions] : ['read'];
+    } else {
+      delete newPermissions[resourceKey];
+    }
+    onChange(newPermissions);
+  };
+
   const handleAccessChange = (resourceKey: ResourceKey, level: AccessLevel) => {
     const newPermissions = { ...value };
     const permissions = accessLevelToPermissions(resourceKey, level);
@@ -164,7 +213,18 @@ export function PermissionMatrix({ value, onChange, disabled = false }: Permissi
   const handleSetAll = (level: AccessLevel) => {
     if (disabled) return;
 
+    // Preserve toggle values (app, etc.) that aren't in the matrix
+    const toggleKeys = new Set(ACCESS_TOGGLES.map((t) => t.key));
     const newPermissions: Record<string, string[]> = {};
+
+    // Keep existing toggle permissions
+    for (const [key, actions] of Object.entries(value)) {
+      if (toggleKeys.has(key)) {
+        newPermissions[key] = actions;
+      }
+    }
+
+    // Set matrix resource permissions
     for (const resource of RESOURCES) {
       const permissions = accessLevelToPermissions(resource.key, level);
       if (permissions.length > 0) {
@@ -184,7 +244,27 @@ export function PermissionMatrix({ value, onChange, disabled = false }: Permissi
   const currentAllLevel = getAllAccessLevel();
 
   return (
-    <div className="rounded-md border">
+    <div className="space-y-4">
+      {/* Access Toggles */}
+      <div className="rounded-md border">
+        <div className="border-b bg-muted/50 py-2 px-3">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Access
+          </span>
+        </div>
+        {ACCESS_TOGGLES.map((toggle) => (
+          <AccessToggle
+            key={toggle.key}
+            toggle={toggle}
+            enabled={Boolean(value[toggle.key]?.length)}
+            onToggle={(enabled) => handleToggleChange(toggle.key, enabled)}
+            disabled={disabled}
+          />
+        ))}
+      </div>
+
+      {/* Resource Permissions Matrix */}
+      <div className="rounded-md border">
       {/* Header */}
       <div className="grid grid-cols-[1fr_100px_100px_100px] items-center border-b bg-muted/50 py-2 px-3">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -238,6 +318,7 @@ export function PermissionMatrix({ value, onChange, disabled = false }: Permissi
           />
         );
       })}
+      </div>
     </div>
   );
 }

@@ -38,22 +38,25 @@ export function usePolicy({ policyId, organizationId, initialData }: UsePolicyOp
     },
     {
       fallbackData: initialData,
-      revalidateOnMount: false,
+      revalidateOnMount: !initialData,
       revalidateOnFocus: false,
     },
   );
 
-  // Track if this is the first render to avoid unnecessary updates
-  const isFirstRender = useRef(true);
+  // Seed the SWR cache with initial data so all hooks sharing this key see real data
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (!seeded.current && initialData) {
+      seeded.current = true;
+      mutate(initialData, false);
+    }
+  }, [initialData, mutate]);
+
+  // Track previous initialData to detect real changes
   const prevInitialDataRef = useRef(initialData);
 
   // Sync initialData to SWR cache when it changes
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
     const prevVersionId = prevInitialDataRef.current?.currentVersionId;
     const newVersionId = initialData?.currentVersionId;
 

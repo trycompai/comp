@@ -37,7 +37,10 @@ import { OrgChartModule } from './org-chart/org-chart.module';
 import { TrainingModule } from './training/training.module';
 import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
 import { FrameworksModule } from './frameworks/frameworks.module';
+import { AuditModule } from './audit/audit.module';
+import { ControlsModule } from './controls/controls.module';
 import { RolesModule } from './roles/roles.module';
+import { SecretsModule } from './secrets/secrets.module';
 
 @Module({
   imports: [
@@ -88,6 +91,9 @@ import { RolesModule } from './roles/roles.module';
     EvidenceFormsModule,
     FrameworksModule,
     RolesModule,
+    AuditModule,
+    ControlsModule,
+    SecretsModule,
   ],
   controllers: [AppController],
   providers: [

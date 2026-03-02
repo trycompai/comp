@@ -113,6 +113,7 @@ export class AuditLogInterceptor implements NestInterceptor {
                 request.url,
                 method,
                 responseBody,
+                requestBody,
               );
               const downloadDesc = extractDownloadDescription(
                 request.url,
@@ -128,7 +129,11 @@ export class AuditLogInterceptor implements NestInterceptor {
 
               if (commentCtx || versionDesc || policyActionDesc) {
                 // Comments and version operations don't produce meaningful diffs
-                changes = null;
+                // But preserve the comment/reason if provided in the request body
+                const comment = requestBody?.comment;
+                changes = comment && typeof comment === 'string'
+                  ? { reason: { previous: null, current: comment } }
+                  : null;
               } else if (relationMappingResult) {
                 changes = relationMappingResult.changes;
                 descriptionOverride ??= relationMappingResult.description;

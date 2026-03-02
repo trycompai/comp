@@ -824,7 +824,7 @@ export function PolicyContentManager({
                 </Button>
               )}
               {/* For read-only versions (published/pending), show button to create new version */}
-              {isVersionReadOnly && !isPendingApproval && (
+              {isVersionReadOnly && !isViewingPendingVersion && (
                 <Button
                   size="default"
                   onClick={() => setIsPublishDialogOpen(true)}
@@ -833,7 +833,7 @@ export function PolicyContentManager({
                   Create new version
                 </Button>
               )}
-              {!isPendingApproval && !isVersionReadOnly && aiAssistantEnabled && activeTab === 'EDITOR' && (
+              {!isVersionReadOnly && aiAssistantEnabled && activeTab === 'EDITOR' && (
                 <Button
                   variant={showAiAssistant ? 'default' : 'outline'}
                   size="default"
@@ -1126,7 +1126,8 @@ function PolicyEditorWrapper({
   }
 
   // Determine if editor should be read-only
-  const isReadOnly = isPendingApproval || isVersionReadOnly || !canUpdatePolicy;
+  // isVersionReadOnly already covers the pending version case (isViewingPendingVersion)
+  const isReadOnly = isVersionReadOnly || !canUpdatePolicy;
 
   // Get status message and styling for all states
   const getStatusInfo = (): {
@@ -1183,7 +1184,11 @@ function PolicyEditorWrapper({
             <span>{statusInfo.message}</span>
           </div>
         )}
-        <PolicyEditor content={normalizedContent} onSave={savePolicy} readOnly={isReadOnly} />
+        <PolicyEditor
+          content={normalizedContent}
+          onSave={savePolicy}
+          readOnly={isReadOnly}
+        />
       </Stack>
     </Section>
   );
