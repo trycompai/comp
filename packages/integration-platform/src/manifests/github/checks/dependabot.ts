@@ -176,17 +176,24 @@ export const dependabotCheck: IntegrationCheck = {
       // Use the dedicated endpoint to check Dependabot security updates status.
       // The security_and_analysis field on the repo object does not include
       // dependabot_security_updates — the correct endpoint is /automated-security-fixes.
-      let dependabotEnabled: boolean | null = null;
+      // status: 'enabled' | 'paused' | 'disabled' | 'unknown'
+      let dependabotStatus: 'enabled' | 'paused' | 'disabled' | 'unknown' = 'unknown';
       try {
         const securityFixes = await ctx.fetch<{ enabled: boolean; paused: boolean }>(
           `/repos/${repo.full_name}/automated-security-fixes`,
         );
-        dependabotEnabled = securityFixes.enabled === true;
+        if (securityFixes.enabled && securityFixes.paused) {
+          dependabotStatus = 'paused';
+        } else if (securityFixes.enabled) {
+          dependabotStatus = 'enabled';
+        } else {
+          dependabotStatus = 'disabled';
+        }
       } catch (error) {
         const errorStr = String(error);
         if (errorStr.includes('404')) {
           // 404 means Dependabot security updates are not enabled for this repo
-          dependabotEnabled = false;
+          dependabotStatus = 'disabled';
         } else {
           // 403 or other errors mean we couldn't determine the status
           ctx.log(
@@ -200,10 +207,7 @@ export const dependabotCheck: IntegrationCheck = {
 
       // Build hierarchical evidence: { "owner/repo": { data } }
       const repoEvidence: Record<string, unknown> = {
-        dependabot_security_updates: {
-          enabled: dependabotEnabled,
-          status_known: dependabotEnabled !== null,
-        },
+        dependabot_security_updates: { status: dependabotStatus },
         ...(alertCounts && {
           alerts: {
             open: alertCounts.open,
@@ -220,7 +224,7 @@ export const dependabotCheck: IntegrationCheck = {
         ? `\n\nAlert Summary: ${formatAlertSummary(alertCounts)}`
         : '';
 
-      if (dependabotEnabled === true) {
+      if (dependabotStatus === 'enabled') {
         ctx.pass({
           title: `Dependabot enabled on ${repo.name}`,
           description: `Dependabot security updates are enabled and will automatically create pull requests to fix vulnerable dependencies.${alertSummary}`,
@@ -230,7 +234,17 @@ export const dependabotCheck: IntegrationCheck = {
             [repo.full_name]: repoEvidence,
           },
         });
-      } else if (dependabotEnabled === false) {
+      } else if (dependabotStatus === 'paused') {
+        ctx.pass({
+          title: `Dependabot enabled on ${repo.name} (paused)`,
+          description: `Dependabot security updates are enabled but currently paused due to inactivity. Dependabot will resume automatically when new alerts are detected.${alertSummary}`,
+          resourceType: 'repository',
+          resourceId: repo.full_name,
+          evidence: {
+            [repo.full_name]: repoEvidence,
+          },
+        });
+      } else if (dependabotStatus === 'disabled') {
         ctx.fail({
           title: `Dependabot not enabled on ${repo.name}`,
           description: `Dependabot security updates are not enabled, leaving the repository vulnerable to known dependency exploits.${alertSummary}`,
