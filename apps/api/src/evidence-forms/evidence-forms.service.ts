@@ -315,6 +315,38 @@ export class EvidenceFormsService {
     };
   }
 
+  async deleteSubmission(params: {
+    organizationId: string;
+    authContext: AuthContext;
+    formType: string;
+    submissionId: string;
+  }) {
+    this.requirePrivilegedEvidenceAccess(params.authContext);
+
+    const parsedType = evidenceFormTypeSchema.safeParse(params.formType);
+    if (!parsedType.success) {
+      throw new BadRequestException('Unsupported form type');
+    }
+
+    const submission = await db.evidenceSubmission.findFirst({
+      where: {
+        id: params.submissionId,
+        organizationId: params.organizationId,
+        formType: toDbEvidenceFormType(parsedType.data),
+      },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+
+    await db.evidenceSubmission.delete({
+      where: { id: params.submissionId },
+    });
+
+    return { success: true, id: params.submissionId };
+  }
+
   async submitForm(params: {
     organizationId: string;
     formType: string;
