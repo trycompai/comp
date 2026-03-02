@@ -46,6 +46,7 @@ const reviewSchema = z.object({
 });
 
 const EVIDENCE_FORM_REVIEWER_ROLES = ['owner', 'admin', 'auditor'] as const;
+const EVIDENCE_FORM_DELETE_ROLES = ['owner', 'admin'] as const;
 const MAX_UPLOAD_FILE_SIZE_BYTES = 100 * 1024 * 1024;
 const MAX_UPLOAD_BASE64_LENGTH = Math.ceil(MAX_UPLOAD_FILE_SIZE_BYTES / 3) * 4;
 
@@ -153,6 +154,20 @@ export class EvidenceFormsService {
     if (!hasRequiredRole) {
       throw new UnauthorizedException(
         `Access denied. Required one of roles: ${EVIDENCE_FORM_REVIEWER_ROLES.join(', ')}`,
+      );
+    }
+
+    return userId;
+  }
+
+  private requireEvidenceDeleteAccess(authContext: AuthContext): string {
+    const userId = this.requireJwtUser(authContext);
+    const roles = authContext.userRoles ?? [];
+    const canDelete = EVIDENCE_FORM_DELETE_ROLES.some((role) => roles.includes(role));
+
+    if (!canDelete) {
+      throw new UnauthorizedException(
+        `Delete denied. Required one of roles: ${EVIDENCE_FORM_DELETE_ROLES.join(', ')}`,
       );
     }
 
@@ -321,7 +336,7 @@ export class EvidenceFormsService {
     formType: string;
     submissionId: string;
   }) {
-    this.requirePrivilegedEvidenceAccess(params.authContext);
+    this.requireEvidenceDeleteAccess(params.authContext);
 
     const parsedType = evidenceFormTypeSchema.safeParse(params.formType);
     if (!parsedType.success) {
