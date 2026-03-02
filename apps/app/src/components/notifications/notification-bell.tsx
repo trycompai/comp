@@ -66,7 +66,7 @@ export function NotificationBell() {
   };
 
   return (
-    <div ref={inboxRef}>
+    <div ref={inboxRef} suppressHydrationWarning>
       <Inbox
         applicationIdentifier={applicationIdentifier}
         subscriber={`${sessionData.userId}-${orgId}`}
@@ -74,6 +74,7 @@ export function NotificationBell() {
         open={visible}
         renderBell={({ total }) => (
           <button
+            id="app-shell-notification-bell"
             onClick={() => setVisible(!visible)}
             className="relative cursor-pointer text-foreground"
             style={{ color: 'var(--foreground)' }}

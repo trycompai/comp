@@ -1,0 +1,779 @@
+import { cloneElement, isValidElement, type ComponentProps, type ReactNode } from 'react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { PentestRun } from '@/lib/security/penetration-tests-client';
+import { PenetrationTestsPageClient } from './penetration-tests-page-client';
+
+const useSearchParamsMock = vi.fn();
+const replaceMock = vi.fn();
+
+const reportHookMock = vi.fn();
+const createHookMock = vi.fn();
+const createReportMock = vi.fn();
+const toastSuccessMock = vi.fn();
+const toastErrorMock = vi.fn();
+let originalLocation: Location | null = null;
+let locationAssignMock: ReturnType<typeof vi.fn>;
+
+vi.mock('next/link', () => ({
+  default: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => useSearchParamsMock(),
+  useRouter: () => ({
+    replace: replaceMock,
+    push: vi.fn(),
+    refresh: vi.fn(),
+    back: vi.fn(),
+  }),
+}));
+
+vi.mock('sonner', () => ({
+  toast: {
+    success: (...args: unknown[]) => toastSuccessMock(...args),
+    error: (...args: unknown[]) => toastErrorMock(...args),
+  },
+}));
+
+vi.mock('./hooks/use-penetration-tests', () => ({
+  usePenetrationTests: (...args: never[]) => reportHookMock(...args),
+  useCreatePenetrationTest: (...args: never[]) => createHookMock(...args),
+  usePenetrationTest: vi.fn(),
+  usePenetrationTestProgress: vi.fn(),
+}));
+
+vi.mock('@comp/ui/input', () => ({
+  Input: (props: React.ComponentProps<'input'>) => <input {...props} />,
+}));
+
+vi.mock('@comp/ui/label', () => ({
+  Label: ({ children, ...props }: React.ComponentProps<'label'>) => <label {...props}>{children}</label>,
+}));
+
+vi.mock('@comp/ui/table', () => ({
+  Table: ({ children }: { children: ReactNode }) => <table>{children}</table>,
+  TableBody: ({ children }: { children: ReactNode }) => <tbody>{children}</tbody>,
+  TableCell: ({ children }: { children: ReactNode }) => <td>{children}</td>,
+  TableHead: ({ children }: { children: ReactNode }) => <th>{children}</th>,
+  TableHeader: ({ children }: { children: ReactNode }) => <thead>{children}</thead>,
+  TableRow: ({ children }: { children: ReactNode }) => <tr>{children}</tr>,
+}));
+
+vi.mock('@comp/ui/dialog', () => ({
+  Dialog: ({ children, open }: { children: ReactNode; open: boolean }) => (
+    <div data-open={String(open)}>{children}</div>
+  ),
+  DialogContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DialogDescription: ({ children }: { children: ReactNode }) => <p>{children}</p>,
+  DialogFooter: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DialogHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
+}));
+
+vi.mock('@comp/ui/card', () => ({
+  Card: ({ children }: { children: ReactNode }) => <section>{children}</section>,
+  CardContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  CardDescription: ({ children }: { children: ReactNode }) => <p>{children}</p>,
+  CardHeader: ({ children }: { children: ReactNode }) => <header>{children}</header>,
+  CardTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
+}));
+
+vi.mock('@comp/ui/badge', () => ({
+  Badge: ({ children }: { children: ReactNode }) => <span>{children}</span>,
+}));
+
+vi.mock('@trycompai/design-system', () => ({
+  Button: ({ asChild, children, ...props }: ComponentProps<'button'> & { asChild?: boolean }) => {
+    if (asChild && isValidElement(children)) {
+      return cloneElement(children, { ...props });
+    }
+    return (
+      <button type={props.type} {...props}>
+        {children}
+      </button>
+    );
+  },
+  PageHeader: ({ title, actions, children }: { title: string; actions?: ReactNode; children?: ReactNode }) => (
+    <header>
+      <h1>{title}</h1>
+      {actions}
+      {children}
+    </header>
+  ),
+  PageLayout: ({ children }: { children: ReactNode }) => <main>{children}</main>,
+}));
+
+const reportRows: PentestRun[] = [
+  {
+    id: 'run_running',
+    sandboxId: 'sb1',
+    workflowId: 'wf1',
+    sessionId: 's1',
+    targetUrl: 'https://running.example.com',
+    repoUrl: 'https://github.com/org/running',
+    status: 'running',
+    createdAt: '2026-02-26T12:00:00Z',
+    updatedAt: '2026-02-26T13:00:00Z',
+    error: null,
+    temporalUiUrl: null,
+    webhookUrl: null,
+    userId: 'user_1',
+    organizationId: 'org_123',
+  },
+  {
+    id: 'run_completed',
+    sandboxId: 'sb2',
+    workflowId: 'wf2',
+    sessionId: 's2',
+    targetUrl: 'https://completed.example.com',
+    repoUrl: 'https://github.com/org/completed',
+    status: 'completed',
+    createdAt: '2026-02-25T12:00:00Z',
+    updatedAt: '2026-02-25T13:00:00Z',
+    error: null,
+    temporalUiUrl: null,
+    webhookUrl: null,
+    userId: 'user_1',
+    organizationId: 'org_123',
+  },
+];
+
+describe('PenetrationTestsPageClient', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useSearchParamsMock.mockReturnValue(new URLSearchParams());
+
+    reportHookMock.mockReturnValue({
+      reports: [],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: [],
+      completedReports: [],
+    });
+
+    createReportMock.mockReset();
+    createReportMock.mockResolvedValue({
+      checkoutMode: 'mock',
+      checkoutUrl: 'https://checkout.local/example',
+      id: 'run_new',
+    });
+
+    createHookMock.mockReturnValue({
+      createReport: createReportMock,
+      isCreating: false,
+      error: null,
+      resetError: vi.fn(),
+    });
+
+    if (typeof window !== 'undefined') {
+      originalLocation = window.location;
+      locationAssignMock = vi.fn();
+      Object.defineProperty(window, 'location', {
+        value: {
+          ...originalLocation,
+          assign: locationAssignMock,
+        },
+        configurable: true,
+      });
+    }
+  });
+
+  afterEach(() => {
+    if (typeof window !== 'undefined' && originalLocation) {
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        configurable: true,
+      });
+    }
+  });
+
+  it('renders an empty state and call-to-action when no reports exist', () => {
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    expect(screen.getAllByText('No reports yet')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Create your first report' })).toBeInTheDocument();
+  });
+
+  it('renders loading state for submit button while checkout creation is in progress', () => {
+    createHookMock.mockReturnValue({
+      createReport: createReportMock,
+      isCreating: true,
+      error: null,
+      resetError: vi.fn(),
+    });
+
+    const { getByText } = render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    fireEvent.click(getByText('Create your first report'));
+
+    expect(screen.getByText('Redirecting...')).toBeInTheDocument();
+    expect(screen.getByText('Redirecting...').closest('button')).toBeTruthy();
+  });
+
+  it('displays completed report summary when there are no active reports', () => {
+    reportHookMock.mockReturnValue({
+      reports: [reportRows[1]],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: [],
+      completedReports: [reportRows[1]],
+    });
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    expect(screen.getByText('1 completed report')).toBeInTheDocument();
+  });
+
+  it('uses pluralized summary copy for multiple active and completed report counts', () => {
+    reportHookMock.mockReturnValue({
+      reports: reportRows,
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: reportRows,
+      completedReports: [reportRows[1], { ...reportRows[1], id: 'run_completed_2' }],
+    });
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    expect(screen.getByText('2 reports in progress')).toBeInTheDocument();
+  });
+
+  it('uses pluralized summary copy for multiple completed reports when none are active', () => {
+    reportHookMock.mockReturnValue({
+      reports: [{ ...reportRows[1], id: 'run_completed_2' }, reportRows[1]],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: [],
+      completedReports: [{ ...reportRows[1], id: 'run_completed_2' }, reportRows[1]],
+    });
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    expect(screen.getByText('2 completed reports')).toBeInTheDocument();
+  });
+
+  it('uses fallback progress phase text when phase is missing', () => {
+    reportHookMock.mockReturnValue({
+      reports: [
+        {
+          id: 'run_without_phase',
+          sandboxId: 'sb5',
+          workflowId: 'wf5',
+          sessionId: 's5',
+          targetUrl: 'https://running.no-phase.example.com',
+          repoUrl: 'https://github.com/org/no-phase',
+          status: 'running',
+          createdAt: '2026-02-26T14:00:00Z',
+          updatedAt: '2026-02-26T14:30:00Z',
+          error: null,
+          temporalUiUrl: null,
+          webhookUrl: null,
+          userId: 'user_1',
+          organizationId: 'org_123',
+          progress: {
+            status: 'running',
+            phase: null,
+            completedAgents: 0,
+            totalAgents: 2,
+            agent: null,
+            elapsedMs: 500,
+          },
+        },
+      ],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: [
+        {
+          id: 'run_without_phase',
+          sandboxId: 'sb5',
+          workflowId: 'wf5',
+          sessionId: 's5',
+          targetUrl: 'https://running.no-phase.example.com',
+          repoUrl: 'https://github.com/org/no-phase',
+          status: 'running',
+          createdAt: '2026-02-26T14:00:00Z',
+          updatedAt: '2026-02-26T14:30:00Z',
+          error: null,
+          temporalUiUrl: null,
+          webhookUrl: null,
+          userId: 'user_1',
+          organizationId: 'org_123',
+          progress: {
+            status: 'running',
+            phase: null,
+            completedAgents: 0,
+            totalAgents: 2,
+            agent: null,
+            elapsedMs: 500,
+          },
+        },
+      ],
+      completedReports: [],
+    });
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    expect(screen.getByText('In progress (0/2)')).toBeInTheDocument();
+  });
+
+  it('renders running and completed reports in the table', () => {
+    reportHookMock.mockReturnValue({
+      reports: reportRows,
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: [reportRows[0]],
+      completedReports: [reportRows[1]],
+    });
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    expect(screen.getByText('https://running.example.com')).toBeInTheDocument();
+    expect(screen.getByText('https://completed.example.com')).toBeInTheDocument();
+    expect(screen.getByText('1 report in progress')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'View output' })).toBeInTheDocument();
+  });
+
+  it('renders repository fallback when repoUrl is not available', () => {
+    reportHookMock.mockReturnValue({
+      reports: [
+        {
+          id: 'run_no_repo',
+          sandboxId: 'sb_no_repo',
+          workflowId: 'wf_no_repo',
+          sessionId: 's_no_repo',
+          targetUrl: 'https://no-repo.example.com',
+          repoUrl: null,
+          status: 'running',
+          createdAt: '2026-02-26T14:00:00Z',
+          updatedAt: '2026-02-26T14:30:00Z',
+          error: null,
+          temporalUiUrl: null,
+          webhookUrl: null,
+          userId: 'user_1',
+          organizationId: 'org_123',
+          progress: {
+            status: 'running',
+            phase: 'scan',
+            completedAgents: 1,
+            totalAgents: 2,
+            agent: null,
+            elapsedMs: 1000,
+          },
+        },
+      ],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: [
+        {
+          id: 'run_no_repo',
+          sandboxId: 'sb_no_repo',
+          workflowId: 'wf_no_repo',
+          sessionId: 's_no_repo',
+          targetUrl: 'https://no-repo.example.com',
+          repoUrl: null,
+          status: 'running',
+          createdAt: '2026-02-26T14:00:00Z',
+          updatedAt: '2026-02-26T14:30:00Z',
+          error: null,
+          temporalUiUrl: null,
+          webhookUrl: null,
+          userId: 'user_1',
+          organizationId: 'org_123',
+          progress: {
+            status: 'running',
+            phase: 'scan',
+            completedAgents: 1,
+            totalAgents: 2,
+            agent: null,
+            elapsedMs: 1000,
+          },
+        },
+      ],
+      completedReports: [],
+    });
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    expect(screen.getByText('https://no-repo.example.com')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  it('shows checkout success notifications from query params and clears the query', () => {
+    const refreshReports = vi.fn();
+    reportHookMock.mockReturnValue({
+      reports: [],
+      isLoading: false,
+      error: undefined,
+      mutate: refreshReports,
+      activeReports: [],
+      completedReports: [],
+    });
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success&reportId=run_99'));
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    return waitFor(() => {
+      expect(refreshReports).toHaveBeenCalled();
+      expect(toastSuccessMock).toHaveBeenCalledWith(
+        'Checkout completed. Your report run_99 is now in the queue.',
+      );
+      expect(replaceMock).toHaveBeenCalledWith('/org_123/security/penetration-tests');
+    });
+  });
+
+  it('triggers report refresh on checkout notifications before rendering other content', async () => {
+    const refreshReports = vi.fn();
+    reportHookMock.mockReturnValue({
+      reports: [],
+      isLoading: false,
+      error: undefined,
+      mutate: refreshReports,
+      activeReports: [],
+      completedReports: [],
+    });
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success&reportId=run_22'));
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    await waitFor(() => {
+      expect(refreshReports).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('shows a loading state while list data is loading', () => {
+    reportHookMock.mockReturnValue({
+      reports: [],
+      isLoading: true,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: [],
+      completedReports: [],
+    });
+
+    const { container } = render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    expect(container.querySelector('.animate-spin')).toBeTruthy();
+  });
+
+  it('shows generic checkout success message when reportId is missing', () => {
+    reportHookMock.mockReturnValue({
+      reports: [],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: [],
+      completedReports: [],
+    });
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success'));
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    expect(toastSuccessMock).toHaveBeenCalledWith('Checkout completed. Your report has been queued.');
+    expect(replaceMock).toHaveBeenCalledWith('/org_123/security/penetration-tests');
+  });
+
+  it('shows checkout failure notifications from query params', () => {
+    reportHookMock.mockReturnValue({
+      reports: [],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: [],
+      completedReports: [],
+    });
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=error'));
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    expect(toastErrorMock).toHaveBeenCalledWith('Checkout did not complete. Try again.');
+    expect(replaceMock).toHaveBeenCalledWith('/org_123/security/penetration-tests');
+  });
+
+  it('preserves unrelated query params while clearing checkout params', () => {
+    const refreshReports = vi.fn();
+    reportHookMock.mockReturnValue({
+      reports: [],
+      isLoading: false,
+      error: undefined,
+      mutate: refreshReports,
+      activeReports: [],
+      completedReports: [],
+    });
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success&reportId=run_77&foo=bar'));
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    return waitFor(() => {
+      expect(refreshReports).toHaveBeenCalled();
+      expect(toastSuccessMock).toHaveBeenCalledWith(
+        'Checkout completed. Your report run_77 is now in the queue.',
+      );
+      expect(replaceMock).toHaveBeenCalledWith('/org_123/security/penetration-tests?foo=bar');
+    });
+  });
+
+  it('renders progress for running report rows including phase and agent counts', () => {
+    reportHookMock.mockReturnValue({
+      reports: [
+        {
+          id: 'run_in_progress',
+          sandboxId: 'sb3',
+          workflowId: 'wf3',
+          sessionId: 's3',
+          targetUrl: 'https://running-progress.example.com',
+          repoUrl: 'https://github.com/org/running-progress',
+          status: 'running',
+          createdAt: '2026-02-26T14:00:00Z',
+          updatedAt: '2026-02-26T14:30:00Z',
+          error: null,
+          temporalUiUrl: null,
+          webhookUrl: null,
+          userId: 'user_1',
+          organizationId: 'org_123',
+          progress: {
+            status: 'running',
+            phase: 'scan',
+            completedAgents: 1,
+            totalAgents: 2,
+            agent: null,
+            elapsedMs: 1500,
+          },
+        },
+      ],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: [
+        {
+          id: 'run_in_progress',
+          sandboxId: 'sb3',
+          workflowId: 'wf3',
+          sessionId: 's3',
+          targetUrl: 'https://running-progress.example.com',
+          repoUrl: 'https://github.com/org/running-progress',
+          status: 'running',
+          createdAt: '2026-02-26T14:00:00Z',
+          updatedAt: '2026-02-26T14:30:00Z',
+          error: null,
+          temporalUiUrl: null,
+          webhookUrl: null,
+          userId: 'user_1',
+          organizationId: 'org_123',
+          progress: {
+            status: 'running',
+            phase: 'scan',
+            completedAgents: 1,
+            totalAgents: 2,
+            agent: null,
+            elapsedMs: 1500,
+          },
+        },
+      ],
+      completedReports: [],
+    });
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    expect(screen.getByText('scan (1/2)')).toBeInTheDocument();
+  });
+
+  it('renders progress row without completed/total counts when values are unavailable', () => {
+    reportHookMock.mockReturnValue({
+      reports: [
+        {
+          id: 'run_without_counts',
+          sandboxId: 'sb4',
+          workflowId: 'wf4',
+          sessionId: 's4',
+          targetUrl: 'https://running-progress.example.com',
+          repoUrl: 'https://github.com/org/running-progress',
+          status: 'running',
+          createdAt: '2026-02-26T14:00:00Z',
+          updatedAt: '2026-02-26T14:30:00Z',
+          error: null,
+          temporalUiUrl: null,
+          webhookUrl: null,
+          userId: 'user_1',
+          organizationId: 'org_123',
+          progress: {
+            status: 'running',
+            phase: 'initializing',
+            completedAgents: 'n/a' as unknown as number,
+            totalAgents: 'n/a' as unknown as number,
+          },
+        },
+      ],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: [
+        {
+          id: 'run_without_counts',
+          sandboxId: 'sb4',
+          workflowId: 'wf4',
+          sessionId: 's4',
+          targetUrl: 'https://running-progress.example.com',
+          repoUrl: 'https://github.com/org/running-progress',
+          status: 'running',
+          createdAt: '2026-02-26T14:00:00Z',
+          updatedAt: '2026-02-26T14:30:00Z',
+          error: null,
+          temporalUiUrl: null,
+          webhookUrl: null,
+          userId: 'user_1',
+          organizationId: 'org_123',
+          progress: {
+            status: 'running',
+            phase: 'initializing',
+            completedAgents: 'n/a' as unknown as number,
+            totalAgents: 'n/a' as unknown as number,
+          },
+        },
+      ],
+      completedReports: [],
+    });
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    expect(screen.getByText('initializing')).toBeInTheDocument();
+    expect(screen.queryByText('(n/a/n/a)')).toBeNull();
+  });
+
+  it('creates a report and redirects to checkout when submitted', async () => {
+    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    await act(async () => {
+      fireEvent.click(getByText('Create Report'));
+    });
+
+    await act(async () => {
+      fireEvent.change(getByLabelText('Target URL'), {
+        target: {
+          value: 'https://example.com',
+        },
+      });
+      fireEvent.change(getByLabelText('Repository URL'), {
+        target: {
+          value: 'https://github.com/org/repo',
+        },
+      });
+      fireEvent.click(getByText('Continue to checkout'));
+    });
+
+    await waitFor(() => {
+      expect(createReportMock).toHaveBeenCalledWith({
+        targetUrl: 'https://example.com',
+        repoUrl: 'https://github.com/org/repo',
+      });
+      expect(toastSuccessMock).toHaveBeenCalledWith('Redirecting to checkout...');
+      expect(locationAssignMock).toHaveBeenCalledWith('https://checkout.local/example');
+    });
+  });
+
+  it('requires target URL before submitting report request', async () => {
+    const { getByText } = render(<PenetrationTestsPageClient orgId="org_123" />);
+    const submitForm = screen.getByText('Continue to checkout').closest('form');
+
+    await act(async () => {
+      fireEvent.submit(submitForm as HTMLFormElement);
+    });
+
+    await waitFor(() => {
+      expect(createReportMock).not.toHaveBeenCalled();
+      expect(toastErrorMock).toHaveBeenCalledWith('Target URL is required');
+    });
+  });
+
+  it('creates a report without repository URL when only target is provided', async () => {
+    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    await act(async () => {
+      fireEvent.click(getByText('Create Report'));
+    });
+
+    await act(async () => {
+      fireEvent.change(getByLabelText('Target URL'), {
+        target: {
+          value: 'jungle.ai',
+        },
+      });
+      fireEvent.click(getByText('Continue to checkout'));
+    });
+
+    await waitFor(() => {
+      expect(createReportMock).toHaveBeenCalledWith({
+        targetUrl: 'https://jungle.ai',
+        repoUrl: undefined,
+      });
+    });
+  });
+
+  it('surfaces errors when checkout creation fails', async () => {
+    createReportMock.mockRejectedValue(new Error('Could not start checkout'));
+
+    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    await act(async () => {
+      fireEvent.click(getByText('Create Report'));
+    });
+
+    await act(async () => {
+      fireEvent.change(getByLabelText('Target URL'), {
+        target: {
+          value: 'https://example.com',
+        },
+      });
+      fireEvent.change(getByLabelText('Repository URL'), {
+        target: {
+          value: 'https://github.com/org/repo',
+        },
+      });
+      fireEvent.click(getByText('Continue to checkout'));
+    });
+
+    await waitFor(() => {
+      expect(toastErrorMock).toHaveBeenCalledWith('Could not start checkout');
+    });
+  });
+
+  it('surfaces a generic error message when checkout creation fails with non-error value', async () => {
+    createReportMock.mockRejectedValue('service-down');
+
+    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    await act(async () => {
+      fireEvent.click(getByText('Create Report'));
+    });
+
+    await act(async () => {
+      fireEvent.change(getByLabelText('Target URL'), {
+        target: {
+          value: 'https://example.com',
+        },
+      });
+      fireEvent.change(getByLabelText('Repository URL'), {
+        target: {
+          value: 'https://github.com/org/repo',
+        },
+      });
+      fireEvent.click(getByText('Continue to checkout'));
+    });
+
+    await waitFor(() => {
+      expect(toastErrorMock).toHaveBeenCalledWith('Could not queue a new report');
+    });
+  });
+});

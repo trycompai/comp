@@ -141,6 +141,7 @@ export default async function Layout({
   let isQuestionnaireEnabled = false;
   let isTrustNdaEnabled = false;
   let isWebAutomationsEnabled = false;
+  let isSecurityEnabled = false;
   if (session?.user?.id) {
     const flags = await getFeatureFlags(session.user.id);
     isQuestionnaireEnabled = flags['ai-vendor-questionnaire'] === true;
@@ -149,6 +150,7 @@ export default async function Layout({
     isWebAutomationsEnabled =
       flags['is-web-automations-enabled'] === true ||
       flags['is-web-automations-enabled'] === 'true';
+    isSecurityEnabled = flags['is-security-enabled'] === true || flags['is-security-enabled'] === 'true';
   }
 
   // Check auditor role
@@ -176,6 +178,7 @@ export default async function Layout({
         isQuestionnaireEnabled={isQuestionnaireEnabled}
         isTrustNdaEnabled={isTrustNdaEnabled}
         isWebAutomationsEnabled={isWebAutomationsEnabled}
+        isSecurityEnabled={isSecurityEnabled}
         hasAuditorRole={hasAuditorRole}
         isOnlyAuditor={isOnlyAuditor}
         user={user}

@@ -1,0 +1,85 @@
+---
+title: "Penetration Tests"
+description: "Generate one-time AI-powered penetration test reports, track progress, and download deliverables."
+---
+
+## About Penetration Tests
+
+Penetration Tests lets your team run one-time external security assessments and receive a generated report with findings and remediation guidance.
+
+The feature is available in **Security** as **Penetration Tests**.
+
+### What you can do
+
+- Start a new one-time penetration test from a target URL
+- Track queued and in-progress jobs in a single list view
+- Open run details for status and execution metadata
+- Download report artifacts when complete (Markdown and PDF)
+
+## Prerequisites
+
+Before using Penetration Tests, make sure:
+
+1. Your organization has the feature enabled
+2. You have access to the **Security** section
+3. You know the target URL you want tested
+
+## Create a penetration test
+
+1. Go to **Security** → **Penetration Tests**
+2. Click **Create Report**
+3. Enter a **Target URL**
+4. (Optional) Enter a repository URL for additional context
+5. Continue through checkout to queue the run
+
+<Note>
+  If you enter a domain without a protocol (for example `example.com`), Comp will normalize it to a valid URL format.
+</Note>
+
+## Track run status
+
+After submission, the run appears in your report list and detail page.
+
+Common states include:
+
+- **In queue**: Job accepted and waiting to start
+- **Running**: Assessment is in progress
+- **Completed**: Artifacts are ready
+- **Failed/Cancelled**: Run did not complete successfully
+
+For in-progress runs, the detail page shows live progress information when available.
+
+## Access deliverables
+
+When a run completes, open the run detail page to access:
+
+- **View markdown**: Opens the generated report content
+- **Download PDF**: Downloads a customer-shareable report artifact
+
+## Best practices
+
+1. Start with externally reachable staging or production-like targets
+2. Run tests after major infrastructure or application changes
+3. Review findings with engineering and assign remediation owners
+4. Keep completed PDFs for audit and customer security reviews
+
+## Troubleshooting
+
+<Accordion title="I do not see the Penetration Tests tab" description="Feature access and visibility" icon="warning">
+  Verify your organization has the feature enabled and that your user has access to Security pages.
+</Accordion>
+
+<Accordion title="My run is stuck in queue or progress is delayed" description="Status updates and provider execution" icon="clock">
+  Refresh the page and check the run detail view. If status does not change after a reasonable period, contact support with the run ID.
+</Accordion>
+
+<Accordion title="Report download is unavailable" description="Artifact availability" icon="file">
+  PDF and markdown artifacts are available after the run reaches Completed status.
+</Accordion>
+
+## Support
+
+If you need help with Penetration Tests:
+
+1. Contact support at [support@trycomp.ai](mailto:support@trycomp.ai)
+2. Join our [Discord community](https://discord.gg/compai)
