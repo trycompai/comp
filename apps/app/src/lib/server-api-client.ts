@@ -61,7 +61,9 @@ async function call<T = unknown>(
 
     return {
       data: response.ok ? data : undefined,
-      error: !response.ok ? data?.message || `HTTP ${response.status}` : undefined,
+      error: !response.ok
+        ? data?.message || data?.error || `HTTP ${response.status}`
+        : undefined,
       status: response.status,
     };
   } catch (error) {

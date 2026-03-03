@@ -109,7 +109,9 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 Serial Number
               </Text>
               <Text size="sm" weight="medium">
-                {device.serialNumber ?? 'N/A'}
+                {device.serialNumber?.startsWith('fallback:')
+                  ? 'Generic serial number'
+                  : (device.serialNumber ?? 'N/A')}
               </Text>
             </div>
             <div>

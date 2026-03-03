@@ -1,5 +1,6 @@
 import { auth } from '@/app/lib/auth';
 import { db } from '@db';
+import { randomUUID } from 'node:crypto';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -69,11 +70,43 @@ export async function POST(req: NextRequest) {
       });
 
       if (existing && existing.memberId !== member.id) {
-        // Device belongs to a different member — prevent hijacking
-        return NextResponse.json(
-          { error: 'Device is already registered to another user in this organization' },
-          { status: 409 },
-        );
+        // Serial number belongs to a different member. This happens when multiple
+        // machines report the same generic serial (e.g. "System Serial Number",
+        // "To Be Filled By O.E.M."). Instead of blocking, treat the serial as
+        // unreliable and register with a generated fallback serial.
+        // Format: "fallback:<originalSerial>:<uuid>" — self-documenting and unique.
+        const fallback = await db.device.findFirst({
+          where: {
+            hostname,
+            memberId: member.id,
+            organizationId,
+            serialNumber: { startsWith: `fallback:${serialNumber}:` },
+          },
+        });
+
+        if (fallback) {
+          device = await db.device.update({
+            where: { id: fallback.id },
+            data: { name, platform, osVersion, hardwareModel, agentVersion },
+          });
+        } else {
+          const fallbackSerial = `fallback:${serialNumber}:${randomUUID()}`;
+          device = await db.device.create({
+            data: {
+              name,
+              hostname,
+              platform,
+              osVersion,
+              serialNumber: fallbackSerial,
+              hardwareModel,
+              agentVersion,
+              memberId: member.id,
+              organizationId,
+            },
+          });
+        }
+
+        return NextResponse.json({ deviceId: device.id });
       }
 
       if (existing) {

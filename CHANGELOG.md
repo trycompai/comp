@@ -1,3 +1,31 @@
+# [1.87.0](https://github.com/trycompai/comp/compare/v1.86.1...v1.87.0) (2026-03-02)
+
+
+### Features
+
+* **security:** launch Penetration Tests epic across app, API lifecycle, and provider integration ([#2193](https://github.com/trycompai/comp/issues/2193)) ([5c6e34e](https://github.com/trycompai/comp/commit/5c6e34e8d6f64c84da6d740866eeda7b9dea464a))
+
+## [1.86.1](https://github.com/trycompai/comp/compare/v1.86.0...v1.86.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* **api:** allow API key auth for task status updates ([#2200](https://github.com/trycompai/comp/issues/2200)) ([fa37281](https://github.com/trycompai/comp/commit/fa372817867d46c476a0b7eb8134b6c93b652e56))
+
+# [1.86.0](https://github.com/trycompai/comp/compare/v1.85.1...v1.86.0) (2026-02-26)
+
+
+### Bug Fixes
+
+* **app:** remove number of inactive users in people card on overview page ([#2188](https://github.com/trycompai/comp/issues/2188)) ([ca24322](https://github.com/trycompai/comp/commit/ca243221238888ef64b389fc549e3af05f2f1fc4))
+* **app:** require vercel txt verification only for vercel domains ([#2179](https://github.com/trycompai/comp/issues/2179)) ([410288e](https://github.com/trycompai/comp/commit/410288ecfb50641ce4107093fae7c2c8fa2dd757))
+* **portal:** fix the tailwind configuration issue on portal ([#2187](https://github.com/trycompai/comp/issues/2187)) ([5751b91](https://github.com/trycompai/comp/commit/5751b918d2b32f1d69b37cc0856499693c040479))
+
+
+### Features
+
+* **evidence-forms:** add endpoint and UI for file upload submissions ([e4ae157](https://github.com/trycompai/comp/commit/e4ae157fb1e1b57e0c27eea46f0c0d2f7637e093))
+
 ## [1.85.1](https://github.com/trycompai/comp/compare/v1.85.0...v1.85.1) (2026-02-23)
 
 
