@@ -269,7 +269,7 @@ export function useCreatePenetrationTest(
           throw new Error('Could not resolve report ID from create response.');
         }
 
-        await checkAndChargePentestBilling(organizationId);
+        await checkAndChargePentestBilling(organizationId, reportId);
 
         const data: CreatePenetrationTestResponse = {
           id: reportId,

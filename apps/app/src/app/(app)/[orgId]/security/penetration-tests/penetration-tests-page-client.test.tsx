@@ -3,14 +3,19 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { PentestRun } from '@/lib/security/penetration-tests-client';
+import * as integrationPlatform from '@/hooks/use-integration-platform';
+import * as pentestHooks from './hooks/use-penetration-tests';
 import { PenetrationTestsPageClient } from './penetration-tests-page-client';
 
-const pushMock = vi.fn();
-const reportHookMock = vi.fn();
-const createHookMock = vi.fn();
-const createReportMock = vi.fn();
-const toastSuccessMock = vi.fn();
-const toastErrorMock = vi.fn();
+const { pushMock, reportHookMock, createHookMock, createReportMock, toastSuccessMock, toastErrorMock, startOAuthMock } = vi.hoisted(() => ({
+  pushMock: vi.fn(),
+  reportHookMock: vi.fn(),
+  createHookMock: vi.fn(),
+  createReportMock: vi.fn(),
+  toastSuccessMock: vi.fn(),
+  toastErrorMock: vi.fn(),
+  startOAuthMock: vi.fn().mockResolvedValue({ success: false, error: 'Not configured' }),
+}));
 
 vi.mock('next/link', () => ({
   default: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
@@ -42,7 +47,12 @@ vi.mock('./hooks/use-penetration-tests', () => ({
   useCreatePenetrationTest: (...args: never[]) => createHookMock(...args),
   usePenetrationTest: vi.fn(),
   usePenetrationTestProgress: vi.fn(),
-  useGithubRepos: vi.fn().mockReturnValue({ repos: [], connected: false, isLoading: false }),
+  useGithubRepos: vi.fn().mockReturnValue({ repos: [], isLoading: false }),
+}));
+
+vi.mock('@/hooks/use-integration-platform', () => ({
+  useIntegrationConnections: vi.fn().mockReturnValue({ connections: [], isLoading: false }),
+  useIntegrationMutations: vi.fn().mockReturnValue({ startOAuth: startOAuthMock }),
 }));
 
 vi.mock('@comp/ui/select', () => ({
@@ -156,7 +166,6 @@ describe('PenetrationTestsPageClient', () => {
       completedReports: [],
     });
 
-    createReportMock.mockReset();
     createReportMock.mockResolvedValue({
       id: 'run_new',
       status: 'provisioning',
@@ -168,6 +177,23 @@ describe('PenetrationTestsPageClient', () => {
       error: null,
       resetError: vi.fn(),
     });
+
+    startOAuthMock.mockResolvedValue({ success: false, error: 'Not configured' });
+
+    vi.mocked(integrationPlatform.useIntegrationConnections).mockReturnValue({
+      connections: [],
+      isLoading: false,
+      error: undefined,
+      refresh: vi.fn(),
+    });
+    vi.mocked(integrationPlatform.useIntegrationMutations).mockReturnValue({
+      startOAuth: startOAuthMock,
+    } as ReturnType<typeof integrationPlatform.useIntegrationMutations>);
+
+    vi.mocked(pentestHooks.useGithubRepos).mockReturnValue({
+      repos: [],
+      isLoading: false,
+    } as ReturnType<typeof pentestHooks.useGithubRepos>);
   });
 
   it('renders an empty state and call-to-action when no reports exist', () => {
@@ -528,5 +554,52 @@ describe('PenetrationTestsPageClient', () => {
     await waitFor(() => {
       expect(toastErrorMock).toHaveBeenCalledWith('Could not queue a new report');
     });
+  });
+
+  it('shows a Connect GitHub button when GitHub is not connected', async () => {
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Create Report'));
+    });
+
+    expect(screen.getByRole('button', { name: 'Connect GitHub' })).toBeInTheDocument();
+    expect(screen.queryByTestId('github-repo-select')).toBeNull();
+  });
+
+  it('shows the repo selector dropdown when GitHub is connected', async () => {
+    vi.mocked(integrationPlatform.useIntegrationConnections).mockReturnValue({
+      connections: [{ id: 'conn_1', providerSlug: 'github', status: 'active', variables: null, errorMessage: null }] as never,
+      isLoading: false,
+      error: undefined,
+      refresh: vi.fn(),
+    });
+    vi.mocked(pentestHooks.useGithubRepos).mockReturnValue({
+      repos: [{ id: 1, name: 'repo', fullName: 'org/repo', private: false, htmlUrl: 'https://github.com/org/repo' }],
+      isLoading: false,
+    } as ReturnType<typeof pentestHooks.useGithubRepos>);
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Create Report'));
+    });
+
+    expect(screen.getByTestId('github-repo-select')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Connect GitHub' })).toBeNull();
+  });
+
+  it('starts GitHub OAuth when Connect GitHub button is clicked', async () => {
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Create Report'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Connect GitHub' }));
+    });
+
+    expect(startOAuthMock).toHaveBeenCalledWith('github', expect.any(String));
   });
 });

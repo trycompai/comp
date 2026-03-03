@@ -194,7 +194,7 @@ export async function createBillingPortalSession(
   return { url: portalSession.url };
 }
 
-export async function checkAndChargePentestBilling(orgId: string): Promise<void> {
+export async function checkAndChargePentestBilling(orgId: string, runId: string): Promise<void> {
   await requireOrgMember(orgId);
 
   const subscription = await db.pentestSubscription.findUnique({
@@ -261,9 +261,9 @@ export async function checkAndChargePentestBilling(orgId: string): Promise<void>
       ? defaultPaymentMethod
       : defaultPaymentMethod.id;
 
-  // Idempotency key scoped to org + billing period + run number so that
-  // concurrent creates at the boundary deduplicate to a single charge.
-  const idempotencyKey = `pentest-overage-${orgId}-${subscription.currentPeriodStart.getTime()}-run${runsThisPeriod}`;
+  // Idempotency key scoped to the specific run ID so concurrent creates
+  // never share a key and each overage run is charged exactly once.
+  const idempotencyKey = `pentest-overage-${orgId}-${runId}`;
 
   const paymentIntent = await stripe.paymentIntents.create(
     {
