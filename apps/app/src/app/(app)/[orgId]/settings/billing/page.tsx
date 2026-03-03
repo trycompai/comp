@@ -10,17 +10,14 @@ import {
   createBillingPortalSession,
   handleSubscriptionSuccess,
   subscribeToPentestPlan,
-} from '../actions/billing';
+} from '../../security/penetration-tests/actions/billing';
 
-interface SubscriptionPageProps {
+interface BillingPageProps {
   params: Promise<{ orgId: string }>;
   searchParams: Promise<{ success?: string; session_id?: string }>;
 }
 
-export default async function PentestSubscriptionPage({
-  params,
-  searchParams,
-}: SubscriptionPageProps) {
+export default async function BillingPage({ params, searchParams }: BillingPageProps) {
   const { orgId } = await params;
   const { success, session_id } = await searchParams;
 
@@ -52,34 +49,38 @@ export default async function PentestSubscriptionPage({
       await handleSubscriptionSuccess(orgId, session_id);
       successMessage = 'Subscription activated! You can now create penetration test runs.';
     } catch (err) {
-      errorMessage =
-        err instanceof Error ? err.message : 'Failed to activate subscription.';
+      errorMessage = err instanceof Error ? err.message : 'Failed to activate subscription.';
     }
   }
+
+  const billing = await db.organizationBilling.findUnique({
+    where: { organizationId: orgId },
+  });
 
   const subscription = await db.pentestSubscription.findUnique({
     where: { organizationId: orgId },
   });
 
-  const runsThisPeriod = subscription
-    ? await db.securityPenetrationTestRun.count({
-        where: {
-          organizationId: orgId,
-          createdAt: {
-            gte: subscription.currentPeriodStart,
-            lte: subscription.currentPeriodEnd,
+  const runsThisPeriod =
+    subscription
+      ? await db.securityPenetrationTestRun.count({
+          where: {
+            organizationId: orgId,
+            createdAt: {
+              gte: subscription.currentPeriodStart,
+              lte: subscription.currentPeriodEnd,
+            },
           },
-        },
-      })
-    : null;
+        })
+      : null;
 
   const appBaseUrl = env.NEXT_PUBLIC_BETTER_AUTH_URL ?? '';
-  const baseUrl = `/${orgId}/security/penetration-tests`;
+  const billingUrl = `${appBaseUrl}/${orgId}/settings/billing`;
 
   return (
     <PageLayout>
-      <PageHeader title="Pentest Subscription">
-        Manage your penetration test subscription plan.
+      <PageHeader title="Billing">
+        Manage your subscriptions and payment methods.
       </PageHeader>
 
       {successMessage && (
@@ -96,10 +97,43 @@ export default async function PentestSubscriptionPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Subscription Status</CardTitle>
+          <CardTitle>Payment &amp; Billing</CardTitle>
           <CardDescription>
-            Your plan includes 3 penetration test runs per month. Additional runs are charged as
-            overage.
+            Manage your payment method for all app subscriptions.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {billing ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Stripe customer connected.
+              </p>
+              <form
+                action={async () => {
+                  'use server';
+                  const { url } = await createBillingPortalSession(orgId, billingUrl);
+                  redirect(url);
+                }}
+              >
+                <Button type="submit" variant="outline">
+                  Manage payment method
+                </Button>
+              </form>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Payment method will be set up when you subscribe to an app below.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Penetration Testing</CardTitle>
+          <CardDescription>
+            $99/month — Includes 3 penetration test runs per period. Additional runs charged as
+            overage at $49/run.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -142,31 +176,11 @@ export default async function PentestSubscriptionPage({
             <form
               action={async () => {
                 'use server';
-                const { url } = await subscribeToPentestPlan(
-                  orgId,
-                  `${appBaseUrl}${baseUrl}`,
-                );
+                const { url } = await subscribeToPentestPlan(orgId, billingUrl);
                 redirect(url);
               }}
             >
               <Button type="submit">Subscribe — $99/month (3 runs included)</Button>
-            </form>
-          )}
-
-          {subscription && subscription.status === 'active' && (
-            <form
-              action={async () => {
-                'use server';
-                const { url } = await createBillingPortalSession(
-                  orgId,
-                  `${appBaseUrl}${baseUrl}/subscription`,
-                );
-                redirect(url);
-              }}
-            >
-              <Button type="submit" variant="outline">
-                Manage payment method
-              </Button>
             </form>
           )}
         </CardContent>
@@ -177,6 +191,6 @@ export default async function PentestSubscriptionPage({
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Pentest Subscription',
+    title: 'Billing',
   };
 }

@@ -117,7 +117,7 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
       >
         Run penetration tests with Maced and review generated reports.{' '}
         <a
-          href={`/${orgId}/security/penetration-tests/subscription`}
+          href={`/${orgId}/settings/billing`}
           className="text-primary underline text-sm"
         >
           Manage subscription
