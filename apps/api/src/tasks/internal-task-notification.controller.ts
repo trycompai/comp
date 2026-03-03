@@ -9,7 +9,8 @@ import {
 } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { TaskStatus } from '@db';
-import { IsBoolean, IsEnum, IsInt, IsString, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsInt, IsString, Min, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { InternalTokenGuard } from '../auth/internal-token.guard';
 import { TaskNotifierService } from './task-notifier.service';
 
@@ -41,6 +42,38 @@ class NotifyAutomationFailuresDto {
   @ApiProperty({ description: 'Whether task status was changed to failed' })
   @IsBoolean()
   taskStatusChanged: boolean;
+}
+
+class FailedTaskDto {
+  @ApiProperty({ description: 'Task ID' })
+  @IsString()
+  taskId: string;
+
+  @ApiProperty({ description: 'Task title' })
+  @IsString()
+  taskTitle: string;
+
+  @ApiProperty({ description: 'Number of failed automations for this task' })
+  @IsInt()
+  @Min(1)
+  failedCount: number;
+
+  @ApiProperty({ description: 'Total number of automations for this task' })
+  @IsInt()
+  @Min(1)
+  totalCount: number;
+}
+
+class NotifyBulkAutomationFailuresDto {
+  @ApiProperty({ description: 'Organization ID' })
+  @IsString()
+  organizationId: string;
+
+  @ApiProperty({ description: 'Array of failed tasks with counts', type: [FailedTaskDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FailedTaskDto)
+  tasks: FailedTaskDto[];
 }
 
 class NotifyStatusChangeDto {
@@ -138,6 +171,36 @@ export class InternalTaskNotificationController {
     } catch (error) {
       this.logger.error(
         `[notifyAutomationFailures] Failed for task ${body.taskId}:`,
+        error instanceof Error ? error.message : 'Unknown error',
+      );
+
+      throw new InternalServerErrorException('Failed to send notifications');
+    }
+  }
+
+  @Post('notify-bulk-automation-failures')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Send consolidated automation failure digest (email + in-app) for an org (internal)',
+  })
+  @ApiResponse({ status: 200, description: 'Notifications sent' })
+  @ApiResponse({ status: 500, description: 'Notification delivery failed' })
+  async notifyBulkAutomationFailures(@Body() body: NotifyBulkAutomationFailuresDto) {
+    this.logger.log(
+      `[notifyBulkAutomationFailures] Received request for org ${body.organizationId} (${body.tasks.length} failed tasks)`,
+    );
+
+    try {
+      await this.taskNotifierService.notifyBulkAutomationFailures({
+        organizationId: body.organizationId,
+        tasks: body.tasks,
+      });
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error(
+        `[notifyBulkAutomationFailures] Failed for org ${body.organizationId}:`,
         error instanceof Error ? error.message : 'Unknown error',
       );
 
