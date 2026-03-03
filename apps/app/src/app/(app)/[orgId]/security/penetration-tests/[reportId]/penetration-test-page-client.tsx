@@ -77,6 +77,7 @@ export function PenetrationTestPageClient({ orgId, reportId }: PenetrationTestPa
   const isInProgress = isReportInProgress(report.status);
   const safeTemporalUiUrl =
     report.temporalUiUrl ? toSafeExternalHttpUrl(report.temporalUiUrl) : null;
+  const runFailureReason = report.failedReason ?? report.error ?? null;
 
   const openArtifact = async (path: string, filename?: string): Promise<void> => {
     try {
@@ -165,10 +166,10 @@ export function PenetrationTestPageClient({ orgId, reportId }: PenetrationTestPa
             </div>
           </div>
 
-          {report.error && (
+          {runFailureReason && (
             <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
               <p className="font-medium">Run error</p>
-              <p>{report.error}</p>
+              <p>{runFailureReason}</p>
             </div>
           )}
 

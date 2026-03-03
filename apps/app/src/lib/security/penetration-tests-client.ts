@@ -21,6 +21,7 @@ export interface PentestRun {
   createdAt: string;
   updatedAt: string;
   error?: string | null;
+  failedReason?: string | null;
   temporalUiUrl?: string | null;
   webhookUrl?: string | null;
   userId: string;
@@ -43,6 +44,6 @@ export interface PentestCreateRequest {
 export interface CreatePenetrationTestResponse {
   checkoutMode?: 'mock' | 'stripe';
   id: string;
-  status?: string;
+  status?: PentestReportStatus;
   checkoutUrl: string;
 }

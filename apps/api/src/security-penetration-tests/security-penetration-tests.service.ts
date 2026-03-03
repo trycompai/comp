@@ -10,7 +10,11 @@ import { db } from '@trycompai/db';
 import { createHash, timingSafeEqual } from 'node:crypto';
 
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
-import { MacedClient, type MacedPentestProgress } from './maced-client';
+import {
+  MacedClient,
+  type MacedPentestProgress,
+  type MacedPentestRun,
+} from './maced-client';
 
 export type PentestReportStatus =
   | 'provisioning'
@@ -34,6 +38,7 @@ export interface SecurityPenetrationTest {
   createdAt: string;
   updatedAt: string;
   error?: string | null;
+  failedReason?: string | null;
   temporalUiUrl?: string | null;
   webhookUrl?: string | null;
   webhookToken?: string | null;
@@ -49,7 +54,7 @@ export interface BinaryArtifact {
 }
 
 interface PentestCompletedWebhookPayload {
-  id: string;
+  runId: string;
   report: {
     markdown: string;
     costUsd: number;
@@ -59,7 +64,7 @@ interface PentestCompletedWebhookPayload {
 }
 
 interface PentestFailedWebhookPayload {
-  id: string;
+  runId: string;
   error: string;
   failedAt: string;
 }
@@ -108,7 +113,7 @@ export class SecurityPenetrationTestsService {
 
     return reports.filter((report) => {
       return ownedRunIds.has(report.id);
-    }) as SecurityPenetrationTest[];
+    }).map((report) => this.mapMacedRunToSecurityPenetrationTest(report));
   }
 
   async createReport(
@@ -125,7 +130,6 @@ export class SecurityPenetrationTestsService {
       pipelineTesting: payload.pipelineTesting,
       testMode: payload.testMode,
       workspace: payload.workspace,
-      mockCheckout: payload.mockCheckout,
       webhookUrl: resolvedWebhookUrl,
     };
 
@@ -190,13 +194,13 @@ export class SecurityPenetrationTestsService {
       );
     }
 
-    return createdReport as SecurityPenetrationTest;
+    return this.mapMacedRunToSecurityPenetrationTest(createdReport);
   }
 
   async getReport(organizationId: string, id: string): Promise<SecurityPenetrationTest> {
     await this.assertRunOwnership(organizationId, id);
     const report = await this.macedClient.getPentest(id);
-    return report as SecurityPenetrationTest;
+    return this.mapMacedRunToSecurityPenetrationTest(report);
   }
 
   async getReportProgress(
@@ -262,9 +266,9 @@ export class SecurityPenetrationTestsService {
     const failedEvent = this.extractFailedWebhookPayload(payload);
 
     const payloadReportId =
-      completedEvent?.id ??
-      failedEvent?.id ??
-      this.extractStringField(payload, 'id');
+      completedEvent?.runId ??
+      failedEvent?.runId ??
+      this.extractStringField(payload, 'runId');
 
     if (!payloadReportId) {
       throw new BadRequestException('Webhook payload must include a report id');
@@ -327,6 +331,18 @@ export class SecurityPenetrationTestsService {
     }
 
     return value.slice(0, end);
+  }
+
+  private mapMacedRunToSecurityPenetrationTest(
+    report: MacedPentestRun,
+  ): SecurityPenetrationTest {
+    const failedReason = report.failedReason ?? report.error ?? null;
+
+    return {
+      ...(report as SecurityPenetrationTest),
+      failedReason,
+      error: report.error ?? failedReason,
+    };
   }
 
   private isRecord(value: unknown): value is Record<string, unknown> {
@@ -415,7 +431,7 @@ export class SecurityPenetrationTestsService {
       return null;
     }
 
-    const reportId = this.extractStringField(payload, 'id');
+    const reportId = this.extractStringField(payload, 'runId');
     const reportValue = payload.report;
     const isReportRecord = this.isRecord(reportValue);
 
@@ -440,7 +456,7 @@ export class SecurityPenetrationTestsService {
     }
 
     return {
-      id: reportId,
+      runId: reportId,
       report: {
         markdown,
         costUsd,
@@ -457,7 +473,7 @@ export class SecurityPenetrationTestsService {
       return null;
     }
 
-    const reportId = this.extractStringField(payload, 'id');
+    const reportId = this.extractStringField(payload, 'runId');
     const error = this.extractStringField(payload, 'error');
     const failedAt = this.extractStringField(payload, 'failedAt');
 
@@ -466,7 +482,7 @@ export class SecurityPenetrationTestsService {
     }
 
     return {
-      id: reportId,
+      runId: reportId,
       error,
       failedAt,
     };
