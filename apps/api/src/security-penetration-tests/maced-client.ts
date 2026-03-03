@@ -27,22 +27,22 @@ const macedPentestProgressSchema = z.object({
 const macedPentestRunSchema = z
   .object({
     id: z.string().min(1),
-    sandboxId: z.string().optional().default(''),
-    workflowId: z.string().optional().default(''),
-    sessionId: z.string().optional().default(''),
-    targetUrl: z.string().min(1),
-    repoUrl: z.string().nullable().optional(),
+    sandboxId: z.string().min(1),
+    workflowId: z.string().min(1),
+    sessionId: z.string().min(1),
+    targetUrl: z.string().url(),
+    repoUrl: z.string().url().nullable().optional(),
     status: macedPentestStatusSchema,
     testMode: z.boolean().optional(),
     createdAt: z.string().min(1),
     updatedAt: z.string().min(1),
     error: z.string().nullable().optional(),
     failedReason: z.string().nullable().optional(),
-    temporalUiUrl: z.string().nullable().optional(),
-    webhookUrl: z.string().nullable().optional(),
+    temporalUiUrl: z.string().url().nullable().optional(),
+    webhookUrl: z.string().url().nullable().optional(),
     webhookToken: z.string().optional(),
-    userId: z.string().optional().default(''),
-    organizationId: z.string().optional().default(''),
+    userId: z.string().min(1),
+    organizationId: z.string().min(1),
   })
   .passthrough();
 
