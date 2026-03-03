@@ -36,7 +36,7 @@ export async function subscribeToPentestPlan(
     select: { website: true, name: true },
   });
 
-  // Check for existing OrganizationBilling record first
+  // Reuse existing Stripe customer if billing record already exists
   let customerId: string | undefined;
   const existingBilling = await db.organizationBilling.findUnique({
     where: { organizationId: orgId },
@@ -44,18 +44,9 @@ export async function subscribeToPentestPlan(
 
   if (existingBilling) {
     customerId = existingBilling.stripeCustomerId;
-  } else if (org?.website) {
-    const { findStripeCustomerByDomain, extractDomain } = await import('@/lib/stripe');
-    const domain = extractDomain(org.website);
-    if (domain) {
-      const existing = await findStripeCustomerByDomain(domain);
-      if (existing) {
-        customerId = existing.customerId;
-      }
-    }
-  }
-
-  if (!customerId) {
+  } else {
+    // Always create a new customer — never infer ownership from domain matching
+    // since organization.website is tenant-controlled and unverified.
     const customer = await stripe.customers.create({
       name: org?.name ?? undefined,
       metadata: { organizationId: orgId },
@@ -114,12 +105,25 @@ export async function handleSubscriptionSuccess(
       ? session.customer
       : session.customer?.id ?? '';
 
-  // Validate the session belongs to this org by checking against any existing billing record
+  // Validate the session belongs to this org.
+  // subscribeToPentestPlan always upserts OrganizationBilling before creating the
+  // checkout session, so a billing row should always exist here. If it doesn't,
+  // verify ownership via the Stripe customer's metadata as a fallback.
   const existingBilling = await db.organizationBilling.findUnique({
     where: { organizationId: orgId },
   });
-  if (existingBilling && existingBilling.stripeCustomerId !== stripeCustomerId) {
-    throw new Error('Checkout session does not belong to this organization.');
+  if (existingBilling) {
+    if (existingBilling.stripeCustomerId !== stripeCustomerId) {
+      throw new Error('Checkout session does not belong to this organization.');
+    }
+  } else {
+    const customer = await stripe.customers.retrieve(stripeCustomerId);
+    if (
+      customer.deleted ||
+      customer.metadata?.organizationId !== orgId
+    ) {
+      throw new Error('Checkout session does not belong to this organization.');
+    }
   }
 
   const item = subscription.items.data[0];

@@ -77,8 +77,13 @@ export default async function BillingPage({ params, searchParams }: BillingPageP
         })
       : null;
 
-  const appBaseUrl = env.NEXT_PUBLIC_BETTER_AUTH_URL ?? '';
-  const billingUrl = `${appBaseUrl}/${orgId}/settings/billing`;
+  // Prefer the explicit base URL env var; fall back to the request origin so
+  // Stripe always receives an absolute URL (relative URLs are rejected).
+  const requestHeaders = await headers();
+  const host = requestHeaders.get('host') ?? '';
+  const proto = host.startsWith('localhost') ? 'http' : 'https';
+  const origin = env.NEXT_PUBLIC_BETTER_AUTH_URL ?? `${proto}://${host}`;
+  const billingUrl = `${origin}/${orgId}/settings/billing`;
 
   return (
     <PageLayout>
