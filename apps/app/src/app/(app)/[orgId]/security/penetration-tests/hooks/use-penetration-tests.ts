@@ -264,9 +264,6 @@ export function useCreatePenetrationTest(
         const now = new Date().toISOString();
         const optimisticReport: PentestRun = {
           id: reportId,
-          sandboxId: '',
-          workflowId: '',
-          sessionId: '',
           targetUrl: payload.targetUrl,
           repoUrl: payload.repoUrl ?? null,
           status: resolveCreateStatus(response.data?.status),
@@ -277,8 +274,6 @@ export function useCreatePenetrationTest(
           failedReason: null,
           temporalUiUrl: null,
           webhookUrl: null,
-          userId: '',
-          organizationId,
         };
 
         setIsCreating(false);

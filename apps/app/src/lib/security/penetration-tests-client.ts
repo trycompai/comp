@@ -2,8 +2,6 @@ export type PentestReportStatus = 'provisioning' | 'cloning' | 'running' | 'comp
 
 export interface PentestProgress {
   status: PentestReportStatus;
-  phase: string | null;
-  agent: string | null;
   completedAgents: number;
   totalAgents: number;
   elapsedMs: number;
@@ -11,9 +9,6 @@ export interface PentestProgress {
 
 export interface PentestRun {
   id: string;
-  sandboxId: string;
-  workflowId: string;
-  sessionId: string;
   targetUrl: string;
   repoUrl?: string | null;
   status: PentestReportStatus;
@@ -24,8 +19,7 @@ export interface PentestRun {
   failedReason?: string | null;
   temporalUiUrl?: string | null;
   webhookUrl?: string | null;
-  userId: string;
-  organizationId: string;
+  notificationEmail?: string | null;
   progress?: PentestProgress;
 }
 
@@ -38,6 +32,7 @@ export interface PentestCreateRequest {
   testMode?: boolean;
   workspace?: string;
   webhookUrl?: string;
+  notificationEmail?: string;
   mockCheckout?: boolean;
 }
 

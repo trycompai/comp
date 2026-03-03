@@ -12,6 +12,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
 import {
   MacedClient,
+  type MacedCreatePentestRun,
   type MacedPentestProgress,
   type MacedPentestRun,
 } from './maced-client';
@@ -28,11 +29,8 @@ export type PentestProgress = MacedPentestProgress;
 
 export interface SecurityPenetrationTest {
   id: string;
-  sandboxId: string;
-  workflowId: string | null;
-  sessionId: string | null;
   targetUrl: string;
-  repoUrl: string | null;
+  repoUrl?: string | null;
   status: PentestReportStatus;
   testMode?: boolean | null;
   createdAt: string;
@@ -41,9 +39,7 @@ export interface SecurityPenetrationTest {
   failedReason?: string | null;
   temporalUiUrl?: string | null;
   webhookUrl?: string | null;
-  webhookToken?: string | null;
-  userId: string;
-  organizationId: string;
+  notificationEmail?: string | null;
   progress?: PentestProgress;
 }
 
@@ -334,14 +330,13 @@ export class SecurityPenetrationTestsService {
   }
 
   private mapMacedRunToSecurityPenetrationTest(
-    report: MacedPentestRun,
+    report: MacedPentestRun | MacedCreatePentestRun,
   ): SecurityPenetrationTest {
-    const failedReason = report.failedReason ?? report.error ?? null;
+    const failedReason = report.error ?? null;
 
     return {
       ...(report as SecurityPenetrationTest),
       failedReason,
-      error: report.error ?? failedReason,
     };
   }
 

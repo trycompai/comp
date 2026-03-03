@@ -160,10 +160,6 @@ export function PenetrationTestPageClient({ orgId, reportId }: PenetrationTestPa
               <p className="text-muted-foreground">Last update</p>
               <p>{formatReportDate(report.updatedAt)}</p>
             </div>
-            <div>
-              <p className="text-muted-foreground">Sandbox</p>
-              <p>{report.sandboxId || '—'}</p>
-            </div>
           </div>
 
           {runFailureReason && (
@@ -177,11 +173,7 @@ export function PenetrationTestPageClient({ orgId, reportId }: PenetrationTestPa
             <div className="rounded-md border p-3 text-sm">
               <p className="font-medium">Current progress</p>
               <p className="text-muted-foreground">
-                {progress.phase || 'In progress'}
-                {typeof progress.completedAgents === 'number' &&
-                typeof progress.totalAgents === 'number'
-                  ? ` (${progress.completedAgents}/${progress.totalAgents})`
-                  : ''}
+                {`In progress${typeof progress.completedAgents === 'number' && typeof progress.totalAgents === 'number' ? ` (${progress.completedAgents}/${progress.totalAgents})` : ''}`}
               </p>
             </div>
           ) : null}

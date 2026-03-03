@@ -32,21 +32,11 @@ describeIfEnabled('Maced provider contract canary (e2e)', () => {
   const assertRunShape = (run: MacedPentestRun) => {
     expect(typeof run.id).toBe('string');
     expect(run.id.length).toBeGreaterThan(0);
-    expect(typeof run.sandboxId).toBe('string');
-    expect(run.sandboxId.length).toBeGreaterThan(0);
-    expect(typeof run.workflowId).toBe('string');
-    expect(run.workflowId.length).toBeGreaterThan(0);
-    expect(typeof run.sessionId).toBe('string');
-    expect(run.sessionId.length).toBeGreaterThan(0);
     expect(typeof run.targetUrl).toBe('string');
     expect(() => new URL(run.targetUrl)).not.toThrow();
     expect(validStatuses.has(run.status)).toBe(true);
     expect(Number.isNaN(Date.parse(run.createdAt))).toBe(false);
     expect(Number.isNaN(Date.parse(run.updatedAt))).toBe(false);
-    expect(typeof run.userId).toBe('string');
-    expect(run.userId.length).toBeGreaterThan(0);
-    expect(typeof run.organizationId).toBe('string');
-    expect(run.organizationId.length).toBeGreaterThan(0);
 
     if (run.repoUrl) {
       expect(() => new URL(run.repoUrl)).not.toThrow();

@@ -17,8 +17,6 @@ const macedPentestStatusSchema = z.enum([
 
 const macedPentestProgressSchema = z.object({
   status: macedPentestStatusSchema,
-  phase: z.string().nullable(),
-  agent: z.string().nullable(),
   completedAgents: z.number().int(),
   totalAgents: z.number().int(),
   elapsedMs: z.number(),
@@ -44,9 +42,6 @@ const nullableUrlSchema = z
 const macedPentestRunSchema = z
   .object({
     id: nonEmptyStringSchema,
-    sandboxId: nonEmptyStringSchema,
-    workflowId: nullableNonEmptyStringSchema,
-    sessionId: nullableNonEmptyStringSchema,
     targetUrl: z.string().url(),
     repoUrl: nullableUrlSchema,
     status: macedPentestStatusSchema,
@@ -54,14 +49,15 @@ const macedPentestRunSchema = z
     createdAt: nonEmptyDateTimeSchema,
     updatedAt: nonEmptyDateTimeSchema,
     error: nullableNonEmptyStringSchema,
-    failedReason: nullableNonEmptyStringSchema,
     temporalUiUrl: nullableUrlSchema,
     webhookUrl: nullableUrlSchema,
-    webhookToken: nullableNonEmptyStringSchema,
-    userId: nonEmptyStringSchema,
-    organizationId: nonEmptyStringSchema,
+    notificationEmail: nullableNonEmptyStringSchema,
   })
   .passthrough();
+
+const macedCreatePentestRunSchema = macedPentestRunSchema.extend({
+  webhookToken: nullableNonEmptyStringSchema,
+});
 
 const macedPentestRunWithProgressSchema = macedPentestRunSchema.extend({
   progress: macedPentestProgressSchema,
@@ -79,12 +75,14 @@ const macedCreatePentestPayloadSchema = z
     testMode: z.boolean().optional(),
     workspace: z.string().optional(),
     webhookUrl: z.string().url().optional(),
+    notificationEmail: z.string().email().optional(),
   })
   .strict();
 
 export type MacedPentestStatus = z.infer<typeof macedPentestStatusSchema>;
 export type MacedPentestProgress = z.infer<typeof macedPentestProgressSchema>;
 export type MacedPentestRun = z.infer<typeof macedPentestRunSchema>;
+export type MacedCreatePentestRun = z.infer<typeof macedCreatePentestRunSchema>;
 export type MacedPentestRunWithProgress = z.infer<
   typeof macedPentestRunWithProgressSchema
 >;
@@ -230,7 +228,7 @@ export class MacedClient {
     );
   }
 
-  async createPentest(payload: MacedCreatePentestPayload): Promise<MacedPentestRun> {
+  async createPentest(payload: MacedCreatePentestPayload): Promise<MacedCreatePentestRun> {
     const validatedPayload = macedCreatePentestPayloadSchema.safeParse(payload);
     if (!validatedPayload.success) {
       this.logger.error(
@@ -249,7 +247,7 @@ export class MacedClient {
         method: 'POST',
         body: JSON.stringify(validatedPayload.data),
       },
-      macedPentestRunSchema,
+      macedCreatePentestRunSchema,
       'creating penetration test',
     );
   }
