@@ -17,15 +17,26 @@ type SecurityNavItem = {
 export function SecuritySidebar({ orgId }: SecuritySidebarProps) {
   const pathname = usePathname() ?? '';
 
+  const subscriptionPath = `/${orgId}/security/penetration-tests/subscription`;
+
   const items: SecurityNavItem[] = [
     {
       id: 'penetration-tests',
       label: 'Penetration Tests',
       path: `/${orgId}/security/penetration-tests`,
     },
+    {
+      id: 'pentest-billing',
+      label: 'Pentest Billing',
+      path: subscriptionPath,
+    },
   ];
 
   const isPathActive = (path: string) => {
+    if (path === `/${orgId}/security/penetration-tests`) {
+      // Don't highlight when on the subscription sub-page
+      return pathname.startsWith(path) && !pathname.startsWith(subscriptionPath);
+    }
     return pathname.startsWith(path);
   };
 

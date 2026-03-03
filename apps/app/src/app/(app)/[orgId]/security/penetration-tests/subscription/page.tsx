@@ -1,3 +1,4 @@
+import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
@@ -6,6 +7,7 @@ import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import {
+  createBillingPortalSession,
   handleSubscriptionSuccess,
   subscribeToPentestPlan,
 } from '../actions/billing';
@@ -71,6 +73,7 @@ export default async function PentestSubscriptionPage({
       })
     : null;
 
+  const appBaseUrl = env.NEXT_PUBLIC_BETTER_AUTH_URL ?? '';
   const baseUrl = `/${orgId}/security/penetration-tests`;
 
   return (
@@ -141,12 +144,29 @@ export default async function PentestSubscriptionPage({
                 'use server';
                 const { url } = await subscribeToPentestPlan(
                   orgId,
-                  `${process.env.NEXT_PUBLIC_APP_URL ?? ''}${baseUrl}`,
+                  `${appBaseUrl}${baseUrl}`,
                 );
                 redirect(url);
               }}
             >
-              <Button type="submit">Subscribe — $0/month + overage</Button>
+              <Button type="submit">Subscribe — $99/month (3 runs included)</Button>
+            </form>
+          )}
+
+          {subscription && subscription.status === 'active' && (
+            <form
+              action={async () => {
+                'use server';
+                const { url } = await createBillingPortalSession(
+                  orgId,
+                  `${appBaseUrl}${baseUrl}/subscription`,
+                );
+                redirect(url);
+              }}
+            >
+              <Button type="submit" variant="outline">
+                Manage payment method
+              </Button>
             </form>
           )}
         </CardContent>

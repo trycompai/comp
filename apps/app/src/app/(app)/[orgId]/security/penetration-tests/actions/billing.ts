@@ -110,6 +110,31 @@ export async function handleSubscriptionSuccess(
   });
 }
 
+export async function createBillingPortalSession(
+  orgId: string,
+  returnUrl: string,
+): Promise<{ url: string }> {
+  if (!stripe) {
+    throw new Error('Stripe is not configured.');
+  }
+
+  const subscription = await db.pentestSubscription.findUnique({
+    where: { organizationId: orgId },
+    select: { stripeCustomerId: true },
+  });
+
+  if (!subscription) {
+    throw new Error('No active pentest subscription found.');
+  }
+
+  const portalSession = await stripe.billingPortal.sessions.create({
+    customer: subscription.stripeCustomerId,
+    return_url: returnUrl,
+  });
+
+  return { url: portalSession.url };
+}
+
 export async function checkAndChargePentestBilling(orgId: string): Promise<void> {
   const subscription = await db.pentestSubscription.findUnique({
     where: { organizationId: orgId },
