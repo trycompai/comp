@@ -84,8 +84,9 @@ export async function handleSubscriptionSuccess(
   const stripePriceId = item?.price.id ?? '';
   const stripeSubscriptionId = subscription.id;
   const status = subscription.status === 'active' ? 'active' : subscription.status;
-  const currentPeriodStart = new Date(subscription.current_period_start * 1000);
-  const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+  // In Stripe SDK v20+ (API 2025-12-15.clover), period dates moved to SubscriptionItem
+  const currentPeriodStart = new Date((item?.current_period_start ?? 0) * 1000);
+  const currentPeriodEnd = new Date((item?.current_period_end ?? 0) * 1000);
 
   await db.pentestSubscription.upsert({
     where: { organizationId: orgId },
