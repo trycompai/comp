@@ -29,8 +29,8 @@ export type PentestProgress = MacedPentestProgress;
 export interface SecurityPenetrationTest {
   id: string;
   sandboxId: string;
-  workflowId: string;
-  sessionId: string;
+  workflowId: string | null;
+  sessionId: string | null;
   targetUrl: string;
   repoUrl: string | null;
   status: PentestReportStatus;

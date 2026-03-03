@@ -24,25 +24,42 @@ const macedPentestProgressSchema = z.object({
   elapsedMs: z.number(),
 });
 
+const nonEmptyStringSchema = z.string().trim().min(1);
+const nonEmptyDateTimeSchema = nonEmptyStringSchema.datetime();
+
+const normalizeBlankToNull = (value: unknown): unknown => {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const nullableNonEmptyStringSchema = z
+  .preprocess(normalizeBlankToNull, nonEmptyStringSchema.nullable().optional())
+  .transform((value) => value ?? null);
+
+const nullableUrlSchema = z
+  .preprocess(normalizeBlankToNull, z.string().url().nullable().optional())
+  .transform((value) => value ?? null);
+
 const macedPentestRunSchema = z
   .object({
-    id: z.string().min(1),
-    sandboxId: z.string().min(1),
-    workflowId: z.string().min(1),
-    sessionId: z.string().min(1),
+    id: nonEmptyStringSchema,
+    sandboxId: nonEmptyStringSchema,
+    workflowId: nullableNonEmptyStringSchema,
+    sessionId: nullableNonEmptyStringSchema,
     targetUrl: z.string().url(),
-    repoUrl: z.string().url().nullable().optional(),
+    repoUrl: nullableUrlSchema,
     status: macedPentestStatusSchema,
     testMode: z.boolean().optional(),
-    createdAt: z.string().min(1),
-    updatedAt: z.string().min(1),
-    error: z.string().nullable().optional(),
-    failedReason: z.string().nullable().optional(),
-    temporalUiUrl: z.string().url().nullable().optional(),
-    webhookUrl: z.string().url().nullable().optional(),
-    webhookToken: z.string().optional(),
-    userId: z.string().min(1),
-    organizationId: z.string().min(1),
+    createdAt: nonEmptyDateTimeSchema,
+    updatedAt: nonEmptyDateTimeSchema,
+    error: nullableNonEmptyStringSchema,
+    failedReason: nullableNonEmptyStringSchema,
+    temporalUiUrl: nullableUrlSchema,
+    webhookUrl: nullableUrlSchema,
+    webhookToken: nullableNonEmptyStringSchema,
+    userId: nonEmptyStringSchema,
+    organizationId: nonEmptyStringSchema,
   })
   .passthrough();
 
