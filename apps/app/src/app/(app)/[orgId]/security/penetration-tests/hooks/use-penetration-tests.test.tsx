@@ -52,32 +52,22 @@ describe('use-penetration-tests hooks', () => {
           targetUrl: 'https://app.example.com',
           repoUrl: 'https://github.com/org/repo',
           status: 'completed',
-          sandboxId: 'sb_1',
-          workflowId: 'wf_1',
-          sessionId: 's_1',
           createdAt: '2025-02-01T10:00:00Z',
           updatedAt: '2025-02-01T10:00:00Z',
           error: null,
           temporalUiUrl: null,
           webhookUrl: null,
-          userId: 'u_1',
-          organizationId: 'org_123',
         },
         {
           id: 'run_running',
           targetUrl: 'https://app.example.com',
           repoUrl: 'https://github.com/org/repo',
           status: 'running',
-          sandboxId: 'sb_2',
-          workflowId: 'wf_2',
-          sessionId: 's_2',
           createdAt: '2025-02-03T10:00:00Z',
           updatedAt: '2025-02-03T10:00:00Z',
           error: null,
           temporalUiUrl: null,
           webhookUrl: null,
-          userId: 'u_1',
-          organizationId: 'org_123',
         },
       ]),
     );
@@ -124,23 +114,16 @@ describe('use-penetration-tests hooks', () => {
           targetUrl: 'https://app.example.com',
           repoUrl: 'https://github.com/org/repo',
           status: 'running',
-          sandboxId: 'sb_2',
-          workflowId: 'wf_2',
-          sessionId: 's_2',
           createdAt: '2025-02-03T10:00:00Z',
           updatedAt: '2025-02-03T10:00:00Z',
           error: null,
           temporalUiUrl: null,
           webhookUrl: null,
-          userId: 'u_1',
-          organizationId: 'org_123',
         }),
       )
       .mockResolvedValueOnce(
         createJsonResponse({
           status: 'running',
-          phase: 'scan',
-          agent: null,
           completedAgents: 1,
           totalAgents: 3,
           elapsedMs: 500,
@@ -159,7 +142,7 @@ describe('use-penetration-tests hooks', () => {
 
     await waitFor(() => expect(progress.result.current.isLoading).toBe(false));
     expect(progress.result.current.progress?.status).toBe('running');
-    expect(progress.result.current.progress?.phase).toBe('scan');
+    expect(progress.result.current.progress?.completedAgents).toBe(1);
   });
 
   it('loads a report detail for empty id only when both identifiers are present', async () => {

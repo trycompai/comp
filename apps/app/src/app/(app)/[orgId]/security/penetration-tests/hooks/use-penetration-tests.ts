@@ -18,6 +18,19 @@ const reportEndpoint = (reportId: string): string =>
   `/v1/security-penetration-tests/${encodeURIComponent(reportId)}`;
 const reportProgressEndpoint = (reportId: string): string =>
   `/v1/security-penetration-tests/${encodeURIComponent(reportId)}/progress`;
+const inProgressStatus: readonly PentestReportStatus[] = [
+  'provisioning',
+  'cloning',
+  'running',
+];
+const allStatuses: readonly PentestReportStatus[] = [
+  'provisioning',
+  'cloning',
+  'running',
+  'completed',
+  'failed',
+  'cancelled',
+];
 
 type ReportsSWRKey = readonly [endpoint: string, organizationId: string];
 
@@ -39,6 +52,18 @@ async function fetchApiJson<T>([endpoint, organizationId]: ReportsSWRKey): Promi
 
   return (response.data ?? null) as T;
 }
+
+const resolveCreateStatus = (
+  status: string | undefined,
+): PentestReportStatus => {
+  if (!status) {
+    return 'provisioning';
+  }
+
+  return (allStatuses as readonly string[]).includes(status)
+    ? (status as PentestReportStatus)
+    : 'provisioning';
+};
 
 interface CreatePayload {
   targetUrl: string;
@@ -190,7 +215,7 @@ export function useCreatePenetrationTest(
           id?: string;
           checkoutMode?: 'mock' | 'stripe';
           checkoutUrl?: string;
-          status?: string;
+          status?: PentestReportStatus;
         }>(
           reportListEndpoint,
           {
@@ -236,15 +261,45 @@ export function useCreatePenetrationTest(
           checkoutUrl,
         };
 
+        const now = new Date().toISOString();
+        const optimisticReport: PentestRun = {
+          id: reportId,
+          targetUrl: payload.targetUrl,
+          repoUrl: payload.repoUrl ?? null,
+          status: resolveCreateStatus(response.data?.status),
+          testMode: payload.testMode ?? null,
+          createdAt: now,
+          updatedAt: now,
+          error: null,
+          failedReason: null,
+          temporalUiUrl: null,
+          webhookUrl: null,
+        };
+
         setIsCreating(false);
         try {
-          await mutate(reportListKey(organizationId));
-        } catch (revalidateError) {
+          await mutate(
+            reportListKey(organizationId),
+            (currentReports?: PentestRun[]) => {
+              const nextReports = currentReports ?? [];
+              const dedupedReports = nextReports.filter(({ id }) => id !== reportId);
+              return sortReportsByUpdatedAtDesc([optimisticReport, ...dedupedReports]);
+            },
+            { revalidate: false },
+          );
+          await mutate(
+            reportKey(organizationId, reportId),
+            optimisticReport,
+            { revalidate: false },
+          );
+        } catch (cacheMutationError) {
           console.error(
-            'Created penetration test but failed to refresh report list',
-            revalidateError,
+            'Created penetration test but failed to optimistically update report cache',
+            cacheMutationError,
           );
         }
+        void mutate(reportListKey(organizationId));
+        void mutate(reportKey(organizationId, reportId));
         return data;
       } catch (reportError) {
         const message =

@@ -237,14 +237,14 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
                     <TableCell>
                       {report.progress ? (
                         <span className="text-sm text-muted-foreground">
-                          {report.progress.phase ?? 'In progress'}
-                          {typeof report.progress.completedAgents === 'number' &&
-                          typeof report.progress.totalAgents === 'number'
-                            ? ` (${report.progress.completedAgents}/${report.progress.totalAgents})`
-                            : ''}
+                          {`In progress${typeof report.progress.completedAgents === 'number' && typeof report.progress.totalAgents === 'number' ? ` (${report.progress.completedAgents}/${report.progress.totalAgents})` : ''}`}
                         </span>
                       ) : isReportInProgress(report.status) ? (
                         <span className="text-sm text-muted-foreground">In queue</span>
+                      ) : report.status === 'failed' ? (
+                        <span className="text-sm text-destructive">
+                          {report.failedReason ?? report.error ?? 'Run failed'}
+                        </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">—</span>
                       )}

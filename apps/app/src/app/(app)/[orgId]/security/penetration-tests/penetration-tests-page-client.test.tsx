@@ -112,9 +112,6 @@ vi.mock('@trycompai/design-system', () => ({
 const reportRows: PentestRun[] = [
   {
     id: 'run_running',
-    sandboxId: 'sb1',
-    workflowId: 'wf1',
-    sessionId: 's1',
     targetUrl: 'https://running.example.com',
     repoUrl: 'https://github.com/org/running',
     status: 'running',
@@ -123,14 +120,9 @@ const reportRows: PentestRun[] = [
     error: null,
     temporalUiUrl: null,
     webhookUrl: null,
-    userId: 'user_1',
-    organizationId: 'org_123',
   },
   {
     id: 'run_completed',
-    sandboxId: 'sb2',
-    workflowId: 'wf2',
-    sessionId: 's2',
     targetUrl: 'https://completed.example.com',
     repoUrl: 'https://github.com/org/completed',
     status: 'completed',
@@ -139,8 +131,6 @@ const reportRows: PentestRun[] = [
     error: null,
     temporalUiUrl: null,
     webhookUrl: null,
-    userId: 'user_1',
-    organizationId: 'org_123',
   },
 ];
 
@@ -262,63 +252,31 @@ describe('PenetrationTestsPageClient', () => {
     expect(screen.getByText('2 completed reports')).toBeInTheDocument();
   });
 
-  it('uses fallback progress phase text when phase is missing', () => {
+  it('shows in-progress text with agent counts for a running report', () => {
+    const runningWithProgress: PentestRun = {
+      id: 'run_with_progress',
+      targetUrl: 'https://running.example.com',
+      repoUrl: 'https://github.com/org/running',
+      status: 'running',
+      createdAt: '2026-02-26T14:00:00Z',
+      updatedAt: '2026-02-26T14:30:00Z',
+      error: null,
+      temporalUiUrl: null,
+      webhookUrl: null,
+      progress: {
+        status: 'running',
+        completedAgents: 0,
+        totalAgents: 2,
+        elapsedMs: 500,
+      },
+    };
+
     reportHookMock.mockReturnValue({
-      reports: [
-        {
-          id: 'run_without_phase',
-          sandboxId: 'sb5',
-          workflowId: 'wf5',
-          sessionId: 's5',
-          targetUrl: 'https://running.no-phase.example.com',
-          repoUrl: 'https://github.com/org/no-phase',
-          status: 'running',
-          createdAt: '2026-02-26T14:00:00Z',
-          updatedAt: '2026-02-26T14:30:00Z',
-          error: null,
-          temporalUiUrl: null,
-          webhookUrl: null,
-          userId: 'user_1',
-          organizationId: 'org_123',
-          progress: {
-            status: 'running',
-            phase: null,
-            completedAgents: 0,
-            totalAgents: 2,
-            agent: null,
-            elapsedMs: 500,
-          },
-        },
-      ],
+      reports: [runningWithProgress],
       isLoading: false,
       error: undefined,
       mutate: vi.fn(),
-      activeReports: [
-        {
-          id: 'run_without_phase',
-          sandboxId: 'sb5',
-          workflowId: 'wf5',
-          sessionId: 's5',
-          targetUrl: 'https://running.no-phase.example.com',
-          repoUrl: 'https://github.com/org/no-phase',
-          status: 'running',
-          createdAt: '2026-02-26T14:00:00Z',
-          updatedAt: '2026-02-26T14:30:00Z',
-          error: null,
-          temporalUiUrl: null,
-          webhookUrl: null,
-          userId: 'user_1',
-          organizationId: 'org_123',
-          progress: {
-            status: 'running',
-            phase: null,
-            completedAgents: 0,
-            totalAgents: 2,
-            agent: null,
-            elapsedMs: 500,
-          },
-        },
-      ],
+      activeReports: [runningWithProgress],
       completedReports: [],
     });
 
@@ -346,62 +304,30 @@ describe('PenetrationTestsPageClient', () => {
   });
 
   it('renders repository fallback when repoUrl is not available', () => {
+    const noRepoRun: PentestRun = {
+      id: 'run_no_repo',
+      targetUrl: 'https://no-repo.example.com',
+      repoUrl: null,
+      status: 'running',
+      createdAt: '2026-02-26T14:00:00Z',
+      updatedAt: '2026-02-26T14:30:00Z',
+      error: null,
+      temporalUiUrl: null,
+      webhookUrl: null,
+      progress: {
+        status: 'running',
+        completedAgents: 1,
+        totalAgents: 2,
+        elapsedMs: 1000,
+      },
+    };
+
     reportHookMock.mockReturnValue({
-      reports: [
-        {
-          id: 'run_no_repo',
-          sandboxId: 'sb_no_repo',
-          workflowId: 'wf_no_repo',
-          sessionId: 's_no_repo',
-          targetUrl: 'https://no-repo.example.com',
-          repoUrl: null,
-          status: 'running',
-          createdAt: '2026-02-26T14:00:00Z',
-          updatedAt: '2026-02-26T14:30:00Z',
-          error: null,
-          temporalUiUrl: null,
-          webhookUrl: null,
-          userId: 'user_1',
-          organizationId: 'org_123',
-          progress: {
-            status: 'running',
-            phase: 'scan',
-            completedAgents: 1,
-            totalAgents: 2,
-            agent: null,
-            elapsedMs: 1000,
-          },
-        },
-      ],
+      reports: [noRepoRun],
       isLoading: false,
       error: undefined,
       mutate: vi.fn(),
-      activeReports: [
-        {
-          id: 'run_no_repo',
-          sandboxId: 'sb_no_repo',
-          workflowId: 'wf_no_repo',
-          sessionId: 's_no_repo',
-          targetUrl: 'https://no-repo.example.com',
-          repoUrl: null,
-          status: 'running',
-          createdAt: '2026-02-26T14:00:00Z',
-          updatedAt: '2026-02-26T14:30:00Z',
-          error: null,
-          temporalUiUrl: null,
-          webhookUrl: null,
-          userId: 'user_1',
-          organizationId: 'org_123',
-          progress: {
-            status: 'running',
-            phase: 'scan',
-            completedAgents: 1,
-            totalAgents: 2,
-            agent: null,
-            elapsedMs: 1000,
-          },
-        },
-      ],
+      activeReports: [noRepoRun],
       completedReports: [],
     });
 
@@ -525,130 +451,70 @@ describe('PenetrationTestsPageClient', () => {
     });
   });
 
-  it('renders progress for running report rows including phase and agent counts', () => {
+  it('renders progress for running report rows with agent counts', () => {
+    const inProgressRun: PentestRun = {
+      id: 'run_in_progress',
+      targetUrl: 'https://running-progress.example.com',
+      repoUrl: 'https://github.com/org/running-progress',
+      status: 'running',
+      createdAt: '2026-02-26T14:00:00Z',
+      updatedAt: '2026-02-26T14:30:00Z',
+      error: null,
+      temporalUiUrl: null,
+      webhookUrl: null,
+      progress: {
+        status: 'running',
+        completedAgents: 1,
+        totalAgents: 2,
+        elapsedMs: 1500,
+      },
+    };
+
     reportHookMock.mockReturnValue({
-      reports: [
-        {
-          id: 'run_in_progress',
-          sandboxId: 'sb3',
-          workflowId: 'wf3',
-          sessionId: 's3',
-          targetUrl: 'https://running-progress.example.com',
-          repoUrl: 'https://github.com/org/running-progress',
-          status: 'running',
-          createdAt: '2026-02-26T14:00:00Z',
-          updatedAt: '2026-02-26T14:30:00Z',
-          error: null,
-          temporalUiUrl: null,
-          webhookUrl: null,
-          userId: 'user_1',
-          organizationId: 'org_123',
-          progress: {
-            status: 'running',
-            phase: 'scan',
-            completedAgents: 1,
-            totalAgents: 2,
-            agent: null,
-            elapsedMs: 1500,
-          },
-        },
-      ],
+      reports: [inProgressRun],
       isLoading: false,
       error: undefined,
       mutate: vi.fn(),
-      activeReports: [
-        {
-          id: 'run_in_progress',
-          sandboxId: 'sb3',
-          workflowId: 'wf3',
-          sessionId: 's3',
-          targetUrl: 'https://running-progress.example.com',
-          repoUrl: 'https://github.com/org/running-progress',
-          status: 'running',
-          createdAt: '2026-02-26T14:00:00Z',
-          updatedAt: '2026-02-26T14:30:00Z',
-          error: null,
-          temporalUiUrl: null,
-          webhookUrl: null,
-          userId: 'user_1',
-          organizationId: 'org_123',
-          progress: {
-            status: 'running',
-            phase: 'scan',
-            completedAgents: 1,
-            totalAgents: 2,
-            agent: null,
-            elapsedMs: 1500,
-          },
-        },
-      ],
+      activeReports: [inProgressRun],
       completedReports: [],
     });
 
     render(<PenetrationTestsPageClient orgId="org_123" />);
 
-    expect(screen.getByText('scan (1/2)')).toBeInTheDocument();
+    expect(screen.getByText('In progress (1/2)')).toBeInTheDocument();
   });
 
-  it('renders progress row without completed/total counts when values are unavailable', () => {
+  it('renders progress row without counts when agent count values are unavailable', () => {
+    const noCounts: PentestRun = {
+      id: 'run_without_counts',
+      targetUrl: 'https://running-progress.example.com',
+      repoUrl: 'https://github.com/org/running-progress',
+      status: 'running',
+      createdAt: '2026-02-26T14:00:00Z',
+      updatedAt: '2026-02-26T14:30:00Z',
+      error: null,
+      temporalUiUrl: null,
+      webhookUrl: null,
+      progress: {
+        status: 'running',
+        completedAgents: 'n/a' as unknown as number,
+        totalAgents: 'n/a' as unknown as number,
+        elapsedMs: 0,
+      },
+    };
+
     reportHookMock.mockReturnValue({
-      reports: [
-        {
-          id: 'run_without_counts',
-          sandboxId: 'sb4',
-          workflowId: 'wf4',
-          sessionId: 's4',
-          targetUrl: 'https://running-progress.example.com',
-          repoUrl: 'https://github.com/org/running-progress',
-          status: 'running',
-          createdAt: '2026-02-26T14:00:00Z',
-          updatedAt: '2026-02-26T14:30:00Z',
-          error: null,
-          temporalUiUrl: null,
-          webhookUrl: null,
-          userId: 'user_1',
-          organizationId: 'org_123',
-          progress: {
-            status: 'running',
-            phase: 'initializing',
-            completedAgents: 'n/a' as unknown as number,
-            totalAgents: 'n/a' as unknown as number,
-          },
-        },
-      ],
+      reports: [noCounts],
       isLoading: false,
       error: undefined,
       mutate: vi.fn(),
-      activeReports: [
-        {
-          id: 'run_without_counts',
-          sandboxId: 'sb4',
-          workflowId: 'wf4',
-          sessionId: 's4',
-          targetUrl: 'https://running-progress.example.com',
-          repoUrl: 'https://github.com/org/running-progress',
-          status: 'running',
-          createdAt: '2026-02-26T14:00:00Z',
-          updatedAt: '2026-02-26T14:30:00Z',
-          error: null,
-          temporalUiUrl: null,
-          webhookUrl: null,
-          userId: 'user_1',
-          organizationId: 'org_123',
-          progress: {
-            status: 'running',
-            phase: 'initializing',
-            completedAgents: 'n/a' as unknown as number,
-            totalAgents: 'n/a' as unknown as number,
-          },
-        },
-      ],
+      activeReports: [noCounts],
       completedReports: [],
     });
 
     render(<PenetrationTestsPageClient orgId="org_123" />);
 
-    expect(screen.getByText('initializing')).toBeInTheDocument();
+    expect(screen.getByText('In progress')).toBeInTheDocument();
     expect(screen.queryByText('(n/a/n/a)')).toBeNull();
   });
 
