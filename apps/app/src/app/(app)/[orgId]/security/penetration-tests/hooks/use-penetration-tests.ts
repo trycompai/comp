@@ -12,8 +12,10 @@ import { useCallback, useMemo, useState } from 'react';
 import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
 import { isReportInProgress, sortReportsByUpdatedAtDesc } from '../lib';
+import { checkAndChargePentestBilling } from '../actions/billing';
 
 const reportListEndpoint = '/v1/security-penetration-tests';
+const githubReposEndpoint = '/v1/security-penetration-tests/github/repos';
 const reportEndpoint = (reportId: string): string =>
   `/v1/security-penetration-tests/${encodeURIComponent(reportId)}`;
 const reportProgressEndpoint = (reportId: string): string =>
@@ -34,6 +36,8 @@ const allStatuses: readonly PentestReportStatus[] = [
 
 type ReportsSWRKey = readonly [endpoint: string, organizationId: string];
 
+const githubReposKey = (organizationId: string): ReportsSWRKey =>
+  [githubReposEndpoint, organizationId] as const;
 const reportListKey = (organizationId: string): ReportsSWRKey =>
   [reportListEndpoint, organizationId] as const;
 const reportKey = (organizationId: string, reportId: string): ReportsSWRKey =>
@@ -73,7 +77,6 @@ interface CreatePayload {
   pipelineTesting?: boolean;
   testMode?: boolean;
   workspace?: string;
-  mockCheckout?: boolean;
 }
 
 type CreateReportApiPayload = PentestCreateRequest;
@@ -197,6 +200,37 @@ export function usePenetrationTestProgress(
   } satisfies UsePenetrationTestProgressReturn;
 }
 
+export interface GithubRepo {
+  id: number;
+  name: string;
+  fullName: string;
+  private: boolean;
+  htmlUrl: string;
+}
+
+interface GithubReposResponse {
+  repos: GithubRepo[];
+  connected: boolean;
+}
+
+export function useGithubRepos(organizationId: string): {
+  repos: GithubRepo[];
+  connected: boolean;
+  isLoading: boolean;
+} {
+  const shouldFetch = Boolean(organizationId);
+  const { data } = useSWR<GithubReposResponse>(
+    shouldFetch ? githubReposKey(organizationId) : null,
+    fetchApiJson,
+  );
+
+  return {
+    repos: data?.repos ?? [],
+    connected: data?.connected ?? false,
+    isLoading: shouldFetch && data === undefined,
+  };
+}
+
 export function useCreatePenetrationTest(
   organizationId: string,
 ): UseCreatePenetrationTestReturn {
@@ -209,12 +243,8 @@ export function useCreatePenetrationTest(
       setIsCreating(true);
       setError(null);
       try {
-        const requestedMockCheckout = payload.mockCheckout ?? true;
-
         const response = await api.post<{
           id?: string;
-          checkoutMode?: 'mock' | 'stripe';
-          checkoutUrl?: string;
           status?: PentestReportStatus;
         }>(
           reportListEndpoint,
@@ -226,7 +256,6 @@ export function useCreatePenetrationTest(
             pipelineTesting: payload.pipelineTesting,
             testMode: payload.testMode,
             workspace: payload.workspace,
-            mockCheckout: requestedMockCheckout,
           } satisfies CreateReportApiPayload,
           organizationId,
         );
@@ -240,25 +269,11 @@ export function useCreatePenetrationTest(
           throw new Error('Could not resolve report ID from create response.');
         }
 
-        const checkoutMode =
-          response.data?.checkoutMode ?? (requestedMockCheckout ? 'mock' : 'stripe');
-        const fallbackCheckoutUrl = `/${organizationId}/security/penetration-tests/checkout?reportId=${encodeURIComponent(reportId)}`;
-        let checkoutUrl: string;
-        if (checkoutMode === 'stripe') {
-          const stripeCheckoutUrl = response.data?.checkoutUrl;
-          if (!stripeCheckoutUrl) {
-            throw new Error('Missing checkout URL for stripe checkout mode.');
-          }
-          checkoutUrl = stripeCheckoutUrl;
-        } else {
-          checkoutUrl = response.data?.checkoutUrl ?? fallbackCheckoutUrl;
-        }
+        await checkAndChargePentestBilling(organizationId, reportId);
 
         const data: CreatePenetrationTestResponse = {
-          checkoutMode,
           id: reportId,
           status: response.data?.status,
-          checkoutUrl,
         };
 
         const now = new Date().toISOString();

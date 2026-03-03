@@ -33,12 +33,9 @@ export interface PentestCreateRequest {
   workspace?: string;
   webhookUrl?: string;
   notificationEmail?: string;
-  mockCheckout?: boolean;
 }
 
 export interface CreatePenetrationTestResponse {
-  checkoutMode?: 'mock' | 'stripe';
   id: string;
   status?: PentestReportStatus;
-  checkoutUrl: string;
 }

@@ -3,18 +3,19 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { PentestRun } from '@/lib/security/penetration-tests-client';
+import * as integrationPlatform from '@/hooks/use-integration-platform';
+import * as pentestHooks from './hooks/use-penetration-tests';
 import { PenetrationTestsPageClient } from './penetration-tests-page-client';
 
-const useSearchParamsMock = vi.fn();
-const replaceMock = vi.fn();
-
-const reportHookMock = vi.fn();
-const createHookMock = vi.fn();
-const createReportMock = vi.fn();
-const toastSuccessMock = vi.fn();
-const toastErrorMock = vi.fn();
-let originalLocation: Location | null = null;
-let locationAssignMock: ReturnType<typeof vi.fn>;
+const { pushMock, reportHookMock, createHookMock, createReportMock, toastSuccessMock, toastErrorMock, startOAuthMock } = vi.hoisted(() => ({
+  pushMock: vi.fn(),
+  reportHookMock: vi.fn(),
+  createHookMock: vi.fn(),
+  createReportMock: vi.fn(),
+  toastSuccessMock: vi.fn(),
+  toastErrorMock: vi.fn(),
+  startOAuthMock: vi.fn().mockResolvedValue({ success: false, error: 'Not configured' }),
+}));
 
 vi.mock('next/link', () => ({
   default: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
@@ -25,10 +26,10 @@ vi.mock('next/link', () => ({
 }));
 
 vi.mock('next/navigation', () => ({
-  useSearchParams: () => useSearchParamsMock(),
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({
-    replace: replaceMock,
-    push: vi.fn(),
+    replace: vi.fn(),
+    push: pushMock,
     refresh: vi.fn(),
     back: vi.fn(),
   }),
@@ -46,6 +47,24 @@ vi.mock('./hooks/use-penetration-tests', () => ({
   useCreatePenetrationTest: (...args: never[]) => createHookMock(...args),
   usePenetrationTest: vi.fn(),
   usePenetrationTestProgress: vi.fn(),
+  useGithubRepos: vi.fn().mockReturnValue({ repos: [], isLoading: false }),
+}));
+
+vi.mock('@/hooks/use-integration-platform', () => ({
+  useIntegrationConnections: vi.fn().mockReturnValue({ connections: [], isLoading: false }),
+  useIntegrationMutations: vi.fn().mockReturnValue({ startOAuth: startOAuthMock }),
+}));
+
+vi.mock('@comp/ui/select', () => ({
+  Select: ({ children, onValueChange }: { children: ReactNode; onValueChange?: (value: string) => void }) => (
+    <div data-testid="github-repo-select">{children}</div>
+  ),
+  SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
+    <button type="button" data-value={value}>{children}</button>
+  ),
+  SelectTrigger: ({ children, id }: { children: ReactNode; id?: string }) => <div id={id}>{children}</div>,
+  SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
 }));
 
 vi.mock('@comp/ui/input', () => ({
@@ -137,7 +156,6 @@ const reportRows: PentestRun[] = [
 describe('PenetrationTestsPageClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useSearchParamsMock.mockReturnValue(new URLSearchParams());
 
     reportHookMock.mockReturnValue({
       reports: [],
@@ -148,11 +166,9 @@ describe('PenetrationTestsPageClient', () => {
       completedReports: [],
     });
 
-    createReportMock.mockReset();
     createReportMock.mockResolvedValue({
-      checkoutMode: 'mock',
-      checkoutUrl: 'https://checkout.local/example',
       id: 'run_new',
+      status: 'provisioning',
     });
 
     createHookMock.mockReturnValue({
@@ -162,26 +178,22 @@ describe('PenetrationTestsPageClient', () => {
       resetError: vi.fn(),
     });
 
-    if (typeof window !== 'undefined') {
-      originalLocation = window.location;
-      locationAssignMock = vi.fn();
-      Object.defineProperty(window, 'location', {
-        value: {
-          ...originalLocation,
-          assign: locationAssignMock,
-        },
-        configurable: true,
-      });
-    }
-  });
+    startOAuthMock.mockResolvedValue({ success: false, error: 'Not configured' });
 
-  afterEach(() => {
-    if (typeof window !== 'undefined' && originalLocation) {
-      Object.defineProperty(window, 'location', {
-        value: originalLocation,
-        configurable: true,
-      });
-    }
+    vi.mocked(integrationPlatform.useIntegrationConnections).mockReturnValue({
+      connections: [],
+      isLoading: false,
+      error: undefined,
+      refresh: vi.fn(),
+    });
+    vi.mocked(integrationPlatform.useIntegrationMutations).mockReturnValue({
+      startOAuth: startOAuthMock,
+    } as ReturnType<typeof integrationPlatform.useIntegrationMutations>);
+
+    vi.mocked(pentestHooks.useGithubRepos).mockReturnValue({
+      repos: [],
+      isLoading: false,
+    } as ReturnType<typeof pentestHooks.useGithubRepos>);
   });
 
   it('renders an empty state and call-to-action when no reports exist', () => {
@@ -191,7 +203,7 @@ describe('PenetrationTestsPageClient', () => {
     expect(screen.getByRole('button', { name: 'Create your first report' })).toBeInTheDocument();
   });
 
-  it('renders loading state for submit button while checkout creation is in progress', () => {
+  it('renders loading state for submit button while run creation is in progress', () => {
     createHookMock.mockReturnValue({
       createReport: createReportMock,
       isCreating: true,
@@ -203,8 +215,8 @@ describe('PenetrationTestsPageClient', () => {
 
     fireEvent.click(getByText('Create your first report'));
 
-    expect(screen.getByText('Redirecting...')).toBeInTheDocument();
-    expect(screen.getByText('Redirecting...').closest('button')).toBeTruthy();
+    expect(screen.getByText('Starting...')).toBeInTheDocument();
+    expect(screen.getByText('Starting...').closest('button')).toBeTruthy();
   });
 
   it('displays completed report summary when there are no active reports', () => {
@@ -300,7 +312,7 @@ describe('PenetrationTestsPageClient', () => {
     expect(screen.getByText('https://running.example.com')).toBeInTheDocument();
     expect(screen.getByText('https://completed.example.com')).toBeInTheDocument();
     expect(screen.getByText('1 report in progress')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'View output' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'View output' })).toHaveLength(2);
   });
 
   it('renders repository fallback when repoUrl is not available', () => {
@@ -337,48 +349,6 @@ describe('PenetrationTestsPageClient', () => {
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
-  it('shows checkout success notifications from query params and clears the query', () => {
-    const refreshReports = vi.fn();
-    reportHookMock.mockReturnValue({
-      reports: [],
-      isLoading: false,
-      error: undefined,
-      mutate: refreshReports,
-      activeReports: [],
-      completedReports: [],
-    });
-    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success&reportId=run_99'));
-
-    render(<PenetrationTestsPageClient orgId="org_123" />);
-
-    return waitFor(() => {
-      expect(refreshReports).toHaveBeenCalled();
-      expect(toastSuccessMock).toHaveBeenCalledWith(
-        'Checkout completed. Your report run_99 is now in the queue.',
-      );
-      expect(replaceMock).toHaveBeenCalledWith('/org_123/security/penetration-tests');
-    });
-  });
-
-  it('triggers report refresh on checkout notifications before rendering other content', async () => {
-    const refreshReports = vi.fn();
-    reportHookMock.mockReturnValue({
-      reports: [],
-      isLoading: false,
-      error: undefined,
-      mutate: refreshReports,
-      activeReports: [],
-      completedReports: [],
-    });
-    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success&reportId=run_22'));
-
-    render(<PenetrationTestsPageClient orgId="org_123" />);
-
-    await waitFor(() => {
-      expect(refreshReports).toHaveBeenCalledTimes(1);
-    });
-  });
-
   it('shows a loading state while list data is loading', () => {
     reportHookMock.mockReturnValue({
       reports: [],
@@ -392,63 +362,6 @@ describe('PenetrationTestsPageClient', () => {
     const { container } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(container.querySelector('.animate-spin')).toBeTruthy();
-  });
-
-  it('shows generic checkout success message when reportId is missing', () => {
-    reportHookMock.mockReturnValue({
-      reports: [],
-      isLoading: false,
-      error: undefined,
-      mutate: vi.fn(),
-      activeReports: [],
-      completedReports: [],
-    });
-    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success'));
-
-    render(<PenetrationTestsPageClient orgId="org_123" />);
-
-    expect(toastSuccessMock).toHaveBeenCalledWith('Checkout completed. Your report has been queued.');
-    expect(replaceMock).toHaveBeenCalledWith('/org_123/security/penetration-tests');
-  });
-
-  it('shows checkout failure notifications from query params', () => {
-    reportHookMock.mockReturnValue({
-      reports: [],
-      isLoading: false,
-      error: undefined,
-      mutate: vi.fn(),
-      activeReports: [],
-      completedReports: [],
-    });
-    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=error'));
-
-    render(<PenetrationTestsPageClient orgId="org_123" />);
-
-    expect(toastErrorMock).toHaveBeenCalledWith('Checkout did not complete. Try again.');
-    expect(replaceMock).toHaveBeenCalledWith('/org_123/security/penetration-tests');
-  });
-
-  it('preserves unrelated query params while clearing checkout params', () => {
-    const refreshReports = vi.fn();
-    reportHookMock.mockReturnValue({
-      reports: [],
-      isLoading: false,
-      error: undefined,
-      mutate: refreshReports,
-      activeReports: [],
-      completedReports: [],
-    });
-    useSearchParamsMock.mockReturnValue(new URLSearchParams('checkout=success&reportId=run_77&foo=bar'));
-
-    render(<PenetrationTestsPageClient orgId="org_123" />);
-
-    return waitFor(() => {
-      expect(refreshReports).toHaveBeenCalled();
-      expect(toastSuccessMock).toHaveBeenCalledWith(
-        'Checkout completed. Your report run_77 is now in the queue.',
-      );
-      expect(replaceMock).toHaveBeenCalledWith('/org_123/security/penetration-tests?foo=bar');
-    });
   });
 
   it('renders progress for running report rows with agent counts', () => {
@@ -518,7 +431,7 @@ describe('PenetrationTestsPageClient', () => {
     expect(screen.queryByText('(n/a/n/a)')).toBeNull();
   });
 
-  it('creates a report and redirects to checkout when submitted', async () => {
+  it('creates a report and navigates to the report detail page', async () => {
     const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await act(async () => {
@@ -536,7 +449,7 @@ describe('PenetrationTestsPageClient', () => {
           value: 'https://github.com/org/repo',
         },
       });
-      fireEvent.click(getByText('Continue to checkout'));
+      fireEvent.click(getByText('Start penetration test'));
     });
 
     await waitFor(() => {
@@ -544,14 +457,14 @@ describe('PenetrationTestsPageClient', () => {
         targetUrl: 'https://example.com',
         repoUrl: 'https://github.com/org/repo',
       });
-      expect(toastSuccessMock).toHaveBeenCalledWith('Redirecting to checkout...');
-      expect(locationAssignMock).toHaveBeenCalledWith('https://checkout.local/example');
+      expect(toastSuccessMock).toHaveBeenCalledWith('Penetration test queued successfully.');
+      expect(pushMock).toHaveBeenCalledWith('/org_123/security/penetration-tests/run_new');
     });
   });
 
   it('requires target URL before submitting report request', async () => {
-    const { getByText } = render(<PenetrationTestsPageClient orgId="org_123" />);
-    const submitForm = screen.getByText('Continue to checkout').closest('form');
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+    const submitForm = screen.getByText('Start penetration test').closest('form');
 
     await act(async () => {
       fireEvent.submit(submitForm as HTMLFormElement);
@@ -576,7 +489,7 @@ describe('PenetrationTestsPageClient', () => {
           value: 'jungle.ai',
         },
       });
-      fireEvent.click(getByText('Continue to checkout'));
+      fireEvent.click(getByText('Start penetration test'));
     });
 
     await waitFor(() => {
@@ -587,8 +500,8 @@ describe('PenetrationTestsPageClient', () => {
     });
   });
 
-  it('surfaces errors when checkout creation fails', async () => {
-    createReportMock.mockRejectedValue(new Error('Could not start checkout'));
+  it('surfaces errors when run creation fails', async () => {
+    createReportMock.mockRejectedValue(new Error('No active pentest subscription.'));
 
     const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
@@ -607,15 +520,15 @@ describe('PenetrationTestsPageClient', () => {
           value: 'https://github.com/org/repo',
         },
       });
-      fireEvent.click(getByText('Continue to checkout'));
+      fireEvent.click(getByText('Start penetration test'));
     });
 
     await waitFor(() => {
-      expect(toastErrorMock).toHaveBeenCalledWith('Could not start checkout');
+      expect(toastErrorMock).toHaveBeenCalledWith('No active pentest subscription.');
     });
   });
 
-  it('surfaces a generic error message when checkout creation fails with non-error value', async () => {
+  it('surfaces a generic error message when run creation fails with non-error value', async () => {
     createReportMock.mockRejectedValue('service-down');
 
     const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
@@ -635,11 +548,58 @@ describe('PenetrationTestsPageClient', () => {
           value: 'https://github.com/org/repo',
         },
       });
-      fireEvent.click(getByText('Continue to checkout'));
+      fireEvent.click(getByText('Start penetration test'));
     });
 
     await waitFor(() => {
       expect(toastErrorMock).toHaveBeenCalledWith('Could not queue a new report');
     });
+  });
+
+  it('shows a Connect GitHub button when GitHub is not connected', async () => {
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Create Report'));
+    });
+
+    expect(screen.getByRole('button', { name: 'Connect GitHub' })).toBeInTheDocument();
+    expect(screen.queryByTestId('github-repo-select')).toBeNull();
+  });
+
+  it('shows the repo selector dropdown when GitHub is connected', async () => {
+    vi.mocked(integrationPlatform.useIntegrationConnections).mockReturnValue({
+      connections: [{ id: 'conn_1', providerSlug: 'github', status: 'active', variables: null, errorMessage: null }] as never,
+      isLoading: false,
+      error: undefined,
+      refresh: vi.fn(),
+    });
+    vi.mocked(pentestHooks.useGithubRepos).mockReturnValue({
+      repos: [{ id: 1, name: 'repo', fullName: 'org/repo', private: false, htmlUrl: 'https://github.com/org/repo' }],
+      isLoading: false,
+    } as ReturnType<typeof pentestHooks.useGithubRepos>);
+
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Create Report'));
+    });
+
+    expect(screen.getByTestId('github-repo-select')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Connect GitHub' })).toBeNull();
+  });
+
+  it('starts GitHub OAuth when Connect GitHub button is clicked', async () => {
+    render(<PenetrationTestsPageClient orgId="org_123" />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Create Report'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Connect GitHub' }));
+    });
+
+    expect(startOAuthMock).toHaveBeenCalledWith('github', expect.any(String));
   });
 });
