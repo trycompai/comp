@@ -4,10 +4,19 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { db, PolicyStatus, Prisma } from '@trycompai/db';
+import {
+  db,
+  Departments,
+  Frequency,
+  PolicyDisplayFormat,
+  PolicyStatus,
+  Prisma,
+} from '@trycompai/db';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
+import type { BulkDeletePoliciesDto } from './dto/bulk-delete-policies.dto';
+import type { BulkUploadPoliciesDto } from './dto/bulk-upload-policies.dto';
 import type { CreatePolicyDto } from './dto/create-policy.dto';
 import type { UpdatePolicyDto } from './dto/update-policy.dto';
 import type {
@@ -381,6 +390,201 @@ export class PoliciesService {
       this.logger.error(`Failed to delete policy ${id}:`, error);
       throw error;
     }
+  }
+
+  async bulkUpload(
+    organizationId: string,
+    dto: BulkUploadPoliciesDto,
+    userId?: string,
+  ) {
+    const memberId = await this.getMemberId(organizationId, userId);
+
+    if (!memberId) {
+      throw new BadRequestException('Active member required for bulk upload');
+    }
+
+    const initialContent = [
+      {
+        type: 'paragraph',
+        content: [{ type: 'text', text: '' }],
+      },
+    ] as Prisma.InputJsonValue[];
+
+    const results: {
+      fileName: string;
+      policyId: string;
+      success: boolean;
+      error?: string;
+    }[] = [];
+
+    for (const file of dto.files) {
+      try {
+        const policyName = this.formatPolicyName(file.fileName);
+
+        const { policy, versionId } = await db.$transaction(async (tx) => {
+          const newPolicy = await tx.policy.create({
+            data: {
+              name: policyName,
+              description: `Uploaded from ${file.fileName}`,
+              organizationId,
+              assigneeId: memberId,
+              department: Departments.none,
+              frequency: Frequency.monthly,
+              status: PolicyStatus.draft,
+              content: initialContent,
+              draftContent: initialContent,
+              displayFormat: PolicyDisplayFormat.PDF,
+            },
+          });
+
+          const version = await tx.policyVersion.create({
+            data: {
+              policyId: newPolicy.id,
+              version: 1,
+              content: initialContent,
+              publishedById: memberId,
+              changelog: 'Initial version (uploaded PDF)',
+            },
+          });
+
+          const updatedPolicy = await tx.policy.update({
+            where: { id: newPolicy.id },
+            data: { currentVersionId: version.id },
+          });
+
+          return { policy: updatedPolicy, versionId: version.id };
+        });
+
+        const sanitizedFileName = file.fileName.replace(
+          /[^a-zA-Z0-9.-]/g,
+          '_',
+        );
+        const s3Key = `${organizationId}/policies/${policy.id}/v1-${Date.now()}-${sanitizedFileName}`;
+
+        const fileBuffer = Buffer.from(file.fileData, 'base64');
+        await this.attachmentsService.uploadPolicyPdf(
+          fileBuffer,
+          s3Key,
+          file.fileType,
+        );
+
+        await db.$transaction([
+          db.policy.update({
+            where: { id: policy.id },
+            data: { pdfUrl: s3Key },
+          }),
+          db.policyVersion.update({
+            where: { id: versionId },
+            data: { pdfUrl: s3Key },
+          }),
+        ]);
+
+        results.push({
+          fileName: file.fileName,
+          policyId: policy.id,
+          success: true,
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to create policy for ${file.fileName}:`,
+          error,
+        );
+        results.push({
+          fileName: file.fileName,
+          policyId: '',
+          success: false,
+          error: 'Failed to create policy',
+        });
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    const failCount = results.filter((r) => !r.success).length;
+
+    this.logger.log(
+      `Bulk upload for org ${organizationId}: ${successCount} succeeded, ${failCount} failed`,
+    );
+
+    return {
+      success: failCount === 0,
+      results,
+      summary: {
+        total: dto.files.length,
+        succeeded: successCount,
+        failed: failCount,
+      },
+    };
+  }
+
+  async bulkDelete(organizationId: string, dto: BulkDeletePoliciesDto) {
+    const policies = await db.policy.findMany({
+      where: {
+        id: { in: dto.policyIds },
+        organizationId,
+      },
+      include: {
+        versions: {
+          select: { pdfUrl: true },
+        },
+      },
+    });
+
+    if (policies.length === 0) {
+      throw new NotFoundException('No policies found matching the given IDs');
+    }
+
+    const pdfUrlsToDelete: string[] = [];
+    for (const policy of policies) {
+      if (policy.pdfUrl) {
+        pdfUrlsToDelete.push(policy.pdfUrl);
+      }
+      for (const version of policy.versions) {
+        if (version.pdfUrl) {
+          pdfUrlsToDelete.push(version.pdfUrl);
+        }
+      }
+    }
+
+    if (pdfUrlsToDelete.length > 0) {
+      await Promise.allSettled(
+        pdfUrlsToDelete.map((pdfUrl) =>
+          this.attachmentsService
+            .deletePolicyVersionPdf(pdfUrl)
+            .catch((err) => {
+              this.logger.warn(
+                `Failed to delete PDF from S3: ${pdfUrl}`,
+                err,
+              );
+            }),
+        ),
+      );
+    }
+
+    await db.policy.deleteMany({
+      where: {
+        id: { in: policies.map((p) => p.id) },
+        organizationId,
+      },
+    });
+
+    this.logger.log(
+      `Bulk deleted ${policies.length} policies for org ${organizationId}`,
+    );
+
+    return { success: true, deletedCount: policies.length };
+  }
+
+  private formatPolicyName(fileName: string): string {
+    const withoutExtension = fileName.replace(/\.[^.]+$/, '');
+    const spaced = withoutExtension
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/[_\-+.]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return spaced
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   }
 
   async getVersionById(

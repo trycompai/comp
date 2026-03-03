@@ -2,6 +2,7 @@
 
 import { StatusIndicator } from '@/components/status-indicator';
 import { formatDate } from '@/lib/format';
+import { Checkbox } from '@comp/ui/checkbox';
 import type { Policy } from '@db';
 import {
   Badge,
@@ -28,6 +29,9 @@ interface PoliciesTableDSProps {
   sortColumn?: SortColumn;
   sortDirection?: 'asc' | 'desc';
   onSort?: (column: SortColumn) => void;
+  selectable?: boolean;
+  selectedIds?: Set<string>;
+  onSelectionChange?: (ids: Set<string>) => void;
 }
 
 const ACTIVE_STATUSES: PolicyTailoringStatus[] = ['queued', 'pending', 'processing'];
@@ -56,13 +60,31 @@ export function PoliciesTableDS({
   sortColumn,
   sortDirection,
   onSort,
+  selectable = false,
+  selectedIds,
+  onSelectionChange,
 }: PoliciesTableDSProps) {
   const params = useParams<{ orgId: string }>();
   const router = useRouter();
   const orgId = params.orgId;
 
+  const handleSelectOne = (policyId: string) => {
+    if (!onSelectionChange || !selectedIds) return;
+    const next = new Set(selectedIds);
+    if (next.has(policyId)) {
+      next.delete(policyId);
+    } else {
+      next.add(policyId);
+    }
+    onSelectionChange(next);
+  };
+
   const handleRowClick = (policyId: string) => {
-    router.push(`/${orgId}/policies/${policyId}`);
+    if (selectable) {
+      handleSelectOne(policyId);
+    } else {
+      router.push(`/${orgId}/policies/${policyId}`);
+    }
   };
 
   if (policies.length === 0) {
@@ -77,6 +99,7 @@ export function PoliciesTableDS({
     <Table variant="bordered">
       <TableHeader>
         <TableRow>
+          {selectable && <TableHead style={{ width: 40 }} />}
           <TableHead>
             <HStack
               gap="xs"
@@ -125,7 +148,15 @@ export function PoliciesTableDS({
       </TableHeader>
       <TableBody>
         {policies.map((policy) => (
-          <PolicyRow key={policy.id} policy={policy} orgId={orgId} onRowClick={handleRowClick} />
+          <PolicyRow
+            key={policy.id}
+            policy={policy}
+            orgId={orgId}
+            onRowClick={handleRowClick}
+            selectable={selectable}
+            selected={selectedIds?.has(policy.id) ?? false}
+            onSelect={handleSelectOne}
+          />
         ))}
       </TableBody>
     </Table>
@@ -136,9 +167,12 @@ interface PolicyRowProps {
   policy: Policy;
   orgId: string;
   onRowClick: (policyId: string) => void;
+  selectable: boolean;
+  selected: boolean;
+  onSelect: (policyId: string) => void;
 }
 
-function PolicyRow({ policy, orgId, onRowClick }: PolicyRowProps) {
+function PolicyRow({ policy, orgId, onRowClick, selectable, selected, onSelect }: PolicyRowProps) {
   const status = usePolicyTailoringStatus(policy.id);
   const isTailoring = status && ACTIVE_STATUSES.includes(status);
 
@@ -146,9 +180,20 @@ function PolicyRow({ policy, orgId, onRowClick }: PolicyRowProps) {
     <TableRow
       onClick={() => !isTailoring && onRowClick(policy.id)}
       style={{ cursor: isTailoring ? 'not-allowed' : 'pointer' }}
+      data-state={selected ? 'selected' : undefined}
     >
+      {selectable && (
+        <TableCell>
+          <Checkbox
+            checked={selected}
+            onCheckedChange={() => onSelect(policy.id)}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Select ${policy.name}`}
+          />
+        </TableCell>
+      )}
       <TableCell>
-        <PolicyNameCell policy={policy} orgId={orgId} isTailoring={isTailoring} />
+        <PolicyNameCell policy={policy} orgId={orgId} isTailoring={isTailoring} selectable={selectable} />
       </TableCell>
       <TableCell>
         <PolicyStatusCell policy={policy} status={status} isTailoring={isTailoring} />
@@ -169,9 +214,10 @@ interface PolicyNameCellProps {
   policy: Policy;
   orgId: string;
   isTailoring: boolean | undefined;
+  selectable?: boolean;
 }
 
-function PolicyNameCell({ policy, orgId, isTailoring }: PolicyNameCellProps) {
+function PolicyNameCell({ policy, orgId, isTailoring, selectable }: PolicyNameCellProps) {
   const policyHref = `/${orgId}/policies/${policy.id}`;
 
   if (isTailoring) {
@@ -182,6 +228,14 @@ function PolicyNameCell({ policy, orgId, isTailoring }: PolicyNameCellProps) {
           {policy.name}
         </Text>
       </HStack>
+    );
+  }
+
+  if (selectable) {
+    return (
+      <Text size="sm" weight="medium">
+        {policy.name}
+      </Text>
     );
   }
 

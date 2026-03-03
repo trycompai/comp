@@ -336,6 +336,24 @@ export class AttachmentsService {
   }
 
   /**
+   * Upload a policy PDF directly to S3 with a pre-determined key
+   */
+  async uploadPolicyPdf(
+    fileBuffer: Buffer,
+    s3Key: string,
+    contentType: string,
+  ): Promise<void> {
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: s3Key,
+        Body: fileBuffer,
+        ContentType: contentType,
+      }),
+    );
+  }
+
+  /**
    * Copy a policy PDF to a new S3 key for versioning
    */
   async copyPolicyVersionPdf(

@@ -1,8 +1,18 @@
 'use client';
 
+import { usePolicyActions } from '@/hooks/use-policies';
+import { Checkbox } from '@comp/ui/checkbox';
 import type { Policy, PolicyStatus } from '@db';
 import {
-  HStack,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
@@ -13,8 +23,9 @@ import {
   SelectValue,
   Stack,
 } from '@trycompai/design-system';
-import { Search } from '@trycompai/design-system/icons';
-import { useMemo, useState } from 'react';
+import { Close, Edit, Search, TrashCan } from '@trycompai/design-system/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { PoliciesTableDS } from './PoliciesTableDS';
 
 interface PolicyFiltersProps {
@@ -34,8 +45,19 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [sortColumn, setSortColumn] = useState<'name' | 'status' | 'updatedAt'>('updatedAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [selectable, setSelectable] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // Get unique departments from policies
+  const { bulkDelete } = usePolicyActions();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (!selectable) {
+      setSelectedIds(new Set());
+    }
+  }, [selectable]);
+
   const departments = useMemo(() => {
     const depts = new Set<string>();
     policies.forEach((p) => {
@@ -44,27 +66,22 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
     return Array.from(depts).sort();
   }, [policies]);
 
-  // Filter and sort policies
   const filteredPolicies = useMemo(() => {
     let result = [...policies];
 
-    // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter((p) => p.name.toLowerCase().includes(query));
     }
 
-    // Status filter
     if (statusFilter !== 'all') {
       result = result.filter((p) => p.status === statusFilter);
     }
 
-    // Department filter
     if (departmentFilter !== 'all') {
       result = result.filter((p) => p.department === departmentFilter);
     }
 
-    // Sort
     result.sort((a, b) => {
       let comparison = 0;
       if (sortColumn === 'name') {
@@ -80,6 +97,33 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
     return result;
   }, [policies, searchQuery, statusFilter, departmentFilter, sortColumn, sortDirection]);
 
+  // Remove stale selections when filtered list changes
+  useEffect(() => {
+    const visibleIds = new Set(filteredPolicies.map((p) => p.id));
+    setSelectedIds((prev) => {
+      const next = new Set([...prev].filter((id) => visibleIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [filteredPolicies]);
+
+  const allSelected =
+    filteredPolicies.length > 0 && filteredPolicies.every((p) => selectedIds.has(p.id));
+  const someSelected =
+    filteredPolicies.some((p) => selectedIds.has(p.id)) && !allSelected;
+  const selectAllChecked = allSelected ? true : someSelected ? 'indeterminate' : false;
+
+  const handleSelectAllChange = (checked: boolean | 'indeterminate') => {
+    if (checked === true) {
+      setSelectedIds(new Set(filteredPolicies.map((p) => p.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectionChange = (ids: Set<string>) => {
+    setSelectedIds(ids);
+  };
+
   const handleSort = (column: 'name' | 'status' | 'updatedAt') => {
     if (sortColumn === column) {
       setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -89,16 +133,40 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
     }
   };
 
+  const handleBulkDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const result = await bulkDelete(Array.from(selectedIds));
+      toast.success(
+        `Deleted ${result.deletedCount} ${result.deletedCount === 1 ? 'policy' : 'policies'}`,
+      );
+      setSelectedIds(new Set());
+      setSelectable(false);
+      setIsDeleteDialogOpen(false);
+    } catch {
+      toast.error('Failed to delete policies');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleExitEditMode = () => {
+    setSelectable(false);
+    setSelectedIds(new Set());
+  };
+
   const statusLabel = STATUS_OPTIONS.find((opt) => opt.value === statusFilter)?.label ?? 'Status';
 
   const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   const departmentLabel =
     departmentFilter === 'all' ? 'All Departments' : capitalize(departmentFilter);
 
+  const selectionCount = selectedIds.size;
+
   return (
     <Stack gap="md">
+      {/* Filters bar -- always visible */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end">
-        {/* Search - full width on mobile, constrained on desktop */}
         <div className="w-full md:max-w-[300px]">
           <InputGroup>
             <InputGroupAddon>
@@ -111,7 +179,6 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
             />
           </InputGroup>
         </div>
-        {/* Filters - side by side on mobile, inline with search on desktop */}
         <div className="flex gap-2">
           <div className="flex-1 md:w-[160px] md:flex-none">
             <Select
@@ -131,7 +198,10 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
             </Select>
           </div>
           <div className="flex-1 md:w-[160px] md:flex-none">
-            <Select value={departmentFilter} onValueChange={(v) => setDepartmentFilter(v ?? 'all')}>
+            <Select
+              value={departmentFilter}
+              onValueChange={(v) => setDepartmentFilter(v ?? 'all')}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Department">{departmentLabel}</SelectValue>
               </SelectTrigger>
@@ -146,13 +216,89 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
             </Select>
           </div>
         </div>
+        <div className="ml-auto flex items-center gap-2">
+          {selectable ? (
+            <>
+              <span className="text-xs text-muted-foreground">
+                {selectionCount} item{selectionCount !== 1 ? 's' : ''} selected
+              </span>
+              <button
+                type="button"
+                onClick={handleExitEditMode}
+                className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Close size={16} />
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSelectable(true)}
+              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Edit size={16} />
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Bulk action bar -- only visible in edit mode */}
+      {selectable && (
+        <div className="flex items-center gap-4 rounded-lg border border-border/60 bg-card p-4">
+          <Checkbox
+            checked={selectAllChecked}
+            onCheckedChange={handleSelectAllChange}
+            aria-label="Select all policies"
+          />
+          <span className="text-sm text-muted-foreground">Select all</span>
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              disabled={selectionCount === 0}
+            >
+              <TrashCan size={14} />
+              <span>Delete</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
       <PoliciesTableDS
         policies={filteredPolicies}
         sortColumn={sortColumn}
         sortDirection={sortDirection}
         onSort={handleSort}
+        selectable={selectable}
+        selectedIds={selectedIds}
+        onSelectionChange={handleSelectionChange}
       />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {selectionCount} {selectionCount === 1 ? 'Policy' : 'Policies'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the selected{' '}
+              {selectionCount === 1 ? 'policy' : 'policies'} and all associated versions and PDF
+              files. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              variant="destructive"
+              loading={isDeleting}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Stack>
   );
 }

@@ -28,6 +28,8 @@ import { streamText, convertToModelMessages, type UIMessage } from 'ai';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import { BulkDeletePoliciesDto } from './dto/bulk-delete-policies.dto';
+import { BulkUploadPoliciesDto } from './dto/bulk-upload-policies.dto';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
 import { AISuggestPolicyRequestDto } from './dto/ai-suggest-policy.dto';
@@ -118,6 +120,68 @@ export class PoliciesController {
   ) {
     const result =
       await this.policiesService.downloadAllPoliciesPdf(organizationId);
+
+    return {
+      ...result,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post('bulk')
+  @ApiOperation({
+    summary: 'Bulk upload policies from PDF files',
+    description:
+      'Creates multiple policies from uploaded PDF files. Each file becomes a new draft policy with a PDF display format.',
+  })
+  @ApiBody({ type: BulkUploadPoliciesDto })
+  @ApiResponse({ status: 201, description: 'Bulk upload completed' })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async bulkUploadPolicies(
+    @Body() body: BulkUploadPoliciesDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const result = await this.policiesService.bulkUpload(
+      organizationId,
+      body,
+      authContext.userId,
+    );
+
+    return {
+      ...result,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Delete('bulk')
+  @ApiOperation({
+    summary: 'Bulk delete policies',
+    description:
+      'Deletes multiple policies and their associated versions and PDF files.',
+  })
+  @ApiBody({ type: BulkDeletePoliciesDto })
+  @ApiResponse({ status: 200, description: 'Policies deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'No policies found' })
+  async bulkDeletePolicies(
+    @Body() body: BulkDeletePoliciesDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const result = await this.policiesService.bulkDelete(organizationId, body);
 
     return {
       ...result,
