@@ -9,6 +9,7 @@ import {
 import { db } from '@trycompai/db';
 import { createHash, timingSafeEqual } from 'node:crypto';
 
+import { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
 import {
   MacedClient,
@@ -16,6 +17,14 @@ import {
   type MacedPentestProgress,
   type MacedPentestRun,
 } from './maced-client';
+
+export interface GithubRepo {
+  id: number;
+  name: string;
+  fullName: string;
+  private: boolean;
+  htmlUrl: string;
+}
 
 export type PentestReportStatus =
   | 'provisioning'
@@ -84,6 +93,9 @@ interface PersistedWebhookHandshake {
 export class SecurityPenetrationTestsService {
   private readonly logger = new Logger(SecurityPenetrationTestsService.name);
   private readonly macedClient = new MacedClient();
+
+  constructor(private readonly credentialVaultService: CredentialVaultService) {}
+
   private readonly canonicalWebhookPath = '/v1/security-penetration-tests/webhook';
   private readonly defaultWebhookBaseUrl = 'https://api.trycomp.ai';
   private readonly defaultCompWebhookHosts = new Set([
@@ -118,7 +130,16 @@ export class SecurityPenetrationTestsService {
   ): Promise<SecurityPenetrationTest> {
     const resolvedWebhookUrl = this.resolveWebhookUrl(payload.webhookUrl);
 
-    const sanitizedPayload = {
+    const sanitizedPayload: {
+      targetUrl: string;
+      repoUrl?: string;
+      githubToken?: string;
+      configYaml?: string;
+      pipelineTesting?: boolean;
+      testMode?: boolean;
+      workspace?: string;
+      webhookUrl?: string;
+    } = {
       targetUrl: payload.targetUrl,
       repoUrl: payload.repoUrl,
       githubToken: payload.githubToken,
@@ -128,6 +149,14 @@ export class SecurityPenetrationTestsService {
       workspace: payload.workspace,
       webhookUrl: resolvedWebhookUrl,
     };
+
+    if (
+      payload.repoUrl?.startsWith('https://github.com/') &&
+      !sanitizedPayload.githubToken
+    ) {
+      sanitizedPayload.githubToken =
+        (await this.getGithubTokenForOrg(organizationId)) ?? undefined;
+    }
 
     const createdReport = await this.macedClient.createPentest(sanitizedPayload);
 
@@ -191,6 +220,51 @@ export class SecurityPenetrationTestsService {
     }
 
     return this.mapMacedRunToSecurityPenetrationTest(createdReport);
+  }
+
+  async listGithubRepos(
+    organizationId: string,
+  ): Promise<{ repos: GithubRepo[]; connected: boolean }> {
+    const token = await this.getGithubTokenForOrg(organizationId);
+    if (!token) {
+      return { repos: [], connected: false };
+    }
+
+    try {
+      const response = await fetch(
+        'https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/vnd.github+json',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        this.logger.warn(
+          `GitHub repos API returned ${response.status} for org=${organizationId}`,
+        );
+        return { repos: [], connected: true };
+      }
+
+      const raw = (await response.json()) as Array<Record<string, unknown>>;
+      const repos: GithubRepo[] = raw.map((r) => ({
+        id: r.id as number,
+        name: r.name as string,
+        fullName: r.full_name as string,
+        private: r.private as boolean,
+        htmlUrl: r.html_url as string,
+      }));
+
+      return { repos, connected: true };
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch GitHub repos for org=${organizationId}`,
+        error instanceof Error ? error.message : String(error),
+      );
+      return { repos: [], connected: true };
+    }
   }
 
   async getReport(organizationId: string, id: string): Promise<SecurityPenetrationTest> {
@@ -318,6 +392,45 @@ export class SecurityPenetrationTestsService {
           }
         : {}),
     };
+  }
+
+  private async getGithubTokenForOrg(organizationId: string): Promise<string | null> {
+    try {
+      const provider = await db.integrationProvider.findUnique({
+        where: { slug: 'github' },
+        select: { id: true },
+      });
+
+      if (!provider) {
+        return null;
+      }
+
+      const connection = await db.integrationConnection.findFirst({
+        where: {
+          providerId: provider.id,
+          organizationId,
+          status: 'active',
+        },
+        select: { id: true },
+      });
+
+      if (!connection) {
+        return null;
+      }
+
+      const credentials = await this.credentialVaultService.getDecryptedCredentials(
+        connection.id,
+      );
+
+      const token = credentials?.GITHUB_TOKEN;
+      return typeof token === 'string' && token.length > 0 ? token : null;
+    } catch (error) {
+      this.logger.warn(
+        `Could not retrieve GitHub token for org=${organizationId}`,
+        error instanceof Error ? error.message : String(error),
+      );
+      return null;
+    }
   }
 
   private trimTrailingSlashes(value: string): string {

@@ -1,8 +1,13 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { db } from '@trycompai/db';
 import { createHash } from 'node:crypto';
+import type { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
 import { SecurityPenetrationTestsService } from './security-penetration-tests.service';
+
+const mockCredentialVaultService: jest.Mocked<Pick<CredentialVaultService, 'getDecryptedCredentials'>> = {
+  getDecryptedCredentials: jest.fn(),
+};
 
 jest.mock('@trycompai/db', () => ({
   db: {
@@ -15,6 +20,12 @@ jest.mock('@trycompai/db', () => ({
       upsert: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+    },
+    integrationProvider: {
+      findUnique: jest.fn(),
+    },
+    integrationConnection: {
+      findFirst: jest.fn(),
     },
   },
 }));
@@ -29,6 +40,12 @@ type MockDb = {
     upsert: jest.Mock;
     findUnique: jest.Mock;
     update: jest.Mock;
+  };
+  integrationProvider: {
+    findUnique: jest.Mock;
+  };
+  integrationConnection: {
+    findFirst: jest.Mock;
   };
 };
 
@@ -58,7 +75,9 @@ describe('SecurityPenetrationTestsService', () => {
 
   beforeEach(() => {
     process.env.MACED_API_KEY = 'test-maced-api-key';
-    service = new SecurityPenetrationTestsService();
+    service = new SecurityPenetrationTestsService(
+      mockCredentialVaultService as unknown as CredentialVaultService,
+    );
     fetchMock.mockReset();
     global.fetch = fetchMock as unknown as typeof fetch;
     mockedDb.securityPenetrationTestRun.upsert.mockResolvedValue({});

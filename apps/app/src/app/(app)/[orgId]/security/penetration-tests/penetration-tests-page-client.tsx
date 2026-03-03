@@ -13,6 +13,13 @@ import {
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@comp/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -21,12 +28,13 @@ import {
   TableRow,
 } from '@comp/ui/table';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { FormEvent, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { FormEvent, useState } from 'react';
 import { toast } from 'sonner';
 import { formatReportDate, isReportInProgress, statusLabel, statusVariant } from './lib';
 import {
   useCreatePenetrationTest,
+  useGithubRepos,
   usePenetrationTests,
 } from './hooks/use-penetration-tests';
 import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
@@ -54,45 +62,21 @@ const normalizeTargetUrl = (value: string): string | null => {
 };
 
 export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClientProps) {
-  const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
+  const [showNewRunDialog, setShowNewRunDialog] = useState(false);
   const [targetUrl, setTargetUrl] = useState('');
   const [repoUrl, setRepoUrl] = useState('');
 
-  const { reports, isLoading, activeReports, completedReports, mutate: refreshReports } =
+  const { reports, isLoading, activeReports, completedReports } =
     usePenetrationTests(orgId);
+
+  const { repos: githubRepos, connected: githubConnected } = useGithubRepos(orgId);
 
   const {
     createReport,
     isCreating,
   } = useCreatePenetrationTest(orgId);
-
-  useEffect(() => {
-    const checkoutStatus = searchParams.get('checkout');
-    const checkoutReportId = searchParams.get('reportId');
-
-    if (!checkoutStatus) {
-      return;
-    }
-
-    if (checkoutStatus === 'success' && checkoutReportId) {
-      toast.success(`Checkout completed. Your report ${checkoutReportId} is now in the queue.`);
-    } else if (checkoutStatus === 'success') {
-      toast.success('Checkout completed. Your report has been queued.');
-    } else if (checkoutStatus === 'error') {
-      toast.error('Checkout did not complete. Try again.');
-    }
-    refreshReports();
-
-    const cleanedSearchParams = new URLSearchParams(searchParams.toString());
-    cleanedSearchParams.delete('checkout');
-    cleanedSearchParams.delete('reportId');
-
-    const cleanQuery = cleanedSearchParams.toString();
-    router.replace(`/${orgId}/security/penetration-tests${cleanQuery ? `?${cleanQuery}` : ''}`);
-  }, [refreshReports, orgId, searchParams, router]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -115,9 +99,9 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
 
       setTargetUrl('');
       setRepoUrl('');
-      setShowCheckoutDialog(false);
-      toast.success('Redirecting to checkout...');
-      window.location.assign(response.checkoutUrl);
+      setShowNewRunDialog(false);
+      toast.success('Penetration test queued successfully.');
+      router.push(`/${orgId}/security/penetration-tests/${response.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not queue a new report');
     }
@@ -128,19 +112,25 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
       <PageHeader
         title="Penetration Tests"
         actions={
-          <Button onClick={() => setShowCheckoutDialog(true)}>Create Report</Button>
+          <Button onClick={() => setShowNewRunDialog(true)}>Create Report</Button>
         }
       >
-        Run one-time penetration tests with Maced and review generated reports.
+        Run penetration tests with Maced and review generated reports.{' '}
+        <a
+          href={`/${orgId}/security/penetration-tests/subscription`}
+          className="text-primary underline text-sm"
+        >
+          Manage subscription
+        </a>
       </PageHeader>
 
-      <Dialog open={showCheckoutDialog} onOpenChange={setShowCheckoutDialog}>
+      <Dialog open={showNewRunDialog} onOpenChange={setShowNewRunDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Queue a penetration test</DialogTitle>
             <DialogDescription>
-              This uses a mocked one-time checkout flow for now. You’ll be redirected to checkout and
-              back.
+              Your subscription includes 3 penetration test runs per month. Additional runs are
+              charged as overage immediately.
             </DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleSubmit}>
@@ -156,28 +146,46 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
             </div>
             <div>
               <Label htmlFor="repoUrl">Repository URL</Label>
-              <Input
-                id="repoUrl"
-                value={repoUrl}
-                placeholder="https://github.com/org/repo"
-                onChange={(event) => setRepoUrl(event.target.value)}
-              />
+              {githubConnected ? (
+                <Select value={repoUrl} onValueChange={setRepoUrl}>
+                  <SelectTrigger id="repoUrl">
+                    <SelectValue placeholder="Select a repository (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {githubRepos.map((repo) => (
+                      <SelectItem key={repo.id} value={repo.htmlUrl}>
+                        {repo.fullName}
+                        {repo.private ? ' (private)' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="repoUrl"
+                  value={repoUrl}
+                  placeholder="https://github.com/org/repo"
+                  onChange={(event) => setRepoUrl(event.target.value)}
+                />
+              )}
               <p className="mt-1 text-xs text-muted-foreground">
-                Optional. Leave blank to run a black-box scan.
+                {githubConnected
+                  ? 'Optional. Leave blank to run a black-box scan.'
+                  : 'Optional. Connect GitHub in Integrations to select from your repos.'}
               </p>
             </div>
             <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => setShowCheckoutDialog(false)}>
+              <Button variant="outline" type="button" onClick={() => setShowNewRunDialog(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isCreating}>
                 {isCreating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Redirecting...
+                    Starting...
                   </>
                 ) : (
-                  'Continue to checkout'
+                  'Start penetration test'
                 )}
               </Button>
             </DialogFooter>
@@ -206,10 +214,10 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
               <AlertCircle className="text-muted-foreground mx-auto mb-4 h-8 w-8" />
               <p className="text-lg font-medium text-foreground">No reports yet</p>
               <p className="text-muted-foreground text-sm">
-                Create your first one-time penetration test to get started.
+                Create your first penetration test to get started.
               </p>
               <div className="mt-4">
-                <Button onClick={() => setShowCheckoutDialog(true)}>
+                <Button onClick={() => setShowNewRunDialog(true)}>
                   Create your first report
                 </Button>
               </div>
@@ -256,7 +264,7 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
                         size="sm"
                         onClick={() => router.push(`/${orgId}/security/penetration-tests/${report.id}`)}
                       >
-                        View report
+                        View output
                       </Button>
                       {report.status === 'completed' ? (
                         <span className="text-sm text-muted-foreground">Ready</span>
