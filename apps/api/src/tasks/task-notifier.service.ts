@@ -1330,8 +1330,6 @@ export class TaskNotifierService {
           },
           select: {
             id: true,
-            title: true,
-            assigneeId: true,
             assignee: {
               select: {
                 user: {
