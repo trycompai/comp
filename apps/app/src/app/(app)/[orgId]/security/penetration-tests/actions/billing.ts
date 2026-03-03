@@ -261,17 +261,24 @@ export async function checkAndChargePentestBilling(orgId: string): Promise<void>
       ? defaultPaymentMethod
       : defaultPaymentMethod.id;
 
-  const paymentIntent = await stripe.paymentIntents.create({
-    customer: stripeCustomerId,
-    amount,
-    currency: 'usd',
-    payment_method: paymentMethodId,
-    confirm: true,
-    automatic_payment_methods: {
-      enabled: true,
-      allow_redirects: 'never',
+  // Idempotency key scoped to org + billing period + run number so that
+  // concurrent creates at the boundary deduplicate to a single charge.
+  const idempotencyKey = `pentest-overage-${orgId}-${subscription.currentPeriodStart.getTime()}-run${runsThisPeriod}`;
+
+  const paymentIntent = await stripe.paymentIntents.create(
+    {
+      customer: stripeCustomerId,
+      amount,
+      currency: 'usd',
+      payment_method: paymentMethodId,
+      confirm: true,
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'never',
+      },
     },
-  });
+    { idempotencyKey },
+  );
 
   if (paymentIntent.status !== 'succeeded') {
     throw new Error('Overage payment failed. Check billing.');

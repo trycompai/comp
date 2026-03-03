@@ -37,6 +37,10 @@ import {
   useGithubRepos,
   usePenetrationTests,
 } from './hooks/use-penetration-tests';
+import {
+  useIntegrationConnections,
+  useIntegrationMutations,
+} from '@/hooks/use-integration-platform';
 import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
 
 interface PenetrationTestsPageClientProps {
@@ -67,16 +71,34 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
   const [showNewRunDialog, setShowNewRunDialog] = useState(false);
   const [targetUrl, setTargetUrl] = useState('');
   const [repoUrl, setRepoUrl] = useState('');
+  const [isConnectingGithub, setIsConnectingGithub] = useState(false);
 
   const { reports, isLoading, activeReports, completedReports } =
     usePenetrationTests(orgId);
 
-  const { repos: githubRepos, connected: githubConnected } = useGithubRepos(orgId);
+  const { repos: githubRepos } = useGithubRepos(orgId);
+
+  const { connections } = useIntegrationConnections();
+  const githubConnected = connections.some(
+    (c) => c.providerSlug === 'github' && c.status === 'active',
+  );
+  const { startOAuth } = useIntegrationMutations();
 
   const {
     createReport,
     isCreating,
   } = useCreatePenetrationTest(orgId);
+
+  const handleConnectGithub = async () => {
+    setIsConnectingGithub(true);
+    const result = await startOAuth('github', window.location.href);
+    if (result.authorizationUrl) {
+      window.location.href = result.authorizationUrl;
+    } else {
+      toast.error(result.error ?? 'Failed to start GitHub connection');
+      setIsConnectingGithub(false);
+    }
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -168,11 +190,41 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
                   onChange={(event) => setRepoUrl(event.target.value)}
                 />
               )}
-              <p className="mt-1 text-xs text-muted-foreground">
-                {githubConnected
-                  ? 'Optional. Leave blank to run a black-box scan.'
-                  : 'Optional. Connect GitHub in Integrations to select from your repos.'}
-              </p>
+              {githubConnected && (
+                <Input
+                  className="mt-1"
+                  value={githubRepos.some((r) => r.htmlUrl === repoUrl) ? '' : repoUrl}
+                  placeholder="or paste URL manually"
+                  onChange={(event) => setRepoUrl(event.target.value)}
+                />
+              )}
+              {githubConnected ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Optional. Leave blank to run a black-box scan.
+                </p>
+              ) : (
+                <div className="mt-1 flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    Optional. Connect GitHub to select from your repos.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleConnectGithub}
+                    disabled={isConnectingGithub}
+                  >
+                    {isConnectingGithub ? (
+                      <>
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      'Connect GitHub'
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" type="button" onClick={() => setShowNewRunDialog(false)}>
