@@ -167,6 +167,59 @@ export class ApiClient {
   }
 
   /**
+   * Raw request for non-JSON responses (e.g. PDF/markdown artifacts)
+   */
+  async raw(
+    endpoint: string,
+    options: ApiCallOptions = {},
+    retryOnAuthError = true,
+  ): Promise<Response> {
+    const { organizationId, headers: customHeaders, ...fetchOptions } = options;
+
+    const headers: Record<string, string> = {
+      ...customHeaders,
+    };
+
+    if (organizationId) {
+      headers['X-Organization-Id'] = organizationId;
+    }
+
+    if (typeof window !== 'undefined') {
+      try {
+        const token = await jwtManager.getValidToken();
+
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+      } catch (error) {
+        console.error('❌ Error getting JWT token for API call:', error);
+      }
+    }
+
+    const request = (requestHeaders: Record<string, string>) =>
+      fetch(`${this.baseUrl}${endpoint}`, {
+        credentials: 'include',
+        ...fetchOptions,
+        headers: requestHeaders,
+      });
+
+    const response = await request(headers);
+
+    if (response.status === 401 && retryOnAuthError && typeof window !== 'undefined') {
+      const newToken = await jwtManager.forceRefresh();
+
+      if (newToken) {
+        return request({
+          ...headers,
+          Authorization: `Bearer ${newToken}`,
+        });
+      }
+    }
+
+    return response;
+  }
+
+  /**
    * GET request
    */
   async get<T = unknown>(endpoint: string, organizationId?: string): Promise<ApiResponse<T>> {
@@ -253,4 +306,7 @@ export const api = {
 
   delete: <T = unknown>(endpoint: string, organizationId?: string, body?: unknown) =>
     apiClient.delete<T>(endpoint, organizationId, body),
+
+  raw: (endpoint: string, options?: Omit<ApiCallOptions, 'organizationId'> & { organizationId?: string }) =>
+    apiClient.raw(endpoint, options),
 };
