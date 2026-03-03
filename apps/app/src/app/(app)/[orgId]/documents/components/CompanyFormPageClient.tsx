@@ -10,8 +10,19 @@ import { api } from '@/lib/api-client';
 import { useActiveMember } from '@/utils/auth-client';
 import { jwtManager } from '@/utils/jwt-manager';
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Badge,
   Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -29,7 +40,15 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Add, Catalog, Download, Search, Upload } from '@trycompai/design-system/icons';
+import {
+  Add,
+  Catalog,
+  Download,
+  OverflowMenuVertical,
+  Search,
+  TrashCan,
+  Upload,
+} from '@trycompai/design-system/icons';
 import {
   Dialog,
   DialogContent,
@@ -79,6 +98,7 @@ const submittedByColumnWidth = 128;
 const statusColumnWidth = 176;
 const meetingTypeColumnWidth = 140;
 const summaryColumnWidth = 280;
+const actionsColumnWidth = 80;
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -135,6 +155,9 @@ export function CompanyFormPageClient({
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [submissionToDelete, setSubmissionToDelete] = useState<EvidenceSubmissionRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: activeMember } = useActiveMember();
   const memberRoles = activeMember?.role?.split(',').map((role: string) => role.trim()) || [];
@@ -315,6 +338,44 @@ export function CompanyFormPageClient({
     }
   }, [selectedFile, isMeeting, formType, organizationId, query, globalMutate]);
 
+  const handleConfirmDelete = useCallback(async () => {
+    if (!submissionToDelete) return;
+
+    const submissionFormType = (submissionToDelete.formType ?? formType) as EvidenceFormType;
+    setIsDeleting(true);
+    try {
+      const response = await api.delete<{ success: boolean; id: string }>(
+        `/v1/evidence-forms/${submissionFormType}/submissions/${submissionToDelete.id}`,
+        organizationId,
+      );
+
+      if (response.error || !response.data?.success) {
+        throw new Error(response.error ?? 'Failed to delete submission');
+      }
+
+      toast.success('Submission deleted');
+      setDeleteDialogOpen(false);
+      setSubmissionToDelete(null);
+
+      if (isMeeting) {
+        for (const subType of MEETING_SUB_TYPES) {
+          globalMutate([`/v1/evidence-forms/${subType}${query}`, organizationId]);
+        }
+        for (const subType of MEETING_SUB_TYPES) {
+          globalMutate([`/v1/findings?evidenceFormType=${subType}`, organizationId]);
+        }
+        globalMutate([`/v1/findings?evidenceFormType=meeting`, organizationId]);
+      } else {
+        globalMutate([`/v1/evidence-forms/${formType}${query}`, organizationId]);
+        globalMutate([`/v1/findings?evidenceFormType=${formType}`, organizationId]);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete submission');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [submissionToDelete, formType, isMeeting, organizationId, query, globalMutate]);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -397,6 +458,7 @@ export function CompanyFormPageClient({
               <col style={{ width: submittedByColumnWidth }} />
               {formType === 'access-request' && <col style={{ width: statusColumnWidth }} />}
               {showSummaryColumn && <col style={{ width: summaryColumnWidth }} />}
+              {isAdminOrOwner && <col style={{ width: actionsColumnWidth }} />}
             </colgroup>
             <TableHeader>
               <TableRow>
@@ -417,6 +479,11 @@ export function CompanyFormPageClient({
                   </TableHead>
                 )}
                 {showSummaryColumn && <TableHead>Summary</TableHead>}
+                {isAdminOrOwner && (
+                  <TableHead>
+                    <div className="whitespace-nowrap">Actions</div>
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -473,6 +540,33 @@ export function CompanyFormPageClient({
                         <span className="block truncate text-muted-foreground">
                           {rowSummary || '—'}
                         </span>
+                      </TableCell>
+                    )}
+                    {isAdminOrOwner && (
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              variant="ellipsis"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <OverflowMenuVertical />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSubmissionToDelete(submission);
+                                  setDeleteDialogOpen(true);
+                                }}
+                              >
+                                <TrashCan size={16} />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
@@ -541,6 +635,35 @@ export function CompanyFormPageClient({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) setSubmissionToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete submission</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this submission? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              loading={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
