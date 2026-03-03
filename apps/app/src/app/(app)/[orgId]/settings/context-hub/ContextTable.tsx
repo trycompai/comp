@@ -53,6 +53,7 @@ import {
 } from '@trycompai/design-system/icons';
 import { Check, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ContextForm } from './components/context-form';
@@ -473,9 +474,32 @@ function CreateContextSheetLocal({
   );
 }
 
-export const ContextTable = ({ entries }: { entries: Context[]; pageCount: number }) => {
+export const ContextTable = ({
+  entries,
+  pageCount,
+}: {
+  entries: Context[];
+  pageCount: number;
+}) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  const currentPage = Number(searchParams.get('page')) || 1;
+  const perPage = Number(searchParams.get('perPage')) || 50;
+
+  const updateSearchParams = useCallback(
+    (updates: Record<string, string>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(updates)) {
+        params.set(key, value);
+      }
+      router.push(`${pathname}?${params.toString()}`);
+    },
+    [router, pathname, searchParams],
+  );
 
   const filteredEntries = useMemo(() => {
     if (!search.trim()) return entries;
@@ -510,7 +534,18 @@ export const ContextTable = ({ entries }: { entries: Context[]; pageCount: numbe
       </HStack>
 
       {/* Table */}
-      <Table variant="bordered">
+      <Table
+        variant="bordered"
+        pagination={{
+          page: currentPage,
+          pageCount,
+          onPageChange: (page) => updateSearchParams({ page: String(page) }),
+          pageSize: perPage,
+          pageSizeOptions: [25, 50, 100],
+          onPageSizeChange: (size) =>
+            updateSearchParams({ perPage: String(size), page: '1' }),
+        }}
+      >
         <TableHeader>
           <TableRow>
             <TableHead style={{ width: '35%' }}>QUESTION</TableHead>
