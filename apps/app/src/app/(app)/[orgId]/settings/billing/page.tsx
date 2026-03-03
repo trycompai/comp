@@ -45,6 +45,9 @@ export default async function BillingPage({ params, searchParams }: BillingPageP
   let errorMessage: string | null = null;
 
   if (success === 'true' && session_id) {
+    // The webhook (checkout.session.completed) is the primary activation path.
+    // handleSubscriptionSuccess is a same-request fallback for the case where
+    // the webhook hasn't fired yet when the user lands back on this page.
     try {
       await handleSubscriptionSuccess(orgId, session_id);
       successMessage = 'Subscription activated! You can now create penetration test runs.';
