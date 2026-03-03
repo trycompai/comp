@@ -245,6 +245,10 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
                         </span>
                       ) : isReportInProgress(report.status) ? (
                         <span className="text-sm text-muted-foreground">In queue</span>
+                      ) : report.status === 'failed' ? (
+                        <span className="text-sm text-destructive">
+                          {report.failedReason ?? report.error ?? 'Run failed'}
+                        </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">—</span>
                       )}
