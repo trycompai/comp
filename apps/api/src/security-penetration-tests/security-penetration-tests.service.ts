@@ -422,7 +422,7 @@ export class SecurityPenetrationTestsService {
         connection.id,
       );
 
-      const token = credentials?.GITHUB_TOKEN;
+      const token = credentials?.access_token;
       return typeof token === 'string' && token.length > 0 ? token : null;
     } catch (error) {
       this.logger.warn(

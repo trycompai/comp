@@ -1,8 +1,10 @@
 'use server';
 
+import { auth } from '@/utils/auth';
 import { env } from '@/env.mjs';
 import { stripe } from '@/lib/stripe';
 import { db } from '@db';
+import { headers } from 'next/headers';
 
 export async function subscribeToPentestPlan(
   orgId: string,
@@ -136,6 +138,14 @@ export async function createBillingPortalSession(
 }
 
 export async function checkAndChargePentestBilling(orgId: string): Promise<void> {
+  const response = await auth.api.getSession({ headers: await headers() });
+  if (!response?.session) {
+    throw new Error('Unauthorized');
+  }
+  if (response.session.activeOrganizationId !== orgId) {
+    throw new Error('Unauthorized');
+  }
+
   const subscription = await db.pentestSubscription.findUnique({
     where: { organizationId: orgId },
   });
@@ -160,7 +170,7 @@ export async function checkAndChargePentestBilling(orgId: string): Promise<void>
     },
   });
 
-  if (runsThisPeriod < subscription.includedRunsPerPeriod) {
+  if (runsThisPeriod <= subscription.includedRunsPerPeriod) {
     return;
   }
 

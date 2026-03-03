@@ -96,6 +96,10 @@ describe('SecurityPenetrationTestsService', () => {
       }),
     });
     mockedDb.secret.update.mockResolvedValue({});
+    // Default: no GitHub integration connected — getGithubTokenForOrg returns null
+    mockedDb.integrationProvider.findUnique.mockResolvedValue(null);
+    mockedDb.integrationConnection.findFirst.mockResolvedValue(null);
+    mockCredentialVaultService.getDecryptedCredentials.mockResolvedValue(null);
     jest.clearAllMocks();
   });
 

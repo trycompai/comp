@@ -243,8 +243,6 @@ export function useCreatePenetrationTest(
       setIsCreating(true);
       setError(null);
       try {
-        await checkAndChargePentestBilling(organizationId);
-
         const response = await api.post<{
           id?: string;
           status?: PentestReportStatus;
@@ -270,6 +268,8 @@ export function useCreatePenetrationTest(
         if (!reportId) {
           throw new Error('Could not resolve report ID from create response.');
         }
+
+        await checkAndChargePentestBilling(organizationId);
 
         const data: CreatePenetrationTestResponse = {
           id: reportId,

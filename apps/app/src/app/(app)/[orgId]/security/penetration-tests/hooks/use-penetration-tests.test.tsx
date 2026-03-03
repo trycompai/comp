@@ -239,7 +239,11 @@ describe('use-penetration-tests hooks', () => {
     expect(requestBody.repoUrl).toBeUndefined();
   });
 
-  it('billing action failure blocks run creation and surfaces the error', async () => {
+  it('billing action failure surfaces the error after run creation', async () => {
+    fetchMock.mockResolvedValueOnce(
+      createJsonResponse({ id: 'run_billed', status: 'provisioning' }),
+    );
+
     const { checkAndChargePentestBilling } = await import('../actions/billing');
     vi.mocked(checkAndChargePentestBilling).mockRejectedValueOnce(
       new Error('No active pentest subscription.'),
@@ -255,7 +259,7 @@ describe('use-penetration-tests hooks', () => {
       ).rejects.toThrow('No active pentest subscription.');
     });
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledOnce();
     expect(result.current.error).toBe('No active pentest subscription.');
   });
 
