@@ -36,6 +36,7 @@ export const RESOURCE_TO_ENTITY_TYPE: Record<
   finding: AuditLogEntityType.finding,
   integration: AuditLogEntityType.integration,
   portal: AuditLogEntityType.trust,
+  trust: AuditLogEntityType.trust,
   app: AuditLogEntityType.organization,
   questionnaire: AuditLogEntityType.organization,
   audit: null,

@@ -157,6 +157,7 @@ export class HybridAuthGuard implements CanActivate {
       // Fetch member data for role and department info
       // Skip if no active org (e.g., /auth/me during onboarding)
       let userRoles: string[] | null = null;
+      request.isPlatformAdmin = false;
       if (organizationId) {
         const member = await db.member.findFirst({
           where: {
