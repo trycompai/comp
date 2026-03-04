@@ -16,11 +16,19 @@ async function requireOrgMember(orgId: string): Promise<void> {
   }
 }
 
+async function getOrgBillingUrl(orgId: string): Promise<string> {
+  const requestHeaders = await headers();
+  const host = requestHeaders.get('host') ?? '';
+  const proto = host.startsWith('localhost') ? 'http' : 'https';
+  const origin = env.NEXT_PUBLIC_BETTER_AUTH_URL ?? `${proto}://${host}`;
+  return `${origin}/${orgId}/settings/billing`;
+}
+
 export async function subscribeToPentestPlan(
   orgId: string,
-  returnBaseUrl: string,
 ): Promise<{ url: string }> {
   await requireOrgMember(orgId);
+  const returnBaseUrl = await getOrgBillingUrl(orgId);
 
   if (!stripe) {
     throw new Error('Stripe is not configured.');
@@ -170,9 +178,9 @@ export async function handleSubscriptionSuccess(
 
 export async function createBillingPortalSession(
   orgId: string,
-  returnUrl: string,
 ): Promise<{ url: string }> {
   await requireOrgMember(orgId);
+  const returnUrl = await getOrgBillingUrl(orgId);
 
   if (!stripe) {
     throw new Error('Stripe is not configured.');
@@ -196,6 +204,15 @@ export async function createBillingPortalSession(
 
 export async function checkAndChargePentestBilling(orgId: string, runId: string): Promise<void> {
   await requireOrgMember(orgId);
+
+  // Verify the run exists and belongs to this org to prevent arbitrary runId abuse.
+  const run = await db.securityPenetrationTestRun.findUnique({
+    where: { id: runId },
+    select: { organizationId: true },
+  });
+  if (!run || run.organizationId !== orgId) {
+    throw new Error('Run not found.');
+  }
 
   const subscription = await db.pentestSubscription.findUnique({
     where: { organizationId: orgId },
