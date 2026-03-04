@@ -1,7 +1,6 @@
-import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
-import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
+import { Button } from '@trycompai/design-system';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
@@ -77,20 +76,8 @@ export default async function BillingPage({ params, searchParams }: BillingPageP
         })
       : null;
 
-  // Prefer the explicit base URL env var; fall back to the request origin so
-  // Stripe always receives an absolute URL (relative URLs are rejected).
-  const requestHeaders = await headers();
-  const host = requestHeaders.get('host') ?? '';
-  const proto = host.startsWith('localhost') ? 'http' : 'https';
-  const origin = env.NEXT_PUBLIC_BETTER_AUTH_URL ?? `${proto}://${host}`;
-  const billingUrl = `${origin}/${orgId}/settings/billing`;
-
   return (
-    <PageLayout>
-      <PageHeader title="Billing">
-        Manage your subscriptions and payment methods.
-      </PageHeader>
-
+    <div className="space-y-6">
       {successMessage && (
         <div className="rounded-md bg-green-50 border border-green-200 p-4 text-green-800 text-sm">
           {successMessage}
@@ -119,7 +106,7 @@ export default async function BillingPage({ params, searchParams }: BillingPageP
               <form
                 action={async () => {
                   'use server';
-                  const { url } = await createBillingPortalSession(orgId, billingUrl);
+                  const { url } = await createBillingPortalSession(orgId);
                   redirect(url);
                 }}
               >
@@ -184,7 +171,7 @@ export default async function BillingPage({ params, searchParams }: BillingPageP
             <form
               action={async () => {
                 'use server';
-                const { url } = await subscribeToPentestPlan(orgId, billingUrl);
+                const { url } = await subscribeToPentestPlan(orgId);
                 redirect(url);
               }}
             >
@@ -193,7 +180,7 @@ export default async function BillingPage({ params, searchParams }: BillingPageP
           )}
         </CardContent>
       </Card>
-    </PageLayout>
+    </div>
   );
 }
 
