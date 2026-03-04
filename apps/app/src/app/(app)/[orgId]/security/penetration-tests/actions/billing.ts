@@ -206,8 +206,9 @@ export async function checkAndChargePentestBilling(orgId: string, runId: string)
   await requireOrgMember(orgId);
 
   // Verify the run exists and belongs to this org to prevent arbitrary runId abuse.
+  // runId here is the provider run ID (stored in providerRunId), not the internal ptr... key.
   const run = await db.securityPenetrationTestRun.findUnique({
-    where: { id: runId },
+    where: { providerRunId: runId },
     select: { organizationId: true },
   });
   if (!run || run.organizationId !== orgId) {
