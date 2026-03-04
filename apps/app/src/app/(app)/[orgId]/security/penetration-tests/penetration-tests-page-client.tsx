@@ -27,7 +27,9 @@ import {
   TableHeader,
   TableRow,
 } from '@comp/ui/table';
+import { ModuleGate } from '@comp/ui/module-gate';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { PentestPreviewAnimation } from './components/pentest-preview-animation';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { toast } from 'sonner';
@@ -42,9 +44,11 @@ import {
   useIntegrationMutations,
 } from '@/hooks/use-integration-platform';
 import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
+import { subscribeToPentestPlan } from './actions/billing';
 
 interface PenetrationTestsPageClientProps {
   orgId: string;
+  hasActiveSubscription: boolean;
 }
 
 const hasProtocol = (value: string): boolean => /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
@@ -65,9 +69,10 @@ const normalizeTargetUrl = (value: string): string | null => {
   }
 };
 
-export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClientProps) {
+export function PenetrationTestsPageClient({ orgId, hasActiveSubscription }: PenetrationTestsPageClientProps) {
   const router = useRouter();
 
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const [showNewRunDialog, setShowNewRunDialog] = useState(false);
   const [targetUrl, setTargetUrl] = useState('');
   const [repoUrl, setRepoUrl] = useState('');
@@ -128,6 +133,66 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
       toast.error(error instanceof Error ? error.message : 'Could not queue a new report');
     }
   };
+
+  const handleSubscribe = async () => {
+    setIsSubscribing(true);
+    try {
+      const result = await subscribeToPentestPlan(orgId);
+      if (result.url) {
+        window.location.href = result.url;
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to start checkout');
+      setIsSubscribing(false);
+    }
+  };
+
+  if (!hasActiveSubscription) {
+    return (
+      <PageLayout>
+        <PageHeader title="Penetration Tests">
+          Run penetration tests with Maced and review generated reports.
+        </PageHeader>
+
+        <ModuleGate
+          label="Penetration Testing"
+          title="Find vulnerabilities before attackers do"
+          description="Automated pen-tests against your apps and infrastructure with detailed reports and remediation guidance."
+          features={[
+            '3 pen-test runs included per month',
+            'OWASP Top 10 and infrastructure coverage',
+            'Actionable remediation steps in every report',
+          ]}
+          action={
+            <Button
+              size="lg"
+              onClick={handleSubscribe}
+              disabled={isSubscribing}
+            >
+              {isSubscribing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Redirecting…
+                </>
+              ) : (
+                'Get started — $99/mo'
+              )}
+            </Button>
+          }
+          secondaryAction={
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => window.open('https://maced.dev', '_blank')}
+            >
+              Learn more
+            </Button>
+          }
+          preview={<PentestPreviewAnimation />}
+        />
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>

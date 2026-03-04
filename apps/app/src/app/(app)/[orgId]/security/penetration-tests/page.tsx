@@ -32,7 +32,13 @@ export default async function PenetrationTestsPage({
     redirect('/');
   }
 
-  return <PenetrationTestsPageClient orgId={orgId} />;
+  const subscription = await db.pentestSubscription.findUnique({
+    where: { organizationId: orgId },
+  });
+
+  const hasActiveSubscription = subscription?.status === 'active';
+
+  return <PenetrationTestsPageClient orgId={orgId} hasActiveSubscription={hasActiveSubscription} />;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
