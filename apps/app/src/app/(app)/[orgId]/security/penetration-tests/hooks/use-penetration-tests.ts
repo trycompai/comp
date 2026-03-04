@@ -8,7 +8,7 @@ import type {
   PentestReportStatus,
   PentestRun,
 } from '@/lib/security/penetration-tests-client';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
 import { isReportInProgress, sortReportsByUpdatedAtDesc } from '../lib';
@@ -237,6 +237,9 @@ export function useCreatePenetrationTest(
   const { mutate } = useSWRConfig();
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Stable nonce per target URL — prevents duplicate overage charges if the
+  // API call fails after billing succeeds and the user retries.
+  const nonceRef = useRef<string>(crypto.randomUUID());
 
   const createReport = useCallback(
     async (payload: CreatePayload): Promise<CreatePenetrationTestResponse> => {
@@ -244,8 +247,7 @@ export function useCreatePenetrationTest(
       setError(null);
       try {
         // Preauthorize billing before creating the run
-        const nonce = crypto.randomUUID();
-        const authResult = await preauthorizePentestRun(organizationId, nonce);
+        const authResult = await preauthorizePentestRun(organizationId, nonceRef.current);
         if (!authResult.authorized) {
           throw new Error(authResult.error ?? 'Billing authorization failed.');
         }
@@ -320,6 +322,8 @@ export function useCreatePenetrationTest(
         }
         void mutate(reportListKey(organizationId));
         void mutate(reportKey(organizationId, reportId));
+        // Rotate nonce so the next submission gets a fresh idempotency key
+        nonceRef.current = crypto.randomUUID();
         return data;
       } catch (reportError) {
         const message =

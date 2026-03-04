@@ -240,13 +240,6 @@ export interface PentestPricing {
   overagePrice: string;      // e.g. "$199"
 }
 
-export interface PentestUsage {
-  includedRuns: number;
-  usedRuns: number;
-  remainingRuns: number;
-  currentPeriodEnd: string;
-}
-
 export async function preauthorizePentestRun(
   orgId: string,
   nonce: string,
@@ -353,38 +346,6 @@ export async function preauthorizePentestRun(
   }
 
   return { authorized: true, isOverage: true };
-}
-
-export async function getPentestUsage(orgId: string): Promise<PentestUsage | null> {
-  await requireOrgAdmin(orgId);
-
-  const subscription = await db.pentestSubscription.findUnique({
-    where: { organizationId: orgId },
-  });
-
-  if (!subscription || subscription.status !== 'active') {
-    return null;
-  }
-
-  const usedRuns = await db.securityPenetrationTestRun.count({
-    where: {
-      organizationId: orgId,
-      createdAt: {
-        gte: subscription.currentPeriodStart,
-        lt: subscription.currentPeriodEnd,
-      },
-    },
-  });
-
-  const includedRuns = subscription.includedRunsPerPeriod;
-  const remainingRuns = Math.max(0, includedRuns - usedRuns);
-
-  return {
-    includedRuns,
-    usedRuns,
-    remainingRuns,
-    currentPeriodEnd: subscription.currentPeriodEnd.toISOString(),
-  };
 }
 
 function formatStripePrice(unitAmount: number | null, currency: string, interval?: string | null): string {
