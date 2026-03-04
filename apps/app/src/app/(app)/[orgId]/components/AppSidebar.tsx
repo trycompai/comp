@@ -1,18 +1,18 @@
 'use client';
 
 import {
-  Connect,
+  Catalog,
+  Chemistry,
   Dashboard,
-  DocumentSigned,
-  DocumentTasks,
-  FolderDetails,
+  Document,
+  Group,
+  Integration,
   ListChecked,
   Policy,
-  Partnership,
-  Scale,
-  SettingsAdjust,
-  TestTool,
-  UserMultiple,
+  Security,
+  ShoppingBag,
+  TaskComplete,
+  Warning,
 } from '@carbon/icons-react';
 import type { Organization } from '@db';
 import { AppShellNav, AppShellNavItem } from '@trycompai/design-system';
@@ -53,14 +53,14 @@ export function AppSidebar({
       id: 'auditor',
       path: `/${organization.id}/auditor`,
       name: 'Auditor View',
-      icon: <DocumentSigned className="size-4" />,
+      icon: <TaskComplete className="size-4" />,
       hidden: !hasAuditorRole,
     },
     {
       id: 'controls',
       path: `/${organization.id}/controls`,
       name: 'Controls',
-      icon: <SettingsAdjust className="size-4" />,
+      icon: <Security className="size-4" />,
       hidden: !organization.advancedModeEnabled,
     },
     {
@@ -79,45 +79,45 @@ export function AppSidebar({
       id: 'documents',
       path: `/${organization.id}/documents`,
       name: 'Documents',
-      icon: <FolderDetails className="size-4" />,
+      icon: <Catalog className="size-4" />,
     },
     {
       id: 'people',
       path: `/${organization.id}/people/all`,
       name: 'People',
-      icon: <UserMultiple className="size-4" />,
+      icon: <Group className="size-4" />,
     },
     {
       id: 'risk',
       path: `/${organization.id}/risk`,
       name: 'Risks',
-      icon: <Scale className="size-4" />,
+      icon: <Warning className="size-4" />,
     },
     {
       id: 'vendors',
       path: `/${organization.id}/vendors`,
       name: 'Vendors',
-      icon: <Partnership className="size-4" />,
+      icon: <ShoppingBag className="size-4" />,
     },
     {
       id: 'questionnaire',
       path: `/${organization.id}/questionnaire`,
       name: 'Questionnaire',
-      icon: <DocumentTasks className="size-4" />,
+      icon: <Document className="size-4" />,
       hidden: !isQuestionnaireEnabled,
     },
     {
       id: 'integrations',
       path: `/${organization.id}/integrations`,
       name: 'Integrations',
-      icon: <Connect className="size-4" />,
+      icon: <Integration className="size-4" />,
       hidden: isOnlyAuditor,
     },
     {
       id: 'tests',
       path: `/${organization.id}/cloud-tests`,
       name: 'Cloud Tests',
-      icon: <TestTool className="size-4" />,
+      icon: <Chemistry className="size-4" />,
     },
   ];
 
