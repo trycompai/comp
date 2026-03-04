@@ -132,7 +132,7 @@ export function CreateRisk({ assignees, onSuccess }: CreateRiskProps) {
               <FieldLabel>Department</FieldLabel>
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a department" />
+                  {field.value ? field.value.toUpperCase() : 'Select a department'}
                 </SelectTrigger>
                 <SelectContent>
                   {Object.values(Departments).map((department) => (

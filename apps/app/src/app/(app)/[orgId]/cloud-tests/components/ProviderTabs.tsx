@@ -95,14 +95,6 @@ function ConnectionDetails({ connection }: { connection: Provider }) {
     details.push(`Account: ${connection.accountId}`);
   }
 
-  if (connection.tenantId) {
-    details.push(`Tenant: ${connection.tenantId}`);
-  }
-
-  if (connection.subscriptionId) {
-    details.push(`Subscription: ${connection.subscriptionId}`);
-  }
-
   if (connection.regions?.length) {
     details.push(
       `${connection.regions.length} region${connection.regions.length !== 1 ? 's' : ''}`,
@@ -190,7 +182,9 @@ export function ProviderTabs({
                   >
                     <div className="w-[240px]">
                       <SelectTrigger size="sm">
-                        <SelectValue placeholder="Select connection" />
+                        {connections.find((c) => c.id === activeConnId)?.displayName
+                          || connections.find((c) => c.id === activeConnId)?.name
+                          || 'Select connection'}
                       </SelectTrigger>
                     </div>
                     <SelectContent>

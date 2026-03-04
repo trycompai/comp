@@ -55,7 +55,6 @@ export class PeopleController {
   constructor(private readonly peopleService: PeopleService) {}
 
   @Get()
-  @AuditRead()
   @RequirePermission('member', 'read')
   @ApiOperation(PEOPLE_OPERATIONS.getAllPeople)
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[200])

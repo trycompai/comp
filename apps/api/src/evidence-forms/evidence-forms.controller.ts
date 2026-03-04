@@ -158,6 +158,7 @@ export class EvidenceFormsController {
   }
 
   @Post(':formType/upload-submission')
+  @RequirePermission('evidence', 'create')
   @ApiOperation({
     summary: 'Upload a file as an evidence submission',
     description:

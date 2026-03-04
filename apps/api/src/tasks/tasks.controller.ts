@@ -22,7 +22,7 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { TaskStatus } from '@db';
+import { TaskFrequency, TaskStatus } from '@db';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
@@ -589,6 +589,8 @@ export class TasksController {
   }
 
   @Get(':taskId/activity')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get task activity',
     description:
@@ -746,7 +748,7 @@ export class TasksController {
         status: body.status,
         assigneeId: body.assigneeId,
         approverId: body.approverId,
-        frequency: body.frequency,
+        frequency: body.frequency as TaskFrequency | undefined,
         department: body.department,
         reviewDate: parsedReviewDate,
       },
@@ -1284,10 +1286,18 @@ export class TasksController {
   ): Promise<{
     success: boolean;
     deletedAttachmentId: string;
+    fileName: string | null;
+    fileType: string | null;
     message: string;
   }> {
     // Verify task access
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
+
+    // Fetch attachment details before deleting for audit trail
+    const attachment = await this.attachmentsService.getAttachmentById(
+      organizationId,
+      attachmentId,
+    );
 
     await this.attachmentsService.deleteAttachment(
       organizationId,
@@ -1297,6 +1307,8 @@ export class TasksController {
     return {
       success: true,
       deletedAttachmentId: attachmentId,
+      fileName: attachment?.name ?? null,
+      fileType: attachment?.type ?? null,
       message: 'Attachment deleted successfully',
     };
   }

@@ -572,40 +572,53 @@ export class TrustPortalService {
       throw new NotFoundException('Trust portal not found for organization');
     }
 
-    const data: Record<string, any> = {};
+    const data: Record<string, unknown> = {};
 
-    // Map framework fields
-    const boolFields = [
-      'soc2type1',
-      'soc2type2',
-      'iso27001',
-      'iso42001',
-      'gdpr',
-      'hipaa',
-      'pci_dss',
-      'nen7510',
-      'iso9001',
-    ] as const;
-    const statusFields = [
-      'soc2type1_status',
-      'soc2type2_status',
-      'iso27001_status',
-      'iso42001_status',
-      'gdpr_status',
-      'hipaa_status',
-      'pci_dss_status',
-      'nen7510_status',
-      'iso9001_status',
-    ] as const;
+    // Map framework boolean fields (frontend sends camelCase, DB uses snake_case)
+    const boolFieldMap: Record<string, string> = {
+      soc2type1: 'soc2type1',
+      soc2type2: 'soc2type2',
+      iso27001: 'iso27001',
+      iso42001: 'iso42001',
+      gdpr: 'gdpr',
+      hipaa: 'hipaa',
+      pcidss: 'pci_dss',
+      pci_dss: 'pci_dss',
+      nen7510: 'nen7510',
+      iso9001: 'iso9001',
+    };
 
-    for (const field of boolFields) {
-      if (frameworks[field] !== undefined) {
-        data[field] = frameworks[field];
+    // Map framework status fields (frontend sends camelCase like "iso27001Status", DB uses "iso27001_status")
+    const statusFieldMap: Record<string, string> = {
+      soc2type1Status: 'soc2type1_status',
+      soc2type2Status: 'soc2type2_status',
+      iso27001Status: 'iso27001_status',
+      iso42001Status: 'iso42001_status',
+      gdprStatus: 'gdpr_status',
+      hipaaStatus: 'hipaa_status',
+      pcidssStatus: 'pci_dss_status',
+      nen7510Status: 'nen7510_status',
+      iso9001Status: 'iso9001_status',
+      // Also support snake_case input (from other callers)
+      soc2type1_status: 'soc2type1_status',
+      soc2type2_status: 'soc2type2_status',
+      iso27001_status: 'iso27001_status',
+      iso42001_status: 'iso42001_status',
+      gdpr_status: 'gdpr_status',
+      hipaa_status: 'hipaa_status',
+      pci_dss_status: 'pci_dss_status',
+      nen7510_status: 'nen7510_status',
+      iso9001_status: 'iso9001_status',
+    };
+
+    for (const [inputKey, dbField] of Object.entries(boolFieldMap)) {
+      if (frameworks[inputKey] !== undefined) {
+        data[dbField] = frameworks[inputKey];
       }
     }
-    for (const field of statusFields) {
-      if (frameworks[field] !== undefined) {
-        data[field] = frameworks[field];
+    for (const [inputKey, dbField] of Object.entries(statusFieldMap)) {
+      if (frameworks[inputKey] !== undefined) {
+        data[dbField] = frameworks[inputKey];
       }
     }
 

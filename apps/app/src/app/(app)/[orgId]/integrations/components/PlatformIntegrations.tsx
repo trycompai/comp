@@ -486,15 +486,31 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                         {/* Mapped tasks */}
                         {provider.mappedTasks && provider.mappedTasks.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
-                            {provider.mappedTasks.slice(0, 3).map((task) => (
-                              <Badge
-                                key={task.id}
-                                variant="secondary"
-                                className="text-[10px] px-1.5 py-0.5 font-normal"
-                              >
-                                {task.name}
-                              </Badge>
-                            ))}
+                            {provider.mappedTasks.slice(0, 3).map((task) => {
+                              const taskId = templateToTaskMap.get(task.id);
+                              return taskId ? (
+                                <Link
+                                  key={task.id}
+                                  href={`/${orgId}/tasks/${taskId}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px] px-1.5 py-0.5 font-normal cursor-pointer hover:bg-secondary/80 transition-colors"
+                                  >
+                                    {task.name}
+                                  </Badge>
+                                </Link>
+                              ) : (
+                                <Badge
+                                  key={task.id}
+                                  variant="secondary"
+                                  className="text-[10px] px-1.5 py-0.5 font-normal"
+                                >
+                                  {task.name}
+                                </Badge>
+                              );
+                            })}
                             {provider.mappedTasks.length > 3 && (
                               <Badge
                                 variant="outline"

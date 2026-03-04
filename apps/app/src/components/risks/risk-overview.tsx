@@ -1,13 +1,8 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import type { Member, Risk, User } from '@db';
-import { Button } from '@trycompai/design-system';
-import { Edit } from '@trycompai/design-system/icons';
-import { useState } from 'react';
-import { usePermissions } from '@/hooks/use-permissions';
+import { Section } from '@trycompai/design-system';
 import { UpdateRiskOverview } from '../forms/risks/risk-overview';
-import { RiskOverviewSheet } from '../sheets/risk-overview-sheet';
 
 export function RiskOverview({
   risk,
@@ -16,29 +11,9 @@ export function RiskOverview({
   risk: Risk & { assignee: { user: User } | null };
   assignees: (Member & { user: User })[];
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const { hasPermission } = usePermissions();
-  const canUpdate = hasPermission('risk', 'update');
-
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <CardTitle>{risk.title}</CardTitle>
-            {canUpdate && (
-              <Button size="icon-xs" variant="ghost" onClick={() => setIsOpen(true)}>
-                <Edit size={12} />
-              </Button>
-            )}
-          </div>
-          <CardDescription>{risk.description}</CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <UpdateRiskOverview risk={risk} assignees={assignees} />
-      </CardContent>
-      <RiskOverviewSheet risk={risk} open={isOpen} onOpenChange={setIsOpen} />
-    </Card>
+    <Section title="Risk Settings">
+      <UpdateRiskOverview risk={risk} assignees={assignees} />
+    </Section>
   );
 }

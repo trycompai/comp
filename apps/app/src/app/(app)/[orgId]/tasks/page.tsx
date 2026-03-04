@@ -65,14 +65,14 @@ export default async function TasksPage({
     evidenceApprovalEnabled: false,
   };
 
-  // Filter members: exclude employee, auditor, contractor roles
-  const excludedRoles = ['employee', 'auditor', 'contractor'];
+  // Filter members: exclude those with only employee/contractor roles (no app access)
+  // Auditors and anyone with owner/admin can still be assigned
   const members = allMembers.filter((m) => {
     const roles = m.role
       ?.split(',')
       .map((r) => r.trim())
       .filter(Boolean) ?? [];
-    return !roles.some((r) => excludedRoles.includes(r));
+    return roles.some((r) => ['owner', 'admin', 'auditor'].includes(r));
   });
 
   // Read tab preference from cookie

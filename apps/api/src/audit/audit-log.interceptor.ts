@@ -27,6 +27,7 @@ import {
   extractCommentContext,
   extractDownloadDescription,
   extractEntityId,
+  extractFindingDescription,
   extractPolicyActionDescription,
   extractVersionDescription,
 } from './audit-log.utils';
@@ -75,7 +76,17 @@ export class AuditLogInterceptor implements NestInterceptor {
     }
 
     const { resource, actions } = requiredPermissions[0];
-    const action = actions[0];
+    // Derive the actual action from the HTTP method rather than using the first
+    // permission action. This is important when a controller declares multiple
+    // actions (e.g. ['create','read','update','delete']) at the class level.
+    const METHOD_TO_ACTION: Record<string, string> = {
+      POST: 'create',
+      GET: 'read',
+      PATCH: 'update',
+      PUT: 'update',
+      DELETE: 'delete',
+    };
+    const action = METHOD_TO_ACTION[method] ?? actions[0];
 
     if (resource === 'audit') {
       return next.handle();
@@ -124,16 +135,35 @@ export class AuditLogInterceptor implements NestInterceptor {
                 method,
                 requestBody,
               );
+              const findingDesc = extractFindingDescription(
+                request.url,
+                method,
+                resource,
+                (request as { userRoles?: string[] }).userRoles,
+              );
               let descriptionOverride: string | null =
-                versionDesc ?? downloadDesc ?? policyActionDesc;
+                versionDesc ?? downloadDesc ?? policyActionDesc ?? findingDesc;
 
-              if (commentCtx || versionDesc || policyActionDesc) {
+              const isAutomationUpdate = policyActionDesc && /automations/.test(request.url) && method === 'PATCH';
+              const isAttachmentAction = policyActionDesc && /attachments/.test(request.url);
+
+              if (commentCtx || versionDesc || (policyActionDesc && !isAutomationUpdate && !isAttachmentAction)) {
                 // Comments and version operations don't produce meaningful diffs
-                // But preserve the comment/reason if provided in the request body
-                const comment = requestBody?.comment;
-                changes = comment && typeof comment === 'string'
-                  ? { reason: { previous: null, current: comment } }
+                // But preserve the comment/reason/changelog if provided in the request body
+                const note = requestBody?.comment || requestBody?.changelog;
+                const noteLabel = requestBody?.changelog ? 'changelog' : 'reason';
+                changes = note && typeof note === 'string'
+                  ? { [noteLabel]: { previous: null, current: note } }
                   : null;
+              } else if (isAttachmentAction) {
+                // For attachments, show file details in the expandable section
+                // Upload: file info in request body. Delete: file info in response body.
+                const attachmentChanges: ChangesRecord = {};
+                const fileName = requestBody?.fileName || (responseBody && typeof responseBody === 'object' ? (responseBody as Record<string, unknown>).fileName : null);
+                const fileType = requestBody?.fileType || (responseBody && typeof responseBody === 'object' ? (responseBody as Record<string, unknown>).fileType : null);
+                if (fileName) attachmentChanges.file = { previous: null, current: fileName };
+                if (fileType) attachmentChanges.type = { previous: null, current: fileType };
+                changes = Object.keys(attachmentChanges).length > 0 ? attachmentChanges : null;
               } else if (relationMappingResult) {
                 changes = relationMappingResult.changes;
                 descriptionOverride ??= relationMappingResult.description;

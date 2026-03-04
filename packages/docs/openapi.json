@@ -5956,6 +5956,36 @@
         ]
       }
     },
+    "/v1/policies/publish-all": {
+      "post": {
+        "operationId": "PoliciesController_publishAllPolicies_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Publish all draft policies",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
     "/v1/policies/download-all": {
       "get": {
         "description": "Generates a PDF bundle containing all published policies with organization branding and returns a signed download URL",
@@ -9776,6 +9806,43 @@
           }
         ],
         "summary": "Get all versions for an automation",
+        "tags": [
+          "Task Automations"
+        ]
+      },
+      "post": {
+        "operationId": "AutomationsController_createVersion_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a published version record for an automation",
         "tags": [
           "Task Automations"
         ]
@@ -15166,6 +15233,34 @@
         ]
       }
     },
+    "/v1/cloud-security/providers": {
+      "get": {
+        "operationId": "CloudSecurityController_getProviders_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/findings": {
+      "get": {
+        "operationId": "CloudSecurityController_getFindings_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
     "/v1/cloud-security/scan/{connectionId}": {
       "post": {
         "operationId": "CloudSecurityController_scan_v1",
@@ -15174,14 +15269,6 @@
             "name": "connectionId",
             "required": true,
             "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "x-organization-id",
-            "required": true,
-            "in": "header",
             "schema": {
               "type": "string"
             }
@@ -17589,6 +17676,15 @@
             "required": false,
             "in": "query",
             "description": "Filter by entity ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pathContains",
+            "required": false,
+            "in": "query",
+            "description": "Filter by path substring (e.g. automation ID)",
             "schema": {
               "type": "string"
             }
@@ -20366,6 +20462,14 @@
             "type": "string",
             "description": "Automation description",
             "example": "Collects evidence about GitHub repository security settings"
+          },
+          "isEnabled": {
+            "type": "boolean",
+            "description": "Whether the automation is enabled"
+          },
+          "evaluationCriteria": {
+            "type": "string",
+            "description": "Evaluation criteria for the automation"
           }
         }
       },

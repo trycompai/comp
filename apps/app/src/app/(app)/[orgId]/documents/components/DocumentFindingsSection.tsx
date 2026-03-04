@@ -2,6 +2,7 @@
 
 import { useFindingActions, useFormTypeFindings, type Finding } from '@/hooks/use-findings-api';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useActiveMember } from '@/utils/auth-client';
 import { Button } from '@trycompai/design-system';
 import { FindingStatus } from '@db';
 import { ChevronDown, ChevronUp, WarningAlt, WarningAltFilled } from '@trycompai/design-system/icons';
@@ -30,7 +31,13 @@ export function DocumentFindingsSection({
   formType,
 }: DocumentFindingsSectionProps) {
   const { hasPermission } = usePermissions();
-  const canCreateFinding = hasPermission('finding', 'create');
+  const { data: activeMember } = useActiveMember();
+  const isAuditor = activeMember?.role?.includes('auditor') ?? false;
+
+  // Only auditors can see findings on document pages
+  if (!isAuditor) return null;
+
+  const canCreateFinding = hasPermission('finding', 'create') && isAuditor;
   const canUpdateFinding = hasPermission('finding', 'update');
   const isMeeting = formType === 'meeting';
 

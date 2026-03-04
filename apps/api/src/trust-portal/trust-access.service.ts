@@ -79,7 +79,7 @@ export class TrustAccessService {
 
   private readonly TRUST_APP_URL =
     process.env.TRUST_APP_URL ||
-    process.env.BASE_URL ||
+    process.env.PORTAL_URL ||
     'http://localhost:3008';
 
   private generateToken(length: number): string {
@@ -238,10 +238,10 @@ export class TrustAccessService {
   ) {
     if (
       !process.env.TRUST_APP_URL &&
-      !process.env.BASE_URL &&
+      !process.env.PORTAL_URL &&
       process.env.NODE_ENV === 'production'
     ) {
-      throw new Error('TRUST_APP_URL or BASE_URL must be set in production');
+      throw new Error('TRUST_APP_URL or PORTAL_URL must be set in production');
     }
   }
 

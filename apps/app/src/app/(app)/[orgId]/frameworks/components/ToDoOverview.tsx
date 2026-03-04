@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmActionDialog } from './ConfirmActionDialog';
@@ -73,6 +74,7 @@ export function ToDoOverview({
     return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
+  const router = useRouter();
   const canPublishPolicies = hasPermission('policy', 'update');
 
   const handleConfirmAction = async () => {
@@ -89,6 +91,7 @@ export function ToDoOverview({
       }
 
       toast.success('All policies published!');
+      router.refresh();
     } catch {
       toast.error('Failed to publish policies.');
     } finally {

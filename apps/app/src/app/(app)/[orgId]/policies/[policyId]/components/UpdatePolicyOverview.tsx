@@ -199,13 +199,13 @@ export function UpdatePolicyOverview({
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select department">
-                    {selectedDepartment.charAt(0).toUpperCase() + selectedDepartment.slice(1)}
+                    {selectedDepartment.toUpperCase()}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {Object.values(Departments).map((dept) => (
                     <SelectItem key={dept} value={dept}>
-                      {dept.charAt(0).toUpperCase() + dept.slice(1)}
+                      {dept.toUpperCase()}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -304,16 +304,14 @@ export function UpdatePolicyOverview({
                 <Text size="sm">
                   <Text as="span" size="sm" variant="muted">
                     {pendingChanges.department.from
-                      ? pendingChanges.department.from.charAt(0).toUpperCase() +
-                        pendingChanges.department.from.slice(1)
+                      ? pendingChanges.department.from.toUpperCase()
                       : ''}
                   </Text>
                   <Text as="span" size="sm" variant="muted">
                     {' → '}
                   </Text>
                   <Text as="span" size="sm" weight="medium">
-                    {pendingChanges.department.to.charAt(0).toUpperCase() +
-                      pendingChanges.department.to.slice(1)}
+                    {pendingChanges.department.to.toUpperCase()}
                   </Text>
                 </Text>
               </HStack>

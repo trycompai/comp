@@ -1,6 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
+import { useEffect, useRef } from 'react';
 import { api } from '@/lib/api-client';
 
 interface SOADocumentData {
@@ -29,8 +30,6 @@ function buildKey(documentId: string | null) {
 export function useSOADocument({ documentId, organizationId, fallbackData }: UseSOADocumentOptions) {
   const { data, error, isLoading, mutate } = useSWR<SOADocumentData | null>(
     buildKey(documentId),
-    // We don't fetch via GET since SOA data comes from the server page setup.
-    // The key is used only for cache identity so mutate() works across components.
     null,
     {
       fallbackData: fallbackData ?? undefined,
@@ -38,6 +37,15 @@ export function useSOADocument({ documentId, organizationId, fallbackData }: Use
       revalidateOnFocus: false,
     },
   );
+
+  // Seed the SWR cache with fallbackData so mutate() updaters work correctly
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (!seeded.current && fallbackData) {
+      seeded.current = true;
+      mutate(fallbackData, false);
+    }
+  }, [fallbackData, mutate]);
 
   const saveAnswer = async (params: {
     questionId: string;
@@ -74,7 +82,9 @@ export function useSOADocument({ documentId, organizationId, fallbackData }: Use
     if (response.error) throw new Error(response.error || 'Failed to approve SOA document');
     if (!response.data?.success) throw new Error('Failed to approve SOA document');
 
-    await mutate();
+    if (data) {
+      await mutate({ ...data, status: 'approved', approvedAt: new Date().toISOString() }, false);
+    }
     return true;
   };
 
@@ -89,7 +99,9 @@ export function useSOADocument({ documentId, organizationId, fallbackData }: Use
     if (response.error) throw new Error(response.error || 'Failed to decline SOA document');
     if (!response.data?.success) throw new Error('Failed to decline SOA document');
 
-    await mutate();
+    if (data) {
+      await mutate({ ...data, status: 'needs_review', declinedAt: new Date().toISOString() }, false);
+    }
     return true;
   };
 
@@ -104,7 +116,10 @@ export function useSOADocument({ documentId, organizationId, fallbackData }: Use
     if (response.error) throw new Error(response.error || 'Failed to submit for approval');
     if (!response.data?.success) throw new Error('Failed to submit for approval');
 
-    await mutate();
+    // Optimistically update cached document status
+    if (data) {
+      await mutate({ ...data, status: 'pending_approval', approverId }, false);
+    }
     return true;
   };
 

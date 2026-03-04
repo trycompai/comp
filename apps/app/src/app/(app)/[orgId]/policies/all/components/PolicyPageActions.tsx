@@ -33,10 +33,13 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
       const logsEntries = await Promise.all(
         policies.map(async (policy) => {
           const res = await api.get<{ data: AuditLogWithRelations[] }>(
-            `/v1/policies/${policy.id}/activity`,
+            `/v1/audit-logs?entityType=policy&entityId=${policy.id}`,
           );
-          const logs = Array.isArray(res.data?.data) ? res.data.data : [];
-          return [policy.id, logs] as const;
+          const allLogs = Array.isArray(res.data?.data) ? res.data.data : [];
+          const approvalLogs = allLogs.filter((log) =>
+            log.description?.toLowerCase().includes('published'),
+          );
+          return [policy.id, approvalLogs] as const;
         }),
       );
       const policyLogs = Object.fromEntries(logsEntries);

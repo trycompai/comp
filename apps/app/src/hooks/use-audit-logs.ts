@@ -17,26 +17,29 @@ type AuditLogsApiResponse = {
   authenticatedUser?: { id: string; email: string };
 };
 
-export const auditLogsKey = (entityType: string, entityId: string) =>
-  ['/v1/audit-logs', entityType, entityId] as const;
+export const auditLogsKey = (entityType: string, entityId: string, pathContains?: string) =>
+  ['/v1/audit-logs', entityType, entityId, pathContains ?? ''] as const;
 
 interface UseAuditLogsOptions {
   entityType: string;
   entityId: string;
+  /** Filter logs to only those whose path contains this string (e.g., automation ID) */
+  pathContains?: string;
   initialData?: AuditLogWithRelations[];
 }
 
 export function useAuditLogs({
   entityType,
   entityId,
+  pathContains,
   initialData,
 }: UseAuditLogsOptions) {
   const { data, error, isLoading, mutate } = useSWR(
-    auditLogsKey(entityType, entityId),
+    auditLogsKey(entityType, entityId, pathContains),
     async () => {
-      const response = await apiClient.get<AuditLogsApiResponse>(
-        `/v1/audit-logs?entityType=${entityType}&entityId=${entityId}`,
-      );
+      let url = `/v1/audit-logs?entityType=${entityType}&entityId=${entityId}`;
+      if (pathContains) url += `&pathContains=${encodeURIComponent(pathContains)}`;
+      const response = await apiClient.get<AuditLogsApiResponse>(url);
       if (response.error) throw new Error(response.error);
       if (!response.data?.data) return [];
       return response.data.data;
@@ -44,7 +47,8 @@ export function useAuditLogs({
     {
       fallbackData: initialData,
       revalidateOnMount: !initialData,
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
+      refreshInterval: 10_000,
     },
   );
 

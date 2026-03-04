@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/design-system';
 import { Textarea } from '@comp/ui/textarea';
 import {
   Select,
@@ -199,16 +199,14 @@ export function EditableSOAFields({
         <span className={`${badgeClasses} uppercase`}>
           {isApplicable === true ? 'YES' : isApplicable === false ? 'NO' : '\u2014'}
         </span>
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
+          type="button"
           onClick={handleEditClick}
-          className="absolute right-0 h-6 w-6 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
+          className="absolute right-0 h-6 w-6 flex items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:bg-muted"
           aria-label="Edit answer"
         >
           <Edit2 className="h-3 w-3" />
-          <span className="sr-only">Edit answer</span>
-        </Button>
+        </button>
       </div>
     );
   }

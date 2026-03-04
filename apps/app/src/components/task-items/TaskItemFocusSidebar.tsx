@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { Check, ArrowLeftFromLine, Link2, Tags, Trash2, User as UserIcon } from 'lucide-react';
+import { Checkmark, ArrowLeft, Link, Tag, TrashCan, User as UserIcon } from '@trycompai/design-system/icons';
 import { cn } from '@/lib/utils';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { toast } from 'sonner';
@@ -83,7 +83,7 @@ export function TaskItemFocusSidebar({
             onClick={onCollapse}
             title="Expand sidebar"
           >
-            <ArrowLeftFromLine className="h-3.5 w-3.5 shrink-0 transition-transform duration-400 ease-in-out" />
+            <ArrowLeft className="h-3.5 w-3.5 shrink-0 transition-transform duration-400 ease-in-out" />
           </Button>
           
           {/* Status */}
@@ -244,7 +244,7 @@ export function TaskItemFocusSidebar({
               onClick={onCollapse}
               title="Collapse sidebar"
             >
-              <ArrowLeftFromLine className="h-3.5 w-3.5 shrink-0 transition-transform duration-400 ease-in-out rotate-180" />
+              <ArrowLeft className="h-3.5 w-3.5 shrink-0 transition-transform duration-400 ease-in-out rotate-180" />
             </Button>
           <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
             Properties
@@ -258,7 +258,7 @@ export function TaskItemFocusSidebar({
               onClick={onCopyLink}
               title="Copy task link"
             >
-              {copiedLink ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
+              {copiedLink ? <Checkmark className="h-3.5 w-3.5" /> : <Link className="h-3.5 w-3.5" />}
             </Button>
             <Button
               variant="ghost"
@@ -267,7 +267,7 @@ export function TaskItemFocusSidebar({
               onClick={onCopyTaskId}
               title="Copy task ID"
             >
-              {copiedTaskId ? <Check className="h-3.5 w-3.5" /> : <Tags className="h-3.5 w-3.5" />}
+              {copiedTaskId ? <Checkmark className="h-3.5 w-3.5" /> : <Tag className="h-3.5 w-3.5" />}
             </Button>
             {canDelete && (
               <Button
@@ -277,7 +277,7 @@ export function TaskItemFocusSidebar({
                 onClick={onDelete}
                 title="Delete task"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <TrashCan className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>

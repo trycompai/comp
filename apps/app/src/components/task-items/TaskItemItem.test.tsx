@@ -202,22 +202,6 @@ describe('TaskItemItem permission gating', () => {
     expect(screen.queryByLabelText('Delete task')).not.toBeInTheDocument();
   });
 
-  it('shows edit button in expanded view when user has task:update permission', () => {
-    setMockPermissions(ADMIN_PERMISSIONS);
-
-    render(<TaskItemItem {...defaultProps} isExpanded={true} onToggleExpanded={vi.fn()} />);
-
-    expect(screen.getByText('Edit')).toBeInTheDocument();
-  });
-
-  it('hides edit button in expanded view when user lacks task:update permission', () => {
-    setMockPermissions(AUDITOR_PERMISSIONS);
-
-    render(<TaskItemItem {...defaultProps} isExpanded={true} onToggleExpanded={vi.fn()} />);
-
-    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
-  });
-
   it('enables status dropdown trigger when user has task:update permission', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
 

@@ -1,9 +1,20 @@
 'use client';
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@comp/ui/dialog';
 import type { TaskItemEntityType, TaskItemFilters, TaskItemSortBy, TaskItemSortOrder } from '@/hooks/use-task-items';
-import { TaskItemForm } from './TaskItemForm';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useMediaQuery } from '@comp/ui/hooks';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@trycompai/design-system';
+import { TaskItemForm } from './TaskItemForm';
 
 interface TaskItemCreateDialogProps {
   open: boolean;
@@ -31,6 +42,7 @@ export function TaskItemCreateDialog({
   onSuccess,
 }: TaskItemCreateDialogProps) {
   const { hasPermission } = usePermissions();
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   if (!hasPermission('task', 'create')) {
     return null;
@@ -45,26 +57,41 @@ export function TaskItemCreateDialog({
     onOpenChange(false);
   };
 
+  const formContent = (
+    <TaskItemForm
+      entityId={entityId}
+      entityType={entityType}
+      page={page}
+      limit={limit}
+      sortBy={sortBy}
+      sortOrder={sortOrder}
+      filters={filters}
+      onSuccess={handleSuccess}
+      onCancel={handleCancel}
+    />
+  );
+
+  if (isDesktop) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Create task</SheetTitle>
+          </SheetHeader>
+          <SheetBody>{formContent}</SheetBody>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create task</DialogTitle>
-          <DialogDescription>Add a new task for this record.</DialogDescription>
-        </DialogHeader>
-        <TaskItemForm
-          entityId={entityId}
-          entityType={entityType}
-          page={page}
-          limit={limit}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          filters={filters}
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
-        />
-      </DialogContent>
-    </Dialog>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Create task</DrawerTitle>
+        </DrawerHeader>
+        <div className="p-4">{formContent}</div>
+      </DrawerContent>
+    </Drawer>
   );
 }
-

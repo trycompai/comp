@@ -1010,7 +1010,10 @@ function ComplianceFramework({
                   }
                 }}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                    <span className="flex items-center gap-2">
+                      <span className={`inline-block h-4 w-4 rounded-sm ${status === 'compliant' ? 'bg-primary' : status === 'in_progress' ? 'bg-yellow-400' : 'bg-gray-300'}`} />
+                      {status === 'compliant' ? 'Compliant' : status === 'in_progress' ? 'In Progress' : 'Started'}
+                    </span>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="started">

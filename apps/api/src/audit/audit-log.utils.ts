@@ -91,10 +91,11 @@ export function extractVersionDescription(
   responseBody: unknown,
   requestBody?: Record<string, unknown>,
 ): string | null {
-  const isVersionPath = /\/versions(?:\/|$)/.test(path);
+  // Only match policy version paths, not automation version paths
+  const isPolicyVersionPath = /\/policies\/[^/]+\/versions(?:\/|$)/.test(path);
   const isApprovalPath = /\/(accept|deny)-changes\/?$/.test(path);
 
-  if (!isVersionPath && !isApprovalPath) return null;
+  if (!isPolicyVersionPath && !isApprovalPath) return null;
 
   const versionNum = extractVersionNumber(responseBody);
   const suffix = versionNum ? ` version ${versionNum}` : '';
@@ -173,9 +174,59 @@ export function extractPolicyActionDescription(
   method: string,
   requestBody: Record<string, unknown> | undefined,
 ): string | null {
-  // POST /v1/policies/:id/regenerate
+  // POST /v1/policies/:id/regenerate or /v1/tasks/:id/regenerate
   if (/\/regenerate\/?$/.test(path) && method === 'POST') {
-    return 'Regenerated policy';
+    return path.includes('/tasks/') ? 'Regenerated evidence' : 'Regenerated policy';
+  }
+
+  // POST /v1/tasks/:id/approve
+  if (/\/tasks\/[^/]+\/approve\/?$/.test(path) && method === 'POST') {
+    return 'Approved evidence';
+  }
+
+  // POST /v1/tasks/:id/reject
+  if (/\/tasks\/[^/]+\/reject\/?$/.test(path) && method === 'POST') {
+    return 'Rejected evidence';
+  }
+
+  // POST /v1/tasks/:id/submit-for-review
+  if (/\/submit-for-review\/?$/.test(path) && method === 'POST') {
+    return 'Submitted evidence for review';
+  }
+
+  // Attachment CRUD — /v1/tasks/:taskId/attachments[/:attachmentId]
+  if (/\/attachments(\/[^/]+)?\/?$/.test(path) && !/(download)/.test(path)) {
+    if (method === 'POST') return 'Uploaded attachment';
+    if (method === 'DELETE') return 'Deleted attachment';
+  }
+
+  // Custom automation version — /v1/tasks/:taskId/automations/:automationId/versions
+  if (/\/automations\/[^/]+\/versions\/?$/.test(path) && method === 'POST') {
+    const version = requestBody?.version;
+    const suffix = typeof version === 'number' ? ` v${version}` : '';
+    return `Published custom automation${suffix}`;
+  }
+
+  // Custom automation CRUD — /v1/tasks/:taskId/automations[/:automationId]
+  if (/\/tasks\/[^/]+\/automations(\/[^/]+)?\/?$/.test(path) && !/(runs|versions)/.test(path)) {
+    if (method === 'POST') return 'Created custom automation';
+    if (method === 'PATCH') {
+      if (requestBody && 'isEnabled' in requestBody) {
+        return requestBody.isEnabled ? 'Enabled custom automation' : 'Disabled custom automation';
+      }
+      if (requestBody && 'evaluationCriteria' in requestBody) {
+        return 'Updated automation evaluation criteria';
+      }
+      return 'Updated custom automation';
+    }
+    if (method === 'DELETE') return 'Deleted custom automation';
+  }
+
+  // Browser automation CRUD — /v1/browserbase/automations[/:automationId]
+  if (/\/browserbase\/automations(\/[^/]+)?\/?$/.test(path)) {
+    if (method === 'POST') return 'Created browser automation';
+    if (method === 'PATCH') return 'Updated browser automation';
+    if (method === 'DELETE') return 'Deleted browser automation';
   }
 
   const pathWithoutQuery = path.split('?')[0];
@@ -196,6 +247,35 @@ export function extractPolicyActionDescription(
   }
 
   return null;
+}
+
+/**
+ * Detects finding-specific actions and builds a description
+ * that includes the actor's role (auditor vs platform admin).
+ */
+export function extractFindingDescription(
+  path: string,
+  method: string,
+  resource: string,
+  userRoles?: string[],
+): string | null {
+  if (resource !== 'finding') return null;
+
+  const isAuditor = userRoles?.includes('auditor');
+  const actor = isAuditor ? 'Auditor' : 'Admin';
+
+  switch (method) {
+    case 'POST':
+      return `${actor} created a finding`;
+    case 'PATCH':
+    case 'PUT': {
+      return `${actor} updated a finding`;
+    }
+    case 'DELETE':
+      return `${actor} deleted a finding`;
+    default:
+      return null;
+  }
 }
 
 export function buildDescription(
@@ -268,7 +348,8 @@ export function extractEntityId(
   method: string,
   responseBody: unknown,
 ): string | null {
-  const paramId = (request as any).params?.id;
+  const params = (request as any).params;
+  const paramId = params?.id || params?.taskId;
   if (paramId) return paramId;
 
   if (method === 'POST' && responseBody && typeof responseBody === 'object') {

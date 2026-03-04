@@ -130,6 +130,28 @@ export class AutomationsService {
     };
   }
 
+  async createVersion(
+    automationId: string,
+    data: { version: number; scriptKey: string; changelog?: string },
+  ) {
+    const [version] = await db.$transaction([
+      db.evidenceAutomationVersion.create({
+        data: {
+          evidenceAutomationId: automationId,
+          version: data.version,
+          scriptKey: data.scriptKey,
+          changelog: data.changelog,
+        },
+      }),
+      // Enable automation on publish if not already enabled
+      db.evidenceAutomation.update({
+        where: { id: automationId },
+        data: { isEnabled: true },
+      }),
+    ]);
+    return { success: true, version };
+  }
+
   async findRunsByAutomationId(automationId: string) {
     const runs = await db.evidenceAutomationRun.findMany({
       where: {

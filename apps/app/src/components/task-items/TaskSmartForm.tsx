@@ -235,7 +235,7 @@ export function TaskSmartForm({
   };
 
   return (
-    <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-4">
+    <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="task-title" className="text-sm font-medium">
           Title <span className="text-destructive">*</span>

@@ -155,8 +155,8 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         // Use dedicated cloud security endpoint
         const response = await api.post(`/v1/cloud-security/scan/${targetProvider.id}`, {});
         if (response.error) {
-          console.error(`Error scanning ${targetProvider.name}:`, response.error);
-          toast.error(`Failed to scan ${targetProvider.name}`);
+          console.error(`Error scanning ${targetProvider.name}:`, response.error, 'Status:', response.status);
+          toast.error(`Failed to scan ${targetProvider.name}: ${response.error}`);
           return null;
         }
       }
@@ -169,7 +169,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
       return 'completed';
     } catch (error) {
       console.error('Scan error:', error);
-      toast.error('Failed to complete scan. Please try again.');
+      toast.error(`Failed to complete scan: ${error instanceof Error ? error.message : 'Please try again.'}`);
       return null;
     } finally {
       setIsScanning(false);
@@ -183,8 +183,8 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   };
 
   const handleCloudConnected = async () => {
-    mutateProviders();
-    mutateFindings();
+    await mutateProviders();
+    await mutateFindings();
     setViewingResults(true);
   };
 

@@ -245,10 +245,25 @@ export function useRiskActions() {
     [api],
   );
 
+  const regenerateMitigation = useCallback(
+    async (riskId: string) => {
+      const response = await fetch(`/api/risks/${riskId}/regenerate-mitigation`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger mitigation regeneration');
+      }
+    },
+    [],
+  );
+
   return {
     createRisk,
     updateRisk,
     deleteRisk,
+    regenerateMitigation,
   };
 }
 

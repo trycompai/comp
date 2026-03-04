@@ -83,7 +83,7 @@ export function FindingsList({
   const hiddenCount = sortedFindings.length - visibleFindings.length;
 
   // Permission checks - use RBAC permissions with role-based fallback
-  const canCreateFinding = hasPermission('finding', 'create');
+  const canCreateFinding = hasPermission('finding', 'create') && (isAuditor || isPlatformAdmin);
   const canUpdateFinding = hasPermission('finding', 'update');
   const canDeleteFinding = hasPermission('finding', 'delete');
   const canChangeStatus = canUpdateFinding || isAuditor || isPlatformAdmin || isAdminOrOwner;

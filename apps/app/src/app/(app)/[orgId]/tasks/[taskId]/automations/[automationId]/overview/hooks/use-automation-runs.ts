@@ -9,11 +9,17 @@ export function useAutomationRuns() {
     taskId: string;
   }>();
 
-  const { data, error, isLoading, mutate } = useSWR<{ data: EvidenceAutomationRun[] }>(
+  const { data, error, isLoading, mutate } = useSWR<EvidenceAutomationRun[]>(
     taskId && automationId
       ? `/v1/tasks/${taskId}/automations/${automationId}/runs`
       : null,
-    (url: string) => apiClient.get<{ data: EvidenceAutomationRun[] }>(url).then((res) => res.data!),
+    async (url: string) => {
+      const res = await apiClient.get<EvidenceAutomationRun[]>(url);
+      if (res.error) throw new Error(res.error);
+      const responseData = res.data;
+      // API returns array directly (no data wrapper)
+      return Array.isArray(responseData) ? responseData : [];
+    },
     {
       refreshInterval: 3000,
       revalidateOnFocus: true,
@@ -21,7 +27,7 @@ export function useAutomationRuns() {
   );
 
   return {
-    runs: Array.isArray(data?.data) ? data.data : undefined,
+    runs: Array.isArray(data) ? data : undefined,
     isLoading,
     isError: !!error,
     mutate,

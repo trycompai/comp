@@ -2,7 +2,6 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { PolicyEditor } from '@/components/editor/policy-editor';
-import '@/styles/editor.css';
 import { useChat } from '@ai-sdk/react';
 import { Badge } from '@comp/ui/badge';
 import {

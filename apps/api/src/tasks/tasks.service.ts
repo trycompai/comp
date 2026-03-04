@@ -9,6 +9,24 @@ import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@trycompai/d
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
 
+function computeNextTaskReviewDate(frequency: TaskFrequency | null | undefined): Date {
+  const now = new Date();
+  switch (frequency) {
+    case TaskFrequency.daily:
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    case TaskFrequency.weekly:
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
+    case TaskFrequency.monthly:
+      return new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    case TaskFrequency.quarterly:
+      return new Date(now.getFullYear(), now.getMonth() + 3, now.getDate());
+    case TaskFrequency.yearly:
+      return new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+    default:
+      return new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+  }
+}
+
 @Injectable()
 export class TasksService {
   constructor(private readonly taskNotifierService: TaskNotifierService) {}
@@ -397,7 +415,7 @@ export class TasksService {
       status?: TaskStatus;
       assigneeId?: string | null;
       approverId?: string | null;
-      frequency?: string;
+      frequency?: TaskFrequency;
       department?: string;
       reviewDate?: Date | null;
     },
@@ -429,7 +447,7 @@ export class TasksService {
         status?: TaskStatus;
         assigneeId?: string | null;
         approverId?: string | null;
-        frequency?: string;
+        frequency?: TaskFrequency;
         department?: string;
         reviewDate?: Date | null;
       } = {};
@@ -453,12 +471,23 @@ export class TasksService {
       }
       if (updateData.frequency !== undefined) {
         dataToUpdate.frequency = updateData.frequency;
+        // When frequency changes, recalculate the review date
+        dataToUpdate.reviewDate = computeNextTaskReviewDate(updateData.frequency);
       }
       if (updateData.department !== undefined) {
         dataToUpdate.department = updateData.department;
       }
       if (updateData.reviewDate !== undefined) {
         dataToUpdate.reviewDate = updateData.reviewDate;
+      }
+
+      // When status changes to done, set review date based on frequency
+      if (updateData.status === TaskStatus.done && !updateData.reviewDate) {
+        const task = await db.task.findFirst({
+          where: { id: taskId, organizationId },
+          select: { frequency: true },
+        });
+        dataToUpdate.reviewDate = computeNextTaskReviewDate(task?.frequency);
       }
 
       // Get the current member for audit logging
@@ -952,7 +981,7 @@ export class TasksService {
         data: {
           status: TaskStatus.done,
           approvedAt: now,
-          reviewDate: now,
+          reviewDate: computeNextTaskReviewDate(task.frequency),
           previousStatus: null,
         },
         include: { assignee: true, approver: true },

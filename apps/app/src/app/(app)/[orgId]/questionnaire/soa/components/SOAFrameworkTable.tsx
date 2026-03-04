@@ -70,6 +70,7 @@ export function SOAFrameworkTable({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const {
+    document: swrDocument,
     approve,
     decline,
     submitForApproval,
@@ -77,7 +78,18 @@ export function SOAFrameworkTable({
   } = useSOADocument({
     documentId: document?.id ?? null,
     organizationId,
+    fallbackData: document,
   });
+
+  // Derive state from SWR-cached document (updates after mutations)
+  const resolvedDocument = swrDocument ?? document;
+  const derivedIsPendingApproval = resolvedDocument?.status === 'pending_approval' || isPendingApproval;
+  const derivedApproverId = (resolvedDocument?.approverId ?? document?.approverId) as string | null | undefined;
+  // Resolve the approver member from the list using the derived approverId
+  const derivedApprover = derivedApproverId
+    ? ownerAdminMembers.find((m) => m.id === derivedApproverId) ?? approver
+    : approver;
+  const derivedCanCurrentUserApprove = derivedIsPendingApproval && derivedApproverId === currentMemberId;
 
   const columns = configuration.columns as SOAColumn[];
   const questions = configuration.questions as SOAQuestion[];
@@ -230,12 +242,12 @@ export function SOAFrameworkTable({
   return (
     <div className="flex flex-col gap-6">
       {/* Pending Approval Alert */}
-      {isPendingApproval && (
+      {derivedIsPendingApproval && (
         <SOAPendingApprovalAlert
-          approver={approver}
+          approver={derivedApprover}
           currentMemberId={currentMemberId}
-          approverId={approverId ?? null}
-          canCurrentUserApprove={canCurrentUserApprove}
+          approverId={derivedApproverId ?? null}
+          canCurrentUserApprove={derivedCanCurrentUserApprove}
           isApproving={isApproving}
           isDeclining={isDeclining}
           onApprove={handleApprove}
@@ -246,8 +258,8 @@ export function SOAFrameworkTable({
       {/* Document Info */}
       <SOADocumentInfo
         document={docForInfo}
-        approver={approver}
-        isPendingApproval={isPendingApproval}
+        approver={derivedApprover}
+        isPendingApproval={derivedIsPendingApproval}
         canApprove={canApprove}
         isAutoFillingSSE={isAutoFillingSSE}
         onAutoFill={handleAutoFill}
@@ -265,7 +277,7 @@ export function SOAFrameworkTable({
         isExpanded={isExpanded}
         onToggleExpand={() => setIsExpanded(!isExpanded)}
         documentId={document.id}
-        isPendingApproval={isPendingApproval}
+        isPendingApproval={derivedIsPendingApproval}
         organizationId={organizationId}
         onAnswerUpdate={handleAnswerUpdate}
       />

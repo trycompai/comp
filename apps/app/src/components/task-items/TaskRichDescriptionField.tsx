@@ -9,7 +9,8 @@ import { useDebouncedCallback } from 'use-debounce';
 import { defaultExtensions } from '@comp/ui/editor/extensions';
 import { Textarea } from '@comp/ui/textarea';
 import { toast } from 'sonner';
-import { Paperclip, Loader2 } from 'lucide-react';
+import { Attachment } from '@trycompai/design-system/icons';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@comp/ui/button';
 import { useAttachments } from '@/hooks/use-attachments';
 
@@ -607,7 +608,7 @@ export function TaskRichDescriptionField({
           {isUploading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Paperclip className="h-4 w-4" />
+            <Attachment className="h-4 w-4" />
           )}
         </Button>
         <input

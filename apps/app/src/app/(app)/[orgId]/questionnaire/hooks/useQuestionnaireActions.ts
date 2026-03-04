@@ -278,10 +278,16 @@ export function useQuestionnaireActions({
       if (response.error) {
         console.error('Error saving answer:', response.error);
         toast.error('Failed to save answer');
+        // Rollback optimistic update
+        if (results) {
+          const rollback = [...results];
+          rollback[index] = { ...rollback[index], answer: results[index]?.answer ?? null };
+          setResults(rollback);
+        }
+      } else {
+        toast.success('Answer updated');
       }
     });
-
-    toast.success('Answer updated');
   };
 
   const handleCancelEdit = () => {

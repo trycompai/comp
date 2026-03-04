@@ -1,7 +1,7 @@
 'use client';
 
 import { Skeleton } from '@comp/ui/skeleton';
-import { Clock, Lock } from 'lucide-react';
+import { Time, Locked } from '@trycompai/design-system/icons';
 
 /**
  * Disabled-looking row for the "Verify risk assessment" task while the
@@ -17,7 +17,7 @@ export function VerifyRiskAssessmentTaskItemSkeletonRow() {
           {/* Priority icon placeholder */}
           <div className="w-8 shrink-0 flex items-center justify-center">
             <div className="h-6 px-1.5 rounded-md flex items-center justify-center bg-transparent text-muted-foreground">
-              <Lock className="h-4 w-4 stroke-[2]" />
+              <Locked className="h-4 w-4 stroke-[2]" />
             </div>
           </div>
 
@@ -28,7 +28,7 @@ export function VerifyRiskAssessmentTaskItemSkeletonRow() {
 
           {/* Status indicator */}
           <div className="w-8 shrink-0 flex items-center justify-center">
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Time className="h-4 w-4 text-muted-foreground" />
           </div>
 
           {/* Title */}

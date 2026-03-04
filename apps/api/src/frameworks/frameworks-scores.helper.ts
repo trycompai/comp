@@ -1,5 +1,12 @@
+import {
+  evidenceFormDefinitionList,
+  meetingSubTypeValues,
+  toDbEvidenceFormType,
+} from '@comp/company';
 import { db } from '@trycompai/db';
 import { filterComplianceMembers } from '../utils/compliance-filters';
+
+const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
 const TRAINING_VIDEO_IDS = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
 
@@ -90,7 +97,59 @@ export async function getOverviewScores(organizationId: string) {
       completed: completedMembers,
     },
     onboardingTriggerJobId: onboarding?.triggerJobId ?? null,
+    documents: await computeDocumentsScore(organizationId),
+    findings: await getOrganizationFindings(organizationId),
   };
+}
+
+async function computeDocumentsScore(organizationId: string) {
+  const groupedStatuses = await db.evidenceSubmission.groupBy({
+    by: ['formType'],
+    where: { organizationId },
+    _max: { submittedAt: true },
+  });
+
+  const statuses: Record<string, { lastSubmittedAt: string | null }> = {};
+  for (const form of evidenceFormDefinitionList) {
+    const match = groupedStatuses.find(
+      (entry) => entry.formType === toDbEvidenceFormType(form.type),
+    );
+    statuses[form.type] = {
+      lastSubmittedAt: match?._max.submittedAt?.toISOString() ?? null,
+    };
+  }
+
+  const includedForms = evidenceFormDefinitionList.filter((f) => !f.hidden && !f.optional);
+  const totalDocuments = includedForms.length;
+  const outstandingDocuments = includedForms.reduce((count, form) => {
+    if (form.type === 'meeting') {
+      const allMeetingsOutstanding = meetingSubTypeValues.every((subType) => {
+        const lastSubmitted = statuses[subType]?.lastSubmittedAt;
+        return !lastSubmitted || Date.now() - new Date(lastSubmitted).getTime() > SIX_MONTHS_MS;
+      });
+      return allMeetingsOutstanding ? count + 1 : count;
+    }
+    const lastSubmitted = statuses[form.type]?.lastSubmittedAt;
+    const isOutstanding = !lastSubmitted || Date.now() - new Date(lastSubmitted).getTime() > SIX_MONTHS_MS;
+    return isOutstanding ? count + 1 : count;
+  }, 0);
+
+  return {
+    totalDocuments,
+    completedDocuments: totalDocuments - outstandingDocuments,
+    outstandingDocuments,
+  };
+}
+
+async function getOrganizationFindings(organizationId: string) {
+  return db.finding.findMany({
+    where: { organizationId },
+    include: {
+      task: { select: { id: true, title: true } },
+      evidenceSubmission: { select: { id: true, formType: true } },
+    },
+    orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+  });
 }
 
 export async function getCurrentMember(

@@ -292,6 +292,16 @@ export class AttachmentsService {
   }
 
   /**
+   * Get attachment by ID
+   */
+  async getAttachmentById(organizationId: string, attachmentId: string) {
+    return db.attachment.findFirst({
+      where: { id: attachmentId, organizationId },
+      select: { id: true, name: true, type: true },
+    });
+  }
+
+  /**
    * Delete attachment from S3 and database
    */
   async deleteAttachment(

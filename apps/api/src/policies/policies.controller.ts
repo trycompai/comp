@@ -108,7 +108,36 @@ export class PoliciesController {
     };
   }
 
+  @Post('publish-all')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Publish all draft policies' })
+  async publishAllPolicies(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.publishAll(
+      organizationId,
+      authContext.userId,
+      authContext.memberId,
+    );
+
+    return {
+      ...data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
   @Get('download-all')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('policy', 'read')
+  @AuditRead()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Download all published policies as a single PDF',

@@ -22,11 +22,30 @@ const getInitials = (name = '') =>
     ? name.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
 
+/** Extract plain text from a value that may be TipTap JSON */
+function extractPlainText(str: string): string {
+  if (str.startsWith('{') || str.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(str);
+      const extract = (node: Record<string, unknown>): string => {
+        if (typeof node.text === 'string') return node.text;
+        if (Array.isArray(node.content)) {
+          return (node.content as Record<string, unknown>[]).map(extract).join(' ');
+        }
+        return '';
+      };
+      const text = extract(parsed).trim();
+      if (text) return text;
+    } catch { /* not JSON, return as-is */ }
+  }
+  return str;
+}
+
 const formatValue = (value: unknown): string => {
   if (value === null || value === undefined) return '—';
   const str = String(value);
   if (!str || str === 'null' || str === 'undefined') return '—';
-  return str;
+  return extractPlainText(str);
 };
 
 function parseChanges(log: AuditLog): Record<string, { previous: unknown; current: unknown }> | null {
@@ -44,7 +63,8 @@ function LogRow({ log }: { log: AuditLogWithRelations }) {
   const [expanded, setExpanded] = useState(false);
   const userName = log.user?.name || `User ${log.userId.substring(0, 6)}`;
   const timeAgo = formatDistanceToNow(log.timestamp, { addSuffix: true });
-  const changes = parseChanges(log);
+  const isCreate = log.description?.toLowerCase().startsWith('created');
+  const changes = isCreate ? null : parseChanges(log);
   const changeCount = changes ? Object.keys(changes).length : 0;
 
   return (

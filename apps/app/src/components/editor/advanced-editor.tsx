@@ -1,5 +1,6 @@
 'use client';
 
+import '@/styles/editor.css';
 import { Editor, type JSONContent } from '@comp/ui/editor';
 
 interface AdvancedEditorProps {
