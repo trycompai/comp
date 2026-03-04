@@ -6,13 +6,32 @@ import { stripe } from '@/lib/stripe';
 import { db } from '@db';
 import { headers } from 'next/headers';
 
-async function requireOrgMember(orgId: string): Promise<void> {
+async function requireOrgAdmin(orgId: string): Promise<void> {
   const response = await auth.api.getSession({ headers: await headers() });
   if (!response?.session) {
     throw new Error('Unauthorized');
   }
   if (response.session.activeOrganizationId !== orgId) {
     throw new Error('Unauthorized');
+  }
+
+  const userId = (response as { user?: { id?: string } }).user?.id;
+  if (!userId) {
+    throw new Error('Unauthorized');
+  }
+
+  // Verify user is an admin or owner — billing actions should not be available to regular members
+  const member = await db.member.findFirst({
+    where: {
+      userId,
+      organizationId: orgId,
+      deactivated: false,
+      role: { in: ['admin', 'owner'] },
+    },
+  });
+
+  if (!member) {
+    throw new Error('Billing actions require admin or owner role.');
   }
 }
 
@@ -27,11 +46,19 @@ async function getOrgBillingUrl(orgId: string): Promise<string> {
 export async function subscribeToPentestPlan(
   orgId: string,
 ): Promise<{ url: string }> {
-  await requireOrgMember(orgId);
+  await requireOrgAdmin(orgId);
   const returnBaseUrl = await getOrgBillingUrl(orgId);
 
   if (!stripe) {
     throw new Error('Stripe is not configured.');
+  }
+
+  // Guard against creating duplicate subscriptions
+  const existingSub = await db.pentestSubscription.findUnique({
+    where: { organizationId: orgId },
+  });
+  if (existingSub?.status === 'active') {
+    throw new Error('Organization already has an active pentest subscription.');
   }
 
   const priceId = env.STRIPE_PENTEST_SUBSCRIPTION_PRICE_ID;
@@ -93,7 +120,7 @@ export async function handleSubscriptionSuccess(
   orgId: string,
   sessionId: string,
 ): Promise<void> {
-  await requireOrgMember(orgId);
+  await requireOrgAdmin(orgId);
 
   if (!stripe) {
     throw new Error('Stripe is not configured.');
@@ -179,7 +206,7 @@ export async function handleSubscriptionSuccess(
 export async function createBillingPortalSession(
   orgId: string,
 ): Promise<{ url: string }> {
-  await requireOrgMember(orgId);
+  await requireOrgAdmin(orgId);
   const returnUrl = await getOrgBillingUrl(orgId);
 
   if (!stripe) {
@@ -202,18 +229,29 @@ export async function createBillingPortalSession(
   return { url: portalSession.url };
 }
 
-export async function checkAndChargePentestBilling(orgId: string, runId: string): Promise<void> {
-  await requireOrgMember(orgId);
+export interface PreauthorizeResult {
+  authorized: boolean;
+  isOverage: boolean;
+  error?: string;
+}
 
-  // Verify the run exists and belongs to this org to prevent arbitrary runId abuse.
-  // runId here is the provider run ID (stored in providerRunId), not the internal ptr... key.
-  const run = await db.securityPenetrationTestRun.findUnique({
-    where: { providerRunId: runId },
-    select: { organizationId: true },
-  });
-  if (!run || run.organizationId !== orgId) {
-    throw new Error('Run not found.');
-  }
+export interface PentestPricing {
+  subscriptionPrice: string; // e.g. "$99/mo"
+  overagePrice: string;      // e.g. "$199"
+}
+
+export interface PentestUsage {
+  includedRuns: number;
+  usedRuns: number;
+  remainingRuns: number;
+  currentPeriodEnd: string;
+}
+
+export async function preauthorizePentestRun(
+  orgId: string,
+  nonce: string,
+): Promise<PreauthorizeResult> {
+  await requireOrgAdmin(orgId);
 
   const subscription = await db.pentestSubscription.findUnique({
     where: { organizationId: orgId },
@@ -221,13 +259,11 @@ export async function checkAndChargePentestBilling(orgId: string, runId: string)
   });
 
   if (!subscription) {
-    throw new Error(
-      `No active pentest subscription. Subscribe at /settings/billing.`,
-    );
+    return { authorized: false, isOverage: false, error: 'No active pentest subscription. Subscribe at /settings/billing.' };
   }
 
   if (subscription.status !== 'active') {
-    throw new Error('Pentest subscription is not active.');
+    return { authorized: false, isOverage: false, error: 'Pentest subscription is not active.' };
   }
 
   const runsThisPeriod = await db.securityPenetrationTestRun.count({
@@ -235,70 +271,160 @@ export async function checkAndChargePentestBilling(orgId: string, runId: string)
       organizationId: orgId,
       createdAt: {
         gte: subscription.currentPeriodStart,
-        lte: subscription.currentPeriodEnd,
+        lt: subscription.currentPeriodEnd,
       },
     },
   });
 
-  if (runsThisPeriod <= subscription.includedRunsPerPeriod) {
-    return;
+  if (runsThisPeriod < subscription.includedRunsPerPeriod) {
+    return { authorized: true, isOverage: false };
   }
 
+  // Over limit — charge overage
   if (!stripe) {
-    throw new Error('Stripe is not configured.');
+    return { authorized: false, isOverage: true, error: 'Stripe is not configured.' };
   }
 
   const overagePriceId = env.STRIPE_PENTEST_OVERAGE_PRICE_ID;
   if (!overagePriceId) {
-    throw new Error('STRIPE_PENTEST_OVERAGE_PRICE_ID is not configured.');
+    return { authorized: false, isOverage: true, error: 'STRIPE_PENTEST_OVERAGE_PRICE_ID is not configured.' };
   }
 
   const price = await stripe.prices.retrieve(overagePriceId);
   const amount = price.unit_amount;
   if (!amount) {
-    throw new Error('Overage price has no unit amount.');
+    return { authorized: false, isOverage: true, error: 'Overage price has no unit amount.' };
   }
 
   const stripeCustomerId = subscription.organizationBilling.stripeCustomerId;
 
-  const customer = await stripe.customers.retrieve(stripeCustomerId, {
-    expand: ['invoice_settings.default_payment_method'],
+  // Try the subscription's default payment method first (Checkout often sets it here),
+  // then fall back to the customer's invoice_settings.default_payment_method.
+  const stripeSub = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId, {
+    expand: ['default_payment_method'],
   });
 
-  if (customer.deleted) {
-    throw new Error('Stripe customer not found.');
+  let paymentMethodId: string | undefined;
+
+  const subPm = stripeSub.default_payment_method;
+  if (subPm) {
+    paymentMethodId = typeof subPm === 'string' ? subPm : subPm.id;
   }
 
-  const defaultPaymentMethod = customer.invoice_settings?.default_payment_method;
-  if (!defaultPaymentMethod) {
-    throw new Error('No payment method on file. Update billing at /settings/billing.');
+  if (!paymentMethodId) {
+    const customer = await stripe.customers.retrieve(stripeCustomerId, {
+      expand: ['invoice_settings.default_payment_method'],
+    });
+
+    if (customer.deleted) {
+      return { authorized: false, isOverage: true, error: 'Stripe customer not found.' };
+    }
+
+    const custPm = customer.invoice_settings?.default_payment_method;
+    if (custPm) {
+      paymentMethodId = typeof custPm === 'string' ? custPm : custPm.id;
+    }
   }
 
-  const paymentMethodId =
-    typeof defaultPaymentMethod === 'string'
-      ? defaultPaymentMethod
-      : defaultPaymentMethod.id;
+  if (!paymentMethodId) {
+    return { authorized: false, isOverage: true, error: 'No payment method on file. Update billing at /settings/billing.' };
+  }
 
-  // Idempotency key scoped to the specific run ID so concurrent creates
-  // never share a key and each overage run is charged exactly once.
-  const idempotencyKey = `pentest-overage-${orgId}-${runId}`;
+  const idempotencyKey = `pentest-overage-${orgId}-${nonce}`;
 
-  const paymentIntent = await stripe.paymentIntents.create(
-    {
-      customer: stripeCustomerId,
-      amount,
-      currency: 'usd',
-      payment_method: paymentMethodId,
-      confirm: true,
-      automatic_payment_methods: {
-        enabled: true,
-        allow_redirects: 'never',
+  try {
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        customer: stripeCustomerId,
+        amount,
+        currency: 'usd',
+        payment_method: paymentMethodId,
+        confirm: true,
+        off_session: true,
+      },
+      { idempotencyKey },
+    );
+
+    if (paymentIntent.status !== 'succeeded') {
+      return { authorized: false, isOverage: true, error: 'Overage payment failed. Check billing.' };
+    }
+  } catch {
+    return { authorized: false, isOverage: true, error: 'Overage payment failed. Check billing.' };
+  }
+
+  return { authorized: true, isOverage: true };
+}
+
+export async function getPentestUsage(orgId: string): Promise<PentestUsage | null> {
+  await requireOrgAdmin(orgId);
+
+  const subscription = await db.pentestSubscription.findUnique({
+    where: { organizationId: orgId },
+  });
+
+  if (!subscription || subscription.status !== 'active') {
+    return null;
+  }
+
+  const usedRuns = await db.securityPenetrationTestRun.count({
+    where: {
+      organizationId: orgId,
+      createdAt: {
+        gte: subscription.currentPeriodStart,
+        lt: subscription.currentPeriodEnd,
       },
     },
-    { idempotencyKey },
-  );
+  });
 
-  if (paymentIntent.status !== 'succeeded') {
-    throw new Error('Overage payment failed. Check billing.');
+  const includedRuns = subscription.includedRunsPerPeriod;
+  const remainingRuns = Math.max(0, includedRuns - usedRuns);
+
+  return {
+    includedRuns,
+    usedRuns,
+    remainingRuns,
+    currentPeriodEnd: subscription.currentPeriodEnd.toISOString(),
+  };
+}
+
+function formatStripePrice(unitAmount: number | null, currency: string, interval?: string | null): string {
+  const amount = (unitAmount ?? 0) / 100;
+  const formatted = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+  if (interval) {
+    const shortInterval = interval === 'month' ? 'mo' : interval === 'year' ? 'yr' : interval;
+    return `${formatted}/${shortInterval}`;
+  }
+  return formatted;
+}
+
+export async function getPentestPricing(): Promise<PentestPricing> {
+  const fallback: PentestPricing = { subscriptionPrice: '$99/mo', overagePrice: '$199' };
+
+  if (!stripe) return fallback;
+
+  const subPriceId = env.STRIPE_PENTEST_SUBSCRIPTION_PRICE_ID;
+  const overagePriceId = env.STRIPE_PENTEST_OVERAGE_PRICE_ID;
+
+  try {
+    const [subPrice, overagePrice] = await Promise.all([
+      subPriceId ? stripe.prices.retrieve(subPriceId) : null,
+      overagePriceId ? stripe.prices.retrieve(overagePriceId) : null,
+    ]);
+
+    return {
+      subscriptionPrice: subPrice
+        ? formatStripePrice(subPrice.unit_amount, subPrice.currency, subPrice.recurring?.interval)
+        : fallback.subscriptionPrice,
+      overagePrice: overagePrice
+        ? formatStripePrice(overagePrice.unit_amount, overagePrice.currency)
+        : fallback.overagePrice,
+    };
+  } catch {
+    return fallback;
   }
 }

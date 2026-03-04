@@ -7,6 +7,8 @@ import PenetrationTestsPage, { generateMetadata } from './page';
 
 const authGetSessionMock = vi.fn();
 const dbFindFirstMock = vi.fn();
+const dbPentestSubFindUniqueMock = vi.fn();
+const dbRunCountMock = vi.fn();
 const headersMock = vi.fn();
 const childMock = vi.fn();
 
@@ -23,6 +25,12 @@ vi.mock('@db', () => ({
     member: {
       findFirst: (...args: unknown[]) => dbFindFirstMock(...args),
     },
+    pentestSubscription: {
+      findUnique: (...args: unknown[]) => dbPentestSubFindUniqueMock(...args),
+    },
+    securityPenetrationTestRun: {
+      count: (...args: unknown[]) => dbRunCountMock(...args),
+    },
   },
 }));
 
@@ -32,6 +40,10 @@ vi.mock('next/headers', () => ({
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
+}));
+
+vi.mock('./actions/billing', () => ({
+  getPentestPricing: vi.fn().mockResolvedValue({ subscriptionPrice: '$99/mo', overagePrice: '$49' }),
 }));
 
 vi.mock('./penetration-tests-page-client', () => ({
@@ -47,6 +59,8 @@ describe('Penetration Tests page', () => {
     headersMock.mockReturnValue(new Headers());
     authGetSessionMock.mockResolvedValue({ user: { id: 'user_1' } });
     dbFindFirstMock.mockResolvedValue({ id: 'member_1' });
+    dbPentestSubFindUniqueMock.mockResolvedValue(null);
+    dbRunCountMock.mockResolvedValue(0);
     vi.mocked(redirect).mockImplementation(() => {
       const error = new Error('NEXT_REDIRECT');
       (error as Error & { digest: string }).digest = 'NEXT_REDIRECT';
