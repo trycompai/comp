@@ -36,8 +36,8 @@ export async function POST(req: Request) {
     const { code } = parsed.data;
     const kvKey = `device-auth:${code}`;
 
-    // Fetch and immediately delete (single-use)
-    const stored = await kv.get<StoredAuthCode>(kvKey);
+    // Atomic get+delete to prevent race condition (TOCTOU)
+    const stored = await kv.getdel<StoredAuthCode>(kvKey);
 
     if (!stored) {
       return NextResponse.json(
@@ -45,9 +45,6 @@ export async function POST(req: Request) {
         { status: 401 },
       );
     }
-
-    // Delete immediately to prevent replay
-    await kv.del(kvKey);
 
     return NextResponse.json({
       session_token: stored.sessionToken,

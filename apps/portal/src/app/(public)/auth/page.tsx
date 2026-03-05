@@ -31,7 +31,7 @@ export default async function Page({
 
   const deviceAuthRedirect =
     isDeviceAuth && callbackPort && state
-      ? `/auth/device-callback?callback_port=${callbackPort}&state=${state}`
+      ? `/auth/device-callback?callback_port=${encodeURIComponent(callbackPort)}&state=${encodeURIComponent(state)}`
       : undefined;
 
   const defaultSignInOptions = (
