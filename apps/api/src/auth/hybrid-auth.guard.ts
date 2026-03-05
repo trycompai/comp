@@ -77,10 +77,10 @@ export class HybridAuthGuard implements CanActivate {
     return true;
   }
 
-  private handleServiceTokenAuth(
+  private async handleServiceTokenAuth(
     request: AuthenticatedRequest,
     token: string,
-  ): boolean {
+  ): Promise<boolean> {
     const service = resolveServiceByToken(token);
     if (!service) {
       throw new UnauthorizedException('Invalid service token');
@@ -90,6 +90,16 @@ export class HybridAuthGuard implements CanActivate {
     if (!organizationId) {
       throw new UnauthorizedException(
         'x-organization-id header is required for service token auth',
+      );
+    }
+
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { id: true },
+    });
+    if (!org) {
+      throw new UnauthorizedException(
+        'Organization not found for the provided x-organization-id',
       );
     }
 
