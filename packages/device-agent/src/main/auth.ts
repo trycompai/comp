@@ -10,7 +10,7 @@ import type {
   StoredAuth,
 } from '../shared/types';
 import { log } from './logger';
-import { getPortalUrl, setAuth } from './store';
+import { clearAuth, getPortalUrl, setAuth } from './store';
 
 /** How long to wait for the user to complete login in the browser */
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -299,8 +299,8 @@ function errorPage(message: string): string {
 }
 
 /**
- * Sign out: clear stored auth (no more Electron session cookies to manage)
+ * Sign out: clear stored auth data
  */
 export async function performLogout(): Promise<void> {
-  // Nothing to clean up — stored auth is cleared by the caller via clearAuth()
+  clearAuth();
 }
