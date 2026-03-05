@@ -2,6 +2,7 @@ model ApiKey {
   id         String    @id @default(dbgenerated("generate_prefixed_cuid('apk'::text)"))
   name       String
   key        String    @unique
+  keyPrefix  String?
   salt       String?
   createdAt  DateTime  @default(now())
   expiresAt  DateTime?
@@ -14,6 +15,7 @@ model ApiKey {
 
   @@index([organizationId])
   @@index([key])
+  @@index([keyPrefix])
 }
 
 model AuditLog {

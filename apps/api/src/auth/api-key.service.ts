@@ -40,6 +40,11 @@ export class ApiKeyService {
     return `comp_${apiKey}`;
   }
 
+  /** Extract the first 8 chars after the `comp_` prefix for indexed lookup */
+  private extractPrefix(apiKey: string): string {
+    return apiKey.slice(5, 13);
+  }
+
   private generateSalt(): string {
     return randomBytes(16).toString('hex');
   }
@@ -88,10 +93,13 @@ export class ApiKeyService {
       }
     }
 
+    const keyPrefix = this.extractPrefix(apiKey);
+
     const record = await db.apiKey.create({
       data: {
         name,
         key: hashedKey,
+        keyPrefix,
         salt,
         expiresAt: expirationDate,
         organizationId,
@@ -166,8 +174,10 @@ export class ApiKeyService {
         return null;
       }
 
-      // Look up the API key in the database
-      // Filter out expired keys at the DB level to reduce payload size
+      // Use key prefix for indexed lookup when available (new keys),
+      // fall back to full scan for legacy keys without prefix
+      const keyPrefix = apiKey.startsWith('comp_') ? this.extractPrefix(apiKey) : null;
+
       const apiKeyRecords = await db.apiKey.findMany({
         where: {
           isActive: true,
@@ -175,6 +185,7 @@ export class ApiKeyService {
             { expiresAt: null },
             { expiresAt: { gt: new Date() } },
           ],
+          ...(keyPrefix ? { keyPrefix } : {}),
         },
         select: {
           id: true,
@@ -186,21 +197,53 @@ export class ApiKeyService {
         },
       });
 
-      // Find the matching API key by hashing with each record's salt
+      // Find the matching API key by hashing with each candidate's salt
       const matchingRecord = apiKeyRecords.find((record) => {
-        // Hash the provided API key with the record's salt
         const hashedKey = record.salt
           ? this.hashApiKey(apiKey, record.salt)
-          : this.hashApiKey(apiKey); // For backward compatibility
-
+          : this.hashApiKey(apiKey);
         return hashedKey === record.key;
       });
 
-      // If no matching key or the key is expired, return null
-      if (
-        !matchingRecord ||
-        (matchingRecord.expiresAt && matchingRecord.expiresAt < new Date())
-      ) {
+      if (!matchingRecord) {
+        // If prefix lookup found nothing, try legacy keys (no prefix set)
+        if (keyPrefix) {
+          const legacyRecords = await db.apiKey.findMany({
+            where: {
+              isActive: true,
+              keyPrefix: null,
+              OR: [
+                { expiresAt: null },
+                { expiresAt: { gt: new Date() } },
+              ],
+            },
+            select: {
+              id: true,
+              key: true,
+              salt: true,
+              organizationId: true,
+              expiresAt: true,
+              scopes: true,
+            },
+          });
+          const legacyMatch = legacyRecords.find((record) => {
+            const hashedKey = record.salt
+              ? this.hashApiKey(apiKey, record.salt)
+              : this.hashApiKey(apiKey);
+            return hashedKey === record.key;
+          });
+          if (legacyMatch) {
+            // Backfill the prefix for future lookups
+            await db.apiKey.update({
+              where: { id: legacyMatch.id },
+              data: { keyPrefix, lastUsedAt: new Date() },
+            });
+            return {
+              organizationId: legacyMatch.organizationId,
+              scopes: legacyMatch.scopes,
+            };
+          }
+        }
         this.logger.warn('Invalid or expired API key attempted');
         return null;
       }
