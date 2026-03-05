@@ -79,30 +79,29 @@ export class AssistantChatController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new HttpException(
-        'AI service not configured',
-        HttpStatus.SERVICE_UNAVAILABLE,
+    // @Res() bypasses NestJS exception filters, so we must handle errors manually
+    try {
+      if (!process.env.OPENAI_API_KEY) {
+        res.status(HttpStatus.SERVICE_UNAVAILABLE).json({ message: 'AI service not configured' });
+        return;
+      }
+
+      const { organizationId, userId } = this.getUserScopedContext(auth);
+
+      const body = req.body as { messages?: UIMessage[] };
+      const messages = body?.messages ?? [];
+
+      const userRoles = auth.userRoles ?? [];
+      const permissions = await this.rolesService.resolvePermissions(
+        organizationId,
+        userRoles,
       );
-    }
 
-    const { organizationId, userId } = this.getUserScopedContext(auth);
+      const tools = buildTools({ organizationId, userId, permissions });
 
-    const body = req.body as { messages?: UIMessage[] };
-    const messages = body?.messages ?? [];
+      const nowIso = new Date().toISOString();
 
-    // Resolve user permissions from their roles
-    const userRoles = auth.userRoles ?? [];
-    const permissions = await this.rolesService.resolvePermissions(
-      organizationId,
-      userRoles,
-    );
-
-    const tools = buildTools({ organizationId, userId, permissions });
-
-    const nowIso = new Date().toISOString();
-
-    const systemPrompt = `
+      const systemPrompt = `
 You're an expert in GRC, and a helpful assistant in Comp AI,
 a platform that helps companies get compliant with frameworks
 like SOC 2, ISO 27001 and GDPR.
@@ -121,41 +120,49 @@ Important:
 - If the user asks about data you don't have tools for, let them know you can't access that information with their current permissions.
 `;
 
-    const result = streamText({
-      model: openai('gpt-5'),
-      system: systemPrompt,
-      messages: convertToModelMessages(messages),
-      tools,
-    });
+      const result = streamText({
+        model: openai('gpt-5'),
+        system: systemPrompt,
+        messages: convertToModelMessages(messages),
+        tools,
+      });
 
-    // toUIMessageStreamResponse returns a Web API Response.
-    // Pipe it to the Express response for NestJS compatibility.
-    const webResponse = result.toUIMessageStreamResponse({
-      sendReasoning: false,
-    });
+      const webResponse = result.toUIMessageStreamResponse({
+        sendReasoning: false,
+      });
 
-    res.status(webResponse.status);
-    webResponse.headers.forEach((value, key) => {
-      res.setHeader(key, value);
-    });
+      res.status(webResponse.status);
+      webResponse.headers.forEach((value, key) => {
+        res.setHeader(key, value);
+      });
 
-    if (webResponse.body) {
-      const reader = webResponse.body.getReader();
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            break;
+      if (webResponse.body) {
+        const reader = webResponse.body.getReader();
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              break;
+            }
+            res.write(value);
           }
-          res.write(value);
+        } catch (error) {
+          this.logger.error('Stream reading error', error);
+        } finally {
+          res.end();
         }
-      } catch (error) {
-        this.logger.error('Stream reading error', error);
-      } finally {
+      } else {
         res.end();
       }
-    } else {
-      res.end();
+    } catch (error) {
+      this.logger.error('Completions endpoint error', error);
+      if (!res.headersSent) {
+        const status = error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+        const message = error instanceof HttpException ? error.message : 'Internal server error';
+        res.status(status).json({ message });
+      } else {
+        res.end();
+      }
     }
   }
 
