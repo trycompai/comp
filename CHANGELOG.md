@@ -1,3 +1,10 @@
+## [1.88.1](https://github.com/trycompai/comp/compare/v1.88.0...v1.88.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* **evidence-forms:** regenerate presigned URLs on submission retrieval ([#2223](https://github.com/trycompai/comp/issues/2223)) ([783db83](https://github.com/trycompai/comp/commit/783db83f15f98aed4554c28a6c6a637c84463ee6))
+
 # [1.88.0](https://github.com/trycompai/comp/compare/v1.87.0...v1.88.0) (2026-03-05)
 
 
