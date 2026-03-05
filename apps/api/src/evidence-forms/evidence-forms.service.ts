@@ -197,6 +197,34 @@ export class EvidenceFormsService {
     return fileBuffer;
   }
 
+  /**
+   * Walk submission data and regenerate fresh presigned URLs for any file fields.
+   * File fields are objects with { fileKey, downloadUrl, fileName }.
+   */
+  private async refreshFileUrls(
+    data: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    const refreshed: Record<string, unknown> = { ...data };
+
+    for (const [key, value] of Object.entries(refreshed)) {
+      if (
+        value &&
+        typeof value === 'object' &&
+        'fileKey' in value &&
+        typeof (value as Record<string, unknown>).fileKey === 'string'
+      ) {
+        const fileObj = value as Record<string, unknown>;
+        const freshUrl =
+          await this.attachmentsService.getPresignedDownloadUrl(
+            fileObj.fileKey as string,
+          );
+        refreshed[key] = { ...fileObj, downloadUrl: freshUrl };
+      }
+    }
+
+    return refreshed;
+  }
+
   listForms() {
     return evidenceFormDefinitionList;
   }
@@ -276,9 +304,21 @@ export class EvidenceFormsService {
 
     const paginated = filtered.slice(query.offset, query.offset + query.limit);
 
+    const submissionsWithFreshUrls = await Promise.all(
+      paginated.map(async (submission) => {
+        const refreshedData = await this.refreshFileUrls(
+          submission.data as Record<string, unknown>,
+        );
+        return normalizeSubmissionFormType({
+          ...submission,
+          data: refreshedData,
+        });
+      }),
+    );
+
     return {
       form: evidenceFormDefinitions[parsedType.data],
-      submissions: paginated.map(normalizeSubmissionFormType),
+      submissions: submissionsWithFreshUrls,
       total: filtered.length,
     };
   }
@@ -324,9 +364,16 @@ export class EvidenceFormsService {
       throw new NotFoundException('Submission not found');
     }
 
+    const refreshedData = await this.refreshFileUrls(
+      submission.data as Record<string, unknown>,
+    );
+
     return {
       form: evidenceFormDefinitions[parsedType.data],
-      submission: normalizeSubmissionFormType(submission),
+      submission: normalizeSubmissionFormType({
+        ...submission,
+        data: refreshedData,
+      }),
     };
   }
 
