@@ -2,6 +2,11 @@
 /dist
 /node_modules
 /build
+src/**/*.js
+*.Extension.js
+customPrismaExtension.js
+emailExtension.js
+integrationPlatformExtension.js
 
 # Logs
 logs
@@ -57,3 +62,5 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 
 prisma/schema.prisma
+trigger.config.js
+test/**/*.js

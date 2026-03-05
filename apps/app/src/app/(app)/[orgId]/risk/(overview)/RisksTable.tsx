@@ -1,8 +1,15 @@
 'use client';
 
-import { useRiskActions } from '@/hooks/use-risks';
-import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import type { Member, Risk, User } from '@db';
+import { usePermissions } from '@/hooks/use-permissions';
+import {
+  useRiskActions,
+  useRisks,
+  type Risk as ApiRisk,
+  type RiskAssignee,
+  type RisksQueryParams,
+} from '@/hooks/use-risks';
+import { getSortingStateParser } from '@/lib/parsers';
+import type { Member, User } from '@db';
 import { Risk as RiskType } from '@db';
 import {
   AlertDialog,
@@ -41,22 +48,16 @@ import { OverflowMenuVertical, Search, TrashCan } from '@trycompai/design-system
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
-  parseAsArrayOf,
   parseAsString,
-  parseAsStringEnum,
   useQueryState,
 } from 'nuqs';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import useSWR from 'swr';
-import * as z from 'zod/v3';
-import { getRisksAction } from './actions/get-risks-action';
 import { RiskOnboardingProvider } from './components/risk-onboarding-context';
 import { RisksLoadingAnimation } from './components/risks-loading-animation';
-import type { GetRiskSchema } from './data/validations';
 import { useOnboardingStatus } from './hooks/use-onboarding-status';
 
-export type RiskRow = Risk & { assignee: User | null; isPending?: boolean; isAssessing?: boolean };
+export type RiskRow = ApiRisk & { isPending?: boolean; isAssessing?: boolean };
 
 const ACTIVE_STATUSES: Array<'pending' | 'processing' | 'created' | 'assessing'> = [
   'pending',
@@ -106,7 +107,7 @@ function getStatusBadge(status: string) {
   }
 }
 
-function formatDate(date: Date): string {
+function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
@@ -125,10 +126,10 @@ export const RisksTable = ({
   assignees: (Member & { user: User })[];
   pageCount: number;
   onboardingRunId?: string | null;
-  searchParams?: GetRiskSchema;
   orgId: string;
 }) => {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
   const { deleteRisk } = useRiskActions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [riskToDelete, setRiskToDelete] = useState<RiskRow | null>(null);
@@ -149,53 +150,35 @@ export const RisksTable = ({
     'sort',
     getSortingStateParser<RiskType>().withDefault([{ id: 'title', desc: false }]),
   );
-  const [filters] = useQueryState('filters', getFiltersStateParser().withDefault([]));
-  const [joinOperator] = useQueryState(
-    'joinOperator',
-    parseAsStringEnum(['and', 'or']).withDefault('and'),
-  );
-  const [lastUpdated] = useQueryState(
-    'lastUpdated',
-    parseAsArrayOf(z.coerce.date()).withDefault([]),
-  );
 
-  // Build current search params from URL state
-  const currentSearchParams = useMemo<GetRiskSchema>(() => {
+  // Build query params for the API
+  const queryParams = useMemo<RisksQueryParams>(() => {
+    const currentSort = sort[0];
     return {
       page,
       perPage,
-      title,
-      sort,
-      filters,
-      joinOperator,
-      lastUpdated,
+      ...(title && { title }),
+      ...(currentSort && {
+        sort: currentSort.id,
+        sortDirection: currentSort.desc ? 'desc' as const : 'asc' as const,
+      }),
     };
-  }, [page, perPage, title, sort, filters, joinOperator, lastUpdated]);
+  }, [page, perPage, title, sort]);
 
-  // Create stable SWR key from current search params
-  const swrKey = useMemo(() => {
-    if (!orgId) return null;
-    const key = JSON.stringify(currentSearchParams);
-    return ['risks', orgId, key] as const;
-  }, [orgId, currentSearchParams]);
-
-  // Fetcher function for SWR
-  const fetcher = useCallback(async () => {
-    if (!orgId) return { data: [], pageCount: 0 };
-    return await getRisksAction({ orgId, searchParams: currentSearchParams });
-  }, [orgId, currentSearchParams]);
-
-  // Use SWR to fetch risks with polling for real-time updates
-  const { data: risksData } = useSWR(swrKey, fetcher, {
-    fallbackData: { data: initialRisks, pageCount: initialPageCount },
+  // Use the useRisks hook with query params
+  const { data: risksData, mutate: mutateRisks } = useRisks({
+    initialData: initialRisks,
+    queryParams,
     refreshInterval: isActive ? 1000 : 5000,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
     keepPreviousData: true,
   });
 
-  const risks = risksData?.data || initialRisks;
-  const pageCount = risksData?.pageCount ?? initialPageCount;
+  const risks = useMemo(() => {
+    const apiData = risksData?.data?.data;
+    return Array.isArray(apiData) ? apiData : initialRisks;
+  }, [risksData, initialRisks]);
+
+  const pageCount = risksData?.data?.pageCount ?? initialPageCount;
 
   // Check if all risks are done assessing
   const allRisksDoneAssessing = useMemo(() => {
@@ -245,6 +228,7 @@ export const RisksTable = ({
       return risk;
     });
 
+    const now = new Date().toISOString();
     const pendingRisks: RiskRow[] = itemsInfo
       .filter((item) => {
         const status = itemStatuses[item.id];
@@ -270,8 +254,8 @@ export const RisksTable = ({
         organizationId: orgId,
         assigneeId: null,
         assignee: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
         isPending: true,
       }));
 
@@ -293,8 +277,8 @@ export const RisksTable = ({
         organizationId: orgId,
         assigneeId: null,
         assignee: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
         isPending: true,
       }));
 
@@ -373,6 +357,7 @@ export const RisksTable = ({
       toast.success('Risk deleted successfully');
       setDeleteDialogOpen(false);
       setRiskToDelete(null);
+      mutateRisks();
     } catch {
       toast.error('Failed to delete risk');
     } finally {
@@ -490,7 +475,7 @@ export const RisksTable = ({
                       {getSortIcon('updatedAt')}
                     </button>
                   </TableHead>
-                  <TableHead>ACTIONS</TableHead>
+                  {hasPermission('risk', 'delete') && <TableHead>ACTIONS</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -512,36 +497,38 @@ export const RisksTable = ({
                       <TableCell>{getSeverityBadge(risk.likelihood, risk.impact)}</TableCell>
                       <TableCell>{getStatusBadge(risk.status)}</TableCell>
                       <TableCell>
-                        <Text>{risk.assignee?.name || 'Unassigned'}</Text>
+                        <Text>{risk.assignee?.user?.name || 'Unassigned'}</Text>
                       </TableCell>
                       <TableCell>
                         <Text>{formatDate(risk.updatedAt)}</Text>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex justify-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger
-                              variant="ellipsis"
-                              disabled={blocked}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <OverflowMenuVertical />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteClick(risk);
-                                }}
+                      {hasPermission('risk', 'delete') && (
+                        <TableCell>
+                          <div className="flex justify-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                variant="ellipsis"
+                                disabled={blocked}
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                <TrashCan size={16} />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
+                                <OverflowMenuVertical />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteClick(risk);
+                                  }}
+                                >
+                                  <TrashCan size={16} />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}

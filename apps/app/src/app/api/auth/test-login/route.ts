@@ -7,21 +7,15 @@ export const dynamic = 'force-dynamic';
 
 // This endpoint is ONLY for E2E tests - never enable in production!
 export async function POST(request: NextRequest) {
-  console.log('[TEST-LOGIN] =========================');
-  console.log('[TEST-LOGIN] Endpoint hit at:', new Date().toISOString());
-  console.log('[TEST-LOGIN] E2E_TEST_MODE:', process.env.E2E_TEST_MODE);
-  console.log('[TEST-LOGIN] NODE_ENV:', process.env.NODE_ENV);
-  console.log('[TEST-LOGIN] Request URL:', request.url);
-  console.log('[TEST-LOGIN] Request headers:', Object.fromEntries(request.headers.entries()));
-  console.log('[TEST-LOGIN] =========================');
+  // SECONDARY GUARD: Block in production even if E2E_TEST_MODE is accidentally set
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+  }
 
   // Only allow in E2E test mode
   if (process.env.E2E_TEST_MODE !== 'true') {
-    console.log('[TEST-LOGIN] E2E_TEST_MODE is not true:', process.env.E2E_TEST_MODE);
     return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
   }
-
-  console.log('[TEST-LOGIN] E2E mode verified');
 
   // Add a timeout wrapper
   const timeoutPromise = new Promise((_, reject) => {
@@ -44,7 +38,6 @@ async function handleLogin(request: NextRequest) {
   let body;
   try {
     body = await request.json();
-    console.log('[TEST-LOGIN] Request body:', body);
   } catch (err) {
     console.error('[TEST-LOGIN] Failed to parse request body:', err);
     return NextResponse.json(
@@ -54,9 +47,7 @@ async function handleLogin(request: NextRequest) {
   }
 
   const { email, name, hasAccess } = body;
-  const testPassword = 'Test123456!'; // Use a stronger test password
-
-  console.log('[TEST-LOGIN] Checking for existing user:', email);
+  const testPassword = 'Test123456!';
 
   // For E2E tests, always start with a clean user state
   // Delete existing user if present to avoid password/state issues
@@ -65,10 +56,6 @@ async function handleLogin(request: NextRequest) {
     existingUser = await db.user.findUnique({
       where: { email },
     });
-    console.log(
-      '[TEST-LOGIN] Existing user lookup result:',
-      existingUser ? existingUser.id : 'none',
-    );
   } catch (err) {
     console.error('[TEST-LOGIN] Error looking up existing user:', err);
     return NextResponse.json(
@@ -79,9 +66,7 @@ async function handleLogin(request: NextRequest) {
 
   if (existingUser) {
     try {
-      console.log('[TEST-LOGIN] Deleting existing user for clean state');
       await db.user.delete({ where: { email } });
-      console.log('[TEST-LOGIN] Existing user deleted');
     } catch (err) {
       console.error('[TEST-LOGIN] Error deleting existing user:', err);
       return NextResponse.json(
@@ -90,8 +75,6 @@ async function handleLogin(request: NextRequest) {
       );
     }
   }
-
-  console.log('[TEST-LOGIN] Creating new user via Better Auth');
 
   // Create the user using Better Auth's signUpEmail method
   let signUpResponse;
@@ -105,7 +88,6 @@ async function handleLogin(request: NextRequest) {
       headers: request.headers, // Pass the request headers
       asResponse: true,
     });
-    console.log('[TEST-LOGIN] Sign up response status:', signUpResponse.status);
   } catch (err) {
     console.error('[TEST-LOGIN] Error during signUpEmail:', err);
     return NextResponse.json(
@@ -131,7 +113,6 @@ async function handleLogin(request: NextRequest) {
       where: { email },
       data: { emailVerified: true },
     });
-    console.log('[TEST-LOGIN] User marked as verified');
   } catch (err) {
     console.error('[TEST-LOGIN] Error marking user as verified:', err);
     return NextResponse.json(
@@ -147,10 +128,8 @@ async function handleLogin(request: NextRequest) {
       where: { email },
     });
     if (!user) {
-      console.log('[TEST-LOGIN] User not found after creation');
       return NextResponse.json({ error: 'User not found after creation' }, { status: 400 });
     }
-    console.log('[TEST-LOGIN] User found:', user.id, user.email);
   } catch (err) {
     console.error('[TEST-LOGIN] Error fetching user after creation:', err);
     return NextResponse.json(
@@ -162,12 +141,9 @@ async function handleLogin(request: NextRequest) {
   // Try signing in with a small delay to ensure user is fully committed
   try {
     await new Promise((resolve) => setTimeout(resolve, 100));
-    console.log('[TEST-LOGIN] Delay after user creation complete');
   } catch (err) {
     console.error('[TEST-LOGIN] Error during delay:', err);
   }
-
-  console.log('[TEST-LOGIN] Attempting sign in for user:', email, 'with password:', testPassword);
 
   let responseData: any;
   let signInResponse;
@@ -180,7 +156,6 @@ async function handleLogin(request: NextRequest) {
       headers: request.headers,
       asResponse: true,
     });
-    console.log('[TEST-LOGIN] Sign in response status:', signInResponse.status);
   } catch (err) {
     console.error('[TEST-LOGIN] Error during signInEmail:', err);
     return NextResponse.json(
@@ -201,18 +176,12 @@ async function handleLogin(request: NextRequest) {
       }
     }
     console.error('[TEST-LOGIN] Sign in failed with error:', errorData);
-    console.log(
-      '[TEST-LOGIN] Response headers:',
-      Object.fromEntries(signInResponse.headers.entries()),
-    );
 
     // Try alternative approach - create session directly
-    console.log('[TEST-LOGIN] Attempting direct session creation...');
   } else {
     // Get the response data from successful sign-in
     try {
       responseData = await signInResponse.json();
-      console.log('[TEST-LOGIN] Sign in successful, user:', responseData.user?.id);
     } catch (err) {
       console.error('[TEST-LOGIN] Error parsing sign in response JSON:', err);
       return NextResponse.json(
@@ -225,7 +194,6 @@ async function handleLogin(request: NextRequest) {
   // Create an organization for the user if skipOrg is not true
   let org = null;
   if (!body.skipOrg) {
-    console.log('[TEST-LOGIN] Creating test organization');
     try {
       org = await db.organization.create({
         data: {
@@ -242,7 +210,6 @@ async function handleLogin(request: NextRequest) {
           },
         },
       });
-      console.log('[TEST-LOGIN] Created organization:', org.id);
     } catch (err) {
       console.error('[TEST-LOGIN] Error creating organization:', err);
       return NextResponse.json(
@@ -262,7 +229,6 @@ async function handleLogin(request: NextRequest) {
       });
 
       if (!setActiveOrgResponse.ok) {
-        console.log('[TEST-LOGIN] Warning: setActiveOrganization returned non-ok status');
         // Try again with a small delay
         await new Promise((resolve) => setTimeout(resolve, 500));
         await auth.api.setActiveOrganization({
@@ -272,8 +238,6 @@ async function handleLogin(request: NextRequest) {
           },
         });
       }
-
-      console.log('[TEST-LOGIN] Set organization as active:', org.id);
     } catch (err) {
       console.error(
         '[TEST-LOGIN] Warning: Failed to set active organization (continuing anyway):',
@@ -293,7 +257,6 @@ async function handleLogin(request: NextRequest) {
       session: responseData.session,
       organizationId: body.skipOrg ? null : org?.id,
     });
-    console.log('[TEST-LOGIN] Created response object');
   } catch (err) {
     console.error('[TEST-LOGIN] Error creating response object:', err);
     return NextResponse.json(
@@ -305,7 +268,6 @@ async function handleLogin(request: NextRequest) {
   // Copy all cookies from Better Auth's response to our response
   try {
     const cookies = signInResponse.headers.getSetCookie();
-    console.log('[TEST-LOGIN] Setting cookies count:', cookies.length);
     cookies.forEach((cookie: string) => {
       response.headers.append('Set-Cookie', cookie);
     });
@@ -314,6 +276,5 @@ async function handleLogin(request: NextRequest) {
     // Still return the response, but log the error
   }
 
-  console.log('[TEST-LOGIN] Returning success response');
   return response;
 }

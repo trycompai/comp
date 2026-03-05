@@ -127,7 +127,7 @@ Keep responses helpful and focused on the policy editing task.`;
       //  we use 5.1 because it has the best context window for this task
       model: openai('gpt-5.1'),
       system: systemPrompt,
-      messages: convertToModelMessages(messages),
+      messages: await convertToModelMessages(messages),
       toolChoice: 'auto',
       tools: getPolicyTools(),
     });

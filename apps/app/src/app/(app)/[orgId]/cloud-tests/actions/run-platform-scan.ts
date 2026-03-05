@@ -18,13 +18,10 @@ async function getAuthHeaders(organizationId: string): Promise<Record<string, st
     'X-Organization-Id': organizationId,
   };
 
-  // Get a JWT from Better Auth using the session cookie
-  const tokenResponse = await auth.api.getToken({
-    headers: reqHeaders,
-  });
-
-  if (tokenResponse?.token) {
-    authHeaders['Authorization'] = `Bearer ${tokenResponse.token}`;
+  // Forward the session cookie for authentication
+  const cookie = reqHeaders.get('cookie');
+  if (cookie) {
+    authHeaders['Cookie'] = cookie;
   }
 
   return authHeaders;

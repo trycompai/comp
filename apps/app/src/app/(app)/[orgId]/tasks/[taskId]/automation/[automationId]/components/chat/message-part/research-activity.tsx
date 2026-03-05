@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 interface ResearchActivityProps {
   toolName: 'exaSearch' | 'firecrawl';
   input: any;
-  state: 'input-streaming' | 'input-available' | 'output-available' | 'output-error';
+  state: string;
   output?: any;
   isAnimating: boolean;
 }

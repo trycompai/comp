@@ -1,5 +1,6 @@
 'use client';
 
+import '@/styles/editor.css';
 import { createMentionExtension, type MentionUser } from '@comp/ui/editor';
 import { defaultExtensions } from '@comp/ui/editor/extensions';
 import type { JSONContent } from '@tiptap/react';
@@ -112,10 +113,7 @@ export function CommentRichTextField({
         },
       },
     },
-    // TipTap only creates the Editor once by default. After a hard refresh, members often
-    // load async via SWR, so we re-create the editor when the members list becomes available.
-    // (This is why "navigate away and back" fixed it before.)
-    [members.length, disabled, placeholder],
+    [disabled, placeholder],
   );
 
   // Sync external value changes to editor
@@ -132,8 +130,8 @@ export function CommentRichTextField({
 
   return (
     <div
-      className="rounded-md bg-background [&_.ProseMirror_p.is-empty::before]:text-muted-foreground/50"
-      style={editorSizeStyles}
+      className="rounded-md bg-background"
+      style={{ ...editorSizeStyles, minHeight: 'var(--editor-min-height)' }}
     >
       <EditorContent editor={editor} />
     </div>

@@ -1,9 +1,10 @@
 'use client';
 
-import { CardTitle, CardDescription } from '@comp/ui/card';
 import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { Loader2, Plus, X } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
+import { Button, HStack, Stack, Text } from '@trycompai/design-system';
+import { Add, Close } from '@trycompai/design-system/icons';
+import { Loader2 } from 'lucide-react';
 
 interface TaskItemsHeaderProps {
   title: string;
@@ -31,11 +32,14 @@ export function TaskItemsHeader({
   isCreateOpen,
   onToggleCreate,
 }: TaskItemsHeaderProps) {
+  const { hasPermission } = usePermissions();
+  const canCreateTask = hasPermission('task', 'create');
+
   return (
     <div className="flex items-start justify-between gap-4">
-      <div className="flex-1">
-        <div className="flex items-center gap-3">
-          <CardTitle>{title}</CardTitle>
+      <Stack gap="xs">
+        <HStack gap="sm" align="center">
+          <Text size="lg" weight="semibold">{title}</Text>
           {statsLoading ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           ) : (
@@ -45,74 +49,63 @@ export function TaskItemsHeader({
               </Badge>
             )
           )}
-        </div>
-        <CardDescription className="mt-1">{description}</CardDescription>
+        </HStack>
+        <Text size="sm" variant="muted">{description}</Text>
         {!statsLoading && stats && stats.total > 0 && (
-          <div className="flex items-center gap-3 mt-3 flex-wrap">
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
             {stats.byStatus.todo > 0 && (
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-muted-foreground" />
-                <span className="text-xs text-muted-foreground">
+                <Text size="xs" variant="muted" as="span">
                   {stats.byStatus.todo} Todo
-                </span>
+                </Text>
               </div>
             )}
             {stats.byStatus.in_progress > 0 && (
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400" />
-                <span className="text-xs text-muted-foreground">
+                <Text size="xs" variant="muted" as="span">
                   {stats.byStatus.in_progress} In Progress
-                </span>
+                </Text>
               </div>
             )}
             {stats.byStatus.in_review > 0 && (
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-purple-500 dark:bg-purple-400" />
-                <span className="text-xs text-muted-foreground">
+                <Text size="xs" variant="muted" as="span">
                   {stats.byStatus.in_review} In Review
-                </span>
+                </Text>
               </div>
             )}
             {stats.byStatus.done > 0 && (
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-primary" />
-                <span className="text-xs text-muted-foreground">
+                <Text size="xs" variant="muted" as="span">
                   {stats.byStatus.done} Done
-                </span>
+                </Text>
               </div>
             )}
             {stats.byStatus.canceled > 0 && (
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-muted-foreground" />
-                <span className="text-xs text-muted-foreground">
+                <Text size="xs" variant="muted" as="span">
                   {stats.byStatus.canceled} Canceled
-                </span>
+                </Text>
               </div>
             )}
           </div>
         )}
-      </div>
-      <Button
-        size="icon"
-        onClick={onToggleCreate}
-        variant={isCreateOpen ? 'outline' : 'default'}
-        aria-label={isCreateOpen ? 'Close create task' : 'Create task'}
-        className="transition-all duration-200 flex-shrink-0"
-      >
-        <span className="relative inline-flex items-center justify-center">
-          <Plus
-            className={`h-4 w-4 absolute transition-all duration-200 ${
-              isCreateOpen ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'
-            }`}
-          />
-          <X
-            className={`h-4 w-4 absolute transition-all duration-200 ${
-              isCreateOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'
-            }`}
-          />
-        </span>
-      </Button>
+      </Stack>
+      {canCreateTask && (
+        <Button
+          size="icon"
+          onClick={onToggleCreate}
+          variant={isCreateOpen ? 'outline' : 'default'}
+          aria-label={isCreateOpen ? 'Close create task' : 'Create task'}
+        >
+          {isCreateOpen ? <Close /> : <Add />}
+        </Button>
+      )}
     </div>
   );
 }
-

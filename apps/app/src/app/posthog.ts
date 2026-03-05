@@ -19,10 +19,6 @@ function getPostHogClient(): PostHog | null {
     return posthogInstance;
   }
 
-  // If keys are not set, warn and return null
-  console.warn(
-    'PostHog keys (NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST) are not set, tracking is disabled.',
-  );
   return null;
 }
 
@@ -32,8 +28,6 @@ export { getPostHogClient };
 export async function track(distinctId: string, eventName: string, properties?: Properties) {
   const client = getPostHogClient();
   if (!client) return;
-
-  console.log('[PostHog]: Tracking server side event:', eventName);
 
   client.capture({
     distinctId,

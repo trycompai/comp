@@ -1,11 +1,10 @@
 'use client';
 
 import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { EvidenceAutomationRun, EvidenceAutomationRunStatus } from '@db';
+import { Stack, Text, Button } from '@trycompai/design-system';
 import { formatDistanceToNow } from 'date-fns';
-import { Activity, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 type AutomationRunWithName = EvidenceAutomationRun & {
@@ -18,270 +17,160 @@ interface AutomationRunsCardProps {
   runs: AutomationRunWithName[];
 }
 
+const getStatusStyles = (status: EvidenceAutomationRunStatus) => {
+  switch (status) {
+    case 'completed':
+      return { dot: 'bg-primary', text: 'text-primary', bg: 'bg-primary/15' };
+    case 'failed':
+      return { dot: 'bg-destructive', text: 'text-destructive', bg: 'bg-destructive/15' };
+    case 'running':
+      return { dot: 'bg-info animate-pulse', text: 'text-info', bg: 'bg-info/15' };
+    case 'pending':
+      return { dot: 'bg-warning', text: 'text-warning', bg: 'bg-warning/15' };
+    case 'cancelled':
+      return { dot: 'bg-muted-foreground', text: 'text-muted-foreground', bg: 'bg-muted/15' };
+  }
+};
+
 export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
 
-  // Group runs by date
   const groupedRuns = useMemo(() => {
     const groups: Record<string, AutomationRunWithName[]> = {};
-
     runs?.forEach((run) => {
-      const date = new Date(run.createdAt).toLocaleDateString('en-US', {
+      const date = new Date(run.createdAt).toLocaleDateString(undefined, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
       });
-      if (!groups[date]) {
-        groups[date] = [];
-      }
+      if (!groups[date]) groups[date] = [];
       groups[date].push(run);
     });
-
     return groups;
   }, [runs]);
 
   if (!runs || runs.length === 0) {
     return (
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-4 bg-gradient-to-br from-muted/30 to-transparent">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <div className="p-1.5 rounded-xs bg-primary/10">
-              <Activity className="h-3.5 w-3.5 text-primary" />
-            </div>
-            Automation History
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="py-8">
-          <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">No automation runs yet</p>
-            <p className="text-xs text-muted-foreground">
-              Runs will appear here once automations are executed
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="py-8">
+        <Stack gap="sm" align="center">
+          <Text size="sm" variant="muted">No runs yet</Text>
+          <Text size="xs" variant="muted">Runs will appear here once automations are executed</Text>
+        </Stack>
+      </div>
     );
   }
 
-  const sortedRuns = [...runs].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
-
-  const displayRuns = showAll ? sortedRuns : sortedRuns.slice(0, 3);
-  const hasMore = runs.length > 3;
-
-  const getStatusStyles = (status: EvidenceAutomationRunStatus) => {
-    switch (status) {
-      case 'completed':
-        return {
-          dot: 'bg-primary shadow-[0_0_8px_rgba(0,76,58,0.4)]',
-          text: 'text-primary',
-          bg: 'bg-primary/5',
-        };
-      case 'failed':
-        return {
-          dot: 'bg-destructive shadow-[0_0_8px_rgba(255,0,0,0.3)]',
-          text: 'text-destructive',
-          bg: 'bg-destructive/5',
-        };
-      case 'running':
-        return {
-          dot: 'bg-blue-500 dark:bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(32,128,141,0.4)]',
-          text: 'text-blue-600 dark:text-blue-400',
-          bg: 'bg-blue-500/5',
-        };
-      case 'pending':
-        return {
-          dot: 'bg-yellow-500 shadow-[0_0_6px_rgba(255,192,7,0.3)]',
-          text: 'text-yellow-600 dark:text-yellow-400',
-          bg: 'bg-yellow-500/5',
-        };
-      case 'cancelled':
-        return {
-          dot: 'bg-muted-foreground',
-          text: 'text-muted-foreground',
-          bg: 'bg-muted/5',
-        };
-    }
-  };
+  const hasMore = runs.length > 5;
+  const displayedGroups = showAll ? groupedRuns : Object.fromEntries(Object.entries(groupedRuns).slice(0, 3));
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-4 bg-gradient-to-br from-muted/30 to-transparent">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <div className="p-1.5 rounded-xs bg-primary/10">
-            <Activity className="h-3.5 w-3.5 text-primary" />
-          </div>
-          Automation History
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4 pt-4">
-        {Object.entries(groupedRuns).map(([date, dateRuns]) => {
-          const visibleRuns = showAll ? dateRuns : dateRuns.slice(0, 3);
+    <Stack gap="lg">
+      {Object.entries(displayedGroups).map(([date, dateRuns]) => (
+        <Stack key={date} gap="sm">
+          <Text size="xs" weight="medium" variant="muted">{date}</Text>
+          <Stack gap="xs">
+            {dateRuns.map((run) => {
+              const timeAgo = formatDistanceToNow(new Date(run.createdAt), { addSuffix: true });
+              const isFailed = run.status === 'failed' || run.evaluationStatus === 'fail';
+              const styles = isFailed ? getStatusStyles('failed') : getStatusStyles(run.status);
+              const isExpanded = expandedId === run.id;
+              const hasDetails = !!(run.logs || run.output || run.evaluationReason || (run.status === 'failed' && run.error));
 
-          return (
-            <div key={date} className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">{date}</p>
-              <div className="space-y-1">
-                {visibleRuns.map((run, index) => {
-                  const timeAgo = formatDistanceToNow(new Date(run.createdAt), { addSuffix: true });
-                  const styles = getStatusStyles(run.status);
-                  const isFailed = run.status === 'failed';
-                  const isFirst = index === 0;
-                  const isExpanded = expandedId === run.id;
-                  const hasDetails = !!(run.logs || run.output);
+              return (
+                <div
+                  key={run.id}
+                  className={`rounded-lg border border-border hover:border-border/80 transition-colors ${styles.bg}`}
+                  onClick={() => hasDetails && setExpandedId(isExpanded ? null : run.id)}
+                  role={hasDetails ? 'button' : undefined}
+                  style={hasDetails ? { cursor: 'pointer' } : undefined}
+                >
+                  <div className="flex items-center gap-3 px-4 py-2.5">
+                    <div className={`h-2 w-2 rounded-full shrink-0 ${styles.dot}`} />
 
-                  return (
-                    <div
-                      key={run.id}
-                      className={`group relative rounded-xs border transition-all duration-300 ${styles.bg} ${
-                        isFirst
-                          ? 'border-primary/20 shadow-sm hover:shadow-md hover:border-primary/30'
-                          : 'border-border/50 hover:border-border hover:shadow-sm'
-                      }`}
-                    >
-                      <button
-                        onClick={() => setExpandedId(isExpanded ? null : run.id)}
-                        className="w-full text-left"
-                        disabled={!hasDetails}
-                      >
-                        <div className="flex items-start gap-3 px-4 py-3">
-                          {/* Status indicator dot with glow */}
-                          <div
-                            className={`h-2 w-2 rounded-full flex-shrink-0 mt-1.5 ${styles.dot}`}
-                          />
-
-                          {/* Content */}
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <p className="text-sm text-foreground font-medium truncate">
-                                  {run.evidenceAutomation.name}
-                                </p>
-                                {run.version ? (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                    v{run.version}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                    draft
-                                  </Badge>
-                                )}
-                              </div>
-                              {hasDetails && (
-                                <ChevronDown
-                                  className={`h-4 w-4 text-muted-foreground transition-transform duration-700 ease-in-out ${
-                                    isExpanded ? 'rotate-180' : ''
-                                  }`}
-                                />
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span className={`font-medium ${styles.text}`}>
-                                {run.status.charAt(0).toUpperCase() + run.status.slice(1)}
-                              </span>
-                              {run.evaluationStatus && (
-                                <>
-                                  <span className="text-[10px]">•</span>
-                                  <Badge
-                                    variant={
-                                      run.evaluationStatus === 'pass' ? 'default' : 'destructive'
-                                    }
-                                    className={`text-[10px] px-1.5 py-0 ${run.evaluationStatus === 'pass' ? '!text-white' : '!text-white'}`}
-                                  >
-                                    {run.evaluationStatus === 'pass' ? '✓ Pass' : '✗ Fail'}
-                                  </Badge>
-                                </>
-                              )}
-                              <span className="text-[10px]">•</span>
-                              <span>{timeAgo}</span>
-                              {run.triggeredBy && (
-                                <>
-                                  <span className="text-[10px]">•</span>
-                                  <span className="capitalize font-medium">{run.triggeredBy}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-
-                      {/* Expandable details with CSS grid animation */}
-                      <div
-                        className={`grid transition-all duration-700 ease-in-out ${
-                          isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-                        }`}
-                      >
-                        <div className="overflow-hidden">
-                          <div className="px-4 pb-3 pt-3 space-y-3 border-t border-border/50">
-                            {/* Evaluation Reason */}
-                            {run.evaluationReason && (
-                              <div className="space-y-1.5">
-                                <div className="flex items-center">
-                                  <p className="text-xs font-medium">Evaluation</p>
-                                </div>
-                                <p className="text-xs text-foreground leading-relaxed">
-                                  {run.evaluationReason}
-                                </p>
-                              </div>
-                            )}
-
-                            {/* Logs */}
-                            {run.logs && (
-                              <div className="space-y-1">
-                                <p className="text-xs font-medium text-muted-foreground">Logs</p>
-                                <pre className="text-xs bg-muted/50 p-2 rounded-xs overflow-x-auto max-h-40 overflow-y-auto font-mono">
-                                  {typeof run.logs === 'string'
-                                    ? run.logs
-                                    : JSON.stringify(run.logs, null, 2)}
-                                </pre>
-                              </div>
-                            )}
-
-                            {/* Output */}
-                            {run.output && (
-                              <div className="space-y-1">
-                                <p className="text-xs font-medium text-muted-foreground">Output</p>
-                                <pre className="text-xs bg-muted/50 p-2 rounded-xs overflow-x-auto max-h-40 overflow-y-auto font-mono">
-                                  {typeof run.output === 'string'
-                                    ? run.output
-                                    : JSON.stringify(run.output, null, 2)}
-                                </pre>
-                              </div>
-                            )}
-
-                            {/* Error message if failed */}
-                            {isFailed && run.error && (
-                              <div className="px-2 py-1.5 rounded-xs bg-destructive/10 border border-destructive/20">
-                                <p className="text-xs text-destructive">{run.error}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Text size="sm" weight="medium" as="span">{run.evidenceAutomation.name}</Text>
+                        {run.version ? (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">v{run.version}</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">draft</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`text-xs font-medium ${styles.text}`}>
+                          {run.status.charAt(0).toUpperCase() + run.status.slice(1)}
+                        </span>
+                        {run.evaluationStatus && (
+                          <>
+                            <span className="text-xs text-muted-foreground">·</span>
+                            <Badge
+                              variant={run.evaluationStatus === 'pass' ? 'default' : 'destructive'}
+                              className="text-[10px] px-1.5 py-0 !text-white"
+                            >
+                              {run.evaluationStatus === 'pass' ? 'Pass' : 'Fail'}
+                            </Badge>
+                          </>
+                        )}
+                        <span className="text-xs text-muted-foreground">·</span>
+                        <Text size="xs" variant="muted" as="span">{timeAgo}</Text>
+                        {run.triggeredBy && (
+                          <>
+                            <span className="text-xs text-muted-foreground">·</span>
+                            <Text size="xs" variant="muted" as="span" style={{ textTransform: 'capitalize' }}>{run.triggeredBy}</Text>
+                          </>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
 
-        {hasMore && (
-          <div className="pt-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAll(!showAll)}
-              className="w-full text-xs"
-            >
-              {showAll ? 'Show less' : `Show ${runs.length - 3} more`}
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                    {hasDetails && (
+                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    )}
+                  </div>
+
+                  {isExpanded && (
+                    <div className="px-4 pb-3 pt-2 border-t space-y-2">
+                      {run.evaluationReason && (
+                        <div>
+                          <Text size="xs" weight="medium" variant="muted">Evaluation</Text>
+                          <Text size="xs" as="p">{run.evaluationReason}</Text>
+                        </div>
+                      )}
+                      {run.logs && (
+                        <div>
+                          <Text size="xs" weight="medium" variant="muted">Logs</Text>
+                          <pre className="text-xs bg-muted text-foreground p-2 rounded overflow-x-auto max-h-40 overflow-y-auto font-mono mt-1">
+                            {typeof run.logs === 'string' ? run.logs : JSON.stringify(run.logs, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                      {run.output && (
+                        <div>
+                          <Text size="xs" weight="medium" variant="muted">Output</Text>
+                          <pre className="text-xs bg-muted text-foreground p-2 rounded overflow-x-auto max-h-40 overflow-y-auto font-mono mt-1">
+                            {typeof run.output === 'string' ? run.output : JSON.stringify(run.output, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                      {run.status === 'failed' && run.error && (
+                        <div className="px-2 py-1.5 rounded bg-destructive/10 border border-destructive/20">
+                          <Text size="xs" variant="destructive">{run.error}</Text>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </Stack>
+        </Stack>
+      ))}
+
+      {hasMore && (
+        <Button variant="ghost" size="sm" onClick={() => setShowAll(!showAll)}>
+          {showAll ? 'Show less' : `Show all ${runs.length} runs`}
+        </Button>
+      )}
+    </Stack>
   );
 }

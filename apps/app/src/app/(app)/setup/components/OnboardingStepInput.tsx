@@ -8,11 +8,10 @@ import { Textarea } from '@comp/ui/textarea';
 import type { GlobalVendors } from '@db';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { AlertCircle, Check, ChevronDown, ChevronUp, HelpCircle, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useApi } from '@/hooks/use-api';
 import { useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useFieldArray } from 'react-hook-form';
-import { searchGlobalVendorsAction } from '../../[orgId]/vendors/actions/search-global-vendors-action';
 import type { CompanyDetails, CSuiteEntry, CustomVendor, Step } from '../lib/types';
 import { FrameworkSelection } from './FrameworkSelection';
 import { WebsiteInput } from './WebsiteInput';
@@ -608,26 +607,24 @@ function SoftwareVendorInput({
   // Get custom vendors from customVendors field
   const customVendors = (form.watch('customVendors') as CustomVendor[] | undefined) || [];
 
-  // Search GlobalVendors action
-  const searchVendors = useAction(searchGlobalVendorsAction, {
-    onExecute: () => setIsSearching(true),
-    onSuccess: (result) => {
-      if (result.data?.success && result.data.data?.vendors) {
-        setSearchResults(result.data.data.vendors);
+  const api = useApi();
+
+  const debouncedSearch = useDebouncedCallback(async (query: string) => {
+    setIsSearching(true);
+    try {
+      const response = await api.get<{ vendors: GlobalVendors[] }>(
+        `/v1/vendors/global/search?name=${encodeURIComponent(query)}`,
+      );
+      if (response.data?.vendors) {
+        setSearchResults(response.data.vendors);
       } else {
         setSearchResults([]);
       }
-      setIsSearching(false);
-    },
-    onError: () => {
+    } catch {
       setSearchResults([]);
+    } finally {
       setIsSearching(false);
-    },
-  });
-
-  const debouncedSearch = useDebouncedCallback((query: string) => {
-    // Always search - empty string returns all vendors
-    searchVendors.execute({ name: query });
+    }
     setShowSuggestions(true);
   }, 300);
 
@@ -743,7 +740,7 @@ function SoftwareVendorInput({
     setShowSuggestions(true);
     // If no search has been done yet, trigger a search with empty string to get initial results
     if (searchResults.length === 0 && customValue.trim() === '') {
-      searchVendors.execute({ name: '' });
+      debouncedSearch('');
     }
   };
 

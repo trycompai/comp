@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog, session } from 'electron';
+import { app, BrowserWindow, dialog, session } from 'electron';
 import { AGENT_VERSION, API_ROUTES } from '../shared/constants';
 import type {
   DeviceInfo,
@@ -89,6 +89,11 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
     // Navigate to the portal auth page
     log(`Loading auth page: ${portalUrl}/auth`);
     authWindow.loadURL(`${portalUrl}/auth`);
+
+    // Ensure window is visible and focused (tray-only apps can open windows behind others)
+    authWindow.show();
+    authWindow.focus();
+    app.focus({ steal: true });
 
     let isExtracting = false;
 

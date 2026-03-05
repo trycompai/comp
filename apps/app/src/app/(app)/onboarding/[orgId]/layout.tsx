@@ -1,10 +1,15 @@
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { MinimalHeader } from '@/components/layout/MinimalHeader';
+import { serverApi } from '@/lib/api-server';
+import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { OnboardingSidebar } from '../../setup/components/OnboardingSidebar';
+
+interface AuthMeResponse {
+  organizations: OrganizationFromMe[];
+}
 
 interface OnboardingRouteLayoutProps {
   children: React.ReactNode;
@@ -17,7 +22,6 @@ export default async function OnboardingRouteLayout({
 }: OnboardingRouteLayoutProps) {
   const { orgId } = await params;
 
-  // Get current user
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -26,17 +30,10 @@ export default async function OnboardingRouteLayout({
     notFound();
   }
 
-  // Get organization and verify membership
-  const organization = await db.organization.findFirst({
-    where: {
-      id: orgId,
-      members: {
-        some: {
-          userId: session.user.id,
-        },
-      },
-    },
-  });
+  // Verify membership via auth/me endpoint
+  const meRes = await serverApi.get<AuthMeResponse>('/v1/auth/me');
+  const orgs = meRes.data?.organizations ?? [];
+  const organization = orgs.find((o) => o.id === orgId);
 
   if (!organization) {
     notFound();
@@ -45,7 +42,6 @@ export default async function OnboardingRouteLayout({
   return (
     <main className="flex min-h-dvh flex-col">
       <div className="flex flex-1 min-h-0">
-        {/* Form Section - Left Side */}
         <div className="flex-1 flex flex-col">
           <MinimalHeader
             user={session.user}
@@ -56,7 +52,6 @@ export default async function OnboardingRouteLayout({
           {children}
         </div>
 
-        {/* Sidebar Section - Right Side, Hidden on Mobile */}
         <div className="hidden md:flex md:w-1/2 min-h-screen bg-[#FAFAFA] items-end justify-center py-16 px-8">
           <OnboardingSidebar className="w-full max-w-xl mx-auto h-1/2 mt-auto" />
         </div>

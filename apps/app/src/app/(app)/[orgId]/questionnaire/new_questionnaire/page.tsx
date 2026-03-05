@@ -1,11 +1,19 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { AppOnboarding } from '@/components/app-onboarding';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { QuestionnaireParser } from '../components/QuestionnaireParser';
+
+interface PolicyApiResponse {
+  data: Array<{
+    id: string;
+    status: string;
+    isArchived: boolean;
+  }>;
+}
 
 export default async function NewQuestionnairePage() {
   const session = await auth.api.getSession({
@@ -16,7 +24,6 @@ export default async function NewQuestionnairePage() {
     return notFound();
   }
 
-  // Check feature flag on server
   const flags = await getFeatureFlags(session.user.id);
   const isFeatureEnabled = flags['ai-vendor-questionnaire'] === true;
 
@@ -26,10 +33,12 @@ export default async function NewQuestionnairePage() {
 
   const organizationId = session.session.activeOrganizationId;
 
-  // Check if organization has published policies
-  const hasPublishedPolicies = await checkPublishedPolicies(organizationId);
+  const policiesResult = await serverApi.get<PolicyApiResponse>('/v1/policies');
+  const policies = policiesResult.data?.data ?? [];
+  const hasPublishedPolicies = policies.some(
+    (p) => p.status === 'published' && !p.isArchived,
+  );
 
-  // Show onboarding if no published policies exist
   if (!hasPublishedPolicies) {
     return (
       <PageWithBreadcrumb
@@ -83,16 +92,3 @@ export default async function NewQuestionnairePage() {
     </PageWithBreadcrumb>
   );
 }
-
-const checkPublishedPolicies = async (organizationId: string): Promise<boolean> => {
-  const count = await db.policy.count({
-    where: {
-      organizationId,
-      status: 'published',
-      isArchived: false,
-    },
-  });
-
-  return count > 0;
-};
-

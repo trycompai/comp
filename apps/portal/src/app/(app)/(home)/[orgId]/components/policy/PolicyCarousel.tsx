@@ -3,10 +3,8 @@
 import type { Member, Policy, PolicyVersion } from '@db';
 import { Button, Text } from '@trycompai/design-system';
 import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
-import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { markPolicyAsCompleted } from '../../../actions/markPolicyAsCompleted';
 import { PolicyCard } from './PolicyCard';
 
 type PolicyWithVersion = Policy & {
@@ -28,14 +26,23 @@ export function PolicyCarousel({
 }: PolicyCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const onCompletePolicy = useAction(markPolicyAsCompleted, {
-    onSuccess: () => {
+
+  const handleCompletePolicy = async (policyId: string) => {
+    try {
+      const res = await fetch('/api/portal/mark-policy-completed', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ policyId }),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to complete policy');
+      }
       toast.success('Policy completed');
-    },
-    onError: () => {
+    } catch {
       toast.error('Failed to complete policy');
-    },
-  });
+    }
+  };
 
   const scrollToIndex = (index: number) => {
     if (!scrollContainerRef.current) return;
@@ -95,7 +102,7 @@ export function PolicyCarousel({
             <PolicyCard
               policy={policy}
               onNext={handleNext}
-              onComplete={() => onCompletePolicy.execute({ policyId: policy.id })}
+              onComplete={() => handleCompletePolicy(policy.id)}
               onClick={() => handleNext()}
               member={member}
               isLastPolicy={currentIndex === policies.length - 1}

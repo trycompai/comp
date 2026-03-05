@@ -1,6 +1,5 @@
 'use client';
 
-import { updateTaskViewPreference } from '@/actions/tasks';
 import type { ReactNode } from 'react';
 import type { Member, Task, User } from '@db';
 import {
@@ -99,10 +98,12 @@ export function TaskList({
     }
   }, [frameworkFilter, frameworkInstances, setFrameworkFilter]);
 
-  const handleTabChange = async (value: string) => {
+  const handleTabChange = (value: string) => {
     const newTab = value as 'categories' | 'list';
     setCurrentTab(newTab);
-    await updateTaskViewPreference({ view: newTab, orgId });
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1);
+    document.cookie = `task-view-preference-${orgId}=${newTab}; expires=${expires.toUTCString()}; path=/`;
   };
 
   const eligibleAssignees = useMemo(() => {
@@ -278,7 +279,7 @@ export function TaskList({
     });
 
     // Sort recent runs by date and take most recent
-    recentRuns.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    recentRuns.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     recentRuns = recentRuns.slice(0, 10);
 
     const automationHealth = {

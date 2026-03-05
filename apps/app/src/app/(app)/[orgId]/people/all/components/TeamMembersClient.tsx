@@ -6,8 +6,11 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useApi } from '@/hooks/use-api';
 import { usePeopleActions } from '@/hooks/use-people-api';
+import { parseRolesString } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
+import useSWR from 'swr';
 import type { Invitation, Role } from '@db';
 import {
   Empty,
@@ -68,7 +71,7 @@ interface DisplayItem extends Partial<MemberWithUser>, Partial<Invitation> {
   displayRole: string | string[]; // Simplified role display, could be comma-separated
   displayStatus: 'active' | 'pending' | 'deactivated';
   displayId: string; // Use member.id or invitation.id
-  processedRoles: Role[];
+  processedRoles: string[];
   isDeactivated?: boolean;
 }
 
@@ -94,6 +97,21 @@ export function TeamMembersClient({
   const [perPage, setPerPage] = useState(25);
 
   const { unlinkDevice } = usePeopleActions();
+  const api = useApi();
+
+  // Fetch custom roles for the role combobox
+  const { data: rolesData } = useSWR(
+    `/v1/roles`,
+    async (endpoint: string) => {
+      const res = await api.get<{ customRoles: Array<{ id: string; name: string; permissions: Record<string, string[]> }> }>(endpoint);
+      return res.data?.customRoles ?? [];
+    },
+  );
+  const customRoles = (rolesData ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    permissions: r.permissions,
+  }));
 
   // Employee sync hook with server-fetched initial data
   const {
@@ -125,12 +143,7 @@ export function TeamMembersClient({
   const allItems: DisplayItem[] = [
     ...data.members.map((member) => {
       // Process the role to handle comma-separated values
-      const roles =
-        typeof member.role === 'string' && member.role.includes(',')
-          ? (member.role.split(',') as Role[])
-          : Array.isArray(member.role)
-            ? member.role
-            : [member.role as Role];
+      const roles = parseRolesString(member.role);
 
       const isInactive = member.deactivated || !member.isActive;
 
@@ -149,12 +162,7 @@ export function TeamMembersClient({
     }),
     ...data.pendingInvitations.map((invitation) => {
       // Process the role to handle comma-separated values
-      const roles =
-        typeof invitation.role === 'string' && invitation.role.includes(',')
-          ? (invitation.role.split(',') as Role[])
-          : Array.isArray(invitation.role)
-            ? invitation.role
-            : [invitation.role as Role];
+      const roles = parseRolesString(invitation.role);
 
       return {
         ...invitation,
@@ -176,7 +184,7 @@ export function TeamMembersClient({
       item.displayEmail.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Check if the role filter matches any of the member's roles
-    const matchesRole = !roleFilter || item.processedRoles.includes(roleFilter as Role);
+    const matchesRole = !roleFilter || item.processedRoles.includes(roleFilter);
 
     // Status filter: 'active' shows non-deactivated members + pending invitations
     // 'deactivated' shows only deactivated members
@@ -251,12 +259,12 @@ export function TeamMembersClient({
   };
 
   // Update handleUpdateRole to use authClient and add toasts
-  const handleUpdateRole = async (memberId: string, roles: Role[]) => {
+  const handleUpdateRole = async (memberId: string, roles: string[]) => {
     const rolesArray = Array.isArray(roles) ? roles : [roles];
     const member = data.members.find((m) => m.id === memberId);
 
     // Client-side check (optional, robust check should be server-side in authClient)
-    const memberRoles = member?.role?.split(',').map((r) => r.trim()) ?? [];
+    const memberRoles = parseRolesString(member?.role);
     if (member && memberRoles.includes('owner') && !rolesArray.includes('owner')) {
       // Show toast error directly, no need to return an error object
       toast.error('The Owner role cannot be removed.');
@@ -528,6 +536,7 @@ export function TeamMembersClient({
                   onReactivate={handleReactivateMember}
                   canEdit={canManageMembers}
                   isCurrentUserOwner={isCurrentUserOwner}
+                  customRoles={customRoles}
                   taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}
                   hasDeviceAgentDevice={memberIdsWithDeviceAgent.includes(
                     (item as MemberWithUser).id,

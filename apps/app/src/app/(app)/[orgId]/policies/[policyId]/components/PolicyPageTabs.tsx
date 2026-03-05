@@ -5,10 +5,13 @@ import type { JSONContent } from '@tiptap/react';
 import { Stack, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Comments } from '../../../../../../components/comments/Comments';
-import type { AuditLogWithRelations } from '../data';
+import type { AuditLogWithRelations } from '@/hooks/use-audit-logs';
 import { PolicyContentManager } from '../editor/components/PolicyDetails';
+import { useAuditLogs } from '../hooks/useAuditLogs';
 import { usePolicy } from '../hooks/usePolicy';
+import { usePolicyVersions } from '../hooks/usePolicyVersions';
 import { PolicyAlerts } from './PolicyAlerts';
 import { PolicyArchiveSheet } from './PolicyArchiveSheet';
 import { PolicyControlMappings } from './PolicyControlMappings';
@@ -44,12 +47,13 @@ export function PolicyPageTabs({
   policyId,
   organizationId,
   logs,
-  versions,
+  versions: initialVersions,
   showAiAssistant,
 }: PolicyPageTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { hasPermission } = usePermissions();
 
   // Use SWR for policy data with initial data from server
   const { policy, mutate } = usePolicy({
@@ -57,6 +61,38 @@ export function PolicyPageTabs({
     organizationId,
     initialData: initialPolicy,
   });
+
+  // Use SWR for versions data with initial data from server
+  const { versions, mutate: mutateVersions } = usePolicyVersions({
+    policyId,
+    organizationId,
+    initialData: initialVersions,
+  });
+
+  // Use SWR for audit logs with initial data from server
+  const { logs: auditLogs, mutate: mutateAuditLogs } = useAuditLogs({
+    entityType: 'policy',
+    entityId: policyId,
+    initialData: logs,
+  });
+
+  // Combined mutate function to refresh policy, versions, and audit logs
+  const mutateAll = async () => {
+    await Promise.all([mutate(), mutateVersions(), mutateAuditLogs()]);
+  };
+
+  // Update a specific version's content in the cache (optimistic update)
+  const updateVersionContent = (versionId: string, newContent: JSONContent[]) => {
+    mutateVersions(
+      (currentVersions) => {
+        if (!currentVersions || !Array.isArray(currentVersions)) return currentVersions;
+        return currentVersions.map((v) =>
+          v.id === versionId ? { ...v, content: newContent } : v
+        );
+      },
+      false // Don't revalidate - this is an optimistic update
+    );
+  };
 
   const hasDraftChanges = useMemo(() => {
     if (!policy) return false;
@@ -80,6 +116,10 @@ export function PolicyPageTabs({
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    // Refresh audit logs when switching to activity tab
+    if (value === 'activity') {
+      mutateAuditLogs();
+    }
     const params = new URLSearchParams(searchParams.toString());
     if (value === 'overview') {
       params.delete('tab');
@@ -105,7 +145,7 @@ export function PolicyPageTabs({
   return (
     <Stack gap="md">
       {/* Alerts always visible above tabs */}
-      <PolicyAlerts policy={policy} isPendingApproval={isPendingApproval} onMutate={mutate} />
+      <PolicyAlerts policy={policy} isPendingApproval={isPendingApproval} onMutate={mutateAll} />
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <Stack gap="lg">
@@ -129,6 +169,7 @@ export function PolicyPageTabs({
                 mappedControls={mappedControls}
                 allControls={allControls}
                 isPendingApproval={isPendingApproval}
+                onMutate={mutateAll}
               />
             </Stack>
           </TabsContent>
@@ -140,8 +181,10 @@ export function PolicyPageTabs({
               policyContent={
                 // Priority: 1) Published version content, 2) legacy policy.content, 3) empty array
                 (() => {
+                  // Ensure versions is an array before using find
+                  const versionsArray = Array.isArray(versions) ? versions : [];
                   // Find the published version content
-                  const currentVersion = versions.find((v) => v.id === policy?.currentVersionId);
+                  const currentVersion = versionsArray.find((v) => v.id === policy?.currentVersionId);
                   if (currentVersion?.content) {
                     const versionContent = currentVersion.content as JSONContent[];
                     return Array.isArray(versionContent) ? versionContent : [versionContent];
@@ -156,21 +199,22 @@ export function PolicyPageTabs({
               displayFormat={policy?.displayFormat}
               pdfUrl={
                 // Use version PDF if available, otherwise fallback to policy PDF
-                versions.find((v) => v.id === policy?.currentVersionId)?.pdfUrl ?? policy?.pdfUrl
+                (Array.isArray(versions) ? versions : []).find((v) => v.id === policy?.currentVersionId)?.pdfUrl ?? policy?.pdfUrl
               }
               aiAssistantEnabled={showAiAssistant}
               hasUnpublishedChanges={hasDraftChanges}
               currentVersionNumber={
-                versions.find((v) => v.id === policy?.currentVersionId)?.version ?? null
+                (Array.isArray(versions) ? versions : []).find((v) => v.id === policy?.currentVersionId)?.version ?? null
               }
               currentVersionId={policy?.currentVersionId ?? null}
               pendingVersionId={policy?.pendingVersionId ?? null}
-              versions={versions}
+              versions={Array.isArray(versions) ? versions : []}
               policyStatus={policy?.status}
               lastPublishedAt={policy?.lastPublishedAt}
               assignees={assignees}
               initialVersionId={versionIdFromUrl || undefined}
-              onMutate={mutate}
+              onMutate={mutateAll}
+              onVersionContentChange={updateVersionContent}
             />
           </TabsContent>
 
@@ -178,20 +222,20 @@ export function PolicyPageTabs({
             {policy && (
               <PolicyVersionsTab
                 policy={policy}
-                versions={versions}
+                versions={Array.isArray(versions) ? versions : []}
                 assignees={assignees}
                 isPendingApproval={isPendingApproval}
-                onMutate={mutate}
+                onMutate={mutateAll}
               />
             )}
           </TabsContent>
 
           <TabsContent value="activity">
-            <RecentAuditLogs logs={logs} />
+            <RecentAuditLogs logs={auditLogs} />
           </TabsContent>
 
           <TabsContent value="comments">
-            <Comments entityId={policyId} entityType="policy" organizationId={organizationId} />
+            <Comments entityId={policyId} entityType="policy" organizationId={organizationId} readOnly={!hasPermission('policy', 'update')} />
           </TabsContent>
         </Stack>
       </Tabs>
@@ -200,7 +244,7 @@ export function PolicyPageTabs({
       {policy && (
         <>
           <PolicyOverviewSheet policy={policy} />
-          <PolicyArchiveSheet policy={policy} onMutate={() => mutate()} />
+          <PolicyArchiveSheet policy={policy} onMutate={mutateAll} />
           <PolicyDeleteDialog
             isOpen={isDeleteDialogOpen}
             onClose={handleCloseDeleteDialog}

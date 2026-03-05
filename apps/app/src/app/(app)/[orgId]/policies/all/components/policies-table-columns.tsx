@@ -125,5 +125,9 @@ function PolicyStatusCell({ row }: { row: Row<Policy> }) {
     );
   }
 
+  if (row.original.isArchived) {
+    return <StatusIndicator status="archived" />;
+  }
+
   return <StatusIndicator status={row.original.status} />;
 }

@@ -1,5 +1,4 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import type { Finding, Provider } from '../types';
@@ -18,6 +17,8 @@ interface ProviderTabsProps {
   onAddConnection: (providerType: string) => void;
   onConfigure: (provider: Provider) => void;
   needsConfiguration: (provider: Provider) => boolean;
+  canRunScan?: boolean;
+  canAddConnection?: boolean;
 }
 
 const formatProviderLabel = (providerType: string): string => {
@@ -94,14 +95,6 @@ function ConnectionDetails({ connection }: { connection: Provider }) {
     details.push(`Account: ${connection.accountId}`);
   }
 
-  if (connection.tenantId) {
-    details.push(`Tenant: ${connection.tenantId}`);
-  }
-
-  if (connection.subscriptionId) {
-    details.push(`Subscription: ${connection.subscriptionId}`);
-  }
-
   if (connection.regions?.length) {
     details.push(
       `${connection.regions.length} region${connection.regions.length !== 1 ? 's' : ''}`,
@@ -139,6 +132,8 @@ export function ProviderTabs({
   onAddConnection,
   onConfigure,
   needsConfiguration,
+  canRunScan,
+  canAddConnection,
 }: ProviderTabsProps) {
   const [activeRegionTabs, setActiveRegionTabs] = useState<Record<string, string>>({});
 
@@ -181,12 +176,18 @@ export function ProviderTabs({
                 <div className="mb-3 flex items-center justify-between">
                   <Select
                     value={activeConnId}
-                    onValueChange={(value) => onConnectionTabChange(providerType, value)}
+                    onValueChange={(value) => {
+                      if (value) onConnectionTabChange(providerType, value);
+                    }}
                   >
-                    <SelectTrigger className="h-9 w-[240px] rounded-lg">
-                      <SelectValue placeholder="Select connection" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-64 overflow-y-auto">
+                    <div className="w-[240px]">
+                      <SelectTrigger size="sm">
+                        {connections.find((c) => c.id === activeConnId)?.displayName
+                          || connections.find((c) => c.id === activeConnId)?.name
+                          || 'Select connection'}
+                      </SelectTrigger>
+                    </div>
+                    <SelectContent>
                       {connections.map((connection) => (
                         <SelectItem key={connection.id} value={connection.id}>
                           {connection.displayName || connection.name}
@@ -195,7 +196,7 @@ export function ProviderTabs({
                     </SelectContent>
                   </Select>
                   {/* Only show "Add connection" button for providers that support multiple connections */}
-                  {connections.some((c) => c.supportsMultipleConnections) && (
+                  {canAddConnection !== false && connections.some((c) => c.supportsMultipleConnections) && (
                     <Button
                       size="lg"
                       iconLeft={<Add size={16} />}
@@ -257,6 +258,7 @@ export function ProviderTabs({
                           isScanning={isScanning}
                           needsConfiguration={needsConfiguration(connection)}
                           onConfigure={() => onConfigure(connection)}
+                          canRunScan={canRunScan}
                         />
                       </div>
                     </TabsContent>

@@ -6,12 +6,20 @@ import type { PolicyStatus } from '@db';
 
 interface PolicyStatusBadgeProps {
   status: PolicyStatus;
+  isArchived?: boolean;
 }
 
-export function PolicyStatusBadge({ status }: PolicyStatusBadgeProps) {
+export function PolicyStatusBadge({ status, isArchived }: PolicyStatusBadgeProps) {
+  if (isArchived) {
+    return (
+      <Badge variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted">
+        Archived
+      </Badge>
+    );
+  }
+
   const statusLabel = getStatusTranslation(status as StatusType);
 
-  // Match the styling from PolicyVersionsTab badges
   const getBadgeProps = () => {
     switch (status) {
       case 'published':

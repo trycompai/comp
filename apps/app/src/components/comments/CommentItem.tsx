@@ -84,9 +84,10 @@ function renderContentWithLinks(text: string): React.ReactNode[] {
 interface CommentItemProps {
   comment: CommentWithAuthor;
   refreshComments: () => void;
+  readOnly?: boolean;
 }
 
-export function CommentItem({ comment, refreshComments }: CommentItemProps) {
+export function CommentItem({ comment, refreshComments, readOnly = false }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState<JSONContent | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -248,7 +249,7 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
                   {!isEditing ? formatRelativeTime(comment.createdAt) : 'Editing...'}
                 </span>
               </div>
-              {!isEditing && (
+              {!isEditing && !readOnly && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button

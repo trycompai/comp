@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { Check, ArrowLeftFromLine, Link2, Tags, Trash2, User as UserIcon } from 'lucide-react';
+import { Checkmark, ArrowLeft, Link, Tag, TrashCan, User as UserIcon } from '@trycompai/design-system/icons';
 import { cn } from '@/lib/utils';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { toast } from 'sonner';
@@ -34,6 +34,8 @@ interface TaskItemFocusSidebarProps {
   copiedLink: boolean;
   copiedTaskId: boolean;
   isCollapsed: boolean;
+  readOnly?: boolean;
+  canDelete?: boolean;
   onCopyLink: () => void;
   onCopyTaskId: () => void;
   onDelete: () => void;
@@ -51,6 +53,8 @@ export function TaskItemFocusSidebar({
   copiedLink,
   copiedTaskId,
   isCollapsed,
+  readOnly,
+  canDelete = true,
   onCopyLink,
   onCopyTaskId,
   onDelete,
@@ -79,17 +83,18 @@ export function TaskItemFocusSidebar({
             onClick={onCollapse}
             title="Expand sidebar"
           >
-            <ArrowLeftFromLine className="h-3.5 w-3.5 shrink-0 transition-transform duration-400 ease-in-out" />
+            <ArrowLeft className="h-3.5 w-3.5 shrink-0 transition-transform duration-400 ease-in-out" />
           </Button>
           
           {/* Status */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild disabled={readOnly}>
               <Button
                 variant="ghost"
                 size="icon"
                 className={`h-7 w-7 rounded-md bg-muted/50 hover:bg-muted ${getStatusColor(taskItem.status)}`}
                 title={`Status: ${taskItem.status.replace('_', ' ')}`}
+                disabled={readOnly}
               >
                 <StatusIcon className="h-3.5 w-3.5 stroke-[2]" />
               </Button>
@@ -117,15 +122,16 @@ export function TaskItemFocusSidebar({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          
+
           {/* Priority */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild disabled={readOnly}>
               <Button
                 variant="ghost"
                 size="icon"
                 className={`h-7 w-7 rounded-md bg-muted/50 hover:bg-muted ${getPriorityColor(taskItem.priority)}`}
                 title={`Priority: ${taskItem.priority}`}
+                disabled={readOnly}
               >
                 <PriorityIcon className="h-3.5 w-3.5 stroke-[2]" />
               </Button>
@@ -153,16 +159,17 @@ export function TaskItemFocusSidebar({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          
+
           {/* Assignee */}
           {assignableMembers && assignableMembers.length > 0 && (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger asChild disabled={readOnly}>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 rounded-md bg-muted/50 hover:bg-muted"
                   title={taskItem.assignee ? `Assignee: ${taskItem.assignee.user?.name || taskItem.assignee.user?.email}` : 'No assignee'}
+                  disabled={readOnly}
                 >
                   {taskItem.assignee?.user?.image ? (
                     <img
@@ -237,7 +244,7 @@ export function TaskItemFocusSidebar({
               onClick={onCollapse}
               title="Collapse sidebar"
             >
-              <ArrowLeftFromLine className="h-3.5 w-3.5 shrink-0 transition-transform duration-400 ease-in-out rotate-180" />
+              <ArrowLeft className="h-3.5 w-3.5 shrink-0 transition-transform duration-400 ease-in-out rotate-180" />
             </Button>
           <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
             Properties
@@ -251,7 +258,7 @@ export function TaskItemFocusSidebar({
               onClick={onCopyLink}
               title="Copy task link"
             >
-              {copiedLink ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
+              {copiedLink ? <Checkmark className="h-3.5 w-3.5" /> : <Link className="h-3.5 w-3.5" />}
             </Button>
             <Button
               variant="ghost"
@@ -260,17 +267,19 @@ export function TaskItemFocusSidebar({
               onClick={onCopyTaskId}
               title="Copy task ID"
             >
-              {copiedTaskId ? <Check className="h-3.5 w-3.5" /> : <Tags className="h-3.5 w-3.5" />}
+              {copiedTaskId ? <Checkmark className="h-3.5 w-3.5" /> : <Tag className="h-3.5 w-3.5" />}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
-              onClick={onDelete}
-              title="Delete task"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            {canDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
+                onClick={onDelete}
+                title="Delete task"
+              >
+                <TrashCan className="h-3.5 w-3.5" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -278,10 +287,10 @@ export function TaskItemFocusSidebar({
       {/* Status */}
       <div>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger asChild disabled={readOnly}>
             <button
               type="button"
-              className={`w-full h-7 rounded-md cursor-pointer select-none transition-all duration-200 focus:outline-none hover:bg-accent/50 active:bg-accent flex items-center gap-2 group ${getStatusColor(taskItem.status)}`}
+              className={`w-full h-7 rounded-md select-none transition-all duration-200 focus:outline-none flex items-center gap-2 group ${readOnly ? 'cursor-default opacity-70' : 'cursor-pointer hover:bg-accent/50 active:bg-accent'} ${getStatusColor(taskItem.status)}`}
               aria-label={`Status: ${taskItem.status.replace('_', ' ')}`}
             >
               <StatusIcon className="h-3.5 w-3.5 stroke-[2] shrink-0" />
@@ -317,10 +326,10 @@ export function TaskItemFocusSidebar({
       {/* Priority */}
       <div>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger asChild disabled={readOnly}>
             <button
               type="button"
-              className={`w-full h-7 rounded-md cursor-pointer select-none transition-all duration-200 focus:outline-none hover:bg-accent/50 active:bg-accent flex items-center gap-2 group ${getPriorityColor(taskItem.priority)}`}
+              className={`w-full h-7 rounded-md select-none transition-all duration-200 focus:outline-none flex items-center gap-2 group ${readOnly ? 'cursor-default opacity-70' : 'cursor-pointer hover:bg-accent/50 active:bg-accent'} ${getPriorityColor(taskItem.priority)}`}
               aria-label={`Priority: ${taskItem.priority}`}
             >
               <PriorityIcon className="h-3.5 w-3.5 stroke-[2] shrink-0" />
@@ -371,7 +380,7 @@ export function TaskItemFocusSidebar({
                   }
                 }}
                 withTitle={false}
-                disabled={isUpdating}
+                disabled={isUpdating || readOnly}
               />
             </div>
           </div>
