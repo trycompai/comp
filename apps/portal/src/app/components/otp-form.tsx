@@ -24,9 +24,10 @@ type OtpFormValues = z.infer<typeof otpFormSchema>;
 
 interface OtpFormProps {
   email: string;
+  deviceAuthRedirect?: string;
 }
 
-export function OtpForm({ email }: OtpFormProps) {
+export function OtpForm({ email, deviceAuthRedirect }: OtpFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const form = useForm<OtpFormValues>({
@@ -40,7 +41,7 @@ export function OtpForm({ email }: OtpFormProps) {
   const { execute, isExecuting } = useAction(login, {
     onSuccess: () => {
       toast.success('OTP verified');
-      router.push('/');
+      router.push(deviceAuthRedirect || '/');
     },
     onError: (error) => {
       toast.error(error.error.serverError as string);
