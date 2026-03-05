@@ -230,6 +230,8 @@ export const EmployeeDetails = ({
                     selected={joinDate}
                     onSelect={(date) => date && setJoinDate(date)}
                     captionLayout="dropdown"
+                    fromYear={2000}
+                    toYear={new Date().getFullYear()}
                     disabled={(date) => date > new Date()}
                   />
                 </PopoverContent>

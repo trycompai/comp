@@ -25,6 +25,11 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Feature docs
+
+- Security penetration tests integration:
+  - `src/security-penetration-tests/README.md`
+
 ## Project setup
 
 ```bash

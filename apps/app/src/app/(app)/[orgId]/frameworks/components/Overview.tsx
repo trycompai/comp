@@ -3,7 +3,6 @@
 import { Finding, FrameworkEditorFramework, Policy, Task } from '@db';
 import { FrameworkInstanceWithControls } from '../types';
 import { ComplianceOverview } from './ComplianceOverview';
-import { DraggableCards } from './DraggableCards';
 import { FindingsOverview } from './FindingsOverview';
 import { FrameworksOverview } from './FrameworksOverview';
 import { ToDoOverview } from './ToDoOverview';
@@ -84,7 +83,7 @@ export const Overview = ({
   });
 
   return (
-    <DraggableCards>
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       <ComplianceOverview
         organizationId={organizationId}
         overallComplianceScore={overallComplianceScore}
@@ -119,7 +118,7 @@ export const Overview = ({
         onboardingTriggerJobId={onboardingTriggerJobId}
       />
       <FindingsOverview findings={findings} organizationId={organizationId} />
-    </DraggableCards>
+    </div>
   );
 };
 

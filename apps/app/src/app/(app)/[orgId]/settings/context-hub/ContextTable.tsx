@@ -1,10 +1,10 @@
 'use client';
 
-import { usePermissions } from '@/hooks/use-permissions';
+import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
+import { updateContextEntryAction } from '@/actions/context-hub/update-context-entry-action';
 import { isJSON } from '@/lib/utils';
 import { useMediaQuery } from '@comp/ui/hooks';
 import type { Context } from '@db';
-import { useContextEntries } from './hooks/useContextEntries';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,19 +52,30 @@ import {
   TrashCan,
 } from '@trycompai/design-system/icons';
 import { Check, Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ContextForm } from './components/context-form';
 
 // Editable answer cell - click to edit
-function EditableAnswerCell({ context, canEdit }: { context: Context; canEdit: boolean }) {
-  const { updateEntry } = useContextEntries();
+function EditableAnswerCell({ context }: { context: Context }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [value, setValue] = useState(context.answer);
   const [structuredValue, setStructuredValue] = useState<Record<string, string> | null>(null);
   const [arrayValue, setArrayValue] = useState<Record<string, string>[] | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { execute, status } = useAction(updateContextEntryAction, {
+    onSuccess: () => {
+      setIsEditing(false);
+      toast.success('Answer updated');
+    },
+    onError: () => {
+      setValue(context.answer);
+      toast.error('Failed to update answer');
+    },
+  });
 
   // Parse structured data when entering edit mode
   useEffect(() => {
@@ -92,7 +103,7 @@ function EditableAnswerCell({ context, canEdit }: { context: Context; canEdit: b
     setValue(context.answer);
   }, [context.answer]);
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(() => {
     let finalValue = value;
 
     // Convert structured data back to JSON
@@ -103,25 +114,12 @@ function EditableAnswerCell({ context, canEdit }: { context: Context; canEdit: b
     }
 
     if (finalValue.trim() && finalValue !== context.answer) {
-      setIsSubmitting(true);
-      try {
-        await updateEntry(context.id, {
-          question: context.question,
-          answer: finalValue,
-        });
-        setIsEditing(false);
-        toast.success('Answer updated');
-      } catch {
-        setValue(context.answer);
-        toast.error('Failed to update answer');
-      } finally {
-        setIsSubmitting(false);
-      }
+      execute({ id: context.id, question: context.question, answer: finalValue });
     } else {
       setIsEditing(false);
       setValue(context.answer);
     }
-  }, [value, arrayValue, structuredValue, context.answer, context.id, context.question, updateEntry]);
+  }, [value, arrayValue, structuredValue, context.answer, context.id, context.question, execute]);
 
   const handleCancel = useCallback(() => {
     setValue(context.answer);
@@ -196,7 +194,7 @@ function EditableAnswerCell({ context, canEdit }: { context: Context; canEdit: b
                       onChange={(e) => updateArrayItem(index, key, e.target.value)}
                       placeholder={key}
                       className="flex-1 rounded border border-input bg-background px-2 py-1 text-sm"
-                      disabled={isSubmitting}
+                      disabled={status === 'executing'}
                     />
                   ))}
                   {arrayValue.length > 1 && (
@@ -204,7 +202,7 @@ function EditableAnswerCell({ context, canEdit }: { context: Context; canEdit: b
                       variant="ghost"
                       size="icon"
                       onClick={() => removeArrayItem(index)}
-                      disabled={isSubmitting}
+                      disabled={status === 'executing'}
                     >
                       <TrashCan size={14} />
                     </Button>
@@ -217,7 +215,7 @@ function EditableAnswerCell({ context, canEdit }: { context: Context; canEdit: b
             variant="outline"
             size="sm"
             onClick={addArrayItem}
-            disabled={isSubmitting}
+            disabled={status === 'executing'}
           >
             <Add size={14} />
             Add Item
@@ -227,12 +225,12 @@ function EditableAnswerCell({ context, canEdit }: { context: Context; canEdit: b
               size="sm"
               variant="outline"
               onClick={handleCancel}
-              disabled={isSubmitting}
+              disabled={status === 'executing'}
             >
               Cancel
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button size="sm" onClick={handleSave} disabled={status === 'executing'}>
+              {status === 'executing' ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : (
                 <Check className="mr-1 h-4 w-4" />
@@ -259,7 +257,7 @@ function EditableAnswerCell({ context, canEdit }: { context: Context; canEdit: b
                   value={val || ''}
                   onChange={(e) => updateStructuredField(key, e.target.value)}
                   className="flex-1 rounded border border-input bg-background px-2 py-1 text-sm"
-                  disabled={isSubmitting}
+                  disabled={status === 'executing'}
                 />
               </div>
             ))}
@@ -269,12 +267,12 @@ function EditableAnswerCell({ context, canEdit }: { context: Context; canEdit: b
               size="sm"
               variant="outline"
               onClick={handleCancel}
-              disabled={isSubmitting}
+              disabled={status === 'executing'}
             >
               Cancel
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button size="sm" onClick={handleSave} disabled={status === 'executing'}>
+              {status === 'executing' ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : (
                 <Check className="mr-1 h-4 w-4" />
@@ -294,19 +292,19 @@ function EditableAnswerCell({ context, canEdit }: { context: Context; canEdit: b
           value={value}
           onChange={(e) => setValue(e.target.value)}
           className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          disabled={isSubmitting}
+          disabled={status === 'executing'}
         />
         <HStack gap="2">
           <Button
             size="sm"
             variant="outline"
             onClick={handleCancel}
-            disabled={isSubmitting}
+            disabled={status === 'executing'}
           >
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={isSubmitting}>
-            {isSubmitting ? (
+          <Button size="sm" onClick={handleSave} disabled={status === 'executing'}>
+            {status === 'executing' ? (
               <Loader2 className="mr-1 h-4 w-4 animate-spin" />
             ) : (
               <Check className="mr-1 h-4 w-4" />
@@ -367,37 +365,28 @@ function EditableAnswerCell({ context, canEdit }: { context: Context; canEdit: b
 
   return (
     <div
-      className={`group relative -mx-2 -my-1.5 rounded-xs px-2 py-1.5 transition-colors ${canEdit ? 'cursor-pointer hover:bg-muted/50' : ''}`}
-      onClick={() => canEdit && setIsEditing(true)}
+      className="group relative -mx-2 -my-1.5 cursor-pointer rounded-xs px-2 py-1.5 transition-colors hover:bg-muted/50"
+      onClick={() => setIsEditing(true)}
     >
-      <div className={canEdit ? 'pr-6' : ''}>{renderContent()}</div>
-      {canEdit && (
-        <Edit className="absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-      )}
+      <div className="pr-6">{renderContent()}</div>
+      <Edit className="absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 }
 
 // Actions cell with dropdown
-function ActionsCell({ context, canDelete }: { context: Context; canDelete: boolean }) {
-  const { deleteEntry } = useContextEntries();
+function ActionsCell({ context }: { context: Context }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await deleteEntry(context.id);
+  const { execute, status } = useAction(deleteContextEntryAction, {
+    onSuccess: () => {
       setDeleteOpen(false);
       toast.success('Entry deleted');
-    } catch {
+    },
+    onError: () => {
       toast.error('Failed to delete entry');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  if (!canDelete) return null;
+    },
+  });
 
   return (
     <>
@@ -425,10 +414,10 @@ function ActionsCell({ context, canDelete }: { context: Context; canDelete: bool
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
+              onClick={() => execute({ id: context.id })}
+              disabled={status === 'executing'}
             >
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              {status === 'executing' ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -485,12 +474,32 @@ function CreateContextSheetLocal({
   );
 }
 
-export const ContextTable = ({ entries: initialEntries }: { entries: Context[]; pageCount: number }) => {
-  const { entries } = useContextEntries({ initialData: initialEntries });
-  const { hasPermission } = usePermissions();
-  const canUpdate = hasPermission('evidence', 'update');
+export const ContextTable = ({
+  entries,
+  pageCount,
+}: {
+  entries: Context[];
+  pageCount: number;
+}) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  const currentPage = Number(searchParams.get('page')) || 1;
+  const perPage = Number(searchParams.get('perPage')) || 50;
+
+  const updateSearchParams = useCallback(
+    (updates: Record<string, string>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(updates)) {
+        params.set(key, value);
+      }
+      router.push(`${pathname}?${params.toString()}`);
+    },
+    [router, pathname, searchParams],
+  );
 
   const filteredEntries = useMemo(() => {
     if (!search.trim()) return entries;
@@ -518,27 +527,36 @@ export const ContextTable = ({ entries: initialEntries }: { entries: Context[]; 
             />
           </InputGroup>
         </div>
-        {canUpdate && (
-          <Button onClick={() => setIsSheetOpen(true)}>
-            <Add size={16} />
-            Add Entry
-          </Button>
-        )}
+        <Button onClick={() => setIsSheetOpen(true)}>
+          <Add size={16} />
+          Add Entry
+        </Button>
       </HStack>
 
       {/* Table */}
-      <Table variant="bordered">
+      <Table
+        variant="bordered"
+        pagination={{
+          page: currentPage,
+          pageCount,
+          onPageChange: (page) => updateSearchParams({ page: String(page) }),
+          pageSize: perPage,
+          pageSizeOptions: [25, 50, 100],
+          onPageSizeChange: (size) =>
+            updateSearchParams({ perPage: String(size), page: '1' }),
+        }}
+      >
         <TableHeader>
           <TableRow>
-            <TableHead style={{ width: canUpdate ? '35%' : '40%' }}>QUESTION</TableHead>
-            <TableHead style={{ width: canUpdate ? '55%' : '60%', maxWidth: '500px' }}>ANSWER</TableHead>
-            {canUpdate && <TableHead style={{ width: '10%' }}>ACTIONS</TableHead>}
+            <TableHead style={{ width: '35%' }}>QUESTION</TableHead>
+            <TableHead style={{ width: '55%', maxWidth: '500px' }}>ANSWER</TableHead>
+            <TableHead style={{ width: '10%' }}>ACTIONS</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredEntries.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={canUpdate ? 3 : 2}>
+              <TableCell colSpan={3}>
                 <div className="flex items-center justify-center py-8">
                   <Text variant="muted">
                     {search ? 'No entries match your search' : 'No context entries yet'}
@@ -553,15 +571,13 @@ export const ContextTable = ({ entries: initialEntries }: { entries: Context[]; 
                   <Text size="sm">{entry.question}</Text>
                 </TableCell>
                 <TableCell style={{ maxWidth: '500px' }}>
-                  <EditableAnswerCell context={entry} canEdit={canUpdate} />
+                  <EditableAnswerCell context={entry} />
                 </TableCell>
-                {canUpdate && (
-                  <TableCell>
-                    <div className="flex justify-center">
-                      <ActionsCell context={entry} canDelete={canUpdate} />
-                    </div>
-                  </TableCell>
-                )}
+                <TableCell>
+                  <div className="flex justify-center">
+                    <ActionsCell context={entry} />
+                  </div>
+                </TableCell>
               </TableRow>
             ))
           )}

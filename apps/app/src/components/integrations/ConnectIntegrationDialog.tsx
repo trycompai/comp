@@ -655,6 +655,11 @@ export function ConnectIntegrationDialog({
                 <p className="whitespace-pre-wrap text-xs">{provider.setupInstructions}</p>
               </div>
             )}
+            {provider?.category === 'Cloud' && (
+              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
+                This integration will only be used for Cloud Security Tests. Your credentials are encrypted and used exclusively to run read-only security scans.
+              </div>
+            )}
             {allFields.map((field) => (
               <div key={field.id} className="space-y-2">
                 <Label htmlFor={field.id}>

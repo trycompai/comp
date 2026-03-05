@@ -51,6 +51,9 @@ export const env = createEnv({
     APP_AWS_ENDPOINT: z.string().optional(),
     BROWSERBASE_PROJECT_ID: z.string().optional(),
     INTERNAL_API_TOKEN: z.string().optional(),
+    STRIPE_PENTEST_SUBSCRIPTION_PRICE_ID: z.string().optional(),
+    STRIPE_PENTEST_OVERAGE_PRICE_ID: z.string().optional(),
+    STRIPE_PENTEST_WEBHOOK_SECRET: z.string().optional(),
   },
 
   client: {
@@ -127,6 +130,9 @@ export const env = createEnv({
     APP_AWS_ENDPOINT: process.env.APP_AWS_ENDPOINT,
     BROWSERBASE_PROJECT_ID: process.env.BROWSERBASE_PROJECT_ID,
     INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN,
+    STRIPE_PENTEST_SUBSCRIPTION_PRICE_ID: process.env.STRIPE_PENTEST_SUBSCRIPTION_PRICE_ID,
+    STRIPE_PENTEST_OVERAGE_PRICE_ID: process.env.STRIPE_PENTEST_OVERAGE_PRICE_ID,
+    STRIPE_PENTEST_WEBHOOK_SECRET: process.env.STRIPE_PENTEST_WEBHOOK_SECRET,
     NEXT_PUBLIC_SELF_HOSTED: process.env.NEXT_PUBLIC_SELF_HOSTED,
     NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
   },

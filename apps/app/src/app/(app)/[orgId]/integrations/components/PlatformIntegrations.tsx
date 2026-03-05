@@ -483,6 +483,12 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                           {provider.description}
                         </CardDescription>
 
+                        {provider.category === 'Cloud' && (
+                          <p className="text-xs text-muted-foreground italic">
+                            This integration is used exclusively for Cloud Security Tests.
+                          </p>
+                        )}
+
                         {/* Mapped tasks */}
                         {provider.mappedTasks && provider.mappedTasks.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">

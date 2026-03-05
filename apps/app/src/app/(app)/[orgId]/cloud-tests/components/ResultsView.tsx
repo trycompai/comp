@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/design-system';
-import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Settings } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Settings, ShieldCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FindingsTable } from './FindingsTable';
 
@@ -44,6 +44,9 @@ export function ResultsView({
   const uniqueSeverities = Array.from(
     new Set(findings.map((f) => f.severity).filter(Boolean) as string[]),
   );
+
+  const allPassed =
+    findings.length > 0 && findings.every((f) => f.status === 'passed');
 
   const filteredFindings = findings.filter((finding) => {
     const matchesStatus = selectedStatus === 'all' || finding.status === selectedStatus;
@@ -115,6 +118,20 @@ export function ResultsView({
           <div className="flex-1">
             <p className="text-primary text-sm font-medium">Scan completed</p>
             <p className="text-muted-foreground text-xs">Results updated successfully</p>
+          </div>
+        </div>
+      )}
+
+      {allPassed && !isScanning && (
+        <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950/50">
+          <ShieldCheck className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-green-800 dark:text-green-300">
+              All checks passed
+            </p>
+            <p className="text-xs text-green-700/80 dark:text-green-400/80">
+              No security issues found across {findings.length} check{findings.length !== 1 ? 's' : ''}
+            </p>
           </div>
         </div>
       )}

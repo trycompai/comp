@@ -41,6 +41,7 @@ import { AuditModule } from './audit/audit.module';
 import { ControlsModule } from './controls/controls.module';
 import { RolesModule } from './roles/roles.module';
 import { SecretsModule } from './secrets/secrets.module';
+import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { SecretsModule } from './secrets/secrets.module';
     AuditModule,
     ControlsModule,
     SecretsModule,
+    SecurityPenetrationTestsModule,
   ],
   controllers: [AppController],
   providers: [

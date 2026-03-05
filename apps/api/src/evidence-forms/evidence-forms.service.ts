@@ -46,6 +46,7 @@ const reviewSchema = z.object({
 });
 
 const EVIDENCE_FORM_REVIEWER_ROLES = ['owner', 'admin', 'auditor'] as const;
+const EVIDENCE_FORM_DELETE_ROLES = ['owner', 'admin'] as const;
 const MAX_UPLOAD_FILE_SIZE_BYTES = 100 * 1024 * 1024;
 const MAX_UPLOAD_BASE64_LENGTH = Math.ceil(MAX_UPLOAD_FILE_SIZE_BYTES / 3) * 4;
 
@@ -153,6 +154,20 @@ export class EvidenceFormsService {
     if (!hasRequiredRole) {
       throw new UnauthorizedException(
         `Access denied. Required one of roles: ${EVIDENCE_FORM_REVIEWER_ROLES.join(', ')}`,
+      );
+    }
+
+    return userId;
+  }
+
+  private requireEvidenceDeleteAccess(authContext: AuthContext): string {
+    const userId = this.requireJwtUser(authContext);
+    const roles = authContext.userRoles ?? [];
+    const canDelete = EVIDENCE_FORM_DELETE_ROLES.some((role) => roles.includes(role));
+
+    if (!canDelete) {
+      throw new UnauthorizedException(
+        `Delete denied. Required one of roles: ${EVIDENCE_FORM_DELETE_ROLES.join(', ')}`,
       );
     }
 
@@ -313,6 +328,38 @@ export class EvidenceFormsService {
       form: evidenceFormDefinitions[parsedType.data],
       submission: normalizeSubmissionFormType(submission),
     };
+  }
+
+  async deleteSubmission(params: {
+    organizationId: string;
+    authContext: AuthContext;
+    formType: string;
+    submissionId: string;
+  }) {
+    this.requireEvidenceDeleteAccess(params.authContext);
+
+    const parsedType = evidenceFormTypeSchema.safeParse(params.formType);
+    if (!parsedType.success) {
+      throw new BadRequestException('Unsupported form type');
+    }
+
+    const submission = await db.evidenceSubmission.findFirst({
+      where: {
+        id: params.submissionId,
+        organizationId: params.organizationId,
+        formType: toDbEvidenceFormType(parsedType.data),
+      },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+
+    await db.evidenceSubmission.delete({
+      where: { id: params.submissionId },
+    });
+
+    return { success: true, id: params.submissionId };
   }
 
   async submitForm(params: {
