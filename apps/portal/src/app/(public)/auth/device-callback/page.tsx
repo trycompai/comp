@@ -47,7 +47,8 @@ export default function DeviceCallbackPage() {
         const { code } = await response.json();
 
         // Redirect to the device agent's localhost server
-        window.location.href = `http://localhost:${port}/auth-callback?code=${code}&state=${state}`;
+        window.location.href = `http://localhost:${port}/auth-callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state!)}`;
+
         setStatus('success');
       } catch (err) {
         console.error('Device auth callback failed:', err);
