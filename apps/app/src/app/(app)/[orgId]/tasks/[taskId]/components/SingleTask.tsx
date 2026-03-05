@@ -329,16 +329,16 @@ export function SingleTask({
                 onRequestApproval={handleRequestApproval}
               />
               <TaskMainContent task={task} showComments={false} />
-              <TaskIntegrationChecks
-                taskId={task.id}
-                onTaskUpdated={() => mutateTask()}
-                isManualTask={task.automationStatus === 'MANUAL'}
-              />
             </Stack>
           </TabsContent>
 
           <TabsContent value="automations">
             <Stack gap="lg">
+              <TaskIntegrationChecks
+                taskId={task.id}
+                onTaskUpdated={() => mutateTask()}
+                isManualTask={task.automationStatus === 'MANUAL'}
+              />
               <TaskAutomations
                 automations={automations || []}
                 isManualTask={task.automationStatus === 'MANUAL'}

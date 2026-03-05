@@ -13,6 +13,7 @@
         "@aws-sdk/s3-request-presigner": "^3.859.0",
         "@browserbasehq/sdk": "^2.6.0",
         "@browserbasehq/stagehand": "^3.0.5",
+        "@comp/auth": "workspace:*",
         "@comp/company": "workspace:*",
         "@comp/integration-platform": "workspace:*",
         "@mendable/firecrawl-js": "^4.9.3",
@@ -56,10 +57,10 @@
         "resend": "^6.4.2",
         "rxjs": "^7.8.1",
         "safe-stable-stringify": "^2.5.0",
+        "stripe": "^20.4.0",
         "swagger-ui-express": "^5.0.1",
         "xlsx": "^0.18.5",
-        "zod": "^4.0.14",
-        "@comp/auth": "workspace:*"
+        "zod": "^4.0.14"
     },
     "devDependencies": {
         "@eslint/eslintrc": "^3.2.0",

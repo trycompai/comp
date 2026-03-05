@@ -31,7 +31,24 @@ const RESOURCE_LABELS: Record<string, { label: string; description: string }> = 
   integration: { label: 'Integrations', description: 'Manage third-party integrations' },
   apiKey: { label: 'API Keys', description: 'Manage API keys for programmatic access' },
   trust: { label: 'Trust Center', description: 'Manage trust portal settings and access requests' },
+  pentest: { label: 'Penetration Tests', description: 'Manage penetration testing activities' },
 };
+
+/** Resources grouped by product section for the permission matrix UI. */
+const RESOURCE_SECTIONS: Array<{ label: string; keys: string[] }> = [
+  {
+    label: 'Compliance',
+    keys: [
+      'organization', 'member', 'control', 'evidence', 'policy', 'risk',
+      'vendor', 'task', 'framework', 'audit', 'finding', 'questionnaire',
+      'integration', 'apiKey', 'trust',
+    ],
+  },
+  {
+    label: 'Security',
+    keys: ['pentest'],
+  },
+];
 
 /**
  * Resources available for permission assignment — derived from @comp/auth statement.
@@ -40,6 +57,14 @@ const RESOURCE_LABELS: Record<string, { label: string; description: string }> = 
 const RESOURCES = Object.keys(RESOURCE_LABELS)
   .filter((key) => key in statement)
   .map((key) => ({ key, ...RESOURCE_LABELS[key] }));
+
+/** Resources grouped into sections, filtered to only those present in the auth statement. */
+const RESOURCE_SECTIONS_RESOLVED = RESOURCE_SECTIONS.map((section) => ({
+  label: section.label,
+  resources: section.keys
+    .filter((key) => key in statement && key in RESOURCE_LABELS)
+    .map((key) => ({ key, ...RESOURCE_LABELS[key] })),
+})).filter((section) => section.resources.length > 0);
 
 type ResourceKey = string;
 
@@ -210,38 +235,26 @@ export function PermissionMatrix({ value, onChange, disabled = false }: Permissi
     onChange(newPermissions);
   };
 
-  const handleSetAll = (level: AccessLevel) => {
+  const handleSetAllInSection = (sectionResources: Array<{ key: string }>, level: AccessLevel) => {
     if (disabled) return;
-
-    // Preserve toggle values (app, etc.) that aren't in the matrix
-    const toggleKeys = new Set(ACCESS_TOGGLES.map((t) => t.key));
-    const newPermissions: Record<string, string[]> = {};
-
-    // Keep existing toggle permissions
-    for (const [key, actions] of Object.entries(value)) {
-      if (toggleKeys.has(key)) {
-        newPermissions[key] = actions;
-      }
-    }
-
-    // Set matrix resource permissions
-    for (const resource of RESOURCES) {
+    const newPermissions = { ...value };
+    for (const resource of sectionResources) {
       const permissions = accessLevelToPermissions(resource.key, level);
-      if (permissions.length > 0) {
+      if (permissions.length === 0) {
+        delete newPermissions[resource.key];
+      } else {
         newPermissions[resource.key] = permissions;
       }
     }
     onChange(newPermissions);
   };
 
-  // Determine if all resources have the same access level
-  const getAllAccessLevel = (): AccessLevel | 'mixed' => {
-    const levels = RESOURCES.map((r) => getAccessLevel(r.key, value[r.key] || []));
-    const firstLevel = levels[0];
-    return levels.every((l) => l === firstLevel) ? firstLevel : 'mixed';
+  const getSectionAccessLevel = (sectionResources: Array<{ key: string }>): AccessLevel | 'mixed' => {
+    if (sectionResources.length === 0) return 'none';
+    const levels = sectionResources.map((r) => getAccessLevel(r.key, value[r.key] || []));
+    const first = levels[0];
+    return levels.every((l) => l === first) ? first : 'mixed';
   };
-
-  const currentAllLevel = getAllAccessLevel();
 
   return (
     <div className="space-y-4">
@@ -264,61 +277,72 @@ export function PermissionMatrix({ value, onChange, disabled = false }: Permissi
       </div>
 
       {/* Resource Permissions Matrix */}
-      <div className="rounded-md border">
-      {/* Header */}
-      <div className="grid grid-cols-[1fr_100px_100px_100px] items-center border-b bg-muted/50 py-2 px-3">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Resource
-        </span>
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-center">
-          No Access
-        </span>
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-center">
-          Read
-        </span>
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-center">
-          Write
-        </span>
-      </div>
-      {/* Set All Row */}
-      <RadioGroup
-        value={currentAllLevel === 'mixed' ? '' : currentAllLevel}
-        onValueChange={(newValue) => handleSetAll(newValue as AccessLevel)}
-        disabled={disabled}
-      >
-        <div className="grid grid-cols-[1fr_100px_100px_100px] items-center border-b bg-muted/30 py-2 px-3">
-          <Text size="xs" variant="muted">
-            Select all
-          </Text>
-          <div className="flex justify-center">
-            <RadioGroupItem value="none" />
+      {RESOURCE_SECTIONS_RESOLVED.map((section) => (
+        <div key={section.label} className="rounded-md border">
+          {/* Section + Column Header */}
+          <div className="grid grid-cols-[1fr_100px_100px_100px] items-center border-b bg-muted/50 py-2 px-3">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {section.label}
+            </span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-center">
+              No Access
+            </span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-center">
+              Read
+            </span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-center">
+              Write
+            </span>
           </div>
-          <div className="flex justify-center">
-            <RadioGroupItem value="view" />
-          </div>
-          <div className="flex justify-center">
-            <RadioGroupItem value="edit" />
-          </div>
-        </div>
-      </RadioGroup>
-      {/* Rows */}
-      {RESOURCES.map((resource) => {
-        const currentLevel = getAccessLevel(
-          resource.key,
-          value[resource.key] || []
-        );
+          {/* Select All Row */}
+          {section.resources.length > 1 && (() => {
+            const sectionLevel = getSectionAccessLevel(section.resources);
+            return (
+              <RadioGroup
+                value={sectionLevel === 'mixed' ? '' : sectionLevel}
+                onValueChange={(newValue) =>
+                  handleSetAllInSection(section.resources, newValue as AccessLevel)
+                }
+                disabled={disabled}
+              >
+                <div className="grid grid-cols-[1fr_100px_100px_100px] items-center border-b py-3 px-3 bg-muted/25">
+                  <div>
+                    <Text size="sm" weight="medium">
+                      Select All
+                    </Text>
+                  </div>
+                  <div className="flex justify-center">
+                    <RadioGroupItem value="none" />
+                  </div>
+                  <div className="flex justify-center">
+                    <RadioGroupItem value="view" />
+                  </div>
+                  <div className="flex justify-center">
+                    <RadioGroupItem value="edit" />
+                  </div>
+                </div>
+              </RadioGroup>
+            );
+          })()}
+          {/* Rows */}
+          {section.resources.map((resource) => {
+            const currentLevel = getAccessLevel(
+              resource.key,
+              value[resource.key] || []
+            );
 
-        return (
-          <PermissionRow
-            key={resource.key}
-            resource={resource}
-            currentLevel={currentLevel}
-            onAccessChange={(level) => handleAccessChange(resource.key, level)}
-            disabled={disabled}
-          />
-        );
-      })}
-      </div>
+            return (
+              <PermissionRow
+                key={resource.key}
+                resource={resource}
+                currentLevel={currentLevel}
+                onAccessChange={(level) => handleAccessChange(resource.key, level)}
+                disabled={disabled}
+              />
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }

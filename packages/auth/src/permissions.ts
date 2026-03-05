@@ -38,6 +38,8 @@ export const statement = {
   // App access resources
   app: ['read'], // Main app access
   trust: ['read', 'update'], // Trust center access
+  // Security product resources
+  pentest: ['create', 'read', 'delete'],
   // Compliance obligation — members with this permission must complete compliance tasks
   compliance: ['required'],
 } as const;
@@ -71,6 +73,8 @@ export const owner = ac.newRole({
   // App access
   app: ['read'],
   trust: ['read', 'update'],
+  // Security product
+  pentest: ['create', 'read', 'delete'],
 });
 
 /**
@@ -100,6 +104,8 @@ export const admin = ac.newRole({
   // App access
   app: ['read'],
   trust: ['read', 'update'],
+  // Security product
+  pentest: ['create', 'read', 'delete'],
 });
 
 /**
@@ -125,6 +131,8 @@ export const auditor = ac.newRole({
   // App access
   app: ['read'],
   trust: ['read'],
+  // Security product (read-only for auditors)
+  pentest: ['read'],
 });
 
 /**

@@ -235,7 +235,7 @@ export function PolicyPageTabs({
           </TabsContent>
 
           <TabsContent value="comments">
-            <Comments entityId={policyId} entityType="policy" organizationId={organizationId} />
+            <Comments entityId={policyId} entityType="policy" organizationId={organizationId} readOnly={!hasPermission('policy', 'update')} />
           </TabsContent>
         </Stack>
       </Tabs>

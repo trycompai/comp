@@ -37,14 +37,6 @@ vi.mock('@/lib/api-client', () => ({
   },
 }));
 
-// ─── Mock jwt-manager ────────────────────────────────────────
-
-vi.mock('@/utils/jwt-manager', () => ({
-  jwtManager: {
-    getValidToken: vi.fn().mockResolvedValue('mock-token'),
-  },
-}));
-
 // ─── Mock design system ──────────────────────────────────────
 
 vi.mock('@trycompai/design-system', () => ({

@@ -823,7 +823,7 @@ export function PolicyContentManager({
                 </Button>
               )}
               {/* For read-only versions (published/pending), show button to create new version */}
-              {isVersionReadOnly && !isViewingPendingVersion && (
+              {isVersionReadOnly && !isViewingPendingVersion && canUpdatePolicy && (
                 <Button
                   size="default"
                   onClick={() => setIsPublishDialogOpen(true)}
@@ -832,7 +832,7 @@ export function PolicyContentManager({
                   Create new version
                 </Button>
               )}
-              {!isVersionReadOnly && aiAssistantEnabled && activeTab === 'EDITOR' && (
+              {!isVersionReadOnly && canUpdatePolicy && aiAssistantEnabled && activeTab === 'EDITOR' && (
                 <Button
                   variant={showAiAssistant ? 'default' : 'outline'}
                   size="default"
@@ -875,7 +875,7 @@ export function PolicyContentManager({
                     versionId={viewingVersion}
                     pdfUrl={selectedVersion?.pdfUrl}
                     isPendingApproval={isPendingApproval}
-                    isVersionReadOnly={isVersionReadOnly}
+                    isVersionReadOnly={isVersionReadOnly || !canUpdatePolicy}
                     isViewingActiveVersion={isViewingActiveVersion}
                     isViewingPendingVersion={isViewingPendingVersion}
                     onMutate={onMutate}

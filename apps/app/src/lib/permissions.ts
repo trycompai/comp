@@ -64,11 +64,22 @@ export const ROUTE_PERMISSIONS: Record<string, Array<{ resource: string; action:
   people: [{ resource: 'member', action: 'read' }],
   risk: [{ resource: 'risk', action: 'read' }],
   vendors: [{ resource: 'vendor', action: 'read' }],
+  documents: [{ resource: 'evidence', action: 'read' }],
   questionnaire: [{ resource: 'questionnaire', action: 'read' }],
   integrations: [{ resource: 'integration', action: 'read' }],
   'cloud-tests': [{ resource: 'integration', action: 'read' }],
-  // Settings pages — top-level is accessible to all app users
-  // (sub-page permissions control which settings sections are visible)
+  // Trust center
+  trust: [{ resource: 'trust', action: 'read' }],
+  // Security product
+  'penetration-tests': [{ resource: 'pentest', action: 'read' }],
+  // Settings — top-level requires access to at least one sub-page resource
+  settings: [
+    { resource: 'organization', action: 'update' },
+    { resource: 'evidence', action: 'read' },
+    { resource: 'apiKey', action: 'read' },
+    { resource: 'member', action: 'read' },
+    { resource: 'integration', action: 'read' },
+  ],
   'settings/context-hub': [{ resource: 'evidence', action: 'read' }],
   'settings/api-keys': [{ resource: 'apiKey', action: 'read' }],
   'settings/secrets': [{ resource: 'organization', action: 'update' }],
@@ -98,6 +109,7 @@ const MAIN_NAV_ROUTES: Array<{ segment: string; path: string }> = [
   { segment: 'vendors', path: '/vendors' },
   { segment: 'integrations', path: '/integrations' },
   { segment: 'cloud-tests', path: '/cloud-tests' },
+  { segment: 'penetration-tests', path: '/security/penetration-tests' },
   { segment: 'settings', path: '/settings' },
 ];
 
@@ -115,12 +127,49 @@ export function getDefaultRoute(permissions: UserPermissions, orgId: string): st
 }
 
 /**
+ * Resources that imply the user should have access to the main app.
+ * Portal-only resources (policy, compliance) are excluded — employees/contractors
+ * have those but should NOT enter the app.
+ */
+const APP_IMPLYING_RESOURCES = new Set([
+  'organization', 'member', 'control', 'evidence', 'risk', 'vendor',
+  'task', 'framework', 'audit', 'finding', 'questionnaire', 'integration',
+  'apiKey', 'trust', 'pentest',
+]);
+
+/** Compliance route segments — used to determine if the Compliance rail icon should show. */
+const COMPLIANCE_ROUTE_SEGMENTS = [
+  'frameworks', 'controls', 'policies', 'tasks', 'documents', 'people',
+  'risk', 'vendors', 'questionnaire', 'integrations', 'cloud-tests', 'auditor',
+] as const;
+
+/**
+ * Check if user can access any compliance route.
+ * Used to gate the Compliance rail icon — shows if user has read on any compliance resource.
+ */
+export function canAccessCompliance(permissions: UserPermissions): boolean {
+  return COMPLIANCE_ROUTE_SEGMENTS.some((segment) => canAccessRoute(permissions, segment));
+}
+
+/**
  * Check if user can access the main app (as opposed to portal-only).
- * Only users with explicit `app:read` permission can access the app.
- * Employees and contractors are portal-only — they have `policy:read` but NOT `app:read`.
+ *
+ * Returns true if the user has explicit `app:read` (built-in roles like owner/admin/auditor),
+ * OR if they have any permission on a resource that implies app access (e.g. a custom role
+ * with only `pentest:read`).
+ *
+ * Employees and contractors are portal-only — they only have `policy:read` and
+ * `compliance:required`, neither of which is in APP_IMPLYING_RESOURCES.
  */
 export function canAccessApp(permissions: UserPermissions): boolean {
-  return hasPermission(permissions, 'app', 'read');
+  if (hasPermission(permissions, 'app', 'read')) return true;
+
+  for (const resource of Object.keys(permissions)) {
+    if (APP_IMPLYING_RESOURCES.has(resource) && permissions[resource]?.length > 0) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**

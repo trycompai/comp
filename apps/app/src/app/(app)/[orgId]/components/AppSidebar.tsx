@@ -65,6 +65,7 @@ export function AppSidebar({
       id: 'documents',
       path: `/${organization.id}/documents`,
       name: 'Documents',
+      hidden: !canAccessRoute(permissions, 'documents'),
     },
     {
       id: 'people',
@@ -101,6 +102,12 @@ export function AppSidebar({
       path: `/${organization.id}/cloud-tests`,
       name: 'Cloud Tests',
       hidden: !canAccessRoute(permissions, 'cloud-tests'),
+    },
+    {
+      id: 'penetration-tests',
+      path: `/${organization.id}/security/penetration-tests`,
+      name: 'Penetration Tests',
+      hidden: !canAccessRoute(permissions, 'penetration-tests'),
     },
   ];
 

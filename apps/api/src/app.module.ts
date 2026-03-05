@@ -42,6 +42,7 @@ import { ControlsModule } from './controls/controls.module';
 import { RolesModule } from './roles/roles.module';
 import { SecretsModule } from './secrets/secrets.module';
 import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
+import { StripeModule } from './stripe/stripe.module';
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { SecurityPenetrationTestsModule } from './security-penetration-tests/sec
     ControlsModule,
     SecretsModule,
     SecurityPenetrationTestsModule,
+    StripeModule,
   ],
   controllers: [AppController],
   providers: [

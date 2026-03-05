@@ -1,6 +1,5 @@
 'use client';
 
-import { JwtTokenManager } from '@/components/auth/jwt-token-manager';
 import { env } from '@/env.mjs';
 import { AnalyticsProvider } from '@comp/analytics';
 import { Toaster } from '@comp/ui/sooner';
@@ -86,7 +85,6 @@ export function Providers({ children, session }: ProviderProps) {
           userId={session?.user?.id ?? undefined}
           userEmail={session?.user?.email ?? undefined}
         >
-          <JwtTokenManager />
           {children}
           <Toaster richColors />
         </AnalyticsProvider>

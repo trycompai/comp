@@ -10,17 +10,6 @@ import {
   usePenetrationTests,
 } from './use-penetration-tests';
 
-vi.mock('../actions/billing', () => ({
-  checkAndChargePentestBilling: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock('@/utils/jwt-manager', () => ({
-  jwtManager: {
-    getValidToken: vi.fn().mockResolvedValue(null),
-    forceRefresh: vi.fn().mockResolvedValue(null),
-  },
-}));
-
 const createJsonResponse = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
     status,
@@ -240,13 +229,13 @@ describe('use-penetration-tests hooks', () => {
   });
 
   it('billing action failure surfaces the error after run creation', async () => {
+    // First call: create pentest (success)
     fetchMock.mockResolvedValueOnce(
       createJsonResponse({ id: 'run_billed', status: 'provisioning' }),
     );
-
-    const { checkAndChargePentestBilling } = await import('../actions/billing');
-    vi.mocked(checkAndChargePentestBilling).mockRejectedValueOnce(
-      new Error('No active pentest subscription.'),
+    // Second call: billing charge (failure via API)
+    fetchMock.mockResolvedValueOnce(
+      createJsonResponse({ error: 'No active pentest subscription.' }, 402),
     );
 
     const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
@@ -259,7 +248,7 @@ describe('use-penetration-tests hooks', () => {
       ).rejects.toThrow('No active pentest subscription.');
     });
 
-    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.current.error).toBe('No active pentest subscription.');
   });
 

@@ -4,7 +4,12 @@ import {
   Controller,
   Delete,
   Get,
+  HttpException,
+  HttpStatus,
+  Post,
   Put,
+  Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -13,6 +18,9 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import { openai } from '@ai-sdk/openai';
+import { streamText, convertToModelMessages, type UIMessage } from 'ai';
+import type { Response, Request } from 'express';
 import { AuthContext } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -20,7 +28,9 @@ import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { SaveAssistantChatHistoryDto } from './assistant-chat.dto';
 import { AssistantChatService } from './assistant-chat.service';
+import { buildTools } from './assistant-chat-tools';
 import type { AssistantChatMessage } from './assistant-chat.types';
+import { RolesService } from '../roles/roles.service';
 
 @ApiTags('Assistant Chat')
 @Controller({ path: 'assistant-chat', version: '1' })
@@ -28,20 +38,22 @@ import type { AssistantChatMessage } from './assistant-chat.types';
 @RequirePermission('app', 'read')
 @ApiSecurity('apikey')
 export class AssistantChatController {
-  constructor(private readonly assistantChatService: AssistantChatService) {}
+  constructor(
+    private readonly assistantChatService: AssistantChatService,
+    private readonly rolesService: RolesService,
+  ) {}
 
   private getUserScopedContext(auth: AuthContextType): {
     organizationId: string;
     userId: string;
   } {
-    // Defensive checks (should already be guaranteed by HybridAuthGuard + AuthContext decorator)
     if (!auth.organizationId) {
       throw new BadRequestException('Organization ID is required');
     }
 
     if (auth.isApiKey) {
       throw new BadRequestException(
-        'Assistant chat history is only available for user-authenticated requests (Bearer JWT).',
+        'Assistant chat is only available for user-authenticated requests.',
       );
     }
 
@@ -50,6 +62,96 @@ export class AssistantChatController {
     }
 
     return { organizationId: auth.organizationId, userId: auth.userId };
+  }
+
+  @Post('completions')
+  @ApiOperation({
+    summary: 'Stream AI chat completion',
+    description:
+      'Streams an AI response based on the conversation messages. Tools are permission-gated per user.',
+  })
+  @ApiResponse({ status: 200, description: 'Streaming AI response' })
+  async completions(
+    @AuthContext() auth: AuthContextType,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new HttpException(
+        'AI service not configured',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    const { organizationId, userId } = this.getUserScopedContext(auth);
+
+    const body = req.body as { messages?: UIMessage[] };
+    const messages = body?.messages ?? [];
+
+    // Resolve user permissions from their roles
+    const userRoles = auth.userRoles ?? [];
+    const permissions = await this.rolesService.resolvePermissions(
+      organizationId,
+      userRoles,
+    );
+
+    const tools = buildTools({ organizationId, userId, permissions });
+
+    const nowIso = new Date().toISOString();
+
+    const systemPrompt = `
+You're an expert in GRC, and a helpful assistant in Comp AI,
+a platform that helps companies get compliant with frameworks
+like SOC 2, ISO 27001 and GDPR.
+
+You must respond in basic markdown format (only use paragraphs, lists and bullet points).
+
+Keep responses concise and to the point.
+
+If you are unsure about the answer, say "I don't know" or "I don't know the answer to that question".
+
+Important:
+- Today's date/time is ${nowIso}.
+- You are assisting a user inside a live application (organizationId: ${organizationId}).
+- Prefer using available tools to fetch up-to-date org data (policies, risks, organization details) rather than guessing.
+- If the question depends on the customer's current configuration/data and you haven't retrieved it, call the relevant tool first.
+- If the user asks about data you don't have tools for, let them know you can't access that information with their current permissions.
+`;
+
+    const result = streamText({
+      model: openai('gpt-5'),
+      system: systemPrompt,
+      messages: convertToModelMessages(messages),
+      tools,
+    });
+
+    // toUIMessageStreamResponse returns a Web API Response.
+    // Pipe it to the Express response for NestJS compatibility.
+    const webResponse = result.toUIMessageStreamResponse({
+      sendReasoning: false,
+    });
+
+    res.status(webResponse.status);
+    webResponse.headers.forEach((value, key) => {
+      res.setHeader(key, value);
+    });
+
+    if (webResponse.body) {
+      const reader = webResponse.body.getReader();
+      const pump = async () => {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            res.end();
+            break;
+          }
+          res.write(value);
+        }
+      };
+      await pump();
+    } else {
+      res.end();
+    }
   }
 
   @Get('history')

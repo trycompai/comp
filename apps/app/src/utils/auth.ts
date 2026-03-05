@@ -115,11 +115,17 @@ export interface FullSession extends Session {
 function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, string> {
   const obj: Record<string, string> = {};
   headers.forEach((value, key) => {
-    // Forward cookies and other relevant headers
-    if (key.toLowerCase() === 'cookie' || key.toLowerCase().startsWith('x-')) {
+    const k = key.toLowerCase();
+    // Forward cookies, origin (required by better-auth CSRF), and custom headers
+    if (k === 'cookie' || k === 'origin' || k.startsWith('x-')) {
       obj[key] = value;
     }
   });
+  // Ensure Origin is always present — server actions may not have one.
+  // better-auth requires it for CSRF protection on POST requests.
+  if (!obj.origin && !obj.Origin) {
+    obj.origin = API_URL;
+  }
   return obj;
 }
 

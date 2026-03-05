@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@/lib/api-client';
 import type { Role } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
@@ -7,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import useSWR from 'swr';
 import { z } from 'zod';
 
 import type { ActionResponse } from '@/actions/types';
@@ -37,24 +39,20 @@ import { sendInvitationEmailToExistingMember } from '../actions/sendInvitationEm
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
 // --- Constants for Roles ---
-const ALL_SELECTABLE_ROLES = [
-  'admin',
-  'auditor',
-  'employee',
-  'contractor',
-] as const satisfies Readonly<[Role, ...Role[]]>;
-type InviteRole = (typeof ALL_SELECTABLE_ROLES)[number];
-const DEFAULT_ROLES: InviteRole[] = [];
+const BUILT_IN_SELECTABLE_ROLES: Role[] = ['admin', 'auditor', 'employee', 'contractor'];
+const DEFAULT_ROLES: string[] = [];
 
-const isInviteRole = (role: string, allowedRoles: InviteRole[]): role is InviteRole => {
-  return allowedRoles.includes(role as InviteRole);
+const isAllowedRole = (role: string, allowedRoles: string[]): boolean => {
+  return allowedRoles.includes(role);
 };
 
-const createFormSchema = (allowedRoles: InviteRole[]) => {
-  const roleEnum = z.enum(allowedRoles as [InviteRole, ...InviteRole[]]);
+const createFormSchema = (allowedRoles: string[]) => {
+  const roleValidator = z.string().refine((val) => allowedRoles.includes(val), {
+    message: 'Invalid role selection.',
+  });
   const manualInviteSchema = z.object({
     email: z.string().email({ message: 'Invalid email address.' }),
-    roles: z.array(roleEnum).min(1, { message: 'Please select at least one role.' }),
+    roles: z.array(roleValidator).min(1, { message: 'Please select at least one role.' }),
   });
 
   const manualModeSchema = z.object({
@@ -82,13 +80,13 @@ interface InviteMembersModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
-  allowedRoles: InviteRole[];
+  allowedBuiltInRoles: Role[];
 }
 
 interface BulkInviteResultData {
   successfulInvites: number;
   failedItems: {
-    input: string | { email: string; role: InviteRole | InviteRole[] };
+    input: string | { email: string; role: string | string[] };
     error: string;
   }[];
 }
@@ -97,7 +95,7 @@ export function InviteMembersModal({
   open,
   onOpenChange,
   organizationId,
-  allowedRoles,
+  allowedBuiltInRoles,
 }: InviteMembersModalProps) {
   const router = useRouter();
   const [mode, setMode] = useState<'manual' | 'csv'>('manual');
@@ -105,7 +103,21 @@ export function InviteMembersModal({
   const [csvFileName, setCsvFileName] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<ActionResponse<BulkInviteResultData> | null>(null);
 
-  const normalizedAllowedRoles = allowedRoles.length > 0 ? allowedRoles : [...ALL_SELECTABLE_ROLES];
+  // Fetch custom roles from the API
+  const { data: customRolesData } = useSWR(
+    open ? `/v1/roles` : null,
+    async (endpoint: string) => {
+      const res = await api.get<{ customRoles: Array<{ id: string; name: string; permissions: Record<string, string[]> }> }>(endpoint);
+      return res.data?.customRoles ?? [];
+    },
+  );
+  const customRoles = customRolesData ?? [];
+  const customRoleNames = customRoles.map((r) => r.name);
+
+  const normalizedAllowedRoles = [
+    ...(allowedBuiltInRoles.length > 0 ? allowedBuiltInRoles : BUILT_IN_SELECTABLE_ROLES),
+    ...customRoleNames,
+  ];
   const formSchema = useMemo(
     () => createFormSchema(normalizedAllowedRoles),
     [normalizedAllowedRoles.join(',')],
@@ -351,7 +363,7 @@ export function InviteMembersModal({
 
             // Validate role(s) - split by pipe for multiple roles
             const roles = roleValue.split('|').map((r) => r.trim().toLowerCase());
-            const validRoles = roles.filter((role) => isInviteRole(role, normalizedAllowedRoles));
+            const validRoles = roles.filter((role) => isAllowedRole(role, normalizedAllowedRoles));
 
             if (validRoles.length === 0) {
               failedInvites.push({
@@ -541,6 +553,7 @@ export function InviteMembersModal({
                             selectedRoles={value || []}
                             onSelectedRolesChange={onChange}
                             allowedRoles={normalizedAllowedRoles}
+                            customRoles={customRoles}
                             placeholder={'Select a role'}
                           />
                           <FormMessage>{error?.message}</FormMessage>

@@ -71,6 +71,16 @@ export class RolesService {
    * Get combined permissions from multiple roles
    * Merges permissions from all roles (union of all permissions)
    */
+  /**
+   * Resolve combined permissions for a set of role names (built-in + custom).
+   */
+  async resolvePermissions(
+    organizationId: string,
+    roleNames: string[],
+  ): Promise<Record<string, string[]>> {
+    return this.getCombinedPermissions(roleNames, organizationId);
+  }
+
   private async getCombinedPermissions(
     roleNames: string[],
     organizationId: string,
