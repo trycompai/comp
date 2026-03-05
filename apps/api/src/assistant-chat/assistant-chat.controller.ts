@@ -11,6 +11,7 @@ import {
   Req,
   Res,
   UseGuards,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -38,6 +39,8 @@ import { RolesService } from '../roles/roles.service';
 @RequirePermission('app', 'read')
 @ApiSecurity('apikey')
 export class AssistantChatController {
+  private readonly logger = new Logger(AssistantChatController.name);
+
   constructor(
     private readonly assistantChatService: AssistantChatService,
     private readonly rolesService: RolesService,
@@ -138,17 +141,19 @@ Important:
 
     if (webResponse.body) {
       const reader = webResponse.body.getReader();
-      const pump = async () => {
+      try {
         while (true) {
           const { done, value } = await reader.read();
           if (done) {
-            res.end();
             break;
           }
           res.write(value);
         }
-      };
-      await pump();
+      } catch (error) {
+        this.logger.error('Stream reading error', error);
+      } finally {
+        res.end();
+      }
     } else {
       res.end();
     }
