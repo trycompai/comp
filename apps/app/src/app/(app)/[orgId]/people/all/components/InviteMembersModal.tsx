@@ -186,7 +186,7 @@ export function InviteMembersModal({
               const result = await addEmployeeWithoutInvite({
                 organizationId,
                 email: invite.email.toLowerCase(),
-                roles: invite.roles,
+                roles: invite.roles as Role[],
               });
               if (!result.success) {
                 failedInvites.push({
@@ -211,14 +211,14 @@ export function InviteMembersModal({
                 await sendInvitationEmailToExistingMember({
                   email: invite.email.toLowerCase(),
                   organizationId,
-                  roles: invite.roles,
+                  roles: invite.roles as Role[],
                 });
               } else {
                 // Member doesn't exist - use server action to send the invitation
                 await inviteNewMember({
                   email: invite.email.toLowerCase(),
                   organizationId,
-                  roles: invite.roles,
+                  roles: invite.roles as Role[],
                 });
               }
               successCount++;
@@ -363,7 +363,7 @@ export function InviteMembersModal({
 
             // Validate role(s) - split by pipe for multiple roles
             const roles = roleValue.split('|').map((r) => r.trim().toLowerCase());
-            const validRoles = roles.filter((role) => isAllowedRole(role, normalizedAllowedRoles));
+            const validRoles = roles.filter((role) => isAllowedRole(role, normalizedAllowedRoles)) as Role[];
 
             if (validRoles.length === 0) {
               failedInvites.push({

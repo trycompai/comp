@@ -89,6 +89,7 @@ export function useTasks({ initialData }: UseTasksOptions = {}): UseTasksReturn 
   const bulkDelete = async (taskIds: string[]): Promise<{ deletedCount: number }> => {
     const response = await apiClient.delete<{ deletedCount: number }>(
       '/v1/tasks/bulk',
+      undefined,
       { taskIds },
     );
     if (response.error) throw new Error(response.error);
