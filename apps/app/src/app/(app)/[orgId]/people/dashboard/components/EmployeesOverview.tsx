@@ -47,6 +47,7 @@ export async function EmployeesOverview() {
       where: {
         organizationId: organizationId,
         deactivated: false,
+        isActive: true,
       },
       include: {
         user: true,
