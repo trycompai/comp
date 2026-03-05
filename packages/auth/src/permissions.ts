@@ -40,6 +40,8 @@ export const statement = {
   trust: ['read', 'update'], // Trust center access
   // Security product resources
   pentest: ['create', 'read', 'delete'],
+  // Training management
+  training: ['read', 'update'],
   // Compliance obligation — members with this permission must complete compliance tasks
   compliance: ['required'],
 } as const;
@@ -75,6 +77,8 @@ export const owner = ac.newRole({
   trust: ['read', 'update'],
   // Security product
   pentest: ['create', 'read', 'delete'],
+  // Training management
+  training: ['read', 'update'],
 });
 
 /**
@@ -106,6 +110,8 @@ export const admin = ac.newRole({
   trust: ['read', 'update'],
   // Security product
   pentest: ['create', 'read', 'delete'],
+  // Training management
+  training: ['read', 'update'],
 });
 
 /**

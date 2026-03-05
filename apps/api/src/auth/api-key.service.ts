@@ -81,6 +81,10 @@ export class ApiKeyService {
             now.setFullYear(now.getFullYear() + 1),
           );
           break;
+        default:
+          throw new BadRequestException(
+            `Invalid expiresAt value: ${expiresAt}. Must be "never", "30days", "90days", or "1year".`,
+          );
       }
     }
 

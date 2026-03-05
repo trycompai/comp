@@ -44,7 +44,7 @@ export class AuthController {
         },
       }),
       db.member.findMany({
-        where: { userId, isActive: true },
+        where: { userId, isActive: true, deactivated: false },
         select: {
           id: true,
           role: true,
@@ -64,7 +64,7 @@ export class AuthController {
       }),
       db.invitation.findFirst({
         where: {
-          email: authContext.userEmail!,
+          email: authContext.userEmail ?? '',
           status: 'pending',
         },
         select: { id: true },

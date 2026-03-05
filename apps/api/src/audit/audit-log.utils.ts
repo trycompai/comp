@@ -242,7 +242,7 @@ export function extractPolicyActionDescription(
   }
 
   // PATCH /v1/policies/:id with isArchived field
-  if (method === 'PATCH' && requestBody && 'isArchived' in requestBody) {
+  if (method === 'PATCH' && /\/policies\/[^/]+\/?$/.test(pathWithoutQuery) && requestBody && 'isArchived' in requestBody) {
     return requestBody.isArchived ? 'Archived policy' : 'Restored policy';
   }
 

@@ -195,6 +195,7 @@ export class HybridAuthGuard implements CanActivate {
       request.organizationId = organizationId ?? '';
       request.authType = 'session';
       request.isApiKey = false;
+      request.isPlatformAdmin = request.isPlatformAdmin ?? false;
 
       return true;
     } catch (error) {

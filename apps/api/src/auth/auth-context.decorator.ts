@@ -23,7 +23,7 @@ export const AuthContext = createParamDecorator(
       memberDepartment,
     } = request;
 
-    if (!organizationId || !authType) {
+    if (organizationId === undefined || !authType) {
       throw new Error(
         'Authentication context not found. Ensure HybridAuthGuard is applied.',
       );
