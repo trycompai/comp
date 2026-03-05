@@ -43,6 +43,20 @@ export function usePeopleActions() {
     [api],
   );
 
+  const removeMember = useCallback(
+    async (memberId: string) => {
+      const response = await api.delete<{
+        success: boolean;
+        deletedMember: { id: string; name: string; email: string };
+      }>(`/v1/people/${memberId}`);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data!;
+    },
+    [api],
+  );
+
   const removeHostFromFleet = useCallback(
     async (memberId: string, hostId: number) => {
       const response = await api.delete<{ success: boolean }>(
@@ -58,6 +72,7 @@ export function usePeopleActions() {
 
   return {
     unlinkDevice,
+    removeMember,
     removeHostFromFleet,
   };
 }

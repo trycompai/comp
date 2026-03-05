@@ -7,6 +7,7 @@ import type { Member, User, Vendor } from '@db';
 import { CommentEntityType } from '@db';
 import type { Prisma } from '@prisma/client';
 import { useMemo } from 'react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { SecondaryFields } from './secondary-fields/secondary-fields';
 import { VendorHeader } from './VendorHeader';
 import { VendorInherentRiskChart } from './VendorInherentRiskChart';
@@ -66,9 +67,8 @@ export function VendorPageClient({
   isViewingTask,
 }: VendorPageClientProps) {
   // Use SWR for real-time updates with polling
-  const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId, {
-    organizationId: orgId,
-  });
+  const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId);
+  const { hasPermission } = usePermissions();
 
   // Normalize and memoize the vendor data
   // Use SWR data when available, fall back to initial data
@@ -92,7 +92,7 @@ export function VendorPageClient({
             </div>
           </>
         )}
-        <TaskItems entityId={vendorId} entityType="vendor" organizationId={orgId} />
+        <TaskItems entityId={vendorId} entityType="vendor" />
         {!isViewingTask && (
           <Comments
             entityId={vendorId}

@@ -45,7 +45,6 @@ export function AuditorView({
     setIsDownloading(true);
     try {
       await downloadAllEvidenceZip({
-        organizationId: orgId,
         organizationName,
         includeJson,
       });

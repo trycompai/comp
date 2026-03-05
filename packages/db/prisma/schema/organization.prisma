@@ -76,5 +76,9 @@ model Organization {
   // Org Chart
   organizationChart OrganizationChart?
 
+  // RBAC
+  organizationRoles          OrganizationRole[]
+  roleNotificationSettings   RoleNotificationSetting[]
+
   @@index([slug])
 }

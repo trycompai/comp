@@ -1,6 +1,5 @@
 import { LoginForm } from '@/app/components/login-form';
 import { OtpSignIn } from '@/app/components/otp';
-import { env } from '@/env.mjs';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -11,7 +10,7 @@ import {
   CardTitle,
 } from '@comp/ui/card';
 import { Icons } from '@comp/ui/icons';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight } from '@trycompai/design-system/icons';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
@@ -26,8 +25,10 @@ export default async function Page() {
     </div>
   );
 
-  const showGoogle = !!(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET);
-  const showMicrosoft = !!(env.AUTH_MICROSOFT_CLIENT_ID && env.AUTH_MICROSOFT_CLIENT_SECRET);
+  // Social providers are configured on the NestJS API.
+  // Use optional env vars to explicitly disable them on the portal if needed.
+  const showGoogle = process.env.PORTAL_DISABLE_GOOGLE_SIGN_IN !== 'true';
+  const showMicrosoft = process.env.PORTAL_DISABLE_MICROSOFT_SIGN_IN !== 'true';
 
   return (
     <div className="flex min-h-dvh flex-col text-foreground">

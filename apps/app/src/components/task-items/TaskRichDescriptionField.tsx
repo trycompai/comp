@@ -9,10 +9,10 @@ import { useDebouncedCallback } from 'use-debounce';
 import { defaultExtensions } from '@comp/ui/editor/extensions';
 import { Textarea } from '@comp/ui/textarea';
 import { toast } from 'sonner';
-import { Paperclip, Loader2 } from 'lucide-react';
+import { Attachment } from '@trycompai/design-system/icons';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@comp/ui/button';
-import { api } from '@/lib/api-client';
-import { useParams } from 'next/navigation';
+import { useAttachments } from '@/hooks/use-attachments';
 
 interface TaskRichDescriptionFieldProps {
   value: JSONContent | null;
@@ -47,7 +47,7 @@ export function TaskRichDescriptionField({
 }: TaskRichDescriptionFieldProps) {
   // Hooks must be called unconditionally and in the same order
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { orgId: organizationId } = useParams<{ orgId: string }>();
+  const { getDownloadUrl, deleteAttachment } = useAttachments();
   const [isUploading, setIsUploading] = useState(false);
   const isUploadingRef = useRef(false);
   
@@ -150,44 +150,31 @@ export function TaskRichDescriptionField({
 
   const resolveDownloadUrl = useCallback(
     async (attachmentId: string): Promise<string | null> => {
-      if (!attachmentId || !organizationId) return null;
+      if (!attachmentId) return null;
       try {
-        const response = await api.get<{ downloadUrl: string }>(
-          `/v1/attachments/${attachmentId}/download`,
-          organizationId,
-        );
-        if (response.error || !response.data?.downloadUrl) {
-          throw new Error(response.error || 'Download URL not available');
-        }
-        return response.data.downloadUrl;
+        return await getDownloadUrl(attachmentId);
       } catch (error) {
         console.error('Failed to refresh attachment download URL:', error);
         toast.error('Failed to refresh attachment download link');
         return null;
       }
     },
-    [organizationId],
+    [getDownloadUrl],
   );
 
   const handleDeleteAttachment = useCallback(
     async (attachmentId: string): Promise<void> => {
-      if (!attachmentId || !organizationId) {
-        throw new Error('Attachment ID or Organization ID is missing');
+      if (!attachmentId) {
+        throw new Error('Attachment ID is missing');
       }
       try {
-        const response = await api.delete(
-          `/v1/task-management/attachments/${attachmentId}`,
-          organizationId,
-        );
-        if (response.error) {
-          throw new Error(response.error);
-        }
+        await deleteAttachment(attachmentId);
       } catch (error) {
         console.error('Failed to delete attachment:', error);
         throw error; // Re-throw to let FileAttachmentView handle the error
       }
     },
-    [organizationId],
+    [deleteAttachment],
   );
 
   // File attachment extension - no upload handler needed here, handled in drop/paste
@@ -403,12 +390,7 @@ export function TaskRichDescriptionField({
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files ? Array.from(event.target.files) : [];
-    console.log('handleFileSelect called', {
-      filesCount: fileList.length,
-      editorExists: !!editor,
-      editorDestroyed: editor?.isDestroyed,
-    });
-    
+
     if (fileList.length > 0 && editor && !editor.isDestroyed) {
       // Notify parent that file selection started
       onFileSelectStart?.();
@@ -438,12 +420,9 @@ export function TaskRichDescriptionField({
       const skeletonCount = fileList.length;
       
       try {
-        console.log('Calling onFileUpload...');
         const results = await onFileUpload(fileList);
-        console.log('Upload results:', results, 'Editor state:', { isDestroyed: editor.isDestroyed });
         
         if (!results || results.length === 0) {
-          console.warn('No upload results returned');
           // Remove skeleton paragraphs if upload failed
           try {
             const doc = editor.state.doc;
@@ -559,8 +538,6 @@ export function TaskRichDescriptionField({
           editor.chain().focus().setTextSelection(currentPos).insertContent(remainingContent).run();
         }
         
-        console.log('Files inserted successfully');
-        
         // Manually trigger onChange to ensure parent state is synced
         // TipTap's onUpdate should fire, but we ensure it here for reliability
         // Defer to avoid flushSync during render cycle
@@ -595,13 +572,6 @@ export function TaskRichDescriptionField({
         fileInputRef.current.value = '';
       }
     } else {
-      // Log why we didn't process files
-      if (fileList.length > 0) {
-        console.warn('Cannot attach files:', {
-          editorExists: !!editor,
-          editorDestroyed: editor?.isDestroyed,
-        });
-      }
       // Notify parent that file selection ended even if no files selected
       onFileSelectEnd?.();
       // Reset input so the same file can be selected again
@@ -638,7 +608,7 @@ export function TaskRichDescriptionField({
           {isUploading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Paperclip className="h-4 w-4" />
+            <Attachment className="h-4 w-4" />
           )}
         </Button>
         <input

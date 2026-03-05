@@ -4,7 +4,6 @@ import {
   useIntegrationConnections,
   useIntegrationMutations,
 } from '@/hooks/use-integration-platform';
-import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import { ComboboxDropdown } from '@comp/ui/combobox-dropdown';
 import {
@@ -154,7 +153,14 @@ export function ManageIntegrationDialog({
   onSaved,
 }: ManageIntegrationDialogProps) {
   const { orgId } = useParams<{ orgId: string }>();
-  const { deleteConnection } = useIntegrationMutations();
+  const {
+    deleteConnection,
+    updateConnectionCredentials,
+    getConnectionDetails,
+    getConnectionVariables,
+    saveConnectionVariables,
+    getVariableOptions,
+  } = useIntegrationMutations();
   const { refresh: refreshConnections } = useIntegrationConnections();
 
   // Variables state
@@ -186,15 +192,13 @@ export function ManageIntegrationDialog({
     if (!connectionId || !orgId) return;
 
     try {
-      const response = await api.get<ConnectionDetailsResponse>(
-        `/v1/integrations/connections/${connectionId}?organizationId=${orgId}`,
-      );
-      if (response.data) {
-        setAuthStrategy(response.data.authStrategy || '');
-        setCredentialFields(response.data.credentialFields || []);
+      const result = await getConnectionDetails<ConnectionDetailsResponse>(connectionId);
+      if (result.data) {
+        setAuthStrategy(result.data.authStrategy || '');
+        setCredentialFields(result.data.credentialFields || []);
         // Initialize empty credential values (we don't show existing values for security)
         const initialValues: Record<string, string | string[]> = {};
-        for (const field of response.data.credentialFields || []) {
+        for (const field of result.data.credentialFields || []) {
           initialValues[field.id] = field.type === 'multi-select' ? [] : '';
         }
         setCredentialValues(initialValues);
@@ -202,7 +206,7 @@ export function ManageIntegrationDialog({
     } catch {
       // Silently fail - credential editing may not be available
     }
-  }, [connectionId, orgId]);
+  }, [connectionId, orgId, getConnectionDetails]);
 
   // Fetch variables when dialog opens
   const loadVariables = useCallback(async () => {
@@ -211,11 +215,9 @@ export function ManageIntegrationDialog({
     setLoadingVariables(true);
     setDynamicOptions({});
     try {
-      const response = await api.get<VariablesResponse>(
-        `/v1/integrations/variables/connections/${connectionId}?organizationId=${orgId}`,
-      );
-      if (response.data) {
-        const vars = response.data.variables || [];
+      const result = await getConnectionVariables<VariablesResponse>(connectionId);
+      if (result.data) {
+        const vars = result.data.variables || [];
         setVariables(vars);
         // Extract current values from each variable
         const values: Record<string, string | number | boolean | string[]> = {};
@@ -230,12 +232,15 @@ export function ManageIntegrationDialog({
         }
         setVariableValues(values);
       }
+      if (result.error) {
+        toast.error('Failed to load configuration');
+      }
     } catch {
       toast.error('Failed to load configuration');
     } finally {
       setLoadingVariables(false);
     }
-  }, [connectionId, orgId]);
+  }, [connectionId, orgId, getConnectionVariables]);
 
   useEffect(() => {
     if (open && connectionId) {
@@ -252,11 +257,12 @@ export function ManageIntegrationDialog({
 
       setLoadingDynamicOptions((prev) => ({ ...prev, [variableId]: true }));
       try {
-        const response = await api.get<{ options: { value: string; label: string }[] }>(
-          `/v1/integrations/variables/connections/${connectionId}/options/${variableId}?organizationId=${orgId}`,
-        );
-        if (response.data?.options) {
-          setDynamicOptions((prev) => ({ ...prev, [variableId]: response.data!.options }));
+        const result = await getVariableOptions(connectionId, variableId);
+        if (result.options) {
+          setDynamicOptions((prev) => ({ ...prev, [variableId]: result.options! }));
+        }
+        if (result.error) {
+          toast.error('Failed to load options');
         }
       } catch {
         toast.error('Failed to load options');
@@ -264,7 +270,7 @@ export function ManageIntegrationDialog({
         setLoadingDynamicOptions((prev) => ({ ...prev, [variableId]: false }));
       }
     },
-    [connectionId, orgId],
+    [connectionId, orgId, getVariableOptions],
   );
 
   const handleSaveVariables = async () => {
@@ -272,13 +278,14 @@ export function ManageIntegrationDialog({
 
     setSavingVariables(true);
     try {
-      await api.post(
-        `/v1/integrations/variables/connections/${connectionId}?organizationId=${orgId}`,
-        { variables: variableValues },
-      );
-      toast.success('Configuration saved');
-      refreshConnections();
-      onSaved?.();
+      const result = await saveConnectionVariables(connectionId, variableValues);
+      if (!result.success) {
+        toast.error(result.error || 'Failed to save configuration');
+      } else {
+        toast.success('Configuration saved');
+        refreshConnections();
+        onSaved?.();
+      }
     } catch {
       toast.error('Failed to save configuration');
     } finally {
@@ -312,21 +319,22 @@ export function ManageIntegrationDialog({
 
     setSavingCredentials(true);
     try {
-      await api.put(
-        `/v1/integrations/connections/${connectionId}/credentials?organizationId=${orgId}`,
-        { credentials: credentialsToSave },
-      );
-      toast.success('Credentials updated');
-      refreshConnections();
-      // Clear the form
-      setCredentialValues((prev) => {
-        const cleared: Record<string, string | string[]> = {};
-        for (const key of Object.keys(prev)) {
-          cleared[key] = Array.isArray(prev[key]) ? [] : '';
-        }
-        return cleared;
-      });
-      onSaved?.();
+      const result = await updateConnectionCredentials(connectionId, credentialsToSave);
+      if (!result.success) {
+        toast.error(result.error || 'Failed to update credentials');
+      } else {
+        toast.success('Credentials updated');
+        refreshConnections();
+        // Clear the form
+        setCredentialValues((prev) => {
+          const cleared: Record<string, string | string[]> = {};
+          for (const key of Object.keys(prev)) {
+            cleared[key] = Array.isArray(prev[key]) ? [] : '';
+          }
+          return cleared;
+        });
+        onSaved?.();
+      }
     } catch {
       toast.error('Failed to update credentials');
     } finally {

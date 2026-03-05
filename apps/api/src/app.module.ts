@@ -36,7 +36,13 @@ import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
 import { OrgChartModule } from './org-chart/org-chart.module';
 import { TrainingModule } from './training/training.module';
 import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
+import { FrameworksModule } from './frameworks/frameworks.module';
+import { AuditModule } from './audit/audit.module';
+import { ControlsModule } from './controls/controls.module';
+import { RolesModule } from './roles/roles.module';
+import { SecretsModule } from './secrets/secrets.module';
 import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
+import { StripeModule } from './stripe/stripe.module';
 
 @Module({
   imports: [
@@ -85,7 +91,13 @@ import { SecurityPenetrationTestsModule } from './security-penetration-tests/sec
     TrainingModule,
     OrgChartModule,
     EvidenceFormsModule,
+    FrameworksModule,
+    RolesModule,
+    AuditModule,
+    ControlsModule,
+    SecretsModule,
     SecurityPenetrationTestsModule,
+    StripeModule,
   ],
   controllers: [AppController],
   providers: [

@@ -514,7 +514,7 @@ async function triggerVendorRiskAssessmentsViaApi(params: {
 
   const apiBaseUrl =
     process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || 'http://localhost:3333';
-  const token = process.env.INTERNAL_API_TOKEN;
+  const token = process.env.SERVICE_TOKEN_TRIGGER;
 
   // Sanitize vendor websites - only send valid URLs or null
   const sanitizeWebsite = (
@@ -562,7 +562,12 @@ async function triggerVendorRiskAssessmentsViaApi(params: {
         }),
       },
       {
-        headers: token ? { 'X-Internal-Token': token } : undefined,
+        headers: token
+          ? {
+              'x-service-token': token,
+              'x-organization-id': organizationId,
+            }
+          : undefined,
         timeout: 15_000,
       },
     );

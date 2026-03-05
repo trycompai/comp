@@ -8,9 +8,15 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiSecurity } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { randomBytes, createHash } from 'crypto';
+import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../../auth/permission.guard';
+import { RequirePermission } from '../../auth/require-permission.decorator';
+import { OrganizationId } from '../../auth/auth-context.decorator';
 import { OAuthStateRepository } from '../repositories/oauth-state.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionRepository } from '../repositories/connection.repository';
@@ -22,7 +28,6 @@ import { getManifest, type OAuthConfig } from '@comp/integration-platform';
 
 interface StartOAuthDto {
   providerSlug: string;
-  organizationId: string;
   userId: string;
   redirectUrl?: string;
 }
@@ -35,6 +40,8 @@ interface OAuthCallbackQuery {
 }
 
 @Controller({ path: 'integrations/oauth', version: '1' })
+@ApiTags('Integrations')
+@ApiSecurity('apikey')
 export class OAuthController {
   private readonly logger = new Logger(OAuthController.name);
 
@@ -52,13 +59,15 @@ export class OAuthController {
    * Check if OAuth credentials are available for a provider
    */
   @Get('availability')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'read')
   async checkAvailability(
     @Query('providerSlug') providerSlug: string,
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
   ) {
-    if (!providerSlug || !organizationId) {
+    if (!providerSlug) {
       throw new HttpException(
-        'providerSlug and organizationId are required',
+        'providerSlug is required',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -73,10 +82,13 @@ export class OAuthController {
    * Start OAuth flow - returns authorization URL
    */
   @Post('start')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'create')
   async startOAuth(
+    @OrganizationId() organizationId: string,
     @Body() body: StartOAuthDto,
   ): Promise<{ authorizationUrl: string }> {
-    const { providerSlug, organizationId, userId, redirectUrl } = body;
+    const { providerSlug, userId, redirectUrl } = body;
 
     // Get manifest and OAuth config
     const manifest = getManifest(providerSlug);

@@ -8,7 +8,6 @@ import {
 } from '@/app/(app)/[orgId]/documents/forms';
 import { api } from '@/lib/api-client';
 import { useActiveMember } from '@/utils/auth-client';
-import { jwtManager } from '@/utils/jwt-manager';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -129,7 +128,7 @@ async function evidenceFormFetcher([endpoint, orgId]: readonly [
   string,
   string,
 ]): Promise<EvidenceFormResponse> {
-  const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
+  const response = await api.get<EvidenceFormResponse>(endpoint);
   if (response.error || !response.data) {
     throw new Error(response.error ?? 'Failed to load submissions');
   }
@@ -145,7 +144,7 @@ export function CompanyFormPageClient({
 }: {
   organizationId: string;
   formType: EvidenceFormType;
-  isPlatformAdmin: boolean;
+  isPlatformAdmin?: boolean;
 }) {
   const router = useRouter();
   const { mutate: globalMutate } = useSWRConfig();
@@ -243,25 +242,13 @@ export function CompanyFormPageClient({
 
     setIsExporting(true);
     try {
-      const token = await jwtManager.getValidToken();
-      if (!token) {
-        throw new Error('Authentication failed');
-      }
-
       const exportTypes = isMeeting ? MEETING_SUB_TYPES : [formType];
       const results: { blob: Blob; exportType: string }[] = [];
 
       for (const exportType of exportTypes) {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333'}/v1/evidence-forms/${exportType}/export.csv`,
-          {
-            method: 'GET',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'X-Organization-Id': organizationId,
-            },
-            credentials: 'include',
-          },
+        const response = await api.raw(
+          `/v1/evidence-forms/${exportType}/export.csv`,
+          { method: 'GET', organizationId },
         );
 
         if (response.status === 400) {
@@ -312,7 +299,6 @@ export function CompanyFormPageClient({
           fileType: selectedFile.type || 'application/octet-stream',
           fileData,
         },
-        organizationId,
       );
 
       if (response.error) {
@@ -579,9 +565,6 @@ export function CompanyFormPageClient({
 
       <DocumentFindingsSection
         formType={formType}
-        isAuditor={isAuditor}
-        isPlatformAdmin={isPlatformAdmin}
-        isAdminOrOwner={isAdminOrOwner}
       />
 
       <Dialog

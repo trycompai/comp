@@ -3,7 +3,7 @@
 import { authClient } from '@/app/lib/auth-client';
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
-import { Loader2 } from 'lucide-react';
+import { Spinner } from '@trycompai/design-system';
 import { useState } from 'react';
 
 export function GoogleSignIn({
@@ -30,8 +30,6 @@ export function GoogleSignIn({
       });
     }
 
-    console.log('******* redirectTo', redirectTo.toString());
-
     await authClient.signIn.social({
       provider: 'google',
       callbackURL: redirectTo.toString(),
@@ -46,7 +44,7 @@ export function GoogleSignIn({
       disabled={isLoading}
     >
       {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Spinner size="sm" />
       ) : (
         <>
           <Icons.Google className="h-4 w-4" />

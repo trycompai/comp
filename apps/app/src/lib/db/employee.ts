@@ -22,7 +22,6 @@ export async function completeEmployeeCreation(params: {
   externalEmployeeId?: string;
 }): Promise<Member | undefined> {
   const { name, email, department, organizationId } = params;
-  console.log(`Starting employee creation for ${email}`);
 
   // Check if the user already exists
   const existingUser = await db.user.findFirst({
@@ -89,8 +88,6 @@ async function inviteEmployeeToPortal({
   organizationName: string;
   inviteLink: string;
 }) {
-  console.log(`Sending portal invite to ${email} for ${organizationName}`);
-
   await sendEmail({
     to: email,
     subject: `You've been invited to join ${organizationName || 'an organization'} on Comp AI`,
@@ -109,8 +106,6 @@ async function inviteEmployeeToPortal({
  * This function is exported so it can be used in other invitation flows
  */
 export async function createTrainingVideoEntries(memberId: string) {
-  console.log(`Creating training video entries for member ${memberId}`);
-
   // Create an entry for each video in the system
   const result = await db.employeeTrainingVideoCompletion.createMany({
     data: trainingVideos.map((video) => ({
@@ -119,8 +114,6 @@ export async function createTrainingVideoEntries(memberId: string) {
     })),
     skipDuplicates: true,
   });
-
-  console.log(`Created ${result.count} training video entries for member ${memberId}`);
 
   return result;
 }
@@ -147,7 +140,6 @@ async function handleExistingUser({
 
   if (!existingMember) {
     // Create a new member record if they're not already in the organization
-    console.log(`[EXISTING_USER] Creating new member for existing user ${userId}`);
     const newMember = await db.member.create({
       data: {
         userId,
@@ -157,7 +149,6 @@ async function handleExistingUser({
         isActive: true,
       },
     });
-    console.log(`[EXISTING_USER] Created new member with ID: ${newMember.id}`);
     return newMember;
   }
 
@@ -169,21 +160,14 @@ async function handleExistingUser({
     | 'owner'
   )[];
 
-  console.log(`[EXISTING_USER] Current roles for user: ${existingMemberRoles.join(', ')}`);
-
   // If they already have any role, we can't add them as an employee
   if (existingMemberRoles.length > 0) {
-    console.log(
-      `[EXISTING_USER] User already has role(s): ${existingMemberRoles.join(', ')}. Cannot add as employee.`,
-    );
     throw new Error(
       `User already has role(s): ${existingMemberRoles.join(', ')}. Each person can only have one role.`,
     );
   }
 
   // If they have no role (this shouldn't happen but just in case), assign employee role
-  console.log(`[EXISTING_USER] Adding employee role to member ${existingMember.id}`);
-
   // Instead of using auth.api, update the member record directly
   try {
     const updatedMember = await db.member.update({
@@ -202,7 +186,6 @@ async function handleExistingUser({
       throw new Error('Failed to update member role');
     }
 
-    console.log(`[EXISTING_USER] Successfully updated member role to: ${updatedMember.role}`);
     return updatedMember;
   } catch (dbError) {
     console.error('[EXISTING_USER] Database error when updating member role:', dbError);

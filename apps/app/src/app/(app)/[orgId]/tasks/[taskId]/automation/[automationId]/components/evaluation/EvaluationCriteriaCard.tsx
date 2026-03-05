@@ -3,6 +3,7 @@
 import { Button } from '@comp/ui/button';
 import { Textarea } from '@comp/ui/textarea';
 import { Save } from 'lucide-react';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { updateEvaluationCriteria } from '../../actions/task-automation-actions';
@@ -18,6 +19,7 @@ export function EvaluationCriteriaCard({
   automationId,
   initialCriteria,
 }: EvaluationCriteriaCardProps) {
+  const { taskId } = useParams<{ taskId: string }>();
   const { automation } = useTaskAutomation();
   const [isEditing, setIsEditing] = useState(false);
   const [criteria, setCriteria] = useState(initialCriteria || '');
@@ -35,7 +37,7 @@ export function EvaluationCriteriaCard({
     e?.stopPropagation();
     setIsSaving(true);
     try {
-      const result = await updateEvaluationCriteria(automationId, criteria);
+      const result = await updateEvaluationCriteria(taskId, automationId, criteria);
       if (result.success) {
         toast.success('Success criteria updated');
         setIsEditing(false);

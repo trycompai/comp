@@ -6,6 +6,7 @@ import type {
   TaskItemSortBy,
   TaskItemSortOrder,
 } from '@/hooks/use-task-items';
+import { Text } from '@trycompai/design-system';
 
 interface TaskItemListProps {
   taskItems: TaskItem[];
@@ -16,7 +17,6 @@ interface TaskItemListProps {
   sortBy?: TaskItemSortBy;
   sortOrder?: TaskItemSortOrder;
   filters?: TaskItemFilters;
-  selectedTaskItemId?: string | null;
   onSelectTaskItemId?: (taskItemId: string | null) => void;
   onStatusOrPriorityChange?: () => void;
 }
@@ -30,12 +30,19 @@ export function TaskItemList({
   sortBy = 'createdAt',
   sortOrder = 'desc',
   filters = {},
-  selectedTaskItemId = null,
   onSelectTaskItemId,
   onStatusOrPriorityChange,
 }: TaskItemListProps) {
+  if (taskItems.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <Text size="sm" variant="muted">No tasks yet.</Text>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-2">
+    <div className="divide-y divide-border border-y border-border">
       {taskItems.map((taskItem) => (
         <TaskItemItem
           key={taskItem.id}
@@ -47,14 +54,10 @@ export function TaskItemList({
           sortBy={sortBy}
           sortOrder={sortOrder}
           filters={filters}
-          isExpanded={selectedTaskItemId === taskItem.id}
-          onToggleExpanded={() =>
-            onSelectTaskItemId?.(selectedTaskItemId === taskItem.id ? null : taskItem.id)
-          }
+          onSelect={() => onSelectTaskItemId?.(taskItem.id)}
           onStatusOrPriorityChange={onStatusOrPriorityChange}
         />
       ))}
     </div>
   );
 }
-

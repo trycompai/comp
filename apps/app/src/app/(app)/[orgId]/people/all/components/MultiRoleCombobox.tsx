@@ -1,5 +1,6 @@
 'use client';
 
+import { parseRolesString } from '@/lib/permissions';
 import type { Role } from '@db';
 import * as React from 'react';
 
@@ -7,8 +8,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { MultiRoleComboboxContent } from './MultiRoleComboboxContent';
 import { MultiRoleComboboxTrigger } from './MultiRoleComboboxTrigger';
 
-// Define the selectable roles explicitly (exclude owner)
-const selectableRoles: {
+// Define the selectable built-in roles
+const builtInRoles: {
   value: Role;
   labelKey: string;
   descriptionKey: string;
@@ -40,13 +41,26 @@ const selectableRoles: {
   },
 ];
 
+// Re-export for backwards compatibility
+const selectableRoles = builtInRoles;
+
+/**
+ * Custom role definition from the API
+ */
+export interface CustomRoleOption {
+  id: string;
+  name: string;
+  permissions: Record<string, string[]>;
+}
+
 interface MultiRoleComboboxProps {
-  selectedRoles: Role[];
-  onSelectedRolesChange: (roles: Role[]) => void;
+  selectedRoles: string[];
+  onSelectedRolesChange: (roles: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
-  lockedRoles?: Role[]; // Roles that cannot be deselected
-  allowedRoles?: Role[];
+  lockedRoles?: string[]; // Roles that cannot be deselected
+  allowedRoles?: string[];
+  customRoles?: CustomRoleOption[]; // Custom roles from the organization
 }
 
 export function MultiRoleCombobox({
@@ -56,6 +70,7 @@ export function MultiRoleCombobox({
   disabled = false,
   lockedRoles = [],
   allowedRoles,
+  customRoles = [],
 }: MultiRoleComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -63,7 +78,7 @@ export function MultiRoleCombobox({
   // Process selected roles to handle comma-separated values
   const selectedRoles = React.useMemo(() => {
     return inputSelectedRoles.flatMap((role) =>
-      typeof role === 'string' && role.includes(',') ? (role.split(',') as Role[]) : [role],
+      typeof role === 'string' && role.includes(',') ? parseRolesString(role) : [role],
     );
   }, [inputSelectedRoles]);
 
@@ -77,14 +92,14 @@ export function MultiRoleCombobox({
   }, [allowedRoles]);
 
   // Filter out owner role for non-owners
-  const availableRoles = React.useMemo(() => {
+  const availableBuiltInRoles = React.useMemo(() => {
     return selectableRoles.filter(
       (role) =>
         normalizedAllowedRoles.includes(role.value) && (role.value !== 'owner' || isOwner),
     );
   }, [isOwner, normalizedAllowedRoles]);
 
-  const handleSelect = (roleValue: Role) => {
+  const handleSelect = (roleValue: string) => {
     // Never allow owner role to be changed
     if (roleValue === 'owner') {
       return;
@@ -102,7 +117,14 @@ export function MultiRoleCombobox({
     onSelectedRolesChange(newSelectedRoles);
   };
 
-  const getRoleLabel = (roleValue: Role) => {
+  const getRoleLabel = (roleValue: string) => {
+    // Check if it's a custom role
+    const customRole = customRoles.find((r) => r.name === roleValue);
+    if (customRole) {
+      return customRole.name;
+    }
+
+    // Built-in roles
     switch (roleValue) {
       case 'owner':
         return 'Owner';
@@ -122,9 +144,13 @@ export function MultiRoleCombobox({
   const triggerText =
     selectedRoles.length > 0 ? `${selectedRoles.length} selected` : placeholder || 'Select role(s)';
 
-  const filteredRoles = availableRoles.filter((role) => {
+  const filteredBuiltInRoles = availableBuiltInRoles.filter((role) => {
     const label = getRoleLabel(role.value);
     return label.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  const filteredCustomRoles = customRoles.filter((role) => {
+    return role.name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   return (
@@ -139,14 +165,16 @@ export function MultiRoleCombobox({
             handleSelect={handleSelect}
             getRoleLabel={getRoleLabel}
             ariaExpanded={open}
+            customRoles={customRoles}
           />
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
+      <PopoverContent className="w-[280px] p-0" align="start">
         <MultiRoleComboboxContent
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
-          filteredRoles={filteredRoles}
+          filteredRoles={filteredBuiltInRoles}
+          filteredCustomRoles={filteredCustomRoles}
           handleSelect={handleSelect}
           lockedRoles={lockedRoles}
           selectedRoles={selectedRoles}

@@ -1,9 +1,9 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
-import { ShieldX, ShieldCheck, Loader2, XCircle } from 'lucide-react';
-import { Member, User } from '@db';
+import { Button } from '@trycompai/design-system';
+import { Checkmark, CloseOutline, WarningAlt } from '@trycompai/design-system/icons';
+import type { Member, User } from '@db';
 
 interface SOAPendingApprovalAlertProps {
   approver?: (Member & { user: User }) | null;
@@ -32,7 +32,7 @@ export function SOAPendingApprovalAlert({
 }: SOAPendingApprovalAlertProps) {
   return (
     <Alert variant="default">
-      <ShieldX className="h-4 w-4" />
+      <WarningAlt className="h-4 w-4" />
       <AlertTitle>
         {canCurrentUserApprove ? 'Action Required by You' : 'Pending Approval'}
       </AlertTitle>
@@ -40,7 +40,7 @@ export function SOAPendingApprovalAlert({
         {lastDeclinedAt && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
             <div className="font-semibold flex items-center gap-2">
-              <XCircle className="h-4 w-4" />
+              <CloseOutline className="h-4 w-4" />
               Document was declined on{' '}
               {new Date(lastDeclinedAt).toLocaleDateString()}
               {lastDeclinedBy
@@ -67,35 +67,24 @@ export function SOAPendingApprovalAlert({
           ' Please review the details and approve or decline the document.'}
         {canCurrentUserApprove && (
           <div className="flex items-center gap-2 mt-2">
-            <Button onClick={onApprove} disabled={isApproving || isDeclining}>
-              {isApproving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Approving...
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="mr-2 h-4 w-4" />
-                  Approve
-                </>
-              )}
-            </Button>
-            <Button 
-              onClick={onDecline} 
+            <Button
+              onClick={onApprove}
               disabled={isApproving || isDeclining}
-              variant="destructive"
+              loading={isApproving}
+              size="sm"
+              iconLeft={<Checkmark />}
             >
-              {isDeclining ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Declining...
-                </>
-              ) : (
-                <>
-                  <XCircle className="mr-2 h-4 w-4" />
-                  Decline
-                </>
-              )}
+              {isApproving ? 'Approving...' : 'Approve'}
+            </Button>
+            <Button
+              onClick={onDecline}
+              disabled={isApproving || isDeclining}
+              loading={isDeclining}
+              variant="destructive"
+              size="sm"
+              iconLeft={<CloseOutline />}
+            >
+              {isDeclining ? 'Declining...' : 'Decline'}
             </Button>
           </div>
         )}
@@ -103,4 +92,3 @@ export function SOAPendingApprovalAlert({
     </Alert>
   );
 }
-

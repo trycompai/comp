@@ -74,7 +74,6 @@ export function useQuestionnaireSingleAnswer({
           organizationId: payload.organizationId,
           questionnaireId: payload.questionnaireId,
         },
-        payload.organizationId,
       );
 
       if (response.error || !response.data) {

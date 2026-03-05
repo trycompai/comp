@@ -1,6 +1,7 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,9 +31,9 @@ import {
   SelectValue,
 } from '@comp/ui/select';
 import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 
 interface Member {
   id: string;
@@ -52,7 +53,7 @@ export function TransferOwnership({ members, isOwner }: TransferOwnershipProps) 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const [isTransferring, setIsTransferring] = useState(false);
-  const router = useRouter();
+  const { mutate } = useSWRConfig();
   const api = useApi();
 
   const handleTransfer = () => {
@@ -87,7 +88,7 @@ export function TransferOwnership({ members, isOwner }: TransferOwnershipProps) 
       setSelectedMemberId('');
       setShowConfirmDialog(false);
       setConfirmationText('');
-      router.refresh();
+      mutate(() => true, undefined, { revalidate: true });
     } catch (error) {
       console.error('Error transferring ownership:', error);
       toast.error('Failed to transfer ownership');
@@ -96,8 +97,10 @@ export function TransferOwnership({ members, isOwner }: TransferOwnershipProps) 
     }
   };
 
-  // Don't show this section if user is not the owner
-  if (!isOwner) {
+  const { hasPermission } = usePermissions();
+
+  // Don't show this section if user is not the owner or lacks permission
+  if (!isOwner || !hasPermission('organization', 'delete')) {
     return null;
   }
 

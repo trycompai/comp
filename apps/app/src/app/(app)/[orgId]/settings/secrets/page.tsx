@@ -1,14 +1,30 @@
-import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { cache } from 'react';
 import { SecretsTable } from './components/table/SecretsTable';
 
-export default async function SecretsPage() {
-  const secrets = await getSecrets();
+export default async function SecretsPage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId } = await params;
 
-  return <SecretsTable secrets={secrets} />;
+  const res = await serverApi.get<{
+    data: Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      category: string | null;
+      createdAt: string;
+      updatedAt: string;
+      lastUsedAt: string | null;
+    }>;
+    count: number;
+  }>('/v1/secrets');
+
+  const secrets = res.data?.data ?? [];
+
+  return <SecretsTable initialSecrets={secrets} />;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,38 +32,3 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'Secrets',
   };
 }
-
-const getSecrets = cache(async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.session.activeOrganizationId) {
-    return [];
-  }
-
-  const secrets = await db.secret.findMany({
-    where: {
-      organizationId: session.session.activeOrganizationId,
-    },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      category: true,
-      createdAt: true,
-      updatedAt: true,
-      lastUsedAt: true,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-  });
-
-  return secrets.map((secret) => ({
-    ...secret,
-    createdAt: secret.createdAt.toISOString(),
-    updatedAt: secret.updatedAt.toISOString(),
-    lastUsedAt: secret.lastUsedAt ? secret.lastUsedAt.toISOString() : null,
-  }));
-});

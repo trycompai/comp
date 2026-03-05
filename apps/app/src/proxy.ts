@@ -1,4 +1,5 @@
-// Note: proxy must not call Prisma/BetterAuth APIs. Use cookie presence only.
+import { auth } from '@/utils/auth';
+import { db } from '@db';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const config = {
@@ -7,6 +8,36 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|research).*)',
   ],
 };
+
+/**
+ * Known route prefixes that are NOT org routes.
+ * Any first path segment not in this set is treated as an orgId.
+ */
+const NON_ORG_ROUTE_PREFIXES = new Set([
+  'auth',
+  'admin',
+  'invite',
+  'no-access',
+  'onboarding',
+  'setup',
+  'upgrade',
+  'unsubscribe',
+]);
+
+/**
+ * Extract the orgId from the first path segment if it's an org route.
+ * Returns null for non-org routes (e.g. /auth, /setup, /invite/...).
+ */
+function extractOrgId(pathname: string): string | null {
+  // Remove leading slash, split by /
+  const segments = pathname.replace(/^\//, '').split('/');
+  const firstSegment = segments[0];
+
+  if (!firstSegment) return null;
+  if (NON_ORG_ROUTE_PREFIXES.has(firstSegment)) return null;
+
+  return firstSegment;
+}
 
 export async function proxy(request: NextRequest) {
   try {
@@ -28,7 +59,6 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    // Cookie-only gating (auth will validate server-side on actual routes)
     const secureCookieName = '__Secure-better-auth.session_token';
     const fallbackCookieName = 'better-auth.session_token';
 
@@ -79,17 +109,27 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // 2. Authenticated users (avoid DB calls in middleware)
-    if (hasToken) {
-      const isRootPath = nextUrl.pathname === '/';
+    // 2. Organization membership check
+    // If the user is authenticated and accessing an org route, verify membership.
+    const orgId = extractOrgId(nextUrl.pathname);
+    if (hasToken && orgId) {
+      const session = await auth.api.getSession({
+        headers: requestHeaders,
+      });
 
-      // If user hits root: route based on active org presence
-      if (isRootPath) {
-        const url = new URL('/setup', request.url);
-        nextUrl.searchParams.forEach((value, key) => {
-          url.searchParams.set(key, value);
+      if (session) {
+        const member = await db.member.findFirst({
+          where: {
+            userId: session.user.id,
+            organizationId: orgId,
+            deactivated: false,
+          },
+          select: { id: true },
         });
-        return NextResponse.redirect(url);
+
+        if (!member) {
+          return new NextResponse('Forbidden', { status: 403 });
+        }
       }
     }
 

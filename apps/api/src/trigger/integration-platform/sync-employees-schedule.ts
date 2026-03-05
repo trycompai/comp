@@ -215,13 +215,14 @@ async function syncGoogleWorkspace({
   const url = new URL(
     `${API_BASE_URL}/v1/integrations/sync/google-workspace/employees`,
   );
-  url.searchParams.set('organizationId', organizationId);
   url.searchParams.set('connectionId', connectionId);
 
   const response = await fetch(url.toString(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+      'x-organization-id': organizationId,
     },
   });
 
@@ -253,13 +254,14 @@ async function syncRippling({
   const url = new URL(
     `${API_BASE_URL}/v1/integrations/sync/rippling/employees`,
   );
-  url.searchParams.set('organizationId', organizationId);
   url.searchParams.set('connectionId', connectionId);
 
   const response = await fetch(url.toString(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+      'x-organization-id': organizationId,
     },
   });
 
@@ -289,13 +291,14 @@ async function syncJumpCloud({
   const url = new URL(
     `${API_BASE_URL}/v1/integrations/sync/jumpcloud/employees`,
   );
-  url.searchParams.set('organizationId', organizationId);
   url.searchParams.set('connectionId', connectionId);
 
   const response = await fetch(url.toString(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+      'x-organization-id': organizationId,
     },
   });
 
@@ -323,13 +326,14 @@ async function syncRamp({
   organizationId: string;
 }): Promise<SyncResult> {
   const url = new URL(`${API_BASE_URL}/v1/integrations/sync/ramp/employees`);
-  url.searchParams.set('organizationId', organizationId);
   url.searchParams.set('connectionId', connectionId);
 
   const response = await fetch(url.toString(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+      'x-organization-id': organizationId,
     },
   });
 

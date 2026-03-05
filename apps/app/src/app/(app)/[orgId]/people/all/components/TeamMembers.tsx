@@ -1,5 +1,6 @@
 'use server';
 
+import { filterComplianceMembers } from '@/lib/compliance';
 import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
 import { auth } from '@/utils/auth';
 import type { Invitation, Member, User } from '@db';
@@ -80,12 +81,7 @@ export async function TeamMembers(props: TeamMembersProps) {
   // Build task completion map for employees/contractors
   const taskCompletionMap: Record<string, { completed: number; total: number }> = {};
 
-  const employeeMembers = members.filter((member) => {
-    const roles = member.role.includes(',')
-      ? member.role.split(',').map((r) => r.trim())
-      : [member.role];
-    return roles.includes('employee') || roles.includes('contractor');
-  });
+  const employeeMembers = await filterComplianceMembers(members, organizationId);
 
   // Build a set of member IDs that have device-agent devices
   const memberIds = members.map((m) => m.id);

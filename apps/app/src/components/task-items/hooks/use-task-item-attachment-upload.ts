@@ -81,7 +81,6 @@ export function useTaskItemAttachmentUpload({
             entityId,
             entityType,
           },
-          orgId,
         );
 
         if (response.error) {

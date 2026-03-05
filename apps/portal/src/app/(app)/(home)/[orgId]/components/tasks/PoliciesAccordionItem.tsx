@@ -1,11 +1,14 @@
 'use client';
 
-import { acceptAllPolicies } from '@/actions/accept-policies';
-import { AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
-import { cn } from '@comp/ui/cn';
 import type { Member, Policy, PolicyVersion } from '@db';
-import { Button } from '@trycompai/design-system';
-import { CheckCircle2, Circle, FileText } from 'lucide-react';
+import {
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  Button,
+  cn,
+} from '@trycompai/design-system';
+import { CheckmarkFilled, CircleDash, Document } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -36,80 +39,89 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
         .filter((p) => !acceptedPolicies.includes(p.id))
         .map((p) => p.id);
 
-      const result = await acceptAllPolicies(unacceptedPolicyIds, member.id);
+      const res = await fetch('/api/portal/accept-policies', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ policyIds: unacceptedPolicyIds, memberId: member.id }),
+      });
 
-      if (result.success) {
-        setAcceptedPolicies([...acceptedPolicies, ...unacceptedPolicyIds]);
-        toast.success('All policies accepted successfully');
-        router.refresh();
-      } else {
-        toast.error(result.error || 'Failed to accept policies');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to accept policies');
       }
+
+      setAcceptedPolicies([...acceptedPolicies, ...unacceptedPolicyIds]);
+      toast.success('All policies accepted successfully');
+      router.refresh();
     } catch (error) {
-      console.error('Error accepting all policies:', error);
-      toast.error('An error occurred while accepting policies');
+      toast.error(error instanceof Error ? error.message : 'An error occurred while accepting policies');
     } finally {
       setIsAcceptingAll(false);
     }
   };
 
   return (
-    <AccordionItem value="policies" className="border rounded-xs">
-      <AccordionTrigger className="px-4 hover:no-underline [&[data-state=open]]:pb-2">
-        <div className="flex items-center gap-3">
-          {hasAcceptedPolicies ? (
-            <CheckCircle2 className="text-primary h-5 w-5" />
-          ) : (
-            <Circle className="text-muted-foreground h-5 w-5" />
-          )}
-          <span
-            className={cn('text-base', hasAcceptedPolicies && 'text-muted-foreground line-through')}
-          >
-            Security Policies
-          </span>
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="px-4 pb-4">
-        <div className="space-y-4">
-          {policies.length > 0 ? (
-            <>
-              <p className="text-muted-foreground text-sm">
-                Please review and accept the following policies:
-              </p>
-              <div>
-                {policies.map((policy) => {
-                  const isAccepted = acceptedPolicies.includes(policy.id);
-
-                  return (
-                    <div key={policy.id} className="underline flex gap-2 items-center">
-                      <Link
-                        href={`/${member.organizationId}/policy/${policy.id}`}
-                        className="hover:text-primary flex items-center gap-2 text-sm transition-colors"
-                      >
-                        <FileText className="text-muted-foreground h-4 w-4" />
-                        <span className={cn(isAccepted && 'line-through')}>{policy.name}</span>
-                      </Link>
-                      {isAccepted && <CheckCircle2 className="text-primary h-3 w-3" />}
-                    </div>
-                  );
-                })}
-              </div>
-              <Button
-                onClick={handleAcceptAllPolicies}
-                disabled={hasAcceptedPolicies || isAcceptingAll}
+    <div className="border rounded-xs">
+      <AccordionItem value="policies">
+        <div className="px-4 [&[data-state=open]]:pb-2">
+          <AccordionTrigger>
+            <div className="flex items-center gap-3">
+              {hasAcceptedPolicies ? (
+                <div className="text-primary"><CheckmarkFilled size={20} /></div>
+              ) : (
+                <div className="text-muted-foreground"><CircleDash size={20} /></div>
+              )}
+              <span
+                className={cn('text-base', hasAcceptedPolicies && 'text-muted-foreground line-through')}
               >
-                {isAcceptingAll
-                  ? 'Accepting...'
-                  : hasAcceptedPolicies
-                    ? 'All Policies Accepted'
-                    : 'Accept All'}
-              </Button>
-            </>
-          ) : (
-            <p className="text-muted-foreground text-sm">No policies ready to be signed.</p>
-          )}
+                Security Policies
+              </span>
+            </div>
+          </AccordionTrigger>
         </div>
-      </AccordionContent>
-    </AccordionItem>
+        <AccordionContent>
+          <div className="px-4 pb-4 space-y-4">
+            {policies.length > 0 ? (
+              <>
+                <p className="text-muted-foreground text-sm">
+                  Please review and accept the following policies:
+                </p>
+                <div>
+                  {policies.map((policy) => {
+                    const isAccepted = acceptedPolicies.includes(policy.id);
+
+                    return (
+                      <div key={policy.id} className="underline flex gap-2 items-center">
+                        <Link
+                          href={`/${member.organizationId}/policy/${policy.id}`}
+                          className="hover:text-primary flex items-center gap-2 text-sm transition-colors"
+                        >
+                          <div className="text-muted-foreground"><Document size={16} /></div>
+                          <span className={cn(isAccepted && 'line-through')}>{policy.name}</span>
+                        </Link>
+                        {isAccepted && <div className="text-primary"><CheckmarkFilled size={12} /></div>}
+                      </div>
+                    );
+                  })}
+                </div>
+                <Button
+                  onClick={handleAcceptAllPolicies}
+                  disabled={hasAcceptedPolicies || isAcceptingAll}
+                >
+                  {isAcceptingAll
+                    ? 'Accepting...'
+                    : hasAcceptedPolicies
+                      ? 'All Policies Accepted'
+                      : 'Accept All'}
+                </Button>
+              </>
+            ) : (
+              <p className="text-muted-foreground text-sm">No policies ready to be signed.</p>
+            )}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </div>
   );
 }

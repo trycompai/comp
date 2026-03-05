@@ -46,8 +46,8 @@ type MockDb = {
 describe('EvidenceFormsService', () => {
   const authContext: AuthContext = {
     organizationId: 'org_123',
-    authType: 'jwt',
-    isApiKey: false,
+    authType: 'session',
+    isApiKey: false, isPlatformAdmin: false,
     userRoles: ['admin'],
     userId: 'usr_reviewer',
     userEmail: 'reviewer@example.com',

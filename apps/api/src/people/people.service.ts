@@ -21,10 +21,14 @@ export class PeopleService {
 
   async findAllByOrganization(
     organizationId: string,
+    includeDeactivated?: boolean,
   ): Promise<PeopleResponseDto[]> {
     try {
       await MemberValidator.validateOrganization(organizationId);
-      const members = await MemberQueries.findAllByOrganization(organizationId);
+      const members = await MemberQueries.findAllByOrganization(
+        organizationId,
+        includeDeactivated,
+      );
 
       this.logger.log(
         `Retrieved ${members.length} members for organization ${organizationId}`,
@@ -236,6 +240,7 @@ export class PeopleService {
   async deleteById(
     memberId: string,
     organizationId: string,
+    callerUserId?: string,
   ): Promise<{
     success: boolean;
     deletedMember: { id: string; name: string; email: string };
@@ -251,6 +256,10 @@ export class PeopleService {
         throw new NotFoundException(
           `Member with ID ${memberId} not found in organization ${organizationId}`,
         );
+      }
+
+      if (callerUserId && member.user.id === callerUserId) {
+        throw new BadRequestException('You cannot delete your own membership');
       }
 
       await MemberQueries.deleteMember(memberId);
@@ -416,5 +425,96 @@ export class PeopleService {
       );
       throw new Error(`Failed to remove host: ${error.message}`);
     }
+  }
+
+  async getDevices(organizationId: string) {
+    return db.device.findMany({
+      where: { organizationId },
+      include: { member: { include: { user: true } } },
+      orderBy: { installedAt: 'desc' },
+    });
+  }
+
+  async getTestStatsByAssignee(organizationId: string) {
+    const tasks = await db.task.findMany({
+      where: { organizationId },
+      select: { assigneeId: true, status: true },
+    });
+    const stats = new Map<string, { total: number; done: number }>();
+    for (const task of tasks) {
+      if (!task.assigneeId) continue;
+      const existing = stats.get(task.assigneeId) || { total: 0, done: 0 };
+      existing.total++;
+      if (task.status === 'done') existing.done++;
+      stats.set(task.assigneeId, existing);
+    }
+    return Object.fromEntries(stats);
+  }
+
+  async getTrainingVideos(memberId: string, organizationId: string) {
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+    });
+    if (!member) throw new NotFoundException('Member not found');
+    return db.employeeTrainingVideoCompletion.findMany({
+      where: { memberId },
+      orderBy: { completedAt: 'desc' },
+    });
+  }
+
+  async getFleetCompliance(memberId: string, organizationId: string) {
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+      select: { id: true, userId: true, fleetDmLabelId: true },
+    });
+    if (!member) throw new NotFoundException('Member not found');
+    if (!member.fleetDmLabelId) return { hosts: [], policyResults: [] };
+
+    const [hosts, policyResults] = await Promise.all([
+      this.fleetService
+        .getHostsByLabel(member.fleetDmLabelId)
+        .then((r) => r?.hosts ?? []),
+      db.fleetPolicyResult.findMany({
+        where: { userId: member.userId, organizationId },
+      }),
+    ]);
+    return { hosts, policyResults };
+  }
+
+  async getEmailPreferences(
+    userId: string,
+    userEmail: string,
+    organizationId: string,
+  ) {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: {
+        emailPreferences: true,
+        emailNotificationsUnsubscribed: true,
+      },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return {
+      email: userEmail,
+      preferences: user.emailPreferences ?? {},
+      unsubscribed: user.emailNotificationsUnsubscribed ?? false,
+    };
+  }
+
+  async updateEmailPreferences(
+    userId: string,
+    preferences: Record<string, boolean>,
+  ) {
+    const allUnsubscribed = Object.values(preferences).every(
+      (v) => v === false,
+    );
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        emailPreferences: preferences,
+        emailNotificationsUnsubscribed: allUnsubscribed,
+      },
+    });
+    return { success: true };
   }
 }

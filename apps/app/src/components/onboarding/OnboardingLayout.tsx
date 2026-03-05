@@ -1,6 +1,3 @@
-'use server';
-
-import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
 import type { Organization } from '@db';
 import { headers } from 'next/headers';
@@ -25,8 +22,6 @@ export async function OnboardingLayout({
   if (!session?.user?.id) {
     redirect('/auth');
   }
-
-  const { organizations } = await getOrganizations();
 
   return (
     <main className="flex min-h-dvh flex-col">

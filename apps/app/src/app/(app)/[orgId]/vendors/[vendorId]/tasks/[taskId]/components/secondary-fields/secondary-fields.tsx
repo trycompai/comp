@@ -1,19 +1,27 @@
 'use client';
 
 import { SelectAssignee } from '@/components/SelectAssignee';
+import { useTaskMutations } from '@/hooks/use-task-mutations';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Member, Task, User } from '@db';
+import { TaskStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon, Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import type { z } from 'zod';
-import { updateVendorTaskSchema } from '../../../../actions/schema';
-import { updateVendorTaskAction } from '../../../../actions/task/update-task-action';
+import { z } from 'zod';
+
+const secondaryFieldsSchema = z.object({
+  id: z.string().min(1),
+  title: z.string(),
+  description: z.string(),
+  status: z.nativeEnum(TaskStatus, { error: 'Task status is required' }),
+  assigneeId: z.string().nullable(),
+});
 
 export default function SecondaryFields({
   task,
@@ -47,17 +55,11 @@ function TaskSecondaryFieldsForm({
   };
   assignees: (Member & { user: User })[];
 }) {
-  const updateTask = useAction(updateVendorTaskAction, {
-    onSuccess: () => {
-      toast.success('Task updated successfully');
-    },
-    onError: () => {
-      toast.error('Failed to update task');
-    },
-  });
+  const { updateTask } = useTaskMutations();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof updateVendorTaskSchema>>({
-    resolver: zodResolver(updateVendorTaskSchema),
+  const form = useForm<z.infer<typeof secondaryFieldsSchema>>({
+    resolver: zodResolver(secondaryFieldsSchema),
     defaultValues: {
       id: task.id,
       title: task.title,
@@ -67,8 +69,19 @@ function TaskSecondaryFieldsForm({
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateVendorTaskSchema>) => {
-    updateTask.execute(data);
+  const onSubmit = async (data: z.infer<typeof secondaryFieldsSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await updateTask(data.id, {
+        status: data.status,
+        assigneeId: data.assigneeId,
+      });
+      toast.success('Task updated successfully');
+    } catch {
+      toast.error('Failed to update task');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Function to render status with correct color
@@ -114,7 +127,7 @@ function TaskSecondaryFieldsForm({
                     assigneeId={field.value}
                     assignees={assignees}
                     onAssigneeChange={field.onChange}
-                    disabled={updateTask.status === 'executing'}
+                    disabled={isSubmitting}
                     withTitle={false}
                   />
                 </FormControl>
@@ -156,8 +169,8 @@ function TaskSecondaryFieldsForm({
           />
         </div>
         <div className="mt-4 flex justify-end">
-          <Button type="submit" variant="default" disabled={updateTask.status === 'executing'}>
-            {updateTask.status === 'executing' ? (
+          <Button type="submit" variant="default" disabled={isSubmitting}>
+            {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <div className="flex items-center">
