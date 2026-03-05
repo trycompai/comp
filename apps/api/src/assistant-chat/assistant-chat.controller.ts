@@ -20,7 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { openai } from '@ai-sdk/openai';
-import { streamText, convertToModelMessages, type UIMessage } from 'ai';
+import { streamText, convertToModelMessages, stepCountIs, type UIMessage } from 'ai';
 import type { Response, Request } from 'express';
 import { AuthContext } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
@@ -127,7 +127,7 @@ Important:
         system: systemPrompt,
         messages: convertToModelMessages(messages),
         tools,
-        maxSteps: 5,
+        stopWhen: stepCountIs(5),
       });
 
       const webResponse = result.toUIMessageStreamResponse({
