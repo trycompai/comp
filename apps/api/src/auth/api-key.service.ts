@@ -167,9 +167,14 @@ export class ApiKeyService {
       }
 
       // Look up the API key in the database
+      // Filter out expired keys at the DB level to reduce payload size
       const apiKeyRecords = await db.apiKey.findMany({
         where: {
           isActive: true,
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: new Date() } },
+          ],
         },
         select: {
           id: true,

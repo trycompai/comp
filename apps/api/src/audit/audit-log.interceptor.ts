@@ -99,16 +99,19 @@ export class AuditLogInterceptor implements NestInterceptor {
     const isUpdate =
       (method === 'PATCH' || method === 'PUT') && requestBody && entityId;
 
-    const preFlightPromise = this.preflight(
+    const safePreFlightPromise = this.preflight(
       request.url,
       method,
       resource,
       requestBody,
       entityId,
       isUpdate ? Object.keys(requestBody) : null,
-    );
+    ).catch((err) => {
+      this.logger.error('Audit preflight failed, proceeding without pre-flight data', err);
+      return { previousValues: null, memberNames: {} as Record<string, string>, relationMappingResult: null };
+    });
 
-    return from(preFlightPromise).pipe(
+    return from(safePreFlightPromise).pipe(
       switchMap(({ previousValues, memberNames, relationMappingResult }) =>
         next.handle().pipe(
           tap({
