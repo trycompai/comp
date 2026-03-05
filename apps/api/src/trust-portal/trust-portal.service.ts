@@ -731,6 +731,8 @@ export class TrustPortalService {
   }
 
   async addCustomDomain(organizationId: string, domain: string) {
+    this.validateDomain(domain);
+
     if (!process.env.TRUST_PORTAL_PROJECT_ID || !process.env.VERCEL_TEAM_ID) {
       throw new InternalServerErrorException(
         'Vercel project configuration is missing',
@@ -880,6 +882,15 @@ export class TrustPortalService {
     }
   }
 
+  /** Validate domain to prevent path injection in API URLs */
+  private static readonly VALID_DOMAIN_PATTERN = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+
+  private validateDomain(domain: string): void {
+    if (!TrustPortalService.VALID_DOMAIN_PATTERN.test(domain)) {
+      throw new BadRequestException('Invalid domain format');
+    }
+  }
+
   /**
    * DNS CNAME patterns for Vercel verification.
    */
@@ -889,6 +900,8 @@ export class TrustPortalService {
     /vercel-dns[^.]*\.com\.?$/i;
 
   async checkDnsRecords(organizationId: string, domain: string) {
+    this.validateDomain(domain);
+
     const rootDomain = domain.split('.').slice(-2).join('.');
 
     const [cnameResp, txtResp, vercelTxtResp] = await Promise.all([
