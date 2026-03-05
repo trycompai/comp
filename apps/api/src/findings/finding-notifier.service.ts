@@ -1,7 +1,7 @@
 import { db, FindingStatus, FindingType } from '@db';
 import { Injectable, Logger } from '@nestjs/common';
 import { isUserUnsubscribed } from '@trycompai/email';
-import { sendEmail } from '../email/resend';
+import { triggerEmail } from '../email/trigger-email';
 import { FindingNotificationEmail } from '../email/templates/finding-notification';
 import { NovuService } from '../notifications/novu.service';
 
@@ -494,7 +494,7 @@ export class FindingNotifierService {
     } = params;
 
     try {
-      const { id } = await sendEmail({
+      const { id } = await triggerEmail({
         to: recipient.email,
         subject,
         react: FindingNotificationEmail({

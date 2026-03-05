@@ -1,7 +1,7 @@
 import { db } from '@db';
 import { Injectable, Logger } from '@nestjs/common';
 import { isUserUnsubscribed } from '@trycompai/email';
-import { sendEmail } from '../email/resend';
+import { triggerEmail } from '../email/trigger-email';
 import { TaskItemAssignedEmail } from '../email/templates/task-item-assigned';
 import { NovuService } from '../notifications/novu.service';
 
@@ -142,7 +142,7 @@ export class TaskItemAssignmentNotifierService {
 
       // Send email notification via Resend
       try {
-        const { id } = await sendEmail({
+        const { id } = await triggerEmail({
           to: assigneeUser.email,
           subject: `You were assigned to a task: ${taskTitle}`,
           react: TaskItemAssignedEmail({

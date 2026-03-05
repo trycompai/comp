@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { sendEmail } from '../email/resend';
+import { triggerEmail } from '../email/trigger-email';
 import { TrainingCompletedEmail } from '../email/templates/training-completed';
 import { TrainingCertificatePdfService } from './training-certificate-pdf.service';
 
@@ -35,7 +35,7 @@ export class TrainingEmailService {
     const safeUserName = toName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
     const filename = `security-awareness-training-certificate-${safeUserName}.pdf`;
 
-    const { id } = await sendEmail({
+    const { id } = await triggerEmail({
       to: toEmail,
       subject: `Congratulations! You've completed your Security Awareness Training - ${organizationName}`,
       react: TrainingCompletedEmail({

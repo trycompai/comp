@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
 import { isUserUnsubscribed } from '@trycompai/email';
-import { sendEmail } from '../email/resend';
+import { triggerEmail } from '../email/trigger-email';
 import { CommentMentionedEmail } from '../email/templates/comment-mentioned';
 import { NovuService } from '../notifications/novu.service';
 // Reuse the extract mentions utility
@@ -310,7 +310,7 @@ export class CommentMentionNotifierService {
 
         // Send email notification via Resend
         try {
-          const { id } = await sendEmail({
+          const { id } = await triggerEmail({
             to: user.email,
             subject: `${mentionedByName} mentioned you in a comment`,
             react: CommentMentionedEmail({

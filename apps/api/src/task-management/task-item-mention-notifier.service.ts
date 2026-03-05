@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
 import { isUserUnsubscribed } from '@trycompai/email';
-import { sendEmail } from '../email/resend';
+import { triggerEmail } from '../email/trigger-email';
 import { TaskItemMentionedEmail } from '../email/templates/task-item-mentioned';
 import { NovuService } from '../notifications/novu.service';
 
@@ -128,7 +128,7 @@ export class TaskItemMentionNotifierService {
 
         // Send email notification via Resend
         try {
-          const { id } = await sendEmail({
+          const { id } = await triggerEmail({
             to: user.email,
             subject: `${mentionedByName} mentioned you in a task`,
             react: TaskItemMentionedEmail({

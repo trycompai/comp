@@ -2,7 +2,7 @@ import { db } from '@db';
 import { Injectable, Logger } from '@nestjs/common';
 import { TaskStatus } from '@db';
 import { isUserUnsubscribed } from '@trycompai/email';
-import { sendEmail } from '../email/resend';
+import { triggerEmail } from '../email/trigger-email';
 import { TaskBulkStatusChangedEmail } from '../email/templates/task-bulk-status-changed';
 import { TaskBulkAssigneeChangedEmail } from '../email/templates/task-bulk-assignee-changed';
 import { TaskStatusChangedEmail } from '../email/templates/task-status-changed';
@@ -147,7 +147,7 @@ export class TaskNotifierService {
 
           // Send email notification
           try {
-            const { id } = await sendEmail({
+            const { id } = await triggerEmail({
               to: recipient.email,
               subject: `${taskCount} task${taskCount === 1 ? '' : 's'} status changed to ${statusLabel}`,
               react: TaskBulkStatusChangedEmail({
@@ -309,7 +309,7 @@ export class TaskNotifierService {
 
           // Send email notification
           try {
-            const { id } = await sendEmail({
+            const { id } = await triggerEmail({
               to: recipient.email,
               subject: `${taskCount} task${taskCount === 1 ? '' : 's'} reassigned to ${newAssigneeName}`,
               react: TaskBulkAssigneeChangedEmail({
@@ -499,7 +499,7 @@ export class TaskNotifierService {
 
           // Send email notification
           try {
-            const { id } = await sendEmail({
+            const { id } = await triggerEmail({
               to: recipient.email,
               subject: `Task "${taskTitle}" status changed to ${newStatusLabel}`,
               react: TaskStatusChangedEmail({
@@ -683,7 +683,7 @@ export class TaskNotifierService {
 
           // Send email notification
           try {
-            const { id } = await sendEmail({
+            const { id } = await triggerEmail({
               to: recipient.email,
               subject: `Task "${taskTitle}" reassigned to ${newAssigneeName}`,
               react: TaskAssigneeChangedEmail({
@@ -833,7 +833,7 @@ export class TaskNotifierService {
 
       // Send email notification
       try {
-        const { id } = await sendEmail({
+        const { id } = await triggerEmail({
           to: recipient.email,
           subject: `Evidence review requested: "${taskTitle}"`,
           react: EvidenceReviewRequestedEmail({
@@ -994,7 +994,7 @@ export class TaskNotifierService {
 
       // Send email notification
       try {
-        const { id } = await sendEmail({
+        const { id } = await triggerEmail({
           to: recipient.email,
           subject: `${taskCount} ${taskText} submitted for your review`,
           react: EvidenceBulkReviewRequestedEmail({
@@ -1186,7 +1186,7 @@ export class TaskNotifierService {
 
           // Send email notification
           try {
-            const { id } = await sendEmail({
+            const { id } = await triggerEmail({
               to: recipient.email,
               subject: `Automation failures on task "${taskTitle}"`,
               react: AutomationFailuresEmail({
@@ -1400,7 +1400,7 @@ export class TaskNotifierService {
 
           // Send email notification
           try {
-            const { id } = await sendEmail({
+            const { id } = await triggerEmail({
               to: recipient.email,
               subject: `${taskCount} ${taskText} with automation failures`,
               react: AutomationBulkFailuresEmail({
