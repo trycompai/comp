@@ -4,6 +4,7 @@ import type { AuthContext as AuthContextType } from '@/auth/types';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Header,
   Param,
@@ -120,6 +121,26 @@ export class EvidenceFormsController {
     @Param('submissionId') submissionId: string,
   ) {
     return this.evidenceFormsService.getSubmission({
+      organizationId,
+      authContext,
+      formType,
+      submissionId,
+    });
+  }
+
+  @Delete(':formType/submissions/:submissionId')
+  @ApiOperation({
+    summary: 'Delete a submission',
+    description:
+      'Remove an evidence form submission for the active organization. Requires owner, admin, or auditor role.',
+  })
+  async deleteSubmission(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Param('formType') formType: string,
+    @Param('submissionId') submissionId: string,
+  ) {
+    return this.evidenceFormsService.deleteSubmission({
       organizationId,
       authContext,
       formType,

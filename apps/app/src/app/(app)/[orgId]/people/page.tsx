@@ -45,6 +45,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
     where: {
       organizationId: orgId,
       deactivated: false,
+      isActive: true,
     },
     include: {
       user: {

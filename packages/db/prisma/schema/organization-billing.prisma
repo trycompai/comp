@@ -1,0 +1,12 @@
+model OrganizationBilling {
+  id               String   @id @default(dbgenerated("generate_prefixed_cuid('obil'::text)"))
+  organizationId   String   @unique @map("organization_id")
+  stripeCustomerId String   @map("stripe_customer_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  pentestSubscription PentestSubscription?
+
+  @@map("organization_billing")
+}

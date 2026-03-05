@@ -76,6 +76,21 @@ export class SecurityPenetrationTestsController {
     return this.service.createReport(organizationId, body);
   }
 
+  @Get('github/repos')
+  @UseGuards(HybridAuthGuard)
+  @ApiOperation({
+    summary: 'List accessible GitHub repositories',
+    description:
+      'Returns GitHub repositories accessible with the connected GitHub integration.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Repository list returned',
+  })
+  async listGithubRepos(@OrganizationId() organizationId: string) {
+    return this.service.listGithubRepos(organizationId);
+  }
+
   @Get(':id')
   @UseGuards(HybridAuthGuard)
   @ApiOperation({

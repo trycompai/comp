@@ -52,16 +52,6 @@ export class CreatePenetrationTestDto {
   workspace?: string;
 
   @ApiPropertyOptional({
-    description:
-      'Set false to reject non-mocked checkout flows for strict behavior',
-    required: false,
-    default: true,
-  })
-  @IsOptional()
-  @IsBoolean()
-  mockCheckout?: boolean;
-
-  @ApiPropertyOptional({
     description: 'Optional webhook URL to notify when report generation completes',
     required: false,
   })

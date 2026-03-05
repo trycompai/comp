@@ -12,15 +12,32 @@ import { useCallback, useMemo, useState } from 'react';
 import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
 import { isReportInProgress, sortReportsByUpdatedAtDesc } from '../lib';
+import { checkAndChargePentestBilling } from '../actions/billing';
 
 const reportListEndpoint = '/v1/security-penetration-tests';
+const githubReposEndpoint = '/v1/security-penetration-tests/github/repos';
 const reportEndpoint = (reportId: string): string =>
   `/v1/security-penetration-tests/${encodeURIComponent(reportId)}`;
 const reportProgressEndpoint = (reportId: string): string =>
   `/v1/security-penetration-tests/${encodeURIComponent(reportId)}/progress`;
+const inProgressStatus: readonly PentestReportStatus[] = [
+  'provisioning',
+  'cloning',
+  'running',
+];
+const allStatuses: readonly PentestReportStatus[] = [
+  'provisioning',
+  'cloning',
+  'running',
+  'completed',
+  'failed',
+  'cancelled',
+];
 
 type ReportsSWRKey = readonly [endpoint: string, organizationId: string];
 
+const githubReposKey = (organizationId: string): ReportsSWRKey =>
+  [githubReposEndpoint, organizationId] as const;
 const reportListKey = (organizationId: string): ReportsSWRKey =>
   [reportListEndpoint, organizationId] as const;
 const reportKey = (organizationId: string, reportId: string): ReportsSWRKey =>
@@ -40,6 +57,18 @@ async function fetchApiJson<T>([endpoint, organizationId]: ReportsSWRKey): Promi
   return (response.data ?? null) as T;
 }
 
+const resolveCreateStatus = (
+  status: string | undefined,
+): PentestReportStatus => {
+  if (!status) {
+    return 'provisioning';
+  }
+
+  return (allStatuses as readonly string[]).includes(status)
+    ? (status as PentestReportStatus)
+    : 'provisioning';
+};
+
 interface CreatePayload {
   targetUrl: string;
   repoUrl?: string;
@@ -48,7 +77,6 @@ interface CreatePayload {
   pipelineTesting?: boolean;
   testMode?: boolean;
   workspace?: string;
-  mockCheckout?: boolean;
 }
 
 type CreateReportApiPayload = PentestCreateRequest;
@@ -172,6 +200,37 @@ export function usePenetrationTestProgress(
   } satisfies UsePenetrationTestProgressReturn;
 }
 
+export interface GithubRepo {
+  id: number;
+  name: string;
+  fullName: string;
+  private: boolean;
+  htmlUrl: string;
+}
+
+interface GithubReposResponse {
+  repos: GithubRepo[];
+  connected: boolean;
+}
+
+export function useGithubRepos(organizationId: string): {
+  repos: GithubRepo[];
+  connected: boolean;
+  isLoading: boolean;
+} {
+  const shouldFetch = Boolean(organizationId);
+  const { data } = useSWR<GithubReposResponse>(
+    shouldFetch ? githubReposKey(organizationId) : null,
+    fetchApiJson,
+  );
+
+  return {
+    repos: data?.repos ?? [],
+    connected: data?.connected ?? false,
+    isLoading: shouldFetch && data === undefined,
+  };
+}
+
 export function useCreatePenetrationTest(
   organizationId: string,
 ): UseCreatePenetrationTestReturn {
@@ -184,13 +243,9 @@ export function useCreatePenetrationTest(
       setIsCreating(true);
       setError(null);
       try {
-        const requestedMockCheckout = payload.mockCheckout ?? true;
-
         const response = await api.post<{
           id?: string;
-          checkoutMode?: 'mock' | 'stripe';
-          checkoutUrl?: string;
-          status?: string;
+          status?: PentestReportStatus;
         }>(
           reportListEndpoint,
           {
@@ -201,7 +256,6 @@ export function useCreatePenetrationTest(
             pipelineTesting: payload.pipelineTesting,
             testMode: payload.testMode,
             workspace: payload.workspace,
-            mockCheckout: requestedMockCheckout,
           } satisfies CreateReportApiPayload,
           organizationId,
         );
@@ -215,36 +269,52 @@ export function useCreatePenetrationTest(
           throw new Error('Could not resolve report ID from create response.');
         }
 
-        const checkoutMode =
-          response.data?.checkoutMode ?? (requestedMockCheckout ? 'mock' : 'stripe');
-        const fallbackCheckoutUrl = `/${organizationId}/security/penetration-tests/checkout?reportId=${encodeURIComponent(reportId)}`;
-        let checkoutUrl: string;
-        if (checkoutMode === 'stripe') {
-          const stripeCheckoutUrl = response.data?.checkoutUrl;
-          if (!stripeCheckoutUrl) {
-            throw new Error('Missing checkout URL for stripe checkout mode.');
-          }
-          checkoutUrl = stripeCheckoutUrl;
-        } else {
-          checkoutUrl = response.data?.checkoutUrl ?? fallbackCheckoutUrl;
-        }
+        await checkAndChargePentestBilling(organizationId, reportId);
 
         const data: CreatePenetrationTestResponse = {
-          checkoutMode,
           id: reportId,
           status: response.data?.status,
-          checkoutUrl,
+        };
+
+        const now = new Date().toISOString();
+        const optimisticReport: PentestRun = {
+          id: reportId,
+          targetUrl: payload.targetUrl,
+          repoUrl: payload.repoUrl ?? null,
+          status: resolveCreateStatus(response.data?.status),
+          testMode: payload.testMode ?? null,
+          createdAt: now,
+          updatedAt: now,
+          error: null,
+          failedReason: null,
+          temporalUiUrl: null,
+          webhookUrl: null,
         };
 
         setIsCreating(false);
         try {
-          await mutate(reportListKey(organizationId));
-        } catch (revalidateError) {
+          await mutate(
+            reportListKey(organizationId),
+            (currentReports?: PentestRun[]) => {
+              const nextReports = currentReports ?? [];
+              const dedupedReports = nextReports.filter(({ id }) => id !== reportId);
+              return sortReportsByUpdatedAtDesc([optimisticReport, ...dedupedReports]);
+            },
+            { revalidate: false },
+          );
+          await mutate(
+            reportKey(organizationId, reportId),
+            optimisticReport,
+            { revalidate: false },
+          );
+        } catch (cacheMutationError) {
           console.error(
-            'Created penetration test but failed to refresh report list',
-            revalidateError,
+            'Created penetration test but failed to optimistically update report cache',
+            cacheMutationError,
           );
         }
+        void mutate(reportListKey(organizationId));
+        void mutate(reportKey(organizationId, reportId));
         return data;
       } catch (reportError) {
         const message =

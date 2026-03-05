@@ -8,16 +8,10 @@ interface SecuritySidebarProps {
   orgId: string;
 }
 
-type SecurityNavItem = {
-  id: string;
-  label: string;
-  path: string;
-};
-
 export function SecuritySidebar({ orgId }: SecuritySidebarProps) {
   const pathname = usePathname() ?? '';
 
-  const items: SecurityNavItem[] = [
+  const items = [
     {
       id: 'penetration-tests',
       label: 'Penetration Tests',
@@ -25,9 +19,7 @@ export function SecuritySidebar({ orgId }: SecuritySidebarProps) {
     },
   ];
 
-  const isPathActive = (path: string) => {
-    return pathname.startsWith(path);
-  };
+  const isPathActive = (path: string) => pathname.startsWith(path);
 
   return (
     <AppShellNav>

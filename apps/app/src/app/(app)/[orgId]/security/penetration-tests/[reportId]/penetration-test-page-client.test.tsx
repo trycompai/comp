@@ -95,9 +95,6 @@ describe('PenetrationTestPageClient', () => {
   it('renders completed report details and artifact links', () => {
     const report: PentestRun = {
       id: 'run_1',
-      sandboxId: 'sandbox_1',
-      workflowId: 'workflow_1',
-      sessionId: 'session_1',
       targetUrl: 'https://example.com',
       repoUrl: 'https://github.com/org/repo',
       status: 'completed',
@@ -106,8 +103,6 @@ describe('PenetrationTestPageClient', () => {
       error: null,
       temporalUiUrl: null,
       webhookUrl: null,
-      userId: 'user_1',
-      organizationId: 'org_123',
     };
 
     reportMock.mockReturnValue({
@@ -131,46 +126,9 @@ describe('PenetrationTestPageClient', () => {
     expect(screen.queryByText('Current progress')).toBeNull();
   });
 
-  it('shows sandbox placeholder when sandboxId is missing', () => {
-    const report: PentestRun = {
-      id: 'run_5',
-      sandboxId: '',
-      workflowId: 'workflow_5',
-      sessionId: 'session_5',
-      targetUrl: 'https://example.com',
-      repoUrl: 'https://github.com/org/repo',
-      status: 'completed',
-      createdAt: '2026-02-26T18:00:00Z',
-      updatedAt: '2026-02-25T18:30:00Z',
-      error: null,
-      temporalUiUrl: null,
-      webhookUrl: null,
-      userId: 'user_1',
-      organizationId: 'org_123',
-    };
-
-    reportMock.mockReturnValue({
-      report,
-      isLoading: false,
-      error: undefined,
-      mutate: vi.fn(),
-    });
-    progressMock.mockReturnValue({
-      progress: null,
-      isLoading: false,
-    });
-
-    render(<PenetrationTestPageClient orgId="org_123" reportId="run_5" />);
-
-    expect(screen.getByText('—')).toBeInTheDocument();
-  });
-
   it('shows repository placeholder when repoUrl is missing', () => {
     const report: PentestRun = {
       id: 'run_6',
-      sandboxId: 'sandbox_6',
-      workflowId: 'workflow_6',
-      sessionId: 'session_6',
       targetUrl: 'https://example.com',
       repoUrl: null,
       status: 'completed',
@@ -179,8 +137,6 @@ describe('PenetrationTestPageClient', () => {
       error: null,
       temporalUiUrl: null,
       webhookUrl: null,
-      userId: 'user_1',
-      organizationId: 'org_123',
     };
 
     reportMock.mockReturnValue({
@@ -203,9 +159,6 @@ describe('PenetrationTestPageClient', () => {
   it('renders running progress section when a live report is available', async () => {
     const report: PentestRun = {
       id: 'run_2',
-      sandboxId: 'sandbox_2',
-      workflowId: 'workflow_2',
-      sessionId: 'session_2',
       targetUrl: 'https://example.com',
       repoUrl: 'https://github.com/org/repo',
       status: 'running',
@@ -214,8 +167,6 @@ describe('PenetrationTestPageClient', () => {
       error: null,
       temporalUiUrl: null,
       webhookUrl: null,
-      userId: 'user_1',
-      organizationId: 'org_123',
     };
 
     reportMock.mockReturnValue({
@@ -227,8 +178,6 @@ describe('PenetrationTestPageClient', () => {
     progressMock.mockReturnValue({
       progress: {
         status: 'running',
-        phase: 'scan',
-        agent: null,
         completedAgents: 1,
         totalAgents: 2,
         elapsedMs: 300,
@@ -240,16 +189,13 @@ describe('PenetrationTestPageClient', () => {
 
     expect(screen.getByText('Running')).toBeInTheDocument();
     expect(screen.getByText('Current progress')).toBeInTheDocument();
-    expect(screen.getByText('scan (1/2)')).toBeInTheDocument();
+    expect(screen.getByText('In progress (1/2)')).toBeInTheDocument();
     expect(screen.queryByText('Download PDF')).toBeNull();
   });
 
-  it('renders progress fallback text without phase and counts when data is incomplete', async () => {
+  it('renders progress fallback text when agent counts are unavailable', async () => {
     const report: PentestRun = {
       id: 'run_4',
-      sandboxId: 'sandbox_4',
-      workflowId: 'workflow_4',
-      sessionId: 'session_4',
       targetUrl: 'https://example.com',
       repoUrl: 'https://github.com/org/repo',
       status: 'running',
@@ -258,8 +204,6 @@ describe('PenetrationTestPageClient', () => {
       error: null,
       temporalUiUrl: null,
       webhookUrl: null,
-      userId: 'user_1',
-      organizationId: 'org_123',
     };
 
     reportMock.mockReturnValue({
@@ -271,8 +215,6 @@ describe('PenetrationTestPageClient', () => {
     progressMock.mockReturnValue({
       progress: {
         status: 'running',
-        phase: null,
-        agent: null,
         completedAgents: '1' as unknown as number,
         totalAgents: '2' as unknown as number,
         elapsedMs: 400,
@@ -289,9 +231,6 @@ describe('PenetrationTestPageClient', () => {
   it('allows progress updates to render from the progress hook contract', () => {
     const report: PentestRun = {
       id: 'run_3',
-      sandboxId: 'sandbox_3',
-      workflowId: 'workflow_3',
-      sessionId: 'session_3',
       targetUrl: 'https://example.com',
       repoUrl: 'https://github.com/org/repo',
       status: 'failed',
@@ -300,8 +239,6 @@ describe('PenetrationTestPageClient', () => {
       error: 'Scan failed due to provider timeout',
       temporalUiUrl: 'https://temporal.ui/session',
       webhookUrl: null,
-      userId: 'user_1',
-      organizationId: 'org_123',
     };
 
     reportMock.mockReturnValue({

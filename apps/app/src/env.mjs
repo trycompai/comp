@@ -46,6 +46,9 @@ export const env = createEnv({
     NOVU_API_KEY: z.string().optional(),
     INTERNAL_API_TOKEN: z.string().optional(),
     STRIPE_SECRET_KEY: z.string().optional(),
+    STRIPE_PENTEST_SUBSCRIPTION_PRICE_ID: z.string().optional(),
+    STRIPE_PENTEST_OVERAGE_PRICE_ID: z.string().optional(),
+    STRIPE_PENTEST_WEBHOOK_SECRET: z.string().optional(),
   },
 
   client: {
@@ -116,6 +119,9 @@ export const env = createEnv({
     NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER: process.env.NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER,
     INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_PENTEST_SUBSCRIPTION_PRICE_ID: process.env.STRIPE_PENTEST_SUBSCRIPTION_PRICE_ID,
+    STRIPE_PENTEST_OVERAGE_PRICE_ID: process.env.STRIPE_PENTEST_OVERAGE_PRICE_ID,
+    STRIPE_PENTEST_WEBHOOK_SECRET: process.env.STRIPE_PENTEST_WEBHOOK_SECRET,
     NEXT_PUBLIC_SELF_HOSTED: process.env.NEXT_PUBLIC_SELF_HOSTED,
   },
 

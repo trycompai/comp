@@ -38,3 +38,14 @@ This module exposes Comp API endpoints under `/v1/security-penetration-tests` an
 
 - Frontend should call Nest API only (no Next.js proxy routes for this feature).
 - Provider callbacks to non-Comp webhook URLs are passed through and are not forced to include Comp-specific webhook tokens.
+
+## Maced contract canary test (real provider)
+
+Use this e2e canary to detect Maced API contract drift against the live provider without creating new paid runs.
+
+- Test file: `apps/api/test/maced-contract.e2e-spec.ts`
+- Command:
+  - `MACED_API_KEY=<key> bun run test:e2e:maced`
+- Optional deep-check env:
+  - `MACED_CONTRACT_E2E_RUN_ID=<existing_provider_run_id>`
+  - When present, the test also calls `GET /v1/pentests/:id` and `GET /v1/pentests/:id/progress`.
