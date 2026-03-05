@@ -27,6 +27,7 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import { SkipAuditLog } from '../audit/skip-audit-log.decorator';
 import { SaveAssistantChatHistoryDto } from './assistant-chat.dto';
 import { AssistantChatService } from './assistant-chat.service';
 import { buildTools } from './assistant-chat-tools';
@@ -68,6 +69,7 @@ export class AssistantChatController {
   }
 
   @Post('completions')
+  @SkipAuditLog()
   @ApiOperation({
     summary: 'Stream AI chat completion',
     description:
@@ -125,6 +127,7 @@ Important:
         system: systemPrompt,
         messages: convertToModelMessages(messages),
         tools,
+        maxSteps: 5,
       });
 
       const webResponse = result.toUIMessageStreamResponse({

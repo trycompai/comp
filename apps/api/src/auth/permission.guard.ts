@@ -114,10 +114,13 @@ export class PermissionGuard implements CanActivate {
       return true;
     }
 
-    // Build required permissions map
+    // Build required permissions map, merging actions for duplicate resources
     const permissionBody: Record<string, string[]> = {};
     for (const perm of requiredPermissions) {
-      permissionBody[perm.resource] = perm.actions;
+      const existing = permissionBody[perm.resource];
+      permissionBody[perm.resource] = existing
+        ? [...new Set([...existing, ...perm.actions])]
+        : perm.actions;
     }
 
     try {

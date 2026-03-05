@@ -40,16 +40,32 @@ async function resolveControlNames(
   }
 }
 
-async function fetchControlIds(parentId: string): Promise<string[]> {
+/** Map of resource names to their Prisma models that have a `controls` relation */
+const RESOURCE_CONTROL_MODELS: Record<string, string> = {
+  policies: 'policy',
+  risks: 'risk',
+};
+
+async function fetchControlIds(resource: string, parentId: string): Promise<string[]> {
+  const modelName = RESOURCE_CONTROL_MODELS[resource];
+  if (!modelName) return [];
   try {
-    const policy = await db.policy.findUnique({
+    const model = (db as Record<string, { findUnique?: Function }>)[modelName];
+    if (!model?.findUnique) return [];
+    const record = await model.findUnique({
       where: { id: parentId },
       select: { controls: { select: { id: true } } },
     });
-    return policy?.controls?.map((c: { id: string }) => c.id) ?? [];
+    return (record as { controls?: { id: string }[] })?.controls?.map((c) => c.id) ?? [];
   } catch {
     return [];
   }
+}
+
+/** Extract the resource name from a URL like /v1/policies/:id/controls */
+function extractResourceFromPath(path: string): string {
+  const match = path.match(/\/v1\/(\w+)\/[^/]+\/controls/);
+  return match?.[1] ?? 'resource';
 }
 
 export async function buildRelationMappingChanges(
@@ -66,8 +82,9 @@ export async function buildRelationMappingChanges(
     requestBody?.controlIds &&
     entityId
   ) {
+    const resource = extractResourceFromPath(path);
     const newIds = requestBody.controlIds as string[];
-    const currentIds = await fetchControlIds(entityId);
+    const currentIds = await fetchControlIds(resource, entityId);
     const allIds = [...new Set([...currentIds, ...newIds])];
     const nameMap = await resolveControlNames(allIds);
 
@@ -78,20 +95,23 @@ export async function buildRelationMappingChanges(
     const afterIds = [...new Set([...currentIds, ...newIds])];
     const afterDisplay = afterIds.map((id) => nameMap[id] || id).join(', ');
 
+    const singularResource = resource.replace(/s$/, '');
+
     return {
       changes: { controls: { previous: prevDisplay, current: afterDisplay } },
-      description: 'Mapped controls to policy',
+      description: `Mapped controls to ${singularResource}`,
     };
   }
 
   // DELETE /v1/<resource>/:id/controls/:controlId — unmapping
   const unmapMatch = path.match(
-    /\/v1\/\w+\/([^/]+)\/controls\/([^/]+)\/?$/,
+    /\/v1\/(\w+)\/([^/]+)\/controls\/([^/]+)\/?$/,
   );
   if (unmapMatch && method === 'DELETE') {
-    const parentId = unmapMatch[1];
-    const removedControlId = unmapMatch[2];
-    const currentIds = await fetchControlIds(parentId);
+    const resource = unmapMatch[1];
+    const parentId = unmapMatch[2];
+    const removedControlId = unmapMatch[3];
+    const currentIds = await fetchControlIds(resource, parentId);
 
     const allIds = [...new Set([...currentIds, removedControlId])];
     const nameMap = await resolveControlNames(allIds);
@@ -106,9 +126,11 @@ export async function buildRelationMappingChanges(
         ? afterIds.map((id) => nameMap[id] || id).join(', ')
         : 'None';
 
+    const singularResource = resource.replace(/s$/, '');
+
     return {
       changes: { controls: { previous: prevDisplay, current: afterDisplay } },
-      description: 'Unmapped control from policy',
+      description: `Unmapped control from ${singularResource}`,
     };
   }
 
