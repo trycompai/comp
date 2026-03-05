@@ -27,7 +27,9 @@ import {
   TableHeader,
   TableRow,
 } from '@comp/ui/table';
+import { ModuleGate } from '@comp/ui/module-gate';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { PentestPreviewAnimation } from './components/pentest-preview-animation';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { toast } from 'sonner';
@@ -42,9 +44,21 @@ import {
   useIntegrationMutations,
 } from '@/hooks/use-integration-platform';
 import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
+import { subscribeToPentestPlan } from './actions/billing';
+import type { PentestPricing } from './actions/billing';
+
+interface PentestUsage {
+  includedRuns: number;
+  usedRuns: number;
+  remainingRuns: number;
+  currentPeriodEnd: string;
+}
 
 interface PenetrationTestsPageClientProps {
   orgId: string;
+  hasActiveSubscription: boolean;
+  usage: PentestUsage | null;
+  pricing: PentestPricing;
 }
 
 const hasProtocol = (value: string): boolean => /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
@@ -65,10 +79,13 @@ const normalizeTargetUrl = (value: string): string | null => {
   }
 };
 
-export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClientProps) {
+export function PenetrationTestsPageClient({ orgId, hasActiveSubscription, usage, pricing }: PenetrationTestsPageClientProps) {
   const router = useRouter();
 
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const [showNewRunDialog, setShowNewRunDialog] = useState(false);
+  const [showOverageConfirm, setShowOverageConfirm] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<{ targetUrl: string; repoUrl?: string } | null>(null);
   const [targetUrl, setTargetUrl] = useState('');
   const [repoUrl, setRepoUrl] = useState('');
   const [isConnectingGithub, setIsConnectingGithub] = useState(false);
@@ -100,6 +117,22 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
     }
   };
 
+  const executeCreateReport = async (payload: { targetUrl: string; repoUrl?: string }) => {
+    try {
+      const response = await createReport(payload);
+
+      setTargetUrl('');
+      setRepoUrl('');
+      setShowNewRunDialog(false);
+      setShowOverageConfirm(false);
+      setPendingPayload(null);
+      toast.success('Penetration test queued successfully.');
+      router.push(`/${orgId}/security/penetration-tests/${response.id}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not queue a new report');
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedTargetUrl = targetUrl.trim();
@@ -113,37 +146,108 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
       return;
     }
 
-    try {
-      const response = await createReport({
-        targetUrl: normalizedTargetUrl,
-        repoUrl: repoUrl.trim() || undefined,
-      });
+    const payload = {
+      targetUrl: normalizedTargetUrl,
+      repoUrl: repoUrl.trim() || undefined,
+    };
 
-      setTargetUrl('');
-      setRepoUrl('');
+    // If no remaining runs, show overage confirmation first
+    if (usage && usage.remainingRuns === 0) {
+      setPendingPayload(payload);
       setShowNewRunDialog(false);
-      toast.success('Penetration test queued successfully.');
-      router.push(`/${orgId}/security/penetration-tests/${response.id}`);
+      setShowOverageConfirm(true);
+      return;
+    }
+
+    await executeCreateReport(payload);
+  };
+
+  const handleConfirmOverage = async () => {
+    if (!pendingPayload) return;
+    await executeCreateReport(pendingPayload);
+  };
+
+  const handleCancelOverage = () => {
+    setShowOverageConfirm(false);
+    setPendingPayload(null);
+  };
+
+  const handleSubscribe = async () => {
+    setIsSubscribing(true);
+    try {
+      const result = await subscribeToPentestPlan(orgId);
+      if (result.url) {
+        window.location.href = result.url;
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not queue a new report');
+      toast.error(error instanceof Error ? error.message : 'Failed to start checkout');
+      setIsSubscribing(false);
     }
   };
+
+  if (!hasActiveSubscription) {
+    return (
+      <PageLayout>
+        <PageHeader title="Penetration Tests">
+          Run penetration tests with Maced and review generated reports.
+        </PageHeader>
+
+        <ModuleGate
+          label="Penetration Testing"
+          title="Find vulnerabilities before attackers do"
+          description="Automated pen-tests against your apps and infrastructure with detailed reports and remediation guidance."
+          features={[
+            '1 pen-test run included per month',
+            'OWASP Top 10 and infrastructure coverage',
+            'Actionable remediation steps in every report',
+          ]}
+          action={
+            <Button
+              size="lg"
+              onClick={handleSubscribe}
+              disabled={isSubscribing}
+            >
+              {isSubscribing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Redirecting…
+                </>
+              ) : (
+                `Get started — ${pricing.subscriptionPrice}`
+              )}
+            </Button>
+          }
+          secondaryAction={
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => window.open('https://maced.dev', '_blank')}
+            >
+              Learn more
+            </Button>
+          }
+          preview={<PentestPreviewAnimation />}
+        />
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
       <PageHeader
         title="Penetration Tests"
         actions={
-          <Button onClick={() => setShowNewRunDialog(true)}>Create Report</Button>
+          <div className="flex items-center gap-3">
+            {usage && (
+              <span className="text-sm text-muted-foreground">
+                {usage.usedRuns}/{usage.includedRuns} runs used this period
+              </span>
+            )}
+            <Button onClick={() => setShowNewRunDialog(true)}>Create Report</Button>
+          </div>
         }
       >
-        Run penetration tests with Maced and review generated reports.{' '}
-        <a
-          href={`/${orgId}/settings/billing`}
-          className="text-primary underline text-sm"
-        >
-          Manage subscription
-        </a>
+        Run penetration tests with Maced and review generated reports.
       </PageHeader>
 
       <Dialog open={showNewRunDialog} onOpenChange={setShowNewRunDialog}>
@@ -151,8 +255,11 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
           <DialogHeader>
             <DialogTitle>Queue a penetration test</DialogTitle>
             <DialogDescription>
-              Your subscription includes 3 penetration test runs per month. Additional runs are
-              charged as overage immediately.
+              {usage && usage.remainingRuns > 0
+                ? `You have ${usage.remainingRuns} of ${usage.includedRuns} included runs remaining this period.`
+                : usage && usage.remainingRuns === 0
+                  ? `You have used all included runs. This run will be charged at ${pricing.overagePrice}.`
+                  : 'Your subscription includes 1 penetration test run per month. Additional runs are charged as overage.'}
             </DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleSubmit}>
@@ -242,6 +349,32 @@ export function PenetrationTestsPageClient({ orgId }: PenetrationTestsPageClient
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showOverageConfirm} onOpenChange={(open) => { if (!open) handleCancelOverage(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Overage charge</DialogTitle>
+            <DialogDescription>
+              You have used all {usage?.includedRuns ?? 1} included runs this period. This run will be charged at {pricing.overagePrice}. Continue?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" type="button" onClick={handleCancelOverage}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmOverage} disabled={isCreating}>
+              {isCreating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Charging...
+                </>
+              ) : (
+                'Confirm & start'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

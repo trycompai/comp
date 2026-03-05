@@ -25,6 +25,7 @@ export * from './dialog';
 export * from './drawer';
 export * from './dropdown-menu';
 export * from './empty-card';
+export * from './module-gate';
 export * from './form';
 export * from './hover-card';
 export * from './icons';
