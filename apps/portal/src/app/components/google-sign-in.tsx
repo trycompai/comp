@@ -20,7 +20,12 @@ export function GoogleSignIn({
 
     // Build the callback URL with search params
     const baseURL = window.location.origin;
-    const path = inviteCode ? `/invite/${inviteCode}` : '/';
+    const isDeviceAuth = searchParams?.get('device_auth') === 'true';
+    const path = isDeviceAuth
+      ? '/auth/device-callback'
+      : inviteCode
+        ? `/invite/${inviteCode}`
+        : '/';
     const redirectTo = new URL(path, baseURL);
 
     // Append all search params if they exist
@@ -29,8 +34,6 @@ export function GoogleSignIn({
         redirectTo.searchParams.append(key, value);
       });
     }
-
-    console.log('******* redirectTo', redirectTo.toString());
 
     await authClient.signIn.social({
       provider: 'google',

@@ -19,10 +19,24 @@ export const metadata: Metadata = {
   title: 'Login | Comp AI',
 };
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const isDeviceAuth = params.device_auth === 'true';
+  const callbackPort = typeof params.callback_port === 'string' ? params.callback_port : undefined;
+  const state = typeof params.state === 'string' ? params.state : undefined;
+
+  const deviceAuthRedirect =
+    isDeviceAuth && callbackPort && state
+      ? `/auth/device-callback?callback_port=${encodeURIComponent(callbackPort)}&state=${encodeURIComponent(state)}`
+      : undefined;
+
   const defaultSignInOptions = (
     <div className="flex flex-col space-y-2">
-      <OtpSignIn />
+      <OtpSignIn deviceAuthRedirect={deviceAuthRedirect} />
     </div>
   );
 
