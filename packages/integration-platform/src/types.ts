@@ -363,6 +363,7 @@ export interface CheckContext {
     options?: {
       baseUrl?: string;
       headers?: Record<string, string>;
+      params?: Record<string, string>;
     },
   ) => Promise<T>;
 
@@ -375,6 +376,7 @@ export interface CheckContext {
     options?: {
       baseUrl?: string;
       headers?: Record<string, string>;
+      params?: Record<string, string>;
     },
   ) => Promise<T>;
 
@@ -387,6 +389,7 @@ export interface CheckContext {
     options?: {
       baseUrl?: string;
       headers?: Record<string, string>;
+      params?: Record<string, string>;
     },
   ) => Promise<T>;
 
@@ -398,6 +401,7 @@ export interface CheckContext {
     options?: {
       baseUrl?: string;
       headers?: Record<string, string>;
+      params?: Record<string, string>;
     },
   ) => Promise<T>;
 

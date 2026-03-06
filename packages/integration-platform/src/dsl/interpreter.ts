@@ -112,15 +112,15 @@ async function executeFetch(
       data = await ctx.fetch(path, { params, headers });
     } else if (method === 'POST') {
       const body = step.body ? JSON.parse(interpolate(JSON.stringify(step.body), scope)) : undefined;
-      data = await ctx.post(path, body, { headers });
+      data = await ctx.post(path, body, { params, headers });
     } else if (method === 'PUT') {
       const body = step.body ? JSON.parse(interpolate(JSON.stringify(step.body), scope)) : undefined;
-      data = await ctx.put(path, body, { headers });
+      data = await ctx.put(path, body, { params, headers });
     } else if (method === 'PATCH') {
       const body = step.body ? JSON.parse(interpolate(JSON.stringify(step.body), scope)) : undefined;
-      data = await ctx.patch(path, body, { headers });
+      data = await ctx.patch(path, body, { params, headers });
     } else if (method === 'DELETE') {
-      data = await ctx.delete(path, { headers });
+      data = await ctx.delete(path, { params, headers });
     }
 
     // Extract nested data if dataPath is specified

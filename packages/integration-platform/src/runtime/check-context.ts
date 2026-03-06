@@ -250,9 +250,9 @@ export function createCheckContext(options: CheckContextOptions): {
   async function httpPost<T>(
     path: string,
     body?: unknown,
-    opts?: { baseUrl?: string; headers?: Record<string, string> },
+    opts?: { baseUrl?: string; headers?: Record<string, string>; params?: Record<string, string> },
   ): Promise<T> {
-    const url = buildUrl(path, opts?.baseUrl);
+    const url = buildUrl(path, opts?.baseUrl, opts?.params);
     return executeRequest<T>(() =>
       fetch(url.toString(), {
         method: 'POST',
@@ -265,9 +265,9 @@ export function createCheckContext(options: CheckContextOptions): {
   async function httpPut<T>(
     path: string,
     body?: unknown,
-    opts?: { baseUrl?: string; headers?: Record<string, string> },
+    opts?: { baseUrl?: string; headers?: Record<string, string>; params?: Record<string, string> },
   ): Promise<T> {
-    const url = buildUrl(path, opts?.baseUrl);
+    const url = buildUrl(path, opts?.baseUrl, opts?.params);
     return executeRequest<T>(() =>
       fetch(url.toString(), {
         method: 'PUT',
@@ -280,9 +280,9 @@ export function createCheckContext(options: CheckContextOptions): {
   async function httpPatch<T>(
     path: string,
     body?: unknown,
-    opts?: { baseUrl?: string; headers?: Record<string, string> },
+    opts?: { baseUrl?: string; headers?: Record<string, string>; params?: Record<string, string> },
   ): Promise<T> {
-    const url = buildUrl(path, opts?.baseUrl);
+    const url = buildUrl(path, opts?.baseUrl, opts?.params);
     return executeRequest<T>(() =>
       fetch(url.toString(), {
         method: 'PATCH',
@@ -294,9 +294,9 @@ export function createCheckContext(options: CheckContextOptions): {
 
   async function httpDelete<T>(
     path: string,
-    opts?: { baseUrl?: string; headers?: Record<string, string> },
+    opts?: { baseUrl?: string; headers?: Record<string, string>; params?: Record<string, string> },
   ): Promise<T> {
-    const url = buildUrl(path, opts?.baseUrl);
+    const url = buildUrl(path, opts?.baseUrl, opts?.params);
     return executeRequest<T>(() =>
       fetch(url.toString(), { method: 'DELETE', headers: buildHeaders(opts?.headers) }),
     );
