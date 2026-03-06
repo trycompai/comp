@@ -57,14 +57,16 @@ export const TaskItems = ({
   const [sortOrder, setSortOrder] = useState<TaskItemSortOrder>('desc');
   const [filters, setFilters] = useState<TaskItemFilters>({});
   const [search, setSearch] = useState('');
-  const [selectedTaskItemId, setSelectedTaskItemId] = useState<string | null>(null);
-  const previousDataRef = useRef<typeof taskItemsResponse>(undefined);
-  const { hasPermission } = usePermissions();
-  const canCreate = hasPermission('task', 'create');
-
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const [selectedTaskItemId, setSelectedTaskItemId] = useState<string | null>(
+    () => searchParams.get('taskItemId') ?? null,
+  );
+  const previousDataRef = useRef<typeof taskItemsResponse>(undefined);
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('task', 'create');
 
   const {
     data: taskItemsResponse,
