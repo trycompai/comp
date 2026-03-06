@@ -8288,6 +8288,44 @@
         ]
       }
     },
+    "/v1/internal/tasks/notify-bulk-automation-failures": {
+      "post": {
+        "operationId": "InternalTaskNotificationController_notifyBulkAutomationFailures_v1",
+        "parameters": [
+          {
+            "name": "X-Internal-Token",
+            "in": "header",
+            "description": "Internal service token (required in production)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotifyBulkAutomationFailuresDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notifications sent"
+          },
+          "500": {
+            "description": "Notification delivery failed"
+          }
+        },
+        "summary": "Send consolidated automation failure digest (email + in-app) for an org (internal)",
+        "tags": [
+          "Internal - Tasks"
+        ]
+      }
+    },
     "/v1/tasks/{taskId}/automations": {
       "get": {
         "description": "Retrieve all automations for a specific task",
@@ -13806,6 +13844,226 @@
         ]
       }
     },
+    "/v1/admin/dynamic-integrations": {
+      "post": {
+        "operationId": "DynamicIntegrationsController_create_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "get": {
+        "operationId": "DynamicIntegrationsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/admin/dynamic-integrations/{id}": {
+      "get": {
+        "operationId": "DynamicIntegrationsController_getById_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "patch": {
+        "operationId": "DynamicIntegrationsController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "delete": {
+        "operationId": "DynamicIntegrationsController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/admin/dynamic-integrations/{id}/checks": {
+      "post": {
+        "operationId": "DynamicIntegrationsController_addCheck_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/admin/dynamic-integrations/{id}/checks/{checkId}": {
+      "patch": {
+        "operationId": "DynamicIntegrationsController_updateCheck_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "delete": {
+        "operationId": "DynamicIntegrationsController_removeCheck_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/admin/dynamic-integrations/{id}/activate": {
+      "post": {
+        "operationId": "DynamicIntegrationsController_activate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/admin/dynamic-integrations/{id}/deactivate": {
+      "post": {
+        "operationId": "DynamicIntegrationsController_deactivate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
     "/v1/integrations/checks/providers/{providerSlug}": {
       "get": {
         "operationId": "ChecksController_listProviderChecks_v1",
@@ -16227,6 +16485,51 @@
         "tags": [
           "Evidence Forms"
         ]
+      },
+      "delete": {
+        "description": "Remove an evidence form submission for the active organization. Requires owner, admin, or auditor role.",
+        "operationId": "EvidenceFormsController_deleteSubmission_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "submissionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete a submission",
+        "tags": [
+          "Evidence Forms"
+        ]
       }
     },
     "/v1/evidence-forms/{formType}/submissions": {
@@ -16658,7 +16961,7 @@
     },
     "/v1/security-penetration-tests/webhook": {
       "post": {
-        "description": "Receives callback payloads from the penetration test provider when a report is updated. Per-run webhook token validation is enforced when handshake state exists.",
+        "description": "Receives callback payloads from the penetration test provider when a run is updated. Per-run webhook token validation is enforced when handshake state exists.",
         "operationId": "SecurityPenetrationTestsController_handleWebhook_v1",
         "parameters": [
           {
@@ -16675,13 +16978,6 @@
             "required": false,
             "in": "query",
             "description": "Per-job webhook token used for handshake validation when callbacks are sent to Comp.",
-            "schema": {}
-          },
-          {
-            "name": "orgId",
-            "required": false,
-            "in": "query",
-            "description": "Organization context for webhook processing when X-Organization-Id is not provided.",
             "schema": {}
           },
           {
@@ -19057,6 +19353,53 @@
           "failedCount",
           "totalCount",
           "taskStatusChanged"
+        ]
+      },
+      "FailedTaskDto": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "description": "Task ID"
+          },
+          "taskTitle": {
+            "type": "string",
+            "description": "Task title"
+          },
+          "failedCount": {
+            "type": "number",
+            "description": "Number of failed automations for this task"
+          },
+          "totalCount": {
+            "type": "number",
+            "description": "Total number of automations for this task"
+          }
+        },
+        "required": [
+          "taskId",
+          "taskTitle",
+          "failedCount",
+          "totalCount"
+        ]
+      },
+      "NotifyBulkAutomationFailuresDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID"
+          },
+          "tasks": {
+            "description": "Array of failed tasks with counts",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FailedTaskDto"
+            }
+          }
+        },
+        "required": [
+          "organizationId",
+          "tasks"
         ]
       },
       "UpdateAutomationDto": {

@@ -197,12 +197,22 @@ export function createCheckContext(options: CheckContextOptions): {
     }
 
     if (!response.ok) {
-      const err = new Error(`HTTP ${response.status}: ${response.statusText}`);
+      let errorBody = '';
+      try {
+        errorBody = await response.text();
+      } catch {}
+      const err = new Error(`HTTP ${response.status}: ${response.statusText}${errorBody ? ` - ${errorBody.slice(0, 500)}` : ''}`);
       (err as Error & { status: number }).status = response.status;
       throw err;
     }
 
-    return response.json();
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      log.error('Failed to parse JSON response', { body: text.slice(0, 1000) });
+      throw e;
+    }
   }
 
   function buildUrl(path: string, base?: string, params?: Record<string, string>): URL {
@@ -367,11 +377,19 @@ export function createCheckContext(options: CheckContextOptions): {
     let cursor: string | null = null;
 
     for (let page = 0; page < maxPages; page++) {
-      const url = buildUrl(path, opts?.baseUrl, opts?.params);
-      if (cursor) url.searchParams.set(cursorParam, cursor);
+      let fetchUrl: string;
+
+      if (cursor && (cursor.startsWith('http://') || cursor.startsWith('https://'))) {
+        // Full URL cursor (e.g., Microsoft Graph @odata.nextLink) — follow directly
+        fetchUrl = cursor;
+      } else {
+        const url = buildUrl(path, opts?.baseUrl, opts?.params);
+        if (cursor) url.searchParams.set(cursorParam, cursor);
+        fetchUrl = url.toString();
+      }
 
       const response = await executeRequest<Record<string, unknown>>(() =>
-        fetch(url.toString(), { method: 'GET', headers: buildHeaders() }),
+        fetch(fetchUrl, { method: 'GET', headers: buildHeaders() }),
       );
 
       const data = getNestedValue(response, dataPath);
