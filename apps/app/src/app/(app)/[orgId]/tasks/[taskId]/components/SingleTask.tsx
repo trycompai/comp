@@ -372,6 +372,7 @@ export function SingleTask({
             <Comments
               entityId={task.id}
               entityType={CommentEntityType.task}
+              mentionResource="evidence"
               organizationId={orgId}
             />
           </TabsContent>

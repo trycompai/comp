@@ -45,6 +45,16 @@ jest.mock('@trycompai/db', () => ({
   },
 }));
 
+jest.mock('@comp/auth', () => ({
+  BUILT_IN_ROLE_PERMISSIONS: {
+    owner: { organization: ['read', 'update', 'delete'], member: ['create', 'read', 'update', 'delete'] },
+    admin: { organization: ['read', 'update'], member: ['create', 'read', 'update', 'delete'] },
+    auditor: { organization: ['read'], member: ['read'] },
+    employee: { compliance: ['required'] },
+    contractor: { compliance: ['required'] },
+  },
+}));
+
 jest.mock('@trycompai/email', () => ({
   isUserUnsubscribed: jest.fn().mockResolvedValue(false),
   sendUnassignedItemsNotificationEmail: jest.fn().mockResolvedValue(undefined),

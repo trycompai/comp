@@ -29,6 +29,7 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import { statement } from '@comp/auth';
 import { CreatePeopleDto } from './dto/create-people.dto';
 import { UpdatePeopleDto } from './dto/update-people.dto';
 import { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
@@ -179,6 +180,44 @@ export class PeopleController {
 
     return {
       ...result,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Get('mentionable')
+  @RequirePermission('member', 'read')
+  @ApiOperation({ summary: 'Get members who can read a specific resource type' })
+  async getMentionableMembers(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Query('resource') resource: string,
+  ) {
+    if (!resource) {
+      throw new BadRequestException('Query parameter "resource" is required');
+    }
+
+    const validResources = Object.keys(statement);
+    if (!validResources.includes(resource)) {
+      throw new BadRequestException(
+        `Invalid resource: "${resource}". Valid resources: ${validResources.join(', ')}`,
+      );
+    }
+
+    const members = await this.peopleService.findMentionableMembers(
+      organizationId,
+      resource,
+    );
+
+    return {
+      data: members,
+      count: members.length,
       authType: authContext.authType,
       ...(authContext.userId &&
         authContext.userEmail && {
