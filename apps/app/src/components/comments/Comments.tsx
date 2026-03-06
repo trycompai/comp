@@ -1,7 +1,7 @@
 'use client';
 
 import { useComments } from '@/hooks/use-comments-api';
-import { CommentEntityType } from '@db';
+import type { CommentEntityType } from '@db';
 import { Stack, Text } from '@trycompai/design-system';
 import { useParams } from 'next/navigation';
 import { CommentForm } from './CommentForm';
@@ -30,6 +30,11 @@ interface CommentsProps {
   entityId: string;
   entityType: CommentEntityType;
   /**
+   * Resource to check for mention filtering (e.g. 'evidence' on evidence pages).
+   * Defaults to entityType. Use when the page resource differs from CommentEntityType.
+   */
+  mentionResource?: string;
+  /**
    * Optional organization ID override.
    * Best practice: omit this and let the component use `orgId` from URL params.
    */
@@ -45,6 +50,7 @@ interface CommentsProps {
 export const Comments = ({
   entityId,
   entityType,
+  mentionResource,
   organizationId,
   readOnly = false,
 }: CommentsProps) => {
@@ -74,7 +80,7 @@ export const Comments = ({
   return (
     <Stack gap="md">
       {!readOnly && (
-        <CommentForm entityId={entityId} entityType={entityType} organizationId={resolvedOrgId} />
+        <CommentForm entityId={entityId} entityType={entityType} mentionResource={mentionResource} organizationId={resolvedOrgId} />
       )}
 
       {commentsLoading && (
@@ -106,7 +112,7 @@ export const Comments = ({
         </Text>
       )}
 
-      {!commentsLoading && !commentsError && comments.length === 0 && (
+      {readOnly && !commentsLoading && !commentsError && comments.length === 0 && (
         <div className="py-8 text-center">
           <Text size="sm" variant="muted">
             No comments yet.
@@ -115,7 +121,7 @@ export const Comments = ({
       )}
 
       {!commentsLoading && !commentsError && comments.length > 0 && (
-        <CommentList comments={comments} refreshComments={refreshComments} readOnly={readOnly} />
+        <CommentList comments={comments} refreshComments={refreshComments} readOnly={readOnly} entityType={mentionResource ?? entityType} />
       )}
     </Stack>
   );

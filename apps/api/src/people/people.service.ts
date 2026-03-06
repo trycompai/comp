@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
 import { FleetService } from '../lib/fleet.service';
+import { BUILT_IN_ROLE_PERMISSIONS } from '@comp/auth';
 import type { PeopleResponseDto } from './dto/people-responses.dto';
 import type { CreatePeopleDto } from './dto/create-people.dto';
 import type { UpdatePeopleDto } from './dto/update-people.dto';
@@ -44,6 +45,64 @@ export class PeopleService {
       );
       throw new Error(`Failed to retrieve members: ${error.message}`);
     }
+  }
+
+  async findMentionableMembers(
+    organizationId: string,
+    resource: string,
+  ): Promise<PeopleResponseDto[]> {
+    const members = await MemberQueries.findAllByOrganization(
+      organizationId,
+      false,
+    );
+
+    // Collect all unique role names across members
+    const allRoleNames = new Set<string>();
+    for (const member of members) {
+      const roles = member.role.split(',').map((r) => r.trim()).filter(Boolean);
+      for (const role of roles) {
+        allRoleNames.add(role);
+      }
+    }
+
+    // Batch-resolve permissions: built-in from constants, custom from DB
+    const builtInRoleNames = [...allRoleNames].filter(
+      (name) => BUILT_IN_ROLE_PERMISSIONS[name] !== undefined,
+    );
+    const customRoleNames = [...allRoleNames].filter(
+      (name) => BUILT_IN_ROLE_PERMISSIONS[name] === undefined,
+    );
+
+    // Build permission map for all roles
+    const permissionMap = new Map<string, Record<string, string[]>>();
+    for (const name of builtInRoleNames) {
+      permissionMap.set(name, BUILT_IN_ROLE_PERMISSIONS[name]);
+    }
+
+    // Batch-fetch custom role permissions in one query
+    if (customRoleNames.length > 0) {
+      const customRoles = await db.organizationRole.findMany({
+        where: { organizationId, name: { in: customRoleNames } },
+      });
+      for (const role of customRoles) {
+        const perms = typeof role.permissions === 'string'
+          ? JSON.parse(role.permissions) as Record<string, string[]>
+          : role.permissions as Record<string, string[]>;
+        permissionMap.set(role.name, perms);
+      }
+    }
+
+    // Filter members whose combined permissions include the required permission
+    return members.filter((member) => {
+      const roles = member.role.split(',').map((r) => r.trim()).filter(Boolean);
+      for (const role of roles) {
+        const perms = permissionMap.get(role);
+        if (perms && perms[resource]?.includes('read')) {
+          return true;
+        }
+      }
+      return false;
+    });
   }
 
   async findById(

@@ -15,6 +15,16 @@ jest.mock('../auth/auth.server', () => ({
   },
 }));
 
+jest.mock('@comp/auth', () => ({
+  statement: {
+    organization: ['read', 'update', 'delete'],
+    member: ['create', 'read', 'update', 'delete'],
+    risk: ['create', 'read', 'update', 'delete'],
+    control: ['create', 'read', 'update', 'delete'],
+  },
+  BUILT_IN_ROLE_PERMISSIONS: {},
+}));
+
 describe('PeopleController', () => {
   let controller: PeopleController;
   let peopleService: jest.Mocked<PeopleService>;
@@ -29,6 +39,7 @@ describe('PeopleController', () => {
     unlinkDevice: jest.fn(),
     removeHostById: jest.fn(),
     updateEmailPreferences: jest.fn(),
+    findMentionableMembers: jest.fn(),
   };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
