@@ -88,6 +88,20 @@ export class VendorsService {
       const vendors = await db.vendor.findMany({
         where: { organizationId },
         orderBy: { createdAt: 'desc' },
+        include: {
+          assignee: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       this.logger.log(
