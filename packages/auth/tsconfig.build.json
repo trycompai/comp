@@ -7,8 +7,8 @@
     "sourceMap": true,
     "noEmit": false,
     "allowImportingTsExtensions": false,
-    "module": "CommonJS",
-    "moduleResolution": "node"
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
