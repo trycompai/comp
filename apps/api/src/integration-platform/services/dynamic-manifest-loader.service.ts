@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import {
   registry,
   interpretDeclarativeCheck,
@@ -9,11 +14,16 @@ import {
   type FindingSeverity,
   type CheckVariable,
 } from '@comp/integration-platform';
-import { DynamicIntegrationRepository, type DynamicIntegrationWithChecks } from '../repositories/dynamic-integration.repository';
+import {
+  DynamicIntegrationRepository,
+  type DynamicIntegrationWithChecks,
+} from '../repositories/dynamic-integration.repository';
 import type { DynamicCheck } from '@prisma/client';
 
 @Injectable()
-export class DynamicManifestLoaderService implements OnModuleInit {
+export class DynamicManifestLoaderService
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(DynamicManifestLoaderService.name);
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -32,6 +42,13 @@ export class DynamicManifestLoaderService implements OnModuleInit {
       }, 60_000);
     } catch (error) {
       this.logger.error('Failed to load dynamic manifests on boot', error);
+    }
+  }
+
+  onModuleDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
     }
   }
 
@@ -55,7 +72,9 @@ export class DynamicManifestLoaderService implements OnModuleInit {
     }
 
     registry.refreshDynamic(manifests);
-    this.logger.log(`Loaded ${manifests.length} dynamic integrations into registry`);
+    this.logger.log(
+      `Loaded ${manifests.length} dynamic integrations into registry`,
+    );
   }
 
   /**
@@ -91,8 +110,12 @@ export class DynamicManifestLoaderService implements OnModuleInit {
       docsUrl: integration.docsUrl ?? undefined,
       auth,
       baseUrl: integration.baseUrl ?? undefined,
-      defaultHeaders: (integration.defaultHeaders as Record<string, string>) ?? undefined,
-      capabilities: (integration.capabilities as unknown as IntegrationCapability[]) ?? ['checks'],
+      defaultHeaders:
+        (integration.defaultHeaders as Record<string, string>) ?? undefined,
+      capabilities:
+        (integration.capabilities as unknown as IntegrationCapability[]) ?? [
+          'checks',
+        ],
       supportsMultipleConnections: integration.supportsMultipleConnections,
       checks,
       isActive: integration.isActive,
@@ -110,7 +133,9 @@ export class DynamicManifestLoaderService implements OnModuleInit {
       id: check.checkSlug,
       name: check.name,
       description: check.description,
-      definition: definition as Parameters<typeof interpretDeclarativeCheck>[0]['definition'],
+      definition: definition as Parameters<
+        typeof interpretDeclarativeCheck
+      >[0]['definition'],
       taskMapping: check.taskMapping ?? undefined,
       defaultSeverity: (check.defaultSeverity as FindingSeverity) ?? 'medium',
       variables: variables && variables.length > 0 ? variables : undefined,

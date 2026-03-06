@@ -19,6 +19,33 @@ import { ProviderRepository } from '../repositories/provider.repository';
 import { DynamicManifestLoaderService } from '../services/dynamic-manifest-loader.service';
 import { validateIntegrationDefinition } from '@comp/integration-platform';
 
+const DYNAMIC_INTEGRATION_UPDATE_FIELDS = [
+  'slug',
+  'name',
+  'description',
+  'category',
+  'logoUrl',
+  'docsUrl',
+  'baseUrl',
+  'defaultHeaders',
+  'authConfig',
+  'capabilities',
+  'supportsMultipleConnections',
+  'isActive',
+] as const;
+
+const DYNAMIC_CHECK_UPDATE_FIELDS = [
+  'checkSlug',
+  'name',
+  'description',
+  'taskMapping',
+  'defaultSeverity',
+  'definition',
+  'variables',
+  'isEnabled',
+  'sortOrder',
+] as const;
+
 @Controller({ path: 'admin/dynamic-integrations', version: '1' })
 @UseGuards(PlatformAdminGuard)
 export class DynamicIntegrationsController {
@@ -40,7 +67,10 @@ export class DynamicIntegrationsController {
     const validation = validateIntegrationDefinition(body);
     if (!validation.success) {
       throw new HttpException(
-        { message: 'Invalid integration definition', errors: validation.errors },
+        {
+          message: 'Invalid integration definition',
+          errors: validation.errors,
+        },
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -87,7 +117,9 @@ export class DynamicIntegrationsController {
       });
     }
 
-    this.logger.log(`Created dynamic integration: ${def.slug} with ${def.checks.length} checks`);
+    this.logger.log(
+      `Created dynamic integration: ${def.slug} with ${def.checks.length} checks`,
+    );
 
     return { success: true, id: integration.id, slug: integration.slug };
   }
@@ -118,7 +150,10 @@ export class DynamicIntegrationsController {
   async getById(@Param('id') id: string) {
     const integration = await this.dynamicIntegrationRepo.findById(id);
     if (!integration) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
     return integration;
   }
@@ -130,10 +165,14 @@ export class DynamicIntegrationsController {
   async update(@Param('id') id: string, @Body() body: Record<string, unknown>) {
     const existing = await this.dynamicIntegrationRepo.findById(id);
     if (!existing) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
-    await this.dynamicIntegrationRepo.update(id, body);
+    const data = this.buildIntegrationUpdateData(body);
+    await this.dynamicIntegrationRepo.update(id, data);
     await this.loaderService.invalidateCache();
 
     return { success: true };
@@ -146,7 +185,10 @@ export class DynamicIntegrationsController {
   async remove(@Param('id') id: string) {
     const existing = await this.dynamicIntegrationRepo.findById(id);
     if (!existing) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     await this.dynamicIntegrationRepo.delete(id);
@@ -168,7 +210,10 @@ export class DynamicIntegrationsController {
   ) {
     const integration = await this.dynamicIntegrationRepo.findById(id);
     if (!integration) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     const check = await this.dynamicCheckRepo.create({
@@ -203,7 +248,8 @@ export class DynamicIntegrationsController {
       throw new HttpException('Check not found', HttpStatus.NOT_FOUND);
     }
 
-    await this.dynamicCheckRepo.update(checkId, body);
+    const data = this.buildCheckUpdateData(body);
+    await this.dynamicCheckRepo.update(checkId, data);
     await this.loaderService.invalidateCache();
 
     return { success: true };
@@ -238,7 +284,10 @@ export class DynamicIntegrationsController {
   async activate(@Param('id') id: string) {
     const integration = await this.dynamicIntegrationRepo.findById(id);
     if (!integration) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     // Validate all checks
@@ -256,7 +305,9 @@ export class DynamicIntegrationsController {
       slug: integration.slug,
       name: integration.name,
       category: integration.category,
-      capabilities: (integration.capabilities as unknown as string[]) ?? ['checks'],
+      capabilities: (integration.capabilities as unknown as string[]) ?? [
+        'checks',
+      ],
       isActive: true,
     });
 
@@ -277,7 +328,10 @@ export class DynamicIntegrationsController {
   async deactivate(@Param('id') id: string) {
     const integration = await this.dynamicIntegrationRepo.findById(id);
     if (!integration) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     await this.dynamicIntegrationRepo.update(id, { isActive: false });
@@ -285,5 +339,73 @@ export class DynamicIntegrationsController {
 
     this.logger.log(`Deactivated dynamic integration: ${integration.slug}`);
     return { success: true };
+  }
+
+  private buildIntegrationUpdateData(
+    body: Record<string, unknown>,
+  ): Prisma.DynamicIntegrationUpdateInput {
+    this.assertNoUnknownFields(body, DYNAMIC_INTEGRATION_UPDATE_FIELDS);
+
+    const data = this.pickAllowedFields(
+      body,
+      DYNAMIC_INTEGRATION_UPDATE_FIELDS,
+    );
+
+    if (Object.keys(data).length === 0) {
+      throw new HttpException(
+        'No valid fields provided for update',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return data as Prisma.DynamicIntegrationUpdateInput;
+  }
+
+  private buildCheckUpdateData(
+    body: Record<string, unknown>,
+  ): Prisma.DynamicCheckUpdateInput {
+    this.assertNoUnknownFields(body, DYNAMIC_CHECK_UPDATE_FIELDS);
+
+    const data = this.pickAllowedFields(body, DYNAMIC_CHECK_UPDATE_FIELDS);
+
+    if (Object.keys(data).length === 0) {
+      throw new HttpException(
+        'No valid fields provided for update',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return data as Prisma.DynamicCheckUpdateInput;
+  }
+
+  private assertNoUnknownFields(
+    body: Record<string, unknown>,
+    allowedFields: readonly string[],
+  ) {
+    const unknownFields = Object.keys(body).filter(
+      (field) => !allowedFields.includes(field),
+    );
+
+    if (unknownFields.length > 0) {
+      throw new HttpException(
+        `Unknown fields in update payload: ${unknownFields.join(', ')}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  private pickAllowedFields(
+    body: Record<string, unknown>,
+    allowedFields: readonly string[],
+  ): Record<string, unknown> {
+    const data: Record<string, unknown> = {};
+
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        data[field] = body[field];
+      }
+    }
+
+    return data;
   }
 }
