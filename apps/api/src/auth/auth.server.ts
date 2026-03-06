@@ -154,14 +154,13 @@ export const auth = betterAuth({
       generateId: false,
     },
     ...(cookieDomain && {
-      cookies: {
-        sessionToken: {
-          attributes: {
-            domain: cookieDomain,
-            sameSite: 'lax' as const,
-            secure: true,
-          },
-        },
+      crossSubDomainCookies: {
+        enabled: true,
+        domain: cookieDomain,
+      },
+      defaultCookieAttributes: {
+        sameSite: 'lax' as const,
+        secure: true,
       },
     }),
   },

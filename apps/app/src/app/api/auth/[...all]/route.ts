@@ -199,7 +199,22 @@ async function proxyRequest(request: NextRequest): Promise<NextResponse> {
     const responseHeaders = new Headers();
 
     // Handle Set-Cookie headers specially - they need to be appended, not set
-    const setCookieHeaders = response.headers.getSetCookie?.() || [];
+    // Use getSetCookie() with fallback for runtimes that don't support it
+    let setCookieHeaders: string[] = [];
+    if (typeof response.headers.getSetCookie === 'function') {
+      setCookieHeaders = response.headers.getSetCookie();
+    }
+
+    // Fallback: extract from raw headers if getSetCookie didn't work
+    // This handles Vercel/edge runtimes where getSetCookie may not be available
+    if (setCookieHeaders.length === 0) {
+      const raw = response.headers.get('set-cookie');
+      if (raw) {
+        // Split on comma-space but NOT within Expires date values
+        // e.g. "Expires=Thu, 01 Jan 2026" contains a comma we must not split on
+        setCookieHeaders = raw.split(/,(?=\s*[a-zA-Z_\-.]+=)/);
+      }
+    }
 
     response.headers.forEach((value, key) => {
       const lowerKey = key.toLowerCase();
