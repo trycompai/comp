@@ -46,6 +46,7 @@ COPY apps/api ./apps/api
 COPY --from=deps /app/node_modules ./node_modules
 
 # Build workspace packages
+RUN cd packages/auth && bun run build && cd ../..
 RUN cd packages/db && bun run build && cd ../..
 RUN cd packages/integration-platform && bun run build && cd ../..
 RUN cd packages/email && bun run build && cd ../..

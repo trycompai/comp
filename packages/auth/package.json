@@ -2,14 +2,27 @@
   "name": "@comp/auth",
   "version": "0.0.1",
   "private": true,
-  "main": "./src/permissions.ts",
-  "types": "./src/permissions.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/permissions.ts",
-    "./permissions": "./src/permissions.ts",
-    "./server": "./src/server.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./permissions": {
+      "types": "./dist/permissions.d.ts",
+      "import": "./src/permissions.ts",
+      "default": "./dist/permissions.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./src/server.ts",
+      "default": "./dist/server.js"
+    }
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
