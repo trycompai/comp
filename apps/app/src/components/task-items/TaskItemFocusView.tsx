@@ -281,6 +281,17 @@ export function TaskItemFocusView({
             <Stack gap="md">
               <Grid cols={{ base: '1', md: '2' }} gap="4">
                 <Stack gap="sm">
+                  <Label>Assignee</Label>
+                  <SelectAssignee
+                    assigneeId={taskItem.assignee?.id || null}
+                    assignees={assignableMembers}
+                    onAssigneeChange={handleAssigneeChange}
+                    disabled={!canUpdate || isUpdating}
+                    withTitle={false}
+                  />
+                </Stack>
+
+                <Stack gap="sm">
                   <Label>Status</Label>
                   <Select
                     value={taskItem.status}
@@ -318,17 +329,6 @@ export function TaskItemFocusView({
                       ))}
                     </SelectContent>
                   </Select>
-                </Stack>
-
-                <Stack gap="sm">
-                  <Label>Assignee</Label>
-                  <SelectAssignee
-                    assigneeId={taskItem.assignee?.id || null}
-                    assignees={assignableMembers}
-                    onAssigneeChange={handleAssigneeChange}
-                    disabled={!canUpdate || isUpdating}
-                    withTitle={false}
-                  />
                 </Stack>
               </Grid>
             </Stack>

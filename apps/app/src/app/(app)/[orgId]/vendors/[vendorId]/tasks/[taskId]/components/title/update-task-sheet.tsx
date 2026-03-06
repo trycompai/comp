@@ -13,7 +13,6 @@ import { TaskStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -30,10 +29,10 @@ const updateTaskSheetSchema = z.object({
 interface UpdateTaskSheetProps {
   task: Task & { assignee: { user: User } | null };
   assignees: (Member & { user: User })[];
+  onClose?: () => void;
 }
 
-export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
-  const [_, setTaskOverviewSheet] = useQueryState('task-overview-sheet');
+export function UpdateTaskSheet({ task, assignees, onClose }: UpdateTaskSheetProps) {
   const params = useParams<{ taskId: string }>();
   const { updateTask } = useTaskMutations();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,7 +58,7 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
         assigneeId: data.assigneeId,
       });
       toast.success('Task updated successfully');
-      setTaskOverviewSheet(null);
+      onClose?.();
     } catch {
       toast.error('Failed to update task');
     } finally {
