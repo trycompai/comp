@@ -103,9 +103,9 @@ function validateSecurityConfig(): void {
     );
   }
 
-  if (process.env.SECRET_KEY.length < 16) {
+  if (process.env.SECRET_KEY.length < 32) {
     throw new Error(
-      'SECURITY ERROR: SECRET_KEY must be at least 16 characters long for security.',
+      'SECURITY ERROR: SECRET_KEY must be at least 32 characters long for security.',
     );
   }
 
