@@ -241,6 +241,20 @@ async function proxyRequest(request: NextRequest): Promise<NextResponse> {
         }
 
         responseHeaders.append('set-cookie', processedCookie);
+
+        // When a cookie has a Domain attribute (cross-subdomain), also delete
+        // any stale host-only cookie with the same name. Host-only cookies
+        // take precedence and would shadow the new cross-subdomain cookie.
+        if (!IS_DEVELOPMENT && /;\s*domain=/i.test(processedCookie)) {
+          const nameMatch = processedCookie.match(/^([^=]+)=/);
+          if (nameMatch) {
+            const cookieName = nameMatch[1].trim();
+            responseHeaders.append(
+              'set-cookie',
+              `${cookieName}=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`,
+            );
+          }
+        }
       }
     }
 
