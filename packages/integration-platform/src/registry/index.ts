@@ -24,6 +24,8 @@ import { vercelManifest } from '../manifests/vercel';
 
 class IntegrationRegistryImpl implements IntegrationRegistry {
   private manifests: Map<string, IntegrationManifest> = new Map();
+  /** IDs of code-based manifests — these can never be overridden by dynamic ones */
+  private codeManifestIds: Set<string> = new Set();
 
   constructor(manifests: IntegrationManifest[]) {
     // Validate and register manifests
@@ -35,6 +37,7 @@ class IntegrationRegistryImpl implements IntegrationRegistry {
       }
 
       this.manifests.set(manifest.id, manifest);
+      this.codeManifestIds.add(manifest.id);
     }
   }
 
@@ -62,6 +65,32 @@ class IntegrationRegistryImpl implements IntegrationRegistry {
       throw new Error(`Integration ${manifest.id}: must have at least one capability`);
     }
   }
+
+  // ==================== Dynamic Manifest Management ====================
+
+  registerDynamic(manifest: IntegrationManifest): void {
+    if (this.codeManifestIds.has(manifest.id)) return;
+    this.validateManifest(manifest);
+    this.manifests.set(manifest.id, manifest);
+  }
+
+  unregisterDynamic(id: string): void {
+    if (this.codeManifestIds.has(id)) return;
+    this.manifests.delete(id);
+  }
+
+  refreshDynamic(manifests: IntegrationManifest[]): void {
+    for (const id of this.manifests.keys()) {
+      if (!this.codeManifestIds.has(id)) {
+        this.manifests.delete(id);
+      }
+    }
+    for (const manifest of manifests) {
+      this.registerDynamic(manifest);
+    }
+  }
+
+  // ==================== Standard Registry Methods ====================
 
   getManifest(id: string): IntegrationManifest | undefined {
     return this.manifests.get(id);
