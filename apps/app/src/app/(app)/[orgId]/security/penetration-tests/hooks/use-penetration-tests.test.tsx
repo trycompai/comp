@@ -10,6 +10,17 @@ import {
   usePenetrationTests,
 } from './use-penetration-tests';
 
+vi.mock('../actions/billing', () => ({
+  checkAndChargePentestBilling: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@/utils/jwt-manager', () => ({
+  jwtManager: {
+    getValidToken: vi.fn().mockResolvedValue(null),
+    forceRefresh: vi.fn().mockResolvedValue(null),
+  },
+}));
+
 const createJsonResponse = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
     status,
@@ -92,7 +103,7 @@ describe('use-penetration-tests hooks', () => {
     fetchMock.mockResolvedValueOnce(
       createJsonResponse(
         {
-          error: 'provider unavailable',
+          message: 'provider unavailable',
         },
         503,
       ),
@@ -172,12 +183,11 @@ describe('use-penetration-tests hooks', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('creates a report and returns checkout context', async () => {
+  it('creates a report and returns run id', async () => {
     fetchMock.mockResolvedValueOnce(
       createJsonResponse({
-        checkoutMode: 'mock',
-        checkoutUrl: 'https://checkout.test/route',
         id: 'run_123',
+        status: 'provisioning',
       }),
     );
 
@@ -185,36 +195,29 @@ describe('use-penetration-tests hooks', () => {
 
     await act(async () => {
       await expect(
-        result.current.createReport(
-          {
-            targetUrl: 'https://app.example.com',
-            repoUrl: 'https://github.com/org/repo',
-            testMode: true,
-            mockCheckout: false,
-          },
-        ),
+        result.current.createReport({
+          targetUrl: 'https://app.example.com',
+          repoUrl: 'https://github.com/org/repo',
+          testMode: true,
+        }),
       ).resolves.toMatchObject({
-        checkoutMode: 'mock',
-        checkoutUrl: 'https://checkout.test/route',
         id: 'run_123',
       });
     });
 
     const init = fetchMock.mock.calls[0][1] as RequestInit;
     const requestBody = JSON.parse((init.body ?? '{}') as string);
-    expect(requestBody.orgId).toBe('org_123');
-    expect(requestBody.mockCheckout).toBe(false);
     expect(requestBody.targetUrl).toBe('https://app.example.com');
     expect(requestBody.repoUrl).toBe('https://github.com/org/repo');
     expect(requestBody.testMode).toBe(true);
+    expect(requestBody.mockCheckout).toBeUndefined();
   });
 
   it('supports creating a report without repository URL for black-box mode', async () => {
     fetchMock.mockResolvedValueOnce(
       createJsonResponse({
-        checkoutMode: 'mock',
-        checkoutUrl: 'https://checkout.test/route',
         id: 'run_black_box',
+        status: 'provisioning',
       }),
     );
 
@@ -236,13 +239,14 @@ describe('use-penetration-tests hooks', () => {
     expect(requestBody.repoUrl).toBeUndefined();
   });
 
-  it('creates a report using default mock checkout when not overridden', async () => {
+  it('billing action failure surfaces the error after run creation', async () => {
     fetchMock.mockResolvedValueOnce(
-      createJsonResponse({
-        checkoutMode: 'mock',
-        checkoutUrl: 'https://checkout.test/route',
-        id: 'run_456',
-      }),
+      createJsonResponse({ id: 'run_billed', status: 'provisioning' }),
+    );
+
+    const { checkAndChargePentestBilling } = await import('../actions/billing');
+    vi.mocked(checkAndChargePentestBilling).mockRejectedValueOnce(
+      new Error('No active pentest subscription.'),
     );
 
     const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
@@ -251,47 +255,19 @@ describe('use-penetration-tests hooks', () => {
       await expect(
         result.current.createReport({
           targetUrl: 'https://app.example.com',
-          repoUrl: 'https://github.com/org/repo',
         }),
-      ).resolves.toMatchObject({
-        checkoutMode: 'mock',
-        checkoutUrl: 'https://checkout.test/route',
-        id: 'run_456',
-      });
+      ).rejects.toThrow('No active pentest subscription.');
     });
 
-    const init = fetchMock.mock.calls[0][1] as RequestInit;
-    const requestBody = JSON.parse((init.body ?? '{}') as string);
-    expect(requestBody.mockCheckout).toBe(true);
-    expect(requestBody.checkoutMode).toBeUndefined();
-  });
-
-  it('fails create when stripe mode is requested but checkout URL is missing', async () => {
-    fetchMock.mockResolvedValueOnce(
-      createJsonResponse({
-        checkoutMode: 'stripe',
-        id: 'run_stripe_no_url',
-      }),
-    );
-
-    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
-
-    await act(async () => {
-      await expect(
-        result.current.createReport({
-          targetUrl: 'https://app.example.com',
-          repoUrl: 'https://github.com/org/repo',
-          mockCheckout: false,
-        }),
-      ).rejects.toThrow('Missing checkout URL for stripe checkout mode.');
-    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(result.current.error).toBe('No active pentest subscription.');
   });
 
   it('surfaces json provider error objects from create response', async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
-          error: 'invalid repository URL',
+          message: 'invalid repository URL',
         }),
         { status: 400 },
       ),
@@ -328,7 +304,7 @@ describe('use-penetration-tests hooks', () => {
     expect(result.current.error).toBe('service unavailable');
   });
 
-  it('uses raw JSON payload text when error body is object-shaped without error/message fields', async () => {
+  it('surfaces HTTP status error when response body has no standard error fields', async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
@@ -346,10 +322,10 @@ describe('use-penetration-tests hooks', () => {
           targetUrl: 'https://app.example.com',
           repoUrl: 'https://github.com/org/repo',
         }),
-      ).rejects.toThrow('{"reason":"provider rejected payload"}');
+      ).rejects.toThrow('HTTP 500: ');
     });
 
-    expect(result.current.error).toBe('{"reason":"provider rejected payload"}');
+    expect(result.current.error).toContain('HTTP 500');
   });
 
   it('uses the message field from non-empty JSON error responses', async () => {
@@ -376,7 +352,7 @@ describe('use-penetration-tests hooks', () => {
     expect(result.current.error).toBe('Invalid report configuration');
   });
 
-  it('falls back to a generic error when the transport failure is not an Error', async () => {
+  it('falls back to network error message when the transport failure is not an Error', async () => {
     fetchMock.mockRejectedValueOnce('network offline');
 
     const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
@@ -387,13 +363,13 @@ describe('use-penetration-tests hooks', () => {
           targetUrl: 'https://app.example.com',
           repoUrl: 'https://github.com/org/repo',
         }),
-      ).rejects.toThrow('Failed to create report');
+      ).rejects.toThrow('Network error');
     });
 
-    expect(result.current.error).toBe('Failed to create report');
+    expect(result.current.error).toBe('Network error');
   });
 
-  it('treats empty create error payload as status based message', async () => {
+  it('treats empty create error payload as HTTP status based message', async () => {
     fetchMock.mockResolvedValueOnce(new Response('', { status: 400 }));
 
     const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
@@ -404,19 +380,19 @@ describe('use-penetration-tests hooks', () => {
           targetUrl: 'https://app.example.com',
           repoUrl: 'https://github.com/org/repo',
         }),
-      ).rejects.toThrow('Request failed with status 400');
+      ).rejects.toThrow('HTTP 400: ');
     });
 
-    expect(result.current.error).toBe('Request failed with status 400');
+    expect(result.current.error).toContain('HTTP 400');
   });
 
-  it('returns an empty object when report detail API response body is empty', async () => {
+  it('returns null when report detail API response body is empty', async () => {
     fetchMock.mockResolvedValueOnce(new Response('', { status: 200 }));
 
     const { result } = renderHook(() => usePenetrationTest('org_123', 'run_123'), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.report).toEqual({});
+    expect(result.current.report).toBeNull();
   });
 });

@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 interface SettingsSidebarProps {
   orgId: string;
   showBrowserTab: boolean;
+  showBillingTab?: boolean;
 }
 
 type SettingsNavItem = {
@@ -16,7 +17,7 @@ type SettingsNavItem = {
   hidden?: boolean;
 };
 
-export function SettingsSidebar({ orgId, showBrowserTab }: SettingsSidebarProps) {
+export function SettingsSidebar({ orgId, showBrowserTab, showBillingTab }: SettingsSidebarProps) {
   const pathname = usePathname() ?? '';
 
   const items: SettingsNavItem[] = [
@@ -30,6 +31,12 @@ export function SettingsSidebar({ orgId, showBrowserTab }: SettingsSidebarProps)
       label: 'Browser',
       path: `/${orgId}/settings/browser-connection`,
       hidden: !showBrowserTab,
+    },
+    {
+      id: 'billing',
+      label: 'Billing',
+      path: `/${orgId}/settings/billing`,
+      hidden: !showBillingTab,
     },
     { id: 'user', label: 'User Settings', path: `/${orgId}/settings/user` },
   ];

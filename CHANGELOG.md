@@ -1,3 +1,30 @@
+## [1.88.1](https://github.com/trycompai/comp/compare/v1.88.0...v1.88.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* **evidence-forms:** regenerate presigned URLs on submission retrieval ([#2223](https://github.com/trycompai/comp/issues/2223)) ([783db83](https://github.com/trycompai/comp/commit/783db83f15f98aed4554c28a6c6a637c84463ee6))
+
+# [1.88.0](https://github.com/trycompai/comp/compare/v1.87.0...v1.88.0) (2026-03-05)
+
+
+### Bug Fixes
+
+* allow year selection in join date picker ([#2211](https://github.com/trycompai/comp/issues/2211)) ([57acab0](https://github.com/trycompai/comp/commit/57acab032f964dd912254d00a29a6ff598dbc329))
+* **app:** hide inactive user tasks on People/Tasks tab ([#2219](https://github.com/trycompai/comp/issues/2219)) ([caef0d9](https://github.com/trycompai/comp/commit/caef0d9c5811f74f423419ef1c0bd526868d198d))
+* **billing:** harden server actions against open redirect and runId abuse ([#2217](https://github.com/trycompai/comp/issues/2217)) ([e77e278](https://github.com/trycompai/comp/commit/e77e2786a9241f58b2b2d8b033c83c3acc5ff6dc))
+* prevent secret input text from overflowing its container ([#2210](https://github.com/trycompai/comp/issues/2210)) ([4489667](https://github.com/trycompai/comp/commit/448966765ccc311050438660a466de8087d52710))
+* **security:** incremental penetration-tests lifecycle and webhook contract fixes ([#2208](https://github.com/trycompai/comp/issues/2208)) ([8a5b115](https://github.com/trycompai/comp/commit/8a5b1158af078f2711cad374a761f61f12c1fc7e))
+
+
+### Features
+
+* add disclaimer to cloud integrations about Cloud Tests usage ([#2213](https://github.com/trycompai/comp/issues/2213)) ([a7ca4fd](https://github.com/trycompai/comp/commit/a7ca4fd458d161512ccaf92c650ca3ea6d134ece))
+* add pagination to context hub table ([#2214](https://github.com/trycompai/comp/issues/2214)) ([f2b282c](https://github.com/trycompai/comp/commit/f2b282c9b9b487ec83c3efb3a6637abe9979ea30))
+* consolidate automation failure emails into daily digest ([#2216](https://github.com/trycompai/comp/issues/2216)) ([f23df39](https://github.com/trycompai/comp/commit/f23df39be66c04a733e3c38c8233ee7551ee09cd))
+* **pentest:** subscription billing + GitHub repo selector ([#2212](https://github.com/trycompai/comp/issues/2212)) ([9ec0449](https://github.com/trycompai/comp/commit/9ec044952f0938e9d992a6610069b1b75ef6af4b))
+* show success banner when all cloud tests pass ([#2215](https://github.com/trycompai/comp/issues/2215)) ([adc8644](https://github.com/trycompai/comp/commit/adc864474e0f214fff75f10ce556d8a9e868f655))
+
 # [1.87.0](https://github.com/trycompai/comp/compare/v1.86.1...v1.87.0) (2026-03-02)
 
 

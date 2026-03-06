@@ -59,6 +59,10 @@ model Organization {
   integrationConnections IntegrationConnection[]
   integrationOAuthApps   IntegrationOAuthApp[]
 
+  // Pentest Subscription
+  pentestSubscription PentestSubscription?
+  billing             OrganizationBilling?
+
   // Browser Automation
   browserbaseContext BrowserbaseContext?
   fleetPolicyResults FleetPolicyResult[]

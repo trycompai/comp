@@ -7,7 +7,7 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
 import { authClient } from '@/utils/auth-client';
-import { CertificateCheck, CloudAuditing, Logout, Security, Settings } from '@carbon/icons-react';
+import { Badge, Globe, Logout, ManageProtection, Settings } from '@carbon/icons-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -240,14 +240,14 @@ function AppShellWrapperContent({
             <ShellRailNavItem
               href={`/${organization.id}/frameworks`}
               isActive={!isSettingsActive && !isTrustActive && !isSecurityActive}
-              icon={<CertificateCheck className="size-5" />}
+              icon={<Badge className="size-5" />}
               label="Compliance"
             />
             {isTrustNdaEnabled && (
               <ShellRailNavItem
                 href={`/${organization.id}/trust`}
                 isActive={isTrustActive}
-                icon={<CloudAuditing className="size-5" />}
+                icon={<Globe className="size-5" />}
                 label="Trust"
               />
             )}
@@ -255,7 +255,7 @@ function AppShellWrapperContent({
               <ShellRailNavItem
                 href={`/${organization.id}/security`}
                 isActive={isSecurityActive}
-                icon={<Security className="size-5" />}
+                icon={<ManageProtection className="size-5" />}
                 label="Security"
               />
             ) : null}
@@ -282,7 +282,7 @@ function AppShellWrapperContent({
                 }
               />
               {isSettingsActive ? (
-                <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} />
+                <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} showBillingTab={isSecurityEnabled} />
               ) : isTrustActive ? (
                 <TrustSidebar orgId={organization.id} />
               ) : isSecurityActive && isSecurityEnabled ? (
