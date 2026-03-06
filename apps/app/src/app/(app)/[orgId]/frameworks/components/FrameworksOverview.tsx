@@ -110,9 +110,10 @@ export function FrameworksOverview({
                             <Image
                               src={badgeSrc}
                               alt={framework.framework.name}
-                              width={400}
-                              height={400}
+                              width={32}
+                              height={32}
                               className="rounded-full w-8 h-8"
+                              unoptimized
                             />
                           ) : (
                             <div className="rounded-full w-8 h-8 bg-muted flex items-center justify-center">
