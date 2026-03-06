@@ -134,7 +134,7 @@ async function executeFetch(
     if (onError === 'fail') {
       throw error;
     } else if (onError === 'empty') {
-      scope[step.as] = Array.isArray(scope[step.as]) ? [] : null;
+      scope[step.as] = [];
     }
     // 'skip' — just don't set anything
     if (onError === 'skip') {
