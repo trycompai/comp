@@ -50,13 +50,20 @@ export class TaskItemMentionNotifierService {
         return;
       }
 
-      // Get all mentioned users
-      const mentionedUsers = await db.user.findMany({
+      // Get mentioned users: exclude platform admins unless they are an owner of this org
+      const mentionedMembers = await db.member.findMany({
         where: {
-          id: { in: mentionedUserIds },
-          isPlatformAdmin: false,
+          organizationId,
+          deactivated: false,
+          user: { id: { in: mentionedUserIds } },
+          OR: [
+            { user: { isPlatformAdmin: false } },
+            { role: { contains: 'owner' } },
+          ],
         },
+        include: { user: true },
       });
+      const mentionedUsers = mentionedMembers.map((m) => m.user);
 
       // Get entity name for context
       let entityName = '';

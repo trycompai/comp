@@ -61,6 +61,7 @@ export class TaskItemAssignmentNotifierService {
           where: { id: assigneeMemberId },
           select: {
             id: true,
+            role: true,
             user: {
               select: {
                 id: true,
@@ -91,10 +92,11 @@ export class TaskItemAssignmentNotifierService {
         return;
       }
 
-      // Skip notifications for platform admin members
-      if (assigneeUser.isPlatformAdmin) {
+      // Skip notifications for platform admin members unless they are an owner
+      const isOwner = assigneeMember.role?.split(',').map((r: string) => r.trim()).includes('owner');
+      if (assigneeUser.isPlatformAdmin && !isOwner) {
         this.logger.log(
-          `Skipping assignment notification: assignee ${assigneeUser.email} is a platform admin`,
+          `Skipping assignment notification: assignee ${assigneeUser.email} is a platform admin (non-owner)`,
         );
         return;
       }
