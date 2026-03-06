@@ -80,13 +80,24 @@ class IntegrationRegistryImpl implements IntegrationRegistry {
   }
 
   refreshDynamic(manifests: IntegrationManifest[]): void {
+    const valid: IntegrationManifest[] = [];
+    for (const manifest of manifests) {
+      if (this.codeManifestIds.has(manifest.id)) continue;
+      try {
+        this.validateManifest(manifest);
+        valid.push(manifest);
+      } catch {
+        // Skip invalid manifests — one bad row should not wipe others
+      }
+    }
+
     for (const id of this.manifests.keys()) {
       if (!this.codeManifestIds.has(id)) {
         this.manifests.delete(id);
       }
     }
-    for (const manifest of manifests) {
-      this.registerDynamic(manifest);
+    for (const manifest of valid) {
+      this.manifests.set(manifest.id, manifest);
     }
   }
 
