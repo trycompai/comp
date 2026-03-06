@@ -5,6 +5,7 @@ import { VENDOR_STATUS_TYPES, VendorStatus } from '@/components/vendor-status';
 import { useVendorActions } from '@/hooks/use-vendors';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Member, type User, type Vendor, VendorCategory } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -145,14 +146,28 @@ export function UpdateSecondaryFieldsForm({
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="website"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{'Website'}</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="https://example.com"
+                    disabled={isSubmitting}
+                    type="url"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
         <div className="mt-4 flex justify-end">
           <Button type="submit" variant="default" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Save'
-            )}
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
           </Button>
         </div>
       </form>
