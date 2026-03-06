@@ -4,8 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const config = {
   matcher: [
-    // Skip auth-related routes (removed onboarding from exclusions)
-    '/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|research).*)',
+    // Skip auth-related routes and static assets
+    '/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|research|.*\\.svg$|.*\\.png$|.*\\.jpg$|.*\\.ico$|.*\\.webp$).*)',
   ],
 };
 
