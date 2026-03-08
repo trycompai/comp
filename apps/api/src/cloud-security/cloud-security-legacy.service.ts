@@ -60,9 +60,9 @@ export class CloudSecurityLegacyService {
    * Produces EncryptedData compatible with @/lib/encryption.
    */
   private encrypt(text: string): EncryptedData {
-    const secretKey = process.env.SECRET_KEY;
+    const secretKey = process.env.ENCRYPTION_KEY;
     if (!secretKey) {
-      throw new Error('SECRET_KEY environment variable is not set');
+      throw new Error('ENCRYPTION_KEY environment variable is not set');
     }
 
     const salt = randomBytes(SALT_LENGTH);
