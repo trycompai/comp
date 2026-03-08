@@ -343,6 +343,7 @@
       "dependencies": {
         "@aws-sdk/client-s3": "^3.859.0",
         "@aws-sdk/s3-request-presigner": "^3.859.0",
+        "@comp/auth": "workspace:*",
         "@comp/company": "workspace:*",
         "@hookform/resolvers": "^5.2.2",
         "@prisma/client": "6.18.0",
