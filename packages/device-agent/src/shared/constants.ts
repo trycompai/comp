@@ -18,10 +18,8 @@ export const API_ROUTES = {
   CHECK_IN: '/api/device-agent/check-in',
   STATUS: '/api/device-agent/status',
   MY_ORGANIZATIONS: '/api/device-agent/my-organizations',
+  EXCHANGE_CODE: '/api/device-agent/exchange-code',
 } as const;
-
-/** Auth callback path used by the Electron BrowserWindow login flow */
-export const AUTH_CALLBACK_PATH = '/api/auth/get-session';
 
 /** electron-store encryption key identifier */
 export const STORE_ENCRYPTION_KEY = 'comp-device-agent-store';
