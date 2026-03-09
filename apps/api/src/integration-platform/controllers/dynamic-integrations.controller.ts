@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Body,
@@ -12,15 +13,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
+import { InternalTokenGuard } from '../../auth/internal-token.guard';
 import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
 import { DynamicCheckRepository } from '../repositories/dynamic-check.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { DynamicManifestLoaderService } from '../services/dynamic-manifest-loader.service';
 import { validateIntegrationDefinition } from '@comp/integration-platform';
 
-@Controller({ path: 'admin/dynamic-integrations', version: '1' })
-@UseGuards(PlatformAdminGuard)
+@Controller({ path: 'internal/dynamic-integrations', version: '1' })
+@UseGuards(InternalTokenGuard)
 export class DynamicIntegrationsController {
   private readonly logger = new Logger(DynamicIntegrationsController.name);
 
@@ -32,11 +33,11 @@ export class DynamicIntegrationsController {
   ) {}
 
   /**
-   * Create a dynamic integration with checks from a full definition.
+   * Upsert a dynamic integration with checks from a full definition.
+   * Creates if new, updates if exists. This is the primary endpoint for AI agents.
    */
-  @Post()
-  async create(@Body() body: Record<string, unknown>) {
-    // Validate with Zod
+  @Put()
+  async upsert(@Body() body: Record<string, unknown>) {
     const validation = validateIntegrationDefinition(body);
     if (!validation.success) {
       throw new HttpException(
@@ -47,16 +48,82 @@ export class DynamicIntegrationsController {
 
     const def = validation.data!;
 
-    // Check for duplicate slug
+    // Upsert the integration
+    const integration = await this.dynamicIntegrationRepo.upsertBySlug({
+      slug: def.slug,
+      name: def.name,
+      description: def.description,
+      category: def.category,
+      logoUrl: def.logoUrl,
+      docsUrl: def.docsUrl,
+      baseUrl: def.baseUrl,
+      defaultHeaders: def.defaultHeaders as unknown as Prisma.InputJsonValue,
+      authConfig: def.authConfig as unknown as Prisma.InputJsonValue,
+      capabilities: def.capabilities as unknown as Prisma.InputJsonValue,
+      supportsMultipleConnections: def.supportsMultipleConnections,
+    });
+
+    // Upsert checks
+    for (const [index, check] of def.checks.entries()) {
+      await this.dynamicCheckRepo.upsert({
+        integrationId: integration.id,
+        checkSlug: check.checkSlug,
+        name: check.name,
+        description: check.description,
+        taskMapping: check.taskMapping,
+        defaultSeverity: check.defaultSeverity,
+        definition: check.definition as unknown as Prisma.InputJsonValue,
+        variables: (check.variables ?? []) as unknown as Prisma.InputJsonValue,
+        isEnabled: check.isEnabled ?? true,
+        sortOrder: check.sortOrder ?? index,
+      });
+    }
+
+    // Upsert IntegrationProvider row
+    await this.providerRepo.upsert({
+      slug: def.slug,
+      name: def.name,
+      category: def.category,
+      capabilities: (def.capabilities as unknown as string[]) ?? ['checks'],
+      isActive: true,
+    });
+
+    // Refresh registry
+    await this.loaderService.invalidateCache();
+
+    this.logger.log(`Upserted dynamic integration: ${def.slug} with ${def.checks.length} checks`);
+
+    return {
+      success: true,
+      id: integration.id,
+      slug: integration.slug,
+      checksCount: def.checks.length,
+    };
+  }
+
+  /**
+   * Create a dynamic integration with checks from a full definition.
+   */
+  @Post()
+  async create(@Body() body: Record<string, unknown>) {
+    const validation = validateIntegrationDefinition(body);
+    if (!validation.success) {
+      throw new HttpException(
+        { message: 'Invalid integration definition', errors: validation.errors },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const def = validation.data!;
+
     const existing = await this.dynamicIntegrationRepo.findBySlug(def.slug);
     if (existing) {
       throw new HttpException(
-        `Integration with slug "${def.slug}" already exists`,
+        `Integration with slug "${def.slug}" already exists. Use PUT to upsert.`,
         HttpStatus.CONFLICT,
       );
     }
 
-    // Create the integration
     const integration = await this.dynamicIntegrationRepo.create({
       slug: def.slug,
       name: def.name,
@@ -71,7 +138,6 @@ export class DynamicIntegrationsController {
       supportsMultipleConnections: def.supportsMultipleConnections,
     });
 
-    // Create checks
     for (const [index, check] of def.checks.entries()) {
       await this.dynamicCheckRepo.create({
         integrationId: integration.id,
@@ -232,7 +298,6 @@ export class DynamicIntegrationsController {
 
   /**
    * Activate a dynamic integration.
-   * Validates checks, upserts IntegrationProvider row, and refreshes registry.
    */
   @Post(':id/activate')
   async activate(@Param('id') id: string) {
@@ -241,7 +306,6 @@ export class DynamicIntegrationsController {
       throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
     }
 
-    // Validate all checks
     for (const check of integration.checks) {
       if (!check.definition || typeof check.definition !== 'object') {
         throw new HttpException(
@@ -251,7 +315,6 @@ export class DynamicIntegrationsController {
       }
     }
 
-    // Upsert IntegrationProvider row (so connections can be created)
     await this.providerRepo.upsert({
       slug: integration.slug,
       name: integration.name,
@@ -260,10 +323,7 @@ export class DynamicIntegrationsController {
       isActive: true,
     });
 
-    // Set isActive=true
     await this.dynamicIntegrationRepo.update(id, { isActive: true });
-
-    // Refresh registry
     await this.loaderService.invalidateCache();
 
     this.logger.log(`Activated dynamic integration: ${integration.slug}`);
