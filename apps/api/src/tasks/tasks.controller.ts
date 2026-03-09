@@ -121,6 +121,7 @@ export class TasksController {
     const assignmentFilter = buildTaskAssignmentFilter(
       authContext.memberId,
       authContext.userRoles,
+      { isApiKey: authContext.isApiKey },
     );
 
     return await this.tasksService.getTasks(organizationId, assignmentFilter, {
@@ -592,7 +593,7 @@ export class TasksController {
     // The task object from service includes assigneeId even though DTO doesn't declare it
     const taskWithAssignee = task as TaskResponseDto & { assigneeId: string | null };
     if (
-      !hasTaskAccess(taskWithAssignee, authContext.memberId, authContext.userRoles)
+      !hasTaskAccess(taskWithAssignee, authContext.memberId, authContext.userRoles, { isApiKey: authContext.isApiKey })
     ) {
       throw new ForbiddenException('You do not have access to this task');
     }

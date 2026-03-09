@@ -10,11 +10,25 @@ const RESTRICTED_ROLES = ['employee', 'contractor'];
  */
 const PRIVILEGED_ROLES = ['owner', 'admin', 'auditor'];
 
+interface AssignmentFilterOptions {
+  /** When true, skip assignment filtering (e.g. for API key auth which is org-level) */
+  isApiKey?: boolean;
+}
+
 /**
  * Check if user roles are restricted (employee/contractor only)
  * Users with any privileged role are NOT restricted, even if they also have a restricted role
+ * API key auth is never restricted (org-level access, already passed permission guard)
  */
-export function isRestrictedRole(roles: string[] | null | undefined): boolean {
+export function isRestrictedRole(
+  roles: string[] | null | undefined,
+  options?: AssignmentFilterOptions,
+): boolean {
+  // API key auth is org-level — always has full access (already passed permission guard)
+  if (options?.isApiKey) {
+    return false;
+  }
+
   if (!roles || roles.length === 0) {
     return true; // No roles = restricted (fail-safe)
   }
@@ -38,8 +52,9 @@ export function isRestrictedRole(roles: string[] | null | undefined): boolean {
 export function buildTaskAssignmentFilter(
   memberId: string | null | undefined,
   roles: string[] | null | undefined,
+  options?: AssignmentFilterOptions,
 ): Prisma.TaskWhereInput {
-  if (!isRestrictedRole(roles)) {
+  if (!isRestrictedRole(roles, options)) {
     return {}; // No filtering for privileged roles
   }
 
@@ -58,8 +73,9 @@ export function buildTaskAssignmentFilter(
 export function buildRiskAssignmentFilter(
   memberId: string | null | undefined,
   roles: string[] | null | undefined,
+  options?: AssignmentFilterOptions,
 ): Prisma.RiskWhereInput {
-  if (!isRestrictedRole(roles)) {
+  if (!isRestrictedRole(roles, options)) {
     return {}; // No filtering for privileged roles
   }
 
@@ -77,8 +93,9 @@ export function buildRiskAssignmentFilter(
 export function buildControlAssignmentFilter(
   memberId: string | null | undefined,
   roles: string[] | null | undefined,
+  options?: AssignmentFilterOptions,
 ): Prisma.ControlWhereInput {
-  if (!isRestrictedRole(roles)) {
+  if (!isRestrictedRole(roles, options)) {
     return {}; // No filtering for privileged roles
   }
 
@@ -101,8 +118,9 @@ export function buildControlAssignmentFilter(
 export function buildPolicyAssignmentFilter(
   memberId: string | null | undefined,
   roles: string[] | null | undefined,
+  options?: AssignmentFilterOptions,
 ): Prisma.PolicyWhereInput {
-  if (!isRestrictedRole(roles)) {
+  if (!isRestrictedRole(roles, options)) {
     return {}; // No filtering for privileged roles
   }
 
@@ -123,8 +141,9 @@ export function hasTaskAccess(
   task: { assigneeId: string | null },
   memberId: string | null | undefined,
   roles: string[] | null | undefined,
+  options?: AssignmentFilterOptions,
 ): boolean {
-  if (!isRestrictedRole(roles)) {
+  if (!isRestrictedRole(roles, options)) {
     return true; // Privileged roles have access to all tasks
   }
 
@@ -142,8 +161,9 @@ export function hasRiskAccess(
   risk: { assigneeId: string | null },
   memberId: string | null | undefined,
   roles: string[] | null | undefined,
+  options?: AssignmentFilterOptions,
 ): boolean {
-  if (!isRestrictedRole(roles)) {
+  if (!isRestrictedRole(roles, options)) {
     return true; // Privileged roles have access to all risks
   }
 
@@ -161,8 +181,9 @@ export function hasControlAccess(
   control: { tasks: { assigneeId: string | null }[] },
   memberId: string | null | undefined,
   roles: string[] | null | undefined,
+  options?: AssignmentFilterOptions,
 ): boolean {
-  if (!isRestrictedRole(roles)) {
+  if (!isRestrictedRole(roles, options)) {
     return true; // Privileged roles have access to all controls
   }
 

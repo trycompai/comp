@@ -13,7 +13,8 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { SkipOrgCheck } from '../auth/skip-org-check.decorator';
-import { OrganizationId, UserId } from '../auth/auth-context.decorator';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
+import type { AuthContext as AuthContextType } from '../auth/types';
 import { FrameworksService } from './frameworks.service';
 import { AddFrameworksDto } from './dto/add-frameworks.dto';
 
@@ -54,9 +55,9 @@ export class FrameworksController {
   @ApiOperation({ summary: 'Get overview compliance scores' })
   async getScores(
     @OrganizationId() organizationId: string,
-    @UserId() userId: string,
+    @AuthContext() authContext: AuthContextType,
   ) {
-    return this.frameworksService.getScores(organizationId, userId);
+    return this.frameworksService.getScores(organizationId, authContext.userId);
   }
 
   @Get(':id')

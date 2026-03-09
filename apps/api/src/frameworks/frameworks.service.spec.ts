@@ -12,7 +12,17 @@ jest.mock('@trycompai/db', () => ({
   },
 }));
 
+jest.mock('./frameworks-scores.helper', () => ({
+  getOverviewScores: jest.fn(),
+  getCurrentMember: jest.fn(),
+  computeFrameworkComplianceScore: jest.fn(),
+}));
+
 import { db } from '@trycompai/db';
+import {
+  getOverviewScores,
+  getCurrentMember,
+} from './frameworks-scores.helper';
 
 const mockDb = db as jest.Mocked<typeof db>;
 
@@ -87,6 +97,40 @@ describe('FrameworksService', () => {
         NotFoundException,
       );
       expect(mockDb.frameworkInstance.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getScores', () => {
+    it('should call getOverviewScores and getCurrentMember when userId is provided', async () => {
+      const mockScores = { policies: 10, tasks: 5 };
+      const mockMember = { id: 'mem_1', userId: 'user_1' };
+
+      (getOverviewScores as jest.Mock).mockResolvedValue(mockScores);
+      (getCurrentMember as jest.Mock).mockResolvedValue(mockMember);
+
+      const result = await service.getScores('org_1', 'user_1');
+
+      expect(getOverviewScores).toHaveBeenCalledWith('org_1');
+      expect(getCurrentMember).toHaveBeenCalledWith('org_1', 'user_1');
+      expect(result).toEqual({
+        ...mockScores,
+        currentMember: mockMember,
+      });
+    });
+
+    it('should call getOverviewScores but NOT getCurrentMember when userId is undefined', async () => {
+      const mockScores = { policies: 10, tasks: 5 };
+
+      (getOverviewScores as jest.Mock).mockResolvedValue(mockScores);
+
+      const result = await service.getScores('org_1');
+
+      expect(getOverviewScores).toHaveBeenCalledWith('org_1');
+      expect(getCurrentMember).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        ...mockScores,
+        currentMember: null,
+      });
     });
   });
 });

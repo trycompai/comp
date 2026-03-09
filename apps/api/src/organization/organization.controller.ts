@@ -20,9 +20,7 @@ import {
 } from '@nestjs/swagger';
 import {
   AuthContext,
-  IsApiKeyAuth,
   OrganizationId,
-  UserId,
 } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -62,14 +60,12 @@ export class OrganizationController {
   async getOrganization(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
-    @IsApiKeyAuth() isApiKey: boolean,
-    @UserId() userId: string,
     @Query('includeOwnership') includeOwnership?: string,
   ) {
     const org = await this.organizationService.findById(organizationId);
     const logoUrl = await this.organizationService.getLogoSignedUrl(org.logo);
 
-    const result: any = {
+    const result: Record<string, unknown> = {
       ...org,
       logoUrl,
       authType: authContext.authType,
@@ -81,10 +77,10 @@ export class OrganizationController {
       }),
     };
 
-    if (includeOwnership === 'true' && userId) {
+    if (includeOwnership === 'true' && authContext.userId) {
       const ownership = await this.organizationService.getOwnershipData(
         organizationId,
-        userId,
+        authContext.userId,
       );
       result.isOwner = ownership.isOwner;
       result.eligibleMembers = ownership.eligibleMembers;
@@ -257,6 +253,12 @@ export class OrganizationController {
       }>;
     },
   ) {
+    if (!body?.settings || !Array.isArray(body.settings)) {
+      throw new BadRequestException(
+        'settings is required and must be an array',
+      );
+    }
+
     return this.organizationService.updateRoleNotifications(
       organizationId,
       body.settings,

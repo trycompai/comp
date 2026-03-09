@@ -58,6 +58,13 @@ describe('Assignment Filter Utilities', () => {
     it('should return true for unknown roles', () => {
       expect(isRestrictedRole(['unknown_role'])).toBe(false);
     });
+
+    it('should return false for API key auth regardless of roles', () => {
+      expect(isRestrictedRole(null, { isApiKey: true })).toBe(false);
+      expect(isRestrictedRole([], { isApiKey: true })).toBe(false);
+      expect(isRestrictedRole(['employee'], { isApiKey: true })).toBe(false);
+      expect(isRestrictedRole(['contractor'], { isApiKey: true })).toBe(false);
+    });
   });
 
   describe('buildTaskAssignmentFilter', () => {
@@ -94,6 +101,11 @@ describe('Assignment Filter Utilities', () => {
       expect(buildTaskAssignmentFilter(null, null)).toEqual({
         id: 'impossible_match_no_member',
       });
+    });
+
+    it('should return empty filter for API key auth regardless of roles/memberId', () => {
+      expect(buildTaskAssignmentFilter(null, null, { isApiKey: true })).toEqual({});
+      expect(buildTaskAssignmentFilter(undefined, [], { isApiKey: true })).toEqual({});
     });
   });
 
@@ -186,6 +198,11 @@ describe('Assignment Filter Utilities', () => {
       expect(hasTaskAccess(assignedTask, null, ['employee'])).toBe(false);
       expect(hasTaskAccess(assignedTask, undefined, ['employee'])).toBe(false);
     });
+
+    it('should return true for API key auth regardless of assignment or memberId', () => {
+      expect(hasTaskAccess(unassignedTask, null, null, { isApiKey: true })).toBe(true);
+      expect(hasTaskAccess(noAssigneeTask, undefined, [], { isApiKey: true })).toBe(true);
+    });
   });
 
   describe('hasRiskAccess', () => {
@@ -205,6 +222,10 @@ describe('Assignment Filter Utilities', () => {
       expect(hasRiskAccess(unassignedRisk, memberId, ['contractor'])).toBe(
         false,
       );
+    });
+
+    it('should return true for API key auth regardless of assignment or memberId', () => {
+      expect(hasRiskAccess(unassignedRisk, null, null, { isApiKey: true })).toBe(true);
     });
   });
 

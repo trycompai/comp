@@ -18195,6 +18195,36 @@
         ]
       }
     },
+    "/v1/internal/email/send": {
+      "post": {
+        "operationId": "EmailController_sendEmail_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email task triggered"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Send an email via the centralized Trigger task (internal)",
+        "tags": [
+          "Internal - Email"
+        ]
+      }
+    },
     "/v1/secrets": {
       "get": {
         "operationId": "SecretsController_listSecrets_v1",
@@ -22899,6 +22929,51 @@
         "required": [
           "name",
           "description"
+        ]
+      },
+      "SendEmailDto": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string",
+            "description": "Recipient email address"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Email subject line"
+          },
+          "html": {
+            "type": "string",
+            "description": "Pre-rendered HTML content"
+          },
+          "from": {
+            "type": "string",
+            "description": "Explicit FROM address override"
+          },
+          "system": {
+            "type": "boolean",
+            "description": "Use system sender address (RESEND_FROM_SYSTEM)"
+          },
+          "cc": {
+            "type": "object",
+            "description": "CC recipients"
+          },
+          "scheduledAt": {
+            "type": "string",
+            "description": "Schedule email for later delivery"
+          },
+          "attachments": {
+            "description": "File attachments",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "to",
+          "subject",
+          "html"
         ]
       },
       "CreatePenetrationTestDto": {
