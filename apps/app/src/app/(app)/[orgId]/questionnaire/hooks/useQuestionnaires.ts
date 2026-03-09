@@ -22,7 +22,9 @@ export function useQuestionnaires({ fallbackData }: UseQuestionnairesOptions = {
     fetchQuestionnaires,
     {
       fallbackData,
-      revalidateOnMount: fallbackData === undefined,
+      // Keep UI fresh when navigating back from parse/detail pages.
+      // With fallbackData only, the list can stay stale until hard refresh.
+      revalidateOnMount: true,
     },
   );
 
