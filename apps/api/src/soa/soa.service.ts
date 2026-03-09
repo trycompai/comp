@@ -391,6 +391,15 @@ export class SOAService {
       throw new NotFoundException('Approver not found in organization');
     }
 
+    // Cannot assign a platform admin as approver
+    const approverUser = await db.user.findUnique({
+      where: { id: approverMember.userId },
+      select: { isPlatformAdmin: true },
+    });
+    if (approverUser?.isPlatformAdmin) {
+      throw new BadRequestException('Cannot assign a platform admin as approver');
+    }
+
     const isOwnerOrAdmin =
       approverMember.role.includes('owner') ||
       approverMember.role.includes('admin');

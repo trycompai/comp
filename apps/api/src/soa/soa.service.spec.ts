@@ -24,6 +24,7 @@ jest.mock('@db', () => ({
       update: jest.fn(),
     },
     member: { findFirst: jest.fn() },
+    user: { findUnique: jest.fn() },
     sOAAnswer: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
   },
 }));
@@ -214,18 +215,34 @@ describe('SOAService', () => {
     it('throws ForbiddenException when approver is not owner/admin', async () => {
       (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
         id: 'mem-1',
+        userId: 'user-1',
         role: 'employee',
       });
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ isPlatformAdmin: false });
       await expect(service.submitForApproval(dto)).rejects.toThrow(
         ForbiddenException,
+      );
+    });
+
+    it('throws BadRequestException when approver is platform admin', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'mem-1',
+        userId: 'user-1',
+        role: 'admin',
+      });
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ isPlatformAdmin: true });
+      await expect(service.submitForApproval(dto)).rejects.toThrow(
+        BadRequestException,
       );
     });
 
     it('throws NotFoundException when document not found', async () => {
       (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
         id: 'mem-1',
+        userId: 'user-1',
         role: 'admin',
       });
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ isPlatformAdmin: false });
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
       await expect(service.submitForApproval(dto)).rejects.toThrow(
         NotFoundException,
@@ -235,8 +252,10 @@ describe('SOAService', () => {
     it('throws BadRequestException when already pending approval', async () => {
       (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
         id: 'mem-1',
+        userId: 'user-1',
         role: 'admin',
       });
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ isPlatformAdmin: false });
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc-1',
         status: 'needs_review',
@@ -249,8 +268,10 @@ describe('SOAService', () => {
     it('submits for approval successfully', async () => {
       (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
         id: 'mem-1',
+        userId: 'user-1',
         role: 'owner',
       });
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ isPlatformAdmin: false });
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc-1',
         status: 'draft',

@@ -3,6 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import type { AuditLog } from '@db';
 import {
+  Badge,
   Button,
   HStack,
   Section,
@@ -83,6 +84,11 @@ function LogRow({ log }: { log: AuditLogWithRelations }) {
 
         <Text size="sm" as="span">
           <Text as="span" size="sm" weight="medium">{userName}</Text>
+          {log.user?.isPlatformAdmin && (
+            <>
+              {' '}<Badge>Comp AI</Badge>
+            </>
+          )}
           {' '}
           <Text as="span" size="sm" variant="muted">{log.description || 'made a change'}</Text>
           {changeCount > 0 && (

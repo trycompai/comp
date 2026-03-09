@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { db, TaskItemPriority, TaskItemStatus } from '@trycompai/db';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
@@ -198,12 +198,25 @@ export class VendorsService {
     }
   }
 
+  private async validateAssigneeNotPlatformAdmin(assigneeId: string, organizationId: string) {
+    const member = await db.member.findFirst({
+      where: { id: assigneeId, organizationId },
+      include: { user: { select: { isPlatformAdmin: true } } },
+    });
+    if (member?.user.isPlatformAdmin) {
+      throw new BadRequestException('Cannot assign a platform admin as assignee');
+    }
+  }
+
   async create(
     organizationId: string,
     createVendorDto: CreateVendorDto,
     createdByUserId?: string,
   ) {
     try {
+      if (createVendorDto.assigneeId) {
+        await this.validateAssigneeNotPlatformAdmin(createVendorDto.assigneeId, organizationId);
+      }
       const vendor = await db.vendor.create({
         data: {
           ...createVendorDto,
@@ -586,6 +599,10 @@ export class VendorsService {
     try {
       // First check if the vendor exists in the organization
       await this.findById(id, organizationId);
+
+      if (updateVendorDto.assigneeId) {
+        await this.validateAssigneeNotPlatformAdmin(updateVendorDto.assigneeId, organizationId);
+      }
 
       const updatedVendor = await db.vendor.update({
         where: { id },

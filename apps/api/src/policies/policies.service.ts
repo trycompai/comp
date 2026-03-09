@@ -237,6 +237,15 @@ export class PoliciesService {
 
   async create(organizationId: string, createData: CreatePolicyDto) {
     try {
+      if (createData.assigneeId) {
+        const assignee = await db.member.findFirst({
+          where: { id: createData.assigneeId, organizationId },
+          include: { user: { select: { isPlatformAdmin: true } } },
+        });
+        if (assignee?.user.isPlatformAdmin) {
+          throw new BadRequestException('Cannot assign a platform admin as assignee');
+        }
+      }
       const contentValue = createData.content as Prisma.InputJsonValue[];
 
       // Create policy with version 1 in a transaction
@@ -968,6 +977,17 @@ export class PoliciesService {
     if (approver.deactivated) {
       throw new BadRequestException(
         'Cannot assign a deactivated member as approver',
+      );
+    }
+
+    // Cannot assign a platform admin as approver
+    const approverUser = await db.user.findUnique({
+      where: { id: approver.userId },
+      select: { isPlatformAdmin: true },
+    });
+    if (approverUser?.isPlatformAdmin) {
+      throw new BadRequestException(
+        'Cannot assign a platform admin as approver',
       );
     }
 

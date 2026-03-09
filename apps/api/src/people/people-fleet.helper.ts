@@ -100,7 +100,14 @@ export async function getAllEmployeeDevices(
 ) {
   try {
     const employees = await db.member.findMany({
-      where: { organizationId, deactivated: false },
+      where: {
+        organizationId,
+        deactivated: false,
+        OR: [
+          { user: { isPlatformAdmin: false } },
+          { role: { contains: 'owner' } },
+        ],
+      },
       include: { user: true },
     });
 

@@ -73,7 +73,7 @@ describe('AuditLogController', () => {
         where: { organizationId: 'org_1' },
         include: {
           user: {
-            select: { id: true, name: true, email: true, image: true },
+            select: { id: true, name: true, email: true, image: true, isPlatformAdmin: true },
           },
           member: true,
           organization: true,

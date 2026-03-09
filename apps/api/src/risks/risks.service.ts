@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { db, Prisma } from '@trycompai/db';
 import { CreateRiskDto } from './dto/create-risk.dto';
 import { GetRisksQueryDto } from './dto/get-risks-query.dto';
@@ -24,6 +24,16 @@ export interface PaginatedRisksResult {
 @Injectable()
 export class RisksService {
   private readonly logger = new Logger(RisksService.name);
+
+  private async validateAssigneeNotPlatformAdmin(assigneeId: string, organizationId: string) {
+    const member = await db.member.findFirst({
+      where: { id: assigneeId, organizationId },
+      include: { user: { select: { isPlatformAdmin: true } } },
+    });
+    if (member?.user.isPlatformAdmin) {
+      throw new BadRequestException('Cannot assign a platform admin as assignee');
+    }
+  }
 
   async findAllByOrganization(
     organizationId: string,
@@ -130,6 +140,9 @@ export class RisksService {
 
   async create(organizationId: string, createRiskDto: CreateRiskDto) {
     try {
+      if (createRiskDto.assigneeId) {
+        await this.validateAssigneeNotPlatformAdmin(createRiskDto.assigneeId, organizationId);
+      }
       const risk = await db.risk.create({
         data: {
           ...createRiskDto,
@@ -158,6 +171,10 @@ export class RisksService {
     try {
       // First check if the risk exists in the organization
       await this.findById(id, organizationId);
+
+      if (updateRiskDto.assigneeId) {
+        await this.validateAssigneeNotPlatformAdmin(updateRiskDto.assigneeId, organizationId);
+      }
 
       const updatedRisk = await db.risk.update({
         where: { id },

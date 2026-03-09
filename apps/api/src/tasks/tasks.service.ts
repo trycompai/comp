@@ -204,7 +204,7 @@ export class TasksService {
         where,
         include: {
           user: {
-            select: { id: true, name: true, email: true, image: true },
+            select: { id: true, name: true, email: true, image: true, isPlatformAdmin: true },
           },
         },
         orderBy: { timestamp: 'desc' },
@@ -357,6 +357,16 @@ export class TasksService {
     changedByUserId: string,
   ): Promise<{ updatedCount: number }> {
     try {
+      if (assigneeId) {
+        const assigneeMember = await db.member.findFirst({
+          where: { id: assigneeId, organizationId },
+          include: { user: { select: { isPlatformAdmin: true } } },
+        });
+        if (assigneeMember?.user.isPlatformAdmin) {
+          throw new BadRequestException('Cannot assign a platform admin as assignee');
+        }
+      }
+
       const result = await db.task.updateMany({
         where: {
           id: {
@@ -493,6 +503,15 @@ export class TasksService {
         dataToUpdate.status = updateData.status;
       }
       if (updateData.assigneeId !== undefined) {
+        if (updateData.assigneeId !== null) {
+          const assigneeMember = await db.member.findFirst({
+            where: { id: updateData.assigneeId, organizationId },
+            include: { user: { select: { isPlatformAdmin: true } } },
+          });
+          if (assigneeMember?.user.isPlatformAdmin) {
+            throw new BadRequestException('Cannot assign a platform admin as assignee');
+          }
+        }
         dataToUpdate.assigneeId =
           updateData.assigneeId === null ? null : updateData.assigneeId;
       }
@@ -826,6 +845,10 @@ export class TasksService {
       throw new BadRequestException('Approver not found or is deactivated');
     }
 
+    if (approver.user.isPlatformAdmin) {
+      throw new BadRequestException('Cannot assign a platform admin as approver');
+    }
+
     const currentMember = await db.member.findFirst({
       where: { userId, organizationId, deactivated: false },
     });
@@ -897,6 +920,10 @@ export class TasksService {
 
     if (!approver) {
       throw new BadRequestException('Approver not found or is deactivated');
+    }
+
+    if (approver.user.isPlatformAdmin) {
+      throw new BadRequestException('Cannot assign a platform admin as approver');
     }
 
     const tasks = await db.task.findMany({

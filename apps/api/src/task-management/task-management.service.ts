@@ -265,6 +265,16 @@ export class TaskManagementService {
         );
       }
 
+      if (createTaskItemDto.assigneeId) {
+        const assigneeMember = await db.member.findFirst({
+          where: { id: createTaskItemDto.assigneeId, organizationId },
+          include: { user: { select: { isPlatformAdmin: true } } },
+        });
+        if (assigneeMember?.user.isPlatformAdmin) {
+          throw new BadRequestException('Cannot assign a platform admin as assignee');
+        }
+      }
+
       const taskItem = await db.taskItem.create({
         data: {
           ...createTaskItemDto,
@@ -470,6 +480,15 @@ export class TaskManagementService {
         updateData.priority = updateTaskItemDto.priority;
       }
       if (updateTaskItemDto.assigneeId !== undefined) {
+        if (updateTaskItemDto.assigneeId) {
+          const assigneeMember = await db.member.findFirst({
+            where: { id: updateTaskItemDto.assigneeId, organizationId },
+            include: { user: { select: { isPlatformAdmin: true } } },
+          });
+          if (assigneeMember?.user.isPlatformAdmin) {
+            throw new BadRequestException('Cannot assign a platform admin as assignee');
+          }
+        }
         updateData.assigneeId = updateTaskItemDto.assigneeId;
       }
 
