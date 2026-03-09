@@ -83,7 +83,7 @@ export interface Invitation {
 function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, string> {
   const obj: Record<string, string> = {};
   headers.forEach((value, key) => {
-    if (key.toLowerCase() === 'cookie' || key.toLowerCase().startsWith('x-')) {
+    if (key.toLowerCase() === 'cookie' || key.toLowerCase() === 'authorization' || key.toLowerCase().startsWith('x-')) {
       obj[key] = value;
     }
   });
