@@ -1,7 +1,8 @@
 import { db } from '@db';
 import { Novu } from '@novu/api';
 import { logger, schedules } from '@trigger.dev/sdk';
-import { isUserUnsubscribed, sendEmail, TaskStatusNotificationEmail } from '@trycompai/email';
+import { isUserUnsubscribed, TaskStatusNotificationEmail } from '@trycompai/email';
+import { sendEmailViaApi } from '../../lib/send-email-via-api';
 
 import { getTargetStatus } from './task-schedule-helpers';
 
@@ -244,7 +245,7 @@ export const taskSchedule = schedules.task({
           }
 
           try {
-            await sendEmail({
+            await sendEmailViaApi({
               to: recipient.email,
               subject: `Task "${recipient.task.title}" ${taskStatus === 'failed' ? 'failed' : 'needs review'}`,
               react: TaskStatusNotificationEmail({
@@ -255,6 +256,7 @@ export const taskSchedule = schedules.task({
                 organizationName: recipient.task.organization.name,
                 taskUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${recipient.task.organizationId}/tasks/${recipient.task.id}`,
               }),
+              organizationId: recipient.task.organizationId,
               system: true,
             });
 

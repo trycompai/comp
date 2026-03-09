@@ -22,6 +22,7 @@ export const SERVICE_DEFINITIONS: Record<string, ServiceDefinition> = {
       'integration:update',
       'cloud-security:update',
       'vendor:update',
+      'email:send',
     ],
   },
   portal: {
