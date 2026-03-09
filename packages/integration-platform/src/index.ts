@@ -93,6 +93,30 @@ export {
   type TaskTemplateId,
 } from './task-mappings';
 
+// DSL Engine (declarative check definitions)
+export {
+  interpretDeclarativeCheck,
+  evaluateCondition,
+  evaluateOperator,
+  resolvePath,
+  interpolate,
+  interpolateTemplate,
+  validateIntegrationDefinition,
+  CheckDefinitionSchema,
+  DynamicIntegrationDefinitionSchema,
+  ConditionSchema,
+  DSLStepSchema,
+} from './dsl';
+
+export type {
+  DSLStep,
+  CheckDefinition,
+  Condition,
+  DynamicIntegrationDefinition,
+  ValidationResult,
+  PaginationConfig,
+} from './dsl';
+
 // Individual manifests (for direct import if needed)
 export { manifest as githubManifest } from './manifests/github';
 

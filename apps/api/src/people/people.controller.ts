@@ -33,9 +33,11 @@ import { statement } from '@comp/auth';
 import { CreatePeopleDto } from './dto/create-people.dto';
 import { UpdatePeopleDto } from './dto/update-people.dto';
 import { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
+import { InvitePeopleDto } from './dto/invite-people.dto';
 import { PeopleResponseDto, UserResponseDto } from './dto/people-responses.dto';
 import { UpdateEmailPreferencesDto } from './dto/update-email-preferences.dto';
 import { PeopleService } from './people.service';
+import { PeopleInviteService } from './people-invite.service';
 import { GET_ALL_PEOPLE_RESPONSES } from './schemas/get-all-people.responses';
 import { CREATE_MEMBER_RESPONSES } from './schemas/create-member.responses';
 import { BULK_CREATE_MEMBERS_RESPONSES } from './schemas/bulk-create-members.responses';
@@ -53,7 +55,38 @@ import { PEOPLE_BODIES } from './schemas/people-bodies';
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 export class PeopleController {
-  constructor(private readonly peopleService: PeopleService) {}
+  constructor(
+    private readonly peopleService: PeopleService,
+    private readonly peopleInviteService: PeopleInviteService,
+  ) {}
+
+  @Post('invite')
+  @RequirePermission('member', 'create')
+  @ApiOperation({ summary: 'Invite members to the organization' })
+  async inviteMembers(
+    @Body() inviteData: InvitePeopleDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const results = await this.peopleInviteService.inviteMembers({
+      organizationId,
+      invites: inviteData.invites,
+      callerUserId: authContext.userId!,
+      callerRole: authContext.userRoles?.join(',') ?? '',
+    });
+
+    return {
+      results,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
 
   @Get()
   @RequirePermission('member', 'read')
@@ -218,6 +251,33 @@ export class PeopleController {
     return {
       data: members,
       count: members.length,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Patch(':id/reactivate')
+  @RequirePermission('member', 'update')
+  @ApiOperation({ summary: 'Reactivate a deactivated member' })
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  async reactivateMember(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const member = await this.peopleService.reactivateById(
+      memberId,
+      organizationId,
+    );
+
+    return {
+      ...member,
       authType: authContext.authType,
       ...(authContext.userId &&
         authContext.userEmail && {

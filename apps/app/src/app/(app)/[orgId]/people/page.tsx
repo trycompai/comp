@@ -156,6 +156,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           canInviteUsers={canInviteUsers}
           isAuditor={isAuditor}
           isCurrentUserOwner={isCurrentUserOwner}
+          organizationId={orgId}
         />
       }
       employeeTasksContent={showEmployeeTasks ? <EmployeesOverview /> : null}

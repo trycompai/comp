@@ -3,11 +3,12 @@ import { AuthModule } from '../auth/auth.module';
 import { FleetService } from '../lib/fleet.service';
 import { PeopleController } from './people.controller';
 import { PeopleService } from './people.service';
+import { PeopleInviteService } from './people-invite.service';
 
 @Module({
   imports: [AuthModule],
   controllers: [PeopleController],
-  providers: [PeopleService, FleetService],
+  providers: [PeopleService, PeopleInviteService, FleetService],
   exports: [PeopleService],
 })
 export class PeopleModule {}

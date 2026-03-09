@@ -935,6 +935,36 @@
         ]
       }
     },
+    "/v1/people/invite": {
+      "post": {
+        "operationId": "PeopleController_inviteMembers_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitePeopleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Invite members to the organization",
+        "tags": [
+          "People"
+        ]
+      }
+    },
     "/v1/people": {
       "get": {
         "description": "Returns all members for the authenticated organization with their user information. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
@@ -1491,6 +1521,37 @@
           }
         ],
         "summary": "Get members who can read a specific resource type",
+        "tags": [
+          "People"
+        ]
+      }
+    },
+    "/v1/people/{id}/reactivate": {
+      "patch": {
+        "operationId": "PeopleController_reactivateMember_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "example": "mem_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Reactivate a deactivated member",
         "tags": [
           "People"
         ]
@@ -14573,6 +14634,238 @@
         ]
       }
     },
+    "/v1/internal/dynamic-integrations": {
+      "put": {
+        "operationId": "DynamicIntegrationsController_upsert_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "post": {
+        "operationId": "DynamicIntegrationsController_create_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "get": {
+        "operationId": "DynamicIntegrationsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/internal/dynamic-integrations/{id}": {
+      "get": {
+        "operationId": "DynamicIntegrationsController_getById_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "patch": {
+        "operationId": "DynamicIntegrationsController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "delete": {
+        "operationId": "DynamicIntegrationsController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/internal/dynamic-integrations/{id}/checks": {
+      "post": {
+        "operationId": "DynamicIntegrationsController_addCheck_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/internal/dynamic-integrations/{id}/checks/{checkId}": {
+      "patch": {
+        "operationId": "DynamicIntegrationsController_updateCheck_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "delete": {
+        "operationId": "DynamicIntegrationsController_removeCheck_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/internal/dynamic-integrations/{id}/activate": {
+      "post": {
+        "operationId": "DynamicIntegrationsController_activate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/internal/dynamic-integrations/{id}/deactivate": {
+      "post": {
+        "operationId": "DynamicIntegrationsController_deactivate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
     "/v1/integrations/checks/providers/{providerSlug}": {
       "get": {
         "operationId": "ChecksController_listProviderChecks_v1",
@@ -18666,6 +18959,42 @@
           "isActive",
           "fleetDmLabelId",
           "user"
+        ]
+      },
+      "InviteItemDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "roles": {
+            "example": [
+              "employee"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "email",
+          "roles"
+        ]
+      },
+      "InvitePeopleDto": {
+        "type": "object",
+        "properties": {
+          "invites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InviteItemDto"
+            }
+          }
+        },
+        "required": [
+          "invites"
         ]
       },
       "CreatePeopleDto": {

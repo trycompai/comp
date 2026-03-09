@@ -39,6 +39,10 @@ jest.mock('@trycompai/db', () => ({
     organization: {
       findUnique: jest.fn(),
     },
+    organizationChart: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
     user: {
       update: jest.fn(),
     },
