@@ -63,7 +63,15 @@ export class DynamicIntegrationsController {
       supportsMultipleConnections: def.supportsMultipleConnections,
     });
 
-    // Upsert checks
+    // Delete checks not in the new definition, then upsert the rest
+    const existingChecks = await this.dynamicCheckRepo.findByIntegrationId(integration.id);
+    const newCheckSlugs = new Set(def.checks.map((c) => c.checkSlug));
+    for (const existing of existingChecks) {
+      if (!newCheckSlugs.has(existing.checkSlug)) {
+        await this.dynamicCheckRepo.delete(existing.id);
+      }
+    }
+
     for (const [index, check] of def.checks.entries()) {
       await this.dynamicCheckRepo.upsert({
         integrationId: integration.id,
