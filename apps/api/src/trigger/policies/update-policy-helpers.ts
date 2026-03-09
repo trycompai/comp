@@ -168,6 +168,7 @@ export async function generatePolicyContent(prompt: string): Promise<{
   try {
     const { object } = await generateObject({
       model: openai('gpt-5-mini'),
+      output: 'no-schema',
       system: `You are an expert at writing security policies. Generate content directly as TipTap JSON format.
 
 TipTap JSON structure:
@@ -180,20 +181,22 @@ TipTap JSON structure:
 - Bold: {"type": "bold"} in marks array
 - Italic: {"type": "italic"} in marks array
 
-IMPORTANT: Follow ALL formatting instructions in the prompt, implementing them as proper TipTap JSON structures.`,
+IMPORTANT: Follow ALL formatting instructions in the prompt, implementing them as proper TipTap JSON structures.
+Return a JSON object with exactly this shape: {"type": "document", "content": [array of TipTap nodes]}`,
       prompt: `Generate a SOC 2 compliant security policy as a complete TipTap JSON document.
 
 INSTRUCTIONS TO IMPLEMENT IN TIPTAP JSON:
 ${prompt.replace(/\\n/g, '\n')}
 
 Return the complete TipTap document following ALL the above requirements using proper TipTap JSON structure.`,
-      schema: z.object({
-        type: z.literal('document'),
-        content: z.array(z.record(z.string(), z.unknown())),
-      }),
     });
 
-    return object;
+    const parsed = object as { type?: string; content?: unknown };
+    if (parsed?.type !== 'document' || !Array.isArray(parsed?.content)) {
+      throw new Error('AI response did not match expected TipTap document structure');
+    }
+
+    return { type: 'document' as const, content: parsed.content as Record<string, unknown>[] };
   } catch (aiError) {
     logger.error(`Error generating AI content: ${aiError}`);
     if (NoObjectGeneratedError.isInstance(aiError)) {

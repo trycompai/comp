@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
 
@@ -62,7 +67,13 @@ export class DeviceAgentService {
         throw error;
       }
       this.logger.error('Failed to download macOS agent from S3:', error);
-      throw error;
+      const s3Error = error as { name?: string };
+      if (s3Error.name === 'NoSuchKey' || s3Error.name === 'NotFound') {
+        throw new NotFoundException('macOS agent file not found');
+      }
+      throw new InternalServerErrorException(
+        'Failed to download macOS agent. The agent file may not be available in this environment.',
+      );
     }
   }
 
@@ -107,7 +118,13 @@ export class DeviceAgentService {
         throw error;
       }
       this.logger.error('Failed to download Windows agent from S3:', error);
-      throw error;
+      const s3Error = error as { name?: string };
+      if (s3Error.name === 'NoSuchKey' || s3Error.name === 'NotFound') {
+        throw new NotFoundException('Windows agent file not found');
+      }
+      throw new InternalServerErrorException(
+        'Failed to download Windows agent. The agent file may not be available in this environment.',
+      );
     }
   }
 }

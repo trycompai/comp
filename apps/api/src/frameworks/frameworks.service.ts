@@ -153,10 +153,10 @@ export class FrameworksService {
     return frameworks;
   }
 
-  async getScores(organizationId: string, userId: string) {
+  async getScores(organizationId: string, userId?: string) {
     const [scores, currentMember] = await Promise.all([
       getOverviewScores(organizationId),
-      getCurrentMember(organizationId, userId),
+      userId ? getCurrentMember(organizationId, userId) : Promise.resolve(null),
     ]);
     return { ...scores, currentMember };
   }

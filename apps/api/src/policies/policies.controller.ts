@@ -75,7 +75,7 @@ import { PolicyResponseDto } from './dto/policy-responses.dto';
 @ApiTags('Policies')
 @ApiExtraModels(PolicyResponseDto)
 @Controller({ path: 'policies', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
@@ -87,6 +87,7 @@ export class PoliciesController {
   constructor(private readonly policiesService: PoliciesService) {}
 
   @Get()
+  @RequirePermission('policy', 'read')
   @ApiOperation(POLICY_OPERATIONS.getAllPolicies)
   @ApiResponse(GET_ALL_POLICIES_RESPONSES[200])
   @ApiResponse(GET_ALL_POLICIES_RESPONSES[401])
@@ -109,7 +110,6 @@ export class PoliciesController {
   }
 
   @Post('publish-all')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'update')
   @ApiOperation({ summary: 'Publish all draft policies' })
   async publishAllPolicies(
@@ -135,7 +135,6 @@ export class PoliciesController {
   }
 
   @Get('download-all')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'read')
   @AuditRead()
   @HttpCode(HttpStatus.OK)
@@ -172,7 +171,6 @@ export class PoliciesController {
   }
 
   @Get(':id/controls')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'read')
   @ApiOperation({ summary: 'Get mapped and all controls for a policy' })
   @ApiParam(POLICY_PARAMS.policyId)
@@ -210,7 +208,6 @@ export class PoliciesController {
   }
 
   @Post(':id/regenerate')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'update')
   @ApiOperation({ summary: 'Regenerate policy content using AI' })
   @ApiParam(POLICY_PARAMS.policyId)
@@ -274,7 +271,6 @@ export class PoliciesController {
   }
 
   @Get(':id/pdf/signed-url')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'read')
   @AuditRead()
   @ApiOperation({ summary: 'Get a signed URL for the policy PDF' })
@@ -344,7 +340,6 @@ export class PoliciesController {
   }
 
   @Post(':id/pdf')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'update')
   @ApiOperation({ summary: 'Upload a PDF to a policy or version' })
   @ApiParam(POLICY_PARAMS.policyId)
@@ -408,7 +403,6 @@ export class PoliciesController {
   }
 
   @Delete(':id/pdf')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'update')
   @ApiOperation({ summary: 'Delete a policy PDF' })
   @ApiParam(POLICY_PARAMS.policyId)
@@ -457,7 +451,6 @@ export class PoliciesController {
   }
 
   @Get(':id/pdf-url')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'read')
   @ApiOperation({ summary: 'Get signed URL for policy PDF (alternate path)' })
   @ApiParam(POLICY_PARAMS.policyId)
@@ -498,7 +491,6 @@ export class PoliciesController {
   }
 
   @Post(':id/controls')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'update')
   @ApiOperation({ summary: 'Map controls to a policy' })
   @ApiParam(POLICY_PARAMS.policyId)
@@ -530,7 +522,6 @@ export class PoliciesController {
   }
 
   @Delete(':id/controls/:controlId')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'update')
   @ApiOperation({ summary: 'Remove a control mapping from a policy' })
   @ApiParam(POLICY_PARAMS.policyId)
@@ -562,6 +553,7 @@ export class PoliciesController {
   }
 
   @Get(':id')
+  @RequirePermission('policy', 'read')
   @ApiOperation(POLICY_OPERATIONS.getPolicyById)
   @ApiParam(POLICY_PARAMS.policyId)
   @ApiResponse(GET_POLICY_BY_ID_RESPONSES[200])
@@ -587,7 +579,6 @@ export class PoliciesController {
   }
 
   @Post()
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'create')
   @ApiOperation(POLICY_OPERATIONS.createPolicy)
   @ApiBody(POLICY_BODIES.createPolicy)
@@ -617,7 +608,6 @@ export class PoliciesController {
   }
 
   @Patch(':id')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'update')
   @ApiOperation(POLICY_OPERATIONS.updatePolicy)
   @ApiParam(POLICY_PARAMS.policyId)
@@ -651,7 +641,6 @@ export class PoliciesController {
   }
 
   @Delete(':id')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'delete')
   @ApiOperation(POLICY_OPERATIONS.deletePolicy)
   @ApiParam(POLICY_PARAMS.policyId)
@@ -678,6 +667,7 @@ export class PoliciesController {
   }
 
   @Get(':id/versions')
+  @RequirePermission('policy', 'read')
   @ApiOperation(VERSION_OPERATIONS.getPolicyVersions)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiResponse(GET_POLICY_VERSIONS_RESPONSES[200])
@@ -703,6 +693,7 @@ export class PoliciesController {
   }
 
   @Get(':id/versions/:versionId')
+  @RequirePermission('policy', 'read')
   @ApiOperation(VERSION_OPERATIONS.getPolicyVersionById)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -734,6 +725,7 @@ export class PoliciesController {
   }
 
   @Post(':id/versions')
+  @RequirePermission('policy', 'update')
   @ApiOperation(VERSION_OPERATIONS.createPolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiBody(VERSION_BODIES.createVersion)
@@ -767,7 +759,6 @@ export class PoliciesController {
   }
 
   @Patch(':id/versions/:versionId')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'update')
   @ApiOperation(VERSION_OPERATIONS.updateVersionContent)
   @ApiParam(VERSION_PARAMS.policyId)
@@ -805,6 +796,7 @@ export class PoliciesController {
   }
 
   @Delete(':id/versions/:versionId')
+  @RequirePermission('policy', 'delete')
   @ApiOperation(VERSION_OPERATIONS.deletePolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -837,6 +829,7 @@ export class PoliciesController {
   }
 
   @Post(':id/versions/publish')
+  @RequirePermission('policy', 'update')
   @ApiOperation(VERSION_OPERATIONS.publishPolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiBody(VERSION_BODIES.publishVersion)
@@ -870,6 +863,7 @@ export class PoliciesController {
   }
 
   @Post(':id/versions/:versionId/activate')
+  @RequirePermission('policy', 'update')
   @ApiOperation(VERSION_OPERATIONS.setActivePolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -902,7 +896,6 @@ export class PoliciesController {
   }
 
   @Post(':id/versions/:versionId/submit-for-approval')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'update')
   @ApiOperation(VERSION_OPERATIONS.submitVersionForApproval)
   @ApiParam(VERSION_PARAMS.policyId)
@@ -939,7 +932,6 @@ export class PoliciesController {
   }
 
   @Post(':id/accept-changes')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'update')
   @ApiOperation({ summary: 'Accept pending policy changes and publish the version' })
   @ApiParam(POLICY_PARAMS.policyId)
@@ -969,7 +961,6 @@ export class PoliciesController {
   }
 
   @Post(':id/deny-changes')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('policy', 'update')
   @ApiOperation({ summary: 'Deny pending policy changes' })
   @ApiParam(POLICY_PARAMS.policyId)
@@ -998,6 +989,7 @@ export class PoliciesController {
   }
 
   @Post(':id/ai-chat')
+  @RequirePermission('policy', 'read')
   @ApiOperation({
     summary: 'Chat with AI about a policy',
     description:

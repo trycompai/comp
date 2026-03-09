@@ -64,6 +64,7 @@ export class RisksController {
     const assignmentFilter = buildRiskAssignmentFilter(
       authContext.memberId,
       authContext.userRoles,
+      { isApiKey: authContext.isApiKey },
     );
 
     const result = await this.risksService.findAllByOrganization(
@@ -152,7 +153,7 @@ export class RisksController {
     const risk = await this.risksService.findById(riskId, organizationId);
 
     // Check assignment access for restricted roles
-    if (!hasRiskAccess(risk, authContext.memberId, authContext.userRoles)) {
+    if (!hasRiskAccess(risk, authContext.memberId, authContext.userRoles, { isApiKey: authContext.isApiKey })) {
       throw new ForbiddenException('You do not have access to this risk');
     }
 

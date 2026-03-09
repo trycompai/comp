@@ -273,11 +273,25 @@ export class ApiKeyService {
   }
 
   /**
+   * Resources from better-auth that are not used by any API endpoint's @RequirePermission.
+   * These are handled internally by better-auth for session-based auth only.
+   */
+  private static readonly INTERNAL_ONLY_RESOURCES = [
+    'invitation',
+    'team',
+    'compliance',
+  ];
+
+  /**
    * Returns all valid `resource:action` scope pairs derived from the permission statement.
+   * Excludes internal-only resources that no API endpoint uses via @RequirePermission.
    */
   getAvailableScopes(): string[] {
     const scopes: string[] = [];
     for (const [resource, actions] of Object.entries(statement)) {
+      if (ApiKeyService.INTERNAL_ONLY_RESOURCES.includes(resource)) {
+        continue;
+      }
       for (const action of actions) {
         scopes.push(`${resource}:${action}`);
       }
