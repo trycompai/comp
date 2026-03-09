@@ -16,11 +16,13 @@ interface SelectAssigneeProps {
 export const SelectAssignee = ({
   assigneeId,
   disabled,
-  assignees,
+  assignees: rawAssignees,
   onAssigneeChange,
   withTitle = true,
 }: SelectAssigneeProps) => {
   const { data: activeMember } = authClient.useActiveMember();
+  // Exclude platform admins from assignee selection
+  const assignees = rawAssignees.filter((a) => !a.user.isPlatformAdmin);
   const [selectedAssignee, setSelectedAssignee] = useState<(Member & { user: User }) | null>(null);
 
   // Initialize selectedAssignee based on assigneeId prop

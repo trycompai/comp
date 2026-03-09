@@ -1095,6 +1095,10 @@ export class TaskNotifierService {
           where: {
             organizationId,
             deactivated: false,
+            OR: [
+              { user: { isPlatformAdmin: false } },
+              { role: { contains: 'owner' } },
+            ],
           },
           select: {
             id: true,
@@ -1298,6 +1302,10 @@ export class TaskNotifierService {
           where: {
             organizationId,
             deactivated: false,
+            OR: [
+              { user: { isPlatformAdmin: false } },
+              { role: { contains: 'owner' } },
+            ],
           },
           select: {
             id: true,

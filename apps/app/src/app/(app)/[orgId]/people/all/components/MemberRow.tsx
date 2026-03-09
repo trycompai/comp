@@ -121,6 +121,7 @@ export function MemberRow({
       : 0;
 
   const isOwner = currentRoles.includes('owner');
+  const isPlatformAdmin = member.user.isPlatformAdmin;
   const canRemove = !isOwner;
   const isDeactivated = member.deactivated || !member.isActive;
   const profileHref = `/${orgId}/people/${memberId}`;
@@ -219,6 +220,9 @@ export function MemberRow({
         <TableCell>
           <div className="w-[160px]">
             <div className="flex flex-wrap gap-1">
+              {member.user.isPlatformAdmin && (
+                <Badge>Comp AI</Badge>
+              )}
               {currentRoles.map((role) => (
                 <Badge key={role} variant="outline">
                   {getRoleLabel(role)}
@@ -333,6 +337,14 @@ export function MemberRow({
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor={`role-${memberId}`}>Roles</Label>
+              {isPlatformAdmin && (
+                <div className="flex items-center gap-2 rounded-md border px-3 py-2">
+                  <Badge>Comp AI</Badge>
+                  <span className="text-muted-foreground text-xs">
+                    This role is managed by the platform and cannot be removed.
+                  </span>
+                </div>
+              )}
               <MultiRoleCombobox
                 selectedRoles={selectedRoles}
                 onSelectedRolesChange={setSelectedRoles}
