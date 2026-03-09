@@ -1,32 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock auth module first
-vi.mock('@/utils/auth', async () => {
-  const { mockAuth } = await import('@/test-utils/mocks/auth');
-  return { auth: mockAuth };
-});
-
-// Mock db module - include Prisma enum exports so mocked auth helpers work
-vi.mock('@db', async () => {
-  const { mockDb } = await import('@/test-utils/mocks/db');
-  return {
-    db: mockDb,
-    Departments: {
-      none: 'none',
-      admin: 'admin',
-      gov: 'gov',
-      hr: 'hr',
-      it: 'it',
-      itsm: 'itsm',
-      qms: 'qms',
-    },
-  };
-});
-
 // Then import other test utilities
 import { createMockRequest } from '@/test-utils/helpers/middleware';
 import { createMockSession, setupAuthMocks } from '@/test-utils/mocks/auth';
-import { mockDb } from '@/test-utils/mocks/db';
 
 vi.mock('next/headers', () => ({
   headers: vi.fn(
@@ -41,15 +17,6 @@ vi.mock('next/headers', () => ({
 
 // Import proxy after mocks are set up
 const { proxy } = await import('./proxy');
-
-/**
- * Helper: set up mockDb.member.findFirst to return a valid member record.
- * Call after setupAuthMocks() for tests where the user should pass the
- * membership check on org routes.
- */
-function mockMembershipExists() {
-  mockDb.member.findFirst.mockResolvedValue({ id: 'member_test123' });
-}
 
 describe('Middleware', () => {
   beforeEach(() => {
@@ -74,7 +41,6 @@ describe('Middleware', () => {
     it('should allow authenticated users to access their org', async () => {
       // Arrange
       setupAuthMocks();
-      mockMembershipExists();
 
       const request = await createMockRequest('/org_123/dashboard', {
         authenticated: true,
@@ -88,12 +54,9 @@ describe('Middleware', () => {
       expect(response.headers.get('x-pathname')).toBe('/org_123/dashboard');
     });
 
-    it('should prevent users from accessing orgs they do not belong to', async () => {
+    it('should allow org routes to continue to the layout for access checks', async () => {
       // Arrange
       setupAuthMocks();
-
-      // User is NOT a member of org_OTHER
-      mockDb.member.findFirst.mockResolvedValue(null);
 
       const request = await createMockRequest('/org_OTHER/dashboard', {
         authenticated: true,
@@ -103,25 +66,7 @@ describe('Middleware', () => {
       const response = await proxy(request);
 
       // Assert
-      expect(response.status).toBe(403);
-    });
-
-    it('should not check membership for non-org routes', async () => {
-      // Arrange
-      const nonOrgRoutes = ['/setup', '/upgrade/org_123', '/onboarding/org_123'];
-
-      for (const route of nonOrgRoutes) {
-        vi.clearAllMocks();
-        setupAuthMocks();
-
-        const request = await createMockRequest(route, { authenticated: true });
-
-        // Act
-        await proxy(request);
-
-        // Assert - member.findFirst should NOT be called for non-org routes
-        expect(mockDb.member.findFirst).not.toHaveBeenCalled();
-      }
+      expect(response.status).toBe(200);
     });
   });
 
@@ -138,7 +83,6 @@ describe('Middleware', () => {
 
       // Assert - root path is not an org route, no membership check
       expect(response.status).toBe(200);
-      expect(mockDb.member.findFirst).not.toHaveBeenCalled();
     });
 
     it('should allow access to /setup with intent param', async () => {
@@ -159,7 +103,7 @@ describe('Middleware', () => {
   });
 
   describe('Unprotected Routes', () => {
-    it('should bypass membership check for unprotected routes', async () => {
+    it('should allow access to unprotected routes', async () => {
       // Arrange
       const unprotectedRoutes = ['/upgrade/org_123', '/setup', '/invite/abc123'];
 
@@ -169,10 +113,10 @@ describe('Middleware', () => {
         const request = await createMockRequest(route, { authenticated: true });
 
         // Act
-        await proxy(request);
+        const response = await proxy(request);
 
-        // Assert - should not call member.findFirst for non-org routes
-        expect(mockDb.member.findFirst).not.toHaveBeenCalled();
+        // Assert
+        expect(response.status).toBe(200);
       }
     });
 
@@ -199,52 +143,12 @@ describe('Middleware', () => {
     });
   });
 
-  describe('Organization Membership', () => {
-    it('should call db.member.findFirst with correct parameters', async () => {
+  describe('Organization Routing', () => {
+    it('should allow authenticated org routes to continue', async () => {
       // Arrange
       setupAuthMocks();
-      mockMembershipExists();
 
       const request = await createMockRequest('/org_123/dashboard', {
-        authenticated: true,
-      });
-
-      // Act
-      await proxy(request);
-
-      // Assert
-      expect(mockDb.member.findFirst).toHaveBeenCalledWith({
-        where: {
-          userId: 'user_test123',
-          organizationId: 'org_123',
-          deactivated: false,
-        },
-        select: { id: true },
-      });
-    });
-
-    it('should return 403 when user is not a member of the org', async () => {
-      // Arrange
-      setupAuthMocks();
-      mockDb.member.findFirst.mockResolvedValue(null);
-
-      const request = await createMockRequest('/org_456/settings', {
-        authenticated: true,
-      });
-
-      // Act
-      const response = await proxy(request);
-
-      // Assert
-      expect(response.status).toBe(403);
-    });
-
-    it('should allow access when user is a member of the org', async () => {
-      // Arrange
-      setupAuthMocks();
-      mockMembershipExists();
-
-      const request = await createMockRequest('/org_456/settings', {
         authenticated: true,
       });
 
@@ -255,8 +159,8 @@ describe('Middleware', () => {
       expect(response.status).toBe(200);
     });
 
-    it('should not check membership when user has no session cookie', async () => {
-      // Arrange - no cookie, so redirects to /auth before membership check
+    it('should redirect unauthenticated org routes to /auth', async () => {
+      // Arrange
       const request = await createMockRequest('/org_123/dashboard');
 
       // Act
@@ -265,11 +169,10 @@ describe('Middleware', () => {
       // Assert
       expect(response.status).toBe(307);
       expect(response.headers.get('location')).toContain('/auth');
-      expect(mockDb.member.findFirst).not.toHaveBeenCalled();
     });
 
-    it('should not check membership when session API returns null', async () => {
-      // Arrange - has cookie but session is invalid/expired
+    it('should allow org routes through when session state is handled later', async () => {
+      // Arrange
       setupAuthMocks({ session: null, user: null });
 
       const request = await createMockRequest('/org_123/dashboard', {
@@ -279,34 +182,8 @@ describe('Middleware', () => {
       // Act
       const response = await proxy(request);
 
-      // Assert - has token so passes cookie check, but session is null
-      // so membership check is skipped (passthrough to layout which will handle it)
-      expect(response.status).toBe(200);
-      expect(mockDb.member.findFirst).not.toHaveBeenCalled();
-    });
-
-    it('should exclude deactivated members from membership check', async () => {
-      // Arrange
-      setupAuthMocks();
-      // findFirst with deactivated: false returns null for deactivated members
-      mockDb.member.findFirst.mockResolvedValue(null);
-
-      const request = await createMockRequest('/org_123/dashboard', {
-        authenticated: true,
-      });
-
-      // Act
-      const response = await proxy(request);
-
       // Assert
-      expect(response.status).toBe(403);
-      expect(mockDb.member.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            deactivated: false,
-          }),
-        }),
-      );
+      expect(response.status).toBe(200);
     });
   });
 
@@ -314,7 +191,6 @@ describe('Middleware', () => {
     it('should handle malicious org IDs without crashing', async () => {
       // Arrange
       setupAuthMocks();
-      mockMembershipExists();
 
       const maliciousRequests = [
         '/org_../../admin',
