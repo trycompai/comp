@@ -14634,6 +14634,238 @@
         ]
       }
     },
+    "/v1/internal/dynamic-integrations": {
+      "put": {
+        "operationId": "DynamicIntegrationsController_upsert_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "post": {
+        "operationId": "DynamicIntegrationsController_create_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "get": {
+        "operationId": "DynamicIntegrationsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/internal/dynamic-integrations/{id}": {
+      "get": {
+        "operationId": "DynamicIntegrationsController_getById_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "patch": {
+        "operationId": "DynamicIntegrationsController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "delete": {
+        "operationId": "DynamicIntegrationsController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/internal/dynamic-integrations/{id}/checks": {
+      "post": {
+        "operationId": "DynamicIntegrationsController_addCheck_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/internal/dynamic-integrations/{id}/checks/{checkId}": {
+      "patch": {
+        "operationId": "DynamicIntegrationsController_updateCheck_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      },
+      "delete": {
+        "operationId": "DynamicIntegrationsController_removeCheck_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/internal/dynamic-integrations/{id}/activate": {
+      "post": {
+        "operationId": "DynamicIntegrationsController_activate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/internal/dynamic-integrations/{id}/deactivate": {
+      "post": {
+        "operationId": "DynamicIntegrationsController_deactivate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
     "/v1/integrations/checks/providers/{providerSlug}": {
       "get": {
         "operationId": "ChecksController_listProviderChecks_v1",

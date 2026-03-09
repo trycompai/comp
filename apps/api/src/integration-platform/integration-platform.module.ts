@@ -4,6 +4,7 @@ import { OAuthController } from './controllers/oauth.controller';
 import { OAuthAppsController } from './controllers/oauth-apps.controller';
 import { ConnectionsController } from './controllers/connections.controller';
 import { AdminIntegrationsController } from './controllers/admin-integrations.controller';
+import { DynamicIntegrationsController } from './controllers/dynamic-integrations.controller';
 import { ChecksController } from './controllers/checks.controller';
 import { VariablesController } from './controllers/variables.controller';
 import { TaskIntegrationsController } from './controllers/task-integrations.controller';
@@ -15,6 +16,7 @@ import { OAuthCredentialsService } from './services/oauth-credentials.service';
 import { AutoCheckRunnerService } from './services/auto-check-runner.service';
 import { ConnectionAuthTeardownService } from './services/connection-auth-teardown.service';
 import { OAuthTokenRevocationService } from './services/oauth-token-revocation.service';
+import { DynamicManifestLoaderService } from './services/dynamic-manifest-loader.service';
 import { ProviderRepository } from './repositories/provider.repository';
 import { ConnectionRepository } from './repositories/connection.repository';
 import { CredentialRepository } from './repositories/credential.repository';
@@ -22,6 +24,8 @@ import { OAuthStateRepository } from './repositories/oauth-state.repository';
 import { OAuthAppRepository } from './repositories/oauth-app.repository';
 import { PlatformCredentialRepository } from './repositories/platform-credential.repository';
 import { CheckRunRepository } from './repositories/check-run.repository';
+import { DynamicIntegrationRepository } from './repositories/dynamic-integration.repository';
+import { DynamicCheckRepository } from './repositories/dynamic-check.repository';
 
 @Module({
   imports: [AuthModule],
@@ -30,6 +34,7 @@ import { CheckRunRepository } from './repositories/check-run.repository';
     OAuthAppsController,
     ConnectionsController,
     AdminIntegrationsController,
+    DynamicIntegrationsController,
     ChecksController,
     VariablesController,
     TaskIntegrationsController,
@@ -44,6 +49,7 @@ import { CheckRunRepository } from './repositories/check-run.repository';
     AutoCheckRunnerService,
     OAuthTokenRevocationService,
     ConnectionAuthTeardownService,
+    DynamicManifestLoaderService,
     // Repositories
     ProviderRepository,
     ConnectionRepository,
@@ -52,12 +58,15 @@ import { CheckRunRepository } from './repositories/check-run.repository';
     OAuthAppRepository,
     PlatformCredentialRepository,
     CheckRunRepository,
+    DynamicIntegrationRepository,
+    DynamicCheckRepository,
   ],
   exports: [
     CredentialVaultService,
     ConnectionService,
     OAuthCredentialsService,
     AutoCheckRunnerService,
+    DynamicManifestLoaderService,
   ],
 })
 export class IntegrationPlatformModule {}

@@ -1,0 +1,88 @@
+// ===== Dynamic Integration Platform =====
+// Stores integration manifests and declarative check definitions in the database
+// Enables adding new integrations without code changes or deployments
+
+/// Stores a full integration manifest as JSON — replaces hand-written TypeScript manifests
+model DynamicIntegration {
+    id          String  @id @default(dbgenerated("generate_prefixed_cuid('din'::text)"))
+    /// Unique slug (e.g., "azure-devops", "office-365")
+    slug        String  @unique
+    /// Display name
+    name        String
+    /// Short description for catalog
+    description String
+    /// Category for grouping
+    category    String
+    /// Logo URL
+    logoUrl     String
+    /// URL to documentation
+    docsUrl     String?
+
+    /// API base URL for ctx.fetch
+    baseUrl     String?
+    /// Default headers (JSON object)
+    defaultHeaders Json?
+
+    /// Auth strategy config (JSON — matches AuthStrategy type: oauth2/api_key/basic/jwt/custom)
+    authConfig  Json
+
+    /// Capabilities JSON array (default ["checks"])
+    capabilities Json @default("[\"checks\"]")
+
+    /// Whether multiple connections per org are allowed
+    supportsMultipleConnections Boolean @default(false)
+
+    /// Whether this dynamic integration is active
+    isActive    Boolean @default(true)
+
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    checks      DynamicCheck[]
+
+    @@index([slug])
+    @@index([category])
+    @@index([isActive])
+}
+
+/// Stores a declarative check definition — DSL JSON replaces hand-written run() functions
+model DynamicCheck {
+    id              String  @id @default(dbgenerated("generate_prefixed_cuid('dck'::text)"))
+
+    /// Parent integration
+    integrationId   String
+    integration     DynamicIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+    /// Unique slug within integration (e.g., "mfa_enabled")
+    checkSlug       String
+
+    /// Human-readable name
+    name            String
+    /// Description of what this check does
+    description     String
+
+    /// Task template ID for auto-completion (references TASK_TEMPLATES)
+    taskMapping     String?
+
+    /// Default severity for findings
+    defaultSeverity String  @default("medium")
+
+    /// Declarative DSL definition (JSON — the step-by-step instructions)
+    definition      Json
+
+    /// Check-level variables (JSON array of CheckVariable)
+    variables       Json    @default("[]")
+
+    /// Whether this check is enabled
+    isEnabled       Boolean @default(true)
+
+    /// Display order
+    sortOrder       Int     @default(0)
+
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+
+    @@unique([integrationId, checkSlug])
+    @@index([integrationId])
+    @@index([isEnabled])
+}
