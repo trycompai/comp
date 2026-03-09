@@ -1,14 +1,17 @@
 import { db, Prisma } from '@trycompai/db';
-import {
-  isUserUnsubscribed,
-  sendUnassignedItemsNotificationEmail,
-  type UnassignedItem,
-} from '@trycompai/email';
+import { isUserUnsubscribed } from '@trycompai/email';
 import { Logger } from '@nestjs/common';
+import { triggerEmail } from '../../email/trigger-email';
+import { UnassignedItemsNotificationEmail } from '../../email/templates/unassigned-items-notification';
+
+export interface UnassignedItem {
+  type: 'task' | 'policy' | 'risk' | 'vendor';
+  id: string;
+  name: string;
+}
 
 const logger = new Logger('MemberDeactivation');
 
-export { type UnassignedItem };
 
 /**
  * Collect all items assigned to a member (tasks, policies, risks, vendors).
@@ -167,13 +170,18 @@ export async function notifyOwnerOfUnassignedItems({
     );
     if (unsubscribed) return;
 
-    await sendUnassignedItemsNotificationEmail({
-      email: owner.user.email,
-      userName: owner.user.name || owner.user.email || 'Owner',
-      organizationName: organization.name,
-      organizationId,
-      removedMemberName,
-      unassignedItems,
+    const userName = owner.user.name || owner.user.email || 'Owner';
+    await triggerEmail({
+      to: owner.user.email,
+      subject: `Member removed from ${organization.name} - items require reassignment`,
+      react: UnassignedItemsNotificationEmail({
+        email: owner.user.email,
+        userName,
+        organizationName: organization.name,
+        organizationId,
+        removedMemberName,
+        unassignedItems,
+      }),
     });
   } catch (emailError) {
     logger.error('Failed to send unassigned items notification:', emailError);
