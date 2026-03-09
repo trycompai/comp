@@ -1,9 +1,6 @@
-import {
-  MagicLinkEmail,
-  OTPVerificationEmail,
-  sendInviteMemberEmail,
-  sendEmail,
-} from '@trycompai/email';
+import { MagicLinkEmail, OTPVerificationEmail } from '@trycompai/email';
+import { triggerEmail } from '../email/trigger-email';
+import { InviteEmail } from '../email/templates/invite-member';
 import { db } from '@trycompai/db';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
@@ -235,10 +232,19 @@ export const auth = betterAuth({
         if (process.env.NODE_ENV === 'development') {
           console.log('[Auth] Sending invitation to:', data.email);
         }
-        await sendInviteMemberEmail({
-          inviteeEmail: data.email,
-          inviteLink: data.invitation.id,
-          organizationName: data.organization.name,
+        const appUrl =
+          process.env.NEXT_PUBLIC_APP_URL ??
+          process.env.BETTER_AUTH_URL ??
+          'https://app.trycomp.ai';
+        const inviteLink = `${appUrl}/invite/${data.invitation.id}`;
+        await triggerEmail({
+          to: data.email,
+          subject: `You've been invited to join ${data.organization.name} on Comp AI`,
+          react: InviteEmail({
+            organizationName: data.organization.name,
+            inviteLink,
+            email: data.email,
+          }),
         });
       },
       ac,
@@ -271,7 +277,7 @@ export const auth = betterAuth({
         if (process.env.NODE_ENV === 'development') {
           console.log('[Auth] Sending magic link to:', email);
         }
-        await sendEmail({
+        await triggerEmail({
           to: email,
           subject: 'Login to Comp AI',
           react: MagicLinkEmail({ email, url }),
@@ -285,7 +291,7 @@ export const auth = betterAuth({
         if (process.env.NODE_ENV === 'development') {
           console.log('[Auth] Sending OTP to:', email);
         }
-        await sendEmail({
+        await triggerEmail({
           to: email,
           subject: 'One-Time Password for Comp AI',
           react: OTPVerificationEmail({ email, otp }),

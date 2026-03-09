@@ -5,7 +5,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
-import { sendInviteMemberEmail } from '@trycompai/email';
+import { triggerEmail } from '../email/trigger-email';
+import { InviteEmail } from '../email/templates/invite-member';
 import type { InviteItemDto } from './dto/invite-people.dto';
 
 export interface InviteResult {
@@ -163,10 +164,10 @@ export class PeopleInviteService {
     let emailSent = true;
     try {
       const inviteLink = this.buildPortalUrl(organizationId);
-      await sendInviteMemberEmail({
-        inviteeEmail: email,
-        inviteLink,
-        organizationName: organization.name,
+      await triggerEmail({
+        to: email,
+        subject: `You've been invited to join ${organization.name} on Comp AI`,
+        react: InviteEmail({ organizationName: organization.name, inviteLink }),
       });
     } catch (emailErr) {
       emailSent = false;
@@ -238,10 +239,10 @@ export class PeopleInviteService {
     });
 
     const inviteLink = this.buildInviteLink(invitation.id);
-    await sendInviteMemberEmail({
-      inviteeEmail: email,
-      inviteLink,
-      organizationName: organization.name,
+    await triggerEmail({
+      to: email,
+      subject: `You've been invited to join ${organization.name} on Comp AI`,
+      react: InviteEmail({ organizationName: organization.name, inviteLink }),
     });
   }
 
@@ -272,10 +273,10 @@ export class PeopleInviteService {
     });
 
     const inviteLink = this.buildInviteLink(invitation.id);
-    await sendInviteMemberEmail({
-      inviteeEmail: email.toLowerCase(),
-      inviteLink,
-      organizationName: organization.name,
+    await triggerEmail({
+      to: email.toLowerCase(),
+      subject: `You've been invited to join ${organization.name} on Comp AI`,
+      react: InviteEmail({ organizationName: organization.name, inviteLink }),
     });
   }
 

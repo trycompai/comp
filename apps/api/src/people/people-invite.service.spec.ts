@@ -25,15 +25,19 @@ jest.mock('@trycompai/db', () => ({
   },
 }));
 
-jest.mock('@trycompai/email', () => ({
-  sendInviteMemberEmail: jest.fn().mockResolvedValue({ success: true }),
+jest.mock('../email/trigger-email', () => ({
+  triggerEmail: jest.fn().mockResolvedValue({ id: 'trigger_123' }),
+}));
+
+jest.mock('../email/templates/invite-member', () => ({
+  InviteEmail: jest.fn().mockReturnValue('mocked-react-element'),
 }));
 
 import { db } from '@trycompai/db';
-import { sendInviteMemberEmail } from '@trycompai/email';
+import { triggerEmail } from '../email/trigger-email';
 
 const mockDb = db as jest.Mocked<typeof db>;
-const mockSendEmail = sendInviteMemberEmail as jest.Mock;
+const mockTriggerEmail = triggerEmail as jest.Mock;
 
 describe('PeopleInviteService', () => {
   let service: PeopleInviteService;
@@ -247,7 +251,7 @@ describe('PeopleInviteService', () => {
       (mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock).mockResolvedValue({
         count: 5,
       });
-      mockSendEmail.mockRejectedValueOnce(new Error('Email service down'));
+      mockTriggerEmail.mockRejectedValueOnce(new Error('Email service down'));
 
       const results = await service.inviteMembers({
         ...baseParams,
