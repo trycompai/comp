@@ -8,7 +8,7 @@ import { db } from '@trycompai/db';
 import { sendInviteMemberEmail } from '@trycompai/email';
 import type { InviteItemDto } from './dto/invite-people.dto';
 
-interface InviteResult {
+export interface InviteResult {
   email: string;
   success: boolean;
   error?: string;
