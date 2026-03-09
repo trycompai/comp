@@ -166,9 +166,9 @@ export class HybridAuthGuard implements CanActivate {
       }
 
       // Fetch member data for role and department info
-      // Skip if no active org (e.g., /auth/me during onboarding)
+      // Skip if no active org or if org check is skipped (e.g., during onboarding)
       let userRoles: string[] | null = null;
-      if (organizationId) {
+      if (organizationId && !skipOrgCheck) {
         const member = await db.member.findFirst({
           where: {
             userId: user.id,
