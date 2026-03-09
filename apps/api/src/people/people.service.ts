@@ -3,6 +3,7 @@ import {
   NotFoundException,
   Logger,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
 import { FleetService } from '../lib/fleet.service';
@@ -13,6 +14,12 @@ import type { UpdatePeopleDto } from './dto/update-people.dto';
 import type { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
+import {
+  collectAssignedItems,
+  clearAssignments,
+  removeMemberFromOrgChart,
+  notifyOwnerOfUnassignedItems,
+} from './utils/member-deactivation';
 
 @Injectable()
 export class PeopleService {
@@ -304,46 +311,103 @@ export class PeopleService {
     success: boolean;
     deletedMember: { id: string; name: string; email: string };
   }> {
-    try {
-      await MemberValidator.validateOrganization(organizationId);
-      const member = await MemberQueries.findMemberForDeletion(
-        memberId,
-        organizationId,
+    await MemberValidator.validateOrganization(organizationId);
+
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+      include: { user: true },
+    });
+
+    if (!member) {
+      throw new NotFoundException(
+        `Member with ID ${memberId} not found in organization ${organizationId}`,
       );
-
-      if (!member) {
-        throw new NotFoundException(
-          `Member with ID ${memberId} not found in organization ${organizationId}`,
-        );
-      }
-
-      if (callerUserId && member.user.id === callerUserId) {
-        throw new BadRequestException('You cannot delete your own membership');
-      }
-
-      await MemberQueries.deleteMember(memberId);
-
-      this.logger.log(
-        `Deleted member: ${member.user.name} (${memberId}) from organization ${organizationId}`,
-      );
-      return {
-        success: true,
-        deletedMember: {
-          id: member.id,
-          name: member.user.name,
-          email: member.user.email,
-        },
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        `Failed to delete member ${memberId} from organization ${organizationId}:`,
-        error,
-      );
-      throw new Error(`Failed to delete member: ${error.message}`);
     }
+
+    if (callerUserId && member.user.id === callerUserId) {
+      throw new ForbiddenException('You cannot remove yourself');
+    }
+
+    if (member.role.includes('owner')) {
+      throw new ForbiddenException('Cannot remove the organization owner');
+    }
+
+    if (member.user.isPlatformAdmin) {
+      throw new ForbiddenException('Cannot remove a platform admin');
+    }
+
+    const unassignedItems = await collectAssignedItems({
+      memberId,
+      organizationId,
+    });
+
+    await clearAssignments({ memberId, organizationId });
+    await removeMemberFromOrgChart({ organizationId, memberId });
+
+    await db.member.update({
+      where: { id: memberId },
+      data: { deactivated: true, isActive: false },
+    });
+
+    await db.session.deleteMany({ where: { userId: member.userId } });
+
+    if (member.fleetDmLabelId) {
+      try {
+        await this.fleetService.removeHostsByLabel(member.fleetDmLabelId);
+      } catch (fleetError) {
+        this.logger.error('Failed to remove Fleet hosts:', fleetError);
+      }
+    }
+
+    await notifyOwnerOfUnassignedItems({
+      organizationId,
+      removedMemberName: member.user.name || member.user.email || 'Member',
+      unassignedItems,
+    });
+
+    this.logger.log(
+      `Deactivated member: ${member.user.name} (${memberId}) from organization ${organizationId}`,
+    );
+
+    return {
+      success: true,
+      deletedMember: {
+        id: member.id,
+        name: member.user.name,
+        email: member.user.email,
+      },
+    };
+  }
+
+  async reactivateById(
+    memberId: string,
+    organizationId: string,
+  ): Promise<PeopleResponseDto> {
+    const member = await MemberQueries.findByIdInOrganization(
+      memberId,
+      organizationId,
+    );
+
+    if (member) {
+      throw new BadRequestException('Member is already active');
+    }
+
+    // Look for deactivated member
+    const deactivatedMember = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+    });
+
+    if (!deactivatedMember) {
+      throw new NotFoundException(
+        `Member with ID ${memberId} not found in organization ${organizationId}`,
+      );
+    }
+
+    return db.member.update({
+      where: { id: memberId },
+      data: { deactivated: false, isActive: true },
+      select: MemberQueries.MEMBER_SELECT,
+    });
   }
 
   async unlinkDevice(

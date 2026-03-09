@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PeopleService } from './people.service';
+import { PeopleInviteService } from './people-invite.service';
 import type { AuthContext } from '../auth/types';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -42,6 +43,10 @@ describe('PeopleController', () => {
     findMentionableMembers: jest.fn(),
   };
 
+  const mockPeopleInviteService = {
+    inviteMembers: jest.fn(),
+  };
+
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
 
   const mockAuthContext: AuthContext = {
@@ -57,7 +62,10 @@ describe('PeopleController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PeopleController],
-      providers: [{ provide: PeopleService, useValue: mockPeopleService }],
+      providers: [
+        { provide: PeopleService, useValue: mockPeopleService },
+        { provide: PeopleInviteService, useValue: mockPeopleInviteService },
+      ],
     })
       .overrideGuard(HybridAuthGuard)
       .useValue(mockGuard)
