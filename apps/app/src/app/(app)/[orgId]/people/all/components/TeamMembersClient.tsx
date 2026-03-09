@@ -35,25 +35,17 @@ import {
 } from '@trycompai/design-system';
 import { Search } from '@trycompai/design-system/icons';
 
+import { apiClient } from '@/lib/api-client';
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TeamMembersData } from './TeamMembers';
 
-// Import the server actions themselves to get their types
-import type { reactivateMember } from '../actions/reactivateMember';
-import type { removeMember } from '../actions/removeMember';
-import type { revokeInvitation } from '../actions/revokeInvitation';
-
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
 
-// Define prop types using typeof for the actions still used
 interface TeamMembersClientProps {
   data: TeamMembersData;
   organizationId: string;
-  removeMemberAction: typeof removeMember;
-  reactivateMemberAction: typeof reactivateMember;
-  revokeInvitationAction: typeof revokeInvitation;
   canManageMembers: boolean;
   canInviteUsers: boolean;
   isAuditor: boolean;
@@ -78,9 +70,6 @@ interface DisplayItem extends Partial<MemberWithUser>, Partial<Invitation> {
 export function TeamMembersClient({
   data,
   organizationId,
-  removeMemberAction,
-  reactivateMemberAction,
-  revokeInvitationAction,
   canManageMembers,
   canInviteUsers,
   isAuditor,
@@ -96,7 +85,7 @@ export function TeamMembersClient({
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
 
-  const { unlinkDevice } = usePeopleActions();
+  const { unlinkDevice, removeMember, reactivateMember } = usePeopleActions();
   const api = useApi();
 
   // Fetch custom roles for the role combobox
@@ -209,46 +198,39 @@ export function TeamMembersClient({
   const pageSizeOptions = [10, 25, 50, 100];
 
   const handleCancelInvitation = async (invitationId: string) => {
-    const result = await revokeInvitationAction({ invitationId });
-    if (result?.data) {
-      if (result.data?.error) {
-        toast.error(String(result?.data?.error) || 'Failed to cancel invitation');
+    try {
+      const response = await apiClient.delete(`/v1/auth/invitations/${invitationId}`);
+      if (response.error) {
+        toast.error(response.error);
         return;
       }
-      // Success case
       toast.success('Invitation has been cancelled');
-      // Data revalidates server-side via action's revalidatePath
-      router.refresh(); // Add client-side refresh as well
-    } else {
-      // Error case
-      const errorMessage = result?.serverError || 'Failed to add user';
-      console.error('Cancel Invitation Error:', errorMessage);
+      router.refresh();
+    } catch (error) {
+      console.error('Cancel Invitation Error:', error);
+      toast.error('Failed to cancel invitation');
     }
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    const result = await removeMemberAction({ memberId });
-    if (result?.data?.success) {
-      // Success case
-      toast.success('has been removed from the organization');
-      router.refresh(); // Add client-side refresh as well
-    } else {
-      // Error case
-      const errorMessage = result?.serverError || 'Failed to remove member';
-      console.error('Remove Member Error:', errorMessage);
-      toast.error(errorMessage);
+    try {
+      await removeMember(memberId);
+      toast.success('Member has been removed from the organization');
+      router.refresh();
+    } catch (error) {
+      console.error('Remove Member Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to remove member');
     }
   };
 
   const handleReactivateMember = async (memberId: string) => {
-    const result = await reactivateMemberAction({ memberId });
-    if (result?.data?.success) {
+    try {
+      await reactivateMember(memberId);
       toast.success('Member has been reinstated');
       router.refresh();
-    } else {
-      const errorMessage = result?.serverError || 'Failed to reinstate member';
-      console.error('Reactivate Member Error:', errorMessage);
-      toast.error(errorMessage);
+    } catch (error) {
+      console.error('Reactivate Member Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to reinstate member');
     }
   };
 

@@ -85,7 +85,7 @@ export class TaskItemAssignmentNotifierService {
         assignedByUser?.email?.trim() ||
         'Someone';
 
-      if (!assigneeUser?.id || !assigneeUser.email) {
+      if (!assigneeMember || !assigneeUser?.id || !assigneeUser.email) {
         this.logger.warn(
           `Skipping assignment notification: assignee member ${assigneeMemberId} has no user/email`,
         );
