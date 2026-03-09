@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { AnswerQuestionResult } from '@/trigger/questionnaire/answer-question';
 import { answerQuestion } from '@/trigger/questionnaire/answer-question';
 import { generateAnswerWithRAGBatch } from '@/trigger/questionnaire/answer-question-helpers';
@@ -550,7 +550,7 @@ export class QuestionnaireService {
     });
 
     if (!questionnaire) {
-      throw new Error('Questionnaire not found');
+      throw new NotFoundException(`Questionnaire with ID ${id} not found`);
     }
 
     await db.questionnaire.delete({ where: { id } });

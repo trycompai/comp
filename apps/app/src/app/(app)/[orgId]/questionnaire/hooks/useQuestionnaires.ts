@@ -32,11 +32,9 @@ export function useQuestionnaires({ fallbackData }: UseQuestionnairesOptions = {
     );
 
     if (result.data?.success) {
+      const currentList = Array.isArray(data) ? data : [];
       await mutate(
-        (current) => {
-          if (!Array.isArray(current)) return current;
-          return current.filter((q) => q.id !== questionnaireId);
-        },
+        currentList.filter((q) => q.id !== questionnaireId),
         { revalidate: false },
       );
       return true;
