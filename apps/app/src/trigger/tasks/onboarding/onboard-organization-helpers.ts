@@ -284,10 +284,12 @@ export async function extractVendorsFromContext(
               'residual_probability',
               'residual_impact',
             ],
+            additionalProperties: false,
           },
         },
       },
       required: ['vendors'],
+      additionalProperties: false,
     }),
     system:
       'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact.',
@@ -757,10 +759,12 @@ export async function extractRisksFromContext(
               'category',
               'department',
             ],
+            additionalProperties: false,
           },
         },
       },
       required: ['risks'],
+      additionalProperties: false,
     }),
     system: `Create a list of 8-12 risks that are relevant to the organization. Use action-oriented language, assume reviewers understand basic termilology - skip definitions.
           Your mandate is to propose risks that satisfy both ISO 27001:2022 clause 6.1 (risk management) and SOC 2 trust services criteria CC3 and CC4.
