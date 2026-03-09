@@ -40,6 +40,7 @@ import { FrameworksModule } from './frameworks/frameworks.module';
 import { AuditModule } from './audit/audit.module';
 import { ControlsModule } from './controls/controls.module';
 import { RolesModule } from './roles/roles.module';
+import { EmailModule } from './email/email.module';
 import { SecretsModule } from './secrets/secrets.module';
 import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
 import { StripeModule } from './stripe/stripe.module';
@@ -95,6 +96,7 @@ import { StripeModule } from './stripe/stripe.module';
     RolesModule,
     AuditModule,
     ControlsModule,
+    EmailModule,
     SecretsModule,
     SecurityPenetrationTestsModule,
     StripeModule,

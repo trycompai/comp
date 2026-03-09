@@ -1,6 +1,5 @@
 import { env } from '@/env.mjs';
 import { trainingVideos } from '@/lib/data/training-videos';
-import { InvitePortalEmail, sendEmail } from '@comp/email';
 import { db, type Departments, type Member, type Role } from '@db';
 import { revalidatePath } from 'next/cache';
 
@@ -55,18 +54,6 @@ export async function completeEmployeeCreation(params: {
     userId = employee.userId;
   }
 
-  // Get organization details for email
-  //   const organization = await db.organization.findUnique({
-  //     where: { id: organizationId },
-  //   });
-
-  // Send portal invitation
-  // await inviteEmployeeToPortal({
-  // 	email,
-  // 	organizationName: organization?.name || "an organization",
-  // 	inviteLink: process.env.NEXT_PUBLIC_PORTAL_URL || "",
-  // });
-
   // Create training video entries for the employee
   await createTrainingVideoEntries(employee.id);
 
@@ -74,31 +61,6 @@ export async function completeEmployeeCreation(params: {
   revalidatePath(`/${organizationId}/people`);
 
   return employee;
-}
-
-/**
- * Sends an invitation email to an employee for portal access
- */
-async function inviteEmployeeToPortal({
-  email,
-  organizationName,
-  inviteLink,
-}: {
-  email: string;
-  organizationName: string;
-  inviteLink: string;
-}) {
-  await sendEmail({
-    to: email,
-    subject: `You've been invited to join ${organizationName || 'an organization'} on Comp AI`,
-    react: InvitePortalEmail({
-      email,
-      organizationName,
-      inviteLink,
-    }),
-  });
-
-  return { success: true };
 }
 
 /**
