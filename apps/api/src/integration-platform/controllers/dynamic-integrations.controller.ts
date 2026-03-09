@@ -153,6 +153,17 @@ export class DynamicIntegrationsController {
       });
     }
 
+    // Create provider row and refresh registry
+    await this.providerRepo.upsert({
+      slug: def.slug,
+      name: def.name,
+      category: def.category,
+      capabilities: (def.capabilities as unknown as string[]) ?? ['checks'],
+      isActive: true,
+    });
+
+    await this.loaderService.invalidateCache();
+
     this.logger.log(`Created dynamic integration: ${def.slug} with ${def.checks.length} checks`);
 
     return { success: true, id: integration.id, slug: integration.slug };
