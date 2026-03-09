@@ -266,6 +266,7 @@ export function Chat({
         width={538}
         height={561}
         className="absolute top-0 right-0 z-10 pointer-events-none opacity-50 dark:opacity-0"
+        unoptimized
       />
 
       <PanelHeader className="shrink-0 relative z-20">

@@ -2,7 +2,7 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useCommentActions } from '@/hooks/use-comments-api';
-import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import { useMentionableMembers } from '@/hooks/use-mentionable-members';
 import { Button } from '@comp/ui/button';
 import {
   DropdownMenu,
@@ -35,7 +35,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import type React from 'react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { formatRelativeTime } from '../../app/(app)/[orgId]/tasks/[taskId]/components/commentUtils';
 import { CommentContentView } from './CommentContentView';
@@ -84,9 +84,11 @@ function renderContentWithLinks(text: string): React.ReactNode[] {
 interface CommentItemProps {
   comment: CommentWithAuthor;
   refreshComments: () => void;
+  readOnly?: boolean;
+  entityType: string;
 }
 
-export function CommentItem({ comment, refreshComments }: CommentItemProps) {
+export function CommentItem({ comment, refreshComments, readOnly = false, entityType }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState<JSONContent | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -95,24 +97,7 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
   // Use API hooks instead of server actions
   const { updateComment, deleteComment } = useCommentActions();
   const { get: apiGet } = useApi();
-  const { members } = useOrganizationMembers();
-
-  // Convert members to MentionUser format - only show admin/owner users
-  const mentionMembers = useMemo(() => {
-    if (!members) return [];
-    return members
-      .filter((member) => {
-        if (!member.role) return false;
-        const roles = member.role.split(',').map((r) => r.trim().toLowerCase());
-        return roles.includes('owner') || roles.includes('admin');
-      })
-      .map((member) => ({
-        id: member.user.id,
-        name: member.user.name || member.user.email || 'Unknown',
-        email: member.user.email || '',
-        image: member.user.image,
-      }));
-  }, [members]);
+  const { members: mentionMembers } = useMentionableMembers(entityType);
 
   // Parse comment content to JSONContent
   const parseContent = (content: string): JSONContent | null => {
@@ -248,7 +233,7 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
                   {!isEditing ? formatRelativeTime(comment.createdAt) : 'Editing...'}
                 </span>
               </div>
-              {!isEditing && (
+              {!isEditing && !readOnly && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button

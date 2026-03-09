@@ -6,6 +6,7 @@ import { Globe, Plus } from 'lucide-react';
 import { useState } from 'react';
 import type { BrowserAutomation } from '../../hooks/types';
 import { AutomationItem } from './AutomationItem';
+import { usePermissions } from '@/hooks/use-permissions';
 
 // Calculate next scheduled run (daily at 5:00 AM UTC)
 const getNextScheduledRun = (): Date => {
@@ -43,6 +44,9 @@ export function BrowserAutomationsList({
   onEditClick,
 }: BrowserAutomationsListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { hasPermission } = usePermissions();
+  const canCreateIntegration = hasPermission('integration', 'create');
+  const canUpdateIntegration = hasPermission('integration', 'update');
 
   const nextRun = automations.length > 0 ? getNextScheduledRun() : null;
 
@@ -92,6 +96,7 @@ export function BrowserAutomationsList({
               automation={automation}
               isRunning={runningAutomationId === automation.id}
               isExpanded={expandedId === automation.id}
+              readOnly={!canUpdateIntegration}
               onToggleExpand={() =>
                 setExpandedId(expandedId === automation.id ? null : automation.id)
               }
@@ -101,7 +106,7 @@ export function BrowserAutomationsList({
           ))}
         </div>
 
-        {onCreateClick && (
+        {onCreateClick && canCreateIntegration && (
           <button
             onClick={onCreateClick}
             className="w-full flex items-center justify-center gap-2 py-2.5 mt-3 rounded-lg border border-dashed border-border/60 hover:border-border hover:bg-muted/30 transition-all text-xs text-muted-foreground hover:text-foreground"

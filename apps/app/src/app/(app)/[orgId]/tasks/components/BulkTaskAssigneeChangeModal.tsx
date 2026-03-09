@@ -15,9 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@comp/ui/selec
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Member, User } from '@db';
 import { Loader2, UserIcon } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/api-client';
 import { toast } from 'sonner';
+import { useTasks } from '../hooks/useTasks';
 
 interface BulkTaskAssigneeChangeModalProps {
   open: boolean;
@@ -53,10 +52,7 @@ export function BulkTaskAssigneeChangeModal({
   members,
   onSuccess,
 }: BulkTaskAssigneeChangeModalProps) {
-  const router = useRouter();
-  const params = useParams<{ orgId: string }>();
-  const orgIdParam = Array.isArray(params.orgId) ? params.orgId[0] : params.orgId;
-
+  const { bulkUpdateAssignee } = useTasks();
   const [assigneeId, setAssigneeId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -78,32 +74,16 @@ export function BulkTaskAssigneeChangeModal({
   };
 
   const handleUpdate = async () => {
-    if (!orgIdParam || selectedTaskIds.length === 0) {
+    if (selectedTaskIds.length === 0) {
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const payload = {
-        taskIds: selectedTaskIds,
-        assigneeId: assigneeId ?? null,
-      };
-
-      const response = await apiClient.patch<{ updatedCount: number }>(
-        '/v1/tasks/bulk/assignee',
-        payload,
-        orgIdParam,
-      );
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      const updatedCount = response.data?.updatedCount ?? selectedTaskIds.length;
+      const { updatedCount } = await bulkUpdateAssignee(selectedTaskIds, assigneeId);
       toast.success(`Updated assignee for ${updatedCount} task${updatedCount === 1 ? '' : 's'}`);
       onSuccess?.();
       onOpenChange(false);
-      router.refresh();
     } catch (error) {
       console.error('Failed to bulk update task assignees', error);
       const message = error instanceof Error ? error.message : 'Failed to update tasks';

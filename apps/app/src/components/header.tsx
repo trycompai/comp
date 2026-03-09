@@ -1,6 +1,7 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { UserMenu } from '@/components/user-menu';
-import { getOrganizations } from '@/data/getOrganizations';
+import { serverApi } from '@/lib/api-server';
+import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
 import { Skeleton } from '@comp/ui/skeleton';
 import { headers } from 'next/headers';
@@ -16,7 +17,8 @@ export async function Header({
   organizationId?: string;
   hideChat?: boolean;
 }) {
-  const { organizations } = await getOrganizations();
+  const meRes = await serverApi.get<{ organizations: OrganizationFromMe[] }>('/v1/auth/me');
+  const organizations = meRes.data?.organizations ?? [];
 
   // Check feature flags for menu items
   const session = await auth.api.getSession({

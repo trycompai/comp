@@ -7,9 +7,10 @@ import { ChevronLeft, ChevronRight, ExternalLink, MessageSquare } from 'lucide-r
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { usePagination } from '../../hooks/usePagination';
+import type { ContextEntry } from '../../../components/types';
 
 interface ContextSectionProps {
-  contextEntries: Awaited<ReturnType<typeof import('../../data/queries').getContextEntries>>;
+  contextEntries: ContextEntry[];
 }
 
 function hasValidAnswer(answer: string): boolean {
@@ -63,7 +64,7 @@ export function ContextSection({ contextEntries }: ContextSectionProps) {
   const params = useParams();
   const orgId = params.orgId as string;
 
-  const validEntries = contextEntries.filter((entry) => hasValidAnswer(entry.answer));
+  const validEntries = contextEntries.filter((entry) => entry.answer != null && hasValidAnswer(entry.answer));
 
   const { currentPage, totalPages, paginatedItems, handlePageChange } = usePagination({
     items: validEntries,
@@ -90,7 +91,7 @@ export function ContextSection({ contextEntries }: ContextSectionProps) {
               <>
             <div className="flex flex-col gap-2 flex-1">
                   {paginatedItems.map((entry) => {
-                    const formattedAnswer = formatAnswer(entry.answer);
+                    const formattedAnswer = formatAnswer(entry.answer ?? '');
                     return (
                       <Link
                         key={entry.id}

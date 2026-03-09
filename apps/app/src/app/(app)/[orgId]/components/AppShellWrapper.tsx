@@ -6,6 +6,7 @@ import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-d
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
+import { canAccessCompliance, canAccessRoute, hasAnyPermission, type UserPermissions } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
 import { Badge, Globe, Logout, ManageProtection, Settings } from '@carbon/icons-react';
 import {
@@ -17,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Onboarding, Organization } from '@db';
+import type { OrganizationFromMe } from '@/types';
 import {
   AppShell,
   AppShellBody,
@@ -54,7 +56,7 @@ import { ConditionalOnboardingTracker } from './ConditionalOnboardingTracker';
 interface AppShellWrapperProps {
   children: React.ReactNode;
   organization: Organization;
-  organizations: Organization[];
+  organizations: OrganizationFromMe[];
   logoUrls: Record<string, string>;
   onboarding: Onboarding | null;
   isCollapsed: boolean;
@@ -64,6 +66,7 @@ interface AppShellWrapperProps {
   isSecurityEnabled: boolean;
   hasAuditorRole: boolean;
   isOnlyAuditor: boolean;
+  permissions: UserPermissions;
   user: {
     name: string | null;
     email: string;
@@ -93,6 +96,7 @@ function AppShellWrapperContent({
   isSecurityEnabled,
   hasAuditorRole,
   isOnlyAuditor,
+  permissions,
   user,
 }: AppShellWrapperContentProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
@@ -132,6 +136,7 @@ function AppShellWrapperContent({
   const searchGroups = getAppShellSearchGroups({
     organizationId: organization.id,
     router,
+    permissions,
     hasAuditorRole,
     isOnlyAuditor,
     isQuestionnaireEnabled,
@@ -237,13 +242,15 @@ function AppShellWrapperContent({
         />
         <AppShellBody>
           <AppShellRail>
-            <ShellRailNavItem
-              href={`/${organization.id}/frameworks`}
-              isActive={!isSettingsActive && !isTrustActive && !isSecurityActive}
-              icon={<Badge className="size-5" />}
-              label="Compliance"
-            />
-            {isTrustNdaEnabled && (
+            {canAccessCompliance(permissions) && (
+              <ShellRailNavItem
+                href={`/${organization.id}/frameworks`}
+                isActive={!isSettingsActive && !isTrustActive && !isSecurityActive}
+                icon={<Badge className="size-5" />}
+                label="Compliance"
+              />
+            )}
+            {isTrustNdaEnabled && hasAnyPermission(permissions, [{ resource: 'trust', action: 'read' }]) && (
               <ShellRailNavItem
                 href={`/${organization.id}/trust`}
                 isActive={isTrustActive}
@@ -251,7 +258,7 @@ function AppShellWrapperContent({
                 label="Trust"
               />
             )}
-            {isSecurityEnabled ? (
+            {isSecurityEnabled && canAccessRoute(permissions, 'penetration-tests') ? (
               <ShellRailNavItem
                 href={`/${organization.id}/security`}
                 isActive={isSecurityActive}
@@ -259,7 +266,7 @@ function AppShellWrapperContent({
                 label="Security"
               />
             ) : null}
-            {!isOnlyAuditor && (
+            {!isOnlyAuditor && canAccessRoute(permissions, 'settings') && (
               <ShellRailNavItem
                 href={`/${organization.id}/settings`}
                 isActive={isSettingsActive}
@@ -293,6 +300,7 @@ function AppShellWrapperContent({
                   isQuestionnaireEnabled={isQuestionnaireEnabled}
                   hasAuditorRole={hasAuditorRole}
                   isOnlyAuditor={isOnlyAuditor}
+                  permissions={permissions}
                 />
               )}
             </AppShellSidebar>

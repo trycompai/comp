@@ -28,7 +28,7 @@ async function getJwtToken(cookieHeader: string): Promise<string | null> {
     const tokenData = await tokenResponse.json();
     return tokenData?.token ?? null;
   } catch (error) {
-    console.warn('Failed to get JWT token:', error);
+    // Token retrieval failed - caller handles null return
     return null;
   }
 }

@@ -1,7 +1,8 @@
 'use client';
 
-import { updateOrganizationWebsiteAction } from '@/actions/organization/update-organization-website-action';
 import { organizationWebsiteSchema } from '@/actions/schema';
+import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -15,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/fo
 import { Input } from '@comp/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -25,14 +26,9 @@ export function UpdateOrganizationWebsite({
 }: {
   organizationWebsite: string;
 }) {
-  const updateOrganizationWebsite = useAction(updateOrganizationWebsiteAction, {
-    onSuccess: () => {
-      toast.success('Organization website updated');
-    },
-    onError: () => {
-      toast.error('Error updating organization website');
-    },
-  });
+  const { updateOrganization } = useOrganizationMutations();
+  const { hasPermission } = usePermissions();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof organizationWebsiteSchema>>({
     resolver: zodResolver(organizationWebsiteSchema),
@@ -41,8 +37,16 @@ export function UpdateOrganizationWebsite({
     },
   });
 
-  const onSubmit = (data: z.infer<typeof organizationWebsiteSchema>) => {
-    updateOrganizationWebsite.execute(data);
+  const onSubmit = async (data: z.infer<typeof organizationWebsiteSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await updateOrganization({ website: data.website });
+      toast.success('Organization website updated');
+    } catch {
+      toast.error('Error updating organization website');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -74,6 +78,7 @@ export function UpdateOrganizationWebsite({
                       spellCheck="false"
                       maxLength={255}
                       placeholder="https://example.com"
+                      disabled={!hasPermission('organization', 'update')}
                     />
                   </FormControl>
                   <FormMessage />
@@ -85,8 +90,8 @@ export function UpdateOrganizationWebsite({
             <div className="text-muted-foreground text-xs">
               {'Please enter a valid URL including https://'}
             </div>
-            <Button type="submit" disabled={updateOrganizationWebsite.status === 'executing'}>
-              {updateOrganizationWebsite.status === 'executing' ? (
+            <Button type="submit" disabled={isSubmitting || !hasPermission('organization', 'update')}>
+              {isSubmitting ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : null}
               {'Save'}

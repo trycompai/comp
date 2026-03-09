@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
 import { isUserUnsubscribed } from '@trycompai/email';
-import { sendEmail } from '../email/resend';
+import { triggerEmail } from '../email/trigger-email';
 import { TaskItemMentionedEmail } from '../email/templates/task-item-mentioned';
 import { NovuService } from '../notifications/novu.service';
 
@@ -50,12 +50,20 @@ export class TaskItemMentionNotifierService {
         return;
       }
 
-      // Get all mentioned users
-      const mentionedUsers = await db.user.findMany({
+      // Get mentioned users: exclude platform admins unless they are an owner of this org
+      const mentionedMembers = await db.member.findMany({
         where: {
-          id: { in: mentionedUserIds },
+          organizationId,
+          deactivated: false,
+          user: { id: { in: mentionedUserIds } },
+          OR: [
+            { user: { isPlatformAdmin: false } },
+            { role: { contains: 'owner' } },
+          ],
         },
+        include: { user: true },
       });
+      const mentionedUsers = mentionedMembers.map((m) => m.user);
 
       // Get entity name for context
       let entityName = '';
@@ -114,6 +122,7 @@ export class TaskItemMentionNotifierService {
           db,
           user.email,
           'taskMentions',
+          organizationId,
         );
         if (isUnsubscribed) {
           this.logger.log(
@@ -126,7 +135,7 @@ export class TaskItemMentionNotifierService {
 
         // Send email notification via Resend
         try {
-          const { id } = await sendEmail({
+          const { id } = await triggerEmail({
             to: user.email,
             subject: `${mentionedByName} mentioned you in a task`,
             react: TaskItemMentionedEmail({

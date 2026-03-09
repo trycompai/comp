@@ -11,6 +11,9 @@ export function ErrorFallback() {
       <div>
         <h2 className="text-md">Something went wrong</h2>
       </div>
+      {/* router.refresh() is intentional here: this is a generic error boundary
+         that doesn't know which SWR keys are relevant, so a full server re-render
+         is the safest recovery strategy. */}
       <Button onClick={() => router.refresh()} variant="outline">
         Try again
       </Button>

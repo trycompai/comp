@@ -1,7 +1,5 @@
 'use client';
 
-import { createContextEntryAction } from '@/actions/context-hub/create-context-entry-action';
-import { updateContextEntryAction } from '@/actions/context-hub/update-context-entry-action';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Input } from '@comp/ui/input';
@@ -9,39 +7,38 @@ import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import type { Context } from '@db';
 import { Loader2 } from 'lucide-react';
-import { useTransition } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useContextEntries } from '../hooks/useContextEntries';
 
 export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?: () => void }) {
-  const [isPending, startTransition] = useTransition();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('evidence', 'update');
+  const { createEntry, updateEntry } = useContextEntries();
+  const [isPending, setIsPending] = useState(false);
 
   async function onSubmit(formData: FormData) {
-    startTransition(async () => {
-      try {
-        if (entry) {
-          const result = await updateContextEntryAction({
-            id: entry.id,
-            question: formData.get('question') as string,
-            answer: formData.get('answer') as string,
-          });
-          if (result?.data) {
-            toast.success('Context entry updated');
-            onSuccess?.();
-          }
-        } else {
-          const result = await createContextEntryAction({
-            question: formData.get('question') as string,
-            answer: formData.get('answer') as string,
-          });
-          if (result?.data) {
-            toast.success('Context entry created');
-            onSuccess?.();
-          }
-        }
-      } catch (error) {
-        toast.error('Something went wrong');
+    setIsPending(true);
+    try {
+      const body = {
+        question: formData.get('question') as string,
+        answer: formData.get('answer') as string,
+      };
+
+      if (entry) {
+        await updateEntry(entry.id, body);
+        toast.success('Context entry updated');
+      } else {
+        await createEntry(body);
+        toast.success('Context entry created');
       }
-    });
+      onSuccess?.();
+    } catch {
+      toast.error('Something went wrong');
+    } finally {
+      setIsPending(false);
+    }
   }
 
   return (
@@ -76,7 +73,7 @@ export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?:
                   />
                 </div>
               </div>
-              <Button type="submit" disabled={isPending} className="justify-self-end">
+              <Button type="submit" disabled={isPending || !canUpdate} className="justify-self-end">
                 {entry ? 'Update' : 'Create'}{' '}
                 {isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
               </Button>

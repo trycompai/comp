@@ -1,7 +1,8 @@
 'use client';
 
-import { updateOrganizationNameAction } from '@/actions/organization/update-organization-name-action';
 import { organizationNameSchema } from '@/actions/schema';
+import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -15,20 +16,15 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/fo
 import { Input } from '@comp/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
 export function UpdateOrganizationName({ organizationName }: { organizationName: string }) {
-  const updateOrganizationName = useAction(updateOrganizationNameAction, {
-    onSuccess: () => {
-      toast.success('Organization name updated');
-    },
-    onError: () => {
-      toast.error('Error updating organization name');
-    },
-  });
+  const { updateOrganization } = useOrganizationMutations();
+  const { hasPermission } = usePermissions();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof organizationNameSchema>>({
     resolver: zodResolver(organizationNameSchema),
@@ -37,8 +33,16 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
     },
   });
 
-  const onSubmit = (data: z.infer<typeof organizationNameSchema>) => {
-    updateOrganizationName.execute(data);
+  const onSubmit = async (data: z.infer<typeof organizationNameSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await updateOrganization({ name: data.name });
+      toast.success('Organization name updated');
+    } catch {
+      toast.error('Error updating organization name');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -71,6 +75,7 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
                       autoCorrect="off"
                       spellCheck="false"
                       maxLength={32}
+                      disabled={!hasPermission('organization', 'update')}
                     />
                   </FormControl>
                   <FormMessage />
@@ -82,8 +87,8 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
             <div className="text-muted-foreground text-xs">
               {'Please use 32 characters at maximum.'}
             </div>
-            <Button type="submit" disabled={updateOrganizationName.status === 'executing'}>
-              {updateOrganizationName.status === 'executing' ? (
+            <Button type="submit" disabled={isSubmitting || !hasPermission('organization', 'update')}>
+              {isSubmitting ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : null}
               {'Save'}

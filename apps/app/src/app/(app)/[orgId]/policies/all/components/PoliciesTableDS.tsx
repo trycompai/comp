@@ -223,5 +223,9 @@ function PolicyStatusCell({ policy, status, isTailoring }: PolicyStatusCellProps
     );
   }
 
+  if (policy.isArchived) {
+    return <StatusIndicator status="archived" />;
+  }
+
   return <StatusIndicator status={policy.status} />;
 }

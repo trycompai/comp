@@ -6,8 +6,11 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useApi } from '@/hooks/use-api';
 import { usePeopleActions } from '@/hooks/use-people-api';
+import { parseRolesString } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
+import useSWR from 'swr';
 import type { Invitation, Role } from '@db';
 import {
   Empty,
@@ -32,25 +35,17 @@ import {
 } from '@trycompai/design-system';
 import { Search } from '@trycompai/design-system/icons';
 
+import { apiClient } from '@/lib/api-client';
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TeamMembersData } from './TeamMembers';
 
-// Import the server actions themselves to get their types
-import type { reactivateMember } from '../actions/reactivateMember';
-import type { removeMember } from '../actions/removeMember';
-import type { revokeInvitation } from '../actions/revokeInvitation';
-
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
 
-// Define prop types using typeof for the actions still used
 interface TeamMembersClientProps {
   data: TeamMembersData;
   organizationId: string;
-  removeMemberAction: typeof removeMember;
-  reactivateMemberAction: typeof reactivateMember;
-  revokeInvitationAction: typeof revokeInvitation;
   canManageMembers: boolean;
   canInviteUsers: boolean;
   isAuditor: boolean;
@@ -68,16 +63,13 @@ interface DisplayItem extends Partial<MemberWithUser>, Partial<Invitation> {
   displayRole: string | string[]; // Simplified role display, could be comma-separated
   displayStatus: 'active' | 'pending' | 'deactivated';
   displayId: string; // Use member.id or invitation.id
-  processedRoles: Role[];
+  processedRoles: string[];
   isDeactivated?: boolean;
 }
 
 export function TeamMembersClient({
   data,
   organizationId,
-  removeMemberAction,
-  reactivateMemberAction,
-  revokeInvitationAction,
   canManageMembers,
   canInviteUsers,
   isAuditor,
@@ -93,7 +85,22 @@ export function TeamMembersClient({
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
 
-  const { unlinkDevice } = usePeopleActions();
+  const { unlinkDevice, removeMember, reactivateMember } = usePeopleActions();
+  const api = useApi();
+
+  // Fetch custom roles for the role combobox
+  const { data: rolesData } = useSWR(
+    `/v1/roles`,
+    async (endpoint: string) => {
+      const res = await api.get<{ customRoles: Array<{ id: string; name: string; permissions: Record<string, string[]> }> }>(endpoint);
+      return res.data?.customRoles ?? [];
+    },
+  );
+  const customRoles = (rolesData ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    permissions: r.permissions,
+  }));
 
   // Employee sync hook with server-fetched initial data
   const {
@@ -125,12 +132,7 @@ export function TeamMembersClient({
   const allItems: DisplayItem[] = [
     ...data.members.map((member) => {
       // Process the role to handle comma-separated values
-      const roles =
-        typeof member.role === 'string' && member.role.includes(',')
-          ? (member.role.split(',') as Role[])
-          : Array.isArray(member.role)
-            ? member.role
-            : [member.role as Role];
+      const roles = parseRolesString(member.role);
 
       const isInactive = member.deactivated || !member.isActive;
 
@@ -149,12 +151,7 @@ export function TeamMembersClient({
     }),
     ...data.pendingInvitations.map((invitation) => {
       // Process the role to handle comma-separated values
-      const roles =
-        typeof invitation.role === 'string' && invitation.role.includes(',')
-          ? (invitation.role.split(',') as Role[])
-          : Array.isArray(invitation.role)
-            ? invitation.role
-            : [invitation.role as Role];
+      const roles = parseRolesString(invitation.role);
 
       return {
         ...invitation,
@@ -176,7 +173,7 @@ export function TeamMembersClient({
       item.displayEmail.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Check if the role filter matches any of the member's roles
-    const matchesRole = !roleFilter || item.processedRoles.includes(roleFilter as Role);
+    const matchesRole = !roleFilter || item.processedRoles.includes(roleFilter);
 
     // Status filter: 'active' shows non-deactivated members + pending invitations
     // 'deactivated' shows only deactivated members
@@ -201,46 +198,39 @@ export function TeamMembersClient({
   const pageSizeOptions = [10, 25, 50, 100];
 
   const handleCancelInvitation = async (invitationId: string) => {
-    const result = await revokeInvitationAction({ invitationId });
-    if (result?.data) {
-      if (result.data?.error) {
-        toast.error(String(result?.data?.error) || 'Failed to cancel invitation');
+    try {
+      const response = await apiClient.delete(`/v1/auth/invitations/${invitationId}`);
+      if (response.error) {
+        toast.error(response.error);
         return;
       }
-      // Success case
       toast.success('Invitation has been cancelled');
-      // Data revalidates server-side via action's revalidatePath
-      router.refresh(); // Add client-side refresh as well
-    } else {
-      // Error case
-      const errorMessage = result?.serverError || 'Failed to add user';
-      console.error('Cancel Invitation Error:', errorMessage);
+      router.refresh();
+    } catch (error) {
+      console.error('Cancel Invitation Error:', error);
+      toast.error('Failed to cancel invitation');
     }
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    const result = await removeMemberAction({ memberId });
-    if (result?.data?.success) {
-      // Success case
-      toast.success('has been removed from the organization');
-      router.refresh(); // Add client-side refresh as well
-    } else {
-      // Error case
-      const errorMessage = result?.serverError || 'Failed to remove member';
-      console.error('Remove Member Error:', errorMessage);
-      toast.error(errorMessage);
+    try {
+      await removeMember(memberId);
+      toast.success('Member has been removed from the organization');
+      router.refresh();
+    } catch (error) {
+      console.error('Remove Member Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to remove member');
     }
   };
 
   const handleReactivateMember = async (memberId: string) => {
-    const result = await reactivateMemberAction({ memberId });
-    if (result?.data?.success) {
+    try {
+      await reactivateMember(memberId);
       toast.success('Member has been reinstated');
       router.refresh();
-    } else {
-      const errorMessage = result?.serverError || 'Failed to reinstate member';
-      console.error('Reactivate Member Error:', errorMessage);
-      toast.error(errorMessage);
+    } catch (error) {
+      console.error('Reactivate Member Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to reinstate member');
     }
   };
 
@@ -251,12 +241,12 @@ export function TeamMembersClient({
   };
 
   // Update handleUpdateRole to use authClient and add toasts
-  const handleUpdateRole = async (memberId: string, roles: Role[]) => {
+  const handleUpdateRole = async (memberId: string, roles: string[]) => {
     const rolesArray = Array.isArray(roles) ? roles : [roles];
     const member = data.members.find((m) => m.id === memberId);
 
     // Client-side check (optional, robust check should be server-side in authClient)
-    const memberRoles = member?.role?.split(',').map((r) => r.trim()) ?? [];
+    const memberRoles = parseRolesString(member?.role);
     if (member && memberRoles.includes('owner') && !rolesArray.includes('owner')) {
       // Show toast error directly, no need to return an error object
       toast.error('The Owner role cannot be removed.');
@@ -528,6 +518,7 @@ export function TeamMembersClient({
                   onReactivate={handleReactivateMember}
                   canEdit={canManageMembers}
                   isCurrentUserOwner={isCurrentUserOwner}
+                  customRoles={customRoles}
                   taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}
                   hasDeviceAgentDevice={memberIdsWithDeviceAgent.includes(
                     (item as MemberWithUser).id,

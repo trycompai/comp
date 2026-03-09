@@ -8,6 +8,7 @@ import type { FrameworkEditorFramework } from '@db';
 import { PlusIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
+import { usePermissions } from '@/hooks/use-permissions';
 import type { FrameworkInstanceWithControls } from '../types';
 import { AddFrameworkModal } from './AddFrameworkModal';
 import type { FrameworkInstanceWithComplianceScore } from './types';
@@ -64,6 +65,7 @@ export function FrameworksOverview({
   organizationId,
 }: FrameworksOverviewProps) {
   const [isAddFrameworkModalOpen, setIsAddFrameworkModalOpen] = useState(false);
+  const { hasPermission } = usePermissions();
 
   // Create a map of framework IDs to compliance scores for easy lookup
   const complianceMap = new Map(
@@ -108,9 +110,10 @@ export function FrameworksOverview({
                             <Image
                               src={badgeSrc}
                               alt={framework.framework.name}
-                              width={400}
-                              height={400}
+                              width={32}
+                              height={32}
                               className="rounded-full w-8 h-8"
+                              unoptimized
                             />
                           ) : (
                             <div className="rounded-full w-8 h-8 bg-muted flex items-center justify-center">
@@ -155,14 +158,16 @@ export function FrameworksOverview({
         </div>
       </CardContent>
 
-      <CardFooter className="mt-auto">
-        <div className="flex justify-center w-full">
-          <Button variant="outline" onClick={() => setIsAddFrameworkModalOpen(true)}>
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Add Framework
-          </Button>
-        </div>
-      </CardFooter>
+      {hasPermission('framework', 'create') && (
+        <CardFooter className="mt-auto">
+          <div className="flex justify-center w-full">
+            <Button variant="outline" onClick={() => setIsAddFrameworkModalOpen(true)}>
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Add Framework
+            </Button>
+          </div>
+        </CardFooter>
+      )}
 
       <Dialog open={isAddFrameworkModalOpen} onOpenChange={setIsAddFrameworkModalOpen}>
         {isAddFrameworkModalOpen && (

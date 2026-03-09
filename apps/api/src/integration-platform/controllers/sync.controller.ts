@@ -7,17 +7,18 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../../auth/permission.guard';
+import { RequirePermission } from '../../auth/require-permission.decorator';
+import { OrganizationId } from '../../auth/auth-context.decorator';
 import { db } from '@db';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { getManifest, type OAuthConfig } from '@comp/integration-platform';
-
-interface SyncQuery {
-  organizationId: string;
-  connectionId: string;
-}
 
 interface GoogleWorkspaceUser {
   id: string;
@@ -102,6 +103,9 @@ const matchesSyncFilterTerms = (email: string, terms: string[]): boolean =>
   terms.some((term) => matchesSyncFilterTerm(email, term));
 
 @Controller({ path: 'integrations/sync', version: '1' })
+@ApiTags('Integrations')
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@ApiSecurity('apikey')
 export class SyncController {
   private readonly logger = new Logger(SyncController.name);
 
@@ -115,12 +119,14 @@ export class SyncController {
    * Sync employees from Google Workspace
    */
   @Post('google-workspace/employees')
-  async syncGoogleWorkspaceEmployees(@Query() query: SyncQuery) {
-    const { organizationId, connectionId } = query;
-
-    if (!organizationId || !connectionId) {
+  @RequirePermission('integration', 'update')
+  async syncGoogleWorkspaceEmployees(
+    @OrganizationId() organizationId: string,
+    @Query('connectionId') connectionId: string,
+  ) {
+    if (!connectionId) {
       throw new HttpException(
-        'organizationId and connectionId are required',
+        'connectionId is required',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -547,15 +553,10 @@ export class SyncController {
    * Check if Google Workspace is connected for an organization
    */
   @Post('google-workspace/status')
+  @RequirePermission('integration', 'read')
   async getGoogleWorkspaceStatus(
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
   ) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const connection = await this.connectionRepository.findBySlugAndOrg(
       'google-workspace',
@@ -583,12 +584,14 @@ export class SyncController {
    * Sync employees from Rippling
    */
   @Post('rippling/employees')
-  async syncRipplingEmployees(@Query() query: SyncQuery) {
-    const { organizationId, connectionId } = query;
-
-    if (!organizationId || !connectionId) {
+  @RequirePermission('integration', 'update')
+  async syncRipplingEmployees(
+    @OrganizationId() organizationId: string,
+    @Query('connectionId') connectionId: string,
+  ) {
+    if (!connectionId) {
       throw new HttpException(
-        'organizationId and connectionId are required',
+        'connectionId is required',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -951,13 +954,8 @@ export class SyncController {
    * Check if Rippling is connected for an organization
    */
   @Post('rippling/status')
-  async getRipplingStatus(@Query('organizationId') organizationId: string) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  @RequirePermission('integration', 'read')
+  async getRipplingStatus(@OrganizationId() organizationId: string) {
 
     const connection = await this.connectionRepository.findBySlugAndOrg(
       'rippling',
@@ -985,12 +983,14 @@ export class SyncController {
    * Sync employees from Ramp
    */
   @Post('ramp/employees')
-  async syncRampEmployees(@Query() query: SyncQuery) {
-    const { organizationId, connectionId } = query;
-
-    if (!organizationId || !connectionId) {
+  @RequirePermission('integration', 'update')
+  async syncRampEmployees(
+    @OrganizationId() organizationId: string,
+    @Query('connectionId') connectionId: string,
+  ) {
+    if (!connectionId) {
       throw new HttpException(
-        'organizationId and connectionId are required',
+        'connectionId is required',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -1357,12 +1357,14 @@ export class SyncController {
    * Sync employees from JumpCloud
    */
   @Post('jumpcloud/employees')
-  async syncJumpCloudEmployees(@Query() query: SyncQuery) {
-    const { organizationId, connectionId } = query;
-
-    if (!organizationId || !connectionId) {
+  @RequirePermission('integration', 'update')
+  async syncJumpCloudEmployees(
+    @OrganizationId() organizationId: string,
+    @Query('connectionId') connectionId: string,
+  ) {
+    if (!connectionId) {
       throw new HttpException(
-        'organizationId and connectionId are required',
+        'connectionId is required',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -1865,13 +1867,8 @@ export class SyncController {
    * Check if JumpCloud is connected for an organization
    */
   @Post('jumpcloud/status')
-  async getJumpCloudStatus(@Query('organizationId') organizationId: string) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  @RequirePermission('integration', 'read')
+  async getJumpCloudStatus(@OrganizationId() organizationId: string) {
 
     const connection = await this.connectionRepository.findBySlugAndOrg(
       'jumpcloud',
@@ -1899,13 +1896,8 @@ export class SyncController {
    * Check if Ramp is connected for an organization
    */
   @Post('ramp/status')
-  async getRampStatus(@Query('organizationId') organizationId: string) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  @RequirePermission('integration', 'read')
+  async getRampStatus(@OrganizationId() organizationId: string) {
 
     const connection = await this.connectionRepository.findBySlugAndOrg(
       'ramp',
@@ -1933,15 +1925,10 @@ export class SyncController {
    * Get the current employee sync provider for an organization
    */
   @Get('employee-sync-provider')
+  @RequirePermission('integration', 'read')
   async getEmployeeSyncProvider(
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
   ) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const org = await db.organization.findUnique({
       where: { id: organizationId },
@@ -1961,16 +1948,11 @@ export class SyncController {
    * Set the employee sync provider for an organization
    */
   @Post('employee-sync-provider')
+  @RequirePermission('integration', 'update')
   async setEmployeeSyncProvider(
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
     @Body() body: { provider: string | null },
   ) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const { provider } = body;
 

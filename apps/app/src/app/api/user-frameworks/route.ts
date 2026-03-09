@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import { db } from '@db';
 import { NextResponse } from 'next/server';
 
@@ -10,7 +11,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
-  if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.slice(7) !== secretKey) {
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  if (!token || token.length !== secretKey.length || !timingSafeEqual(Buffer.from(token), Buffer.from(secretKey))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

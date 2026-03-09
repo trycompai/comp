@@ -1,13 +1,8 @@
-'use server';
-
+import { filterComplianceMembers } from '@/lib/compliance';
 import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
-import { auth } from '@/utils/auth';
+import { serverApi } from '@/lib/server-api-client';
 import type { Invitation, Member, User } from '@db';
 import { db } from '@db';
-import { headers } from 'next/headers';
-import { reactivateMember } from '../actions/reactivateMember';
-import { removeMember } from '../actions/removeMember';
-import { revokeInvitation } from '../actions/revokeInvitation';
 import { getEmployeeSyncConnections } from '../data/queries';
 import { TeamMembersClient } from './TeamMembersClient';
 
@@ -25,54 +20,32 @@ export interface TeamMembersProps {
   canInviteUsers: boolean;
   isAuditor: boolean;
   isCurrentUserOwner: boolean;
+  organizationId: string;
 }
 
 export async function TeamMembers(props: TeamMembersProps) {
-  const { canManageMembers, canInviteUsers, isAuditor, isCurrentUserOwner } = props;
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  const organizationId = session?.session?.activeOrganizationId;
+  const { canManageMembers, canInviteUsers, isAuditor, isCurrentUserOwner, organizationId } = props;
 
   if (!organizationId) {
     return null;
   }
 
-  let members: MemberWithUser[] = [];
-  let pendingInvitations: Invitation[] = [];
+  // Fetch members and invitations from API
+  const [membersRes, invitationsRes] = await Promise.all([
+    serverApi.get<{ data: MemberWithUser[]; count: number }>(
+      '/v1/people?includeDeactivated=true',
+    ),
+    serverApi.get<{ data: Invitation[] }>('/v1/auth/invitations'),
+  ]);
 
-  if (organizationId) {
-    // Fetch all members including deactivated ones
-    const fetchedMembers = await db.member.findMany({
-      where: {
-        organizationId: organizationId,
-      },
-      include: {
-        user: true,
-      },
-      orderBy: [
-        { deactivated: 'asc' }, // Active members first
-        { user: { email: 'asc' } },
-      ],
-    });
+  const members: MemberWithUser[] = Array.isArray(membersRes.data?.data)
+    ? membersRes.data.data
+    : [];
+  const pendingInvitations: Invitation[] = Array.isArray(invitationsRes.data?.data)
+    ? invitationsRes.data.data
+    : [];
 
-    members = fetchedMembers;
-
-    pendingInvitations = await db.invitation.findMany({
-      where: {
-        organizationId,
-        status: 'pending',
-      },
-      orderBy: {
-        email: 'asc',
-      },
-    });
-  }
-
-  const data: TeamMembersData = {
-    members: members,
-    pendingInvitations: pendingInvitations,
-  };
+  const data: TeamMembersData = { members, pendingInvitations };
 
   // Fetch employee sync connections server-side
   const employeeSyncData = await getEmployeeSyncConnections(organizationId);
@@ -80,12 +53,7 @@ export async function TeamMembers(props: TeamMembersProps) {
   // Build task completion map for employees/contractors
   const taskCompletionMap: Record<string, { completed: number; total: number }> = {};
 
-  const employeeMembers = members.filter((member) => {
-    const roles = member.role.includes(',')
-      ? member.role.split(',').map((r) => r.trim())
-      : [member.role];
-    return roles.includes('employee') || roles.includes('contractor');
-  });
+  const employeeMembers = await filterComplianceMembers(members, organizationId);
 
   // Build a set of member IDs that have device-agent devices
   const memberIds = members.map((m) => m.id);
@@ -101,13 +69,11 @@ export async function TeamMembers(props: TeamMembersProps) {
   ];
 
   if (employeeMembers.length > 0) {
-    // Fetch org settings to know which steps are enabled
     const org = await db.organization.findUnique({
       where: { id: organizationId },
       select: { securityTrainingStepEnabled: true },
     });
 
-    // Fetch required policies
     const policies = await db.policy.findMany({
       where: {
         organizationId,
@@ -117,13 +83,10 @@ export async function TeamMembers(props: TeamMembersProps) {
       },
     });
 
-    // Fetch training video completions (only if training is enabled)
     const employeeIds = employeeMembers.map((m) => m.id);
     const trainingCompletions = org?.securityTrainingStepEnabled
       ? await db.employeeTrainingVideoCompletion.findMany({
-          where: {
-            memberId: { in: employeeIds },
-          },
+          where: { memberId: { in: employeeIds } },
         })
       : [];
 
@@ -150,10 +113,7 @@ export async function TeamMembers(props: TeamMembersProps) {
   return (
     <TeamMembersClient
       data={data}
-      organizationId={organizationId ?? ''}
-      removeMemberAction={removeMember}
-      reactivateMemberAction={reactivateMember}
-      revokeInvitationAction={revokeInvitation}
+      organizationId={organizationId}
       canManageMembers={canManageMembers}
       canInviteUsers={canInviteUsers}
       isAuditor={isAuditor}

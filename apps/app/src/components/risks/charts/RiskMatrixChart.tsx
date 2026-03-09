@@ -1,10 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Impact, Likelihood } from '@db';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { Button, HStack, Section } from '@trycompai/design-system';
 import { useEffect, useState } from 'react';
 
 const LIKELIHOOD_SCORES: Record<Likelihood, number> = {
@@ -45,18 +42,18 @@ interface RiskCell {
   value?: number;
 }
 
-const getRiskColor = (level: string) => {
+const getRiskColor = (level: string, readOnly?: boolean) => {
   switch (level) {
     case 'very-low':
-      return 'bg-emerald-500/20 border-emerald-500/30 hover:bg-emerald-500/30';
+      return `bg-emerald-500/20 border-emerald-500/30${readOnly ? '' : ' hover:bg-emerald-500/30'}`;
     case 'low':
-      return 'bg-green-500/20 border-green-500/30 hover:bg-green-500/30';
+      return `bg-green-500/20 border-green-500/30${readOnly ? '' : ' hover:bg-green-500/30'}`;
     case 'medium':
-      return 'bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30';
+      return `bg-yellow-500/20 border-yellow-500/30${readOnly ? '' : ' hover:bg-yellow-500/30'}`;
     case 'high':
-      return 'bg-orange-500/20 border-orange-500/30 hover:bg-orange-500/30';
+      return `bg-orange-500/20 border-orange-500/30${readOnly ? '' : ' hover:bg-orange-500/30'}`;
     case 'very-high':
-      return 'bg-red-500/20 border-red-500/30 hover:bg-red-500/30';
+      return `bg-red-500/20 border-red-500/30${readOnly ? '' : ' hover:bg-red-500/30'}`;
     default:
       return 'bg-slate-500/20 border-slate-500/30';
   }
@@ -81,6 +78,7 @@ interface RiskMatrixChartProps {
   activeLikelihood: Likelihood;
   activeImpact: Impact;
   saveAction: (data: { id: string; probability: Likelihood; impact: Impact }) => Promise<any>;
+  readOnly?: boolean;
 }
 
 export function RiskMatrixChart({
@@ -90,6 +88,7 @@ export function RiskMatrixChart({
   activeLikelihood: initialLikelihoodProp,
   activeImpact: initialImpactProp,
   saveAction,
+  readOnly,
 }: RiskMatrixChartProps) {
   const [initialLikelihood, setInitialLikelihood] = useState<Likelihood>(initialLikelihoodProp);
   const [initialImpact, setInitialImpact] = useState<Impact>(initialImpactProp);
@@ -133,6 +132,7 @@ export function RiskMatrixChart({
   );
 
   const handleCellClick = (probability: string, impact: string) => {
+    if (readOnly) return;
     const likelihoodIdx = probabilityLevels.indexOf(probability);
     const impactIdx = impactLevels.indexOf(impact);
     const newLikelihood = VISUAL_LIKELIHOOD_ORDER[likelihoodIdx];
@@ -160,45 +160,30 @@ export function RiskMatrixChart({
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
-          </div>
-          <AnimatePresence>
-            {hasChanges && (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15, ease: 'easeOut' }}
-              >
-                <Button onClick={handleSave} variant="default" disabled={loading}>
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="relative">
-          <div>
-            <div className="grid grid-cols-6 rounded-lg">
-              <div className="h-12" />
-              {impactLevels.map((impact, index) => (
-                <div key={impact} className="flex flex-col items-center justify-center">
-                  <span className="text-center text-xs leading-tight">{impact}</span>
-                </div>
-              ))}
+    <Section
+      title={title}
+      description={description}
+      actions={
+        !readOnly && hasChanges ? (
+          <Button onClick={handleSave} disabled={loading} loading={loading} size="sm">
+            Save
+          </Button>
+        ) : undefined
+      }
+    >
+        <div className="flex gap-0">
+          <div className="flex-1">
+            <div className="mb-2 flex justify-center">
+              <span className="text-xs font-medium text-muted-foreground">Impact</span>
+            </div>
+            <div className="grid rounded-lg" style={{ gridTemplateColumns: '2rem repeat(5, 1fr)' }}>
               {probabilityLevels.map((probability, rowIdx) => (
                 <div key={probability} className="contents">
                   <div
-                    className="mr-4 flex flex-col items-center justify-center"
+                    className="flex items-center justify-start"
                     title={probabilityLabels[rowIdx]}
                   >
-                    <span className="text-xs">{probabilityNumbers[rowIdx]}</span>
+                    <span className="text-xs text-muted-foreground">{probabilityNumbers[rowIdx]}</span>
                   </div>
                   {impactLevels.map((impact, colIdx) => {
                     const cell = riskData.find(
@@ -218,7 +203,7 @@ export function RiskMatrixChart({
                     return (
                       <div
                         key={`${probability}-${impact}`}
-                        className={`relative h-12 cursor-pointer border transition-all duration-200 ${getRiskColor(cell?.level || 'very-low')} flex items-center justify-center ${rounding} `}
+                        className={`relative h-12 ${readOnly ? '' : 'cursor-pointer'} border transition-all duration-200 ${getRiskColor(cell?.level || 'very-low', readOnly)} flex items-center justify-center ${rounding} `}
                         onClick={() => handleCellClick(probability, impact)}
                       >
                         {cell?.value && (
@@ -230,12 +215,19 @@ export function RiskMatrixChart({
                 </div>
               ))}
             </div>
-            <div className="mt-2 flex justify-center">
-              <span className="text-xs">{'Impact'}</span>
+            <div className="grid mt-2" style={{ gridTemplateColumns: '2rem repeat(5, 1fr)' }}>
+              <div />
+              {impactLevels.map((impact) => (
+                <div key={impact} className="flex justify-center">
+                  <span className="text-center text-xs text-muted-foreground leading-tight">{impact}</span>
+                </div>
+              ))}
             </div>
           </div>
+          <div className="flex items-center justify-center ml-2" style={{ writingMode: 'vertical-rl' }}>
+            <span className="text-xs font-medium text-muted-foreground">Likelihood</span>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+    </Section>
   );
 }

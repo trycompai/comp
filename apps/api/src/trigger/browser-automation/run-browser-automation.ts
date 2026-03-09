@@ -1,7 +1,7 @@
 import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk';
 import { BrowserbaseService } from '../../browserbase/browserbase.service';
-import { sendEmail } from '../../email/resend';
+import { triggerEmail } from '../../email/trigger-email';
 import { TaskStatusChangedEmail } from '../../email/templates/task-status-changed';
 import { isUserUnsubscribed } from '@trycompai/email';
 
@@ -123,7 +123,7 @@ async function sendTaskStatusChangeEmails(params: {
         }
 
         try {
-          await sendEmail({
+          await triggerEmail({
             to: recipient.email,
             subject: `Task "${taskTitle}" status changed to ${newStatus}`,
             react: TaskStatusChangedEmail({

@@ -7,7 +7,12 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../../auth/permission.guard';
+import { RequirePermission } from '../../auth/require-permission.decorator';
 import {
   getManifest,
   getAvailableChecks,
@@ -24,6 +29,9 @@ interface RunChecksDto {
 }
 
 @Controller({ path: 'integrations/checks', version: '1' })
+@ApiTags('Integrations')
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@ApiSecurity('apikey')
 export class ChecksController {
   private readonly logger = new Logger(ChecksController.name);
 
@@ -38,6 +46,7 @@ export class ChecksController {
    * List available checks for a provider
    */
   @Get('providers/:providerSlug')
+  @RequirePermission('integration', 'read')
   async listProviderChecks(@Param('providerSlug') providerSlug: string) {
     const manifest = getManifest(providerSlug);
     if (!manifest) {
@@ -58,6 +67,7 @@ export class ChecksController {
    * List available checks for a connection
    */
   @Get('connections/:connectionId')
+  @RequirePermission('integration', 'read')
   async listConnectionChecks(@Param('connectionId') connectionId: string) {
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
@@ -92,6 +102,7 @@ export class ChecksController {
    * Run checks for a connection
    */
   @Post('connections/:connectionId/run')
+  @RequirePermission('integration', 'update')
   async runConnectionChecks(
     @Param('connectionId') connectionId: string,
     @Body() body: RunChecksDto,
@@ -291,6 +302,7 @@ export class ChecksController {
    * Run a specific check for a connection
    */
   @Post('connections/:connectionId/run/:checkId')
+  @RequirePermission('integration', 'update')
   async runSingleCheck(
     @Param('connectionId') connectionId: string,
     @Param('checkId') checkId: string,

@@ -8,10 +8,13 @@ import { createHash, randomBytes } from 'node:crypto';
  * @returns A new API key with prefix
  */
 export function generateApiKey(): string {
-  // Generate a random string for the API key
   const apiKey = randomBytes(32).toString('hex');
-  // Add a prefix to make it easily identifiable
   return `comp_${apiKey}`;
+}
+
+/** Extract the first 8 chars after the `comp_` prefix for indexed lookup */
+export function extractKeyPrefix(apiKey: string): string {
+  return apiKey.slice(5, 13);
 }
 
 /**
@@ -84,10 +87,18 @@ async function validateApiKeyValue(apiKey: string): Promise<string | null> {
       return null;
     }
 
-    // Look up the API key in the database
+    // Use key prefix for indexed lookup when available (new keys),
+    // fall back to full scan for legacy keys without prefix
+    const keyPrefix = apiKey.startsWith('comp_') ? extractKeyPrefix(apiKey) : null;
+
     const apiKeyRecords = await db.apiKey.findMany({
       where: {
         isActive: true,
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
+        ...(keyPrefix ? { keyPrefix } : {}),
       },
       select: {
         id: true,
@@ -98,30 +109,52 @@ async function validateApiKeyValue(apiKey: string): Promise<string | null> {
       },
     });
 
-    // Find the matching API key by hashing with each record's salt
     const matchingRecord = apiKeyRecords.find((record) => {
-      // Hash the provided API key with the record's salt
-      const hashedKey = record.salt ? hashApiKey(apiKey, record.salt) : hashApiKey(apiKey); // For backward compatibility
-
+      const hashedKey = record.salt ? hashApiKey(apiKey, record.salt) : hashApiKey(apiKey);
       return hashedKey === record.key;
     });
 
-    // If no matching key or the key is expired, return null
-    if (!matchingRecord || (matchingRecord.expiresAt && matchingRecord.expiresAt < new Date())) {
+    if (!matchingRecord) {
+      // Try legacy keys (no prefix set) for backwards compatibility
+      if (keyPrefix) {
+        const legacyRecords = await db.apiKey.findMany({
+          where: {
+            isActive: true,
+            keyPrefix: null,
+            OR: [
+              { expiresAt: null },
+              { expiresAt: { gt: new Date() } },
+            ],
+          },
+          select: {
+            id: true,
+            key: true,
+            salt: true,
+            organizationId: true,
+            expiresAt: true,
+          },
+        });
+        const legacyMatch = legacyRecords.find((record) => {
+          const hashedKey = record.salt ? hashApiKey(apiKey, record.salt) : hashApiKey(apiKey);
+          return hashedKey === record.key;
+        });
+        if (legacyMatch) {
+          // Backfill the prefix for future lookups
+          await db.apiKey.update({
+            where: { id: legacyMatch.id },
+            data: { keyPrefix, lastUsedAt: new Date() },
+          });
+          return legacyMatch.organizationId;
+        }
+      }
       return null;
     }
 
-    // Update the lastUsedAt timestamp
     await db.apiKey.update({
-      where: {
-        id: matchingRecord.id,
-      },
-      data: {
-        lastUsedAt: new Date(),
-      },
+      where: { id: matchingRecord.id },
+      data: { lastUsedAt: new Date() },
     });
 
-    // Return the organization ID
     return matchingRecord.organizationId;
   } catch (error) {
     console.error('Error validating API key:', error);

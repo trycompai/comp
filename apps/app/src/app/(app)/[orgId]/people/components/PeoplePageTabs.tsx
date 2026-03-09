@@ -75,7 +75,7 @@ export function PeoplePageTabs({
         open={isInviteModalOpen}
         onOpenChange={setIsInviteModalOpen}
         organizationId={organizationId}
-        allowedRoles={
+        allowedBuiltInRoles={
           canManageMembers ? ['admin', 'auditor', 'employee', 'contractor'] : ['auditor']
         }
       />

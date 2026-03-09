@@ -3,10 +3,29 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
-import { db, TaskStatus } from '@trycompai/db';
+import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@trycompai/db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
+
+function computeNextTaskReviewDate(frequency: TaskFrequency | null | undefined): Date {
+  const now = new Date();
+  switch (frequency) {
+    case TaskFrequency.daily:
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    case TaskFrequency.weekly:
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
+    case TaskFrequency.monthly:
+      return new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    case TaskFrequency.quarterly:
+      return new Date(now.getFullYear(), now.getMonth() + 3, now.getDate());
+    case TaskFrequency.yearly:
+      return new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+    default:
+      return new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+  }
+}
 
 @Injectable()
 export class TasksService {
@@ -45,25 +64,65 @@ export class TasksService {
 
   /**
    * Get all tasks for an organization
+   * @param organizationId - The organization ID
+   * @param assignmentFilter - Optional filter for assignment-based access (for employee/contractor roles)
    */
-  async getTasks(organizationId: string): Promise<TaskResponseDto[]> {
+  async getTasks(
+    organizationId: string,
+    assignmentFilter: Prisma.TaskWhereInput = {},
+    options?: { includeRelations?: boolean },
+  ) {
     try {
       const tasks = await db.task.findMany({
         where: {
           organizationId,
+          ...assignmentFilter,
         },
+        ...(options?.includeRelations && {
+          include: {
+            controls: {
+              select: { id: true, name: true },
+            },
+            evidenceAutomations: {
+              select: {
+                id: true,
+                isEnabled: true,
+                name: true,
+                runs: {
+                  orderBy: { createdAt: 'desc' as const },
+                  take: 3,
+                  select: {
+                    status: true,
+                    success: true,
+                    evaluationStatus: true,
+                    createdAt: true,
+                    triggeredBy: true,
+                    runDuration: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
         orderBy: [{ status: 'asc' }, { order: 'asc' }, { createdAt: 'asc' }],
       });
 
-      return tasks.map((task) => ({
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
-        taskTemplateId: task.taskTemplateId,
-      }));
+      if (options?.includeRelations) {
+        return { data: tasks, count: tasks.length };
+      }
+
+      return {
+        data: tasks.map((task) => ({
+          id: task.id,
+          title: task.title,
+          description: task.description,
+          status: task.status,
+          createdAt: task.createdAt,
+          updatedAt: task.updatedAt,
+          taskTemplateId: task.taskTemplateId,
+        })),
+        count: tasks.length,
+      };
     } catch (error) {
       console.error('Error fetching tasks:', error);
       throw new InternalServerErrorException('Failed to fetch tasks');
@@ -76,7 +135,7 @@ export class TasksService {
   async getTask(
     organizationId: string,
     taskId: string,
-  ): Promise<TaskResponseDto> {
+  ) {
     try {
       const task = await db.task.findFirst({
         where: {
@@ -85,6 +144,7 @@ export class TasksService {
         },
         include: {
           assignee: true,
+          controls: true,
           approver: { include: { user: true } },
         },
       });
@@ -181,6 +241,54 @@ export class TasksService {
     });
 
     return runs;
+  }
+
+  /**
+   * Get page options for the tasks overview page
+   */
+  async getTaskPageOptions(organizationId: string, userId?: string) {
+    const [controls, frameworkInstances, organization, member] =
+      await Promise.all([
+        db.control.findMany({
+          where: { organizationId },
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        }),
+        db.frameworkInstance.findMany({
+          where: { organizationId },
+          include: {
+            framework: { select: { id: true, name: true } },
+            requirementsMapped: { select: { controlId: true } },
+          },
+        }),
+        db.organization.findUnique({
+          where: { id: organizationId },
+          select: { name: true, evidenceApprovalEnabled: true },
+        }),
+        userId
+          ? db.member.findFirst({
+              where: { userId, organizationId, deactivated: false },
+              select: { role: true },
+            })
+          : null,
+      ]);
+
+    const roles =
+      member?.role
+        ?.split(',')
+        .map((r) => r.trim())
+        .filter(Boolean) || [];
+    const hasEvidenceExportAccess = roles.some((r) =>
+      ['auditor', 'admin', 'owner'].includes(r),
+    );
+
+    return {
+      controls,
+      frameworkInstances,
+      organizationName: organization?.name ?? null,
+      hasEvidenceExportAccess,
+      evidenceApprovalEnabled: organization?.evidenceApprovalEnabled ?? false,
+    };
   }
 
   /**
@@ -333,10 +441,12 @@ export class TasksService {
     organizationId: string,
     taskId: string,
     updateData: {
+      title?: string;
+      description?: string;
       status?: TaskStatus;
       assigneeId?: string | null;
       approverId?: string | null;
-      frequency?: string;
+      frequency?: TaskFrequency;
       department?: string;
       reviewDate?: Date | null;
     },
@@ -363,14 +473,22 @@ export class TasksService {
 
       // Prepare update data - Prisma handles updatedAt automatically
       const dataToUpdate: {
+        title?: string;
+        description?: string;
         status?: TaskStatus;
         assigneeId?: string | null;
         approverId?: string | null;
-        frequency?: string;
+        frequency?: TaskFrequency;
         department?: string;
         reviewDate?: Date | null;
       } = {};
 
+      if (updateData.title !== undefined) {
+        dataToUpdate.title = updateData.title;
+      }
+      if (updateData.description !== undefined) {
+        dataToUpdate.description = updateData.description;
+      }
       if (updateData.status !== undefined) {
         dataToUpdate.status = updateData.status;
       }
@@ -384,12 +502,23 @@ export class TasksService {
       }
       if (updateData.frequency !== undefined) {
         dataToUpdate.frequency = updateData.frequency;
+        // When frequency changes, recalculate the review date
+        dataToUpdate.reviewDate = computeNextTaskReviewDate(updateData.frequency);
       }
       if (updateData.department !== undefined) {
         dataToUpdate.department = updateData.department;
       }
       if (updateData.reviewDate !== undefined) {
         dataToUpdate.reviewDate = updateData.reviewDate;
+      }
+
+      // When status changes to done, set review date based on frequency
+      if (updateData.status === TaskStatus.done && !updateData.reviewDate) {
+        const task = await db.task.findFirst({
+          where: { id: taskId, organizationId },
+          select: { frequency: true },
+        });
+        dataToUpdate.reviewDate = computeNextTaskReviewDate(task?.frequency);
       }
 
       // Get the current member for audit logging
@@ -520,6 +649,146 @@ export class TasksService {
       }
       throw new InternalServerErrorException('Failed to update task');
     }
+  }
+
+  /**
+   * Create a new task
+   */
+  async createTask(
+    organizationId: string,
+    createData: {
+      title: string;
+      description: string;
+      assigneeId?: string | null;
+      frequency?: string | null;
+      department?: string | null;
+      controlIds?: string[];
+      taskTemplateId?: string | null;
+      vendorId?: string | null;
+    },
+  ): Promise<TaskResponseDto> {
+    try {
+      // Get automation status from template if one is selected
+      let automationStatus: 'AUTOMATED' | 'MANUAL' = 'AUTOMATED';
+      if (createData.taskTemplateId) {
+        const template = await db.frameworkEditorTaskTemplate.findUnique({
+          where: { id: createData.taskTemplateId },
+          select: { automationStatus: true },
+        });
+        if (template) {
+          automationStatus = template.automationStatus;
+        }
+      }
+
+      const task = await db.task.create({
+        data: {
+          title: createData.title,
+          description: createData.description,
+          assigneeId: createData.assigneeId || null,
+          organizationId,
+          status: 'todo',
+          order: 0,
+          frequency: (createData.frequency as TaskFrequency) || null,
+          department: (createData.department as Departments) || null,
+          automationStatus,
+          taskTemplateId: createData.taskTemplateId || null,
+          ...(createData.controlIds &&
+            createData.controlIds.length > 0 && {
+              controls: {
+                connect: createData.controlIds.map((id) => ({ id })),
+              },
+            }),
+          ...(createData.vendorId && {
+            vendors: {
+              connect: { id: createData.vendorId },
+            },
+          }),
+        },
+      });
+
+      return {
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+        taskTemplateId: task.taskTemplateId,
+      };
+    } catch (error) {
+      console.error('Error creating task:', error);
+      throw new InternalServerErrorException('Failed to create task');
+    }
+  }
+
+  /**
+   * Regenerate task from its associated template
+   */
+  async regenerateFromTemplate(
+    organizationId: string,
+    taskId: string,
+  ) {
+    const task = await db.task.findFirst({
+      where: { id: taskId, organizationId },
+      include: { taskTemplate: true },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    if (!task.taskTemplate) {
+      throw new BadRequestException('Task has no associated template to regenerate from');
+    }
+
+    const updated = await db.task.update({
+      where: { id: taskId },
+      data: {
+        title: task.taskTemplate.name,
+        description: task.taskTemplate.description,
+        automationStatus: task.taskTemplate.automationStatus,
+      },
+    });
+
+    return { id: updated.id, title: updated.title };
+  }
+
+  /**
+   * Reorder tasks (update order and status for multiple tasks)
+   */
+  async reorderTasks(
+    organizationId: string,
+    updates: { id: string; order: number; status: TaskStatus }[],
+  ): Promise<void> {
+    for (const { id, order, status } of updates) {
+      await db.task.update({
+        where: { id, organizationId },
+        data: { order, status },
+      });
+    }
+  }
+
+  /**
+   * Delete a single task by ID
+   */
+  async deleteTask(
+    organizationId: string,
+    taskId: string,
+  ): Promise<void> {
+    const task = await db.task.findFirst({
+      where: {
+        id: taskId,
+        organizationId,
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    await db.task.delete({
+      where: { id: taskId },
+    });
   }
 
   /**
@@ -743,7 +1012,7 @@ export class TasksService {
         data: {
           status: TaskStatus.done,
           approvedAt: now,
-          reviewDate: now,
+          reviewDate: computeNextTaskReviewDate(task.frequency),
           previousStatus: null,
         },
         include: { assignee: true, approver: true },

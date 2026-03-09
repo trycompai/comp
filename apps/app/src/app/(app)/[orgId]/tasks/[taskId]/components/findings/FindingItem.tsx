@@ -37,6 +37,7 @@ interface FindingItemProps {
   isExpanded: boolean;
   canChangeStatus: boolean;
   canSetRestrictedStatus: boolean;
+  canDelete?: boolean;
   isAuditor: boolean;
   isPlatformAdmin: boolean;
   isTarget?: boolean; // Whether this finding is the navigation target
@@ -54,6 +55,7 @@ export function FindingItem({
   isExpanded,
   canChangeStatus,
   canSetRestrictedStatus,
+  canDelete = canSetRestrictedStatus,
   isAuditor,
   isPlatformAdmin,
   isTarget = false,
@@ -290,7 +292,7 @@ export function FindingItem({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleViewHistory}>History</DropdownMenuItem>
-              {canSetRestrictedStatus && (
+              {canDelete && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

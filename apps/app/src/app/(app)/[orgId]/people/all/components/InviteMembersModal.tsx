@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@/lib/api-client';
 import type { Role } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
@@ -7,9 +8,9 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import useSWR from 'swr';
 import { z } from 'zod';
 
-import type { ActionResponse } from '@/actions/types';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -30,31 +31,23 @@ import {
 } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { addEmployeeWithoutInvite } from '../actions/addEmployeeWithoutInvite';
-import { checkMemberStatus } from '../actions/checkMemberStatus';
-import { inviteNewMember } from '../actions/inviteNewMember';
-import { sendInvitationEmailToExistingMember } from '../actions/sendInvitationEmail';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
 // --- Constants for Roles ---
-const ALL_SELECTABLE_ROLES = [
-  'admin',
-  'auditor',
-  'employee',
-  'contractor',
-] as const satisfies Readonly<[Role, ...Role[]]>;
-type InviteRole = (typeof ALL_SELECTABLE_ROLES)[number];
-const DEFAULT_ROLES: InviteRole[] = [];
+const BUILT_IN_SELECTABLE_ROLES: Role[] = ['admin', 'auditor', 'employee', 'contractor'];
+const DEFAULT_ROLES: string[] = [];
 
-const isInviteRole = (role: string, allowedRoles: InviteRole[]): role is InviteRole => {
-  return allowedRoles.includes(role as InviteRole);
+const isAllowedRole = (role: string, allowedRoles: string[]): boolean => {
+  return allowedRoles.includes(role);
 };
 
-const createFormSchema = (allowedRoles: InviteRole[]) => {
-  const roleEnum = z.enum(allowedRoles as [InviteRole, ...InviteRole[]]);
+const createFormSchema = (allowedRoles: string[]) => {
+  const roleValidator = z.string().refine((val) => allowedRoles.includes(val), {
+    message: 'Invalid role selection.',
+  });
   const manualInviteSchema = z.object({
     email: z.string().email({ message: 'Invalid email address.' }),
-    roles: z.array(roleEnum).min(1, { message: 'Please select at least one role.' }),
+    roles: z.array(roleValidator).min(1, { message: 'Please select at least one role.' }),
   });
 
   const manualModeSchema = z.object({
@@ -82,30 +75,35 @@ interface InviteMembersModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
-  allowedRoles: InviteRole[];
-}
-
-interface BulkInviteResultData {
-  successfulInvites: number;
-  failedItems: {
-    input: string | { email: string; role: InviteRole | InviteRole[] };
-    error: string;
-  }[];
+  allowedBuiltInRoles: Role[];
 }
 
 export function InviteMembersModal({
   open,
   onOpenChange,
   organizationId,
-  allowedRoles,
+  allowedBuiltInRoles,
 }: InviteMembersModalProps) {
   const router = useRouter();
   const [mode, setMode] = useState<'manual' | 'csv'>('manual');
   const [isLoading, setIsLoading] = useState(false);
   const [csvFileName, setCsvFileName] = useState<string | null>(null);
-  const [lastResult, setLastResult] = useState<ActionResponse<BulkInviteResultData> | null>(null);
 
-  const normalizedAllowedRoles = allowedRoles.length > 0 ? allowedRoles : [...ALL_SELECTABLE_ROLES];
+  // Fetch custom roles from the API
+  const { data: customRolesData } = useSWR(
+    open ? `/v1/roles` : null,
+    async (endpoint: string) => {
+      const res = await api.get<{ customRoles: Array<{ id: string; name: string; permissions: Record<string, string[]> }> }>(endpoint);
+      return res.data?.customRoles ?? [];
+    },
+  );
+  const customRoles = customRolesData ?? [];
+  const customRoleNames = customRoles.map((r) => r.name);
+
+  const normalizedAllowedRoles = [
+    ...(allowedBuiltInRoles.length > 0 ? allowedBuiltInRoles : BUILT_IN_SELECTABLE_ROLES),
+    ...customRoleNames,
+  ];
   const formSchema = useMemo(
     () => createFormSchema(normalizedAllowedRoles),
     [normalizedAllowedRoles.join(',')],
@@ -159,68 +157,34 @@ export function InviteMembersModal({
           return;
         }
 
-        // Process invitations
-        let successCount = 0;
-        const failedInvites: { email: string; error: string }[] = [];
-        const emailFailedEmails: string[] = [];
+        // Send all invites to the API in one call
+        const invitePayload = values.manualInvites.map((invite) => ({
+          email: invite.email.toLowerCase(),
+          roles: invite.roles,
+        }));
 
-        // Process each invitation sequentially
-        for (const invite of values.manualInvites) {
-          const hasEmployeeRoleAndNoAdmin =
-            !invite.roles.includes('admin') &&
-            (invite.roles.includes('employee') || invite.roles.includes('contractor'));
-          try {
-            if (hasEmployeeRoleAndNoAdmin) {
-              const result = await addEmployeeWithoutInvite({
-                organizationId,
-                email: invite.email.toLowerCase(),
-                roles: invite.roles,
-              });
-              if (!result.success) {
-                failedInvites.push({
-                  email: invite.email,
-                  error: result.error ?? 'Failed to add employee',
-                });
-              } else {
-                if ('emailSent' in result && result.emailSent === false) {
-                  emailFailedEmails.push(invite.email);
-                }
-                successCount++;
-              }
-            } else {
-              // Check member status and reactivate if needed
-              const memberStatus = await checkMemberStatus({
-                email: invite.email.toLowerCase(),
-                organizationId,
-              });
+        const { data, error } = await api.post<{
+          results: Array<{
+            email: string;
+            success: boolean;
+            error?: string;
+            emailSent?: boolean;
+          }>;
+        }>('/v1/people/invite', { invites: invitePayload });
 
-              if (memberStatus.memberExists && memberStatus.isActive) {
-                // Member already exists and is active - send invitation email manually
-                await sendInvitationEmailToExistingMember({
-                  email: invite.email.toLowerCase(),
-                  organizationId,
-                  roles: invite.roles,
-                });
-              } else {
-                // Member doesn't exist - use server action to send the invitation
-                await inviteNewMember({
-                  email: invite.email.toLowerCase(),
-                  organizationId,
-                  roles: invite.roles,
-                });
-              }
-              successCount++;
-            }
-          } catch (error) {
-            console.error(`Failed to invite ${invite.email}:`, error);
-            failedInvites.push({
-              email: invite.email,
-              error: error instanceof Error ? error.message : 'Unknown error',
-            });
-          }
+        if (error || !data?.results) {
+          toast.error('Failed to process invitations.');
+          setIsLoading(false);
+          return;
         }
 
-        // Handle results
+        const results = data.results;
+        const successCount = results.filter((r) => r.success).length;
+        const failedInvites = results.filter((r) => !r.success);
+        const emailFailedEmails = results
+          .filter((r) => r.success && r.emailSent === false)
+          .map((r) => r.email);
+
         if (successCount > 0) {
           toast.success(`Successfully invited ${successCount} member(s).`);
 
@@ -229,7 +193,6 @@ export function InviteMembersModal({
             onOpenChange(false);
           }
 
-          // Revalidate the page to refresh the member list
           router.refresh();
         }
 
@@ -320,17 +283,15 @@ export function InviteMembersModal({
             return;
           }
 
-          // Track results
-          let successCount = 0;
-          const failedInvites: { email: string; error: string }[] = [];
-          const emailFailedEmails: string[] = [];
+          // Parse CSV rows into invite items, validating locally first
+          const csvInvites: Array<{ email: string; roles: string[] }> = [];
+          const clientErrors: { email: string; error: string }[] = [];
 
-          // Process each row
           for (const row of dataRows) {
             const columns = row.split(',').map((col) => col.trim());
 
             if (columns.length <= Math.max(emailIndex, roleIndex)) {
-              failedInvites.push({
+              clientErrors.push({
                 email: columns[emailIndex] || 'Invalid row',
                 error: 'Invalid CSV row format',
               });
@@ -340,105 +301,79 @@ export function InviteMembersModal({
             const email = columns[emailIndex];
             const roleValue = columns[roleIndex];
 
-            // Validate email
             if (!email || !z.string().email().safeParse(email).success) {
-              failedInvites.push({
+              clientErrors.push({
                 email: email || 'Invalid email',
                 error: 'Invalid email format',
               });
               continue;
             }
 
-            // Validate role(s) - split by pipe for multiple roles
             const roles = roleValue.split('|').map((r) => r.trim().toLowerCase());
-            const validRoles = roles.filter((role) => isInviteRole(role, normalizedAllowedRoles));
+            const validRoles = roles.filter((role) => isAllowedRole(role, normalizedAllowedRoles));
 
             if (validRoles.length === 0) {
-              failedInvites.push({
+              clientErrors.push({
                 email,
                 error: `Invalid role(s): ${roleValue}. Must be one of: ${normalizedAllowedRoles.join(', ')}`,
               });
               continue;
             }
 
-            // Attempt to invite
-            const hasEmployeeRoleAndNoAdmin =
-              (validRoles.includes('employee') || validRoles.includes('contractor')) &&
-              !validRoles.includes('admin');
-            try {
-              if (hasEmployeeRoleAndNoAdmin) {
-                const result = await addEmployeeWithoutInvite({
-                  organizationId,
-                  email: email.toLowerCase(),
-                  roles: validRoles,
-                });
-                if (!result.success) {
-                  failedInvites.push({
-                    email,
-                    error: result.error ?? 'Failed to add employee',
-                  });
-                } else {
-                  if ('emailSent' in result && result.emailSent === false) {
-                    emailFailedEmails.push(email);
-                  }
-                  successCount++;
-                }
-              } else {
-                // Check member status and reactivate if needed
-                const memberStatus = await checkMemberStatus({
-                  email: email.toLowerCase(),
-                  organizationId,
-                });
-
-                if (memberStatus.memberExists && memberStatus.isActive) {
-                  // Member already exists and is active - send invitation email manually
-                  await sendInvitationEmailToExistingMember({
-                    email: email.toLowerCase(),
-                    organizationId,
-                    roles: validRoles,
-                  });
-                } else {
-                  // Member doesn't exist - use server action to send the invitation
-                  await inviteNewMember({
-                    email: email.toLowerCase(),
-                    organizationId,
-                    roles: validRoles,
-                  });
-                }
-                successCount++;
-              }
-            } catch (error) {
-              console.error(`Failed to invite ${email}:`, error);
-              failedInvites.push({
-                email,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              });
-            }
+            csvInvites.push({ email: email.toLowerCase(), roles: validRoles });
           }
 
-          // Handle results
-          if (successCount > 0) {
-            toast.success(`Successfully invited ${successCount} member(s).`);
-
-            if (failedInvites.length === 0) {
-              form.reset();
-              onOpenChange(false);
-            }
-
-            // Revalidate the page to refresh the member list
-            router.refresh();
-          }
-
-          if (failedInvites.length > 0) {
+          if (clientErrors.length > 0) {
             toast.error(
-              `Failed to invite ${failedInvites.length} member(s): ${failedInvites.map((f) => f.email).join(', ')}`,
+              `${clientErrors.length} row(s) had validation errors: ${clientErrors.map((e) => e.email).join(', ')}`,
             );
           }
 
-          if (emailFailedEmails.length > 0) {
-            toast.warning(
-              `${emailFailedEmails.length} member(s) added but invite email could not be sent: ${emailFailedEmails.join(', ')}. You can resend from the team page.`,
-            );
+          if (csvInvites.length > 0) {
+            const { data: csvData, error: csvApiError } = await api.post<{
+              results: Array<{
+                email: string;
+                success: boolean;
+                error?: string;
+                emailSent?: boolean;
+              }>;
+            }>('/v1/people/invite', { invites: csvInvites });
+
+            if (csvApiError || !csvData?.results) {
+              toast.error('Failed to process CSV invitations.');
+              setIsLoading(false);
+              return;
+            }
+
+            const results = csvData.results;
+            const successCount = results.filter((r) => r.success).length;
+            const failedInvites = results.filter((r) => !r.success);
+            const emailFailedEmails = results
+              .filter((r) => r.success && r.emailSent === false)
+              .map((r) => r.email);
+
+            if (successCount > 0) {
+              toast.success(`Successfully invited ${successCount} member(s).`);
+
+              if (failedInvites.length === 0 && clientErrors.length === 0) {
+                form.reset();
+                onOpenChange(false);
+              }
+
+              router.refresh();
+            }
+
+            if (failedInvites.length > 0) {
+              toast.error(
+                `Failed to invite ${failedInvites.length} member(s): ${failedInvites.map((f) => f.email).join(', ')}`,
+              );
+            }
+
+            if (emailFailedEmails.length > 0) {
+              toast.warning(
+                `${emailFailedEmails.length} member(s) added but invite email could not be sent: ${emailFailedEmails.join(', ')}. You can resend from the team page.`,
+              );
+            }
           }
         } catch (csvError) {
           console.error('Error parsing CSV:', csvError);
@@ -541,6 +476,7 @@ export function InviteMembersModal({
                             selectedRoles={value || []}
                             onSelectedRolesChange={onChange}
                             allowedRoles={normalizedAllowedRoles}
+                            customRoles={customRoles}
                             placeholder={'Select a role'}
                           />
                           <FormMessage>{error?.message}</FormMessage>

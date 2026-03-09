@@ -14,16 +14,14 @@ import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
+import { usePermissions } from '@/hooks/use-permissions';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
-interface AddSecretDialogProps {
-  onSecretAdded?: () => void;
-}
+import { useSecrets } from '../hooks/useSecrets';
 
 const secretSchema = z.object({
   name: z
@@ -38,8 +36,11 @@ const secretSchema = z.object({
 
 type SecretFormValues = z.infer<typeof secretSchema>;
 
-export function AddSecretDialog({ onSecretAdded }: AddSecretDialogProps) {
+export function AddSecretDialog() {
   const [open, setOpen] = useState(false);
+  const { createSecret } = useSecrets();
+  const { hasPermission } = usePermissions();
+  const canManageSecrets = hasPermission('organization', 'update');
 
   const {
     handleSubmit,
@@ -55,46 +56,17 @@ export function AddSecretDialog({ onSecretAdded }: AddSecretDialogProps) {
   });
 
   const onSubmit = handleSubmit(async (values) => {
-    // Get organizationId from the URL path
-    const pathSegments = window.location.pathname.split('/');
-    const orgId = pathSegments[1];
-
     try {
-      const response = await fetch('/api/secrets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: values.name,
-          value: values.value,
-          description: values.description || null,
-          category: values.category || null,
-          organizationId: orgId,
-        }),
+      await createSecret({
+        name: values.name,
+        value: values.value,
+        description: values.description || null,
+        category: values.category || null,
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        // Map Zod errors to form fields
-        if (Array.isArray(error.details)) {
-          let handled = false;
-          for (const issue of error.details) {
-            const field = issue?.path?.[0] as keyof SecretFormValues | undefined;
-            if (field) {
-              setError(field, { type: 'server', message: issue.message });
-              handled = true;
-            }
-          }
-          if (handled) return; // Inline errors shown; skip toast
-        }
-        throw new Error(error.error || 'Failed to create secret');
-      }
 
       toast.success('Secret created successfully');
       setOpen(false);
       reset();
-
-      if (onSecretAdded) onSecretAdded();
-      else window.location.reload();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create secret');
       console.error('Error creating secret:', err);
@@ -185,7 +157,7 @@ export function AddSecretDialog({ onSecretAdded }: AddSecretDialogProps) {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !canManageSecrets}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

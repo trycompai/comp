@@ -110,7 +110,6 @@ export function useIntegrationConnections() {
     async () => {
       const response = await api.get<ConnectionListItem[]>(
         `/v1/integrations/connections?organizationId=${orgId}`,
-        orgId,
       );
       if (response.error) {
         throw new Error(response.error);
@@ -143,7 +142,6 @@ export function useIntegrationConnection(connectionId: string | null) {
     async () => {
       const response = await api.get<IntegrationConnection>(
         `/v1/integrations/connections/${connectionId}`,
-        orgId,
       );
       if (response.error) {
         throw new Error(response.error);
@@ -250,7 +248,6 @@ export function useIntegrationMutations() {
           organizationId: orgId,
           credentials,
         },
-        orgId,
       );
 
       if (response.error) {
@@ -272,8 +269,6 @@ export function useIntegrationMutations() {
     async (connectionId: string): Promise<TestConnectionResponse> => {
       const response = await api.post<TestConnectionResponse>(
         `/v1/integrations/connections/${connectionId}/test`,
-        undefined,
-        orgId,
       );
 
       if (response.error) {
@@ -296,8 +291,6 @@ export function useIntegrationMutations() {
     async (connectionId: string): Promise<{ success: boolean; error?: string }> => {
       const response = await api.post(
         `/v1/integrations/connections/${connectionId}/pause`,
-        undefined,
-        orgId,
       );
 
       if (response.error) {
@@ -319,8 +312,6 @@ export function useIntegrationMutations() {
     async (connectionId: string): Promise<{ success: boolean; error?: string }> => {
       const response = await api.post(
         `/v1/integrations/connections/${connectionId}/resume`,
-        undefined,
-        orgId,
       );
 
       if (response.error) {
@@ -342,8 +333,6 @@ export function useIntegrationMutations() {
     async (connectionId: string): Promise<{ success: boolean; error?: string }> => {
       const response = await api.post(
         `/v1/integrations/connections/${connectionId}/disconnect`,
-        undefined,
-        orgId,
       );
 
       if (response.error) {
@@ -363,7 +352,7 @@ export function useIntegrationMutations() {
    */
   const deleteConnection = useCallback(
     async (connectionId: string): Promise<{ success: boolean; error?: string }> => {
-      const response = await api.delete(`/v1/integrations/connections/${connectionId}`, orgId);
+      const response = await api.delete(`/v1/integrations/connections/${connectionId}`);
 
       if (response.error) {
         return { success: false, error: response.error };
@@ -376,6 +365,161 @@ export function useIntegrationMutations() {
     [orgId],
   );
 
+  /**
+   * Update credentials for an existing connection
+   */
+  const updateConnectionCredentials = useCallback(
+    async (
+      connectionId: string,
+      credentials: Record<string, string | string[]>,
+    ): Promise<{ success: boolean; error?: string }> => {
+      if (!orgId) {
+        return { success: false, error: 'No organization selected' };
+      }
+
+      const response = await api.put<{ success: boolean }>(
+        `/v1/integrations/connections/${connectionId}/credentials?organizationId=${orgId}`,
+        { credentials },
+      );
+
+      if (response.error) {
+        return { success: false, error: response.error };
+      }
+
+      globalMutate(['integration-connection', connectionId, orgId]);
+      globalMutate(['integration-connections', orgId]);
+
+      return { success: true };
+    },
+    [orgId],
+  );
+
+  /**
+   * Update metadata for a connection
+   */
+  const updateConnectionMetadata = useCallback(
+    async (
+      connectionId: string,
+      metadata: Record<string, unknown>,
+    ): Promise<{ success: boolean; error?: string }> => {
+      if (!orgId) {
+        return { success: false, error: 'No organization selected' };
+      }
+
+      const response = await api.patch<{ success: boolean }>(
+        `/v1/integrations/connections/${connectionId}?organizationId=${orgId}`,
+        { metadata },
+      );
+
+      if (response.error) {
+        return { success: false, error: response.error };
+      }
+
+      globalMutate(['integration-connection', connectionId, orgId]);
+      globalMutate(['integration-connections', orgId]);
+
+      return { success: true };
+    },
+    [orgId],
+  );
+
+  /**
+   * Get connection details (including credential fields)
+   */
+  const getConnectionDetails = useCallback(
+    async <T = unknown>(connectionId: string): Promise<{ data?: T; error?: string }> => {
+      if (!orgId) {
+        return { error: 'No organization selected' };
+      }
+
+      const response = await api.get<T>(
+        `/v1/integrations/connections/${connectionId}?organizationId=${orgId}`,
+      );
+
+      if (response.error) {
+        return { error: response.error };
+      }
+
+      return { data: response.data ?? undefined };
+    },
+    [orgId],
+  );
+
+  /**
+   * Get variables for a connection
+   */
+  const getConnectionVariables = useCallback(
+    async <T = unknown>(connectionId: string): Promise<{ data?: T; error?: string }> => {
+      if (!orgId) {
+        return { error: 'No organization selected' };
+      }
+
+      const response = await api.get<T>(
+        `/v1/integrations/variables/connections/${connectionId}?organizationId=${orgId}`,
+      );
+
+      if (response.error) {
+        return { error: response.error };
+      }
+
+      return { data: response.data ?? undefined };
+    },
+    [orgId],
+  );
+
+  /**
+   * Save variables for a connection
+   */
+  const saveConnectionVariables = useCallback(
+    async (
+      connectionId: string,
+      variables: Record<string, string | number | boolean | string[]>,
+    ): Promise<{ success: boolean; error?: string }> => {
+      if (!orgId) {
+        return { success: false, error: 'No organization selected' };
+      }
+
+      const response = await api.post(
+        `/v1/integrations/variables/connections/${connectionId}?organizationId=${orgId}`,
+        { variables },
+      );
+
+      if (response.error) {
+        return { success: false, error: response.error };
+      }
+
+      globalMutate(['integration-connections', orgId]);
+
+      return { success: true };
+    },
+    [orgId],
+  );
+
+  /**
+   * Get dynamic options for a variable
+   */
+  const getVariableOptions = useCallback(
+    async (
+      connectionId: string,
+      variableId: string,
+    ): Promise<{ options?: { value: string; label: string }[]; error?: string }> => {
+      if (!orgId) {
+        return { error: 'No organization selected' };
+      }
+
+      const response = await api.get<{ options: { value: string; label: string }[] }>(
+        `/v1/integrations/variables/connections/${connectionId}/options/${variableId}?organizationId=${orgId}`,
+      );
+
+      if (response.error) {
+        return { error: response.error };
+      }
+
+      return { options: response.data?.options };
+    },
+    [orgId],
+  );
+
   return {
     startOAuth,
     createConnection,
@@ -384,6 +528,12 @@ export function useIntegrationMutations() {
     resumeConnection,
     disconnectConnection,
     deleteConnection,
+    updateConnectionCredentials,
+    updateConnectionMetadata,
+    getConnectionDetails,
+    getConnectionVariables,
+    saveConnectionVariables,
+    getVariableOptions,
   };
 }
 

@@ -6,9 +6,10 @@ import { ChevronLeft, ChevronRight, ExternalLink, FileText } from 'lucide-react'
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { usePagination } from '../../hooks/usePagination';
+import type { PublishedPolicy } from '../../../components/types';
 
 interface PublishedPoliciesSectionProps {
-  policies: Awaited<ReturnType<typeof import('../../data/queries').getPublishedPolicies>>;
+  policies: PublishedPolicy[];
 }
 
 export function PublishedPoliciesSection({ policies }: PublishedPoliciesSectionProps) {

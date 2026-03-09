@@ -1,11 +1,9 @@
 'use client';
 
-import { updateOrganizationDeviceAgentStepAction } from '@/actions/organization/update-organization-device-agent-step-action';
-import { updateOrganizationSecurityTrainingStepAction } from '@/actions/organization/update-organization-security-training-step-action';
-import { updateOrganizationWhistleblowerReportAction } from '@/actions/organization/update-organization-whistleblower-report-action';
-import { updateOrganizationAccessRequestFormAction } from '@/actions/organization/update-organization-access-request-form-action';
+import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
+import { usePermissions } from '@/hooks/use-permissions';
 import { SettingGroup, SettingRow, Switch } from '@trycompai/design-system';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 interface PortalSettingsProps {
@@ -21,25 +19,26 @@ export function PortalSettings({
   whistleblowerReportEnabled,
   accessRequestFormEnabled,
 }: PortalSettingsProps) {
-  const updateDeviceAgentStep = useAction(updateOrganizationDeviceAgentStepAction, {
-    onSuccess: () => toast.success('Device agent step setting updated'),
-    onError: () => toast.error('Error updating device agent step setting'),
-  });
+  const { hasPermission } = usePermissions();
+  const { updateOrganization } = useOrganizationMutations();
+  const [updatingField, setUpdatingField] = useState<string | null>(null);
 
-  const updateSecurityTrainingStep = useAction(updateOrganizationSecurityTrainingStepAction, {
-    onSuccess: () => toast.success('Security training step setting updated'),
-    onError: () => toast.error('Error updating security training step setting'),
-  });
-
-  const updateWhistleblowerReport = useAction(updateOrganizationWhistleblowerReportAction, {
-    onSuccess: () => toast.success('Whistleblower report visibility updated'),
-    onError: () => toast.error('Error updating whistleblower report visibility'),
-  });
-
-  const updateAccessRequestForm = useAction(updateOrganizationAccessRequestFormAction, {
-    onSuccess: () => toast.success('Access request visibility updated'),
-    onError: () => toast.error('Error updating access request visibility'),
-  });
+  const handleToggle = async (
+    field: string,
+    value: boolean,
+    successMessage: string,
+    errorMessage: string,
+  ) => {
+    setUpdatingField(field);
+    try {
+      await updateOrganization({ [field]: value });
+      toast.success(successMessage);
+    } catch {
+      toast.error(errorMessage);
+    } finally {
+      setUpdatingField(null);
+    }
+  };
 
   return (
     <SettingGroup>
@@ -51,9 +50,14 @@ export function PortalSettings({
         <Switch
           checked={deviceAgentStepEnabled}
           onCheckedChange={(checked) => {
-            updateDeviceAgentStep.execute({ deviceAgentStepEnabled: checked });
+            handleToggle(
+              'deviceAgentStepEnabled',
+              checked,
+              'Device agent step setting updated',
+              'Error updating device agent step setting',
+            );
           }}
-          disabled={updateDeviceAgentStep.status === 'executing'}
+          disabled={!hasPermission('organization', 'update') || updatingField === 'deviceAgentStepEnabled'}
         />
       </SettingRow>
       <SettingRow
@@ -64,9 +68,14 @@ export function PortalSettings({
         <Switch
           checked={securityTrainingStepEnabled}
           onCheckedChange={(checked) => {
-            updateSecurityTrainingStep.execute({ securityTrainingStepEnabled: checked });
+            handleToggle(
+              'securityTrainingStepEnabled',
+              checked,
+              'Security training step setting updated',
+              'Error updating security training step setting',
+            );
           }}
-          disabled={updateSecurityTrainingStep.status === 'executing'}
+          disabled={!hasPermission('organization', 'update') || updatingField === 'securityTrainingStepEnabled'}
         />
       </SettingRow>
       <SettingRow
@@ -77,9 +86,14 @@ export function PortalSettings({
         <Switch
           checked={whistleblowerReportEnabled}
           onCheckedChange={(checked) => {
-            updateWhistleblowerReport.execute({ whistleblowerReportEnabled: checked });
+            handleToggle(
+              'whistleblowerReportEnabled',
+              checked,
+              'Whistleblower report visibility updated',
+              'Error updating whistleblower report visibility',
+            );
           }}
-          disabled={updateWhistleblowerReport.status === 'executing'}
+          disabled={!hasPermission('organization', 'update') || updatingField === 'whistleblowerReportEnabled'}
         />
       </SettingRow>
       <SettingRow
@@ -90,9 +104,14 @@ export function PortalSettings({
         <Switch
           checked={accessRequestFormEnabled}
           onCheckedChange={(checked) => {
-            updateAccessRequestForm.execute({ accessRequestFormEnabled: checked });
+            handleToggle(
+              'accessRequestFormEnabled',
+              checked,
+              'Access request visibility updated',
+              'Error updating access request visibility',
+            );
           }}
-          disabled={updateAccessRequestForm.status === 'executing'}
+          disabled={!hasPermission('organization', 'update') || updatingField === 'accessRequestFormEnabled'}
         />
       </SettingRow>
     </SettingGroup>

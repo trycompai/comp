@@ -1,9 +1,5 @@
-'use server';
-
-import { auth } from '@/utils/auth';
-import { db } from '@db';
-import { headers } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
+import { serverApi } from '@/lib/api-server';
+import { notFound } from 'next/navigation';
 import SecondaryFields from './components/secondary-fields/secondary-fields';
 import Title from './components/title/title';
 
@@ -14,58 +10,52 @@ interface PageProps {
   }>;
 }
 
+interface PeopleApiResponse {
+  data: Array<{
+    id: string;
+    role: string;
+    deactivated: boolean;
+    user: {
+      id: string;
+      name: string | null;
+      email: string;
+      image: string | null;
+    };
+  }>;
+}
+
 export default async function TaskPage({ params }: PageProps) {
   const { orgId, taskId } = await params;
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
 
-  if (!session?.user) {
-    redirect('/auth/signin');
-  }
+  // GET /v1/tasks/:id returns task fields flat (no data wrapper)
+  // GET /v1/people returns { data: people[], count }
+  const [taskResult, peopleResult] = await Promise.all([
+    serverApi.get<Record<string, unknown>>(`/v1/tasks/${taskId}`),
+    serverApi.get<PeopleApiResponse>('/v1/people'),
+  ]);
 
-  // Fetch the task
-  const task = await db.task.findUnique({
-    where: {
-      id: taskId,
-      organizationId: orgId,
-    },
-    include: {
-      assignee: {
-        include: {
-          user: true,
-        },
-      },
-    },
-  });
+  const task = taskResult.data;
 
   if (!task) {
     notFound();
   }
 
-  const getAssignees = async () => {
-    const assignees = await db.member.findMany({
-      where: {
-        organizationId: orgId,
-        role: {
-          notIn: ['employee', 'contractor'],
-        },
-        deactivated: false,
-      },
-      include: {
-        user: true,
-      },
-    });
-
-    return assignees;
-  };
-
-  const assignees = await getAssignees();
+  // Transform people to assignees (filter out employee/contractor, filter deactivated)
+  const people = peopleResult.data?.data ?? [];
+  const assignees = people
+    .filter((p) => !p.deactivated && !['employee', 'contractor'].includes(p.role))
+    .map((p) => ({
+      id: p.id,
+      role: p.role,
+      user: p.user,
+      organizationId: orgId,
+      deactivated: false,
+    }));
 
   return (
     <div className="space-y-8">
-      <Title task={task} assignees={assignees} />
-      <SecondaryFields task={task} assignees={assignees} />
+      <Title task={task as any} assignees={assignees as any} />
+      <SecondaryFields task={task as any} assignees={assignees as any} />
     </div>
   );
 }

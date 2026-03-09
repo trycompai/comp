@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { QuestionnaireResult, QuestionnaireQuestionAnswer } from './types';
 
 interface UseQuestionnaireDetailStateProps {
@@ -13,8 +12,6 @@ export function useQuestionnaireDetailState({
   initialQuestions,
   questionnaireId,
 }: UseQuestionnaireDetailStateProps) {
-  const router = useRouter();
-
   // Initialize results from database
   const [results, setResults] = useState<QuestionnaireResult[]>(() =>
     initialQuestions.map((q) => ({
@@ -90,7 +87,6 @@ export function useQuestionnaireDetailState({
     isAutoAnswerProcessStartedRef,
     savingIndex,
     setSavingIndex,
-    router,
     answerQueue,
     setAnswerQueue,
     answerQueueRef,

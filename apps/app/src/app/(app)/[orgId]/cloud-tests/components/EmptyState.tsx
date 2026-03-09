@@ -1,17 +1,26 @@
 'use client';
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
+import { useApi } from '@/hooks/use-api';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
 import MultipleSelector from '@comp/ui/multiple-selector';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Button, PageHeader, PageLayout, Spinner } from '@trycompai/design-system';
+import {
+  Button,
+  Input,
+  Label,
+  PageHeader,
+  PageLayout,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Spinner,
+} from '@trycompai/design-system';
 import { ArrowLeft, CheckmarkFilled, Launch } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { connectCloudAction } from '../actions/connect-cloud';
-import { validateAwsCredentialsAction } from '../actions/validate-aws-credentials';
 
 type CloudProvider = 'aws' | 'gcp' | 'azure' | null;
 type Step = 'choose' | 'connect' | 'validate-aws' | 'success';
@@ -142,6 +151,9 @@ export function EmptyState({
   onConnected,
   initialProvider = null,
 }: EmptyStateProps) {
+  const api = useApi();
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('integration', 'create');
   const initialUsesDialog = initialProvider === 'aws' || initialProvider === 'azure';
   const [step, setStep] = useState<Step>(
     initialProvider && !initialUsesDialog ? 'connect' : 'choose',
@@ -237,12 +249,22 @@ export function EmptyState({
 
     try {
       setIsConnecting(true);
-      const result = await validateAwsCredentialsAction({
+      const response = await api.post<{
+        success: boolean;
+        accountId?: string;
+        regions?: { value: string; label: string }[];
+        message?: string;
+      }>('/v1/cloud-security/legacy/validate-aws', {
         accessKeyId: credentials.access_key_id,
         secretAccessKey: credentials.secret_access_key,
       });
 
-      const data = result?.data;
+      if (response.error) {
+        toast.error(response.error || 'Failed to validate credentials');
+        return;
+      }
+
+      const data = response.data;
       if (data?.success && data.regions) {
         setAwsRegions(data.regions);
         setAwsAccountId(data.accountId || '');
@@ -253,7 +275,7 @@ export function EmptyState({
         setStep('validate-aws');
         toast.success('Credentials validated! Now select your regions.');
       } else {
-        toast.error(result?.data?.error || 'Failed to validate credentials');
+        toast.error('Failed to validate credentials');
       }
     } catch (error) {
       console.error('Validation error:', error);
@@ -278,26 +300,31 @@ export function EmptyState({
 
     try {
       setIsConnecting(true);
-      const result = await connectCloudAction({
-        cloudProvider: selectedProvider,
+      const response = await api.post<{
+        success: boolean;
+        integrationId?: string;
+        error?: string;
+        message?: string;
+      }>('/v1/cloud-security/legacy/connect', {
+        provider: selectedProvider,
         credentials,
       });
 
-      if (result?.data?.success) {
+      if (response.error) {
+        toast.error(response.error || 'Failed to connect cloud provider');
+        return;
+      }
+
+      if (response.data?.success) {
         setStep('success');
-        if (result.data?.trigger) {
-          onConnected?.(result.data.trigger);
-        }
-        if (result.data?.runErrors && result.data.runErrors.length > 0) {
-          toast.error(result.data.runErrors[0] || 'Initial scan reported an issue');
-        }
+        onConnected?.();
         if (onBack) {
           setTimeout(() => {
             onBack();
           }, 2000);
         }
       } else {
-        toast.error(result?.data?.error || 'Failed to connect cloud provider');
+        toast.error(response.data?.error || 'Failed to connect cloud provider');
       }
     } catch (error) {
       console.error('Connection error:', error);
@@ -346,7 +373,7 @@ export function EmptyState({
 
             <CardContent className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="region" className="text-sm font-medium">
+                <Label htmlFor="region">
                   Regions
                 </Label>
                 <MultipleSelector
@@ -387,7 +414,7 @@ export function EmptyState({
               <div className="mt-6">
                 <Button
                   onClick={handleConnect}
-                  disabled={!Array.isArray(credentials.regions) || credentials.regions.length === 0}
+                  disabled={!canCreate || !Array.isArray(credentials.regions) || credentials.regions.length === 0}
                   loading={isConnecting}
                   width="full"
                   size="lg"
@@ -444,8 +471,8 @@ export function EmptyState({
           ).map((cloudProvider) => (
             <Card
               key={cloudProvider.id}
-              className="group relative cursor-pointer overflow-hidden rounded-xl border-2 transition-all hover:scale-[1.02] hover:border-primary hover:shadow-xl"
-              onClick={() => handleProviderSelect(cloudProvider.id)}
+              className={`group relative overflow-hidden rounded-xl border-2 transition-all ${canCreate ? 'cursor-pointer hover:scale-[1.02] hover:border-primary hover:shadow-xl' : 'opacity-50 cursor-not-allowed'}`}
+              onClick={() => canCreate && handleProviderSelect(cloudProvider.id)}
             >
               <div
                 className={`absolute inset-0 bg-gradient-to-br ${cloudProvider.color} opacity-0 transition-opacity group-hover:opacity-5`}
@@ -529,18 +556,16 @@ export function EmptyState({
 
                 return (
                   <div key={field.id} className="space-y-2">
-                    <Label htmlFor={field.id} className="text-sm font-medium">
+                    <Label htmlFor={field.id}>
                       {field.label}
                     </Label>
                     {field.type === 'select' && options.length > 0 ? (
                       <Select
                         value={stringValue}
-                        onValueChange={(value) => handleFieldChange(field.id, value)}
+                        onValueChange={(value) => { if (value) handleFieldChange(field.id, value); }}
                         disabled={isConnecting}
                       >
-                        <SelectTrigger
-                          className={`h-11 rounded-lg transition-colors ${errors[field.id] ? 'border-destructive focus-visible:ring-destructive' : 'focus-visible:ring-primary'}`}
-                        >
+                        <SelectTrigger>
                           <SelectValue placeholder="Select a region" />
                         </SelectTrigger>
                         <SelectContent>
@@ -572,7 +597,7 @@ export function EmptyState({
                         value={stringValue}
                         onChange={(e) => handleFieldChange(field.id, e.target.value)}
                         disabled={isConnecting}
-                        className={`h-11 rounded-lg transition-colors ${errors[field.id] ? 'border-destructive focus-visible:ring-destructive' : 'focus-visible:ring-primary'}`}
+                        aria-invalid={!!errors[field.id]}
                       />
                     )}
                     {errors[field.id] && (
@@ -593,6 +618,7 @@ export function EmptyState({
                 <Button
                   onClick={selectedProvider === 'aws' ? handleValidateAws : handleConnect}
                   loading={isConnecting}
+                  disabled={!canCreate}
                   width="full"
                   size="lg"
                 >
