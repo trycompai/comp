@@ -27,6 +27,7 @@ import {
 } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
+import { Public } from '../auth/public.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import {
   OrganizationId,
@@ -407,6 +408,7 @@ export class QuestionnaireController {
   }
 
   @Post('parse/upload/token')
+  @Public()
   @UseGuards() // Override class-level guards — this endpoint uses token-based auth
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')

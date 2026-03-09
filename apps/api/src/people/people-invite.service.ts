@@ -49,8 +49,7 @@ export class PeopleInviteService {
             results.push({
               email: invite.email,
               success: false,
-              error:
-                "Auditors can only invite users with the 'auditor' role.",
+              error: "Auditors can only invite users with the 'auditor' role.",
             });
             continue;
           }
@@ -280,17 +279,9 @@ export class PeopleInviteService {
     });
   }
 
-  private async createTrainingVideoEntries(
-    memberId: string,
-  ): Promise<void> {
+  private async createTrainingVideoEntries(memberId: string): Promise<void> {
     // Training videos are defined in the app; we create entries for known video IDs
-    const trainingVideoIds = [
-      'sat-1',
-      'sat-2',
-      'sat-3',
-      'sat-4',
-      'sat-5',
-    ];
+    const trainingVideoIds = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
 
     await db.employeeTrainingVideoCompletion.createMany({
       data: trainingVideoIds.map((videoId) => ({
