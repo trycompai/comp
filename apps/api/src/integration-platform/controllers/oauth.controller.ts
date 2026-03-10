@@ -313,8 +313,9 @@ export class OAuthController {
         });
       }
 
-      // Store tokens
+      // Store tokens and mark connection as active
       await this.credentialVaultService.storeOAuthTokens(connection.id, tokens);
+      await this.connectionService.activateConnection(connection.id);
 
       // Provider-specific post-OAuth actions
       if (oauthState.providerSlug === 'rippling') {
