@@ -34,8 +34,8 @@ describe('RoleForm', () => {
       render(<RoleForm {...defaultProps} />);
 
       expect(screen.getByLabelText(/Role Name/i)).toBeInTheDocument();
-      // Permissions label exists - use exact text match to avoid matching "Set Permissions" button
-      expect(screen.getByText('Permissions')).toBeInTheDocument();
+      // Permissions label exists
+      expect(screen.getByText('Permissions & Obligations')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Save/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Cancel/i })).toBeInTheDocument();
     });
@@ -114,6 +114,7 @@ describe('RoleForm', () => {
         expect(mockOnSubmit).toHaveBeenCalledWith({
           name: 'Compliance Lead',
           permissions: { control: ['read'] },
+          obligations: {},
         });
       });
     });
@@ -155,6 +156,7 @@ describe('RoleForm', () => {
         expect(mockOnSubmit).toHaveBeenCalledWith({
           name: 'compliance-lead',
           permissions: { control: ['read'] },
+          obligations: {},
         });
       });
     });
@@ -211,6 +213,7 @@ describe('roleFormSchema', () => {
       const result = roleFormSchema.safeParse({
         name,
         permissions: { control: ['read'] },
+        obligations: {},
       });
       expect(result.success).toBe(true);
     }
@@ -229,6 +232,7 @@ describe('roleFormSchema', () => {
       const result = roleFormSchema.safeParse({
         name,
         permissions: { control: ['read'] },
+        obligations: {},
       });
       expect(result.success).toBe(false);
     }
@@ -238,6 +242,7 @@ describe('roleFormSchema', () => {
     const result = roleFormSchema.safeParse({
       name: 'valid-role',
       permissions: {},
+      obligations: {},
     });
     expect(result.success).toBe(false);
   });
@@ -246,6 +251,7 @@ describe('roleFormSchema', () => {
     const result = roleFormSchema.safeParse({
       name: 'valid-role',
       permissions: { control: [] },
+      obligations: {},
     });
     expect(result.success).toBe(false);
   });

@@ -158,7 +158,12 @@ export class RolesController {
         organizationId,
         roleNames,
       );
-    return { permissions };
+    const obligations =
+      await this.rolesService.getObligationsForRoles(
+        organizationId,
+        roleNames,
+      );
+    return { permissions, obligations };
   }
 
   @Get(':roleId')

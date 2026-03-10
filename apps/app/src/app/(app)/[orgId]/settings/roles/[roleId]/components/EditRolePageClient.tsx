@@ -49,6 +49,7 @@ export function EditRolePageClient({ orgId, roleId, initialData }: EditRolePageC
           defaultValues={{
             name: initialData.name,
             permissions: initialData.permissions,
+            obligations: initialData.obligations || {},
           }}
           onSubmit={handleSubmit}
           onCancel={handleCancel}

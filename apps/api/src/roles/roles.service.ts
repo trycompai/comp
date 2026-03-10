@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { db } from '@trycompai/db';
-import { statement, allRoles, BUILT_IN_ROLE_PERMISSIONS } from '@comp/auth';
+import { statement, allRoles, BUILT_IN_ROLE_PERMISSIONS, BUILT_IN_ROLE_OBLIGATIONS, type RoleObligations } from '@comp/auth';
 import type { CreateRoleDto } from './dto/create-role.dto';
 import type { UpdateRoleDto } from './dto/update-role.dto';
 
@@ -35,9 +35,8 @@ export class RolesService {
   }
 
   /**
-   * Check if caller has all the permissions they're trying to grant
-   * Prevents privilege escalation
-   * @param callerRoles Array of roles the caller has (supports multiple roles)
+   * Check if caller has all the permissions they're trying to grant.
+   * Prevents privilege escalation.
    */
   private async validateNoPrivilegeEscalation(
     callerRoles: string[],
@@ -182,6 +181,7 @@ export class RolesService {
       data: {
         name: dto.name,
         permissions: JSON.stringify(dto.permissions),
+        obligations: JSON.stringify(dto.obligations || {}),
         organizationId,
       },
     });
@@ -189,6 +189,7 @@ export class RolesService {
     return {
       ...role,
       permissions: JSON.parse(role.permissions),
+      obligations: JSON.parse(role.obligations) as RoleObligations,
     };
   }
 
@@ -226,6 +227,7 @@ export class RolesService {
         id: r.id,
         name: r.name,
         permissions: typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions,
+        obligations: typeof r.obligations === 'string' ? JSON.parse(r.obligations) : (r.obligations || {}),
         isBuiltIn: false,
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),
@@ -257,6 +259,7 @@ export class RolesService {
       id: role.id,
       name: role.name,
       permissions: typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions,
+      obligations: typeof role.obligations === 'string' ? JSON.parse(role.obligations) : (role.obligations || {}),
       isBuiltIn: false,
       createdAt: role.createdAt.toISOString(),
       updatedAt: role.updatedAt.toISOString(),
@@ -316,6 +319,7 @@ export class RolesService {
       data: {
         ...(dto.name && { name: dto.name }),
         ...(dto.permissions && { permissions: JSON.stringify(dto.permissions) }),
+        ...(dto.obligations !== undefined && { obligations: JSON.stringify(dto.obligations) }),
       },
     });
 
@@ -323,6 +327,7 @@ export class RolesService {
       id: updated.id,
       name: updated.name,
       permissions: typeof updated.permissions === 'string' ? JSON.parse(updated.permissions) : updated.permissions,
+      obligations: typeof updated.obligations === 'string' ? JSON.parse(updated.obligations) : (updated.obligations || {}),
       isBuiltIn: false,
       createdAt: updated.createdAt,
       updatedAt: updated.updatedAt,
@@ -402,6 +407,32 @@ export class RolesService {
           }
         }
       }
+    }
+
+    return combined;
+  }
+
+  /**
+   * Get merged obligations for a list of custom role names.
+   * Used by the frontend to resolve effective obligations for custom roles.
+   */
+  async getObligationsForRoles(
+    organizationId: string,
+    roleNames: string[],
+  ): Promise<RoleObligations> {
+    if (roleNames.length === 0) return {};
+
+    const customRoles = await db.organizationRole.findMany({
+      where: { organizationId, name: { in: roleNames } },
+      select: { name: true, obligations: true },
+    });
+
+    const combined: RoleObligations = {};
+    for (const role of customRoles) {
+      const obligations = typeof role.obligations === 'string'
+        ? JSON.parse(role.obligations)
+        : (role.obligations || {});
+      if (obligations.compliance) combined.compliance = true;
     }
 
     return combined;

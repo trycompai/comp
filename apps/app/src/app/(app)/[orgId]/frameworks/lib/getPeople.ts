@@ -15,7 +15,7 @@ export async function getPeopleScore(organizationId: string) {
     },
   });
 
-  // Filter to members with compliance:required permission
+  // Filter to members with the compliance obligation
   const employees = await filterComplianceMembers(allMembers, organizationId);
 
   if (employees.length === 0) {

@@ -155,6 +155,7 @@ model OrganizationRole {
   id             String       @id @default(dbgenerated("generate_prefixed_cuid('rol'::text)"))
   name           String
   permissions    String       @db.Text // Stored as serialized JSON string for better-auth compatibility
+  obligations    String       @default("{}") @db.Text // JSON: { compliance?: boolean }
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt      DateTime     @default(now())

@@ -48,6 +48,7 @@ const roleFormSchema = z.object({
         });
       }
     }),
+  obligations: z.record(z.string(), z.boolean()),
 });
 
 export type RoleFormValues = z.infer<typeof roleFormSchema>;
@@ -72,6 +73,7 @@ export function RoleForm({
     defaultValues: {
       name: defaultValues?.name || '',
       permissions: defaultValues?.permissions || {},
+      obligations: defaultValues?.obligations || {},
     },
   });
 
@@ -107,17 +109,19 @@ export function RoleForm({
           <FormField
             control={form.control}
             name="permissions"
-            render={({ field }) => (
+            render={({ field: permissionsField }) => (
               <FormItem>
-                <FormLabel>Permissions</FormLabel>
+                <FormLabel>Permissions & Obligations</FormLabel>
                 <FormDescription>
                   Select the access level for each resource. Read allows read-only access,
-                  Write allows full management.
+                  Write allows full management. Obligations are requirements the role must fulfill.
                 </FormDescription>
                 <FormControl>
                   <PermissionMatrix
-                    value={field.value as Record<string, string[]>}
-                    onChange={field.onChange}
+                    value={permissionsField.value as Record<string, string[]>}
+                    onChange={permissionsField.onChange}
+                    obligations={form.watch('obligations') as Record<string, boolean>}
+                    onObligationsChange={(val) => form.setValue('obligations', val)}
                     disabled={isSubmitting}
                   />
                 </FormControl>

@@ -30,6 +30,16 @@ vi.mock('sonner', () => ({
   },
 }));
 
+// Mock usePermissions to grant manage permissions
+vi.mock('@/hooks/use-permissions', () => ({
+  usePermissions: () => ({
+    permissions: { member: ['create', 'read', 'update', 'delete'] },
+    obligations: {},
+    hasPermission: (resource: string, action: string) =>
+      resource === 'member' && ['create', 'read', 'update', 'delete'].includes(action),
+  }),
+}));
+
 const mockRoles: CustomRole[] = [
   {
     id: 'role-1',
@@ -38,6 +48,7 @@ const mockRoles: CustomRole[] = [
       control: ['read', 'update'],
       policy: ['read', 'update'],
     },
+    obligations: {},
     isBuiltIn: false,
     createdAt: '2024-01-15T10:00:00.000Z',
     updatedAt: '2024-01-15T10:00:00.000Z',
@@ -49,6 +60,7 @@ const mockRoles: CustomRole[] = [
     permissions: {
       risk: ['create', 'read', 'update', 'delete'],
     },
+    obligations: { compliance: true },
     isBuiltIn: false,
     createdAt: '2024-02-01T10:00:00.000Z',
     updatedAt: '2024-02-01T10:00:00.000Z',
