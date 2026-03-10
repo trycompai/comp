@@ -13,9 +13,6 @@ import { z } from 'zod';
 
 const INPUT_LENGTH = 6;
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-
 const otpFormSchema = z.object({
   email: z.string().email(),
   otp: z.string().min(INPUT_LENGTH, 'OTP is required'),
