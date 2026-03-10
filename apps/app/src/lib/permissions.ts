@@ -158,8 +158,8 @@ export function canAccessCompliance(permissions: UserPermissions): boolean {
  * OR if they have any permission on a resource that implies app access (e.g. a custom role
  * with only `pentest:read`).
  *
- * Employees and contractors are portal-only — they only have `policy:read` and
- * `compliance:required`, neither of which is in APP_IMPLYING_RESOURCES.
+ * Employees and contractors are portal-only — they only have `policy:read`
+ * and compliance obligations, neither of which is in APP_IMPLYING_RESOURCES.
  */
 export function canAccessApp(permissions: UserPermissions): boolean {
   if (hasPermission(permissions, 'app', 'read')) return true;
@@ -173,11 +173,10 @@ export function canAccessApp(permissions: UserPermissions): boolean {
 }
 
 /**
- * Check if user has the compliance:required permission,
- * meaning they must complete compliance tasks (policy signing, training, etc.).
+ * Check if any of the user's roles have the compliance obligation.
  */
-export function requiresCompliance(permissions: UserPermissions): boolean {
-  return hasPermission(permissions, 'compliance', 'required');
+export function requiresComplianceObligation(obligations: Record<string, boolean>): boolean {
+  return Boolean(obligations?.compliance);
 }
 
 // ─── Permission resolver (no server-only imports) ────────────────────

@@ -20,7 +20,6 @@ jest.mock('@comp/auth', () => ({
     trust: ['read', 'update'],
     pentest: ['create', 'read', 'delete'],
     training: ['read', 'update'],
-    compliance: ['required'],
   },
 }));
 

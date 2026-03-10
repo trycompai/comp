@@ -30,4 +30,13 @@ export class UpdateRoleDto {
   @IsObject()
   @IsOptional()
   permissions?: Record<string, string[]>;
+
+  @ApiProperty({
+    description: 'Updated obligations for the role.',
+    example: { compliance: true },
+    required: false,
+  })
+  @IsObject()
+  @IsOptional()
+  obligations?: Record<string, boolean>;
 }

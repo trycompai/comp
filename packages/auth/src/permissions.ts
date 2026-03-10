@@ -42,8 +42,6 @@ export const statement = {
   pentest: ['create', 'read', 'delete'],
   // Training management
   training: ['read', 'update'],
-  // Compliance obligation — members with this permission must complete compliance tasks
-  compliance: ['required'],
 } as const;
 
 export const ac = createAccessControl(statement);
@@ -149,7 +147,6 @@ export const auditor = ac.newRole({
 export const employee = ac.newRole({
   // Portal access only — can read policies to sign them
   policy: ['read'],
-  compliance: ['required'],
 });
 
 /**
@@ -160,7 +157,6 @@ export const employee = ac.newRole({
 export const contractor = ac.newRole({
   // Portal access only — can read policies to sign them
   policy: ['read'],
-  compliance: ['required'],
 });
 
 /**
@@ -217,3 +213,26 @@ export const BUILT_IN_ROLE_PERMISSIONS: Record<string, Record<string, string[]>>
       ),
     ]),
   );
+
+// ─── Obligations ─────────────────────────────────────────────────────
+// Obligations are separate from permissions. Permissions grant powers;
+// obligations impose requirements (e.g. "must complete compliance tasks").
+
+/**
+ * Shape of role obligations — boolean flags for each obligation type.
+ */
+export interface RoleObligations {
+  compliance?: boolean;
+}
+
+/**
+ * Built-in role obligations. Every role that must complete compliance
+ * tasks (sign policies, watch training, install device agent) is listed here.
+ */
+export const BUILT_IN_ROLE_OBLIGATIONS: Record<string, RoleObligations> = {
+  owner: { compliance: true },
+  admin: { compliance: true },
+  auditor: {},
+  employee: { compliance: true },
+  contractor: { compliance: true },
+};

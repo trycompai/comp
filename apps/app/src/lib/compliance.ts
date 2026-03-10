@@ -1,16 +1,18 @@
 import 'server-only';
 
+import { BUILT_IN_ROLE_OBLIGATIONS } from '@comp/auth';
 import { db } from '@db';
 import {
   type UserPermissions,
   canAccessApp,
   mergePermissions,
-  requiresCompliance,
+  parseRolesString,
   resolveBuiltInPermissions,
 } from './permissions';
 
 interface MemberWithRole {
   role: string;
+  user?: { isPlatformAdmin?: boolean } | null;
 }
 
 /**
@@ -70,13 +72,55 @@ async function filterMembersByPermission<T extends MemberWithRole>(
 }
 
 /**
- * Filter members to only those with `compliance:required` permission.
+ * Filter members to only those with the compliance obligation.
+ * Checks built-in role obligations and custom role obligations from DB.
  */
 export async function filterComplianceMembers<T extends MemberWithRole>(
   members: T[],
   organizationId: string,
 ): Promise<T[]> {
-  return filterMembersByPermission(members, organizationId, requiresCompliance);
+  if (members.length === 0) return [];
+
+  const builtInRoleNames = new Set(Object.keys(BUILT_IN_ROLE_OBLIGATIONS));
+  const allCustomRoleNames = new Set<string>();
+
+  const memberRoles = members.map((member) => {
+    const roleNames = parseRolesString(member.role);
+    const customNames = roleNames.filter((n) => !builtInRoleNames.has(n));
+    for (const name of customNames) allCustomRoleNames.add(name);
+    return { member, roleNames };
+  });
+
+  // Single DB query for custom role obligations
+  let customObligationMap: Record<string, Record<string, boolean>> = {};
+  if (allCustomRoleNames.size > 0) {
+    const customRoles = await db.organizationRole.findMany({
+      where: { organizationId, name: { in: [...allCustomRoleNames] } },
+      select: { name: true, obligations: true },
+    });
+    customObligationMap = Object.fromEntries(
+      customRoles.map((r) => {
+        const obligations = typeof r.obligations === 'string'
+          ? JSON.parse(r.obligations)
+          : (r.obligations || {});
+        return [r.name, obligations as Record<string, boolean>];
+      }),
+    );
+  }
+
+  return memberRoles
+    .filter(({ member, roleNames }) => {
+      // Platform admins are excluded — they join customer orgs to debug
+      if (member.user?.isPlatformAdmin) return false;
+      for (const name of roleNames) {
+        const builtIn = BUILT_IN_ROLE_OBLIGATIONS[name];
+        if (builtIn?.compliance) return true;
+        const custom = customObligationMap[name];
+        if (custom?.compliance) return true;
+      }
+      return false;
+    })
+    .map(({ member }) => member);
 }
 
 /**

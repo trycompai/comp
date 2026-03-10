@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsObject, IsString, MaxLength, MinLength, Matches } from 'class-validator';
+import { IsNotEmpty, IsObject, IsOptional, IsString, MaxLength, MinLength, Matches } from 'class-validator';
 
 export class CreateRoleDto {
   @ApiProperty({
@@ -28,4 +28,13 @@ export class CreateRoleDto {
   @IsObject()
   @IsNotEmpty()
   permissions: Record<string, string[]>;
+
+  @ApiProperty({
+    description: 'Obligations for the role. Boolean flags for requirements like compliance.',
+    example: { compliance: true },
+    required: false,
+  })
+  @IsObject()
+  @IsOptional()
+  obligations?: Record<string, boolean>;
 }
