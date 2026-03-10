@@ -284,10 +284,12 @@ export async function extractVendorsFromContext(
               'residual_probability',
               'residual_impact',
             ],
+            additionalProperties: false,
           },
         },
       },
       required: ['vendors'],
+      additionalProperties: false,
     }),
     system:
       'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact.',
@@ -514,7 +516,7 @@ async function triggerVendorRiskAssessmentsViaApi(params: {
 
   const apiBaseUrl =
     process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || 'http://localhost:3333';
-  const token = process.env.INTERNAL_API_TOKEN;
+  const token = process.env.SERVICE_TOKEN_TRIGGER;
 
   // Sanitize vendor websites - only send valid URLs or null
   const sanitizeWebsite = (
@@ -562,7 +564,12 @@ async function triggerVendorRiskAssessmentsViaApi(params: {
         }),
       },
       {
-        headers: token ? { 'X-Internal-Token': token } : undefined,
+        headers: token
+          ? {
+              'x-service-token': token,
+              'x-organization-id': organizationId,
+            }
+          : undefined,
         timeout: 15_000,
       },
     );
@@ -752,10 +759,12 @@ export async function extractRisksFromContext(
               'category',
               'department',
             ],
+            additionalProperties: false,
           },
         },
       },
       required: ['risks'],
+      additionalProperties: false,
     }),
     system: `Create a list of 8-12 risks that are relevant to the organization. Use action-oriented language, assume reviewers understand basic termilology - skip definitions.
           Your mandate is to propose risks that satisfy both ISO 27001:2022 clause 6.1 (risk management) and SOC 2 trust services criteria CC3 and CC4.

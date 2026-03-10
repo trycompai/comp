@@ -21,6 +21,8 @@ import {
 import { Add, ArrowDown } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useTasks } from '../hooks/useTasks';
+import { usePermissions } from '@/hooks/use-permissions';
 import type { FrameworkInstanceForTasks } from '../types';
 import { CreateTaskSheet } from './CreateTaskSheet';
 import { TaskList } from './TaskList';
@@ -53,7 +55,7 @@ interface TasksPageClientProps {
 }
 
 export function TasksPageClient({
-  tasks,
+  tasks: initialTasks,
   members,
   controls,
   frameworkInstances,
@@ -63,6 +65,8 @@ export function TasksPageClient({
   hasEvidenceExportAccess,
   evidenceApprovalEnabled,
 }: TasksPageClientProps) {
+  const { tasks, createTask, mutate: mutateTasks } = useTasks({ initialData: initialTasks });
+  const { hasPermission } = usePermissions();
   const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [includeRawJson, setIncludeRawJson] = useState(false);
@@ -73,7 +77,6 @@ export function TasksPageClient({
     setIsDownloadingAll(true);
     try {
       await downloadAllEvidenceZip({
-        organizationId: orgId,
         organizationName: organizationName ?? undefined,
         includeJson: includeRawJson,
       });
@@ -124,14 +127,16 @@ export function TasksPageClient({
                         disabled={isDownloadingAll}
                         width="full"
                       >
-                        {isDownloadingAll ? 'Preparing…' : 'Export'}
+                        {isDownloadingAll ? 'Preparing...' : 'Export'}
                       </Button>
                     </PopoverContent>
                   </Popover>
                 )}
-                <Button iconLeft={<Add />} onClick={() => setIsCreateSheetOpen(true)}>
-                  Create Evidence
-                </Button>
+                {hasPermission('task', 'create') && (
+                  <Button iconLeft={<Add />} onClick={() => setIsCreateSheetOpen(true)}>
+                    Create Evidence
+                  </Button>
+                )}
               </div>
             }
           />
@@ -161,6 +166,7 @@ export function TasksPageClient({
           controls={controls}
           open={isCreateSheetOpen}
           onOpenChange={setIsCreateSheetOpen}
+          createTask={createTask}
         />
       </PageLayout>
     </Tabs>

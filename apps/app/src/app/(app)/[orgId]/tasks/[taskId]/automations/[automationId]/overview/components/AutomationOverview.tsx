@@ -1,25 +1,24 @@
 'use client';
 
-import { api } from '@/lib/api-client';
+import { RecentAuditLogs } from '@/components/RecentAuditLogs';
+import { useAuditLogs } from '@/hooks/use-audit-logs';
+import { Button } from '@comp/ui/button';
+import type { EvidenceAutomation, EvidenceAutomationRun, EvidenceAutomationVersion, Task } from '@db';
 import {
   Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from '@comp/ui/breadcrumb';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Textarea } from '@comp/ui/textarea';
-import { EvidenceAutomation, EvidenceAutomationRun, EvidenceAutomationVersion, Task } from '@db';
-import { ChevronRight, Loader2, MoreVertical, Play, Trash2 } from 'lucide-react';
+  Button as DSButton,
+  HStack,
+  PageLayout,
+  Section,
+  Stack,
+  Switch,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Text,
+} from '@trycompai/design-system';
+import { Code2, Loader2, Play, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useRef, useState } from 'react';
@@ -35,9 +34,7 @@ import { useAutomationRuns } from '../hooks/use-automation-runs';
 import { MetricsSection } from './MetricsSection';
 
 type RunWithAutomationName = EvidenceAutomationRun & {
-  evidenceAutomation: {
-    name: string;
-  };
+  evidenceAutomation: { name: string };
 };
 
 interface AutomationOverviewProps {
@@ -61,58 +58,86 @@ export function AutomationOverview({
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isTogglingEnabled, setIsTogglingEnabled] = useState(false);
-  const [editingDescription, setEditingDescription] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionValue, setDescriptionValue] = useState('');
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [isTestingVersion, setIsTestingVersion] = useState(false);
-  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Use the automation hook to get live data and mutate function
-  const { automation: liveAutomation, mutate: mutateAutomation } = useTaskAutomation();
+  const {
+    automation: liveAutomation,
+    mutate: mutateAutomation,
+    updateAutomation,
+  } = useTaskAutomation();
 
-  // Use live runs data with auto-refresh
   const { runs: liveRuns, mutate: mutateRuns } = useAutomationRuns();
 
-  // Use live data from hook if available, fallback to initial data
   const automation = liveAutomation || initialAutomation;
   const runs = liveRuns || initialRuns;
 
-  // Set initial selected version to latest
   const latestVersion = initialVersions.length > 0 ? initialVersions[0].version : null;
   if (selectedVersion === null && latestVersion !== null) {
     setSelectedVersion(latestVersion);
   }
 
+  const startEditingName = () => {
+    setNameValue(automation.name);
+    setIsEditingName(true);
+  };
+
+  const saveNameEdit = async () => {
+    if (!nameValue.trim() || nameValue === automation.name) {
+      setIsEditingName(false);
+      return;
+    }
+    try {
+      await updateAutomation({ name: nameValue.trim() });
+      toast.success('Name updated');
+      setIsEditingName(false);
+      await mutateAutomation();
+    } catch {
+      toast.error('Failed to update name');
+    }
+  };
+
+  const startEditingDescription = () => {
+    setDescriptionValue(automation.description || '');
+    setIsEditingDescription(true);
+  };
+
+  const saveDescriptionEdit = async () => {
+    if (descriptionValue === (automation.description || '')) {
+      setIsEditingDescription(false);
+      return;
+    }
+    try {
+      await updateAutomation({ description: descriptionValue.trim() });
+      toast.success('Description updated');
+      setIsEditingDescription(false);
+      await mutateAutomation();
+    } catch {
+      toast.error('Failed to update description');
+    }
+  };
+
   const handleToggleEnabled = async (enabled: boolean) => {
     if (!automation?.id) return;
-
     setIsTogglingEnabled(true);
     try {
-      const result = await toggleAutomationEnabled(automation.id, enabled);
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to toggle automation');
-      }
-
+      const result = await toggleAutomationEnabled(taskId, automation.id, enabled);
+      if (!result.success) throw new Error(result.error || 'Failed to toggle automation');
       toast.success(enabled ? 'Automation enabled' : 'Automation disabled');
       await mutateAutomation();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to toggle automation');
-      console.error('Error toggling automation:', error);
     } finally {
       setIsTogglingEnabled(false);
     }
   };
 
-  const handleDescriptionEdit = () => {
-    setDescriptionValue(automation.description || '');
-    setEditingDescription(true);
-    setTimeout(() => descriptionInputRef.current?.focus(), 0);
-  };
-
   const handleTestVersion = async () => {
     if (!selectedVersion) return;
-
     setIsTestingVersion(true);
     try {
       const result = await executeAutomationScript({
@@ -124,272 +149,266 @@ export function AutomationOverview({
 
       if (result.success) {
         toast.success(`Testing version ${selectedVersion}`, {
-          description: 'Test started - check run history below',
+          description: 'Test started - check run history',
         });
-
-        // Refresh runs to show the new test
-        await mutateRuns();
+        const runId = result.data?.runId || `pending-${Date.now()}`;
+        const now = new Date();
+        mutateRuns(
+          (currentRuns) => {
+            const pendingRun: RunWithAutomationName = {
+              id: runId,
+              evidenceAutomationId: automation.id,
+              taskId,
+              status: 'pending',
+              success: null,
+              output: null,
+              error: null,
+              version: selectedVersion,
+              evaluationStatus: null,
+              evaluationReason: null,
+              createdAt: now,
+              updatedAt: now,
+              completedAt: null,
+              startedAt: now,
+              logs: null,
+              runDuration: null,
+              triggeredBy: 'manual',
+              evidenceAutomation: { name: automation.name },
+            };
+            const existing = Array.isArray(currentRuns) ? currentRuns : [];
+            return [pendingRun, ...existing];
+          },
+          false,
+        );
       } else {
         toast.error(result.error || 'Failed to start test');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to start test');
     } finally {
       setIsTestingVersion(false);
     }
   };
 
-  const saveDescriptionEdit = async () => {
-    if (descriptionValue === (automation.description || '')) {
-      setEditingDescription(false);
-      return;
-    }
-
-    try {
-      const response = await api.patch(
-        `/v1/tasks/${taskId}/automations/${automationId}`,
-        { description: descriptionValue.trim() || null },
-        orgId,
-      );
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      await mutateAutomation();
-      toast.success('Description updated');
-      setEditingDescription(false);
-    } catch (error) {
-      toast.error('Failed to update description');
-      setDescriptionValue(automation.description || '');
-      setEditingDescription(false);
-    }
-  };
-
-  // Transform runs to include automation name
-  const runsWithName = runs.map((run) => ({
+  const runsWithName: RunWithAutomationName[] = (runs || []).map((run) => ({
     ...run,
-    evidenceAutomation: {
+    evidenceAutomation: (run as RunWithAutomationName).evidenceAutomation || {
       name: automation.name,
     },
   }));
 
   return (
-    <div>
-      {/* Breadcrumb */}
-      <div className="px-8 py-4">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link
-                  href={`/${orgId}/tasks`}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Tasks
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator>
-              <ChevronRight className="h-4 w-4" />
-            </BreadcrumbSeparator>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link
-                  href={`/${orgId}/tasks/${taskId}`}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  {task.title}
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator>
-              <ChevronRight className="h-4 w-4" />
-            </BreadcrumbSeparator>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <span className="text-foreground font-medium">{automation.name}</span>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-
-      <MetricsSection
-        automationName={automation.name}
-        initialVersions={initialVersions}
-        initialRuns={runs}
-        isEnabled={automation.isEnabled}
-        onToggleEnabled={handleToggleEnabled}
-        isTogglingEnabled={isTogglingEnabled}
-        editScriptUrl={`/${orgId}/tasks/${taskId}/automation/${automationId}`}
+    <PageLayout>
+      <Breadcrumb
+        items={[
+          {
+            label: 'Evidence',
+            href: `/${orgId}/tasks`,
+            props: { render: <Link href={`/${orgId}/tasks`} /> },
+          },
+          {
+            label: task.title,
+            href: `/${orgId}/tasks/${taskId}`,
+            props: { render: <Link href={`/${orgId}/tasks/${taskId}`} /> },
+          },
+          { label: automation.name, isCurrent: true },
+        ]}
       />
 
-      {/* Main Content - 2 Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-8 py-12">
-        {/* Left Column - History */}
-        <div className="lg:col-span-2">
-          <AutomationRunsCard runs={runsWithName} />
-        </div>
-
-        {/* Right Column - Versions & Details */}
-        <div className="space-y-6">
-          {/* Versions Card */}
-          {initialVersions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base font-medium">Versions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={selectedVersion?.toString() || ''}
-                      onValueChange={(value) => setSelectedVersion(parseInt(value))}
-                    >
-                      <SelectTrigger className="h-9 text-sm flex-1">
-                        <SelectValue placeholder="Select version" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {initialVersions.map((v) => (
-                          <SelectItem key={v.version} value={v.version.toString()}>
-                            v{v.version}
-                            {v.changelog &&
-                              ` - ${v.changelog.substring(0, 30)}${v.changelog.length > 30 ? '...' : ''}`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleTestVersion}
-                      disabled={!selectedVersion || isTestingVersion}
-                    >
-                      {isTestingVersion ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                          Testing
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-3.5 h-3.5 mr-1.5" />
-                          Test
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Select a version and test it to verify functionality
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+      <Stack gap="xs">
+        <HStack justify="between" align="center">
+          {isEditingName ? (
+            <input
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              onBlur={saveNameEdit}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveNameEdit();
+                if (e.key === 'Escape') setIsEditingName(false);
+              }}
+              className="text-2xl font-semibold tracking-tight bg-transparent border-b border-primary outline-none flex-1"
+              autoFocus
+            />
+          ) : (
+            <h1
+              onClick={startEditingName}
+              className="text-2xl font-semibold tracking-tight cursor-pointer rounded px-1 -mx-1 hover:bg-muted/50 transition-colors"
+            >
+              {automation.name}
+            </h1>
           )}
+          <Link href={`/${orgId}/tasks/${taskId}/automation/${automationId}`}>
+            <Button size="sm">
+              <Code2 className="h-4 w-4 mr-2" />
+              Edit Script
+            </Button>
+          </Link>
+        </HStack>
+        {isEditingDescription ? (
+          <textarea
+            value={descriptionValue}
+            onChange={(e) => setDescriptionValue(e.target.value)}
+            onBlur={saveDescriptionEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setIsEditingDescription(false);
+            }}
+            className="text-sm text-muted-foreground bg-transparent border-b border-primary outline-none resize-none w-full"
+            rows={5}
+            autoFocus
+          />
+        ) : (
+          <Text
+            size="sm"
+            variant="muted"
+            as="p"
+            onClick={startEditingDescription}
+            style={{ cursor: 'pointer' }}
+          >
+            {automation.description || 'Add a description...'}
+          </Text>
+        )}
+      </Stack>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-medium">Details</CardTitle>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => setDeleteDialogOpen(true)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Automation
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1 group">
-                  <p className="text-xs font-medium text-muted-foreground">Description</p>
-                  {editingDescription ? (
-                    <Textarea
-                      ref={descriptionInputRef}
-                      value={descriptionValue}
-                      onChange={(e) => setDescriptionValue(e.target.value)}
-                      onBlur={saveDescriptionEdit}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Escape') {
-                          setEditingDescription(false);
-                        }
-                      }}
-                      className="text-sm min-h-[60px]"
-                      rows={3}
-                    />
-                  ) : (
-                    <p
-                      onClick={handleDescriptionEdit}
-                      className="text-sm cursor-pointer rounded-md px-2 py-1 -mx-2 -my-1 hover:bg-muted/50 transition-colors min-h-[24px]"
-                    >
-                      {automation.description || (
-                        <span className="text-muted-foreground italic">
-                          Click to add description
-                        </span>
-                      )}
-                    </p>
-                  )}
-                </div>
+      <MetricsSection
+        initialVersions={initialVersions}
+        initialRuns={runs}
+      />
 
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs font-medium text-muted-foreground">Created</p>
-                  <p className="text-sm">
-                    {new Date(automation.createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}{' '}
-                    at{' '}
-                    {new Date(automation.createdAt).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true,
-                    })}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs font-medium text-muted-foreground">Last Published</p>
-                  <p className="text-sm">
-                    {runsWithName[0]?.createdAt ? (
-                      <>
-                        {new Date(runsWithName[0].createdAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}{' '}
-                        at{' '}
-                        {new Date(runsWithName[0].createdAt).toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true,
-                        })}
-                      </>
-                    ) : (
-                      'Never'
-                    )}
-                  </p>
-                </div>
+      <Tabs defaultValue="history">
+        <Stack gap="lg">
+          <TabsList variant="underline">
+            <TabsTrigger value="history">Run History</TabsTrigger>
+            <TabsTrigger value="versions">Versions</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="history">
+            <AutomationRunsCard runs={runsWithName} />
+          </TabsContent>
+
+          <TabsContent value="versions">
+            {initialVersions.length > 0 ? (
+              <Stack gap="sm">
+                {initialVersions.map((v) => {
+                  const isLatest = v.version === latestVersion;
+                  const isTesting = isTestingVersion && selectedVersion === v.version;
+                  return (
+                    <div
+                      key={v.version}
+                      className={`flex items-center justify-between rounded-lg border py-3 px-4 ${isLatest ? 'border-primary/50 bg-primary/5' : 'border-border'}`}
+                    >
+                      <HStack gap="md" align="center">
+                        <div>
+                          <HStack gap="sm" align="center">
+                            <Text size="sm" weight="medium">v{v.version}</Text>
+                            {isLatest && (
+                              <span className="text-[10px] px-1.5 py-0 rounded-full bg-primary/10 text-primary font-medium">
+                                Latest
+                              </span>
+                            )}
+                          </HStack>
+                          {v.changelog && (
+                            <Text size="xs" variant="muted">{v.changelog}</Text>
+                          )}
+                          <Text size="xs" variant="muted">
+                            {new Date(v.createdAt).toLocaleDateString(undefined, {
+                              month: 'short', day: 'numeric', year: 'numeric',
+                            })}
+                          </Text>
+                        </div>
+                      </HStack>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedVersion(v.version);
+                          handleTestVersion();
+                        }}
+                        disabled={isTestingVersion}
+                      >
+                        {isTesting ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <>
+                            <Play className="w-3.5 h-3.5 mr-1.5" />
+                            Test
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </Stack>
+            ) : (
+              <div className="py-8">
+                <Stack gap="sm" align="center">
+                  <Text size="sm" variant="muted">No versions published yet</Text>
+                </Stack>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <AutomationActivity taskId={taskId} automationId={automationId} />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <Section title="Automation Settings">
+              <Stack gap="lg">
+                <HStack justify="between" align="center">
+                  <Stack gap="none">
+                    <Text size="sm" weight="medium">Enable Automation</Text>
+                    <Text size="xs" variant="muted">
+                      When enabled, this automation will run on its configured schedule
+                    </Text>
+                  </Stack>
+                  <Switch
+                    checked={automation.isEnabled}
+                    onCheckedChange={handleToggleEnabled}
+                    disabled={isTogglingEnabled}
+                  />
+                </HStack>
+
+                <div className="border-t" />
+
+                <HStack justify="between" align="center">
+                  <Stack gap="none">
+                    <Text size="sm" weight="medium">Delete Automation</Text>
+                    <Text size="xs" variant="muted">
+                      Permanently delete this automation and all its versions
+                    </Text>
+                  </Stack>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </HStack>
+              </Stack>
+            </Section>
+          </TabsContent>
+        </Stack>
+      </Tabs>
 
       <DeleteAutomationDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onSuccess={mutateAutomation}
       />
-    </div>
+    </PageLayout>
   );
+}
+
+function AutomationActivity({ taskId, automationId }: { taskId: string; automationId: string }) {
+  const { logs } = useAuditLogs({
+    entityType: 'task',
+    entityId: taskId,
+    pathContains: automationId,
+  });
+  return <RecentAuditLogs logs={logs} />;
 }

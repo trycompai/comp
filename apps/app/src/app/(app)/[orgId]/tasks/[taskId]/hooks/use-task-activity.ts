@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 
 export type ActivityLog = AuditLog & {
-  user: Pick<User, 'id' | 'name' | 'email' | 'image'> | null;
+  user: Pick<User, 'id' | 'name' | 'email' | 'image' | 'isPlatformAdmin'> | null;
 };
 
 interface ActivityResponse {
@@ -29,7 +29,6 @@ export function useTaskActivity({ take = 3, skip = 0 }: UseTaskActivityOptions =
 
       const response = await api.get<ActivityResponse>(
         `/v1/tasks/${taskId}/activity?skip=${skip}&take=${take}`,
-        orgId,
       );
 
       if (response.error) {

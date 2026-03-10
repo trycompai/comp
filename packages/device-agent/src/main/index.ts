@@ -14,7 +14,7 @@ import {
   startScheduler,
   stopScheduler,
 } from './scheduler';
-import { clearAuth, getAuth, getLastCheckResults } from './store';
+import { getAuth, getLastCheckResults } from './store';
 import {
   createTray,
   destroyTray,
@@ -64,7 +64,6 @@ setSessionExpiredHandler(async () => {
   log('Session expired — clearing auth and prompting re-login');
   stopScheduler();
   await performLogout();
-  clearAuth();
   currentResults = [];
   setStatus('unauthenticated');
   notifyRenderer(IPC_CHANNELS.AUTH_STATE_CHANGED, false);
@@ -77,7 +76,6 @@ setDevicesNotFoundHandler(async () => {
   log('All devices returned 404 — clearing auth and re-registering');
   stopScheduler();
   await performLogout();
-  clearAuth();
   currentResults = [];
   setStatus('unauthenticated');
   notifyRenderer(IPC_CHANNELS.AUTH_STATE_CHANGED, false);
@@ -102,6 +100,7 @@ async function triggerSignIn(): Promise<void> {
       log(`Login successful: ${auth.organizations.length} org(s) — ${orgNames}`);
       notifyRenderer(IPC_CHANNELS.AUTH_STATE_CHANGED, true);
       setStatus('checking');
+      openStatusWindow();
       startScheduler(handleCheckComplete);
     } else {
       log('Login cancelled or failed');
@@ -128,7 +127,6 @@ const trayCallbacks = {
     log('User signing out');
     stopScheduler();
     await performLogout();
-    clearAuth();
     currentResults = [];
     setStatus('unauthenticated');
     notifyRenderer(IPC_CHANNELS.AUTH_STATE_CHANGED, false);
@@ -179,7 +177,6 @@ ipcMain.handle(IPC_CHANNELS.LOGOUT, async () => {
   log('Logout via IPC');
   stopScheduler();
   await performLogout();
-  clearAuth();
   currentResults = [];
   setStatus('unauthenticated');
   notifyRenderer(IPC_CHANNELS.AUTH_STATE_CHANGED, false);

@@ -1,37 +1,101 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { db, Prisma } from '@trycompai/db';
 import { CreateRiskDto } from './dto/create-risk.dto';
+import { GetRisksQueryDto } from './dto/get-risks-query.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
+
+export interface PaginatedRisksResult {
+  data: Prisma.RiskGetPayload<{
+    include: {
+      assignee: {
+        include: {
+          user: {
+            select: { id: true; name: true; email: true; image: true };
+          };
+        };
+      };
+    };
+  }>[];
+  totalCount: number;
+  page: number;
+  pageCount: number;
+}
 
 @Injectable()
 export class RisksService {
   private readonly logger = new Logger(RisksService.name);
 
-  async findAllByOrganization(organizationId: string) {
+  private async validateAssigneeNotPlatformAdmin(assigneeId: string, organizationId: string) {
+    const member = await db.member.findFirst({
+      where: { id: assigneeId, organizationId },
+      include: { user: { select: { isPlatformAdmin: true } } },
+    });
+    if (member?.user.isPlatformAdmin) {
+      throw new BadRequestException('Cannot assign a platform admin as assignee');
+    }
+  }
+
+  async findAllByOrganization(
+    organizationId: string,
+    assignmentFilter: Prisma.RiskWhereInput = {},
+    query: GetRisksQueryDto = {},
+  ): Promise<PaginatedRisksResult> {
+    const {
+      title,
+      page = 1,
+      perPage = 50,
+      sort = 'createdAt',
+      sortDirection = 'desc',
+      status,
+      category,
+      department,
+      assigneeId,
+    } = query;
+
     try {
-      const risks = await db.risk.findMany({
-        where: { organizationId },
-        orderBy: { createdAt: 'desc' },
-        include: {
-          assignee: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  image: true,
+      const where: Prisma.RiskWhereInput = {
+        organizationId,
+        ...assignmentFilter,
+        ...(title && {
+          title: { contains: title, mode: Prisma.QueryMode.insensitive },
+        }),
+        ...(status && { status }),
+        ...(category && { category }),
+        ...(department && { department }),
+        ...(assigneeId && { assigneeId }),
+      };
+
+      const [risks, totalCount] = await Promise.all([
+        db.risk.findMany({
+          where,
+          skip: (page - 1) * perPage,
+          take: perPage,
+          orderBy: { [sort]: sortDirection },
+          include: {
+            assignee: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    image: true,
+                  },
                 },
               },
             },
           },
-        },
-      });
+        }),
+        db.risk.count({ where }),
+      ]);
+
+      const pageCount = Math.ceil(totalCount / perPage);
 
       this.logger.log(
-        `Retrieved ${risks.length} risks for organization ${organizationId}`,
+        `Retrieved ${risks.length} risks (page ${page}/${pageCount}) for organization ${organizationId}`,
       );
-      return risks;
+
+      return { data: risks, totalCount, page, pageCount };
     } catch (error) {
       this.logger.error(
         `Failed to retrieve risks for organization ${organizationId}:`,
@@ -76,6 +140,9 @@ export class RisksService {
 
   async create(organizationId: string, createRiskDto: CreateRiskDto) {
     try {
+      if (createRiskDto.assigneeId) {
+        await this.validateAssigneeNotPlatformAdmin(createRiskDto.assigneeId, organizationId);
+      }
       const risk = await db.risk.create({
         data: {
           ...createRiskDto,
@@ -104,6 +171,10 @@ export class RisksService {
     try {
       // First check if the risk exists in the organization
       await this.findById(id, organizationId);
+
+      if (updateRiskDto.assigneeId) {
+        await this.validateAssigneeNotPlatformAdmin(updateRiskDto.assigneeId, organizationId);
+      }
 
       const updatedRisk = await db.risk.update({
         where: { id },
@@ -145,5 +216,41 @@ export class RisksService {
       this.logger.error(`Failed to delete risk ${id}:`, error);
       throw error;
     }
+  }
+
+  async getStatsByAssignee(organizationId: string) {
+    const members = await db.member.findMany({
+      where: { organizationId },
+      select: {
+        id: true,
+        risks: {
+          where: { organizationId },
+          select: { status: true },
+        },
+        user: {
+          select: { name: true, image: true, email: true },
+        },
+      },
+    });
+
+    return members
+      .filter((m) => m.risks.length > 0)
+      .map((m) => ({
+        id: m.id,
+        user: m.user,
+        totalRisks: m.risks.length,
+        openRisks: m.risks.filter((r) => r.status === 'open').length,
+        pendingRisks: m.risks.filter((r) => r.status === 'pending').length,
+        closedRisks: m.risks.filter((r) => r.status === 'closed').length,
+        archivedRisks: m.risks.filter((r) => r.status === 'archived').length,
+      }));
+  }
+
+  async getStatsByDepartment(organizationId: string) {
+    return db.risk.groupBy({
+      by: ['department'],
+      where: { organizationId },
+      _count: true,
+    });
   }
 }

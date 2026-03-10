@@ -184,7 +184,6 @@ export function CompanySubmissionWizard({
           fileType: file.type || 'application/octet-stream',
           fileData,
         },
-        organizationId,
       );
 
       if (response.error || !response.data) {
@@ -405,7 +404,6 @@ export function CompanySubmissionWizard({
     const response = await api.post(
       `/v1/evidence-forms/${submitFormType}/submissions`,
       payload,
-      organizationId,
     );
 
     if (response.error) {

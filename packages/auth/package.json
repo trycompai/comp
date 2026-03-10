@@ -1,0 +1,36 @@
+{
+  "name": "@comp/auth",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/permissions.js",
+  "types": "./src/permissions.ts",
+  "exports": {
+    ".": {
+      "types": "./src/permissions.ts",
+      "default": "./dist/permissions.js"
+    },
+    "./permissions": {
+      "types": "./src/permissions.ts",
+      "default": "./dist/permissions.js"
+    },
+    "./server": {
+      "types": "./src/server.ts",
+      "default": "./dist/server.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "better-auth": "^1.4.5"
+  },
+  "peerDependencies": {
+    "@prisma/client": ">=5.0.0"
+  },
+  "devDependencies": {
+    "@trycompai/tsconfig": "workspace:*",
+    "@prisma/client": "6.18.0",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,18 +1,40 @@
 'use client';
 
+import { env } from '@/env.mjs';
 import { useSession } from '@/utils/auth-client';
 import { useChat } from '@ai-sdk/react';
 import { Button } from '@comp/ui/button';
-import { ScrollArea } from '@comp/ui/scroll-area';
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
+import {
+  DefaultChatTransport,
+  isToolUIPart,
+  lastAssistantMessageIsCompleteWithToolCalls,
+} from 'ai';
 import type { UIMessage } from 'ai';
 import { useActiveOrganization } from '@/utils/auth-client';
 import { apiClient } from '@/lib/api-client';
 import { useParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-import { ChatEmpty } from './chat-empty';
-import { ChatTextarea } from './chat-text-area';
-import { Messages } from './messages';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from '@/components/ai-elements/message';
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from '@/components/ai-elements/reasoning';
+import { Tool, ToolHeader, ToolContent } from '@/components/ai-elements/tool';
+import { LogoSpinner } from '../logo-spinner';
+import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
+
+const API_URL = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
 type AssistantStoredMessage = {
   id: string;
@@ -20,6 +42,57 @@ type AssistantStoredMessage = {
   text: string;
   createdAt: number;
 };
+
+function MessageParts({
+  message,
+  isLastMessage,
+  isStreaming,
+}: {
+  message: UIMessage;
+  isLastMessage: boolean;
+  isStreaming: boolean;
+}) {
+  const reasoningParts = message.parts.filter((p) => p.type === 'reasoning');
+  const reasoningText = reasoningParts.map((p) => p.text).join('\n\n');
+  const hasReasoning = reasoningParts.length > 0;
+  const lastPart = message.parts.at(-1);
+  const isReasoningStreaming =
+    isLastMessage && isStreaming && lastPart?.type === 'reasoning';
+
+  return (
+    <>
+      {hasReasoning && (
+        <Reasoning className="w-full" isStreaming={isReasoningStreaming}>
+          <ReasoningTrigger />
+          <ReasoningContent>{reasoningText}</ReasoningContent>
+        </Reasoning>
+      )}
+      {message.parts.map((part, i) => {
+        if (part.type === 'text') {
+          return (
+            <MessageResponse key={`${message.id}-${i}`}>
+              {part.text}
+            </MessageResponse>
+          );
+        }
+        if (isToolUIPart(part)) {
+          if (part.state === 'output-available') return null;
+          const toolType = part.type as `tool-${string}`;
+          return (
+            <Tool key={`${message.id}-tool-${i}`}>
+              <ToolHeader
+                type={toolType}
+                state={part.state as "input-streaming" | "input-available" | "output-available" | "output-error"}
+              />
+              <ToolContent />
+            </Tool>
+          );
+        }
+        return null;
+      })}
+    </>
+  );
+}
 
 export default function Chat() {
   const { data: session } = useSession();
@@ -36,7 +109,6 @@ export default function Chat() {
         ? params.orgId[0]
         : undefined;
 
-  // Best practice: prefer org from URL params (deterministic). Fallback only when assistant is used outside org routes.
   const resolvedOrganizationId = orgIdFromUrl ?? activeOrganization?.id;
 
   const lastSavedJsonRef = useRef<string>('');
@@ -51,31 +123,28 @@ export default function Chat() {
     resolvedOrganizationIdRef.current = resolvedOrganizationId;
   }, [resolvedOrganizationId]);
 
+  const transport = new DefaultChatTransport({
+    api: `${API_URL}/v1/assistant-chat/completions`,
+    credentials: 'include',
+  });
+
   const { messages, sendMessage, error, status, stop, setMessages } = useChat({
     id:
       resolvedOrganizationId && userId
         ? `assistant-chat:v1:${resolvedOrganizationId}:${userId}`
         : undefined,
-    transport: new DefaultChatTransport({
-      api: '/api/chat',
-      headers: resolvedOrganizationId ? { 'X-Organization-Id': resolvedOrganizationId } : undefined,
-    }),
-
-    // Automatically submit when all server-side tool calls are complete
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    transport: transport as any,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   });
 
   const isLoading = status === 'streaming' || status === 'submitted';
-
-  if (error) return <div>{error.message}</div>;
 
   // Hydrate chat messages from server-side (Redis-backed) history.
   useEffect(() => {
     if (!userId || !resolvedOrganizationId) return;
 
     isHydratingRef.current = true;
-
-    // Clear current messages immediately so we never show cross-org history while loading.
     setMessages([]);
 
     const controller = new AbortController();
@@ -84,8 +153,6 @@ export default function Chat() {
     void (async () => {
       const res = await apiClient.get<{ messages: AssistantStoredMessage[] }>(
         '/v1/assistant-chat/history',
-        resolvedOrganizationId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       );
 
       if (res.error || res.status !== 200) {
@@ -95,7 +162,6 @@ export default function Chat() {
         });
       }
 
-      // If the org changed while we were loading, ignore this result.
       if (resolvedOrganizationIdRef.current !== orgIdAtStart) {
         isHydratingRef.current = false;
         return;
@@ -105,13 +171,14 @@ export default function Chat() {
       latestSnapshotRef.current = { organizationId: orgIdAtStart, messages: stored };
       lastSavedJsonRef.current = JSON.stringify(stored);
 
-      const uiMessages: UIMessage[] = stored.map((m) => ({
+      const uiMessages = stored.map((m) => ({
         id: m.id,
         role: m.role,
-        parts: [{ type: 'text', text: m.text }],
+        parts: [{ type: 'text' as const, text: m.text }],
       }));
 
-      setMessages(uiMessages);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setMessages(uiMessages as any);
       isHydratingRef.current = false;
     })();
 
@@ -124,13 +191,8 @@ export default function Chat() {
     if (!resolvedOrganizationId || !userId) return;
     if (isHydratingRef.current) return;
 
-    const isStorableRole = (role: UIMessage['role']): role is 'user' | 'assistant' => {
-      return role === 'user' || role === 'assistant';
-    };
-
-    // Persist only user + assistant text for stability and forward-compatibility.
     const storedMessages: AssistantStoredMessage[] = messages
-      .filter((m): m is UIMessage & { role: 'user' | 'assistant' } => isStorableRole(m.role))
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
       .map((m) => {
         const text = (m.parts ?? [])
           .map((part) => {
@@ -145,7 +207,7 @@ export default function Chat() {
 
         return {
           id: m.id,
-          role: m.role,
+          role: m.role as 'user' | 'assistant',
           text,
           createdAt: Date.now(),
         };
@@ -162,7 +224,6 @@ export default function Chat() {
       };
     }
 
-    // Debounce while streaming; save immediately once ready.
     const delayMs = isLoading ? 300 : 0;
     const timeout = window.setTimeout(() => {
       void apiClient.call(
@@ -170,16 +231,14 @@ export default function Chat() {
         {
           method: 'PUT',
           body: JSON.stringify({ messages: storedMessages }),
-          organizationId: resolvedOrganizationId,
         },
-        true,
       );
     }, delayMs);
 
     return () => window.clearTimeout(timeout);
   }, [isLoading, messages, resolvedOrganizationId, userId]);
 
-  // Flush the latest history snapshot on unmount so closing the sheet can't cancel the last save.
+  // Flush the latest history snapshot on unmount.
   useEffect(() => {
     if (!resolvedOrganizationId || !userId) return;
 
@@ -187,20 +246,18 @@ export default function Chat() {
       const snapshot = latestSnapshotRef.current;
       if (!snapshot || snapshot.messages.length === 0) return;
 
-      // IMPORTANT: Always flush using the orgId that the snapshot was created for,
-      // not the orgId captured by this effect's closure (prevents cross-org mixups).
       void apiClient.call(
         '/v1/assistant-chat/history',
         {
           method: 'PUT',
           body: JSON.stringify({ messages: snapshot.messages }),
-          organizationId: snapshot.organizationId,
           keepalive: true,
         },
-        false,
       );
     };
   }, [resolvedOrganizationId, userId]);
+
+  const isStreaming = status === 'streaming';
 
   return (
     <div className="relative flex h-full flex-col">
@@ -212,7 +269,7 @@ export default function Chat() {
           disabled={isLoading || messages.length === 0 || !resolvedOrganizationId || !userId}
           onClick={() => {
             if (!resolvedOrganizationId || !userId) return;
-            void apiClient.delete('/v1/assistant-chat/history', resolvedOrganizationId);
+            void apiClient.delete('/v1/assistant-chat/history');
             setMessages([]);
             setInput('');
           }}
@@ -221,17 +278,64 @@ export default function Chat() {
         </Button>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-100px)]">
-        {messages.length === 0 ? (
-          <div className="mx-auto w-full max-w-xl">
-            <ChatEmpty firstName={session?.user?.name?.split(' ').at(0) ?? ''} />
-          </div>
-        ) : (
-          <Messages messages={messages} isLoading={isLoading} status={status} />
-        )}
-      </ScrollArea>
+      <Conversation className="flex-1">
+        <ConversationContent className="mx-auto max-w-xl !gap-6">
+          {error && (
+            <div className="px-4 py-2">
+              <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {error.message}
+              </div>
+            </div>
+          )}
+          {messages.length === 0 && !error ? (
+            <ConversationEmptyState
+              icon={<LogoSpinner />}
+              title={`Hi ${session?.user?.name?.split(' ').at(0) ?? ''}, how can I help you today?`}
+            />
+          ) : (
+            messages.map((message, index) => (
+              <Message from={message.role} key={message.id}>
+                {message.role === 'user' ? (
+                  <div className="flex justify-end">
+                    <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-2.5">
+                      <MessageContent>
+                        <MessageParts
+                          message={message}
+                          isLastMessage={index === messages.length - 1}
+                          isStreaming={isStreaming}
+                        />
+                      </MessageContent>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-5 w-5 shrink-0 items-center justify-center text-foreground">
+                        <LogoSpinner size={16} isDisabled={false} />
+                      </div>
+                      <span className="text-xs font-semibold text-foreground">
+                        Comp AI
+                      </span>
+                    </div>
+                    <MessageContent className="pl-7">
+                      <MessageParts
+                        message={message}
+                        isLastMessage={index === messages.length - 1}
+                        isStreaming={isStreaming}
+                      />
+                    </MessageContent>
+                  </>
+                )}
+              </Message>
+            ))
+          )}
+          {status === 'submitted' && <LogoSpinner />}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
 
       <form
+        className="mx-auto w-full max-w-xl px-4 py-2"
         onSubmit={(e) => {
           e.preventDefault();
           if (input.trim()) {
@@ -240,13 +344,24 @@ export default function Chat() {
           }
         }}
       >
-        <ChatTextarea
-          handleInputChange={(e) => setInput(e.target.value)}
-          input={input}
-          isLoading={isLoading}
-          status={status}
-          stop={stop}
-        />
+        <div className="relative">
+          <textarea
+            className="mb-2 h-12 min-h-12 w-full resize-none rounded-md border bg-background px-3 pt-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            value={input}
+            autoFocus
+            placeholder="Ask Comp AI something..."
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (input.trim() && !isLoading) {
+                  const form = (e.target as HTMLElement).closest('form');
+                  if (form) form.requestSubmit();
+                }
+              }
+            }}
+          />
+        </div>
       </form>
     </div>
   );

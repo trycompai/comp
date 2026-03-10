@@ -1,8 +1,8 @@
-import { auth } from '@/app/lib/auth';
 import { db } from '@db';
 import { type NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@db';
 import { z } from 'zod';
+import { getDeviceAgentSession } from '../session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,7 +29,7 @@ const checkInSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: req.headers });
+    const session = await getDeviceAgentSession(req);
 
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

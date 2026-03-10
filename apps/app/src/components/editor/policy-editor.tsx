@@ -8,9 +8,12 @@ interface PolicyEditorProps {
   content: JSONContent[];
   readOnly?: boolean;
   onSave?: (content: JSONContent[]) => Promise<void>;
+  className?: string;
+  minHeight?: string;
+  maxHeight?: string;
 }
 
-export function PolicyEditor({ content, readOnly = false, onSave }: PolicyEditorProps) {
+export function PolicyEditor({ content, readOnly = false, onSave, className, minHeight, maxHeight }: PolicyEditorProps) {
   const documentContent = validateAndFixTipTapContent({
     type: 'doc',
     content: Array.isArray(content) && content.length > 0 ? content : [],
@@ -31,7 +34,7 @@ export function PolicyEditor({ content, readOnly = false, onSave }: PolicyEditor
 
   return (
     <>
-      <AdvancedEditor initialContent={documentContent} onSave={handleSave} readOnly={readOnly} />
+      <AdvancedEditor initialContent={documentContent} onSave={handleSave} readOnly={readOnly} className={className} minHeight={minHeight} maxHeight={maxHeight} />
     </>
   );
 }

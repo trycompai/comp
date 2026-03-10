@@ -1,52 +1,65 @@
 'use client';
 
+import { apiClient } from '@/lib/api-client';
 import { SelectPills } from '@comp/ui/select-pills';
-import { Control } from '@db';
+import type { Control } from '@db';
 import { Section } from '@trycompai/design-system';
-import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { mapPolicyToControls } from '../actions/mapPolicyToControls';
-import { unmapPolicyFromControl } from '../actions/unmapPolicyFromControl';
+import { usePolicy } from '../hooks/usePolicy';
+import { usePermissions } from '@/hooks/use-permissions';
+import useSWR from 'swr';
+
+interface ControlsResponse {
+  mappedControls: Pick<Control, 'id' | 'name' | 'description'>[];
+  allControls: Pick<Control, 'id' | 'name' | 'description'>[];
+}
 
 export const PolicyControlMappings = ({
-  mappedControls,
-  allControls,
+  mappedControls: initialMapped,
+  allControls: initialAll,
   isPendingApproval,
+  onMutate,
 }: {
   mappedControls: Control[];
   allControls: Control[];
   isPendingApproval: boolean;
+  onMutate?: () => void;
 }) => {
-  const { policyId } = useParams<{ policyId: string }>();
+  const { orgId, policyId } = useParams<{ orgId: string; policyId: string }>();
   const [loading, setLoading] = useState(false);
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('policy', 'update');
 
-  const mapControlsAction = useAction(mapPolicyToControls, {
-    onSuccess: () => {
-      toast.success('Controls mapped successfully');
+  const { data, mutate: mutateControls } = useSWR(
+    [`/v1/policies/${policyId}/controls`, orgId],
+    async () => {
+      const res = await apiClient.get<ControlsResponse>(
+        `/v1/policies/${policyId}/controls`,
+      );
+      if (res.error) throw new Error(res.error);
+      return res.data;
     },
-    onError: (err) => {
-      toast.error(err.error.serverError || 'Failed to map controls');
-      setLoading(false);
+    {
+      fallbackData: { mappedControls: initialMapped, allControls: initialAll },
+      revalidateOnMount: false,
+      revalidateOnFocus: false,
     },
-  });
+  );
 
-  const unmapControlAction = useAction(unmapPolicyFromControl, {
-    onSuccess: () => {
-      toast.success('Controls unmapped successfully');
-      setLoading(false);
-    },
-    onError: (err) => {
-      toast.error(err.error.serverError || 'Failed to unmap control');
-      setLoading(false);
-    },
+  const mappedControls = data?.mappedControls ?? initialMapped;
+  const allControls = data?.allControls ?? initialAll;
+
+  const { addControlMappings, removeControlMapping } = usePolicy({
+    policyId,
+    organizationId: orgId,
   });
 
   const mappedNames = mappedControls.map((c) => c.name);
 
   const handleValueChange = async (selectedNames: string[]) => {
-    if (isPendingApproval || loading) return;
+    if (isPendingApproval || loading || !canUpdate) return;
     setLoading(true);
     const prevIds = mappedControls.map((c) => c.id);
     const nextControls = allControls.filter((c) => selectedNames.includes(c.name));
@@ -57,17 +70,15 @@ export const PolicyControlMappings = ({
 
     try {
       if (added.length > 0) {
-        await mapControlsAction.execute({
-          policyId,
-          controlIds: added.map((c) => c.id),
-        });
+        await addControlMappings(added.map((c) => c.id));
+        toast.success('Controls mapped successfully');
       }
       if (removed.length > 0) {
-        await unmapControlAction.execute({
-          policyId,
-          controlId: removed[0].id,
-        });
+        await removeControlMapping(removed[0].id);
+        toast.success('Controls unmapped successfully');
       }
+      await mutateControls();
+      onMutate?.();
     } catch {
       toast.error('Failed to update controls');
     } finally {
@@ -82,7 +93,7 @@ export const PolicyControlMappings = ({
         value={mappedNames}
         onValueChange={handleValueChange}
         placeholder="Search controls..."
-        disabled={isPendingApproval || loading}
+        disabled={isPendingApproval || loading || !canUpdate}
       />
     </Section>
   );

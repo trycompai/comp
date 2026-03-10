@@ -3,15 +3,23 @@ import {
   NotFoundException,
   Logger,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
 import { FleetService } from '../lib/fleet.service';
+import { BUILT_IN_ROLE_PERMISSIONS } from '@comp/auth';
 import type { PeopleResponseDto } from './dto/people-responses.dto';
 import type { CreatePeopleDto } from './dto/create-people.dto';
 import type { UpdatePeopleDto } from './dto/update-people.dto';
 import type { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
+import {
+  collectAssignedItems,
+  clearAssignments,
+  removeMemberFromOrgChart,
+  notifyOwnerOfUnassignedItems,
+} from './utils/member-deactivation';
 
 @Injectable()
 export class PeopleService {
@@ -21,10 +29,14 @@ export class PeopleService {
 
   async findAllByOrganization(
     organizationId: string,
+    includeDeactivated?: boolean,
   ): Promise<PeopleResponseDto[]> {
     try {
       await MemberValidator.validateOrganization(organizationId);
-      const members = await MemberQueries.findAllByOrganization(organizationId);
+      const members = await MemberQueries.findAllByOrganization(
+        organizationId,
+        includeDeactivated,
+      );
 
       this.logger.log(
         `Retrieved ${members.length} members for organization ${organizationId}`,
@@ -40,6 +52,64 @@ export class PeopleService {
       );
       throw new Error(`Failed to retrieve members: ${error.message}`);
     }
+  }
+
+  async findMentionableMembers(
+    organizationId: string,
+    resource: string,
+  ): Promise<PeopleResponseDto[]> {
+    const members = await MemberQueries.findAllByOrganization(
+      organizationId,
+      false,
+    );
+
+    // Collect all unique role names across members
+    const allRoleNames = new Set<string>();
+    for (const member of members) {
+      const roles = member.role.split(',').map((r) => r.trim()).filter(Boolean);
+      for (const role of roles) {
+        allRoleNames.add(role);
+      }
+    }
+
+    // Batch-resolve permissions: built-in from constants, custom from DB
+    const builtInRoleNames = [...allRoleNames].filter(
+      (name) => BUILT_IN_ROLE_PERMISSIONS[name] !== undefined,
+    );
+    const customRoleNames = [...allRoleNames].filter(
+      (name) => BUILT_IN_ROLE_PERMISSIONS[name] === undefined,
+    );
+
+    // Build permission map for all roles
+    const permissionMap = new Map<string, Record<string, string[]>>();
+    for (const name of builtInRoleNames) {
+      permissionMap.set(name, BUILT_IN_ROLE_PERMISSIONS[name]);
+    }
+
+    // Batch-fetch custom role permissions in one query
+    if (customRoleNames.length > 0) {
+      const customRoles = await db.organizationRole.findMany({
+        where: { organizationId, name: { in: customRoleNames } },
+      });
+      for (const role of customRoles) {
+        const perms = typeof role.permissions === 'string'
+          ? JSON.parse(role.permissions) as Record<string, string[]>
+          : role.permissions as Record<string, string[]>;
+        permissionMap.set(role.name, perms);
+      }
+    }
+
+    // Filter members whose combined permissions include the required permission
+    return members.filter((member) => {
+      const roles = member.role.split(',').map((r) => r.trim()).filter(Boolean);
+      for (const role of roles) {
+        const perms = permissionMap.get(role);
+        if (perms && perms[resource]?.includes('read')) {
+          return true;
+        }
+      }
+      return false;
+    });
   }
 
   async findById(
@@ -236,46 +306,108 @@ export class PeopleService {
   async deleteById(
     memberId: string,
     organizationId: string,
+    callerUserId?: string,
   ): Promise<{
     success: boolean;
     deletedMember: { id: string; name: string; email: string };
   }> {
-    try {
-      await MemberValidator.validateOrganization(organizationId);
-      const member = await MemberQueries.findMemberForDeletion(
-        memberId,
-        organizationId,
-      );
+    await MemberValidator.validateOrganization(organizationId);
 
-      if (!member) {
-        throw new NotFoundException(
-          `Member with ID ${memberId} not found in organization ${organizationId}`,
-        );
-      }
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+      include: { user: true },
+    });
 
-      await MemberQueries.deleteMember(memberId);
-
-      this.logger.log(
-        `Deleted member: ${member.user.name} (${memberId}) from organization ${organizationId}`,
+    if (!member) {
+      throw new NotFoundException(
+        `Member with ID ${memberId} not found in organization ${organizationId}`,
       );
-      return {
-        success: true,
-        deletedMember: {
-          id: member.id,
-          name: member.user.name,
-          email: member.user.email,
-        },
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        `Failed to delete member ${memberId} from organization ${organizationId}:`,
-        error,
-      );
-      throw new Error(`Failed to delete member: ${error.message}`);
     }
+
+    if (callerUserId && member.user.id === callerUserId) {
+      throw new ForbiddenException('You cannot remove yourself');
+    }
+
+    if (member.role.includes('owner')) {
+      throw new ForbiddenException('Cannot remove the organization owner');
+    }
+
+    if (member.user.isPlatformAdmin) {
+      throw new ForbiddenException('Cannot remove a platform admin');
+    }
+
+    const unassignedItems = await collectAssignedItems({
+      memberId,
+      organizationId,
+    });
+
+    await clearAssignments({ memberId, organizationId });
+    await removeMemberFromOrgChart({ organizationId, memberId });
+
+    await db.member.update({
+      where: { id: memberId },
+      data: { deactivated: true, isActive: false },
+    });
+
+    await db.session.deleteMany({ where: { userId: member.userId } });
+
+    if (member.fleetDmLabelId) {
+      try {
+        await this.fleetService.removeHostsByLabel(member.fleetDmLabelId);
+      } catch (fleetError) {
+        this.logger.error('Failed to remove Fleet hosts:', fleetError);
+      }
+    }
+
+    await notifyOwnerOfUnassignedItems({
+      organizationId,
+      removedMemberName: member.user.name || member.user.email || 'Member',
+      unassignedItems,
+    });
+
+    this.logger.log(
+      `Deactivated member: ${member.user.name} (${memberId}) from organization ${organizationId}`,
+    );
+
+    return {
+      success: true,
+      deletedMember: {
+        id: member.id,
+        name: member.user.name,
+        email: member.user.email,
+      },
+    };
+  }
+
+  async reactivateById(
+    memberId: string,
+    organizationId: string,
+  ): Promise<PeopleResponseDto> {
+    const member = await MemberQueries.findByIdInOrganization(
+      memberId,
+      organizationId,
+    );
+
+    if (member) {
+      throw new BadRequestException('Member is already active');
+    }
+
+    // Look for deactivated member
+    const deactivatedMember = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+    });
+
+    if (!deactivatedMember) {
+      throw new NotFoundException(
+        `Member with ID ${memberId} not found in organization ${organizationId}`,
+      );
+    }
+
+    return db.member.update({
+      where: { id: memberId },
+      data: { deactivated: false, isActive: true },
+      select: MemberQueries.MEMBER_SELECT,
+    });
   }
 
   async unlinkDevice(
@@ -416,5 +548,96 @@ export class PeopleService {
       );
       throw new Error(`Failed to remove host: ${error.message}`);
     }
+  }
+
+  async getDevices(organizationId: string) {
+    return db.device.findMany({
+      where: { organizationId },
+      include: { member: { include: { user: true } } },
+      orderBy: { installedAt: 'desc' },
+    });
+  }
+
+  async getTestStatsByAssignee(organizationId: string) {
+    const tasks = await db.task.findMany({
+      where: { organizationId },
+      select: { assigneeId: true, status: true },
+    });
+    const stats = new Map<string, { total: number; done: number }>();
+    for (const task of tasks) {
+      if (!task.assigneeId) continue;
+      const existing = stats.get(task.assigneeId) || { total: 0, done: 0 };
+      existing.total++;
+      if (task.status === 'done') existing.done++;
+      stats.set(task.assigneeId, existing);
+    }
+    return Object.fromEntries(stats);
+  }
+
+  async getTrainingVideos(memberId: string, organizationId: string) {
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+    });
+    if (!member) throw new NotFoundException('Member not found');
+    return db.employeeTrainingVideoCompletion.findMany({
+      where: { memberId },
+      orderBy: { completedAt: 'desc' },
+    });
+  }
+
+  async getFleetCompliance(memberId: string, organizationId: string) {
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+      select: { id: true, userId: true, fleetDmLabelId: true },
+    });
+    if (!member) throw new NotFoundException('Member not found');
+    if (!member.fleetDmLabelId) return { hosts: [], policyResults: [] };
+
+    const [hosts, policyResults] = await Promise.all([
+      this.fleetService
+        .getHostsByLabel(member.fleetDmLabelId)
+        .then((r) => r?.hosts ?? []),
+      db.fleetPolicyResult.findMany({
+        where: { userId: member.userId, organizationId },
+      }),
+    ]);
+    return { hosts, policyResults };
+  }
+
+  async getEmailPreferences(
+    userId: string,
+    userEmail: string,
+    organizationId: string,
+  ) {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: {
+        emailPreferences: true,
+        emailNotificationsUnsubscribed: true,
+      },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return {
+      email: userEmail,
+      preferences: user.emailPreferences ?? {},
+      unsubscribed: user.emailNotificationsUnsubscribed ?? false,
+    };
+  }
+
+  async updateEmailPreferences(
+    userId: string,
+    preferences: Record<string, boolean>,
+  ) {
+    const allUnsubscribed = Object.values(preferences).every(
+      (v) => v === false,
+    );
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        emailPreferences: preferences,
+        emailNotificationsUnsubscribed: allUnsubscribed,
+      },
+    });
+    return { success: true };
   }
 }

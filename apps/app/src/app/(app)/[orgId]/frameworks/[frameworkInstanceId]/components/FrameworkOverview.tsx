@@ -14,6 +14,7 @@ import { Progress } from '@comp/ui/progress';
 import { Control, Task } from '@db';
 import { BarChart3, MoreVertical, Target, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { getControlStatus } from '../../lib/utils';
 import { FrameworkInstanceWithControls } from '../../types';
 import { FrameworkDeleteDialog } from './FrameworkDeleteDialog';
@@ -29,6 +30,7 @@ export function FrameworkOverview({
 }: FrameworkOverviewProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { hasPermission } = usePermissions();
 
   // Get all controls from all requirements
   const allControls = frameworkInstanceWithControls.controls;
@@ -72,25 +74,27 @@ export function FrameworkOverview({
             {frameworkInstanceWithControls.framework.description}
           </p>
         </div>
-        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="ghost">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => {
-                setDropdownOpen(false);
-                setDeleteDialogOpen(true);
-              }}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete Framework
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {hasPermission('framework', 'delete') && (
+          <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  setDropdownOpen(false);
+                  setDeleteDialogOpen(true);
+                }}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Framework
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Compliance Dashboard */}

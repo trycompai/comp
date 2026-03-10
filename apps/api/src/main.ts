@@ -13,7 +13,11 @@ import { mkdirSync, writeFileSync, existsSync } from 'fs';
 let app: INestApplication | null = null;
 
 async function bootstrap(): Promise<void> {
-  app = await NestFactory.create(AppModule);
+  // Disable body parser - required for better-auth NestJS integration
+  // The library will re-add body parsers after handling auth routes
+  app = await NestFactory.create(AppModule, {
+    bodyParser: false,
+  });
 
   // Enable CORS for all origins - security is handled by authentication
   app.enableCors({

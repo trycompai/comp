@@ -1,28 +1,33 @@
+import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+interface OrgInfo {
+  id: string;
+  onboardingCompleted: boolean;
+}
+
+interface AuthMeResponse {
+  organizations: OrgInfo[];
+}
+
 export default async function SetupLayout({ children }: { children: React.ReactNode }) {
-  // Respect explicit intent to create an additional organization
   const hdrs = await headers();
   const intent = hdrs.get('x-intent');
 
-  // If user already belongs to an org, route to their latest org instead of re-running setup
   const session = await auth.api.getSession({ headers: await headers() });
   if (session && intent !== 'create-additional') {
-    const userOrg = await db.organization.findFirst({
-      where: {
-        members: { some: { userId: session.user.id } },
-      },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true, onboardingCompleted: true },
-    });
+    const meRes = await serverApi.get<AuthMeResponse>('/v1/auth/me');
+    const orgs = meRes.data?.organizations ?? [];
+
+    // Find the most recently relevant org (API returns them, pick first)
+    const userOrg = orgs[0];
     if (userOrg) {
       if (userOrg.onboardingCompleted === false) {
         return redirect(`/onboarding/${userOrg.id}`);
       }
-      return redirect(`/${userOrg.id}/frameworks`);
+      return redirect(`/${userOrg.id}`);
     }
   }
 

@@ -1,7 +1,7 @@
 import { getManifest, runAllChecks } from '@comp/integration-platform';
 import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk';
-import { sendEmail } from '../../email/resend';
+import { triggerEmail } from '../../email/trigger-email';
 import { TaskStatusChangedEmail } from '../../email/templates/task-status-changed';
 import { isUserUnsubscribed } from '@trycompai/email';
 
@@ -121,7 +121,7 @@ async function sendTaskStatusChangeEmails(params: {
         }
 
         try {
-          await sendEmail({
+          await triggerEmail({
             to: recipient.email,
             subject: `Task "${taskTitle}" status changed to ${newStatus}`,
             react: TaskStatusChangedEmail({
@@ -214,11 +214,13 @@ export const runTaskIntegrationChecks = task({
     try {
       logger.info('Ensuring valid credentials (refreshing if needed)...');
       const response = await fetch(
-        `${apiUrl}/v1/integrations/connections/${connectionId}/ensure-valid-credentials?organizationId=${organizationId}`,
+        `${apiUrl}/v1/integrations/connections/${connectionId}/ensure-valid-credentials`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+            'x-organization-id': organizationId,
           },
         },
       );

@@ -1,17 +1,15 @@
-import { getValidFilters } from '@/lib/data-table';
-import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
 import { PageHeader, PageLayout, Stack } from '@trycompai/design-system';
 import { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { SearchParams } from 'nuqs';
 import { CreateControlSheet } from './components/CreateControlSheet';
 import { ControlsTable } from './components/controls-table';
-import { getControls } from './data/queries';
+import type { ControlWithRelations } from './data/queries';
 import { searchParamsCache } from './data/validations';
 
 interface ControlTableProps {
   searchParams: Promise<SearchParams>;
+  params: Promise<{ orgId: string }>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -23,129 +21,54 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ControlsPage({ ...props }: ControlTableProps) {
   const searchParams = await props.searchParams;
   const search = searchParamsCache.parse(searchParams);
-  const validFilters = getValidFilters(search.filters);
+  const sort = search.sort?.[0];
 
-  const promises = Promise.all([
-    getControls({
-      ...search,
-      filters: validFilters,
-    }),
+  const queryParams = new URLSearchParams({
+    page: String(search.page),
+    perPage: String(search.perPage),
+    ...(search.name && { name: search.name }),
+    ...(sort && { sortBy: sort.id, sortDesc: String(sort.desc) }),
+  });
+
+  const [controlsRes, optionsRes] = await Promise.all([
+    serverApi.get<{ data: ControlWithRelations[]; pageCount: number }>(
+      `/v1/controls?${queryParams}`,
+    ),
+    serverApi.get<{
+      policies: { id: string; name: string }[];
+      tasks: { id: string; title: string }[];
+      requirements: {
+        id: string;
+        name: string;
+        identifier: string;
+        frameworkInstanceId: string;
+        frameworkName: string;
+      }[];
+    }>('/v1/controls/options'),
   ]);
 
-  const policies = await getPolicies();
-  const tasks = await getTasks();
-  const requirements = await getRequirements();
+  const controlsData = controlsRes.data ?? { data: [], pageCount: 0 };
+  const options = optionsRes.data ?? { policies: [], tasks: [], requirements: [] };
+
+  const promises = Promise.resolve(
+    [controlsData] as [{ data: ControlWithRelations[]; pageCount: number }],
+  );
 
   return (
     <PageLayout>
       <Stack gap="md">
         <PageHeader
           title="Controls"
-          actions={<CreateControlSheet policies={policies} tasks={tasks} requirements={requirements} />}
+          actions={
+            <CreateControlSheet
+              policies={options.policies}
+              tasks={options.tasks}
+              requirements={options.requirements}
+            />
+          }
         />
-        <ControlsTable
-          promises={promises}
-        />
+        <ControlsTable promises={promises} />
       </Stack>
     </PageLayout>
   );
 }
-
-const getPolicies = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const orgId = session?.session.activeOrganizationId;
-
-  if (!orgId) {
-    return [];
-  }
-
-  const policies = await db.policy.findMany({
-    where: {
-      organizationId: orgId,
-    },
-    select: {
-      id: true,
-      name: true,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-  });
-
-  return policies;
-};
-
-const getTasks = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const orgId = session?.session.activeOrganizationId;
-
-  if (!orgId) {
-    return [];
-  }
-
-  const tasks = await db.task.findMany({
-    where: {
-      organizationId: orgId,
-    },
-    select: {
-      id: true,
-      title: true,
-    },
-    orderBy: {
-      title: 'asc',
-    },
-  });
-
-  return tasks;
-};
-
-const getRequirements = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const orgId = session?.session.activeOrganizationId;
-
-  if (!orgId) {
-    return [];
-  }
-
-  // Get all framework instances for this organization
-  const frameworkInstances = await db.frameworkInstance.findMany({
-    where: {
-      organizationId: orgId,
-    },
-    include: {
-      framework: {
-        include: {
-          requirements: {
-            select: {
-              id: true,
-              name: true,
-              identifier: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  // Flatten requirements and include framework context
-  const requirements = frameworkInstances.flatMap((fi) =>
-    fi.framework.requirements.map((req) => ({
-      id: req.id,
-      name: req.name,
-      identifier: req.identifier,
-      frameworkInstanceId: fi.id,
-      frameworkName: fi.framework.name,
-    })),
-  );
-
-  return requirements;
-};

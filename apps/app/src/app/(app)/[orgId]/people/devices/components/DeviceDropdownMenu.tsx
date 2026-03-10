@@ -8,12 +8,12 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Laptop, MoreHorizontal } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Host } from '../types';
 import { RemoveDeviceAlert } from '../../all/components/RemoveDeviceAlert';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { usePeopleActions } from '@/hooks/use-people-api';
-import { useRouter } from 'next/navigation';
+import { useDevices } from '../hooks/useDevices';
 
 interface DeviceDropdownMenuProps {
   host: Host;
@@ -21,13 +21,13 @@ interface DeviceDropdownMenuProps {
 }
 
 export const DeviceDropdownMenu = ({ host, isCurrentUserOwner }: DeviceDropdownMenuProps) => {
-  const router = useRouter();
+  const { hasPermission } = usePermissions();
   const [isRemoveDeviceAlertOpen, setIsRemoveDeviceAlertOpen] = useState(false);
   const [isRemovingDevice, setIsRemovingDevice] = useState(false);
-  
-  const { removeHostFromFleet } = usePeopleActions();
 
-  if (!isCurrentUserOwner || !host.member_id) {
+  const { removeDevice } = useDevices();
+
+  if (!hasPermission('member', 'delete') || !host.member_id) {
     return null;
   }
 
@@ -36,10 +36,9 @@ export const DeviceDropdownMenu = ({ host, isCurrentUserOwner }: DeviceDropdownM
   const handleRemoveDeviceClick = async () => {
     try {
       setIsRemovingDevice(true);
-      await removeHostFromFleet(memberId, host.id);
+      await removeDevice(memberId, host.id);
       setIsRemoveDeviceAlertOpen(false);
       toast.success('Device removed successfully');
-      router.refresh(); // Revalidate data to update UI
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to remove device');
     } finally {

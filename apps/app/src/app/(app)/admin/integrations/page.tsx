@@ -2,23 +2,27 @@
 
 import { api } from '@/lib/api-client';
 import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
+import { Button } from '@trycompai/design-system';
 import {
-  CheckCircle2,
-  ExternalLink,
+  CheckmarkFilled,
+  InProgress,
   Key,
-  Loader2,
-  RefreshCw,
+  Launch,
+  Renew,
   Search,
   Settings,
-  Trash2,
-} from 'lucide-react';
+  TrashCan,
+  View,
+  ViewOff,
+} from '@trycompai/design-system/icons';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import useSWR from 'swr';
+
+import { decrypt, type EncryptedData } from '@/lib/encryption';
 
 interface AdditionalOAuthSetting {
   id: string;
@@ -44,6 +48,9 @@ interface Integration {
   hasCredentials: boolean;
   credentialConfiguredAt?: string;
   credentialUpdatedAt?: string;
+  encryptedClientId?: EncryptedData;
+  encryptedClientSecret?: EncryptedData;
+  existingCustomSettings?: Record<string, unknown>;
   setupInstructions?: string;
   createAppUrl?: string;
   requiredScopes?: string[];
@@ -64,7 +71,28 @@ function IntegrationCard({
   const [customSettingsValues, setCustomSettingsValues] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+  const [decryptedClientId, setDecryptedClientId] = useState<string | null>(null);
+  const [decryptedClientSecret, setDecryptedClientSecret] = useState<string | null>(null);
+  const [isDecrypting, setIsDecrypting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleDecryptCredentials = useCallback(async () => {
+    if (decryptedClientId || !integration.encryptedClientId || !integration.encryptedClientSecret) return;
+    setIsDecrypting(true);
+    try {
+      const [id, secret] = await Promise.all([
+        decrypt(integration.encryptedClientId),
+        decrypt(integration.encryptedClientSecret),
+      ]);
+      setDecryptedClientId(id);
+      setDecryptedClientSecret(secret);
+    } catch {
+      setError('Failed to decrypt credentials');
+    } finally {
+      setIsDecrypting(false);
+    }
+  }, [integration.encryptedClientId, integration.encryptedClientSecret, decryptedClientId]);
 
   const additionalSettings = integration.additionalOAuthSettings || [];
 
@@ -133,8 +161,8 @@ function IntegrationCard({
                 unoptimized
               />
               {integration.hasCredentials && (
-                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-green-500 border-2 border-background flex items-center justify-center">
-                  <CheckCircle2 className="h-2.5 w-2.5 text-white" />
+                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-green-500 border-2 border-background flex items-center justify-center text-white">
+                  <CheckmarkFilled className="h-2.5 w-2.5" />
                 </div>
               )}
             </div>
@@ -167,8 +195,18 @@ function IntegrationCard({
           {integration.authType === 'oauth2' && (
             <>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => setShowConfig(!showConfig)}>
-                  <Settings className="h-3 w-3 mr-1" />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  iconLeft={<Settings />}
+                  onClick={() => {
+                    const next = !showConfig;
+                    setShowConfig(next);
+                    if (next && integration.hasCredentials) {
+                      handleDecryptCredentials();
+                    }
+                  }}
+                >
                   {showConfig ? 'Hide' : 'Configure'}
                 </Button>
 
@@ -178,20 +216,16 @@ function IntegrationCard({
                     variant="destructive"
                     onClick={handleDelete}
                     disabled={isDeleting}
+                    loading={isDeleting}
+                    iconLeft={<TrashCan />}
                   >
-                    {isDeleting ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-3 w-3 mr-1" />
-                    )}
                     Delete
                   </Button>
                 )}
 
                 {integration.createAppUrl && (
                   <a href={integration.createAppUrl} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="ghost">
-                      <ExternalLink className="h-3 w-3 mr-1" />
+                    <Button size="sm" variant="ghost" iconLeft={<Launch />}>
                       Create OAuth App
                     </Button>
                   </a>
@@ -202,6 +236,61 @@ function IntegrationCard({
                 <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
                   {error && (
                     <div className="text-sm text-red-500 p-2 bg-red-500/10 rounded">{error}</div>
+                  )}
+
+                  {integration.hasCredentials && (
+                    <div className="p-3 bg-muted rounded-lg space-y-2">
+                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Current Credentials
+                      </h4>
+                      {isDecrypting ? (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="h-3 w-3 animate-spin"><InProgress /></div>
+                          Decrypting...
+                        </div>
+                      ) : decryptedClientId ? (
+                        <div className="grid gap-1.5 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground text-xs w-20 shrink-0">Client ID:</span>
+                            <code className="text-xs bg-background px-2 py-1 rounded border truncate select-all">
+                              {decryptedClientId}
+                            </code>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground text-xs w-20 shrink-0">Secret:</span>
+                            <code className="text-xs bg-background px-2 py-1 rounded border select-all">
+                              {showSecret
+                                ? decryptedClientSecret
+                                : '••••••••••••••••'}
+                            </code>
+                            <Button
+                              size="icon-xs"
+                              variant="ghost"
+                              onClick={() => setShowSecret(!showSecret)}
+                            >
+                              {showSecret ? <ViewOff /> : <View />}
+                            </Button>
+                          </div>
+                          {integration.existingCustomSettings &&
+                            Object.entries(integration.existingCustomSettings).map(
+                              ([key, value]) => (
+                                <div key={key} className="flex items-center gap-2">
+                                  <span className="text-muted-foreground text-xs w-20 shrink-0">
+                                    {key}:
+                                  </span>
+                                  <code className="text-xs bg-background px-2 py-1 rounded border truncate select-all">
+                                    {String(value)}
+                                  </code>
+                                </div>
+                              ),
+                            )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Failed to load credentials
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   {integration.setupInstructions && (
@@ -215,6 +304,13 @@ function IntegrationCard({
                     </details>
                   )}
 
+                  <div className="text-sm">
+                    <span className="font-medium">Callback URL: </span>
+                    <code className="text-xs bg-muted px-1.5 py-0.5 rounded select-all">
+                      {process.env.NEXT_PUBLIC_API_URL || ''}/v1/integrations/oauth/callback
+                    </code>
+                  </div>
+
                   {integration.requiredScopes && integration.requiredScopes.length > 0 && (
                     <div className="text-sm">
                       <span className="font-medium">Required Scopes: </span>
@@ -226,16 +322,20 @@ function IntegrationCard({
 
                   <div className="grid gap-3">
                     <div>
-                      <Label className="text-sm">Client ID</Label>
+                      <Label className="text-sm">
+                        {integration.hasCredentials ? 'New Client ID' : 'Client ID'}
+                      </Label>
                       <Input
                         className="font-mono text-sm"
-                        placeholder="Enter OAuth Client ID"
+                        placeholder={decryptedClientId || 'Enter OAuth Client ID'}
                         value={clientId}
                         onChange={(e) => setClientId(e.target.value)}
                       />
                     </div>
                     <div>
-                      <Label className="text-sm">Client Secret</Label>
+                      <Label className="text-sm">
+                        {integration.hasCredentials ? 'New Client Secret' : 'Client Secret'}
+                      </Label>
                       <Input
                         type="password"
                         className="font-mono text-sm"
@@ -289,13 +389,10 @@ function IntegrationCard({
                       additionalSettings.some((s) => s.required && !customSettingsValues[s.id]) ||
                       isSaving
                     }
+                    loading={isSaving}
+                    iconLeft={<Key />}
                   >
-                    {isSaving ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Key className="h-4 w-4 mr-2" />
-                    )}
-                    Save Credentials
+                    {integration.hasCredentials ? 'Update Credentials' : 'Save Credentials'}
                   </Button>
                 </div>
               )}
@@ -372,7 +469,7 @@ export default function AdminIntegrationsPage() {
       {/* Search and Refresh */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"><Search /></div>
           <Input
             placeholder="Search integrations..."
             value={searchQuery}
@@ -380,8 +477,7 @@ export default function AdminIntegrationsPage() {
             className="pl-9"
           />
         </div>
-        <Button variant="outline" onClick={() => mutate()} disabled={isLoading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+        <Button variant="outline" onClick={() => mutate()} loading={isLoading} iconLeft={<Renew />}>
           Refresh
         </Button>
       </div>
@@ -394,7 +490,7 @@ export default function AdminIntegrationsPage() {
 
       {isLoading && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="h-8 w-8 animate-spin text-muted-foreground"><InProgress /></div>
         </div>
       )}
 

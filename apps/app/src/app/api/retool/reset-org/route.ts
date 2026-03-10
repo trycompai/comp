@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { db } from '@db';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -24,6 +25,11 @@ export const runtime = 'nodejs';
  * - 500: { success: false, error: "Failed to reset organization" }
  */
 export async function POST(request: NextRequest) {
+  // Block in production - Retool endpoints should only work in staging/dev
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+  }
+
   const authHeader = request.headers.get('authorization');
   const retoolApiSecret = process.env.RETOOL_COMP_API_SECRET;
 
@@ -40,7 +46,7 @@ export async function POST(request: NextRequest) {
 
   const token = authHeader?.split(' ')[1];
 
-  if (!token || token !== retoolApiSecret) {
+  if (!token || token.length !== retoolApiSecret.length || !timingSafeEqual(Buffer.from(token), Buffer.from(retoolApiSecret))) {
     return NextResponse.json(
       {
         success: false,

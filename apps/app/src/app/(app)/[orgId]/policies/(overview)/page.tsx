@@ -1,4 +1,5 @@
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
+import type { Policy } from '@db';
 import { PageHeader, PageLayout, Stack } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
@@ -9,6 +10,10 @@ import { PolicyChartsClient } from './components/PolicyChartsClient';
 import { computePoliciesOverview } from './lib/compute-overview';
 import Loading from './loading';
 
+type PolicyWithAssignee = Policy & {
+  assignee: { id: string; user: { name: string | null } } | null;
+};
+
 interface PoliciesPageProps {
   params: Promise<{ orgId: string }>;
 }
@@ -16,23 +21,12 @@ interface PoliciesPageProps {
 export default async function PoliciesPage({ params }: PoliciesPageProps) {
   const { orgId } = await params;
 
-  // Fetch all policies with assignee data for computing overview
-  const policies = await db.policy.findMany({
-    where: { organizationId: orgId },
-    orderBy: { name: 'asc' },
-    include: {
-      assignee: {
-        select: {
-          id: true,
-          user: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-    },
-  });
+  const policiesRes = await serverApi.get<{ data: PolicyWithAssignee[] }>(
+    '/v1/policies',
+  );
+  const policies = Array.isArray(policiesRes.data?.data)
+    ? policiesRes.data.data
+    : [];
 
   // Compute overview from policies (same logic used client-side)
   const initialOverview = computePoliciesOverview(
@@ -45,21 +39,18 @@ export default async function PoliciesPage({ params }: PoliciesPageProps) {
     })),
   );
 
-  // Filter non-archived for the table display
-  const nonArchivedPolicies = policies.filter((p) => !p.isArchived);
-
   return (
     <PageLayout>
       <Stack gap="md">
         <PageHeader
           title="Policies"
-          actions={<PolicyPageActions policies={nonArchivedPolicies} />}
+          actions={<PolicyPageActions policies={policies.filter((p) => !p.isArchived)} />}
         />
         <Suspense fallback={<Loading />}>
           <PolicyChartsClient organizationId={orgId} initialData={initialOverview} />
         </Suspense>
         <PolicyTailoringProvider statuses={{}}>
-          <PolicyFilters policies={nonArchivedPolicies} />
+          <PolicyFilters policies={policies} />
         </PolicyTailoringProvider>
       </Stack>
     </PageLayout>

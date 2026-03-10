@@ -1,7 +1,18 @@
-interface LayoutProps {
-  children: React.ReactNode;
-}
+import { requireRoutePermission } from '@/lib/permissions.server';
 
-export default function Layout({ children }: LayoutProps) {
-  return <>{children}</>;
+export default async function Layout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId } = await params;
+  await requireRoutePermission('tasks', orgId);
+
+  return (
+    <div className="h-full">
+      <main className="h-full">{children}</main>
+    </div>
+  );
 }

@@ -1,15 +1,15 @@
 'use client';
 
 import { useDebounce } from '@/hooks/useDebounce';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from '@trycompai/design-system';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 
 const trustSettingsSchema = z.object({
   primaryColor: z.string().optional(),
@@ -24,17 +24,9 @@ export function BrandSettings({
   orgId,
   primaryColor,
 }: BrandSettingsProps) {
-  const trustPortalSwitch = useAction(trustPortalSwitchAction, {
-    onSuccess: () => {
-      toast.success('Brand settings updated');
-    },
-    onError: () => {
-      toast.error('Failed to update brand settings');
-    },
-  });
-
-  const trustPortalSwitchRef = useRef(trustPortalSwitch);
-  trustPortalSwitchRef.current = trustPortalSwitch;
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
+  const { updateToggleSettings } = useTrustPortalSettings();
 
   const form = useForm<z.infer<typeof trustSettingsSchema>>({
     resolver: zodResolver(trustSettingsSchema),
@@ -60,19 +52,21 @@ export function BrandSettings({
       if (lastSaved.current[field] !== value) {
         savingRef.current[field] = true;
         try {
-          const data = {
+          await updateToggleSettings({
             enabled: true,
             primaryColor:
               field === 'primaryColor' ? (value as string) : (form.getValues('primaryColor') ?? undefined),
-          };
-          await trustPortalSwitchRef.current.execute(data);
+          });
+          toast.success('Brand settings updated');
           lastSaved.current[field] = value as string | null;
+        } catch {
+          toast.error('Failed to update brand settings');
         } finally {
           savingRef.current[field] = false;
         }
       }
     },
-    [form],
+    [form, updateToggleSettings],
   );
 
   const [primaryColorValue, setPrimaryColorValue] = useState(form.getValues('primaryColor') || '');
@@ -130,6 +124,7 @@ export function BrandSettings({
                             type="color"
                             className="sr-only"
                             id="color-picker"
+                            disabled={!canUpdate}
                           />
                           <label
                             htmlFor="color-picker"
@@ -154,6 +149,7 @@ export function BrandSettings({
                               onBlur={handlePrimaryColorBlur}
                               placeholder="#000000"
                               maxLength={7}
+                              disabled={!canUpdate}
                             />
                           </div>
                         </div>

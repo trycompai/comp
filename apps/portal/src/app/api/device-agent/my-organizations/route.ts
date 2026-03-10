@@ -1,6 +1,6 @@
-import { auth } from '@/app/lib/auth';
 import { db } from '@db';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getDeviceAgentSession } from '../session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: req.headers });
+    const session = await getDeviceAgentSession(req);
 
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

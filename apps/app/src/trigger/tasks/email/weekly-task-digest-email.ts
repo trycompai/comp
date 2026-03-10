@@ -1,12 +1,12 @@
 import { db } from '@db';
 import { logger, queue, task } from '@trigger.dev/sdk';
-import { sendWeeklyTaskDigestEmail } from '@trycompai/email/lib/weekly-task-digest';
+import WeeklyTaskDigestEmail from '@trycompai/email/emails/reminders/weekly-task-digest';
 import { isUserUnsubscribed } from '@comp/email/lib/check-unsubscribe';
+import { sendEmailViaApi } from '../../lib/send-email-via-api';
 
-// Queue with concurrency limit to prevent rate limiting
 const weeklyTaskDigestQueue = queue({
   name: 'weekly-task-digest-queue',
-  concurrencyLimit: 2, // Max 2 emails at a time
+  concurrencyLimit: 2,
 });
 
 interface WeeklyTaskDigestPayload {
@@ -20,6 +20,11 @@ interface WeeklyTaskDigestPayload {
   }>;
 }
 
+const getTaskCountMessage = (count: number) => {
+  const plural = count !== 1 ? 's' : '';
+  return `You have ${count} pending task${plural} that are not yet completed`;
+};
+
 export const sendWeeklyTaskDigestEmailTask = task({
   id: 'send-weekly-task-digest-email',
   queue: weeklyTaskDigestQueue,
@@ -31,7 +36,7 @@ export const sendWeeklyTaskDigestEmailTask = task({
     });
 
     try {
-      const unsubscribed = await isUserUnsubscribed(db, payload.email, 'weeklyTaskDigest');
+      const unsubscribed = await isUserUnsubscribed(db, payload.email, 'weeklyTaskDigest', payload.organizationId);
       if (unsubscribed) {
         logger.info('User is unsubscribed from email notifications, skipping', {
           email: payload.email,
@@ -44,7 +49,19 @@ export const sendWeeklyTaskDigestEmailTask = task({
         };
       }
 
-      await sendWeeklyTaskDigestEmail(payload);
+      await sendEmailViaApi({
+        to: payload.email,
+        subject: getTaskCountMessage(payload.tasks.length),
+        react: WeeklyTaskDigestEmail({
+          email: payload.email,
+          userName: payload.userName,
+          organizationName: payload.organizationName,
+          organizationId: payload.organizationId,
+          tasks: payload.tasks,
+        }),
+        organizationId: payload.organizationId,
+        system: true,
+      });
 
       logger.info('Successfully sent weekly task digest email', {
         email: payload.email,

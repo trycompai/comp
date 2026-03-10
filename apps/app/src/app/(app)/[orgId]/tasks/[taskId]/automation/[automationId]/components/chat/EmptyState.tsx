@@ -127,7 +127,7 @@ export function EmptyState({
   isLoadingSuggestions = false,
 }: EmptyStateProps) {
   // Use dynamic suggestions if provided, otherwise fall back to static examples
-  const examplesToShow: AutomationExample[] = suggestions
+  const examplesToShow: AutomationExample[] = suggestions && suggestions.length > 0
     ? suggestions.map((s) => ({
         title: s.title,
         prompt: s.prompt,

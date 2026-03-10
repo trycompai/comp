@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { db, PolicyStatus, Prisma } from '@trycompai/db';
+import { db, Frequency, PolicyStatus, Prisma } from '@trycompai/db';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
@@ -16,6 +16,20 @@ import type {
   SubmitForApprovalDto,
   UpdateVersionContentDto,
 } from './dto/version.dto';
+
+function computeNextReviewDate(frequency: Frequency | null | undefined): Date {
+  const now = new Date();
+  switch (frequency) {
+    case Frequency.monthly:
+      return new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    case Frequency.quarterly:
+      return new Date(now.getFullYear(), now.getMonth() + 3, now.getDate());
+    case Frequency.yearly:
+      return new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+    default:
+      return new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+  }
+}
 
 @Injectable()
 export class PoliciesService {
@@ -83,6 +97,81 @@ export class PoliciesService {
     }
   }
 
+  async publishAll(
+    organizationId: string,
+    userId?: string,
+    memberId?: string,
+  ) {
+    const draftPolicies = await db.policy.findMany({
+      where: { organizationId, status: 'draft', isArchived: false },
+      select: { id: true, name: true, frequency: true },
+    });
+
+    if (draftPolicies.length === 0) {
+      return { success: true, publishedCount: 0, members: [] };
+    }
+
+    const now = new Date();
+
+    await db.$transaction(
+      draftPolicies.map((p) =>
+        db.policy.update({
+          where: { id: p.id },
+          data: {
+            status: 'published',
+            lastPublishedAt: now,
+            reviewDate: computeNextReviewDate(p.frequency),
+          },
+        }),
+      ),
+    );
+
+    // Create audit log entry for each published policy
+    if (userId) {
+      await db.auditLog.createMany({
+        data: draftPolicies.map((p) => ({
+          organizationId,
+          userId,
+          memberId: memberId ?? null,
+          entityType: 'policy' as const,
+          entityId: p.id,
+          description: `Published policy via bulk publish`,
+          data: {
+            action: 'Published policy',
+            method: 'POST',
+            path: '/v1/policies/publish-all',
+            resource: 'policy',
+            permission: 'update',
+          },
+        })),
+      });
+    }
+
+    // Fetch employee/contractor members for email notifications
+    const members = await db.member.findMany({
+      where: {
+        organizationId,
+        deactivated: false,
+        role: { in: ['employee', 'contractor'] },
+      },
+      include: {
+        user: { select: { email: true, name: true } },
+        organization: { select: { name: true, id: true } },
+      },
+    });
+
+    return {
+      success: true,
+      publishedCount: draftPolicies.length,
+      members: members.map((m) => ({
+        email: m.user.email,
+        userName: m.user.name || '',
+        organizationName: m.organization.name || '',
+        organizationId: m.organization.id,
+      })),
+    };
+  }
+
   async findById(id: string, organizationId: string) {
     try {
       const policy = await db.policy.findFirst({
@@ -148,6 +237,15 @@ export class PoliciesService {
 
   async create(organizationId: string, createData: CreatePolicyDto) {
     try {
+      if (createData.assigneeId) {
+        const assignee = await db.member.findFirst({
+          where: { id: createData.assigneeId, organizationId },
+          include: { user: { select: { isPlatformAdmin: true } } },
+        });
+        if (assignee?.user.isPlatformAdmin) {
+          throw new BadRequestException('Cannot assign a platform admin as assignee');
+        }
+      }
       const contentValue = createData.content as Prisma.InputJsonValue[];
 
       // Create policy with version 1 in a transaction
@@ -756,6 +854,7 @@ export class PoliciesService {
               content: contentToPublish,
               draftContent: contentToPublish,
               lastPublishedAt: new Date(),
+              reviewDate: computeNextReviewDate(policy.frequency),
               status: 'published',
               // Clear any pending approval since we're publishing directly
               pendingVersionId: null,
@@ -819,12 +918,11 @@ export class PoliciesService {
       data: {
         currentVersionId: versionId,
         content: version.content as Prisma.InputJsonValue[],
-        draftContent: version.content as Prisma.InputJsonValue[], // Sync draft to prevent "unpublished changes" UI bug
+        draftContent: version.content as Prisma.InputJsonValue[],
         status: 'published',
-        // Clear pending approval state since we're directly activating a version
+        reviewDate: computeNextReviewDate(policy.frequency),
         pendingVersionId: null,
         approverId: null,
-        // Clear signatures - employees must re-acknowledge new content
         signedBy: [],
       },
     });
@@ -857,8 +955,11 @@ export class PoliciesService {
       throw new NotFoundException('Version not found');
     }
 
-    // Cannot submit the already-active version for approval
-    if (versionId === policy.currentVersionId) {
+    // Cannot re-submit the already-published version for approval
+    if (
+      versionId === policy.currentVersionId &&
+      policy.status === PolicyStatus.published
+    ) {
       throw new BadRequestException(
         'Cannot submit the currently published version for approval',
       );
@@ -879,6 +980,17 @@ export class PoliciesService {
       );
     }
 
+    // Cannot assign a platform admin as approver
+    const approverUser = await db.user.findUnique({
+      where: { id: approver.userId },
+      select: { isPlatformAdmin: true },
+    });
+    if (approverUser?.isPlatformAdmin) {
+      throw new BadRequestException(
+        'Cannot assign a platform admin as approver',
+      );
+    }
+
     await db.policy.update({
       where: { id: policyId },
       data: {
@@ -892,6 +1004,104 @@ export class PoliciesService {
       versionId: version.id,
       version: version.version,
     };
+  }
+
+  async acceptChanges(
+    policyId: string,
+    organizationId: string,
+    dto: { approverId: string; comment?: string },
+    userId?: string,
+  ) {
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    if (!policy.pendingVersionId) {
+      throw new BadRequestException('No pending version to approve');
+    }
+
+    if (policy.approverId !== dto.approverId) {
+      throw new BadRequestException('Only the assigned approver can accept changes');
+    }
+
+    const version = await db.policyVersion.findUnique({
+      where: { id: policy.pendingVersionId },
+    });
+
+    if (!version) {
+      throw new NotFoundException('Pending version not found');
+    }
+
+    const memberId = await this.getMemberId(organizationId, userId);
+
+    await db.$transaction(async (tx) => {
+      // Update the version with the publisher
+      await tx.policyVersion.update({
+        where: { id: version.id },
+        data: { publishedById: memberId },
+      });
+
+      // Publish the pending version
+      await tx.policy.update({
+        where: { id: policyId },
+        data: {
+          currentVersionId: version.id,
+          content: version.content as Prisma.InputJsonValue[],
+          draftContent: version.content as Prisma.InputJsonValue[],
+          status: PolicyStatus.published,
+          lastPublishedAt: new Date(),
+          reviewDate: computeNextReviewDate(policy.frequency),
+          pendingVersionId: null,
+          approverId: null,
+          // Clear signatures — employees must re-acknowledge new content
+          signedBy: [],
+        },
+      });
+    });
+
+    return { versionId: version.id, version: version.version };
+  }
+
+  async denyChanges(
+    policyId: string,
+    organizationId: string,
+    dto: { approverId: string; comment?: string },
+  ) {
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    if (!policy.pendingVersionId) {
+      throw new BadRequestException('No pending version to deny');
+    }
+
+    if (policy.approverId !== dto.approverId) {
+      throw new BadRequestException('Only the assigned approver can deny changes');
+    }
+
+    // Revert policy to previous state (draft if never published, published if it was)
+    const newStatus = policy.lastPublishedAt
+      ? PolicyStatus.published
+      : PolicyStatus.draft;
+
+    await db.policy.update({
+      where: { id: policyId },
+      data: {
+        status: newStatus,
+        pendingVersionId: null,
+        approverId: null,
+      },
+    });
+
+    return { status: newStatus };
   }
 
   private async getMemberId(

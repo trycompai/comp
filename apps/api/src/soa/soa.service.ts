@@ -1,4 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { db } from '@db';
 import { SaveSOAAnswerDto } from './dto/save-soa-answer.dto';
 import { CreateSOADocumentDto } from './dto/create-soa-document.dto';
@@ -57,7 +64,7 @@ export class SOAService {
     });
 
     if (!document) {
-      throw new Error('SOA document not found');
+      throw new NotFoundException('SOA document not found');
     }
 
     // Get existing answer to determine version
@@ -180,7 +187,7 @@ export class SOAService {
     });
 
     if (!configuration) {
-      throw new Error('No SOA configuration found for this framework');
+      throw new NotFoundException('No SOA configuration found for this framework');
     }
 
     const existingLatestDocument = await db.sOADocument.findFirst({
@@ -245,7 +252,7 @@ export class SOAService {
     });
 
     if (!framework) {
-      throw new Error('Framework not found');
+      throw new NotFoundException('Framework not found');
     }
 
     const isISO27001 = ISO27001_FRAMEWORK_NAMES.includes(framework.name);
@@ -270,7 +277,7 @@ export class SOAService {
       try {
         configuration = await this.seedISO27001SOAConfig();
       } catch (error) {
-        throw new Error(
+        throw new InternalServerErrorException(
           `Failed to create SOA configuration: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
       }
@@ -295,7 +302,7 @@ export class SOAService {
           configuration.id,
         );
       } catch (error) {
-        throw new Error(
+        throw new InternalServerErrorException(
           `Failed to create SOA document: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
       }
@@ -315,15 +322,15 @@ export class SOAService {
     });
 
     if (!document) {
-      throw new Error('SOA document not found');
+      throw new NotFoundException('SOA document not found');
     }
 
     if (!document.approverId || document.approverId !== member.id) {
-      throw new Error('Document is not pending your approval');
+      throw new ForbiddenException('Document is not pending your approval');
     }
 
     if (document.status !== 'needs_review') {
-      throw new Error('Document is not in needs_review status');
+      throw new BadRequestException('Document is not in needs_review status');
     }
 
     const updatedDocument = await db.sOADocument.update({
@@ -348,15 +355,15 @@ export class SOAService {
     });
 
     if (!document) {
-      throw new Error('SOA document not found');
+      throw new NotFoundException('SOA document not found');
     }
 
     if (!document.approverId || document.approverId !== member.id) {
-      throw new Error('Document is not pending your approval');
+      throw new ForbiddenException('Document is not pending your approval');
     }
 
     if (document.status !== 'needs_review') {
-      throw new Error('Document is not in needs_review status');
+      throw new BadRequestException('Document is not in needs_review status');
     }
 
     const updatedDocument = await db.sOADocument.update({
@@ -381,14 +388,23 @@ export class SOAService {
     });
 
     if (!approverMember) {
-      throw new Error('Approver not found in organization');
+      throw new NotFoundException('Approver not found in organization');
+    }
+
+    // Cannot assign a platform admin as approver
+    const approverUser = await db.user.findUnique({
+      where: { id: approverMember.userId },
+      select: { isPlatformAdmin: true },
+    });
+    if (approverUser?.isPlatformAdmin) {
+      throw new BadRequestException('Cannot assign a platform admin as approver');
     }
 
     const isOwnerOrAdmin =
       approverMember.role.includes('owner') ||
       approverMember.role.includes('admin');
     if (!isOwnerOrAdmin) {
-      throw new Error('Approver must be an owner or admin');
+      throw new ForbiddenException('Approver must be an owner or admin');
     }
 
     const document = await db.sOADocument.findFirst({
@@ -399,11 +415,11 @@ export class SOAService {
     });
 
     if (!document) {
-      throw new Error('SOA document not found');
+      throw new NotFoundException('SOA document not found');
     }
 
     if (document.status === 'needs_review') {
-      throw new Error('Document is already pending approval');
+      throw new BadRequestException('Document is already pending approval');
     }
 
     const updatedDocument = await db.sOADocument.update({
@@ -502,14 +518,14 @@ export class SOAService {
     });
 
     if (!member) {
-      throw new Error('Member not found');
+      throw new NotFoundException('Member not found');
     }
 
     const isOwnerOrAdmin =
       member.role.includes('owner') || member.role.includes('admin');
 
     if (!isOwnerOrAdmin) {
-      throw new Error('Only owners and admins can perform this action');
+      throw new ForbiddenException('Only owners and admins can perform this action');
     }
 
     return member;
@@ -542,7 +558,7 @@ export class SOAService {
     });
 
     if (!configuration) {
-      throw new Error('Configuration not found');
+      throw new NotFoundException('Configuration not found');
     }
 
     const questions = configuration.questions as Array<{ id: string }>;
@@ -573,7 +589,7 @@ export class SOAService {
     });
 
     if (!iso27001Framework) {
-      throw new Error('ISO 27001 framework not found');
+      throw new NotFoundException('ISO 27001 framework not found');
     }
 
     const existingConfig = await db.sOAFrameworkConfiguration.findFirst({

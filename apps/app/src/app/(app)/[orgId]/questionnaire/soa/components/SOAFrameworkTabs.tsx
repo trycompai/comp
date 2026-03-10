@@ -2,11 +2,10 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { SOAFrameworkTable } from './SOAFrameworkTable';
-import { api } from '@/lib/api-client';
+import { ensureSOASetup } from '../../hooks/useSOADocument';
 import type { FrameworkWithSOAData } from '../types';
 
 interface SOAFrameworkTabsProps {
@@ -19,8 +18,7 @@ const isFrameworkSupported = (frameworkName: string) => {
 };
 
 export function SOAFrameworkTabs({ frameworksWithSOAData, organizationId }: SOAFrameworkTabsProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [loadingTab, setLoadingTab] = useState<string | null>(null);
   const [frameworkData, setFrameworkData] = useState<Map<string, typeof frameworksWithSOAData[0]>>(
     new Map(frameworksWithSOAData.map((fw) => [fw.frameworkId, fw]))
@@ -57,44 +55,28 @@ export function SOAFrameworkTabs({ frameworksWithSOAData, organizationId }: SOAF
 
     startTransition(async () => {
       try {
-        const response = await api.post<{
-          success: boolean;
-          configuration?: FrameworkWithSOAData['configuration'] | null;
-          document?: FrameworkWithSOAData['document'] | null;
-          error?: string;
-        }>(
-          '/v1/soa/ensure-setup',
-          {
-            frameworkId,
-            organizationId,
-          },
-          organizationId,
-        );
+        const result = await ensureSOASetup({ frameworkId, organizationId });
 
-        if (response.error) {
-          toast.error(response.error || 'Failed to setup SOA');
-        } else if (response.data?.success) {
-          // Update framework data
+        if (result.error) {
+          toast.error(result.error);
+        } else if (result.success) {
           const existingData = frameworkData.get(frameworkId);
           if (existingData) {
             setFrameworkData((prev) => {
               const newMap = new Map(prev);
               newMap.set(frameworkId, {
                 ...existingData,
-                configuration: (response.data?.configuration ?? null) as FrameworkWithSOAData['configuration'],
-                document: (response.data?.document ?? null) as FrameworkWithSOAData['document'],
+                configuration: (result.configuration ?? null) as FrameworkWithSOAData['configuration'],
+                document: (result.document ?? null) as FrameworkWithSOAData['document'],
               });
               return newMap;
             });
           }
-        } else if (response.data?.error) {
-          toast.error(response.data.error);
         }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Failed to setup SOA');
       } finally {
         setLoadingTab(null);
-        router.refresh();
       }
     });
   };

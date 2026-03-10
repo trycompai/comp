@@ -18,13 +18,15 @@ import {
 } from '@nestjs/swagger';
 import { OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { OrgChartService } from './org-chart.service';
 import { UpsertOrgChartDto } from './dto/upsert-org-chart.dto';
 import { UploadOrgChartDto } from './dto/upload-org-chart.dto';
 
 @ApiTags('Org Chart')
 @Controller({ path: 'org-chart', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
@@ -36,6 +38,7 @@ export class OrgChartController {
   constructor(private readonly orgChartService: OrgChartService) {}
 
   @Get()
+  @RequirePermission('organization', 'read')
   @ApiOperation({ summary: 'Get the organization chart' })
   @ApiResponse({ status: 200, description: 'The organization chart' })
   async getOrgChart(@OrganizationId() organizationId: string) {
@@ -43,6 +46,7 @@ export class OrgChartController {
   }
 
   @Put()
+  @RequirePermission('organization', 'update')
   @ApiOperation({
     summary: 'Create or update an interactive organization chart',
   })
@@ -61,6 +65,7 @@ export class OrgChartController {
   }
 
   @Post('upload')
+  @RequirePermission('organization', 'update')
   @ApiOperation({ summary: 'Upload an image as the organization chart' })
   @ApiResponse({ status: 201, description: 'The uploaded organization chart' })
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
@@ -72,6 +77,7 @@ export class OrgChartController {
   }
 
   @Delete()
+  @RequirePermission('organization', 'delete')
   @ApiOperation({ summary: 'Delete the organization chart' })
   @ApiResponse({ status: 200, description: 'Deletion confirmation' })
   async deleteOrgChart(@OrganizationId() organizationId: string) {

@@ -12,7 +12,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
 import { isReportInProgress, sortReportsByUpdatedAtDesc } from '../lib';
-import { checkAndChargePentestBilling } from '../actions/billing';
 
 const reportListEndpoint = '/v1/security-penetration-tests';
 const githubReposEndpoint = '/v1/security-penetration-tests/github/repos';
@@ -269,7 +268,14 @@ export function useCreatePenetrationTest(
           throw new Error('Could not resolve report ID from create response.');
         }
 
-        await checkAndChargePentestBilling(organizationId, reportId);
+        const billingRes = await api.post(
+          '/v1/pentest-billing/charge',
+          { runId: reportId },
+          organizationId,
+        );
+        if (billingRes.error) {
+          throw new Error(billingRes.error);
+        }
 
         const data: CreatePenetrationTestResponse = {
           id: reportId,

@@ -9,6 +9,7 @@ WORKDIR /app
 COPY package.json bun.lock ./
 
 # Copy all workspace package.json files
+COPY packages/auth/package.json ./packages/auth/
 COPY packages/db/package.json ./packages/db/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/integration-platform/package.json ./packages/integration-platform/
@@ -30,6 +31,7 @@ FROM deps AS builder
 WORKDIR /app
 
 # Copy workspace packages source
+COPY packages/auth ./packages/auth
 COPY packages/db ./packages/db
 COPY packages/utils ./packages/utils
 COPY packages/integration-platform ./packages/integration-platform
@@ -44,6 +46,7 @@ COPY apps/api ./apps/api
 COPY --from=deps /app/node_modules ./node_modules
 
 # Build workspace packages
+RUN cd packages/auth && bun run build && cd ../..
 RUN cd packages/db && bun run build && cd ../..
 RUN cd packages/integration-platform && bun run build && cd ../..
 RUN cd packages/email && bun run build && cd ../..
@@ -77,6 +80,7 @@ COPY --from=builder /app/apps/api/prisma ./prisma
 COPY --from=builder /app/apps/api/package.json ./package.json
 
 # Copy workspace packages that are referenced by node_modules symlinks
+COPY --from=builder /app/packages/auth ./packages/auth
 COPY --from=builder /app/packages/db ./packages/db
 COPY --from=builder /app/packages/utils ./packages/utils
 COPY --from=builder /app/packages/integration-platform ./packages/integration-platform

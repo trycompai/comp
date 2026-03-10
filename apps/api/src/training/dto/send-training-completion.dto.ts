@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class SendTrainingCompletionDto {
   @ApiProperty({
@@ -11,12 +11,13 @@ export class SendTrainingCompletionDto {
   memberId: string;
 
   @ApiProperty({
-    description: 'The organization ID',
+    description: 'Organization ID (deprecated — use auth context)',
     example: 'org_abc123',
+    required: false,
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  organizationId: string;
+  organizationId?: string;
 }
 
 export class SendTrainingCompletionResponseDto {

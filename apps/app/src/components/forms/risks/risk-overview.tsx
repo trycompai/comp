@@ -1,19 +1,27 @@
 'use client';
 
-import { updateRiskAction } from '@/actions/risk/update-risk-action';
 import { updateRiskSchema } from '@/actions/schema';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { StatusIndicator } from '@/components/status-indicator';
-import { Button } from '@comp/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Departments, Member, type Risk, RiskCategory, RiskStatus, type User } from '@db';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useRiskActions } from '@/hooks/use-risks';
+import { Departments, type Member, type Risk, RiskCategory, RiskStatus, type User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-
+import {
+  Button,
+  Grid,
+  HStack,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  Stack,
+} from '@trycompai/design-system';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import type { z } from 'zod';
 
 export function UpdateRiskOverview({
@@ -23,14 +31,11 @@ export function UpdateRiskOverview({
   risk: Risk;
   assignees: (Member & { user: User })[];
 }) {
-  const updateRisk = useAction(updateRiskAction, {
-    onSuccess: () => {
-      toast.success('Risk updated successfully');
-    },
-    onError: () => {
-      toast.error('Failed to update risk');
-    },
-  });
+  const { updateRisk } = useRiskActions();
+  const { mutate: globalMutate } = useSWRConfig();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('risk', 'update');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateRiskSchema>>({
     resolver: zodResolver(updateRiskSchema),
@@ -45,137 +50,117 @@ export function UpdateRiskOverview({
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateRiskSchema>) => {
-    updateRisk.execute({
-      id: data.id,
-      title: data.title,
-      description: data.description,
-      assigneeId: data.assigneeId,
-      category: data.category,
-      department: data.department,
-      status: data.status,
-    });
+  const onSubmit = async (data: z.infer<typeof updateRiskSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await updateRisk(data.id, {
+        title: data.title,
+        description: data.description,
+        assigneeId: data.assigneeId,
+        category: data.category,
+        department: data.department,
+        status: data.status,
+      });
+      toast.success('Risk updated successfully');
+      globalMutate(
+        (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
+        undefined,
+        { revalidate: true },
+      );
+    } catch {
+      toast.error('Failed to update risk');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="assigneeId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{'Assignee'}</FormLabel>
-                <FormControl>
-                  <SelectAssignee
-                    assigneeId={field.value ?? null}
-                    assignees={assignees}
-                    onAssigneeChange={field.onChange}
-                    disabled={updateRisk.status === 'executing'}
-                    withTitle={false}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{'Status'}</FormLabel>
-                <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={'Select a status'}>
-                        {field.value && <StatusIndicator status={field.value as RiskStatus} />}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(RiskStatus).map((status) => (
-                        <SelectItem key={status} value={status}>
-                          <StatusIndicator status={status} />
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{'Category'}</FormLabel>
-                <FormControl>
-                  <Select {...field} value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={'Select a category'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(RiskCategory).map((category) => {
-                        const formattedCategory = category
-                          .toLowerCase()
-                          .split('_')
-                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                          .join(' ');
-                        return (
-                          <SelectItem key={category} value={category}>
-                            {formattedCategory}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="department"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{'Department'}</FormLabel>
-                <FormControl>
-                  <Select {...field} value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={'Select a department'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(Departments).map((department) => {
-                        const formattedDepartment = department.toUpperCase();
+  const formatCategory = (category: string) =>
+    category.toLowerCase().split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-                        return (
-                          <SelectItem key={department} value={department}>
-                            {formattedDepartment}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="mt-4 flex justify-end">
-          <Button type="submit" variant="default" disabled={updateRisk.status === 'executing'}>
-            {updateRisk.status === 'executing' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Save'
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)}>
+      <Stack gap="md">
+        <Grid cols={{ base: '1', md: '2' }} gap="4">
+          <Stack gap="sm">
+            <Label>Assignee</Label>
+            <SelectAssignee
+              assigneeId={form.watch('assigneeId') ?? ''}
+              assignees={assignees}
+              onAssigneeChange={(id) => form.setValue('assigneeId', id, { shouldDirty: true })}
+              disabled={!canUpdate || isSubmitting}
+              withTitle={false}
+            />
+          </Stack>
+
+          <Stack gap="sm">
+            <Label>Status</Label>
+            <Select
+              value={form.watch('status')}
+              onValueChange={(value) => form.setValue('status', value as RiskStatus, { shouldDirty: true })}
+              disabled={!canUpdate}
+            >
+              <SelectTrigger>
+                {form.watch('status') && <StatusIndicator status={form.watch('status') as RiskStatus} />}
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(RiskStatus).map((status) => (
+                  <SelectItem key={status} value={status}>
+                    <StatusIndicator status={status} />
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Stack>
+
+          <Stack gap="sm">
+            <Label>Category</Label>
+            <Select
+              value={form.watch('category')}
+              onValueChange={(value) => form.setValue('category', value as RiskCategory, { shouldDirty: true })}
+              disabled={!canUpdate}
+            >
+              <SelectTrigger>
+                {formatCategory(form.watch('category') || '')}
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(RiskCategory).map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {formatCategory(category)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Stack>
+
+          <Stack gap="sm">
+            <Label>Department</Label>
+            <Select
+              value={form.watch('department')}
+              onValueChange={(value) => form.setValue('department', value as Departments, { shouldDirty: true })}
+              disabled={!canUpdate}
+            >
+              <SelectTrigger>
+                {(form.watch('department') || '').toUpperCase()}
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(Departments).map((department) => (
+                  <SelectItem key={department} value={department}>
+                    {department.toUpperCase()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Stack>
+        </Grid>
+
+        {canUpdate && (
+          <HStack justify="end">
+            <Button type="submit" disabled={!form.formState.isDirty || isSubmitting} loading={isSubmitting}>
+              Save
+            </Button>
+          </HStack>
+        )}
+      </Stack>
+    </form>
   );
 }

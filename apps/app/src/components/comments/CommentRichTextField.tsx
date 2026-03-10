@@ -1,12 +1,12 @@
 'use client';
 
+import '@/styles/editor.css';
 import { createMentionExtension, type MentionUser } from '@comp/ui/editor';
 import { defaultExtensions } from '@comp/ui/editor/extensions';
 import type { JSONContent } from '@tiptap/react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import type { CSSProperties } from 'react';
-import { useCallback, useEffect, useMemo } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 type EditorSizeStyle = CSSProperties & {
   '--editor-min-height': string;
@@ -38,19 +38,24 @@ export function CommentRichTextField({
     [],
   );
 
-  // Search members for mention suggestions - use the members prop directly
+  // Use a ref to always have the latest members available to the extension
+  const membersRef = useRef(members);
+  membersRef.current = members;
+
+  // Search members for mention suggestions
   const searchMembers = useCallback(
     (query: string): MentionUser[] => {
-      if (!members || members.length === 0) return [];
+      const currentMembers = membersRef.current;
+      if (!currentMembers || currentMembers.length === 0) return [];
 
       // Show first 20 members immediately when query is empty
       if (!query || query.trim() === '') {
-        return members.slice(0, 20);
+        return currentMembers.slice(0, 20);
       }
 
       // Filter members based on query
       const lowerQuery = query.toLowerCase();
-      return members
+      return currentMembers
         .filter(
           (member) =>
             member.name?.toLowerCase().includes(lowerQuery) ||
@@ -59,32 +64,24 @@ export function CommentRichTextField({
         )
         .slice(0, 20);
     },
-    [members],
+    [],
   );
 
-  // Debounced version for when user is typing
-  const debouncedSearchMembers = useDebouncedCallback(searchMembers, 250);
-
-  // Create mention extension with member search
+  // Create mention extension once - it reads members via ref so it always has latest data
   const mentionExtension = useMemo(
     () =>
       createMentionExtension({
         suggestion: {
           char: '@',
           items: ({ query }) => {
-            // Use immediate search for empty query, debounced for typed queries
-            if (!query || query.trim() === '') {
-              return searchMembers(query) || [];
-            }
-            return debouncedSearchMembers(query) || [];
+            return searchMembers(query) || [];
           },
           onSelect: () => {
-            // Notify parent that a mention is being selected
             onMentionSelect?.();
           },
         },
       }),
-    [members, searchMembers, debouncedSearchMembers, onMentionSelect],
+    [searchMembers, onMentionSelect],
   );
 
   // Memoize extensions array to prevent recreation
@@ -112,10 +109,7 @@ export function CommentRichTextField({
         },
       },
     },
-    // TipTap only creates the Editor once by default. After a hard refresh, members often
-    // load async via SWR, so we re-create the editor when the members list becomes available.
-    // (This is why "navigate away and back" fixed it before.)
-    [members.length, disabled, placeholder],
+    [disabled, placeholder],
   );
 
   // Sync external value changes to editor
@@ -132,8 +126,8 @@ export function CommentRichTextField({
 
   return (
     <div
-      className="rounded-md bg-background [&_.ProseMirror_p.is-empty::before]:text-muted-foreground/50"
-      style={editorSizeStyles}
+      className="rounded-md bg-background"
+      style={{ ...editorSizeStyles, minHeight: 'var(--editor-min-height)' }}
     >
       <EditorContent editor={editor} />
     </div>
