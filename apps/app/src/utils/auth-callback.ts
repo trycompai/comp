@@ -28,6 +28,8 @@ export const getSafeRedirectPath = (path?: string | null): string | undefined =>
 
 /**
  * Builds the auth callback URL for sign-in flows.
+ * Returns absolute URLs so that OAuth callbacks redirect to the correct app
+ * regardless of which server processes the OAuth flow.
  *
  * Priority:
  * 1. If inviteCode is provided, redirect to /invite/{code}
@@ -40,17 +42,20 @@ export const buildAuthCallbackUrl = (options?: {
 }): string => {
   const { inviteCode, redirectTo } = options ?? {};
 
+  // Determine the base origin for absolute URLs
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+
   // Invite code takes priority
   if (inviteCode) {
-    return `/invite/${inviteCode}`;
+    return `${origin}/invite/${inviteCode}`;
   }
 
   // Use redirectTo if valid
   const safeRedirect = getSafeRedirectPath(redirectTo);
   if (safeRedirect) {
-    return safeRedirect;
+    return `${origin}${safeRedirect}`;
   }
 
   // Default to root
-  return '/';
+  return `${origin}/`;
 };

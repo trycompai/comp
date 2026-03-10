@@ -13,12 +13,14 @@ import { ApiTags, ApiSecurity } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
+import { OrganizationId } from '../../auth/auth-context.decorator';
 import {
   getManifest,
   getAvailableChecks,
   runAllChecks,
 } from '@comp/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
+import { ConnectionService } from '../services/connection.service';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
@@ -40,6 +42,7 @@ export class ChecksController {
     private readonly providerRepository: ProviderRepository,
     private readonly credentialVaultService: CredentialVaultService,
     private readonly checkRunRepository: CheckRunRepository,
+    private readonly connectionService: ConnectionService,
   ) {}
 
   /**
@@ -68,7 +71,11 @@ export class ChecksController {
    */
   @Get('connections/:connectionId')
   @RequirePermission('integration', 'read')
-  async listConnectionChecks(@Param('connectionId') connectionId: string) {
+  async listConnectionChecks(
+    @Param('connectionId') connectionId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
@@ -106,7 +113,9 @@ export class ChecksController {
   async runConnectionChecks(
     @Param('connectionId') connectionId: string,
     @Body() body: RunChecksDto,
+    @OrganizationId() organizationId: string,
   ) {
+    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
@@ -306,7 +315,8 @@ export class ChecksController {
   async runSingleCheck(
     @Param('connectionId') connectionId: string,
     @Param('checkId') checkId: string,
+    @OrganizationId() organizationId: string,
   ) {
-    return this.runConnectionChecks(connectionId, { checkId });
+    return this.runConnectionChecks(connectionId, { checkId }, organizationId);
   }
 }
