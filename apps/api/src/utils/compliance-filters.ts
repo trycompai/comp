@@ -26,10 +26,13 @@ function hasComplianceObligation(
 
 interface MemberWithRole {
   role: string;
+  user?: { isPlatformAdmin?: boolean } | null;
 }
 
 /**
  * Filter members to only those with the compliance obligation.
+ * Excludes platform admins — they join customer orgs to debug,
+ * not to be counted toward compliance progress.
  * Resolves built-in role obligations in-memory and fetches custom role
  * obligations with a single DB query.
  */
@@ -67,6 +70,10 @@ export async function filterComplianceMembers<T extends MemberWithRole>(
   }
 
   return memberRoles
-    .filter(({ roleNames }) => hasComplianceObligation(roleNames, customObligationMap))
+    .filter(({ member, roleNames }) => {
+      // Platform admins are excluded — they join customer orgs to debug
+      if (member.user?.isPlatformAdmin) return false;
+      return hasComplianceObligation(roleNames, customObligationMap);
+    })
     .map(({ member }) => member);
 }

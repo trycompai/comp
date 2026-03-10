@@ -172,11 +172,6 @@ export function canAccessApp(permissions: UserPermissions): boolean {
   return false;
 }
 
-/** @deprecated Use requiresComplianceObligation with obligations instead */
-export function requiresCompliance(_permissions: UserPermissions): boolean {
-  return false;
-}
-
 /**
  * Check if any of the user's roles have the compliance obligation.
  */
