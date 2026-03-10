@@ -1,3 +1,430 @@
+# [2.0.0](https://github.com/trycompai/comp/compare/v1.88.1...v2.0.0) (2026-03-10)
+
+
+* [comp] Production Deploy ([#2269](https://github.com/trycompai/comp/issues/2269)) ([0fcaaf9](https://github.com/trycompai/comp/commit/0fcaaf9d98f72c868f1d4e3d009b54d3dedc9aee)), closes [#2092](https://github.com/trycompai/comp/issues/2092)
+
+
+### BREAKING CHANGES
+
+* Employee and contractor roles in portal now have
+restricted permissions matching the app. Previously they had member
+management and organization update permissions.
+
+Part of ENG-138: Complete Permission System
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* test(rbac): add PermissionGuard unit tests
+
+Add comprehensive tests for PermissionGuard covering:
+- Permission bypass when no permissions required
+- API key bypass behavior
+- Role-based access for privileged vs restricted roles
+- Fallback behavior when better-auth API unavailable
+- isRestrictedRole static method for all role types
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): migrate controllers from RequireRoles to RequirePermission
+
+Migrate all API controllers to use the new better-auth permission system:
+- findings.controller.ts: finding create/update/delete permissions
+- task-management.controller.ts: task CRUD + assign permissions
+- people.controller.ts: member delete permission for removeHost
+- evidence-export.controller.ts: evidence export permission
+
+Also fix TypeScript errors in permission.guard.spec.ts for fetch mocking.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): add assignment-based filtering for employee/contractor roles
+
+Implement assignment filtering to restrict employees/contractors to only
+see resources they are assigned to:
+
+- Add memberId to AuthContext for assignment checking
+- Create assignment-filter utility with filter builders and access checkers
+- Update tasks controller/service with assignment filtering on GET endpoints
+- Update risks controller/service with assignment filtering on GET endpoints
+- Add PermissionGuard and @RequirePermission to tasks and risks endpoints
+
+Employees/contractors now only see:
+- Tasks where they are the assignee
+- Risks where they are the assignee
+
+Privileged roles (owner, admin, program_manager, auditor) see all resources.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): add department-based policy visibility
+
+Allow admins to control which departments can see specific policies:
+
+Schema changes:
+- Add PolicyVisibility enum (ALL, DEPARTMENT)
+- Add visibility and visibleToDepartments fields to Policy model
+
+API changes:
+- Add memberDepartment to AuthContext for visibility filtering
+- Create department-visibility utility with filter builders
+- Update policies controller to filter by visibility for restricted roles
+- Update policies service to accept visibility filter
+
+Policies can now be:
+- Visible to ALL (default) - everyone in the organization sees them
+- Visible to specific DEPARTMENTS only - only members in those departments see them
+
+Privileged roles (owner, admin, program_manager, auditor) see all policies
+regardless of visibility settings.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(auth): centralize auth on API with security hardening
+
+- Move auth server to API, app now uses proxy to forward auth requests
+- Remove localStorage token storage (XSS prevention)
+- Add rate limiting to auth proxy (60/min general, 10/min sensitive)
+- Add redirect URL validation to prevent open redirects
+- Add AUTH_SECRET validation at startup
+- Make all debug logging conditional on NODE_ENV
+- Simplify root page routing (no activeOrganizationId dependency)
+- Use URL-based RBAC with direct DB member lookup
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): add shared auth package and API integration
+
+- Add @comp/auth package with centralized permissions and role definitions
+- Update API auth module to integrate with better-auth server
+- Add 403 responses to policy and risk endpoints for Swagger
+- Add assignment filter and department visibility utilities with tests
+- Sync permissions across app and portal
+- Update tsconfig and nest-cli for proper module resolution
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): enable dynamic access control for custom roles
+
+- Add dynamicAccessControl config to organization plugin
+- Add OrganizationRole table for storing custom roles
+- Configure maximum 20 roles per organization
+- Add schema mapping for better-auth role table
+
+Resolves: ENG-145
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): add Custom Roles API for dynamic role management
+
+- Add roles module with CRUD endpoints for custom roles
+- Implement privilege escalation prevention
+- Add permission validation against valid resources/actions
+- Protect built-in roles (owner, admin, auditor, employee, contractor)
+- Add OrganizationRole table migration
+- Limit to 20 custom roles per organization
+- Require ac:create/read/update/delete permissions for role management
+
+Implements: ENG-146
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): support multiple roles for privilege escalation checks
+
+- Update roles service to accept array of roles instead of single role
+- Add getCombinedPermissions to merge permissions from all user roles
+- Update controller to pass full userRoles array
+- Users with multiple roles now get combined permissions for validation
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* fix(auth): prevent JWKS key regeneration causing session loss
+
+Add explicit jwks configuration with rotationInterval to prevent
+better-auth from creating new JWKS keys on each request. Without this,
+all existing JWTs become invalid when the API restarts because new
+signing keys are generated.
+
+- Set rotationInterval to 30 days for monthly key rotation
+- Set gracePeriod to 7 days so old keys remain valid after rotation
+
+Fixes: Session persistence across API restarts
+
+References:
+- https://github.com/better-auth/better-auth/issues/6215
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* test(rbac): add unit tests for Custom Roles API
+
+- Add 18 tests for RolesService covering CRUD operations
+- Add 9 tests for RolesController
+- Test permission validation and privilege escalation prevention
+- Test multiple roles support for privilege checking
+- Test edge cases (duplicate names, max roles limit, reserved names)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* docs: add testing guidelines for API development
+
+- Update .cursorrules with testing requirements and conventions
+- Add apps/api/CLAUDE.md with API-specific development guidelines
+- Document when to write tests, how to run them, and test patterns
+- Include RBAC system documentation
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* refactor(docs): move API testing rules to apps/api
+
+- Remove API-specific testing rules from root .cursorrules
+- Create apps/api/.cursorrules with API testing requirements
+- Keep root .cursorrules focused on commit message conventions
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* test(rbac): add privilege escalation test for role updates
+
+Ensures that users cannot escalate privileges when updating
+role permissions, not just when creating roles.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): implement Custom Roles UI (ENG-148)
+
+- Add roles settings pages (list, create, edit) with permission matrix
+- Add "Select all" feature to quickly set all permissions
+- Integrate custom roles into member management UI:
+  - Role filter dropdown shows all roles dynamically
+  - Invite modal supports custom role selection
+  - Edit member role supports custom roles
+- Allow normal spelling for role names (spaces, capitalization)
+- Add loading skeletons with proper PageLayout wrappers
+- Add comprehensive tests for RolesTable, RoleForm, PermissionMatrix
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* chore(docs): add API endpoints for managing custom roles
+
+* chore(auth): implement cleanup of stale JWKS records on secret change
+
+* chore(permissions): implement user permissions resolution and route protection
+
+- Add functions to resolve user permissions based on roles and organization
+- Implement route permission checks to guard access to various app sections
+- Introduce new layout components for route protection across multiple pages
+- Update existing components to utilize the new permissions system for access control
+
+* chore(api): migrate to session-based authentication and add controls management
+
+* refactor(auth): update permission checks to include cookie header
+
+* refactor(api): update permission guard logging to include request details
+
+* refactor(api): remove unnecessary logging from getPolicy function
+
+* chore(api): handle optional chaining for user ID in various actions
+
+* refactor(app): update policy editor to check version read-only state
+
+* refactor(api): enhance version content handling and validation in policies
+
+* refactor(app): update PolicyArchiveSheet to use new design system components
+
+* feat(audit): implement audit logging interceptor and related functionality
+
+* refactor(audit): add audit log constants, resolvers, and utilities
+
+* refactor(auth): add isPlatformAdmin support in authentication and guards
+
+* chore(api): add unit tests for PeopleController and PeopleService
+
+* chore(tests): add unit tests for layout and questionnaire data queries
+
+* chore(api): implement pagination and filtering for risks retrieval
+
+* chore(api): add onboarding endpoint to retrieve organization onboarding data
+
+* refactor(vendors): migrate vendor data fetching to server API and remove obsolete queries
+
+* refactor(api): update controllers and services to use new API structure and enhance data fetching
+
+* refactor(soa): remove console logs for component initialization and debugging
+
+* refactor(auth): implement service token authentication and update guards
+
+* refactor(trust): replace server action with API call for brand settings
+
+* chore(openapi): add new endpoints for trust portal settings management
+
+* chore(trust): add endpoints for managing trust portal settings and favicon
+
+* feat(auth): add API key validation with scopes and new auth controller
+
+* refactor(auth): update resource mapping from "portal" to "trust" in permissions
+
+* feat(tasks): add bulk submit for review functionality and task approval methods
+
+* feat(audit): add comprehensive audit commands for design system, hooks, RBAC, unit tests, and production readiness
+
+* feat(auth): add apiKey resource and permissions to roles and decorators
+
+* refactor: standardize roles in packages/auth package
+
+* refactor(auth): add createdAt field to user response and update environment variables
+
+* refactor(env): add internal API token to environment configuration
+
+* fix(CompanyFormPageClient): remove orgId parameter from API call
+
+* refactor: add AWS credentials validation and integration test actions
+
+* refactor(cloud-tests): update authentication method to use session cookie
+
+* chore: add unit tests
+
+* chore(trust): enhance permission gating tests and mock localStorage
+
+* chore(db): add multiple migrations for policy visibility and role management
+
+* chore: fix stuff
+
+* feat: add audit log controller and integrate with existing modules
+
+* feat: add audit log controller and integrate with existing modules
+
+* chore: remove CODE_OF_CONDUCT and commitlint configuration files
+
+* feat(api): implement pentest billing module with Stripe integration
+
+- Add PentestBillingController and PentestBillingService for managing subscriptions and billing.
+- Implement endpoints for subscription status, creating checkout sessions, handling success callbacks, and managing billing portals.
+- Integrate role-based access control for billing actions using @RequirePermission.
+- Introduce tools for AI chat to fetch organization and policy data based on user permissions.
+- Update app.module.ts to include StripeModule and RolesModule for billing functionalities.
+- Ensure all new features are covered by tests and adhere to project guidelines.
+
+* feat(api): implement triggerEmail function for email notifications
+
+- Introduce triggerEmail function to replace sendEmail for sending email notifications.
+- Update various notifier services to utilize triggerEmail for sending emails.
+- Add new send-email task to handle email sending via the trigger.dev SDK.
+- Update package.json and bun.lock to include @react-email/render dependency.
+- Ensure all changes are covered by tests and adhere to project guidelines.
+
+* feat(db): add migrations for policy visibility, organization roles, role notifications, JWKS expiration, and API key scopes
+
+- Create new enum type "PolicyVisibility" and update "Policy" table to include visibility and visibleToDepartments fields.
+- Introduce "organization_role" table for dynamic roles with associated permissions and foreign key constraints.
+- Add "role_notification_setting" table to manage notification settings per role within organizations.
+- Extend "jwks" table to include "expiresAt" timestamp for better key management.
+- Change "permissions" column in "organization_role" from jsonb to text for compatibility with better-auth.
+
+* chore: update .gitignore and remove outdated audit findings document
+
+- Update .gitignore to reflect the new path for audit findings.
+- Remove the outdated audit findings document from the repository.
+
+* chore(deps): update ai-sdk packages and remove unused DraggableCards component
+
+- Upgrade @ai-sdk dependencies to version 3.0.0 for @ai-sdk/anthropic, @ai-sdk/groq, @ai-sdk/openai, @ai-sdk/provider, and @ai-sdk/react.
+- Update @ai-sdk/rsc to version 2.0.0 and @ai-sdk/provider-utils to version 4.0.19.
+- Remove the unused DraggableCards component from the project.
+- Adjust types in InviteMembersModal and other components for better type safety.
+
+* fix(api): add error handling to streaming pump in assistant chat controller
+
+Wrap the ReadableStream pump loop in try/catch/finally to handle stream
+read errors gracefully (e.g., client disconnects) and ensure res.end()
+is always called.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): validate organization exists in service token auth
+
+Service token auth now verifies the x-organization-id header references
+a real organization in the database, preventing operations against
+non-existent or arbitrary organization IDs.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): audit preflight failure no longer blocks requests + filter expired API keys
+
+1. Wrap audit preflight in .catch() so a failure in pre-flight data
+   collection (e.g., bad controlIds) never blocks the actual API request.
+   The request proceeds with empty audit context instead.
+
+2. Filter expired API keys at the DB level to reduce payload size
+   during validation. The full-table scan design (per-key salts) is a
+   known limitation that requires a schema migration to fully resolve.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): add keyPrefix for indexed API key lookup
+
+Store first 8 chars of the plaintext key as `keyPrefix` for O(1) indexed
+lookup instead of loading all active keys into memory.
+
+Backwards compatible: legacy keys without a prefix fall back to scanning
+only keys where keyPrefix IS NULL, and the prefix is backfilled on first
+successful validation so future lookups are fast.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): handle errors in @Res() streaming endpoint + set isServiceToken explicitly
+
+1. Wrap completions endpoint in try/catch since @Res() bypasses NestJS
+   exception filters. Errors now return proper JSON responses instead
+   of hanging.
+
+2. Explicitly set isServiceToken=false in API key and session auth
+   handlers to prevent accidental fallthrough in PermissionGuard.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): validate domain format in trust portal to prevent path injection
+
+Add domain format validation in addCustomDomain and checkDnsRecords to
+ensure user-provided domain values can't inject path segments into
+Vercel API or DNS lookup URLs.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): merge duplicate permissions, skip chat audit, add maxSteps, fix control mapping descriptions
+
+1. PermissionGuard: merge actions for duplicate resources instead of
+   overwriting, preventing silently dropped permission checks.
+
+2. Assistant chat completions: add @SkipAuditLog() to prevent noisy
+   "Created app" audit entries on every chat message.
+
+3. Assistant chat: add maxSteps=5 to streamText so the model can
+   synthesize tool results into natural language responses.
+
+4. Audit log resolvers: extract resource name from URL path instead
+   of hardcoding "policy". fetchControlIds now dynamically resolves
+   the correct Prisma model.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* feat: rBAC support and major security improvements
+
+Role-Based Access Control (RBAC) system with custom roles,
+permission guards, and audit logging across the platform.
+
+Key changes:
+- Hybrid auth guard for session, API key, service token
+- Permission guard with better-auth and custom roles
+- Granular resource:action permissions
+- Audit log interceptor with mutation tracking
+- API key prefix indexing for O(1) lookups
+- Service token org existence validation
+- Domain validation to prevent SSRF
+- Streaming endpoint error handling
+- AI assistant chat with permission-gated tools
+* all API endpoints now require RBAC
+permissions via @RequirePermission decorators.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
 ## [1.88.1](https://github.com/trycompai/comp/compare/v1.88.0...v1.88.1) (2026-03-05)
 
 
