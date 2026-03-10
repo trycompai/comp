@@ -136,10 +136,10 @@ export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),
-  // BASE_URL must contain the production domain (e.g., api.trycomp.ai)
-  // so getCookieDomain() can derive the cross-subdomain cookie domain.
+  // BETTER_AUTH_URL should point to the app (e.g., https://app.trycomp.ai)
+  // so OAuth callbacks redirect to the app's auth proxy, not the API directly.
+  // BASE_URL points to the API and must NOT be used here.
   baseURL:
-    process.env.BASE_URL ||
     process.env.AUTH_BASE_URL ||
     process.env.BETTER_AUTH_URL ||
     'http://localhost:3000',

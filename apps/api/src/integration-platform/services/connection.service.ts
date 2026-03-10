@@ -35,6 +35,17 @@ export class ConnectionService {
     return connection;
   }
 
+  async getConnectionForOrg(
+    connectionId: string,
+    organizationId: string,
+  ): Promise<IntegrationConnection> {
+    const connection = await this.connectionRepository.findById(connectionId);
+    if (!connection || connection.organizationId !== organizationId) {
+      throw new NotFoundException(`Connection ${connectionId} not found`);
+    }
+    return connection;
+  }
+
   async getConnectionByProviderSlug(
     providerSlug: string,
     organizationId: string,
