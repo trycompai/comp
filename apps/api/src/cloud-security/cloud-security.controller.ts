@@ -2,8 +2,10 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Param,
   Query,
+  Body,
   Logger,
   HttpException,
   HttpStatus,
@@ -18,6 +20,7 @@ import {
   ConnectionNotFoundError,
 } from './cloud-security.service';
 import { CloudSecurityQueryService } from './cloud-security-query.service';
+import { CloudSecurityLegacyService } from './cloud-security-legacy.service';
 
 @Controller({ path: 'cloud-security', version: '1' })
 export class CloudSecurityController {
@@ -26,6 +29,7 @@ export class CloudSecurityController {
   constructor(
     private readonly cloudSecurityService: CloudSecurityService,
     private readonly queryService: CloudSecurityQueryService,
+    private readonly legacyService: CloudSecurityLegacyService,
   ) {}
 
   @Get('providers')
@@ -132,5 +136,44 @@ export class CloudSecurityController {
         error instanceof Error ? error.message : 'Failed to get run status';
       throw new HttpException(message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @Post('legacy/connect')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'create')
+  async connectLegacy(
+    @OrganizationId() organizationId: string,
+    @Body() body: { provider: 'aws' | 'gcp' | 'azure'; credentials: Record<string, string | string[]> },
+  ) {
+    const result = await this.legacyService.connectLegacy(
+      organizationId,
+      body.provider,
+      body.credentials,
+    );
+    return { success: true, integrationId: result.integrationId };
+  }
+
+  @Post('legacy/validate-aws')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'read')
+  async validateAwsCredentials(
+    @Body() body: { accessKeyId: string; secretAccessKey: string },
+  ) {
+    const result = await this.legacyService.validateAwsAccessKeys(
+      body.accessKeyId,
+      body.secretAccessKey,
+    );
+    return { success: true, accountId: result.accountId, regions: result.regions };
+  }
+
+  @Delete('legacy/:integrationId')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'delete')
+  async disconnectLegacy(
+    @Param('integrationId') integrationId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    await this.legacyService.disconnectLegacy(integrationId, organizationId);
+    return { success: true };
   }
 }

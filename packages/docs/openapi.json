@@ -15584,6 +15584,57 @@
         ]
       }
     },
+    "/v1/cloud-security/legacy/connect": {
+      "post": {
+        "operationId": "CloudSecurityController_connectLegacy_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/legacy/validate-aws": {
+      "post": {
+        "operationId": "CloudSecurityController_validateAwsCredentials_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/legacy/{integrationId}": {
+      "delete": {
+        "operationId": "CloudSecurityController_disconnectLegacy_v1",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
     "/v1/browserbase/org-context": {
       "post": {
         "description": "Gets the existing browser context for the org or creates a new one",
