@@ -80,11 +80,44 @@ Variables are referenced in check definitions as `{{variables.project_id}}`.
 **Common variables by service type:**
 - **Google/Firebase/GCP**: `project_id` (required)
 - **Azure DevOps**: `organization` (required)
-- **Microsoft 365**: Usually none (tenant determined from OAuth)
+- **Microsoft 365/Intune**: Usually none (tenant determined from OAuth)
 - **Slack/GitHub**: Usually none (determined from OAuth token)
 - **Multi-tenant services**: `tenant_id` or `domain`
 
-### Step 4: Deploy via API
+### Step 4: Pre-Deployment Validation (MANDATORY)
+Before deploying, verify EVERY item in this checklist. These are real bugs we hit in production:
+
+**JSON structure:**
+- [ ] `capabilities` is `["checks"]` NOT `{"checks"}` — must be a JSON array, not an object
+- [ ] `defaultHeaders` is `{}` not empty — must be valid JSON object
+
+**Base URL:**
+- [ ] If URL has a path component (e.g., `/v1.0`), add trailing slash: `https://api.example.com/v1.0/`
+- [ ] Test mentally: `new URL('endpoint', baseUrl)` — does it resolve correctly?
+
+**API paths in check definitions:**
+- [ ] **ALWAYS use full URLs** in fetch/fetchPages paths (e.g., `https://graph.microsoft.com/v1.0/deviceManagement/...`)
+- [ ] NEVER start paths with `/` — it skips the base URL path component
+- [ ] If using `$select` or other OData params, put them directly in the path URL, NOT in `params`
+
+**OAuth config:**
+- [ ] Google: includes `"authorizationParams": {"access_type": "offline", "prompt": "consent"}`
+- [ ] Microsoft: use EXPLICIT scopes, NOT `.default` — `.default` doesn't always work (especially for Intune)
+- [ ] Microsoft: scopes must be added as **Delegated** permissions (not Application) in Azure app
+- [ ] `supportsRefreshToken` is `true`
+- [ ] `clientAuthMethod` is set correctly (`"body"` for most, `"header"` for some like Rippling)
+
+**Check definitions:**
+- [ ] Every check has `variables` array with required user inputs (project IDs, org names, etc.)
+- [ ] `forEach` handles empty collections gracefully (use `branch` to check length first if needed)
+- [ ] `onFail` includes real remediation with actual UI navigation paths
+- [ ] Check names match evidence task names exactly
+
+**Provider setup:**
+- [ ] Redirect URI `{BASE_URL}/v1/integrations/oauth/callback` must be registered with the OAuth provider
+- [ ] Production redirect: `https://api.trycomp.ai/v1/integrations/oauth/callback`
+
+### Step 5: Deploy via API
 Use the **PUT upsert endpoint** to create or update the integration. This is idempotent — safe to run multiple times.
 
 **Endpoint:** `PUT /v1/internal/dynamic-integrations`
@@ -101,7 +134,7 @@ curl -X PUT http://localhost:3333/v1/internal/dynamic-integrations \
     "description": "...",
     "category": "Cloud",
     "logoUrl": "https://img.logo.dev/domain.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ",
-    "baseUrl": "https://api.example.com/",
+    "baseUrl": "https://api.example.com/v1/",
     "authConfig": { ... },
     "capabilities": ["checks"],
     "checks": [ ... ]
@@ -123,70 +156,70 @@ POST   /v1/internal/dynamic-integrations/:id/activate   — Activate + create pr
 POST   /v1/internal/dynamic-integrations/:id/deactivate — Deactivate
 ```
 
-### Step 5: Verify
+### Step 6: Verify Deployment
 1. Confirm the API returns `{ success: true, id: "...", slug: "...", checksCount: N }`
-2. Tell the user to restart the API server (or wait 60 seconds for auto-refresh)
+2. Call `GET /v1/internal/dynamic-integrations` and verify the integration appears with correct data
+3. Check that all check definitions have correct paths, scopes, and variables
 
-### Step 6: Post-Integration Report
+### Step 7: Post-Integration Report
 After completing, report to the user:
 
 **What was done:**
 - Integration name, slug, number of checks
 - Which evidence tasks each check maps to
+- Full list of API endpoints used with confidence levels
 
-**What the user needs to do:**
-- Configure OAuth credentials in admin panel (if OAuth integration)
-- Register OAuth app with the provider (provide the exact URL)
-- Add required scopes (list them)
-- Set redirect URI to: `{BASE_URL}/v1/integrations/oauth/callback`
-- Any provider-specific setup (e.g., enable Identity Platform for Firebase)
+**What the user needs to do (step by step):**
+1. **OAuth app setup** (if needed):
+   - Where to register: provide exact URL
+   - Which scopes to add as **Delegated** permissions (list each one)
+   - Grant admin consent
+   - Add redirect URI: `https://api.trycomp.ai/v1/integrations/oauth/callback`
+2. **Admin panel setup:**
+   - Go to `/admin/integrations`
+   - Find the integration
+   - Enter client ID + client secret from the OAuth app
+3. **Provider-specific setup** (if any):
+   - e.g., "Enable Identity Platform in Firebase Console"
+   - e.g., "Assign Intune license to the user account"
+4. **Test:**
+   - Connect the integration
+   - Enter any required variables (list them with example values)
+   - Run each check and verify results
 
 **Complexity assessment:**
 - 🟢 Simple: API key auth, no approval needed (e.g., SendGrid, Datadog)
 - 🟡 Medium: OAuth with existing provider (e.g., Google services — reuse existing Google OAuth app)
 - 🔴 Complex: OAuth requiring new app registration + provider approval process (e.g., Rippling, Salesforce)
 
-## Important Lessons (from production experience)
+## Provider-Specific Rules (from production experience)
 
-### Base URL trailing slash
-If the base URL has a path component (e.g., `https://graph.microsoft.com/v1.0`), add a trailing slash: `https://graph.microsoft.com/v1.0/`. Otherwise `new URL('users', base)` resolves incorrectly.
-
-### Full URL in fetch paths
-When a check needs to call a DIFFERENT API domain than the base URL, use the full URL in the path:
-```json
-{ "type": "fetch", "path": "https://other-api.com/v1/endpoint", "as": "data" }
-```
-
-### Google OAuth — ALWAYS include offline access
-For ANY Google/Firebase integration, add `authorizationParams`:
-```json
-"authorizationParams": { "access_type": "offline", "prompt": "consent" }
-```
-Without this, Google won't issue a refresh token and the integration breaks after 1 hour.
-
-### Google OAuth endpoints
+### Google / Firebase / GCP
 - Authorize: `https://accounts.google.com/o/oauth2/v2/auth`
 - Token: `https://oauth2.googleapis.com/token`
-- Supports PKCE and refresh tokens
-- Scopes are full URLs like `https://www.googleapis.com/auth/firebase.readonly`
+- **ALWAYS** add `"authorizationParams": {"access_type": "offline", "prompt": "consent"}`
+- Scopes are full URLs: `https://www.googleapis.com/auth/firebase.readonly`
+- Supports PKCE
+- Google app needs verification for external users (or add test users manually)
+- Firebase needs Identity Platform upgrade for admin APIs
 
-### Microsoft Graph scopes
-Use `https://graph.microsoft.com/.default` instead of individual scopes. The `.default` scope requests all permissions already granted to the app.
+### Microsoft Graph (Office 365, Intune, Azure AD)
+- Authorize: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize`
+- Token: `https://login.microsoftonline.com/common/oauth2/v2.0/token`
+- **Use EXPLICIT scopes** — do NOT use `.default` (it fails for Intune)
+- Scopes must be added as **Delegated** (not Application) in Azure app
+- Grant admin consent after adding permissions
+- Pagination: `@odata.nextLink` returns full URL — our cursor handler follows it automatically
+- Always use full URLs in paths: `https://graph.microsoft.com/v1.0/endpoint`
+- Intune APIs need an Intune license on the connecting account
+- Personal Microsoft accounts (MSA) don't support admin APIs — need work/school accounts
 
-### Microsoft Graph pagination
-Uses `@odata.nextLink` which returns a full URL. Our `fetchWithCursor` handles this — set `cursorPath` to `@odata.nextLink` and it follows the full URL automatically.
-
-### Variables are dynamic
-Any variable in a check's `variables` array automatically shows as a form field in the UI. No frontend changes needed.
-
-### Check names match evidence task names
-If the evidence task is "2FA", name the check "2FA". This is what the customer sees.
-
-### Don't use `$` in query params via the `params` field
-URL `$` characters get encoded to `%24`. Put OData-style params directly in the path: `users?$select=id,name`.
-
-### Handle empty API responses
-When using `branch` to check collection existence before `forEach`, use the raw response variable (e.g., `releasesResponse.releases.length`).
+### Azure DevOps
+- Authorize: `https://app.vssps.visualstudio.com/oauth2/authorize`
+- Token: `https://app.vssps.visualstudio.com/oauth2/token`
+- Base URL: `https://dev.azure.com`
+- Requires `organization` variable (user provides their org name)
+- Scopes: `vso.code`, `vso.build`, `vso.project`
 
 ## DSL Reference
 
@@ -194,13 +227,13 @@ When using `branch` to check collection existence before `forEach`, use the raw 
 
 **fetch** — Single API call:
 ```json
-{ "type": "fetch", "path": "endpoint", "as": "varName", "dataPath": "response.data", "params": {}, "onError": "fail|skip|empty" }
+{ "type": "fetch", "path": "https://api.example.com/v1/endpoint", "as": "varName", "dataPath": "response.data", "onError": "fail|skip|empty" }
 ```
 
 **fetchPages** — Paginated API call:
 ```json
 {
-  "type": "fetchPages", "path": "endpoint", "as": "varName",
+  "type": "fetchPages", "path": "https://api.example.com/v1/endpoint", "as": "varName",
   "pagination": {
     "strategy": "cursor",
     "cursorParam": "pageToken",
@@ -218,7 +251,7 @@ Strategies: `cursor` (token-based or full-URL), `page` (page-number), `link` (Li
   "resourceType": "user", "resourceIdPath": "item.email",
   "filter": { "field": "item.active", "operator": "eq", "value": true },
   "conditions": [{ "field": "item.mfa_enabled", "operator": "eq", "value": true }],
-  "steps": [{ "type": "fetch", "path": "details/{{item.id}}", "as": "detail" }],
+  "steps": [{ "type": "fetch", "path": "https://api.example.com/v1/details/{{item.id}}", "as": "detail" }],
   "onPass": { "title": "...", "resourceType": "...", "resourceId": "..." },
   "onFail": { "title": "...", "severity": "high", "remediation": "..." }
 }
@@ -267,19 +300,22 @@ For EACH endpoint and field you use, state your confidence:
 **DO NOT:**
 - Guess API endpoints or field names
 - Use placeholder URLs
-- Skip pagination handling
-- Write vague remediation ("fix the issue")
-- Forget to define variables for user-provided config
+- Use relative paths — always use full URLs in check definitions
+- Use `.default` scope for Microsoft — use explicit scopes
+- Use `params` field for `$`-prefixed query params
+- Skip the pre-deployment validation checklist
 - Create JSON files in the codebase
 - Seed directly to DB — always use the API
 
 **DO:**
 - Use the PUT upsert endpoint for all integration creation/updates
-- Use correct OAuth2 scopes (least privilege)
+- Use full URLs in all fetch/fetchPages paths
+- Use correct OAuth2 scopes (least privilege, explicit, Delegated)
 - Handle pagination correctly for each API's specific strategy
 - Write remediation that references actual UI navigation paths
 - Always define variables when checks need user config
 - Name checks to match the evidence task name
 - Add trailing slash to base URLs with path components
 - Include `access_type: offline` for all Google OAuth integrations
-- Report what the user needs to do manually after integration is created
+- Run the pre-deployment validation checklist before every deploy
+- Report step-by-step what the user needs to do manually
