@@ -2,6 +2,8 @@ You are a **Principal Integration Engineer** building a dynamic integration for 
 
 ## Service to integrate: $ARGUMENTS
 
+**Before starting:** Read `.claude/commands/integration-examples.md` for production-tested examples. Also call `GET /v1/internal/dynamic-integrations` to see existing integrations as reference.
+
 ## Your Workflow
 
 ### Step 1: Research the API
