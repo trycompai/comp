@@ -194,18 +194,25 @@ jobs:
           ESIGNER_CREDENTIAL_ID: ${{ secrets.ESIGNER_CREDENTIAL_ID }}
           ESIGNER_TOTP_SECRET: ${{ secrets.ESIGNER_TOTP_SECRET }}
         run: |
-          # Download and extract CodeSignTool
+          if (-not $env:ESIGNER_USERNAME -or -not $env:ESIGNER_PASSWORD -or -not $env:ESIGNER_CREDENTIAL_ID -or -not $env:ESIGNER_TOTP_SECRET) {
+            throw "One or more ESIGNER secrets are not configured. Cannot sign."
+          }
+
           Invoke-WebRequest -Uri "https://github.com/SSLcom/CodeSignTool/releases/download/v1.3.0/CodeSignTool-v1.3.0-windows.zip" -OutFile "codesigntool.zip"
           Expand-Archive -Path "codesigntool.zip" -DestinationPath "codesigntool"
 
-          # Find the jar file
-          $jar = Get-ChildItem -Path "codesigntool" -Recurse -Filter "code_sign_tool-*.jar" | Select-Object -First 1
+          $cstDir = Get-ChildItem -Path "codesigntool" -Directory | Select-Object -First 1
+          if (-not $cstDir) { throw "CodeSignTool directory not found after extraction" }
+          Write-Host "CodeSignTool directory: $($cstDir.FullName)"
+
+          $jar = Get-ChildItem -Path $cstDir.FullName -Recurse -Filter "code_sign_tool-*.jar" | Select-Object -First 1
           if (-not $jar) { throw "CodeSignTool jar not found" }
           Write-Host "Found CodeSignTool jar at: $($jar.FullName)"
 
-          # Sign each .exe file using Java directly (skips .bat which needs bundled JDK)
-          Get-ChildItem -Filter "*.exe" | ForEach-Object {
+          $releaseDir = Get-Location
+          Get-ChildItem -Path $releaseDir -Filter "*.exe" | ForEach-Object {
             Write-Host "Signing $($_.Name)..."
+            Push-Location $cstDir.FullName
             & java -Xmx1024M -jar "$($jar.FullName)" sign `
               -username="$env:ESIGNER_USERNAME" `
               -password="$env:ESIGNER_PASSWORD" `
@@ -213,9 +220,30 @@ jobs:
               -totp_secret="$env:ESIGNER_TOTP_SECRET" `
               -input_file_path="$($_.FullName)" `
               -override="true"
-            if ($LASTEXITCODE -ne 0) { throw "Code signing failed for $($_.Name)" }
-            Write-Host "Signed $($_.Name) successfully"
+            $signExitCode = $LASTEXITCODE
+            Pop-Location
+            if ($signExitCode -ne 0) { throw "Code signing failed for $($_.Name) (exit code: $signExitCode)" }
+            Write-Host "CodeSignTool completed for $($_.Name)"
           }
+
+      - name: Verify Windows code signature
+        shell: powershell
+        working-directory: packages/device-agent/release
+        run: |
+          $allSigned = $true
+          Get-ChildItem -Filter "*.exe" | ForEach-Object {
+            $sig = Get-AuthenticodeSignature -FilePath $_.FullName
+            Write-Host "File: $($_.Name)"
+            Write-Host "  Status: $($sig.Status)"
+            Write-Host "  Signer: $($sig.SignerCertificate.Subject)"
+            Write-Host "  Issuer: $($sig.SignerCertificate.Issuer)"
+            Write-Host "  Valid from: $($sig.SignerCertificate.NotBefore) to $($sig.SignerCertificate.NotAfter)"
+            if ($sig.Status -ne 'Valid') {
+              Write-Host "::error::Signature verification FAILED for $($_.Name) — Status: $($sig.Status)"
+              $allSigned = $false
+            }
+          }
+          if (-not $allSigned) { throw "One or more .exe files are NOT properly signed. Failing build." }
 
       - name: Recalculate latest.yml hash after signing
         shell: bash
