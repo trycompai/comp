@@ -6,10 +6,11 @@ import { PermissionMatrix } from '../../components/PermissionMatrix';
 
 interface SystemRoleDetailProps {
   permissions: Record<string, string[]>;
+  obligations: Record<string, boolean>;
   description: string;
 }
 
-export function SystemRoleDetail({ permissions, description }: SystemRoleDetailProps) {
+export function SystemRoleDetail({ permissions, obligations, description }: SystemRoleDetailProps) {
   return (
     <Card>
       <CardContent className="pt-6">
@@ -20,6 +21,8 @@ export function SystemRoleDetail({ permissions, description }: SystemRoleDetailP
           <PermissionMatrix
             value={permissions}
             onChange={() => {}}
+            obligations={obligations}
+            onObligationsChange={() => {}}
             disabled
           />
         </Stack>

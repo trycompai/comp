@@ -38,6 +38,7 @@ export interface CustomRole {
   id: string;
   name: string;
   permissions: Record<string, string[]>;
+  obligations: Record<string, boolean>;
   isBuiltIn: boolean;
   createdAt: string;
   updatedAt: string;

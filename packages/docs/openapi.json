@@ -22812,6 +22812,13 @@
                 "read"
               ]
             }
+          },
+          "obligations": {
+            "type": "object",
+            "description": "Obligations for the role. Boolean flags for requirements like compliance.",
+            "example": {
+              "compliance": true
+            }
           }
         },
         "required": [
@@ -22847,6 +22854,13 @@
                 "read",
                 "update"
               ]
+            }
+          },
+          "obligations": {
+            "type": "object",
+            "description": "Updated obligations for the role.",
+            "example": {
+              "compliance": true
             }
           }
         }

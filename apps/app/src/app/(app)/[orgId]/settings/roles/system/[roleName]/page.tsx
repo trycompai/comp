@@ -2,6 +2,7 @@ import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { BUILT_IN_ROLE_OBLIGATIONS } from '@comp/auth';
 import { SYSTEM_ROLES, SYSTEM_ROLE_PERMISSIONS } from '../../constants/system-roles';
 import { SystemRoleDetail } from './system-role-detail';
 
@@ -32,7 +33,7 @@ export default async function SystemRolePage({
         ]}
       />
       <PageHeader title={role.name} />
-      <SystemRoleDetail permissions={permissions} description={role.description} />
+      <SystemRoleDetail permissions={permissions} obligations={(BUILT_IN_ROLE_OBLIGATIONS[roleName] || {}) as Record<string, boolean>} description={role.description} />
     </PageLayout>
   );
 }

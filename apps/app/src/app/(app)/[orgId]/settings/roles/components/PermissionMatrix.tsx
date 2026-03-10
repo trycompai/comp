@@ -11,6 +11,10 @@ import { statement } from '@comp/auth';
 /** Access toggles — binary on/off permissions shown as switches above the matrix */
 const ACCESS_TOGGLES = [
   { key: 'app', label: 'App Access', description: 'Can access the main compliance dashboard. Without this, the user can only access the employee portal.' },
+];
+
+/** Obligation toggles — requirements the role must fulfill, separate from permissions */
+const OBLIGATION_TOGGLES = [
   { key: 'compliance', label: 'Employee Compliance', description: 'Must complete compliance tasks: sign policies, watch training videos, and install device agent.' },
 ];
 
@@ -98,6 +102,8 @@ const ACCESS_LEVEL_MAPPING: Record<string, Record<Exclude<AccessLevel, 'none'>, 
 interface PermissionMatrixProps {
   value: Record<string, string[]>;
   onChange: (permissions: Record<string, string[]>) => void;
+  obligations?: Record<string, boolean>;
+  onObligationsChange?: (obligations: Record<string, boolean>) => void;
   disabled?: boolean;
 }
 
@@ -209,7 +215,18 @@ function AccessToggle({
   );
 }
 
-export function PermissionMatrix({ value, onChange, disabled = false }: PermissionMatrixProps) {
+export function PermissionMatrix({ value, onChange, obligations, onObligationsChange, disabled = false }: PermissionMatrixProps) {
+  const handleObligationChange = (key: string, enabled: boolean) => {
+    if (!onObligationsChange) return;
+    const newObligations = { ...obligations };
+    if (enabled) {
+      newObligations[key] = true;
+    } else {
+      delete newObligations[key];
+    }
+    onObligationsChange(newObligations);
+  };
+
   const handleToggleChange = (resourceKey: string, enabled: boolean) => {
     const newPermissions = { ...value };
     if (enabled) {
@@ -271,6 +288,24 @@ export function PermissionMatrix({ value, onChange, disabled = false }: Permissi
             toggle={toggle}
             enabled={Boolean(value[toggle.key]?.length)}
             onToggle={(enabled) => handleToggleChange(toggle.key, enabled)}
+            disabled={disabled}
+          />
+        ))}
+      </div>
+
+      {/* Obligations */}
+      <div className="rounded-md border">
+        <div className="border-b bg-muted/50 py-2 px-3">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Obligations
+          </span>
+        </div>
+        {OBLIGATION_TOGGLES.map((toggle) => (
+          <AccessToggle
+            key={toggle.key}
+            toggle={toggle}
+            enabled={Boolean(obligations?.[toggle.key])}
+            onToggle={(enabled) => handleObligationChange(toggle.key, enabled)}
             disabled={disabled}
           />
         ))}
