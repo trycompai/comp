@@ -19,7 +19,7 @@ const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
  */
 function getCookieDomain(): string | undefined {
   const baseUrl =
-    process.env.AUTH_BASE_URL || process.env.BETTER_AUTH_URL || '';
+    process.env.BASE_URL || process.env.AUTH_BASE_URL || process.env.BETTER_AUTH_URL || '';
 
   if (baseUrl.includes('staging.trycomp.ai')) {
     return '.staging.trycomp.ai';
@@ -109,10 +109,10 @@ function validateSecurityConfig(): void {
   // Warn about development defaults in production
   if (process.env.NODE_ENV === 'production') {
     const baseUrl =
-      process.env.AUTH_BASE_URL || process.env.BETTER_AUTH_URL || '';
+      process.env.BASE_URL || process.env.AUTH_BASE_URL || process.env.BETTER_AUTH_URL || '';
     if (baseUrl.includes('localhost')) {
       console.warn(
-        'SECURITY WARNING: AUTH_BASE_URL contains "localhost" in production. ' +
+        'SECURITY WARNING: BASE_URL contains "localhost" in production. ' +
           'This may cause issues with OAuth callbacks and cookies.',
       );
     }
@@ -136,9 +136,10 @@ export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),
-  // Use AUTH_BASE_URL pointing to the app (client), not the API itself
-  // This is critical for OAuth callbacks and cookie domains to work correctly
+  // BASE_URL must contain the production domain (e.g., api.trycomp.ai)
+  // so getCookieDomain() can derive the cross-subdomain cookie domain.
   baseURL:
+    process.env.BASE_URL ||
     process.env.AUTH_BASE_URL ||
     process.env.BETTER_AUTH_URL ||
     'http://localhost:3000',
