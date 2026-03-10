@@ -1,9 +1,11 @@
 'use client';
 
 import { useFindingActions, useFormTypeFindings, type Finding } from '@/hooks/use-findings-api';
-import { Button } from '@comp/ui/button';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useActiveMember } from '@/utils/auth-client';
+import { Button } from '@trycompai/design-system';
 import { FindingStatus } from '@db';
-import { AlertTriangle, ChevronDown, ChevronUp, FileWarning, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, WarningAlt, WarningAltFilled } from '@trycompai/design-system/icons';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateFindingButton } from '../../tasks/[taskId]/components/findings/CreateFindingButton';
@@ -23,17 +25,20 @@ const STATUS_ORDER: Record<FindingStatus, number> = {
 
 interface DocumentFindingsSectionProps {
   formType: EvidenceFormType;
-  isAuditor: boolean;
-  isPlatformAdmin: boolean;
-  isAdminOrOwner: boolean;
 }
 
 export function DocumentFindingsSection({
   formType,
-  isAuditor,
-  isPlatformAdmin,
-  isAdminOrOwner,
 }: DocumentFindingsSectionProps) {
+  const { hasPermission } = usePermissions();
+  const { data: activeMember } = useActiveMember();
+  const isAuditor = activeMember?.role?.includes('auditor') ?? false;
+
+  // Only auditors can see findings on document pages
+  if (!isAuditor) return null;
+
+  const canCreateFinding = hasPermission('finding', 'create') && isAuditor;
+  const canUpdateFinding = hasPermission('finding', 'update');
   const isMeeting = formType === 'meeting';
 
   const { data, isLoading, error, mutate } = useFormTypeFindings(isMeeting ? null : formType);
@@ -81,14 +86,13 @@ export function DocumentFindingsSection({
 
   const rawFindings = useMemo(() => {
     if (isMeeting) {
-      return [
-        ...(m0?.data || []),
-        ...(m1?.data || []),
-        ...(m2?.data || []),
-        ...(mParent?.data || []),
-      ];
+      const m0Data = Array.isArray(m0?.data) ? m0.data : [];
+      const m1Data = Array.isArray(m1?.data) ? m1.data : [];
+      const m2Data = Array.isArray(m2?.data) ? m2.data : [];
+      const mParentData = Array.isArray(mParent?.data) ? mParent.data : [];
+      return [...m0Data, ...m1Data, ...m2Data, ...mParentData];
     }
-    return data?.data || [];
+    return Array.isArray(data?.data) ? data.data : [];
   }, [isMeeting, data, m0, m1, m2, mParent]);
 
   const sortedFindings = useMemo(() => {
@@ -102,9 +106,8 @@ export function DocumentFindingsSection({
   const visibleFindings = showAll ? sortedFindings : sortedFindings.slice(0, INITIAL_DISPLAY_COUNT);
   const hiddenCount = sortedFindings.length - visibleFindings.length;
 
-  const canCreateFinding = isAuditor || isPlatformAdmin;
-  const canChangeStatus = isAuditor || isPlatformAdmin || isAdminOrOwner;
-  const canSetRestrictedStatus = isAuditor || isPlatformAdmin;
+  const canChangeStatus = canUpdateFinding;
+  const canSetRestrictedStatus = canUpdateFinding;
 
   const handleStatusChange = useCallback(
     async (findingId: string, status: FindingStatus, revisionNote?: string) => {
@@ -154,7 +157,7 @@ export function DocumentFindingsSection({
   if (allIsLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
       </div>
     );
   }
@@ -162,7 +165,7 @@ export function DocumentFindingsSection({
   if (allError) {
     return (
       <div className="flex items-center justify-center py-8 text-destructive">
-        <AlertTriangle className="h-5 w-5 mr-2" />
+        <WarningAlt size={20} className="mr-2" />
         <span>Failed to load findings</span>
       </div>
     );
@@ -178,7 +181,7 @@ export function DocumentFindingsSection({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 rounded-md bg-muted">
-              <FileWarning className="h-4 w-4 text-primary" />
+              <WarningAltFilled size={16} className="text-primary" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground">Findings</h3>
@@ -207,7 +210,7 @@ export function DocumentFindingsSection({
       <div className="p-5">
         {sortedFindings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <FileWarning className="h-10 w-10 mb-3 opacity-50" />
+            <WarningAltFilled size={40} className="mb-3 opacity-50" />
             <p className="text-sm">No findings for this document</p>
             {canCreateFinding && <p className="text-xs mt-1">Create a finding to flag an issue</p>}
           </div>
@@ -217,8 +220,8 @@ export function DocumentFindingsSection({
               <FindingItem
                 key={finding.id}
                 finding={finding}
-                isAuditor={isAuditor}
-                isPlatformAdmin={isPlatformAdmin}
+                isAuditor={canSetRestrictedStatus}
+                isPlatformAdmin={false}
                 isExpanded={expandedId === finding.id}
                 canChangeStatus={canChangeStatus}
                 canSetRestrictedStatus={canSetRestrictedStatus}
@@ -231,24 +234,26 @@ export function DocumentFindingsSection({
             ))}
 
             {sortedFindings.length > INITIAL_DISPLAY_COUNT && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full mt-2 text-muted-foreground hover:text-foreground"
-                onClick={() => setShowAll(!showAll)}
-              >
-                {showAll ? (
-                  <>
-                    <ChevronUp className="h-4 w-4 mr-1.5" />
-                    Show less
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-4 w-4 mr-1.5" />
-                    Show {hiddenCount} more {hiddenCount === 1 ? 'finding' : 'findings'}
-                  </>
-                )}
-              </Button>
+              <div className="mt-2 text-muted-foreground hover:text-foreground">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  width="full"
+                  onClick={() => setShowAll(!showAll)}
+                >
+                  {showAll ? (
+                    <>
+                      <ChevronUp size={16} className="mr-1.5" />
+                      Show less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown size={16} className="mr-1.5" />
+                      Show {hiddenCount} more {hiddenCount === 1 ? 'finding' : 'findings'}
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
           </div>
         )}

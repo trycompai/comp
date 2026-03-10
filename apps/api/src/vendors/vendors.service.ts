@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { db, TaskItemPriority, TaskItemStatus } from '@trycompai/db';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
@@ -59,11 +59,49 @@ const VERIFY_RISK_ASSESSMENT_TASK_TITLE = 'Verify risk assessment' as const;
 export class VendorsService {
   private readonly logger = new Logger(VendorsService.name);
 
+  async searchGlobal(name: string) {
+    const whereClause = name.trim()
+      ? {
+          OR: [
+            {
+              company_name: {
+                contains: name,
+                mode: 'insensitive' as const,
+              },
+            },
+            { legal_name: { contains: name, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+
+    const vendors = await db.globalVendors.findMany({
+      where: whereClause,
+      take: 50,
+      orderBy: { company_name: 'asc' },
+    });
+
+    return { vendors };
+  }
+
   async findAllByOrganization(organizationId: string) {
     try {
       const vendors = await db.vendor.findMany({
         where: { organizationId },
         orderBy: { createdAt: 'desc' },
+        include: {
+          assignee: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       this.logger.log(
@@ -160,12 +198,25 @@ export class VendorsService {
     }
   }
 
+  private async validateAssigneeNotPlatformAdmin(assigneeId: string, organizationId: string) {
+    const member = await db.member.findFirst({
+      where: { id: assigneeId, organizationId },
+      include: { user: { select: { isPlatformAdmin: true } } },
+    });
+    if (member?.user.isPlatformAdmin) {
+      throw new BadRequestException('Cannot assign a platform admin as assignee');
+    }
+  }
+
   async create(
     organizationId: string,
     createVendorDto: CreateVendorDto,
     createdByUserId?: string,
   ) {
     try {
+      if (createVendorDto.assigneeId) {
+        await this.validateAssigneeNotPlatformAdmin(createVendorDto.assigneeId, organizationId);
+      }
       const vendor = await db.vendor.create({
         data: {
           ...createVendorDto,
@@ -512,6 +563,34 @@ export class VendorsService {
     }
   }
 
+  /**
+   * Trigger a vendor risk assessment from a public endpoint.
+   * Looks up the vendor, triggers the assessment, and updates vendor status.
+   */
+  async triggerAssessment(
+    vendorId: string,
+    organizationId: string,
+    userId?: string,
+  ): Promise<{ runId: string; publicAccessToken: string }> {
+    const vendor = await this.findById(vendorId, organizationId);
+
+    const result = await this.triggerSingleVendorRiskAssessment({
+      organizationId,
+      vendorId: vendor.id,
+      vendorName: vendor.name,
+      vendorWebsite: vendor.website,
+      createdByUserId: userId ?? null,
+    });
+
+    // Update vendor status to in_progress
+    await db.vendor.update({
+      where: { id: vendor.id },
+      data: { status: 'in_progress' },
+    });
+
+    return result;
+  }
+
   async updateById(
     id: string,
     organizationId: string,
@@ -520,6 +599,10 @@ export class VendorsService {
     try {
       // First check if the vendor exists in the organization
       await this.findById(id, organizationId);
+
+      if (updateVendorDto.assigneeId) {
+        await this.validateAssigneeNotPlatformAdmin(updateVendorDto.assigneeId, organizationId);
+      }
 
       const updatedVendor = await db.vendor.update({
         where: { id },

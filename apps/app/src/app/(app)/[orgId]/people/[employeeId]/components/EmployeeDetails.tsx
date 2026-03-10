@@ -1,5 +1,6 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import type { Departments, Member, User } from '@db';
 import {
@@ -19,10 +20,8 @@ import {
 } from '@trycompai/design-system';
 import { ChevronDown } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
-import { useAction } from 'next-safe-action/hooks';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { updateEmployee } from '../actions/update-employee';
 
 const DEPARTMENTS: { value: string; label: string }[] = [
   { value: 'admin', label: 'Admin' },
@@ -54,19 +53,8 @@ export const EmployeeDetails = ({
   const [status, setStatus] = useState<string>(employee.isActive ? 'active' : 'inactive');
   const [joinDate, setJoinDate] = useState<Date>(new Date(employee.createdAt));
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-
-  const { execute, status: actionStatus } = useAction(updateEmployee, {
-    onSuccess: (res) => {
-      if (!res?.data?.success) {
-        toast.error(res?.data?.error?.message || 'Failed to update employee details');
-        return;
-      }
-      toast.success('Employee details updated successfully');
-    },
-    onError: (error) => {
-      toast.error(error?.error?.serverError || 'Failed to update employee details');
-    },
-  });
+  const [isLoading, setIsLoading] = useState(false);
+  const api = useApi();
 
   const hasChanges = useMemo(() => {
     const nameChanged = name !== (employee.user.name ?? '');
@@ -78,9 +66,7 @@ export const EmployeeDetails = ({
     return nameChanged || jobTitleChanged || departmentChanged || statusChanged || dateChanged;
   }, [name, jobTitle, department, status, joinDate, employee]);
 
-  const isLoading = actionStatus === 'executing';
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!name.trim()) {
@@ -89,13 +75,12 @@ export const EmployeeDetails = ({
     }
 
     const updateData: {
-      employeeId: string;
       name?: string;
       department?: string;
       isActive?: boolean;
-      createdAt?: Date;
+      createdAt?: string;
       jobTitle?: string;
-    } = { employeeId: employee.id };
+    } = {};
 
     if (name !== (employee.user.name ?? '')) {
       updateData.name = name;
@@ -107,7 +92,7 @@ export const EmployeeDetails = ({
       updateData.department = department;
     }
     if (joinDate.toISOString() !== new Date(employee.createdAt).toISOString()) {
-      updateData.createdAt = joinDate;
+      updateData.createdAt = joinDate.toISOString();
     }
 
     const isActive = status === 'active';
@@ -115,10 +100,23 @@ export const EmployeeDetails = ({
       updateData.isActive = isActive;
     }
 
-    if (Object.keys(updateData).length > 1) {
-      execute(updateData);
-    } else {
+    if (Object.keys(updateData).length === 0) {
       toast.info('No changes to save');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await api.patch(`/v1/people/${employee.id}`, updateData);
+      if (response.error) {
+        toast.error(response.error || 'Failed to update employee details');
+      } else {
+        toast.success('Employee details updated successfully');
+      }
+    } catch {
+      toast.error('Failed to update employee details');
+    } finally {
+      setIsLoading(false);
     }
   };
 

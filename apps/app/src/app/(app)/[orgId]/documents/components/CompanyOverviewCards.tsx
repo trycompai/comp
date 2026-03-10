@@ -97,7 +97,7 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
   const { data: statuses } = useSWR<FormStatuses>(
     swrKey,
     async ([endpoint, orgId]: readonly [string, string]) => {
-      const response = await api.get<FormStatuses>(endpoint, orgId);
+      const response = await api.get<FormStatuses>(endpoint);
       if (response.error || !response.data) {
         throw new Error(response.error ?? 'Failed to load form statuses');
       }
@@ -110,7 +110,7 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
   const activeIssueCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     const findings = findingsResponse?.data;
-    if (!findings) return counts;
+    if (!Array.isArray(findings)) return counts;
 
     for (const finding of findings) {
       if (finding.status === FindingStatus.closed) continue;

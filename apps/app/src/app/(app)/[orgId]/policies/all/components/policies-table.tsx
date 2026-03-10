@@ -13,12 +13,11 @@ import { apiClient } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import type { Policy } from '@db';
 import { useParams } from 'next/navigation';
-import { getPolicies } from '../data/queries';
 import { getPolicyColumns } from './policies-table-columns';
 import { type PolicyTailoringStatus, PolicyTailoringProvider } from './policy-tailoring-context';
 
 interface PoliciesTableProps {
-  promises: Promise<[Awaited<ReturnType<typeof getPolicies>>]>;
+  promises: Promise<[{ data: Policy[]; pageCount: number }]>;
   onboardingRunId?: string | null;
 }
 
@@ -110,7 +109,7 @@ export function PoliciesTable({ promises, onboardingRunId }: PoliciesTableProps)
         downloadUrl: string;
         policyCount: number;
         name: string;
-      }>('/v1/policies/download-all', orgId);
+      }>('/v1/policies/download-all');
 
       if (response.error) {
         toast.error(response.error);

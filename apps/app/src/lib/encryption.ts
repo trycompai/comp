@@ -26,10 +26,10 @@ async function deriveKey(secret: string, salt: Buffer): Promise<Buffer> {
 }
 
 export async function encrypt(text: string): Promise<EncryptedData> {
-  const secretKey = process.env.SECRET_KEY;
+  const secretKey = process.env.ENCRYPTION_KEY;
 
   if (!secretKey) {
-    throw new Error('SECRET_KEY environment variable is not set');
+    throw new Error('ENCRYPTION_KEY environment variable is not set');
   }
 
   const salt = randomBytes(SALT_LENGTH);
@@ -50,9 +50,9 @@ export async function encrypt(text: string): Promise<EncryptedData> {
 }
 
 export async function decrypt(encryptedData: EncryptedData): Promise<string> {
-  const secretKey = process.env.SECRET_KEY;
+  const secretKey = process.env.ENCRYPTION_KEY;
   if (!secretKey) {
-    throw new Error('SECRET_KEY environment variable is not set');
+    throw new Error('ENCRYPTION_KEY environment variable is not set');
   }
 
   const encrypted = Buffer.from(encryptedData.encrypted, 'base64');

@@ -44,7 +44,7 @@ export const updateEmployee = authActionClient
     const currentUserMember = await db.member.findFirst({
       where: {
         organizationId: organizationId,
-        userId: ctx.user.id,
+        userId: ctx.user!.id,
       },
     });
 

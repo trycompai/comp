@@ -13,17 +13,17 @@ import {
 import { AdditionalDocumentsSection } from '../knowledge-base/additional-documents/components';
 import { KnowledgeBaseHeader } from '../knowledge-base/components/KnowledgeBaseHeader';
 import { ContextSection } from '../knowledge-base/context/components';
-import type {
-  getContextEntries,
-  getKnowledgeBaseDocuments,
-  getManualAnswers,
-  getPublishedPolicies,
-} from '../knowledge-base/data/queries';
 import { ManualAnswersSection } from '../knowledge-base/manual-answers/components';
 import { PublishedPoliciesSection } from '../knowledge-base/published-policies/components';
 import { SOAFrameworkTable } from '../soa/components/SOAFrameworkTable';
 import { QuestionnaireOverview } from '../start_page/components';
-import type { getQuestionnaires } from '../start_page/data/queries';
+import type {
+  ContextEntry,
+  KBDocument,
+  ManualAnswer,
+  PublishedPolicy,
+  QuestionnaireListItem,
+} from './types';
 
 // Use type inference from SOAFrameworkTable props
 type SOAFrameworkTableProps = Parameters<typeof SOAFrameworkTable>[0];
@@ -44,17 +44,17 @@ interface SOAData {
 interface QuestionnaireTabsProps {
   organizationId: string;
   // Questionnaires tab
-  questionnaires: Awaited<ReturnType<typeof getQuestionnaires>>;
+  questionnaires: QuestionnaireListItem[];
   hasPublishedPolicies: boolean;
   // SOA tab (conditional)
   showSOATab: boolean;
   soaData?: SOAData | null;
   soaError?: string | null;
   // Knowledge Base tab
-  policies: Awaited<ReturnType<typeof getPublishedPolicies>>;
-  contextEntries: Awaited<ReturnType<typeof getContextEntries>>;
-  manualAnswers: Awaited<ReturnType<typeof getManualAnswers>>;
-  documents: Awaited<ReturnType<typeof getKnowledgeBaseDocuments>>;
+  policies: PublishedPolicy[];
+  contextEntries: ContextEntry[];
+  manualAnswers: ManualAnswer[];
+  documents: KBDocument[];
 }
 
 export function QuestionnaireTabs({

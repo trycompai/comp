@@ -6,7 +6,8 @@ import { cn } from '@comp/ui/cn';
 import { Form, FormControl, FormField, FormItem } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { Spinner } from '@trycompai/design-system';
+import { ArrowRight } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -19,9 +20,10 @@ const formSchema = z.object({
 
 type Props = {
   className?: string;
+  deviceAuthRedirect?: string;
 };
 
-export function OtpSignIn({ className }: Props) {
+export function OtpSignIn({ className, deviceAuthRedirect }: Props) {
   const [isLoading, setLoading] = useState(false);
   const [isSent, setSent] = useState(false);
   const [_email, setEmail] = useState<string>();
@@ -56,7 +58,7 @@ export function OtpSignIn({ className }: Props) {
   if (isSent) {
     return (
       <div className={cn('flex flex-col space-y-4', className)}>
-        <OtpForm email={_email ?? ''} />
+        <OtpForm email={_email ?? ''} deviceAuthRedirect={deviceAuthRedirect} />
       </div>
     );
   }
@@ -91,11 +93,11 @@ export function OtpSignIn({ className }: Props) {
             disabled={isLoading}
           >
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Spinner size="sm" />
             ) : (
               <>
                 <span>Continue</span>
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight size={16} />
               </>
             )}
           </Button>

@@ -1,6 +1,5 @@
 'use client';
 
-import { createTaskAction } from '@/actions/tasks/create-task-action';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useTaskTemplates } from '@/hooks/use-task-template-api';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -27,9 +26,7 @@ import {
   Textarea,
 } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
-import { useAction } from 'next-safe-action/hooks';
-import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -49,30 +46,29 @@ const createTaskSchema = z.object({
   taskTemplateId: z.string().nullable().optional(),
 });
 
+interface CreateTaskPayload {
+  title: string;
+  description: string;
+  assigneeId?: string | null;
+  frequency?: string | null;
+  department?: string | null;
+  controlIds?: string[];
+  taskTemplateId?: string | null;
+}
+
 interface CreateTaskSheetProps {
   members: (Member & { user: User })[];
   controls: { id: string; name: string }[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  createTask: (data: CreateTaskPayload) => Promise<void>;
 }
 
-export function CreateTaskSheet({ members, controls, open, onOpenChange }: CreateTaskSheetProps) {
+export function CreateTaskSheet({ members, controls, open, onOpenChange, createTask }: CreateTaskSheetProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const params = useParams<{ orgId: string }>();
-  const orgId = params?.orgId;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: taskTemplates } = useTaskTemplates({ organizationId: orgId });
-
-  const createTask = useAction(createTaskAction, {
-    onSuccess: () => {
-      toast.success('Evidence created successfully');
-      onOpenChange(false);
-      form.reset();
-    },
-    onError: (error) => {
-      toast.error(error.error?.serverError || 'Failed to create evidence');
-    },
-  });
+  const { data: taskTemplates } = useTaskTemplates();
 
   const form = useForm<z.infer<typeof createTaskSchema>>({
     resolver: zodResolver(createTaskSchema),
@@ -88,10 +84,28 @@ export function CreateTaskSheet({ members, controls, open, onOpenChange }: Creat
   });
 
   const onSubmit = useCallback(
-    (data: z.infer<typeof createTaskSchema>) => {
-      createTask.execute(data);
+    async (data: z.infer<typeof createTaskSchema>) => {
+      setIsSubmitting(true);
+      try {
+        await createTask({
+          title: data.title,
+          description: data.description,
+          assigneeId: data.assigneeId,
+          frequency: data.frequency,
+          department: data.department,
+          controlIds: data.controlIds,
+          taskTemplateId: data.taskTemplateId,
+        });
+        toast.success('Evidence created successfully');
+        onOpenChange(false);
+        form.reset();
+      } catch {
+        toast.error('Failed to create evidence');
+      } finally {
+        setIsSubmitting(false);
+      }
     },
-    [createTask],
+    [createTask, onOpenChange, form],
   );
 
   // Memoize control options to prevent re-renders
@@ -364,8 +378,8 @@ export function CreateTaskSheet({ members, controls, open, onOpenChange }: Creat
         <div className="flex justify-end pt-4">
           <Button
             type="submit"
-            disabled={createTask.status === 'executing'}
-            loading={createTask.status === 'executing'}
+            disabled={isSubmitting}
+            loading={isSubmitting}
             iconRight={<ArrowRight size={16} />}
           >
             Create Evidence

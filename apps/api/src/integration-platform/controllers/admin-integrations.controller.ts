@@ -66,6 +66,12 @@ export class AdminIntegrationsController {
         hasCredentials: configuredProviders.has(manifest.id),
         credentialConfiguredAt: credential?.createdAt,
         credentialUpdatedAt: credential?.updatedAt,
+        // Encrypted credential data (decrypted client-side)
+        encryptedClientId: credential?.encryptedClientId,
+        encryptedClientSecret: credential?.encryptedClientSecret,
+        existingCustomSettings:
+          (credential as { customSettings?: Record<string, unknown> } | undefined)
+            ?.customSettings || undefined,
         // OAuth-specific info
         ...(manifest.auth.type === 'oauth2' && {
           setupInstructions: manifest.auth.config.setupInstructions,

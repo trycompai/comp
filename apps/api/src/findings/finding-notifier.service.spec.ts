@@ -1,5 +1,5 @@
 import { isUserUnsubscribed } from '@trycompai/email';
-import { sendEmail } from '../email/resend';
+import { triggerEmail } from '../email/trigger-email';
 import { NovuService } from '../notifications/novu.service';
 import { FindingNotifierService } from './finding-notifier.service';
 
@@ -41,8 +41,8 @@ jest.mock('@trycompai/email', () => ({
   isUserUnsubscribed: jest.fn(),
 }));
 
-jest.mock('../email/resend', () => ({
-  sendEmail: jest.fn(),
+jest.mock('../email/trigger-email', () => ({
+  triggerEmail: jest.fn(),
 }));
 
 jest.mock(
@@ -80,7 +80,7 @@ const { db, FindingType } = mockDbModule;
 
 describe('FindingNotifierService', () => {
   const mockedDb = db;
-  const mockedSendEmail = sendEmail as jest.MockedFunction<typeof sendEmail>;
+  const mockedTriggerEmail = triggerEmail as jest.MockedFunction<typeof triggerEmail>;
   const mockedIsUserUnsubscribed = isUserUnsubscribed as jest.MockedFunction<
     typeof isUserUnsubscribed
   >;
@@ -120,7 +120,7 @@ describe('FindingNotifierService', () => {
     });
 
     mockedIsUserUnsubscribed.mockResolvedValue(false);
-    mockedSendEmail.mockResolvedValue({ id: 'email_123', message: 'queued' });
+    mockedTriggerEmail.mockResolvedValue({ id: 'email_123' });
     novuTriggerMock.mockResolvedValue(undefined);
   });
 

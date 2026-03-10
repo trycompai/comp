@@ -171,6 +171,12 @@ export function useVendor(
  * Hook for vendor CRUD operations (mutations)
  * Use alongside useVendors/useVendor and call mutate() after mutations
  */
+interface TriggerAssessmentResponse {
+  success: boolean;
+  runId: string;
+  publicAccessToken: string;
+}
+
 export function useVendorActions() {
   const api = useApi();
 
@@ -207,10 +213,39 @@ export function useVendorActions() {
     [api],
   );
 
+  const triggerAssessment = useCallback(
+    async (vendorId: string) => {
+      const response = await api.post<TriggerAssessmentResponse>(
+        `/v1/vendors/${vendorId}/trigger-assessment`,
+        {},
+      );
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data!;
+    },
+    [api],
+  );
+
+  const regenerateMitigation = useCallback(
+    async (vendorId: string) => {
+      const response = await fetch(`/api/vendors/${vendorId}/regenerate-mitigation`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger mitigation regeneration');
+      }
+    },
+    [],
+  );
+
   return {
     createVendor,
     updateVendor,
     deleteVendor,
+    triggerAssessment,
+    regenerateMitigation,
   };
 }
 

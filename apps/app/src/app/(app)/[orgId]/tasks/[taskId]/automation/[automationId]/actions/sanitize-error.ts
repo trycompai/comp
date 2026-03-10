@@ -98,7 +98,6 @@ export const sanitizeErrorMessage = async (rawError: unknown): Promise<string> =
     });
 
     const result = text.trim() || 'The automation encountered an error. Please check your script and try again.';
-    console.log('[sanitizeErrorMessage] SYSTEM AI response:', result);
 
     return result;
   } catch (aiError) {

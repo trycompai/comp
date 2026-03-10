@@ -24,8 +24,7 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
   }
 
   const portalUrl = getPortalUrl();
-  const cookieName = auth.cookieName ?? 'better-auth.session_token';
-  const cookieHeader = `${cookieName}=${auth.sessionToken}`;
+  const authHeader = `Bearer ${auth.sessionToken}`;
 
   let allSucceeded = true;
   let anyNonCompliant = false;
@@ -43,7 +42,7 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
       const response = await fetch(`${portalUrl}${API_ROUTES.CHECK_IN}`, {
         method: 'POST',
         headers: {
-          Cookie: cookieHeader,
+          Authorization: authHeader,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),

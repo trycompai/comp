@@ -1,6 +1,6 @@
 'use client';
 
-import { changeOrganizationAction } from '@/actions/change-organization';
+import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import {
   DropdownMenu,
@@ -10,8 +10,7 @@ import {
 } from '@comp/ui/dropdown-menu';
 import type { Organization } from '@db';
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 interface MinimalOrganizationSwitcherProps {
   organizations: Organization[];
@@ -22,20 +21,17 @@ export function MinimalOrganizationSwitcher({
   organizations,
   currentOrganization,
 }: MinimalOrganizationSwitcherProps) {
-  const router = useRouter();
-  const { execute, status } = useAction(changeOrganizationAction, {
-    onSuccess: (result) => {
-      const orgId = result.data?.data?.id;
-      if (orgId) {
-        // Full page reload to ensure data is fresh
-        window.location.href = `/${orgId}/`;
-      }
-    },
-  });
+  const [isSwitching, setIsSwitching] = useState(false);
 
-  const handleOrgChange = (org: Organization) => {
+  const handleOrgChange = async (org: Organization) => {
     if (org.id !== currentOrganization?.id) {
-      execute({ organizationId: org.id });
+      setIsSwitching(true);
+      try {
+        await authClient.organization.setActive({ organizationId: org.id });
+        window.location.href = `/${org.id}/`;
+      } catch {
+        setIsSwitching(false);
+      }
     }
   };
 
@@ -45,10 +41,10 @@ export function MinimalOrganizationSwitcher({
         <Button
           variant="ghost"
           className="h-auto p-1 text-sm font-medium"
-          disabled={status === 'executing'}
+          disabled={isSwitching}
         >
           {currentOrganization?.name || 'Select Organization'}
-          {status === 'executing' ? (
+          {isSwitching ? (
             <Loader2 className="ml-2 h-4 w-4 animate-spin" />
           ) : (
             <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />

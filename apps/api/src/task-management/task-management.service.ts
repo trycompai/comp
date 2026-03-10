@@ -19,9 +19,7 @@ import {
 import type { GetTaskItemQueryDto } from './dto/get-task-item-query.dto';
 import { TaskItemAssignmentNotifierService } from './task-item-assignment-notifier.service';
 import { TaskItemMentionNotifierService } from './task-item-mention-notifier.service';
-import { TaskItemAuditService } from './task-item-audit.service';
 import { extractMentionedUserIds } from './utils/extract-mentions';
-import { formatStatus, formatPriority } from './utils/format-activity';
 
 @Injectable()
 export class TaskManagementService {
@@ -29,7 +27,6 @@ export class TaskManagementService {
   constructor(
     private readonly notifier: TaskItemAssignmentNotifierService,
     private readonly mentionNotifier: TaskItemMentionNotifierService,
-    private readonly auditService: TaskItemAuditService,
   ) {}
 
   /**
@@ -268,6 +265,16 @@ export class TaskManagementService {
         );
       }
 
+      if (createTaskItemDto.assigneeId) {
+        const assigneeMember = await db.member.findFirst({
+          where: { id: createTaskItemDto.assigneeId, organizationId },
+          include: { user: { select: { isPlatformAdmin: true } } },
+        });
+        if (assigneeMember?.user.isPlatformAdmin) {
+          throw new BadRequestException('Cannot assign a platform admin as assignee');
+        }
+      }
+
       const taskItem = await db.taskItem.create({
         data: {
           ...createTaskItemDto,
@@ -300,17 +307,6 @@ export class TaskManagementService {
         `Created task item: ${taskItem.id} for organization ${organizationId} by ${member.id}`,
       );
 
-      // Log task creation in audit log first (await to ensure it's created before assignment log)
-      await this.auditService.logTaskItemCreated({
-        taskItemId: taskItem.id,
-        organizationId,
-        userId: authContext.userId,
-        memberId: member.id,
-        taskTitle: taskItem.title,
-        entityType: taskItem.entityType,
-        entityId: taskItem.entityId,
-      });
-
       if (createTaskItemDto.assigneeId && authContext.userId) {
         this.logger.log(
           `[ASSIGNEE DEBUG] Sending assignment notification to ${createTaskItemDto.assigneeId} for task ${taskItem.id}`,
@@ -327,21 +323,6 @@ export class TaskManagementService {
           assignedByUserId: authContext.userId,
         });
 
-        // Log initial assignment in audit log (after creation log to ensure correct order)
-        if (taskItem.assignee) {
-          await this.auditService.logTaskItemAssigned({
-            taskItemId: taskItem.id,
-            organizationId,
-            userId: authContext.userId,
-            memberId: member.id,
-            taskTitle: taskItem.title,
-            assigneeId: createTaskItemDto.assigneeId,
-            assigneeName:
-              taskItem.assignee.user.name || taskItem.assignee.user.email,
-            entityType: taskItem.entityType,
-            entityId: taskItem.entityId,
-          });
-        }
       }
 
       // Notify mentioned users
@@ -499,6 +480,15 @@ export class TaskManagementService {
         updateData.priority = updateTaskItemDto.priority;
       }
       if (updateTaskItemDto.assigneeId !== undefined) {
+        if (updateTaskItemDto.assigneeId) {
+          const assigneeMember = await db.member.findFirst({
+            where: { id: updateTaskItemDto.assigneeId, organizationId },
+            include: { user: { select: { isPlatformAdmin: true } } },
+          });
+          if (assigneeMember?.user.isPlatformAdmin) {
+            throw new BadRequestException('Cannot assign a platform admin as assignee');
+          }
+        }
         updateData.assigneeId = updateTaskItemDto.assigneeId;
       }
 
@@ -526,57 +516,10 @@ export class TaskManagementService {
 
       this.logger.log(`Updated task item: ${taskItem.id} by ${member.id}`);
 
-      // Track what changed for audit log
-      const changes: string[] = [];
-      if (
-        updateTaskItemDto.title !== undefined &&
-        updateTaskItemDto.title !== existingTaskItem.title
-      ) {
-        changes.push('changed the title');
-      }
-      if (
-        updateTaskItemDto.description !== undefined &&
-        updateTaskItemDto.description !== existingTaskItem.description
-      ) {
-        changes.push('updated the description');
-      }
-      if (
-        updateTaskItemDto.status !== undefined &&
-        updateTaskItemDto.status !== existingTaskItem.status
-      ) {
-        changes.push(
-          `changed status from ${formatStatus(existingTaskItem.status)} to ${formatStatus(updateTaskItemDto.status)}`,
-        );
-      }
-      if (
-        updateTaskItemDto.priority !== undefined &&
-        updateTaskItemDto.priority !== existingTaskItem.priority
-      ) {
-        changes.push(
-          `changed priority from ${formatPriority(existingTaskItem.priority)} to ${formatPriority(updateTaskItemDto.priority)}`,
-        );
-      }
-
       // Notify assignee only when assignee changes
       const assigneeChanged =
         updateTaskItemDto.assigneeId !== undefined &&
         (existingTaskItem.assigneeId ?? null) !== (taskItem.assigneeId ?? null);
-
-      // Don't add 'assignee' to changes array - it's logged separately below
-
-      // Log update in audit log (only for non-assignee changes)
-      if (changes.length > 0) {
-        void this.auditService.logTaskItemUpdated({
-          taskItemId: taskItem.id,
-          organizationId,
-          userId: authContext.userId,
-          memberId: member.id,
-          taskTitle: taskItem.title,
-          changes,
-          entityType: taskItem.entityType,
-          entityId: taskItem.entityId,
-        });
-      }
 
       if (assigneeChanged && authContext.userId) {
         if (taskItem.assigneeId) {
@@ -595,38 +538,12 @@ export class TaskManagementService {
             assignedByUserId: authContext.userId,
           });
 
-          // Log assignee change in audit log
-          if (taskItem.assignee) {
-            void this.auditService.logTaskItemAssigned({
-              taskItemId: taskItem.id,
-              organizationId,
-              userId: authContext.userId,
-              memberId: member.id,
-              taskTitle: taskItem.title,
-              assigneeId: taskItem.assigneeId,
-              assigneeName:
-                taskItem.assignee.user.name || taskItem.assignee.user.email,
-              entityType: taskItem.entityType,
-              entityId: taskItem.entityId,
-            });
-          }
         } else {
           // Assignee removed
           this.logger.log(
             `[ASSIGNEE DEBUG] Assignee removed from task ${taskItem.id}`,
           );
 
-          // Log assignee removal in audit log
-          void this.auditService.logTaskItemUpdated({
-            taskItemId: taskItem.id,
-            organizationId,
-            userId: authContext.userId,
-            memberId: member.id,
-            taskTitle: taskItem.title,
-            changes: ['removed the assignee'],
-            entityType: taskItem.entityType,
-            entityId: taskItem.entityId,
-          });
         }
       } else if (updateTaskItemDto.assigneeId !== undefined) {
         this.logger.log(

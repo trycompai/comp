@@ -1,8 +1,8 @@
 'use client';
 
 import type { EmployeeTrainingVideoCompletion } from '@db';
-import { Button } from '@trycompai/design-system';
-import { ArrowRight, Check, Loader2 } from 'lucide-react';
+import { Button, Spinner } from '@trycompai/design-system';
+import { ArrowRight, Checkmark } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 
 // Define our own TrainingVideo interface since we can't find the import
@@ -54,12 +54,12 @@ export function YoutubeEmbed({
           >
             {isMarkingComplete ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Spinner size="sm" />
                 Marking as Complete...
               </>
             ) : (
               <>
-                <Check className="h-4 w-4" />
+                <Checkmark size={16} />
                 {isCompleted ? 'Completed' : 'Mark as Complete'}
               </>
             )}
@@ -70,7 +70,7 @@ export function YoutubeEmbed({
         {isCompleted && !isRewatching && (
           <div className="bg-background/80 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-xs">
             <div className="space-y-4 text-center">
-              <Check className="text-primary mx-auto h-12 w-12" />
+              <div className="text-primary mx-auto"><Checkmark size={48} /></div>
               <h3 className="text-xl font-semibold">Video Completed</h3>
               <div className="flex justify-center gap-2">
                 <Button variant="outline" onClick={() => setIsRewatching(true)}>

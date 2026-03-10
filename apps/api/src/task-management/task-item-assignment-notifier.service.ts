@@ -1,7 +1,7 @@
 import { db } from '@db';
 import { Injectable, Logger } from '@nestjs/common';
 import { isUserUnsubscribed } from '@trycompai/email';
-import { sendEmail } from '../email/resend';
+import { triggerEmail } from '../email/trigger-email';
 import { TaskItemAssignedEmail } from '../email/templates/task-item-assigned';
 import { NovuService } from '../notifications/novu.service';
 
@@ -61,11 +61,13 @@ export class TaskItemAssignmentNotifierService {
           where: { id: assigneeMemberId },
           select: {
             id: true,
+            role: true,
             user: {
               select: {
                 id: true,
                 name: true,
                 email: true,
+                isPlatformAdmin: true,
               },
             },
           },
@@ -83,9 +85,18 @@ export class TaskItemAssignmentNotifierService {
         assignedByUser?.email?.trim() ||
         'Someone';
 
-      if (!assigneeUser?.id || !assigneeUser.email) {
+      if (!assigneeMember || !assigneeUser?.id || !assigneeUser.email) {
         this.logger.warn(
           `Skipping assignment notification: assignee member ${assigneeMemberId} has no user/email`,
+        );
+        return;
+      }
+
+      // Skip notifications for platform admin members unless they are an owner
+      const isOwner = assigneeMember.role?.split(',').map((r: string) => r.trim()).includes('owner');
+      if (assigneeUser.isPlatformAdmin && !isOwner) {
+        this.logger.log(
+          `Skipping assignment notification: assignee ${assigneeUser.email} is a platform admin (non-owner)`,
         );
         return;
       }
@@ -118,6 +129,7 @@ export class TaskItemAssignmentNotifierService {
         db,
         assigneeUser.email,
         'taskAssignments',
+        organizationId,
       );
       if (isUnsubscribed) {
         this.logger.log(
@@ -132,7 +144,7 @@ export class TaskItemAssignmentNotifierService {
 
       // Send email notification via Resend
       try {
-        const { id } = await sendEmail({
+        const { id } = await triggerEmail({
           to: assigneeUser.email,
           subject: `You were assigned to a task: ${taskTitle}`,
           react: TaskItemAssignedEmail({

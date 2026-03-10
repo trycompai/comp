@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/design-system';
 import { Textarea } from '@comp/ui/textarea';
 import {
   Select,
@@ -20,8 +20,7 @@ import {
 } from '@comp/ui/dialog';
 import { X, Loader2, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { api } from '@/lib/api-client';
-import { useRouter } from 'next/navigation';
+import { useSOADocument } from '../../hooks/useSOADocument';
 
 interface EditableSOAFieldsProps {
   documentId: string;
@@ -46,7 +45,7 @@ export function EditableSOAFields({
   organizationId,
   onUpdate,
 }: EditableSOAFieldsProps) {
-  const router = useRouter();
+  const { saveAnswer } = useSOADocument({ documentId, organizationId });
   const [isEditing, setIsEditing] = useState(false);
   const [isApplicable, setIsApplicable] = useState<boolean | null>(initialIsApplicable);
   const [justification, setJustification] = useState<string | null>(initialJustification);
@@ -88,39 +87,25 @@ export function EditableSOAFields({
     setIsSaving(true);
     try {
       const answerValue = nextIsApplicable === false ? nextJustification : null;
-      const response = await api.post<{ success: boolean }>(
-        '/v1/soa/save-answer',
-        {
-          organizationId,
-          documentId,
-          questionId,
-          answer: answerValue,
-          isApplicable: nextIsApplicable,
-          justification: nextIsApplicable === false ? nextJustification : null,
-        },
-        organizationId,
-      );
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
+      await saveAnswer({
+        questionId,
+        answer: answerValue,
+        isApplicable: nextIsApplicable,
+        justification: nextIsApplicable === false ? nextJustification : null,
+      });
 
-      if (response.data?.success) {
-        // Update local state optimistically
-        setIsApplicable(nextIsApplicable);
-        setJustification(nextJustification);
-        setIsEditing(false);
-        setError(null);
-        toast.success('Answer saved successfully');
-        // Call onUpdate with the saved answer value to update parent state optimistically
-        const savedAnswer = nextIsApplicable === false ? nextJustification : null;
-        onUpdate?.(savedAnswer);
-        router.refresh();
-      } else {
-        throw new Error('Failed to save answer');
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to save answer';
+      // Update local state
+      setIsApplicable(nextIsApplicable);
+      setJustification(nextJustification);
+      setIsEditing(false);
+      setError(null);
+      toast.success('Answer saved successfully');
+      // Call onUpdate with the saved answer value to update parent state optimistically
+      const savedAnswer = nextIsApplicable === false ? nextJustification : null;
+      onUpdate?.(savedAnswer);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save answer';
       if (!isJustificationDialogOpen) {
         setIsApplicable(initialIsApplicable);
         setJustification(initialJustification);
@@ -202,7 +187,7 @@ export function EditableSOAFields({
     return (
       <div className="flex w-full flex-col items-center gap-2 text-center">
         <span className={`${badgeClasses} uppercase`}>
-          {isApplicable === true ? 'YES' : isApplicable === false ? 'NO' : '—'}
+          {isApplicable === true ? 'YES' : isApplicable === false ? 'NO' : '\u2014'}
         </span>
       </div>
     );
@@ -212,18 +197,16 @@ export function EditableSOAFields({
     return (
       <div className="group relative flex w-full items-center justify-center">
         <span className={`${badgeClasses} uppercase`}>
-          {isApplicable === true ? 'YES' : isApplicable === false ? 'NO' : '—'}
+          {isApplicable === true ? 'YES' : isApplicable === false ? 'NO' : '\u2014'}
         </span>
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
+          type="button"
           onClick={handleEditClick}
-          className="absolute right-0 h-6 w-6 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
+          className="absolute right-0 h-6 w-6 flex items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:bg-muted"
           aria-label="Edit answer"
         >
           <Edit2 className="h-3 w-3" />
-          <span className="sr-only">Edit answer</span>
-        </Button>
+        </button>
       </div>
     );
   }
@@ -240,7 +223,7 @@ export function EditableSOAFields({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="null" disabled>
-              —
+              {'\u2014'}
             </SelectItem>
             <SelectItem value="yes">YES</SelectItem>
             <SelectItem value="no">NO</SelectItem>
@@ -307,4 +290,3 @@ export function EditableSOAFields({
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 'use client';
 
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Asleep, Light, Screen } from '@trycompai/design-system/icons';
 import { useTheme } from 'next-themes';
 
 import {
@@ -21,11 +21,11 @@ type Props = {
 const ThemeIcon = ({ currentTheme }: Props) => {
   switch (currentTheme) {
     case 'dark':
-      return <Moon size={12} />;
+      return <Asleep size={12} />;
     case 'system':
-      return <Monitor size={12} />;
+      return <Screen size={12} />;
     default:
-      return <Sun size={12} />;
+      return <Light size={12} />;
   }
 };
 

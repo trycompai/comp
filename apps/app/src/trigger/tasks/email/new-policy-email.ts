@@ -1,9 +1,9 @@
 import { db } from '@db';
-import { sendPolicyNotificationEmail } from '@comp/email';
+import { PolicyNotificationEmail } from '@comp/email';
 import { isUserUnsubscribed } from '@comp/email/lib/check-unsubscribe';
 import { logger, queue, task } from '@trigger.dev/sdk';
+import { sendEmailViaApi } from '../../lib/send-email-via-api';
 
-// Queue with concurrency limit of 1 to ensure rate limiting (1 email per second max)
 const policyEmailQueue = queue({
   name: 'policy-email-queue',
   concurrencyLimit: 2,
@@ -28,7 +28,7 @@ export const sendNewPolicyEmail = task({
     });
 
     try {
-      const unsubscribed = await isUserUnsubscribed(db, payload.email, 'policyNotifications');
+      const unsubscribed = await isUserUnsubscribed(db, payload.email, 'policyNotifications', payload.organizationId);
       if (unsubscribed) {
         logger.info('User is unsubscribed from email notifications, skipping', {
           email: payload.email,
@@ -41,7 +41,20 @@ export const sendNewPolicyEmail = task({
         };
       }
 
-      await sendPolicyNotificationEmail(payload);
+      await sendEmailViaApi({
+        to: payload.email,
+        subject: 'Please review and accept this policy',
+        react: PolicyNotificationEmail({
+          email: payload.email,
+          userName: payload.userName,
+          policyName: payload.policyName,
+          organizationName: payload.organizationName,
+          organizationId: payload.organizationId,
+          notificationType: payload.notificationType,
+        }),
+        organizationId: payload.organizationId,
+        system: true,
+      });
 
       logger.info('Successfully sent policy email', {
         email: payload.email,

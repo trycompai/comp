@@ -9,20 +9,18 @@ import {
   AlertDialogTitle,
 } from '@comp/ui/alert-dialog';
 import { Button } from '@comp/ui/button';
+import { useVendorActions, type Vendor } from '@/hooks/use-vendors';
 import { Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
-import { deleteVendor } from '../actions/deleteVendor';
-import type { GetVendorsResult } from '../data/queries';
-
-type VendorRow = GetVendorsResult['data'][number];
 
 interface VendorDeleteCellProps {
-  vendor: VendorRow;
+  vendor: Vendor;
 }
 
 export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) => {
+  const { deleteVendor } = useVendorActions();
   const { mutate } = useSWRConfig();
   const [isRemoveAlertOpen, setIsRemoveAlertOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -31,19 +29,19 @@ export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) =>
     event.stopPropagation();
     setIsDeleting(true);
 
-    const response = await deleteVendor({ vendorId: vendor.id });
-
-    if (response?.data?.success) {
+    try {
+      await deleteVendor(vendor.id);
       toast.success(`Vendor "${vendor.name}" has been deleted.`);
       setIsRemoveAlertOpen(false);
-      // Invalidate all vendors SWR caches (any key starting with 'vendors')
       mutate(
-        (key) => Array.isArray(key) && key[0] === 'vendors',
+        (key) =>
+          (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+          (typeof key === 'string' && key.includes('/v1/vendors')),
         undefined,
         { revalidate: true },
       );
-    } else {
-      toast.error(String(response?.data?.error) || 'Failed to delete vendor.');
+    } catch {
+      toast.error('Failed to delete vendor.');
     }
 
     setIsDeleting(false);

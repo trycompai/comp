@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { AnswerQuestionResult } from '@/trigger/questionnaire/answer-question';
 import { answerQuestion } from '@/trigger/questionnaire/answer-question';
 import { generateAnswerWithRAGBatch } from '@/trigger/questionnaire/answer-question-helpers';
@@ -492,6 +492,70 @@ export class QuestionnaireService {
     sources?: AnswerQuestionResult['sources'];
   }): Promise<void> {
     await saveGeneratedAnswer(params);
+  }
+
+  async findAll(organizationId: string) {
+    return db.questionnaire.findMany({
+      where: {
+        organizationId,
+        status: { in: ['completed', 'parsing'] },
+      },
+      select: {
+        id: true,
+        filename: true,
+        fileType: true,
+        status: true,
+        totalQuestions: true,
+        answeredQuestions: true,
+        source: true,
+        createdAt: true,
+        updatedAt: true,
+        questions: {
+          orderBy: { questionIndex: 'asc' },
+          select: {
+            id: true,
+            question: true,
+            answer: true,
+            status: true,
+            questionIndex: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findById(id: string, organizationId: string) {
+    return db.questionnaire.findUnique({
+      where: { id, organizationId },
+      include: {
+        questions: {
+          orderBy: { questionIndex: 'asc' },
+          select: {
+            id: true,
+            question: true,
+            answer: true,
+            status: true,
+            questionIndex: true,
+            sources: true,
+          },
+        },
+      },
+    });
+  }
+
+  async deleteById(id: string, organizationId: string) {
+    const questionnaire = await db.questionnaire.findUnique({
+      where: { id, organizationId },
+    });
+
+    if (!questionnaire) {
+      throw new NotFoundException(`Questionnaire with ID ${id} not found`);
+    }
+
+    await db.questionnaire.delete({ where: { id } });
+
+    return { success: true };
   }
 
   // Private helper methods

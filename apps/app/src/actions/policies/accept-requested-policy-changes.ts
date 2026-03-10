@@ -28,7 +28,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
     const { id, approverId, comment } = parsedInput;
     const { user, session } = ctx;
 
-    if (!user.id || !session.activeOrganizationId) {
+    if (!user?.id || !session.activeOrganizationId) {
       throw new Error('Unauthorized');
     }
 
@@ -100,26 +100,22 @@ export const acceptRequestedPolicyChangesAction = authActionClient
         data: updateData,
       });
 
-      // Get all employees in the organization to send notifications
-      const employees = await db.member.findMany({
+      // Get all active members — the downstream isUserUnsubscribed check
+      // handles role-based notification filtering via the org's notification matrix.
+      const members = await db.member.findMany({
         where: {
           organizationId: session.activeOrganizationId,
           isActive: true,
           deactivated: false,
+          user: { isPlatformAdmin: false },
         },
         include: {
           user: true,
         },
       });
 
-      // Filter to get only employees and contractors
-      const employeeMembers = employees.filter((member) => {
-        const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
-        return roles.includes('employee') || roles.includes('contractor');
-      });
-
       // Prepare the events array for the API
-      const events = employeeMembers
+      const events = members
         .filter((employee) => employee.user.email)
         .map((employee) => {
           let notificationType: 'new' | 're-acceptance' | 'updated';
@@ -153,7 +149,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
       if (comment && comment.trim() !== '') {
         const member = await db.member.findFirst({
           where: {
-            userId: user.id,
+            userId: user!.id,
             organizationId: session.activeOrganizationId,
             deactivated: false,
           },

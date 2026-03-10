@@ -126,10 +126,10 @@ export const authActionClient = actionClientWithMeta
     }
 
     if (metadata.track) {
-      track(ctx.user.id, metadata.track.event, {
+      track(ctx.user!.id, metadata.track.event, {
         channel: metadata.track.channel,
-        email: ctx.user.email,
-        name: ctx.user.name,
+        email: ctx.user!.email,
+        name: ctx.user!.name,
         organizationId: ctx.session.activeOrganizationId,
       });
     }
@@ -160,9 +160,9 @@ export const authActionClient = actionClientWithMeta
     const { fileData: _, ...inputForAuditLog } = (clientInput || {}) as any;
 
     const data = {
-      userId: ctx.user.id,
-      email: ctx.user.email,
-      name: ctx.user.name,
+      userId: ctx.user!.id,
+      email: ctx.user!.email,
+      name: ctx.user!.name,
       organizationId: ctx.session.activeOrganizationId,
       action: metadata.name,
       input: inputForAuditLog,
@@ -209,7 +209,7 @@ export const authActionClient = actionClientWithMeta
         data: {
           data: JSON.stringify(data),
           memberId: member.id,
-          userId: ctx.user.id,
+          userId: ctx.user!.id,
           description: metadata.track?.description || null,
           organizationId: ctx.session.activeOrganizationId,
           entityId,
@@ -241,7 +241,7 @@ export const authWithOrgAccessClient = authActionClient.use(async ({ next, clien
   // Check if user is a member of the organization
   const member = await db.member.findFirst({
     where: {
-      userId: ctx.user.id,
+      userId: ctx.user!.id,
       organizationId,
       deactivated: false,
     },

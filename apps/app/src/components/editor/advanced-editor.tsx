@@ -1,5 +1,6 @@
 'use client';
 
+import '@/styles/editor.css';
 import { Editor, type JSONContent } from '@comp/ui/editor';
 
 interface AdvancedEditorProps {
@@ -10,6 +11,8 @@ interface AdvancedEditorProps {
   placeholder?: string;
   className?: string;
   saveDebounceMs?: number;
+  minHeight?: string;
+  maxHeight?: string;
 }
 
 const AdvancedEditor = ({
@@ -20,6 +23,8 @@ const AdvancedEditor = ({
   placeholder = 'Start writing...',
   className,
   saveDebounceMs = 500,
+  minHeight,
+  maxHeight,
 }: AdvancedEditorProps) => {
   return (
     <Editor
@@ -33,6 +38,8 @@ const AdvancedEditor = ({
       showSaveStatus={true}
       showWordCount={true}
       showToolbar={true}
+      minHeight={minHeight}
+      maxHeight={maxHeight}
     />
   );
 };

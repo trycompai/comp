@@ -2,6 +2,7 @@
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   ConnectionListItem,
   IntegrationProvider,
@@ -36,7 +37,6 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { getRelevantTasksForIntegration } from '../actions/get-relevant-tasks';
 import {
   CATEGORIES,
   INTEGRATIONS,
@@ -85,6 +85,8 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
     isLoading: loadingConnections,
     refresh: refreshConnections,
   } = useIntegrationConnections();
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('integration', 'create');
   const { startOAuth } = useIntegrationMutations();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -250,19 +252,16 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
 
     // Wait for data to load
     if (!connections || !providers || loadingConnections || loadingProviders) {
-      console.log('[OAuth] Waiting for data to load...');
       return;
     }
 
     // Mark as handled
     hasHandledOAuthRef.current = true;
-    console.log('[OAuth] Handling callback for', providerSlug);
 
     const connection = connections.find((c) => c.providerSlug === providerSlug);
     const provider = providers.find((p) => p.id === providerSlug);
 
     if (connection && provider) {
-      console.log('[OAuth] Found connection and provider, opening dialog');
       toast.success(`${provider.name} connected successfully!`);
 
       // Set state first
@@ -271,16 +270,8 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
 
       // Open dialog after a tick to ensure state is updated
       setTimeout(() => {
-        console.log('[OAuth] Opening manage dialog');
         setManageDialogOpen(true);
       }, 150);
-    } else {
-      console.warn('[OAuth] Connection or provider not found:', {
-        hasConnection: !!connection,
-        hasProvider: !!provider,
-        connectionsCount: connections.length,
-        providersCount: providers.length,
-      });
     }
 
     // Clean up URL parameters
@@ -300,24 +291,30 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
   useEffect(() => {
     if (selectedCustomIntegration && orgId && taskTemplates && taskTemplates.length > 0) {
       setIsLoadingTasks(true);
-      getRelevantTasksForIntegration({
-        integrationName: selectedCustomIntegration.name,
-        integrationDescription: selectedCustomIntegration.description,
-        taskTemplates: taskTemplates.map((t) => ({
-          id: t.id,
-          name: t.name,
-          description: t.description,
-        })),
-        examplePrompts: selectedCustomIntegration.examplePrompts,
+      fetch('/api/integrations/relevant-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          integrationName: selectedCustomIntegration.name,
+          integrationDescription: selectedCustomIntegration.description,
+          taskTemplates: taskTemplates.map((t) => ({
+            id: t.id,
+            name: t.name,
+            description: t.description,
+          })),
+          examplePrompts: selectedCustomIntegration.examplePrompts,
+        }),
       })
-        .then((aiTasks) => {
-          // Map AI results to include actual taskId
+        .then((res) => res.json())
+        .then((data: { tasks: Array<{ taskTemplateId: string; taskName: string; reason: string; prompt: string }> }) => {
+          const aiTasks = Array.isArray(data.tasks) ? data.tasks : [];
           const tasksWithIds = aiTasks
             .map((task) => ({
               ...task,
               taskId: templateToTaskMap.get(task.taskTemplateId) || '',
             }))
-            .filter((task) => task.taskId); // Only keep tasks we can navigate to
+            .filter((task) => task.taskId);
           setRelevantTasks(tasksWithIds);
         })
         .catch((error) => {
@@ -495,15 +492,31 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                         {/* Mapped tasks */}
                         {provider.mappedTasks && provider.mappedTasks.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
-                            {provider.mappedTasks.slice(0, 3).map((task) => (
-                              <Badge
-                                key={task.id}
-                                variant="secondary"
-                                className="text-[10px] px-1.5 py-0.5 font-normal"
-                              >
-                                {task.name}
-                              </Badge>
-                            ))}
+                            {provider.mappedTasks.slice(0, 3).map((task) => {
+                              const taskId = templateToTaskMap.get(task.id);
+                              return taskId ? (
+                                <Link
+                                  key={task.id}
+                                  href={`/${orgId}/tasks/${taskId}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px] px-1.5 py-0.5 font-normal cursor-pointer hover:bg-secondary/80 transition-colors"
+                                  >
+                                    {task.name}
+                                  </Badge>
+                                </Link>
+                              ) : (
+                                <Badge
+                                  key={task.id}
+                                  variant="secondary"
+                                  className="text-[10px] px-1.5 py-0.5 font-normal"
+                                >
+                                  {task.name}
+                                </Badge>
+                              );
+                            })}
                             {provider.mappedTasks.length > 3 && (
                               <Badge
                                 variant="outline"
@@ -531,28 +544,30 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                             <p className="text-xs text-destructive line-clamp-1">
                               {connection?.errorMessage || 'Connection error'}
                             </p>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full"
-                              onClick={() => handleConnect(provider)}
-                              disabled={isConnecting}
-                            >
-                              {isConnecting ? (
-                                <>
-                                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                                  Reconnecting...
-                                </>
-                              ) : (
-                                'Reconnect'
-                              )}
-                            </Button>
+                            {canCreate && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => handleConnect(provider)}
+                                disabled={isConnecting}
+                              >
+                                {isConnecting ? (
+                                  <>
+                                    <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                    Reconnecting...
+                                  </>
+                                ) : (
+                                  'Reconnect'
+                                )}
+                              </Button>
+                            )}
                           </div>
                         ) : provider.authType === 'oauth2' && provider.oauthConfigured === false ? (
                           <Button size="sm" variant="outline" className="w-full" disabled>
                             Coming Soon
                           </Button>
-                        ) : (
+                        ) : canCreate ? (
                           <Button
                             size="sm"
                             className="w-full"
@@ -568,7 +583,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                               'Connect'
                             )}
                           </Button>
-                        )}
+                        ) : null}
                       </div>
                     </CardContent>
                   </Card>

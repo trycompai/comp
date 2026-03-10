@@ -33,7 +33,7 @@ export function useTaskAutomations({
       const response = await api.get<{
         success: boolean;
         automations: AutomationWithRuns[];
-      }>(`/v1/tasks/${taskId}/automations`, orgId);
+      }>(`/v1/tasks/${taskId}/automations`);
 
       if (response.error) {
         throw new Error(response.error);

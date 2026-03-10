@@ -53,8 +53,8 @@ import { FindingsController } from './findings.controller';
 describe('FindingsController', () => {
   const authContext: AuthContext = {
     organizationId: 'org_123',
-    authType: 'jwt',
-    isApiKey: false,
+    authType: 'session',
+    isApiKey: false, isPlatformAdmin: false,
     userRoles: ['admin'],
     userId: 'usr_123',
     userEmail: 'admin@example.com',

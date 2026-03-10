@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import { db } from '@db';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -21,6 +22,11 @@ import { type NextRequest, NextResponse } from 'next/server';
  * - 500: { success: false, error: "Failed to approve organization" }
  */
 export async function POST(request: NextRequest) {
+  // Block in production - QA endpoints should only work in staging/dev
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+  }
+
   const authHeader = request.headers.get('authorization');
   const qaSecret = process.env.QA_SECRET;
 
@@ -37,7 +43,7 @@ export async function POST(request: NextRequest) {
 
   const token = authHeader?.split(' ')[1];
 
-  if (!token || token !== qaSecret) {
+  if (!token || token.length !== qaSecret.length || !timingSafeEqual(Buffer.from(token), Buffer.from(qaSecret))) {
     return NextResponse.json(
       {
         success: false,
@@ -93,8 +99,6 @@ export async function POST(request: NextRequest) {
       where: { id: organizationId },
       data: { hasAccess: true },
     });
-
-    console.log(`QA: Organization ${organizationId} approved successfully`);
 
     return NextResponse.json({
       success: true,

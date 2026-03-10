@@ -2,13 +2,13 @@
 
 import { LinkIcon, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { api } from '@/lib/api-client';
+import { useKnowledgeBaseDocView } from '../hooks/useKnowledgeBaseDocView';
 
 interface KnowledgeBaseDocumentLinkProps {
   documentId: string;
   sourceName: string;
   orgId: string;
-  className?: string; // Allow custom className for different contexts (cards vs table)
+  className?: string;
 }
 
 export function KnowledgeBaseDocumentLink({
@@ -18,6 +18,7 @@ export function KnowledgeBaseDocumentLink({
   className = 'font-medium text-primary hover:underline inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed',
 }: KnowledgeBaseDocumentLinkProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { viewDocument } = useKnowledgeBaseDocView(orgId);
 
   const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -25,41 +26,17 @@ export function KnowledgeBaseDocumentLink({
 
     setIsLoading(true);
     try {
-      const response = await api.post<{
-        signedUrl: string;
-        fileName: string;
-        fileType: string;
-        viewableInBrowser: boolean;
-      }>(
-        `/v1/knowledge-base/documents/${documentId}/view`,
-        {
-          organizationId: orgId,
-        },
-        orgId,
-      );
+      const result = await viewDocument(documentId);
+      const { signedUrl, viewableInBrowser } = result;
 
-      if (response.error) {
-        // Fallback: navigate to knowledge base page
+      if (viewableInBrowser && signedUrl) {
+        window.open(signedUrl, '_blank', 'noopener,noreferrer');
+      } else {
         const knowledgeBaseUrl = `/${orgId}/questionnaire/knowledge-base`;
         window.open(knowledgeBaseUrl, '_blank', 'noopener,noreferrer');
-        return;
-      }
-
-      if (response.data) {
-        const { signedUrl, viewableInBrowser } = response.data;
-
-        if (viewableInBrowser && signedUrl) {
-          // File can be viewed in browser - open it directly
-          window.open(signedUrl, '_blank', 'noopener,noreferrer');
-        } else {
-          // File cannot be viewed in browser - navigate to knowledge base page
-          const knowledgeBaseUrl = `/${orgId}/questionnaire/knowledge-base`;
-          window.open(knowledgeBaseUrl, '_blank', 'noopener,noreferrer');
-        }
       }
     } catch (error) {
       console.error('Error opening knowledge base document:', error);
-      // Fallback: navigate to knowledge base page
       const knowledgeBaseUrl = `/${orgId}/questionnaire/knowledge-base`;
       window.open(knowledgeBaseUrl, '_blank', 'noopener,noreferrer');
     } finally {
@@ -82,4 +59,3 @@ export function KnowledgeBaseDocumentLink({
     </button>
   );
 }
-

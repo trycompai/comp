@@ -1,17 +1,18 @@
 'use client';
 
-import { updateInherentRiskAction } from '@/actions/risk/update-inherent-risk-action';
 import { updateInherentRiskSchema } from '@/actions/schema';
+import { useRiskActions } from '@/hooks/use-risks';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import type { z } from 'zod';
 
 interface InherentRiskFormProps {
@@ -43,16 +44,10 @@ export function InherentRiskForm({
   initialProbability,
   initialImpact,
 }: InherentRiskFormProps) {
+  const { updateRisk } = useRiskActions();
+  const { mutate: globalMutate } = useSWRConfig();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [_, setOpen] = useQueryState('inherent-risk-sheet');
-  const updateInherentRisk = useAction(updateInherentRiskAction, {
-    onSuccess: () => {
-      toast.success('Inherent risk updated successfully');
-      setOpen(null);
-    },
-    onError: () => {
-      toast.error('Failed to update inherent risk');
-    },
-  });
 
   const form = useForm<z.infer<typeof updateInherentRiskSchema>>({
     resolver: zodResolver(updateInherentRiskSchema),
@@ -63,8 +58,25 @@ export function InherentRiskForm({
     },
   });
 
-  const onSubmit = (values: z.infer<typeof updateInherentRiskSchema>) => {
-    updateInherentRisk.execute(values);
+  const onSubmit = async (values: z.infer<typeof updateInherentRiskSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await updateRisk(values.id, {
+        likelihood: values.probability,
+        impact: values.impact,
+      });
+      toast.success('Inherent risk updated successfully');
+      globalMutate(
+        (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
+        undefined,
+        { revalidate: true },
+      );
+      setOpen(null);
+    } catch {
+      toast.error('Failed to update inherent risk');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -122,9 +134,9 @@ export function InherentRiskForm({
           <Button
             type="submit"
             variant="default"
-            disabled={updateInherentRisk.status === 'executing'}
+            disabled={isSubmitting}
           >
-            {updateInherentRisk.status === 'executing' ? (
+            {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               'Save'

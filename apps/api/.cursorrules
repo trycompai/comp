@@ -1,0 +1,45 @@
+# API Rules
+
+Read CLAUDE.md in this directory for comprehensive API development guidelines.
+
+## Quick Reference
+
+- **Auth**: Session-based only (no JWT). `HybridAuthGuard` + `PermissionGuard` on every endpoint.
+- **RBAC**: `@RequirePermission('resource', 'action')` required. Without it, `AuditLogInterceptor` won't log.
+- **Controller**: `@Controller({ path: 'name', version: '1' })`, NOT `@Controller('v1/name')` (double prefix bug).
+- **Tests**: Every feature needs tests. `npx jest src/<module> --passWithNoTests`.
+- **No `as any`**. Max 300 lines per file.
+- **Multi-tenancy**: Always scope DB queries by `organizationId`.
+- **Billing errors**: `HttpException` with `HttpStatus.PAYMENT_REQUIRED` (no PaymentRequiredException).
+- **Webhooks**: Use `@Public()` decorator.
+- **Nested JSON**: Use `@Req() req` + `req.body` instead of DTO when receiving complex nested objects.
+- **Permission resources**: organization, member, control, evidence, policy, risk, vendor, task, framework, audit, finding, questionnaire, integration, apiKey, trust, pentest, app, compliance
+
+## Testing
+
+**Every new feature MUST include tests.** This is mandatory, not optional.
+
+```bash
+# Run tests for a specific module
+npx jest src/<module-name> --passWithNoTests
+
+# Run all API tests
+npx turbo run test --filter=@comp/api
+
+# Type-check
+npx turbo run typecheck --filter=@comp/api
+```
+
+### Test File Conventions
+
+- Colocate: `foo.service.ts` → `foo.service.spec.ts`
+- Mock external deps (DB, external APIs)
+- Test success, error, and edge cases
+- Override guards in controller tests with `.overrideGuard(HybridAuthGuard).useValue({ canActivate: () => true })`
+
+## Code Style
+
+- Use `@AuthContext()` for auth context, `@OrganizationId()` for org ID
+- NestJS exceptions: `BadRequestException`, `NotFoundException`, `ForbiddenException`
+- Prisma via `@trycompai/db`, always scope by `organizationId`
+- Transactions for multi-record operations

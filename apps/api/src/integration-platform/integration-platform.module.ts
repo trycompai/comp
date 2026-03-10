@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { OAuthController } from './controllers/oauth.controller';
 import { OAuthAppsController } from './controllers/oauth-apps.controller';
 import { ConnectionsController } from './controllers/connections.controller';
@@ -27,6 +28,7 @@ import { DynamicIntegrationRepository } from './repositories/dynamic-integration
 import { DynamicCheckRepository } from './repositories/dynamic-check.repository';
 
 @Module({
+  imports: [AuthModule],
   controllers: [
     OAuthController,
     OAuthAppsController,

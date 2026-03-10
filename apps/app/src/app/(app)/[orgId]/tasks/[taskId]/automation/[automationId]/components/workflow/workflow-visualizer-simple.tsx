@@ -150,8 +150,6 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     enabled: !!script?.content,
   });
 
-  console.log('steps', steps);
-
   const testResult = useMemo<TestResult | null>(() => {
     if (!executionResult && !executionError) return null;
     if (executionError) return { status: 'error', error: executionError.message };
@@ -185,7 +183,6 @@ export function WorkflowVisualizerSimple({ className }: Props) {
       automationIdRef.current !== 'new' ? automationIdRef.current : automationId;
 
     if (!orgId || !taskId || !resolvedAutomationId || resolvedAutomationId === 'new') {
-      console.warn('Cannot test automation without a saved ID');
       toast.error('Save the automation before testing.');
       return;
     }

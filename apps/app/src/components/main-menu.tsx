@@ -306,8 +306,8 @@ const Item = ({
                 )}
                 disabled
               >
-                <Icon size={16} />
-                {!isCollapsed && <span className="ml-2 truncate">Coming Soon</span>}
+                {isCollapsed && <Icon size={16} />}
+                {!isCollapsed && <span className="truncate">Coming Soon</span>}
               </Button>
             </TooltipTrigger>
             {isCollapsed && <TooltipContent side="right">Coming Soon</TooltipContent>}
@@ -329,10 +329,10 @@ const Item = ({
               asChild
             >
               <Link href={itemPath} onClick={onItemClick}>
-                <Icon size={16} />
+                {isCollapsed && <Icon size={16} />}
                 {!isCollapsed && (
                   <>
-                    <span className="ml-2 flex-1 truncate text-left">{item.name}</span>
+                    <span className="flex-1 truncate text-left">{item.name}</span>
                     {item.badge && (
                       <Badge variant={item.badge.variant} className="ml-auto text-xs">
                         {item.badge.text}

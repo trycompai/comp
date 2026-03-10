@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -24,8 +23,9 @@ import {
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
-import { Role, TaskItemEntityType } from '@trycompai/db';
-import { RequireRoles } from '../auth/role-validator.guard';
+import { TaskItemEntityType } from '@trycompai/db';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { TaskManagementService } from './task-management.service';
 import { CreateTaskItemDto } from './dto/create-task-item.dto';
 import { UpdateTaskItemDto } from './dto/update-task-item.dto';
@@ -40,14 +40,9 @@ import { TaskItemAuditService } from './task-item-audit.service';
 
 @ApiTags('Task Management')
 @Controller({ path: 'task-management', version: '1' })
-@UseGuards(HybridAuthGuard, RequireRoles(Role.admin, Role.owner))
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@RequirePermission('task', ['create', 'read', 'update', 'delete'])
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class TaskManagementController {
   constructor(
     private readonly taskManagementService: TaskManagementService,

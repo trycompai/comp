@@ -192,7 +192,7 @@ function ToolCard({
 }: {
   part: {
     type: 'tool-proposePolicy';
-    state: 'input-streaming' | 'input-available' | 'output-available' | 'output-error';
+    state: string;
     input?: {
       title?: string;
       summary?: string;

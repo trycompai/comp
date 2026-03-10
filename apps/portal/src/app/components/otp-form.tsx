@@ -1,19 +1,20 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@comp/ui/input-otp';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { Button } from '@comp/ui/button';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@comp/ui/input-otp';
+import { Spinner } from '@trycompai/design-system';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { login } from '../actions/login';
 
 const INPUT_LENGTH = 6;
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
 const otpFormSchema = z.object({
   email: z.string().email(),
@@ -24,9 +25,10 @@ type OtpFormValues = z.infer<typeof otpFormSchema>;
 
 interface OtpFormProps {
   email: string;
+  deviceAuthRedirect?: string;
 }
 
-export function OtpForm({ email }: OtpFormProps) {
+export function OtpForm({ email, deviceAuthRedirect }: OtpFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const form = useForm<OtpFormValues>({
@@ -37,25 +39,40 @@ export function OtpForm({ email }: OtpFormProps) {
     },
   });
 
-  const { execute, isExecuting } = useAction(login, {
-    onSuccess: () => {
-      toast.success('OTP verified');
-      router.push('/');
-    },
-    onError: (error) => {
-      toast.error(error.error.serverError as string);
-    },
-  });
-
   const onSubmit = async (formData: OtpFormValues) => {
     try {
       setIsLoading(true);
 
-      await execute({
-        otp: formData.otp,
-        email: formData.email,
+      const response = await fetch('/api/auth/sign-in/email-otp', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          otp: formData.otp,
+        }),
       });
-    } catch (error) {
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || 'Login failed';
+        const lower = errorMessage.toLowerCase();
+
+        if (lower.includes('invalid') && lower.includes('otp')) {
+          toast.error('Invalid OTP code. Please check your code and try again.');
+        } else if (lower.includes('expired') && lower.includes('otp')) {
+          toast.error('OTP code has expired. Please request a new code.');
+        } else if (lower.includes('not found') || lower.includes('user not found')) {
+          toast.error('No account found with this email address.');
+        } else {
+          toast.error('Login failed. Please check your OTP code and try again.');
+        }
+        return;
+      }
+
+      toast.success('OTP verified');
+      router.push(deviceAuthRedirect || '/');
+    } catch {
       toast.error('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -88,7 +105,7 @@ export function OtpForm({ email }: OtpFormProps) {
           disabled={isLoading}
           className="flex h-[40px] w-fit space-x-2 px-6 py-4 font-medium active:scale-[0.98]"
         >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>Continue</span>}
+          {isLoading ? <Spinner size="sm" /> : <span>Continue</span>}
         </Button>
       </form>
     </Form>

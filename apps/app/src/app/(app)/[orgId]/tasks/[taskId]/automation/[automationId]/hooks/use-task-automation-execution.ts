@@ -21,12 +21,27 @@
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sanitizeErrorMessage } from '../actions/sanitize-error';
+import { getAutomationRunStatus } from '../actions/task-automation-actions';
 import { useSharedChatContext } from '../lib/chat-context';
 import { taskAutomationApi } from '../lib/task-automation-api';
 import type {
   TaskAutomationExecutionResult,
   UseTaskAutomationExecutionOptions,
 } from '../lib/types';
+
+interface AutomationRunData {
+  id: string;
+  status: string;
+  error?: unknown;
+  output?: {
+    success: boolean;
+    error?: unknown;
+    output?: Record<string, unknown>;
+    summary?: string;
+    evaluationStatus?: 'fail' | 'pass';
+    evaluationReason?: string;
+  };
+}
 
 export function useTaskAutomationExecution({
   onSuccess,
@@ -52,13 +67,11 @@ export function useTaskAutomationExecution({
 
     const pollRunStatus = async () => {
       try {
-        const url = `${process.env.NEXT_PUBLIC_ENTERPRISE_API_URL}/api/tasks-automations/runs/${runId}`;
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch run status');
+        const res = await getAutomationRunStatus(runId);
+        if (!res.success) {
+          throw new Error(res.error || 'Failed to fetch run status');
         }
+        const data = res.data as AutomationRunData;
 
         if (data.status === 'COMPLETED' && data.output) {
           // Check both possible error locations:
@@ -91,9 +104,10 @@ export function useTaskAutomationExecution({
 
           // Use AI to sanitize error message with fallback if AI fails
           // Fallback extracts message from error object if available
-          const sanitizedMessage = await sanitizeErrorMessage(data.error).catch(() => {
-            if (typeof data.error === 'string') return data.error;
-            if (data.error?.message) return String(data.error.message);
+          const rawErr = data.error;
+          const sanitizedMessage = await sanitizeErrorMessage(rawErr).catch(() => {
+            if (typeof rawErr === 'string') return rawErr;
+            if (rawErr && typeof rawErr === 'object' && 'message' in rawErr) return String((rawErr as { message: unknown }).message);
             return 'The automation failed to execute';
           });
           const error = new Error(sanitizedMessage);
@@ -153,10 +167,8 @@ export function useTaskAutomationExecution({
         setRunId(response.runId);
         return response;
       } else {
-        // Handle legacy response format
-        setResult(response as TaskAutomationExecutionResult);
+        // No runId — treat as immediate completion
         setIsExecuting(false);
-        onSuccess?.(response as TaskAutomationExecutionResult);
         return response;
       }
     } catch (err) {
