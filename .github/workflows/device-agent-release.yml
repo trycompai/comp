@@ -212,7 +212,7 @@ jobs:
           $jar = Get-ChildItem -Path "codesigntool" -Recurse -Filter "code_sign_tool-*.jar" | Select-Object -First 1
           if (-not $jar) { throw "CodeSignTool jar not found" }
           Write-Host "Found CodeSignTool jar at: $($jar.FullName)"
-          $cstDir = $jar.Directory
+          $cstDir = $jar.Directory.Parent
 
           $releaseDir = Get-Location
           Get-ChildItem -Path $releaseDir -Filter "*.exe" | ForEach-Object {
