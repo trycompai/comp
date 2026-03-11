@@ -45,8 +45,21 @@ async function bootstrap(): Promise<void> {
   // STEP 3: Configure body parser
   // NOTE: Attachment uploads are sent as base64 in JSON, so request payloads are
   // larger than the raw file size. Keep this above the user-facing max file size.
-  app.use(express.json({ limit: '150mb' }));
-  app.use(express.urlencoded({ limit: '150mb', extended: true }));
+  // IMPORTANT: Skip body parsing for /api/auth routes — better-auth needs the raw
+  // request stream to properly read the body (including OAuth callbackURL).
+  // Express-level middleware runs BEFORE NestJS module middleware, so without this
+  // skip, express.json() would consume the stream before better-auth's handler.
+  const jsonParser = express.json({ limit: '150mb' });
+  const urlencodedParser = express.urlencoded({ limit: '150mb', extended: true });
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.path.startsWith('/api/auth')) {
+      return next();
+    }
+    jsonParser(req, res, (err?: unknown) => {
+      if (err) return next(err);
+      urlencodedParser(req, res, next);
+    });
+  });
 
   // STEP 4: Enable global pipes and filters
   app.useGlobalPipes(
