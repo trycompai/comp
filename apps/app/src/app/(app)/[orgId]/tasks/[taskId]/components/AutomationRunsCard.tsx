@@ -55,7 +55,7 @@ function CopyableCodeBlock({ label, content }: { label: string; content: unknown
             onClick={handleCopy}
             title="Copy to clipboard"
           >
-            {copied ? <CheckmarkFilled className="!size-3" /> : <CopyToClipboard className="!size-3" />}
+            {copied ? <CheckmarkFilled className="!size-3 text-primary" /> : <CopyToClipboard className="!size-3" />}
           </Button>
         </div>
         <pre className="text-xs bg-muted text-foreground p-2 pl-9 rounded overflow-x-auto max-h-40 overflow-y-auto font-mono select-text cursor-text">
