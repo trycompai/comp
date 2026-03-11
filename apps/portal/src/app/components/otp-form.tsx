@@ -1,5 +1,6 @@
 'use client';
 
+import { authClient } from '@/app/lib/auth-client';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@comp/ui/button';
@@ -12,9 +13,6 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 const INPUT_LENGTH = 6;
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
 const otpFormSchema = z.object({
   email: z.string().email(),
@@ -43,20 +41,13 @@ export function OtpForm({ email, deviceAuthRedirect }: OtpFormProps) {
     try {
       setIsLoading(true);
 
-      const response = await fetch('/api/auth/sign-in/email-otp', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          otp: formData.otp,
-        }),
+      const { error } = await authClient.signIn.emailOtp({
+        email: formData.email,
+        otp: formData.otp,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || 'Login failed';
-        const lower = errorMessage.toLowerCase();
+      if (error) {
+        const lower = (error.message || '').toLowerCase();
 
         if (lower.includes('invalid') && lower.includes('otp')) {
           toast.error('Invalid OTP code. Please check your code and try again.');

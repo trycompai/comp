@@ -7,8 +7,7 @@ import { createAuthClient } from 'better-auth/react';
 import { ac, allRoles } from '@comp/auth';
 
 export const authClient = createAuthClient({
-  // Empty baseURL = calls go through the portal's own /api/auth/* proxy
-  baseURL: '',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333',
   plugins: [
     organizationClient({ ac, roles: allRoles }),
     emailOTPClient(),

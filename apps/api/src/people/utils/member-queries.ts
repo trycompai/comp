@@ -91,10 +91,11 @@ export class MemberQueries {
   }
 
   /**
-   * Update a member by ID
+   * Update a member by ID within an organization
    */
   static async updateMember(
     memberId: string,
+    organizationId: string,
     updateData: UpdatePeopleDto,
   ): Promise<PeopleResponseDto> {
     // Separate user-level fields from member-level fields
@@ -123,9 +124,9 @@ export class MemberQueries {
     // If we need to update both user and member, use a transaction
     if (hasUserUpdates) {
       return db.$transaction(async (tx) => {
-        // Get the member to find the associated userId
-        const member = await tx.member.findUniqueOrThrow({
-          where: { id: memberId },
+        // Get the member to find the associated userId (scoped to org)
+        const member = await tx.member.findFirstOrThrow({
+          where: { id: memberId, organizationId },
           select: { userId: true },
         });
 
@@ -142,15 +143,15 @@ export class MemberQueries {
         // Update member fields if any
         if (hasMemberUpdates) {
           return tx.member.update({
-            where: { id: memberId },
+            where: { id: memberId, organizationId },
             data: updatePayload,
             select: this.MEMBER_SELECT,
           });
         }
 
         // Return updated member with fresh user data
-        return tx.member.findUniqueOrThrow({
-          where: { id: memberId },
+        return tx.member.findFirstOrThrow({
+          where: { id: memberId, organizationId },
           select: this.MEMBER_SELECT,
         });
       });
@@ -158,7 +159,7 @@ export class MemberQueries {
 
     // Only member-level updates
     return db.member.update({
-      where: { id: memberId },
+      where: { id: memberId, organizationId },
       data: updatePayload,
       select: this.MEMBER_SELECT,
     });
@@ -193,20 +194,26 @@ export class MemberQueries {
   }
 
   /**
-   * Delete a member by ID
+   * Delete a member by ID within an organization
    */
-  static async deleteMember(memberId: string): Promise<void> {
+  static async deleteMember(
+    memberId: string,
+    organizationId: string,
+  ): Promise<void> {
     await db.member.delete({
-      where: { id: memberId },
+      where: { id: memberId, organizationId },
     });
   }
 
   /**
-   * Unlink device by resetting fleetDmLabelId to null
+   * Unlink device by resetting fleetDmLabelId to null within an organization
    */
-  static async unlinkDevice(memberId: string): Promise<PeopleResponseDto> {
+  static async unlinkDevice(
+    memberId: string,
+    organizationId: string,
+  ): Promise<PeopleResponseDto> {
     return db.member.update({
-      where: { id: memberId },
+      where: { id: memberId, organizationId },
       data: { fleetDmLabelId: null },
       select: this.MEMBER_SELECT,
     });

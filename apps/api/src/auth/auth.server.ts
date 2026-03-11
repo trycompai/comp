@@ -19,7 +19,7 @@ const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
  */
 function getCookieDomain(): string | undefined {
   const baseUrl =
-    process.env.AUTH_BASE_URL || process.env.BETTER_AUTH_URL || '';
+    process.env.BASE_URL || '';
 
   if (baseUrl.includes('staging.trycomp.ai')) {
     return '.staging.trycomp.ai';
@@ -109,10 +109,10 @@ function validateSecurityConfig(): void {
   // Warn about development defaults in production
   if (process.env.NODE_ENV === 'production') {
     const baseUrl =
-      process.env.AUTH_BASE_URL || process.env.BETTER_AUTH_URL || '';
+      process.env.BASE_URL || '';
     if (baseUrl.includes('localhost')) {
       console.warn(
-        'SECURITY WARNING: AUTH_BASE_URL contains "localhost" in production. ' +
+        'SECURITY WARNING: BASE_URL contains "localhost" in production. ' +
           'This may cause issues with OAuth callbacks and cookies.',
       );
     }
@@ -125,23 +125,21 @@ validateSecurityConfig();
 /**
  * The auth server instance - single source of truth for authentication.
  *
- * IMPORTANT: For OAuth to work correctly with the app's auth proxy:
- * - Set AUTH_BASE_URL to the app's URL (e.g., http://localhost:3000 in dev)
- * - This ensures OAuth callbacks point to the app, which proxies to this API
- * - Cookies will be set for the app's domain, not the API's domain
- *
- * In production, use the app's public URL (e.g., https://app.trycomp.ai)
+ * BASE_URL must point to the API (e.g., https://api.trycomp.ai).
+ * OAuth callbacks go directly to the API. Clients send absolute callbackURLs
+ * so better-auth redirects to the correct app after processing.
+ * Cross-subdomain cookies (.trycomp.ai) ensure the session works on all apps.
  */
 export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),
-  // Use AUTH_BASE_URL pointing to the app (client), not the API itself
-  // This is critical for OAuth callbacks and cookie domains to work correctly
-  baseURL:
-    process.env.AUTH_BASE_URL ||
-    process.env.BETTER_AUTH_URL ||
-    'http://localhost:3000',
+  // baseURL must point to the API (e.g., https://api.trycomp.ai) so that
+  // OAuth callbacks go directly to the API regardless of which frontend
+  // initiated the flow. Clients must send absolute callbackURLs so that
+  // after OAuth processing, better-auth redirects to the correct app.
+  // Cross-subdomain cookies (.trycomp.ai) ensure the session works everywhere.
+  baseURL: process.env.BASE_URL || 'http://localhost:3333',
   trustedOrigins: getTrustedOrigins(),
   emailAndPassword: {
     enabled: true,
@@ -322,6 +320,12 @@ export const auth = betterAuth({
       enabled: true,
       trustedProviders: ['google', 'github', 'microsoft'],
     },
+    // Skip the state cookie CSRF check for OAuth flows.
+    // In our cross-origin setup (app/portal → API), the state cookie may not
+    // survive the OAuth redirect flow. The OAuth state parameter stored in the
+    // database already provides CSRF protection (random 32-char string validated
+    // against the DB). This is the same approach better-auth's oAuthProxy plugin uses.
+    skipStateCookieCheck: true,
   },
   verification: {
     modelName: 'Verification',
