@@ -244,7 +244,7 @@ jobs:
             Write-Host "  Issuer: $($sig.SignerCertificate.Issuer)"
             Write-Host "  Valid from: $($sig.SignerCertificate.NotBefore) to $($sig.SignerCertificate.NotAfter)"
             if ($sig.Status -ne 'Valid') {
-              Write-Host "::error::Signature verification FAILED for $($_.Name) — Status: $($sig.Status)"
+              Write-Host "::error::Signature verification FAILED for $($_.Name) - Status: $($sig.Status)"
               $allSigned = $false
             }
           }
