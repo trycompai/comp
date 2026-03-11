@@ -4,8 +4,9 @@ import { Badge } from '@comp/ui/badge';
 import { EvidenceAutomationRun, EvidenceAutomationRunStatus } from '@db';
 import { Stack, Text, Button } from '@trycompai/design-system';
 import { formatDistanceToNow } from 'date-fns';
-import { ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { CheckmarkFilled, ChevronDown, CopyToClipboard } from '@trycompai/design-system/icons';
+import { useCallback, useMemo, useState } from 'react';
 
 type AutomationRunWithName = EvidenceAutomationRun & {
   evidenceAutomation: {
@@ -31,6 +32,39 @@ const getStatusStyles = (status: EvidenceAutomationRunStatus) => {
       return { dot: 'bg-muted-foreground', text: 'text-muted-foreground', bg: 'bg-muted/15' };
   }
 };
+
+function CopyableCodeBlock({ label, content }: { label: string; content: unknown }) {
+  const [copied, setCopied] = useState(false);
+  const text = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success('Copied to clipboard');
+    setTimeout(() => setCopied(false), 2000);
+  }, [text]);
+
+  return (
+    <div>
+      <Text size="xs" weight="medium" variant="muted">{label}</Text>
+      <div className="relative mt-1">
+        <div className="absolute top-1.5 left-1.5 z-10">
+          <Button
+            variant="outline"
+            size="icon-xs"
+            onClick={handleCopy}
+            title="Copy to clipboard"
+          >
+            {copied ? <CheckmarkFilled className="!size-3 text-primary" /> : <CopyToClipboard className="!size-3" />}
+          </Button>
+        </div>
+        <pre className="text-xs bg-muted text-foreground p-2 pl-9 rounded overflow-x-auto max-h-40 overflow-y-auto font-mono select-text cursor-text">
+          {text}
+        </pre>
+      </div>
+    </div>
+  );
+}
 
 export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -81,11 +115,13 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
                 <div
                   key={run.id}
                   className={`rounded-lg border border-border hover:border-border/80 transition-colors ${styles.bg}`}
-                  onClick={() => hasDetails && setExpandedId(isExpanded ? null : run.id)}
-                  role={hasDetails ? 'button' : undefined}
-                  style={hasDetails ? { cursor: 'pointer' } : undefined}
                 >
-                  <div className="flex items-center gap-3 px-4 py-2.5">
+                  <div
+                    className="flex items-center gap-3 px-4 py-2.5"
+                    onClick={() => hasDetails && setExpandedId(isExpanded ? null : run.id)}
+                    role={hasDetails ? 'button' : undefined}
+                    style={hasDetails ? { cursor: 'pointer' } : undefined}
+                  >
                     <div className={`h-2 w-2 rounded-full shrink-0 ${styles.dot}`} />
 
                     <div className="flex-1 min-w-0">
@@ -124,12 +160,12 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
                     </div>
 
                     {hasDetails && (
-                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                      <ChevronDown size={16} className={`text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                     )}
                   </div>
 
                   {isExpanded && (
-                    <div className="px-4 pb-3 pt-2 border-t space-y-2">
+                    <div className="px-4 pb-3 pt-2 border-t space-y-2 select-text">
                       {run.evaluationReason && (
                         <div>
                           <Text size="xs" weight="medium" variant="muted">Evaluation</Text>
@@ -137,20 +173,10 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
                         </div>
                       )}
                       {run.logs && (
-                        <div>
-                          <Text size="xs" weight="medium" variant="muted">Logs</Text>
-                          <pre className="text-xs bg-muted text-foreground p-2 rounded overflow-x-auto max-h-40 overflow-y-auto font-mono mt-1">
-                            {typeof run.logs === 'string' ? run.logs : JSON.stringify(run.logs, null, 2)}
-                          </pre>
-                        </div>
+                        <CopyableCodeBlock label="Logs" content={run.logs} />
                       )}
                       {run.output && (
-                        <div>
-                          <Text size="xs" weight="medium" variant="muted">Output</Text>
-                          <pre className="text-xs bg-muted text-foreground p-2 rounded overflow-x-auto max-h-40 overflow-y-auto font-mono mt-1">
-                            {typeof run.output === 'string' ? run.output : JSON.stringify(run.output, null, 2)}
-                          </pre>
-                        </div>
+                        <CopyableCodeBlock label="Output" content={run.output} />
                       )}
                       {run.status === 'failed' && run.error && (
                         <div className="px-2 py-1.5 rounded bg-destructive/10 border border-destructive/20">
