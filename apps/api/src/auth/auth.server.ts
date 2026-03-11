@@ -272,8 +272,13 @@ export const auth = betterAuth({
     magicLink({
       expiresIn: MAGIC_LINK_EXPIRES_IN_SECONDS,
       sendMagicLink: async ({ email, url }) => {
+        // The `url` from better-auth points to the API's verify endpoint
+        // and includes the callbackURL from the client's sign-in request.
+        // Flow: user clicks link → API verifies token & sets session cookie
+        // → API redirects (302) to callbackURL (the app).
         if (process.env.NODE_ENV === 'development') {
           console.log('[Auth] Sending magic link to:', email);
+          console.log('[Auth] Magic link URL:', url);
         }
         await triggerEmail({
           to: email,
