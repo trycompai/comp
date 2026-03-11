@@ -208,13 +208,10 @@ jobs:
           Invoke-WebRequest -Uri "https://github.com/SSLcom/CodeSignTool/releases/download/v1.3.0/CodeSignTool-v1.3.0-windows.zip" -OutFile "codesigntool.zip"
           Expand-Archive -Path "codesigntool.zip" -DestinationPath "codesigntool"
 
-          $cstDir = Get-ChildItem -Path "codesigntool" -Directory | Select-Object -First 1
-          if (-not $cstDir) { throw "CodeSignTool directory not found after extraction" }
-          Write-Host "CodeSignTool directory: $($cstDir.FullName)"
-
-          $jar = Get-ChildItem -Path $cstDir.FullName -Recurse -Filter "code_sign_tool-*.jar" | Select-Object -First 1
+          $jar = Get-ChildItem -Path "codesigntool" -Recurse -Filter "code_sign_tool-*.jar" | Select-Object -First 1
           if (-not $jar) { throw "CodeSignTool jar not found" }
           Write-Host "Found CodeSignTool jar at: $($jar.FullName)"
+          $cstDir = $jar.Directory
 
           $releaseDir = Get-Location
           Get-ChildItem -Path $releaseDir -Filter "*.exe" | ForEach-Object {
