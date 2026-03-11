@@ -320,6 +320,12 @@ export const auth = betterAuth({
       enabled: true,
       trustedProviders: ['google', 'github', 'microsoft'],
     },
+    // Skip the state cookie CSRF check for OAuth flows.
+    // In our cross-origin setup (app/portal → API), the state cookie may not
+    // survive the OAuth redirect flow. The OAuth state parameter stored in the
+    // database already provides CSRF protection (random 32-char string validated
+    // against the DB). This is the same approach better-auth's oAuthProxy plugin uses.
+    skipStateCookieCheck: true,
   },
   verification: {
     modelName: 'Verification',
