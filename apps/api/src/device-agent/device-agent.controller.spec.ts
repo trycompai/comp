@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StreamableFile } from '@nestjs/common';
 import { DeviceAgentController } from './device-agent.controller';
+import { DeviceAgentAuthService } from './device-agent-auth.service';
 import { DeviceAgentService } from './device-agent.service';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -46,7 +47,10 @@ describe('DeviceAgentController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [DeviceAgentController],
-      providers: [{ provide: DeviceAgentService, useValue: mockService }],
+      providers: [
+        { provide: DeviceAgentService, useValue: mockService },
+        { provide: DeviceAgentAuthService, useValue: {} },
+      ],
     })
       .overrideGuard(HybridAuthGuard)
       .useValue(mockGuard)
