@@ -5,6 +5,7 @@ import { db } from '@trycompai/db';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import {
+  bearer,
   emailOTP,
   magicLink,
   multiSession,
@@ -302,6 +303,7 @@ export const auth = betterAuth({
       },
     }),
     multiSession(),
+    bearer(),
   ],
   socialProviders,
   user: {

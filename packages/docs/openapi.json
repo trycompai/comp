@@ -7895,6 +7895,191 @@
         ]
       }
     },
+    "/v1/device-agent/exchange-code": {
+      "post": {
+        "operationId": "DeviceAgentController_exchangeCode_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExchangeCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Agent"
+        ]
+      }
+    },
+    "/v1/device-agent/updates/{filename}": {
+      "get": {
+        "operationId": "DeviceAgentController_getUpdateFile_v1",
+        "parameters": [
+          {
+            "name": "filename",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Agent"
+        ]
+      },
+      "head": {
+        "operationId": "DeviceAgentController_headUpdateFile_v1",
+        "parameters": [
+          {
+            "name": "filename",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Agent"
+        ]
+      }
+    },
+    "/v1/device-agent/auth-code": {
+      "post": {
+        "operationId": "DeviceAgentController_generateAuthCode_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Agent"
+        ]
+      }
+    },
+    "/v1/device-agent/my-organizations": {
+      "get": {
+        "operationId": "DeviceAgentController_getMyOrganizations_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Agent"
+        ]
+      }
+    },
+    "/v1/device-agent/register": {
+      "post": {
+        "operationId": "DeviceAgentController_registerDevice_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Agent"
+        ]
+      }
+    },
+    "/v1/device-agent/check-in": {
+      "post": {
+        "operationId": "DeviceAgentController_checkIn_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Agent"
+        ]
+      }
+    },
+    "/v1/device-agent/status": {
+      "get": {
+        "operationId": "DeviceAgentController_getDeviceStatus_v1",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Agent"
+        ]
+      }
+    },
     "/v1/device-agent/mac": {
       "get": {
         "description": "Downloads the Comp AI Device Agent installer for macOS as a DMG file. The agent helps monitor device compliance and security policies. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
@@ -21093,6 +21278,22 @@
         "required": [
           "instructions"
         ]
+      },
+      "ExchangeCodeDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AuthCodeDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RegisterDeviceDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CheckInDto": {
+        "type": "object",
+        "properties": {}
       },
       "TaskResponseDto": {
         "type": "object",

@@ -34,10 +34,13 @@ packages/
 
 ## Authentication & Session
 
-- **Session-based auth only.** No JWT tokens. All requests use `credentials: 'include'` to send httpOnly session cookies.
+- **Auth lives in `apps/api` (NestJS).** The API is the single source of truth for authentication via better-auth. All apps and packages that need to authenticate (app, portal, device-agent, etc.) MUST go through the API — never run a local better-auth instance or handle auth directly in a frontend app.
+- **Session-based auth only.** No JWT tokens. Cross-subdomain cookies (`.trycomp.ai`) allow sessions to work across all apps.
 - **HybridAuthGuard** supports 3 methods in order: API Key (`x-api-key`), Service Token (`x-service-token`), Session (cookies). `@Public()` skips auth.
-- **Client-side**: `apiClient` from `@/lib/api-client` (always sends cookies).
-- **Server-side**: `serverApi` from `@/lib/api-server.ts`.
+- **Client-side auth**: `authClient` (better-auth client) with `baseURL` pointing to the API, NOT the current app.
+- **Client-side data**: `apiClient` from `@/lib/api-client` (always sends cookies).
+- **Server-side data**: `serverApi` from `@/lib/api-server.ts`.
+- **Server-side session checks**: Proxy to the API's `/api/auth/get-session` endpoint — do NOT instantiate better-auth locally.
 - **Raw `fetch()` to API**: MUST include `credentials: 'include'`, otherwise 401.
 
 ## API Architecture

@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 
 type Status = 'redirecting' | 'success' | 'error';
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+
 export default function DeviceCallbackPage() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<Status>('redirecting');
@@ -32,16 +34,17 @@ export default function DeviceCallbackPage() {
 
     async function exchangeAndRedirect() {
       try {
-        // Generate an auth code using the authenticated session
-        const response = await fetch('/api/device-agent/auth-code', {
+        // Generate an auth code by calling the NestJS API cross-origin
+        const response = await fetch(`${apiUrl}/v1/device-agent/auth-code`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ callback_port: port, state }),
         });
 
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
-          throw new Error(data.error || `Server returned ${response.status}`);
+          throw new Error(data.error || data.message || `Server returned ${response.status}`);
         }
 
         const { code } = await response.json();
