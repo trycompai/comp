@@ -10,7 +10,7 @@ import type {
   StoredAuth,
 } from '../shared/types';
 import { log } from './logger';
-import { clearAuth, getPortalUrl, setAuth } from './store';
+import { clearAuth, getApiUrl, getPortalUrl, setAuth } from './store';
 
 /** How long to wait for the user to complete login in the browser */
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -21,6 +21,7 @@ const LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
  */
 export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth | null> {
   const portalUrl = getPortalUrl();
+  const apiUrl = getApiUrl();
   const state = randomBytes(16).toString('hex');
 
   let server: Server | null = null;
@@ -46,8 +47,8 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
 
     log('Received auth code, exchanging for session token...');
 
-    // Exchange the code for a session token
-    const exchangeResponse = await fetch(`${portalUrl}${API_ROUTES.EXCHANGE_CODE}`, {
+    // Exchange the code for a session token (calls the NestJS API)
+    const exchangeResponse = await fetch(`${apiUrl}${API_ROUTES.EXCHANGE_CODE}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
@@ -69,8 +70,8 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
     const { session_token, user_id } = await exchangeResponse.json();
     log(`Session token received for userId=${user_id}`);
 
-    // Fetch organizations and register device
-    const authData = await fetchOrgsAndRegister(portalUrl, session_token, user_id, deviceInfo);
+    // Fetch organizations and register device (calls the NestJS API)
+    const authData = await fetchOrgsAndRegister(apiUrl, session_token, user_id, deviceInfo);
 
     if (authData) {
       setAuth(authData);
@@ -170,7 +171,7 @@ function startCallbackServer(
  * After receiving a session token, fetches the user's orgs and registers the device for all of them.
  */
 async function fetchOrgsAndRegister(
-  portalUrl: string,
+  apiUrl: string,
   sessionToken: string,
   userId: string,
   deviceInfo: DeviceInfo,
@@ -178,7 +179,7 @@ async function fetchOrgsAndRegister(
   const authHeader = `Bearer ${sessionToken}`;
 
   // Fetch all organizations the user belongs to
-  const orgsResponse = await fetch(`${portalUrl}${API_ROUTES.MY_ORGANIZATIONS}`, {
+  const orgsResponse = await fetch(`${apiUrl}${API_ROUTES.MY_ORGANIZATIONS}`, {
     headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
   });
 
@@ -220,7 +221,7 @@ async function fetchOrgsAndRegister(
     log(`Registering device for org: ${org.organizationName} (${org.organizationId})`);
 
     try {
-      const registerResponse = await fetch(`${portalUrl}${API_ROUTES.REGISTER}`, {
+      const registerResponse = await fetch(`${apiUrl}${API_ROUTES.REGISTER}`, {
         method: 'POST',
         headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
         body: JSON.stringify({
