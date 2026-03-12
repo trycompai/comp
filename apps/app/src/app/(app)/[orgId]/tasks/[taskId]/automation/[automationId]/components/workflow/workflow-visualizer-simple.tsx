@@ -229,7 +229,7 @@ Please fix the automation script to resolve this error.`;
       { text: errorMessage },
       {
         body: {
-          modelId: 'openai/gpt-5-mini',
+          modelId: 'anthropic/claude-sonnet-4.6',
           reasoningEffort: 'medium',
           orgId,
           taskId,
