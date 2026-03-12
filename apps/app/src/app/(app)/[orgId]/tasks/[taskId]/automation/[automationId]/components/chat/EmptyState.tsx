@@ -151,7 +151,7 @@ export function EmptyState({
               <SuggestionCardSkeleton key={`skeleton-${index}`} />
             ))
           : // Show actual suggestion cards
-            examplesToShow?.map((example: AutomationExample, index: number) => (
+            examplesToShow.map((example: AutomationExample, index: number) => (
               <VendorCard
                 key={`${example.title}-${index}`}
                 example={example}

@@ -92,7 +92,12 @@ export async function generateAutomationSuggestions(
               ? parsed.suggestions
               : [parsed.suggestions];
             if (suggestions.length > 0 && suggestions[0].title) {
-              return suggestions;
+              return suggestions.map((s: Record<string, unknown>) => ({
+                title: String(s.title),
+                prompt: String(s.prompt),
+                vendorName: (s.vendorName as string) ?? undefined,
+                vendorWebsite: (s.vendorWebsite as string) ?? undefined,
+              }));
             }
           }
         }
