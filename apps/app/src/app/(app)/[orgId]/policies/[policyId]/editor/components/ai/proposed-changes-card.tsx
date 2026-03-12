@@ -98,9 +98,11 @@ export function ProposedChangesCard({
     setDecisions(next);
   }, [hunkIndices]);
 
-  const deselectAll = useCallback(() => {
-    setDecisions({});
-  }, []);
+  const rejectAll = useCallback(() => {
+    const next: Record<number, HunkDecision> = {};
+    for (const i of hunkIndices) next[i] = 'rejected';
+    setDecisions(next);
+  }, [hunkIndices]);
 
   if (!file) return null;
 
@@ -113,6 +115,50 @@ export function ProposedChangesCard({
   const allDecided = pendingIndices.length === 0 && hasAnyDecision;
 
   const skipRanges = buildSkipRanges(file);
+
+  // Build a display list that merges adjacent skip blocks and no-change hunks
+  const displayItems = useMemo(() => {
+    type DisplayItem =
+      | { type: 'hunk'; index: number; hunk: Hunk }
+      | { type: 'skip'; totalLines: number; startLine: number; endLine: number };
+
+    const items: DisplayItem[] = [];
+    let pendingSkipLines = 0;
+    let skipStart = 1;
+    let skipEnd = 0;
+
+    const flushSkip = () => {
+      if (pendingSkipLines > 0) {
+        items.push({ type: 'skip', totalLines: pendingSkipLines, startLine: skipStart, endLine: skipEnd });
+        pendingSkipLines = 0;
+      }
+    };
+
+    for (let i = 0; i < file.hunks.length; i++) {
+      const hunk = file.hunks[i];
+      if (!hunk) continue;
+
+      if (hunk.type === 'skip') {
+        const range = skipRanges.get(i);
+        if (range) {
+          if (pendingSkipLines === 0) skipStart = range.start;
+          skipEnd = range.end;
+          pendingSkipLines += range.end - range.start + 1;
+        }
+      } else if (hunk.type === 'hunk' && !hunkHasChanges(hunk)) {
+        // No-change hunk — count its lines as skipped
+        if (pendingSkipLines === 0) skipStart = hunk.oldStart;
+        skipEnd = hunk.oldStart + hunk.oldLines - 1;
+        pendingSkipLines += hunk.oldLines;
+      } else if (hunk.type === 'hunk') {
+        flushSkip();
+        items.push({ type: 'hunk', index: i, hunk });
+      }
+    }
+    flushSkip();
+
+    return items;
+  }, [file, skipRanges]);
 
   // Click-to-confirm for unreviewed "Apply All"
   const [confirmingApplyAll, setConfirmingApplyAll] = useState(false);
@@ -187,7 +233,7 @@ export function ProposedChangesCard({
                 Accept all
               </Button>
               <span className="text-muted-foreground/30">|</span>
-              <Button variant="ghost" size="sm" onClick={deselectAll}>
+              <Button variant="ghost" size="sm" onClick={rejectAll}>
                 Reject all
               </Button>
             </div>
@@ -195,12 +241,13 @@ export function ProposedChangesCard({
 
           {/* Inline diff body — scrollable */}
           <div className="max-h-[400px] divide-y divide-border/50 overflow-y-auto">
-            {file.hunks.map((hunk, i) => {
-              if (hunk.type === 'hunk' && hunkHasChanges(hunk)) {
+            {displayItems.map((item, idx) => {
+              if (item.type === 'hunk') {
+                const i = item.index;
                 return (
                   <HunkWithActions
-                    key={i}
-                    hunk={hunk}
+                    key={`hunk-${i}`}
+                    hunk={item.hunk}
                     decision={getDecision(i)}
                     onAccept={() => setDecision(i, 'accepted')}
                     onReject={() => setDecision(i, 'rejected')}
@@ -210,16 +257,13 @@ export function ProposedChangesCard({
                   />
                 );
               }
-              if (hunk.type === 'skip') {
-                return (
-                  <ExpandableSkipSection
-                    key={i}
-                    count={hunk.count}
-                    lines={getSkipLines(originalLines, skipRanges, i)}
-                  />
-                );
-              }
-              return null;
+              return (
+                <ExpandableSkipSection
+                  key={`skip-${idx}`}
+                  count={item.totalLines}
+                  lines={originalLines.slice(item.startLine - 1, item.endLine).join('\n')}
+                />
+              );
             })}
           </div>
 
@@ -497,6 +541,10 @@ function hasContent(line: Line): boolean {
   return text.length > 0;
 }
 
+function normalizeText(text: string): string {
+  return text.replace(/\s+/g, ' ').trim();
+}
+
 function hunkHasChanges(hunk: Hunk): boolean {
   if (hunk.type !== 'hunk') return false;
 
@@ -507,7 +555,7 @@ function hunkHasChanges(hunk: Hunk): boolean {
     if (line.content.some((s) => s.type !== 'normal')) return true;
   }
 
-  // Check for unpaired inserts/deletes, but skip delete+insert pairs with identical text
+  // Check for unpaired inserts/deletes, but skip delete+insert pairs with identical/whitespace-only text
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (!line) continue;
@@ -515,16 +563,19 @@ function hunkHasChanges(hunk: Hunk): boolean {
     if (line.type === 'delete') {
       const next = lines[i + 1];
       if (next?.type === 'insert') {
-        // Paired delete+insert — only count as a change if text differs
-        const delText = line.content.map((s) => s.value).join('');
-        const insText = next.content.map((s) => s.value).join('');
+        const delText = normalizeText(line.content.map((s) => s.value).join(''));
+        const insText = normalizeText(next.content.map((s) => s.value).join(''));
         if (delText !== insText) return true;
         i++; // skip the insert
       } else {
-        return true; // unpaired delete
+        // Unpaired delete — only count if it has non-whitespace content
+        const text = normalizeText(line.content.map((s) => s.value).join(''));
+        if (text.length > 0) return true;
       }
     } else if (line.type === 'insert') {
-      return true; // unpaired insert
+      // Unpaired insert — only count if it has non-whitespace content
+      const text = normalizeText(line.content.map((s) => s.value).join(''));
+      if (text.length > 0) return true;
     }
   }
 
@@ -535,11 +586,7 @@ function countChanges(file: File): number {
   let count = 0;
   for (const hunk of file.hunks) {
     if (hunk.type === 'hunk' && hunkHasChanges(hunk)) {
-      for (const line of hunk.lines) {
-        if (line.type !== 'normal' || line.content.some((s) => s.type !== 'normal')) {
-          count++;
-        }
-      }
+      count++;
     }
   }
   return count;

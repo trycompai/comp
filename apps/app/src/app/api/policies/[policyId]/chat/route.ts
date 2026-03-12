@@ -121,6 +121,13 @@ When using the proposePolicy tool:
 - Always fill in title, detail, and reviewHint so the UI can show a small banner indicating that changes are ready to review.
 - Keep title, detail, and reviewHint focused, specific, and free of markdown formatting.
 
+CRITICAL — PRESERVE UNCHANGED TEXT EXACTLY:
+- Copy every section you are NOT changing VERBATIM, character-for-character.
+- Do NOT rephrase, reformat, reword, or "improve" sections the user did not ask you to change.
+- Do NOT add, remove, or change punctuation, whitespace, line breaks, or list formatting in untouched sections.
+- The ONLY differences between the current policy and your output should be the specific changes the user requested.
+- If you are adding a new section, insert it at the appropriate location and leave ALL existing text identical.
+
 PER-SECTION FEEDBACK:
 - When the user's message references a specific section (e.g., "For the section that says '...'"), they are giving targeted feedback on ONLY that part of the policy.
 - Apply the requested change ONLY to the referenced section. Do NOT modify any other sections.
