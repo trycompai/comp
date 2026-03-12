@@ -36,11 +36,6 @@ import {
   HStack,
   Label,
   Section,
-  Sheet,
-  SheetBody,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
   Stack,
   Tabs,
   TabsContent,
@@ -94,29 +89,35 @@ interface LatestProposal {
   reviewHint: string;
 }
 
-function getLatestProposedPolicy(messages: PolicyChatUIMessage[]): LatestProposal | null {
-  const lastAssistantMessage = [...messages].reverse().find((m) => m.role === 'assistant');
-  if (!lastAssistantMessage?.parts) return null;
-
+/**
+ * Scan ALL assistant messages for the latest completed proposePolicy tool call.
+ * This ensures the card stays visible even when a new streaming response starts
+ * (the previous completed proposal lives on an earlier message).
+ */
+function getLatestCompletedProposal(messages: PolicyChatUIMessage[]): LatestProposal | null {
   let latest: LatestProposal | null = null;
 
-  lastAssistantMessage.parts.forEach((part, index) => {
-    if (part.type !== 'tool-proposePolicy') return;
-    if (part.state === 'input-streaming' || part.state === 'output-error') return;
-    const input = part.input;
-    if (!input?.content) return;
+  for (const msg of messages) {
+    if (msg.role !== 'assistant' || !msg.parts) continue;
+    for (let index = 0; index < msg.parts.length; index++) {
+      const part = msg.parts[index];
+      if (!part || part.type !== 'tool-proposePolicy') continue;
+      if (part.state === 'input-streaming' || part.state === 'output-error') continue;
+      const input = part.input;
+      if (!input?.content) continue;
 
-    latest = {
-      key: `${lastAssistantMessage.id}:${index}`,
-      content: input.content,
-      summary: input.summary ?? 'Proposing policy changes',
-      title: input.title ?? input.summary ?? 'Policy updates ready for your review',
-      detail:
-        input.detail ??
-        'I have prepared an updated version of this policy based on your instructions.',
-      reviewHint: input.reviewHint ?? 'Review the proposed changes below before applying them.',
-    };
-  });
+      latest = {
+        key: `${msg.id}:${index}`,
+        content: input.content,
+        summary: input.summary ?? 'Proposing policy changes',
+        title: input.title ?? input.summary ?? 'Policy updates ready for your review',
+        detail:
+          input.detail ??
+          'I have prepared an updated version of this policy based on your instructions.',
+        reviewHint: input.reviewHint ?? 'Review the proposed changes below before applying them.',
+      };
+    }
+  }
 
   return latest;
 }
@@ -451,14 +452,18 @@ export function PolicyContentManager({
     baseSendMessage(payload);
   };
 
-  const latestProposal = useMemo(() => getLatestProposedPolicy(messages), [messages]);
+  // ── Proposal state management ──────────────────────────────────────
+  // Scan ALL assistant messages for the latest completed proposePolicy tool call.
+  // Unlike before, this doesn't only check the last assistant message — it finds
+  // the most recent completed proposal across the entire conversation so that
+  // starting a new streaming response doesn't cause the card to vanish.
 
-  const activeProposal =
-    latestProposal && latestProposal.key !== dismissedProposalKey ? latestProposal : null;
+  const latestCompletedProposal = useMemo(
+    () => getLatestCompletedProposal(messages),
+    [messages],
+  );
 
-  const proposedPolicyMarkdown = activeProposal?.content ?? null;
-
-  const hasPendingProposal = useMemo(
+  const isProposalStreaming = useMemo(
     () =>
       messages.some(
         (m) =>
@@ -471,6 +476,14 @@ export function PolicyContentManager({
       ),
     [messages],
   );
+
+  // The last fully-completed, non-dismissed proposal the user can act on.
+  const activeProposal =
+    latestCompletedProposal && latestCompletedProposal.key !== dismissedProposalKey
+      ? latestCompletedProposal
+      : null;
+
+  const proposedPolicyMarkdown = activeProposal?.content ?? null;
 
   const handleSwitchFormat = async (format: string) => {
     previousTabRef.current = activeTab;
@@ -498,14 +511,45 @@ export function PolicyContentManager({
     return createGitPatch('Proposed Changes', currentPolicyMarkdown, proposedPolicyMarkdown);
   }, [currentPolicyMarkdown, proposedPolicyMarkdown]);
 
-  const [feedbackHunkIndex, setFeedbackHunkIndex] = useState<number | null>(null);
+  // ── Per-hunk feedback ────────────────────────────────────────────
+  // When the user gives feedback on a single hunk, we:
+  //   1. Snapshot the current diffPatch so the card stays mounted
+  //   2. Show a shimmer on the targeted hunk
+  //   3. Send a hidden message to the AI
+  //   4. Once a new completed proposal arrives, swap in the new diff
 
-  // Clear feedbackHunkIndex when a new proposal arrives
+  const [feedbackHunkIndex, setFeedbackHunkIndex] = useState<number | null>(null);
+  // Snapshot of the diff at the moment feedback was sent — keeps the card alive
+  const [frozenPatch, setFrozenPatch] = useState<string | null>(null);
+  // The proposal key that was active when feedback was sent
+  const [feedbackSourceKey, setFeedbackSourceKey] = useState<string | null>(null);
+
+  const isFeedbackInFlight = feedbackSourceKey !== null;
+
+  // The patch to render: frozen during feedback, live otherwise
+  const displayPatch = frozenPatch ?? diffPatch;
+
+  // Clear feedback state when the AI finishes responding.
+  // We track whether the AI has started working (status left 'ready') so we
+  // don't immediately clear on the same render that sets feedbackSourceKey.
+  const feedbackStartedRef = useRef(false);
+
   useEffect(() => {
-    if (latestProposal) {
-      setFeedbackHunkIndex(null);
+    if (!isFeedbackInFlight) {
+      feedbackStartedRef.current = false;
+      return;
     }
-  }, [latestProposal?.key]);
+    if (status !== 'ready') {
+      feedbackStartedRef.current = true;
+    }
+    if (feedbackStartedRef.current && status === 'ready') {
+      setFeedbackHunkIndex(null);
+      setFrozenPatch(null);
+      setFeedbackSourceKey(null);
+    }
+  }, [status, isFeedbackInFlight]);
+
+  const FEEDBACK_MARKER = '___hunk_feedback___';
 
   function handleHunkFeedback(hunkIndex: number, feedback: string) {
     if (!diffPatch) return;
@@ -516,17 +560,44 @@ export function PolicyContentManager({
     const hunk = file.hunks[hunkIndex];
     if (!hunk || hunk.type !== 'hunk') return;
 
-    const hunkText = hunk.lines
+    // Build the proposed (new) text for this hunk so the AI knows exactly what section to edit
+    const proposedText = hunk.lines
+      .filter((line) => line.type !== 'delete')
       .map((line) => line.content.map((seg) => seg.value).join(''))
-      .join(' ')
-      .slice(0, 80);
+      .join('\n')
+      .trim();
 
+    // Freeze current state before the AI starts streaming
     setFeedbackHunkIndex(hunkIndex);
+    setFrozenPatch(diffPatch);
+    setFeedbackSourceKey(activeProposal?.key ?? null);
 
     sendMessage({
-      text: `For the section that says "${hunkText}": ${feedback}`,
+      text: `For the section that says:\n"""\n${proposedText}\n"""\n\nFeedback: ${feedback}\n\nApply this feedback ONLY to the section above. Do not change any other sections.\n${FEEDBACK_MARKER}`,
     });
   }
+
+  // Filter out per-hunk feedback messages (and their AI responses) from chat display
+  const displayMessages = useMemo(() => {
+    const result: typeof messages = [];
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      if (!msg) continue;
+      const isFeedbackMsg =
+        msg.role === 'user' &&
+        msg.parts?.some(
+          (part) => part.type === 'text' && part.text.includes(FEEDBACK_MARKER),
+        );
+      if (isFeedbackMsg) {
+        // Skip this user message and the following assistant response
+        const next = messages[i + 1];
+        if (next?.role === 'assistant') i++;
+        continue;
+      }
+      result.push(msg);
+    }
+    return result;
+  }, [messages]);
 
   async function applyProposedChanges() {
     if (!activeProposal || !viewingVersion) return;
@@ -911,16 +982,16 @@ export function PolicyContentManager({
             </div>
           </div>
 
-          {/* Medium desktop (1024-1535px): AI assistant above the editor */}
-          {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && isDesktop && !isWideDesktop && (
-            <div className="max-h-[400px]">
+          {/* Mobile/tablet and medium desktop: AI assistant above the editor */}
+          {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && !isWideDesktop && (
+            <div className="h-[400px]">
               <PolicyAiAssistant
-                messages={messages}
+                messages={displayMessages}
                 status={status}
                 errorMessage={chatErrorMessage}
                 sendMessage={sendMessage}
                 close={() => setShowAiAssistant(false)}
-                hasActiveProposal={!!activeProposal && !hasPendingProposal}
+                hasActiveProposal={!!activeProposal && !isProposalStreaming}
               />
             </div>
           )}
@@ -933,15 +1004,20 @@ export function PolicyContentManager({
             <div className={showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex-[7] min-w-0' : 'w-full'}>
               <Stack gap="sm">
                 <TabsContent value="EDITOR">
-                  {diffPatch && activeProposal && !hasPendingProposal && (
+                  {displayPatch && (activeProposal || isFeedbackInFlight) && (
                     <ProposedChangesCard
-                      patch={diffPatch}
+                      patch={displayPatch}
                       originalText={currentPolicyMarkdown}
                       onApplyAll={applyProposedChanges}
                       onApplySelected={(selectedHunkIndices) =>
-                        applySelectedChanges(diffPatch, selectedHunkIndices)
+                        applySelectedChanges(displayPatch, selectedHunkIndices)
                       }
-                      onDismiss={() => setDismissedProposalKey(activeProposal.key)}
+                      onDismiss={() => {
+                        if (activeProposal) setDismissedProposalKey(activeProposal.key);
+                        setFrozenPatch(null);
+                        setFeedbackSourceKey(null);
+                        setFeedbackHunkIndex(null);
+                      }}
                       isApplying={isApplying}
                       onHunkFeedback={handleHunkFeedback}
                       feedbackHunkIndex={feedbackHunkIndex}
@@ -987,31 +1063,12 @@ export function PolicyContentManager({
                   errorMessage={chatErrorMessage}
                   sendMessage={sendMessage}
                   close={() => setShowAiAssistant(false)}
-                  hasActiveProposal={!!activeProposal && !hasPendingProposal}
+                  hasActiveProposal={!!activeProposal && !isProposalStreaming}
                 />
               </div>
             )}
           </div>
 
-          {/* Mobile/tablet: AI Assistant as a Sheet */}
-          {aiAssistantEnabled && !isVersionReadOnly && activeTab === 'EDITOR' && !isDesktop && (
-            <Sheet open={showAiAssistant} onOpenChange={setShowAiAssistant}>
-              <SheetContent side="right">
-                <SheetHeader>
-                  <SheetTitle>AI Assistant</SheetTitle>
-                </SheetHeader>
-                <SheetBody>
-                  <PolicyAiAssistant
-                    messages={messages}
-                    status={status}
-                    errorMessage={chatErrorMessage}
-                    sendMessage={sendMessage}
-                    hasActiveProposal={!!activeProposal && !hasPendingProposal}
-                  />
-                </SheetBody>
-              </SheetContent>
-            </Sheet>
-          )}
         </Stack>
       </Tabs>
 

@@ -1,5 +1,5 @@
 import { auth } from '@/utils/auth';
-import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
 import { db } from '@db';
 import { convertToModelMessages, streamText, type UIMessage } from 'ai';
 import { headers } from 'next/headers';
@@ -121,11 +121,16 @@ When using the proposePolicy tool:
 - Always fill in title, detail, and reviewHint so the UI can show a small banner indicating that changes are ready to review.
 - Keep title, detail, and reviewHint focused, specific, and free of markdown formatting.
 
+PER-SECTION FEEDBACK:
+- When the user's message references a specific section (e.g., "For the section that says '...'"), they are giving targeted feedback on ONLY that part of the policy.
+- Apply the requested change ONLY to the referenced section. Do NOT modify any other sections.
+- Follow the user's instructions literally — if they say to insert text "in the middle", place it in the middle of that section, not at the end.
+- Still provide the COMPLETE policy content via the proposePolicy tool, but only the targeted section should differ from the current policy.
+
 Keep responses helpful and focused on the policy editing task.`;
 
     const result = streamText({
-      //  we use 5.1 because it has the best context window for this task
-      model: openai('gpt-5.1'),
+      model: anthropic('claude-sonnet-4-6'),
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       toolChoice: 'auto',

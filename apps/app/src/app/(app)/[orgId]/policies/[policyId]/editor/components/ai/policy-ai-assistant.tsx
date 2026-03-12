@@ -1,25 +1,25 @@
 'use client';
 
 import {
-  AIChatBody,
-  Badge,
-  Button,
-  Card,
-  HStack,
-  Stack,
-  Text,
-  Textarea,
-} from '@trycompai/design-system';
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
 import {
-  ArrowDown,
-  CheckmarkFilled,
-  CircleFilled,
-  Close,
-  Error,
-  Time,
-} from '@trycompai/design-system/icons';
+  Message,
+  MessageContent,
+  MessageResponse,
+} from '@/components/ai-elements/message';
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputFooter,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { Alert, Button } from '@trycompai/design-system';
+import { Close, MagicWand } from '@trycompai/design-system/icons';
 import type { ChatStatus } from 'ai';
-import { useState } from 'react';
 import type { PolicyChatUIMessage } from '../../types';
 
 interface PolicyAiAssistantProps {
@@ -39,154 +39,92 @@ export function PolicyAiAssistant({
   close,
   hasActiveProposal,
 }: PolicyAiAssistantProps) {
-  const [input, setInput] = useState('');
-
-  const isLoading = status === 'streaming' || status === 'submitted';
-
-  const hasActiveTool = messages.some(
-    (m) =>
-      m.role === 'assistant' &&
-      m.parts.some(
-        (p) =>
-          p.type === 'tool-proposePolicy' &&
-          (p.state === 'input-streaming' ||
-            p.state === 'output-available' ||
-            p.state === 'output-error'),
-      ),
-  );
-
-  const handleSubmit = () => {
-    if (!input.trim()) return;
-    sendMessage({ text: input });
-    setInput('');
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
   return (
-    <Card
-      width="full"
-      title="AI Assistant"
-      headerAction={
-        close && (
-          <Button variant="ghost" size="icon-sm" onClick={close}>
-            <Close size={16} />
-          </Button>
-        )
-      }
-    >
-      <Stack gap="md">
-        <AIChatBody>
-          <Stack gap="sm">
-            {messages.length === 0 ? (
-              <Stack gap="sm">
-                <Text size="sm" variant="muted">
-                  I can help you edit, adapt, or check this policy for compliance. Try asking me
-                  things like:
-                </Text>
-                <Stack gap="xs">
-                  <Text size="xs" variant="muted">
-                    "Adapt this for a fully remote, distributed team."
-                  </Text>
-                  <Text size="xs" variant="muted">
-                    "Can I shorten the data retention timeframe and still meet SOC 2 standards?"
-                  </Text>
-                  <Text size="xs" variant="muted">
-                    "Modify the access control section to include contractors."
-                  </Text>
-                </Stack>
-              </Stack>
-            ) : (
-              messages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  hasActiveProposal={hasActiveProposal}
-                />
-              ))
-            )}
-            {isLoading && !hasActiveTool && (
-              <Text size="sm" variant="muted">
-                Thinking...
-              </Text>
-            )}
-          </Stack>
-        </AIChatBody>
+    <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm">
+      {close && (
+        <div className="flex items-center justify-between bg-primary px-3 py-2 text-primary-foreground">
+          <span className="text-sm font-semibold">AI Assistant</span>
+          <div className="text-primary-foreground [&_button]:text-primary-foreground/70 [&_button:hover]:text-primary-foreground">
+            <Button variant="ghost" size="icon" onClick={close} iconLeft={<Close size={14} />} />
+          </div>
+        </div>
+      )}
 
+      <Conversation className="min-h-0 flex-1">
+        <ConversationContent className="!gap-3 px-3 py-3">
+          {messages.length === 0 ? (
+            <ConversationEmptyState>
+              <div className="text-muted-foreground">
+                <MagicWand size={24} />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-medium">Policy AI Assistant</h3>
+                <p className="text-xs text-muted-foreground">I can help you edit, adapt, or check this policy for compliance.</p>
+              </div>
+              <div className="space-y-0.5 text-center text-xs italic text-muted-foreground/70">
+                <p>&quot;Add a section covering third-party vendor access controls.&quot;</p>
+                <p>&quot;Update the incident response steps to align with SOC 2.&quot;</p>
+                <p>&quot;Rewrite the data retention clause for GDPR compliance.&quot;</p>
+              </div>
+            </ConversationEmptyState>
+          ) : (
+            messages.map((message) => (
+              <Message from={message.role} key={message.id}>
+                <MessageContent>
+                  {message.parts.map((part, index) => {
+                    if (part.type === 'text') {
+                      return (
+                        <MessageResponse key={`${message.id}-${index}`}>
+                          {part.text}
+                        </MessageResponse>
+                      );
+                    }
+
+                    if (part.type === 'tool-proposePolicy') {
+                      return (
+                        <PolicyToolCard
+                          key={`${message.id}-${index}`}
+                          part={part}
+                          hasActiveProposal={hasActiveProposal}
+                        />
+                      );
+                    }
+
+                    return null;
+                  })}
+                </MessageContent>
+              </Message>
+            ))
+          )}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
+
+      <div className="border-t px-3 py-2">
         {errorMessage && (
-          <Stack>
-            <Text size="xs" variant="destructive">
-              {errorMessage}
-            </Text>
-          </Stack>
+          <div className="mb-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {errorMessage}
+          </div>
         )}
 
-        <Stack gap="xs">
-          <Textarea
-            size="full"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about this policy..."
-            rows={2}
-          />
-          <HStack justify="end">
-            <Button size="sm" onClick={handleSubmit} disabled={isLoading || !input.trim()}>
-              Send
-            </Button>
-          </HStack>
-        </Stack>
-      </Stack>
-    </Card>
-  );
-}
-
-function MessageBubble({
-  message,
-  hasActiveProposal,
-}: {
-  message: PolicyChatUIMessage;
-  hasActiveProposal?: boolean;
-}) {
-  const isUser = message.role === 'user';
-
-  return (
-    <div
-      className={
-        isUser ? 'ml-auto max-w-[85%] rounded-lg bg-secondary px-3 py-2' : 'text-foreground'
-      }
-    >
-      {message.parts.map((part, index) => {
-        if (part.type === 'text') {
-          return (
-            <div key={`${message.id}-${index}`} className="whitespace-pre-wrap text-sm">
-              {part.text}
-            </div>
-          );
-        }
-
-        if (part.type === 'tool-proposePolicy') {
-          return (
-            <ToolCard
-              key={`${message.id}-${index}`}
-              part={part}
-              hasActiveProposal={hasActiveProposal}
-            />
-          );
-        }
-
-        return null;
-      })}
+        <PromptInput
+          onSubmit={({ text }) => {
+            if (!text.trim()) return;
+            sendMessage({ text });
+          }}
+        >
+          <PromptInputTextarea placeholder="Let me know what to edit..." />
+          <PromptInputFooter>
+            <div />
+            <PromptInputSubmit status={status} />
+          </PromptInputFooter>
+        </PromptInput>
+      </div>
     </div>
   );
 }
 
-function ToolCard({
+function PolicyToolCard({
   part,
   hasActiveProposal,
 }: {
@@ -203,77 +141,32 @@ function ToolCard({
   hasActiveProposal?: boolean;
 }) {
   const toolInput = part.input;
-
-  const isInProgress = part.state === 'input-streaming' || part.state === 'input-available';
   const isCompleted = part.state === 'output-available';
+  const isError = part.state === 'output-error';
 
-  const title =
-    (isCompleted
-      ? toolInput?.title || toolInput?.summary
-      : toolInput?.title || 'Configuring policy updates') || 'Policy updates ready for your review';
+  const title = isCompleted
+    ? toolInput?.title || toolInput?.summary || 'Policy updates ready'
+    : toolInput?.title || 'Preparing policy updates';
 
-  const bodyText = (() => {
-    if (isInProgress) {
-      return (
-        toolInput?.detail ||
-        'I am preparing an updated version of this policy. Please wait a moment before accepting any changes.'
-      );
-    }
-    if (isCompleted) {
-      return (
-        toolInput?.detail ||
-        'The updated policy is ready. Review the diff in the editor before applying changes.'
-      );
-    }
-    return (
-      toolInput?.detail ||
-      'Review the proposed changes in the editor preview below before applying them.'
-    );
-  })();
+  const bodyText = toolInput?.detail || (isCompleted
+    ? (hasActiveProposal ? 'Review the proposed changes below before applying.' : 'Policy updates were generated.')
+    : 'Working on your policy updates...');
 
   const truncatedBodyText = bodyText.length > 180 ? `${bodyText.slice(0, 177)}…` : bodyText;
 
-  type ToolState = typeof part.state;
-  const statusConfig: Record<ToolState, { label: string; icon: React.ReactNode }> = {
-    'input-streaming': { label: 'Drafting', icon: <CircleFilled size={12} /> },
-    'input-available': {
-      label: 'Running',
-      icon: <Time size={12} className="animate-pulse" />,
-    },
-    'output-available': {
-      label: 'Completed',
-      icon: <CheckmarkFilled size={12} className="text-green-600" />,
-    },
-    'output-error': { label: 'Error', icon: <Error size={12} className="text-red-600" /> },
-  };
+  const variant = isCompleted
+    ? (hasActiveProposal ? 'success' : 'default')
+    : isError ? 'destructive' : 'info';
 
-  const { label, icon } = statusConfig[part.state];
+  const description = hasActiveProposal && isCompleted
+    ? `${truncatedBodyText} ↓ View proposed changes below.`
+    : truncatedBodyText;
 
   return (
-    <Card
+    <Alert
+      variant={variant}
       title={title}
-      headerAction={
-        <Badge variant="secondary">
-          <HStack gap="xs" align="center">
-            {icon}
-            <span className="text-[10px] uppercase tracking-wider">{label}</span>
-          </HStack>
-        </Badge>
-      }
-    >
-      <Stack gap="sm">
-        <Text size="xs" variant="muted">
-          {truncatedBodyText}
-        </Text>
-        {hasActiveProposal && isCompleted && (
-          <HStack gap="xs" align="center">
-            <ArrowDown size={12} className="text-primary" />
-            <Text size="xs" variant="primary">
-              View proposed changes below
-            </Text>
-          </HStack>
-        )}
-      </Stack>
-    </Card>
+      description={description}
+    />
   );
 }

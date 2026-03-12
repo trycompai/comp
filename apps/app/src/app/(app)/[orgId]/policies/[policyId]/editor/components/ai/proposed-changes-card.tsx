@@ -36,7 +36,7 @@ export function ProposedChangesCard({
   const hunkIndices = useMemo(() => {
     if (!file) return [];
     return file.hunks
-      .map((h, i) => (h.type === 'hunk' ? i : -1))
+      .map((h, i) => (h.type === 'hunk' && hunkHasChanges(h) ? i : -1))
       .filter((i) => i !== -1);
   }, [file]);
 
@@ -114,19 +114,41 @@ export function ProposedChangesCard({
 
   const skipRanges = buildSkipRanges(file);
 
+  // Click-to-confirm for unreviewed "Apply All"
+  const [confirmingApplyAll, setConfirmingApplyAll] = useState(false);
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  useEffect(() => {
+    return () => {
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    };
+  }, []);
+
   const handleApply = () => {
     if (hasAnyDecision && acceptedIndices.length > 0) {
       onApplySelected(acceptedIndices);
-    } else {
-      onApplyAll();
+      return;
     }
+
+    // No changes reviewed — require confirmation
+    if (!confirmingApplyAll) {
+      setConfirmingApplyAll(true);
+      confirmTimerRef.current = setTimeout(() => setConfirmingApplyAll(false), 3000);
+      return;
+    }
+
+    setConfirmingApplyAll(false);
+    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    onApplyAll();
   };
 
-  const applyLabel = !hasAnyDecision
-    ? 'Apply All'
-    : acceptedIndices.length === hunkIndices.length
+  const applyLabel = confirmingApplyAll
+    ? `Apply all ${changeCount} changes?`
+    : !hasAnyDecision
       ? 'Apply All'
-      : `Apply ${acceptedIndices.length} ${acceptedIndices.length === 1 ? 'Change' : 'Changes'}`;
+      : acceptedIndices.length === hunkIndices.length
+        ? 'Apply All'
+        : `Apply ${acceptedIndices.length} ${acceptedIndices.length === 1 ? 'Change' : 'Changes'}`;
 
   const canApply = !hasAnyDecision || acceptedIndices.length > 0;
 
@@ -173,26 +195,32 @@ export function ProposedChangesCard({
 
           {/* Inline diff body — scrollable */}
           <div className="max-h-[400px] divide-y divide-border/50 overflow-y-auto">
-            {file.hunks.map((hunk, i) =>
-              hunk.type === 'hunk' ? (
-                <HunkWithActions
-                  key={i}
-                  hunk={hunk}
-                  decision={getDecision(i)}
-                  onAccept={() => setDecision(i, 'accepted')}
-                  onReject={() => setDecision(i, 'rejected')}
-                  onReset={() => setDecision(i, 'pending')}
-                  onFeedback={onHunkFeedback ? (feedback: string) => onHunkFeedback(i, feedback) : undefined}
-                  isLoading={feedbackHunkIndex === i}
-                />
-              ) : (
-                <ExpandableSkipSection
-                  key={i}
-                  count={hunk.count}
-                  lines={getSkipLines(originalLines, skipRanges, i)}
-                />
-              ),
-            )}
+            {file.hunks.map((hunk, i) => {
+              if (hunk.type === 'hunk' && hunkHasChanges(hunk)) {
+                return (
+                  <HunkWithActions
+                    key={i}
+                    hunk={hunk}
+                    decision={getDecision(i)}
+                    onAccept={() => setDecision(i, 'accepted')}
+                    onReject={() => setDecision(i, 'rejected')}
+                    onReset={() => setDecision(i, 'pending')}
+                    onFeedback={onHunkFeedback ? (feedback: string) => onHunkFeedback(i, feedback) : undefined}
+                    isLoading={feedbackHunkIndex === i}
+                  />
+                );
+              }
+              if (hunk.type === 'skip') {
+                return (
+                  <ExpandableSkipSection
+                    key={i}
+                    count={hunk.count}
+                    lines={getSkipLines(originalLines, skipRanges, i)}
+                  />
+                );
+              }
+              return null;
+            })}
           </div>
 
           {/* Footer with actions */}
@@ -212,6 +240,7 @@ export function ProposedChangesCard({
               </Button>
               <Button
                 size="sm"
+                variant={confirmingApplyAll ? 'outline' : 'default'}
                 onClick={handleApply}
                 disabled={isApplying || !canApply}
                 loading={isApplying}
@@ -468,10 +497,44 @@ function hasContent(line: Line): boolean {
   return text.length > 0;
 }
 
+function hunkHasChanges(hunk: Hunk): boolean {
+  if (hunk.type !== 'hunk') return false;
+
+  const lines = hunk.lines;
+
+  // Check for inline diff segments (merged delete+insert with visible changes)
+  for (const line of lines) {
+    if (line.content.some((s) => s.type !== 'normal')) return true;
+  }
+
+  // Check for unpaired inserts/deletes, but skip delete+insert pairs with identical text
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) continue;
+
+    if (line.type === 'delete') {
+      const next = lines[i + 1];
+      if (next?.type === 'insert') {
+        // Paired delete+insert — only count as a change if text differs
+        const delText = line.content.map((s) => s.value).join('');
+        const insText = next.content.map((s) => s.value).join('');
+        if (delText !== insText) return true;
+        i++; // skip the insert
+      } else {
+        return true; // unpaired delete
+      }
+    } else if (line.type === 'insert') {
+      return true; // unpaired insert
+    }
+  }
+
+  return false;
+}
+
 function countChanges(file: File): number {
   let count = 0;
   for (const hunk of file.hunks) {
-    if (hunk.type === 'hunk') {
+    if (hunk.type === 'hunk' && hunkHasChanges(hunk)) {
       for (const line of hunk.lines) {
         if (line.type !== 'normal' || line.content.some((s) => s.type !== 'normal')) {
           count++;
