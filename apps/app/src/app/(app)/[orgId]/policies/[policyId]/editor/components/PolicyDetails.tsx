@@ -4,6 +4,7 @@ import { SelectAssignee } from '@/components/SelectAssignee';
 import { PolicyEditor } from '@/components/editor/policy-editor';
 import { useChat } from '@ai-sdk/react';
 import { Badge } from '@comp/ui/badge';
+import { useMediaQuery } from '@comp/ui/hooks';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import { DiffViewer } from '@comp/ui/diff-viewer';
+import { ProposedChangesCard } from './ai/proposed-changes-card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,15 +36,21 @@ import {
   HStack,
   Label,
   Section,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
   Stack,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@trycompai/design-system';
-import { Checkmark, Close, MagicWand } from '@trycompai/design-system/icons';
+import { Close, MagicWand } from '@trycompai/design-system/icons';
 import { DefaultChatTransport } from 'ai';
 import { format } from 'date-fns';
+import { parseDiff } from '@comp/ui/diff/utils/index';
 import { structuredPatch } from 'diff';
 import { ArrowDownUp, ChevronDown, ChevronLeft, ChevronRight, FileText, Trash2, Upload } from 'lucide-react';
 import { useParams } from 'next/navigation';
@@ -182,6 +189,8 @@ export function PolicyContentManager({
   const canDeletePolicy = hasPermission('policy', 'delete');
 
   const [showAiAssistant, setShowAiAssistant] = useState(false);
+  const isWideDesktop = useMediaQuery('(min-width: 1536px)');
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [editorKey, setEditorKey] = useState(0);
   const [activeTab, setActiveTab] = useState<string>(displayFormat);
   const previousTabRef = useRef<string>(displayFormat);
@@ -489,6 +498,36 @@ export function PolicyContentManager({
     return createGitPatch('Proposed Changes', currentPolicyMarkdown, proposedPolicyMarkdown);
   }, [currentPolicyMarkdown, proposedPolicyMarkdown]);
 
+  const [feedbackHunkIndex, setFeedbackHunkIndex] = useState<number | null>(null);
+
+  // Clear feedbackHunkIndex when a new proposal arrives
+  useEffect(() => {
+    if (latestProposal) {
+      setFeedbackHunkIndex(null);
+    }
+  }, [latestProposal?.key]);
+
+  function handleHunkFeedback(hunkIndex: number, feedback: string) {
+    if (!diffPatch) return;
+
+    const [file] = parseDiff(diffPatch);
+    if (!file) return;
+
+    const hunk = file.hunks[hunkIndex];
+    if (!hunk || hunk.type !== 'hunk') return;
+
+    const hunkText = hunk.lines
+      .map((line) => line.content.map((seg) => seg.value).join(''))
+      .join(' ')
+      .slice(0, 80);
+
+    setFeedbackHunkIndex(hunkIndex);
+
+    sendMessage({
+      text: `For the section that says "${hunkText}": ${feedback}`,
+    });
+  }
+
   async function applyProposedChanges() {
     if (!activeProposal || !viewingVersion) return;
 
@@ -508,6 +547,33 @@ export function PolicyContentManager({
       setEditorKey((prev) => prev + 1);
       setDismissedProposalKey(key);
       toast.success('Policy updated with AI suggestions');
+    } catch {
+      toast.error('Failed to apply changes');
+    } finally {
+      setIsApplying(false);
+    }
+  }
+
+  async function applySelectedChanges(patch: string, selectedHunkIndices: number[]) {
+    if (!activeProposal || !viewingVersion) return;
+    if (isVersionReadOnly) {
+      toast.error('Cannot modify a published or pending version. Create a new version first.');
+      return;
+    }
+
+    setIsApplying(true);
+    try {
+      const mergedMarkdown = applySelectedHunks(
+        currentPolicyMarkdown,
+        patch,
+        selectedHunkIndices,
+      );
+      const jsonContent = markdownToTipTapJSON(mergedMarkdown);
+      await updateVersionContent(viewingVersion, jsonContent);
+      setCurrentContent(jsonContent);
+      setEditorKey((prev) => prev + 1);
+      setDismissedProposalKey(activeProposal.key);
+      toast.success('Selected changes applied');
     } catch {
       toast.error('Failed to apply changes');
     } finally {
@@ -536,7 +602,7 @@ export function PolicyContentManager({
         }}
       >
         <Stack gap="md">
-          <HStack justify="between" align="center">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Left side: Tabs */}
             <div>
               <TabsList variant="default">
@@ -843,16 +909,44 @@ export function PolicyContentManager({
                 </Button>
               )}
             </div>
-          </HStack>
+          </div>
+
+          {/* Medium desktop (1024-1535px): AI assistant above the editor */}
+          {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && isDesktop && !isWideDesktop && (
+            <div className="max-h-[400px]">
+              <PolicyAiAssistant
+                messages={messages}
+                status={status}
+                errorMessage={chatErrorMessage}
+                sendMessage={sendMessage}
+                close={() => setShowAiAssistant(false)}
+                hasActiveProposal={!!activeProposal && !hasPendingProposal}
+              />
+            </div>
+          )}
 
           <div
             className={
-              showAiAssistant && aiAssistantEnabled ? 'flex flex-col lg:flex-row gap-6' : ''
+              showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex flex-row gap-6' : ''
             }
           >
-            <div className={showAiAssistant && aiAssistantEnabled ? 'flex-[7] min-w-0' : 'w-full'}>
+            <div className={showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex-[7] min-w-0' : 'w-full'}>
               <Stack gap="sm">
                 <TabsContent value="EDITOR">
+                  {diffPatch && activeProposal && !hasPendingProposal && (
+                    <ProposedChangesCard
+                      patch={diffPatch}
+                      originalText={currentPolicyMarkdown}
+                      onApplyAll={applyProposedChanges}
+                      onApplySelected={(selectedHunkIndices) =>
+                        applySelectedChanges(diffPatch, selectedHunkIndices)
+                      }
+                      onDismiss={() => setDismissedProposalKey(activeProposal.key)}
+                      isApplying={isApplying}
+                      onHunkFeedback={handleHunkFeedback}
+                      feedbackHunkIndex={feedbackHunkIndex}
+                    />
+                  )}
                   <PolicyEditorWrapper
                     key={`${editorKey}-${viewingVersion}`}
                     policyId={policyId}
@@ -884,8 +978,9 @@ export function PolicyContentManager({
               </Stack>
             </div>
 
-            {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && (
-              <div className="flex-[3] min-w-0 self-stretch">
+            {/* Wide desktop (1536px+): AI assistant side panel */}
+            {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && isWideDesktop && (
+              <div className="flex-[3] min-w-[320px] self-stretch">
                 <PolicyAiAssistant
                   messages={messages}
                   status={status}
@@ -897,38 +992,28 @@ export function PolicyContentManager({
               </div>
             )}
           </div>
+
+          {/* Mobile/tablet: AI Assistant as a Sheet */}
+          {aiAssistantEnabled && !isVersionReadOnly && activeTab === 'EDITOR' && !isDesktop && (
+            <Sheet open={showAiAssistant} onOpenChange={setShowAiAssistant}>
+              <SheetContent side="right">
+                <SheetHeader>
+                  <SheetTitle>AI Assistant</SheetTitle>
+                </SheetHeader>
+                <SheetBody>
+                  <PolicyAiAssistant
+                    messages={messages}
+                    status={status}
+                    errorMessage={chatErrorMessage}
+                    sendMessage={sendMessage}
+                    hasActiveProposal={!!activeProposal && !hasPendingProposal}
+                  />
+                </SheetBody>
+              </SheetContent>
+            </Sheet>
+          )}
         </Stack>
       </Tabs>
-
-      {proposedPolicyMarkdown && diffPatch && activeProposal && !hasPendingProposal && (
-        <Section
-          title="Proposed Changes"
-          description="The AI has proposed updates to this policy. Review the changes above and click 'Apply Changes' to accept them."
-          actions={
-            <HStack gap="sm">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDismissedProposalKey(activeProposal.key)}
-                iconLeft={<Close size={12} />}
-              >
-                Dismiss
-              </Button>
-              <Button
-                size="sm"
-                onClick={applyProposedChanges}
-                disabled={isApplying}
-                loading={isApplying}
-                iconLeft={!isApplying ? <Checkmark size={12} /> : undefined}
-              >
-                Apply Changes
-              </Button>
-            </HStack>
-          }
-        >
-          <DiffViewer patch={diffPatch} />
-        </Section>
-      )}
 
       {/* Create Version Dialog */}
       <PublishVersionDialog
@@ -1039,6 +1124,95 @@ function createGitPatch(fileName: string, oldStr: string, newStr: string): strin
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Apply only selected hunks from a patch to the original text.
+ * selectedHunkIndices are indices into parseDiff's file.hunks array (which includes skip blocks).
+ */
+function applySelectedHunks(
+  originalText: string,
+  patch: string,
+  selectedHunkIndices: number[],
+): string {
+  const [file] = parseDiff(patch);
+  if (!file) return originalText;
+
+  // Map selected absolute indices to ordinal hunk positions (0th, 1st, 2nd actual hunk)
+  const selectedOrdinals = new Set<number>();
+  let ordinal = 0;
+  for (let i = 0; i < file.hunks.length; i++) {
+    if (file.hunks[i]?.type === 'hunk') {
+      if (selectedHunkIndices.includes(i)) {
+        selectedOrdinals.add(ordinal);
+      }
+      ordinal++;
+    }
+  }
+
+  // Re-create the patch using structuredPatch to get raw hunks with line-level data
+  const rawPatch = structuredPatch('f', 'f', originalText, '', '', '', { context: 1 });
+
+  // But we actually need the real new text — parse from the git patch directly
+  // Instead, reconstruct by applying selected raw hunks to original lines
+  const originalLines = originalText.split('\n');
+  const result: string[] = [];
+  let cursor = 0; // current position in originalLines
+
+  // Get raw hunks from the patch string by re-parsing with structuredPatch
+  // We need to extract the actual hunks from the diff — use gitdiff-parser's output
+  // The file.hunks (type==='hunk') in order correspond to the raw diff hunks
+  const actualHunks = file.hunks.filter((h) => h.type === 'hunk');
+
+  for (let i = 0; i < actualHunks.length; i++) {
+    const hunk = actualHunks[i];
+    if (!hunk || hunk.type !== 'hunk') continue;
+
+    const hunkOldStart = hunk.oldStart - 1; // 0-indexed
+
+    // Copy unchanged lines before this hunk
+    while (cursor < hunkOldStart && cursor < originalLines.length) {
+      result.push(originalLines[cursor]!);
+      cursor++;
+    }
+
+    if (selectedOrdinals.has(i)) {
+      // Apply this hunk: use its lines to build the new content
+      for (const line of hunk.lines) {
+        const text = line.content.map((seg) => seg.value).join('');
+        if (line.type === 'insert' || line.type === 'normal') {
+          // For inline diffs (type==='normal' with mixed segments), use only insert/normal segments
+          if (line.content.some((seg) => seg.type !== 'normal')) {
+            // Inline diff line — take insert and normal segments
+            const newText = line.content
+              .filter((seg) => seg.type !== 'delete')
+              .map((seg) => seg.value)
+              .join('');
+            result.push(newText);
+          } else {
+            result.push(text);
+          }
+        }
+        // delete lines: skip (don't add to result)
+      }
+      cursor = hunkOldStart + hunk.oldLines;
+    } else {
+      // Keep original lines for this hunk region
+      const end = hunkOldStart + hunk.oldLines;
+      while (cursor < end && cursor < originalLines.length) {
+        result.push(originalLines[cursor]!);
+        cursor++;
+      }
+    }
+  }
+
+  // Copy remaining lines after last hunk
+  while (cursor < originalLines.length) {
+    result.push(originalLines[cursor]!);
+    cursor++;
+  }
+
+  return result.join('\n');
 }
 
 function convertContentToMarkdown(content: Array<JSONContent>): string {
