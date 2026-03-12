@@ -14,8 +14,8 @@ const SuggestionsSchema = z.object({
     z.object({
       title: z.string(),
       prompt: z.string(),
-      vendorName: z.string().optional(),
-      vendorWebsite: z.string().optional(),
+      vendorName: z.string().nullable(),
+      vendorWebsite: z.string().nullable(),
     }),
   ),
 });
@@ -24,39 +24,39 @@ export async function generateAutomationSuggestions(
   taskDescription: string,
   organizationId: string,
 ): Promise<{ title: string; prompt: string; vendorName?: string; vendorWebsite?: string }[]> {
-  // Get vendors from the Vendor table
-  const vendors = await db.vendor.findMany({
-    where: {
-      organizationId,
-    },
-    select: {
-      name: true,
-      website: true,
-      description: true,
-    },
-  });
-  // Get vendors from context table as well
-  const contextEntries = await db.context.findMany({
-    where: {
-      organizationId,
-    },
-    select: {
-      question: true,
-      answer: true,
-    },
-  });
-  const vendorList =
-    vendors.length > 0
-      ? vendors.map((v) => `${v.name}${v.website ? ` (${v.website})` : ''}`).join(', ')
-      : 'No vendors configured yet';
-
-  const contextInfo =
-    contextEntries.length > 0
-      ? contextEntries.map((c) => `Q: ${c.question}\nA: ${c.answer}`).join('\n\n')
-      : 'No additional context available';
-
-  // Generate AI suggestions
   try {
+    // Get vendors from the Vendor table
+    const vendors = await db.vendor.findMany({
+      where: {
+        organizationId,
+      },
+      select: {
+        name: true,
+        website: true,
+        description: true,
+      },
+    });
+    // Get vendors from context table as well
+    const contextEntries = await db.context.findMany({
+      where: {
+        organizationId,
+      },
+      select: {
+        question: true,
+        answer: true,
+      },
+    });
+    const vendorList =
+      vendors.length > 0
+        ? vendors.map((v) => `${v.name}${v.website ? ` (${v.website})` : ''}`).join(', ')
+        : 'No vendors configured yet';
+
+    const contextInfo =
+      contextEntries.length > 0
+        ? contextEntries.map((c) => `Q: ${c.question}\nA: ${c.answer}`).join('\n\n')
+        : 'No additional context available';
+
+    // Generate AI suggestions
     const { object } = await generateObject({
       model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
       schema: SuggestionsSchema,
@@ -73,7 +73,12 @@ export async function generateAutomationSuggestions(
       }
     }
 
-    return suggestions;
+    return suggestions.map((s) => ({
+      title: s.title,
+      prompt: s.prompt,
+      vendorName: s.vendorName ?? undefined,
+      vendorWebsite: s.vendorWebsite ?? undefined,
+    }));
   } catch (error) {
     console.error('[generateAutomationSuggestions] Error generating suggestions:', error);
     // Try to extract suggestions from error if available
