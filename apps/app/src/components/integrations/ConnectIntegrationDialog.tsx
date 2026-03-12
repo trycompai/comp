@@ -651,8 +651,8 @@ export function ConnectIntegrationDialog({
               </Button>
             )}
             {provider?.setupInstructions && (
-              <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md max-h-32 overflow-y-auto">
-                <p className="whitespace-pre-wrap text-xs">{provider.setupInstructions}</p>
+              <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md max-h-32 overflow-y-auto overflow-x-hidden">
+                <p className="whitespace-pre-wrap text-xs break-words">{provider.setupInstructions}</p>
               </div>
             )}
             {provider?.category === 'Cloud' && (
@@ -672,7 +672,7 @@ export function ConnectIntegrationDialog({
                   onChange={(value) => updateCredential(field.id, value)}
                 />
                 {field.helpText && (
-                  <p className="text-xs text-muted-foreground">{field.helpText}</p>
+                  <p className="text-xs text-muted-foreground break-words">{field.helpText}</p>
                 )}
                 {errors[field.id] && <p className="text-xs text-destructive">{errors[field.id]}</p>}
               </div>
@@ -751,7 +751,7 @@ export function ConnectIntegrationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center overflow-hidden">
@@ -768,7 +768,7 @@ export function ConnectIntegrationDialog({
           <DialogDescription>{getDialogDescription()}</DialogDescription>
         </DialogHeader>
 
-        <div className="pt-2">
+        <div className="pt-2 max-h-[60vh] overflow-y-auto">
           {isDataLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
