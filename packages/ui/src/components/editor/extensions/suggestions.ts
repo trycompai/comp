@@ -221,11 +221,15 @@ function buildDecorations(
       case 'modify': {
         const blocks = findBlockNodesInRange(doc, range.from, range.to);
 
-        // Show proposed content ABOVE the old content as a green block
+        // Place proposed content widget BEFORE the top-level ancestor
+        // of the first affected block (so it's outside any nesting)
         if (blocks.length > 0) {
+          const resolved = doc.resolve(blocks[0].pos);
+          // Walk up to depth 1 (direct child of doc)
+          const topPos = resolved.before(1);
           decorations.push(
             Decoration.widget(
-              blocks[0].pos,
+              topPos,
               createInsertionWidget(range.proposedText, schema),
               { side: -1, key: `insert-${range.id}` }
             )
@@ -244,11 +248,16 @@ function buildDecorations(
       }
 
       case 'insert': {
+        // Place at the top-level position so the widget isn't nested
+        const resolved = doc.resolve(range.from);
+        const insertPos = resolved.depth >= 1
+          ? resolved.before(1)
+          : range.from;
         decorations.push(
           Decoration.widget(
-            range.from,
+            insertPos,
             createInsertionWidget(range.proposedText, schema),
-            { side: 1 }
+            { side: 1, key: `insert-${range.id}` }
           )
         );
         break;
@@ -268,11 +277,17 @@ function buildDecorations(
       }
     }
 
-    // Gutter widget — placed at the first text block within this range
+    // Gutter widget — placed at top-level position before the change
     const gutterBlocks = findBlockNodesInRange(doc, range.from, range.to);
-    const gutterPos = gutterBlocks.length > 0
-      ? gutterBlocks[0].pos + 1  // +1 to be inside the text block content
-      : Math.max(0, Math.min(range.from, doc.content.size));
+    let gutterPos: number;
+    if (gutterBlocks.length > 0) {
+      const resolved = doc.resolve(gutterBlocks[0].pos);
+      gutterPos = resolved.depth >= 1
+        ? resolved.before(1)
+        : gutterBlocks[0].pos;
+    } else {
+      gutterPos = Math.max(0, Math.min(range.from, doc.content.size));
+    }
     decorations.push(
       Decoration.widget(
         gutterPos,

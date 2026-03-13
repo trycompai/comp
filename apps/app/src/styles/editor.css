@@ -260,7 +260,15 @@ pre .hljs-strong {
   padding: 8px 12px;
   border-radius: 0 4px 4px 0;
   margin: 4px 0;
-  white-space: pre-wrap;
+  font-weight: normal;
+  font-size: inherit;
+}
+
+.suggestion-new-section h1,
+.suggestion-new-section h2,
+.suggestion-new-section h3,
+.suggestion-new-section h4 {
+  font-weight: 600;
 }
 
 .suggestion-deleted-section {
