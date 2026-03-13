@@ -2,7 +2,12 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
-import { DOMSerializer, type Node as ProseMirrorNode, type Schema } from '@tiptap/pm/model';
+import {
+  DOMSerializer,
+  Fragment,
+  type Node as ProseMirrorNode,
+  type Schema,
+} from '@tiptap/pm/model';
 
 export interface SuggestionRange {
   id: string;
@@ -37,10 +42,12 @@ interface CallbackOptions {
   onFeedback?: (id: string) => void;
 }
 
+// ── Widget factories ──
+
 function createGutterWidget(
   rangeId: string,
   callbacks: CallbackOptions
-): (_view: EditorView) => HTMLElement {
+): (view: EditorView) => HTMLElement {
   return (_view: EditorView) => {
     const wrapper = document.createElement('div');
     wrapper.className = 'suggestion-gutter';
@@ -85,19 +92,30 @@ function createGutterWidget(
 }
 
 function createInsertionWidget(
-  text: string
-): (_view: EditorView) => HTMLElement {
+  text: string,
+  schema: Schema
+): (view: EditorView) => HTMLElement {
   return (_view: EditorView) => {
-    const span = document.createElement('span');
-    span.className = 'suggestion-insert';
-    span.textContent = text;
-    return span;
+    const div = document.createElement('div');
+    div.className = 'suggestion-new-section';
+
+    try {
+      const pmNodes = markdownLinesToNodes(text, schema);
+      const serializer = DOMSerializer.fromSchema(schema);
+      const fragment = Fragment.from(pmNodes);
+      const rendered = serializer.serializeFragment(fragment);
+      div.appendChild(rendered);
+    } catch {
+      div.textContent = text;
+    }
+
+    return div;
   };
 }
 
 /**
- * Parse a line of markdown into a ProseMirror node using the editor schema.
- * Handles headings (##), list items (-), and plain paragraphs.
+ * Parse markdown lines into ProseMirror nodes.
+ * Handles headings (##), list items (-/*), and plain paragraphs.
  */
 function markdownLinesToNodes(
   text: string,
@@ -150,29 +168,39 @@ function markdownLinesToNodes(
   return nodes;
 }
 
-function createNewSectionWidget(
-  text: string
-): (view: EditorView) => HTMLElement {
-  return (view: EditorView) => {
-    const div = document.createElement('div');
-    div.className = 'suggestion-new-section';
+// ── Decoration building ──
 
-    try {
-      const { schema } = view.state;
-      const pmNodes = markdownLinesToNodes(text, schema);
-      const serializer = DOMSerializer.fromSchema(schema);
+/**
+ * Find all top-level block nodes whose position range overlaps [from, to].
+ * Returns an array of { node, pos, end } where pos/end are the exact
+ * node boundaries (suitable for Decoration.node).
+ */
+function findBlockNodesInRange(
+  doc: ProseMirrorNode,
+  from: number,
+  to: number
+): Array<{ node: ProseMirrorNode; pos: number; end: number }> {
+  const results: Array<{
+    node: ProseMirrorNode;
+    pos: number;
+    end: number;
+  }> = [];
 
-      for (const node of pmNodes) {
-        const dom = serializer.serializeNode(node);
-        div.appendChild(dom);
+  doc.descendants((node, pos) => {
+    // We want block nodes that contain text (paragraphs, headings, list items)
+    // but not their parent containers (lists, blockquotes, doc)
+    if (node.isTextblock) {
+      const nodeEnd = pos + node.nodeSize;
+      // Check overlap with range
+      if (pos < to && nodeEnd > from) {
+        results.push({ node, pos, end: nodeEnd });
       }
-    } catch {
-      // Fallback to plain text if parsing fails
-      div.textContent = text;
+      return false; // Don't descend into text blocks
     }
+    return true; // Descend into containers
+  });
 
-    return div;
-  };
+  return results;
 }
 
 function buildDecorations(
@@ -182,6 +210,7 @@ function buildDecorations(
   callbacks: CallbackOptions
 ): DecorationSet {
   const decorations: Decoration[] = [];
+  const schema = doc.type.schema;
 
   for (const range of ranges) {
     if (range.from < 0 || range.to > doc.content.size) continue;
@@ -190,40 +219,54 @@ function buildDecorations(
 
     switch (range.type) {
       case 'modify': {
-        // Node decoration for the modified block
-        const resolvedFrom = doc.resolve(range.from);
-        const resolvedTo = doc.resolve(range.to);
-        const nodeStart = resolvedFrom.before(resolvedFrom.depth);
-        const nodeEnd = resolvedTo.after(resolvedTo.depth);
+        // Find all text blocks in this range and decorate each
+        const blocks = findBlockNodesInRange(doc, range.from, range.to);
 
-        if (nodeStart >= 0 && nodeEnd <= doc.content.size) {
+        for (const block of blocks) {
           decorations.push(
-            Decoration.node(nodeStart, nodeEnd, {
+            Decoration.node(block.pos, block.end, {
               class: `suggestion-modified${focusedSuffix}`,
             })
           );
         }
 
-        // Inline decorations for segments
-        let pos = range.from;
-        for (const segment of range.segments) {
-          if (segment.type === 'delete') {
-            const end = Math.min(pos + segment.text.length, range.to);
-            decorations.push(
-              Decoration.inline(pos, end, {
-                class: 'suggestion-delete',
-              })
-            );
-            pos = end;
-          } else if (segment.type === 'insert') {
-            decorations.push(
-              Decoration.widget(pos, createInsertionWidget(segment.text), {
-                side: 1,
-              })
-            );
-          } else {
-            // unchanged
-            pos += segment.text.length;
+        // For single-block modifications, try inline word-level diffs
+        if (blocks.length === 1 && range.segments.length > 0) {
+          const block = blocks[0];
+          // Text content starts at block.pos + 1 (after open token)
+          let pos = block.pos + 1;
+          const textEnd = block.end - 1; // before close token
+
+          for (const segment of range.segments) {
+            if (pos >= textEnd) break;
+
+            if (segment.type === 'delete') {
+              const end = Math.min(pos + segment.text.length, textEnd);
+              if (end > pos) {
+                decorations.push(
+                  Decoration.inline(pos, end, {
+                    class: 'suggestion-delete',
+                  })
+                );
+              }
+              pos = end;
+            } else if (segment.type === 'insert') {
+              decorations.push(
+                Decoration.widget(
+                  pos,
+                  (_view: EditorView) => {
+                    const span = document.createElement('span');
+                    span.className = 'suggestion-insert';
+                    span.textContent = segment.text;
+                    return span;
+                  },
+                  { side: 1 }
+                )
+              );
+            } else {
+              // unchanged — advance position
+              pos += segment.text.length;
+            }
           }
         }
         break;
@@ -233,7 +276,7 @@ function buildDecorations(
         decorations.push(
           Decoration.widget(
             range.from,
-            createNewSectionWidget(range.proposedText),
+            createInsertionWidget(range.proposedText, schema),
             { side: 1 }
           )
         );
@@ -241,14 +284,11 @@ function buildDecorations(
       }
 
       case 'delete': {
-        const resolvedFrom = doc.resolve(range.from);
-        const resolvedTo = doc.resolve(range.to);
-        const nodeStart = resolvedFrom.before(resolvedFrom.depth);
-        const nodeEnd = resolvedTo.after(resolvedTo.depth);
+        const blocks = findBlockNodesInRange(doc, range.from, range.to);
 
-        if (nodeStart >= 0 && nodeEnd <= doc.content.size) {
+        for (const block of blocks) {
           decorations.push(
-            Decoration.node(nodeStart, nodeEnd, {
+            Decoration.node(block.pos, block.end, {
               class: `suggestion-deleted-section${focusedSuffix}`,
             })
           );
@@ -257,17 +297,21 @@ function buildDecorations(
       }
     }
 
-    // Gutter widget for each range
+    // Gutter widget for each range — placed at the first text block
+    const gutterPos = Math.max(0, Math.min(range.from, doc.content.size));
     decorations.push(
-      Decoration.widget(range.from, createGutterWidget(range.id, callbacks), {
-        side: -1,
-        key: `gutter-${range.id}`,
-      })
+      Decoration.widget(
+        gutterPos,
+        createGutterWidget(range.id, callbacks),
+        { side: -1, key: `gutter-${range.id}` }
+      )
     );
   }
 
   return DecorationSet.create(doc, decorations);
 }
+
+// ── Extension ──
 
 export const SuggestionsExtension =
   Extension.create<SuggestionsExtensionOptions>({
