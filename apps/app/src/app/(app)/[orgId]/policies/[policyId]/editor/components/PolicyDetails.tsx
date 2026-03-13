@@ -46,7 +46,7 @@ import { DefaultChatTransport } from 'ai';
 import { format } from 'date-fns';
 import { ArrowDownUp, ChevronDown, ChevronLeft, ChevronRight, FileText, Trash2, Upload } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { usePolicy } from '../../hooks/usePolicy';
 import { usePolicyVersions } from '../../hooks/usePolicyVersions';
@@ -204,8 +204,25 @@ export function PolicyContentManager({
   const [editorInstance, setEditorInstance] = useState<TipTapEditor | null>(null);
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
 
+  // Stable callback refs so the extension doesn't need to be recreated
+  // when suggestion handlers change
+  const suggestionCallbacksRef = useRef<{
+    onAccept: (id: string) => void;
+    onReject: (id: string) => void;
+    onFeedback: (id: string) => void;
+  }>({
+    onAccept: () => {},
+    onReject: () => {},
+    onFeedback: () => {},
+  });
+
   const suggestionsExtension = useMemo(
-    () => SuggestionsExtension.configure({}),
+    () =>
+      SuggestionsExtension.configure({
+        onAccept: (id: string) => suggestionCallbacksRef.current.onAccept(id),
+        onReject: (id: string) => suggestionCallbacksRef.current.onReject(id),
+        onFeedback: (id: string) => suggestionCallbacksRef.current.onFeedback(id),
+      }),
     [],
   );
 
@@ -505,6 +522,16 @@ export function PolicyContentManager({
       });
     },
   });
+
+  // Wire suggestion callbacks via refs (avoids recreating the extension)
+  suggestionCallbacksRef.current = {
+    onAccept: suggestions.accept,
+    onReject: suggestions.reject,
+    onFeedback: (id: string) => {
+      const feedback = window.prompt('How should this section be changed?');
+      if (feedback) suggestions.giveFeedback(id, feedback);
+    },
+  };
 
   // Filter out per-hunk feedback messages (and their AI responses) from chat display
   const displayMessages = useMemo(() => {
@@ -887,8 +914,6 @@ export function PolicyContentManager({
                       currentIndex={suggestions.currentIndex}
                       onAcceptAll={suggestions.acceptAll}
                       onRejectAll={suggestions.rejectAll}
-                      onAcceptCurrent={suggestions.acceptCurrent}
-                      onRejectCurrent={suggestions.rejectCurrent}
                       onPrev={suggestions.goToPrev}
                       onNext={suggestions.goToNext}
                       onDismiss={() => {
@@ -912,6 +937,7 @@ export function PolicyContentManager({
                     saveVersionContent={updateVersionContent}
                     onEditorReady={setEditorInstance}
                     additionalExtensions={[suggestionsExtension]}
+                    suggestionsActive={suggestions.isActive}
                   />
                 </TabsContent>
                 <TabsContent value="PDF">
@@ -1055,6 +1081,7 @@ function PolicyEditorWrapper({
   saveVersionContent,
   onEditorReady,
   additionalExtensions,
+  suggestionsActive = false,
 }: {
   policyId: string;
   versionId: string;
@@ -1069,6 +1096,7 @@ function PolicyEditorWrapper({
   saveVersionContent: (versionId: string, content: JSONContent[]) => Promise<unknown>;
   onEditorReady?: (editor: TipTapEditor) => void;
   additionalExtensions?: import('@tiptap/core').Extension[];
+  suggestionsActive?: boolean;
 }) {
   const { hasPermission } = usePermissions();
   const canUpdatePolicy = hasPermission('policy', 'update');
@@ -1146,7 +1174,7 @@ function PolicyEditorWrapper({
   return (
     <Section>
       <Stack gap="sm">
-        {statusInfo && (
+        {statusInfo && !suggestionsActive && (
           <div
             className={`flex items-center gap-4 rounded-lg border px-4 py-3 text-sm text-foreground ${statusInfo.className}`}
           >
@@ -1159,6 +1187,7 @@ function PolicyEditorWrapper({
           readOnly={isReadOnly}
           onEditorReady={onEditorReady}
           additionalExtensions={additionalExtensions}
+          showToolbar={!suggestionsActive}
         />
       </Stack>
     </Section>

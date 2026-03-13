@@ -11,7 +11,12 @@ export function computeSuggestionRanges(
     return [];
   }
 
-  const patch = structuredPatch('policy', 'policy', currentMarkdown, proposedMarkdown, '', '', {
+  // Ensure both inputs end with a newline so the diff library
+  // never generates "\ No newline at end of file" markers
+  const normalizedCurrent = currentMarkdown.endsWith('\n') ? currentMarkdown : `${currentMarkdown}\n`;
+  const normalizedProposed = proposedMarkdown.endsWith('\n') ? proposedMarkdown : `${proposedMarkdown}\n`;
+
+  const patch = structuredPatch('policy', 'policy', normalizedCurrent, normalizedProposed, '', '', {
     context: 0,
   });
 

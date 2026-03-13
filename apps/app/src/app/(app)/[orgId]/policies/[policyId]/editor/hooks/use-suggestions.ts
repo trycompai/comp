@@ -61,11 +61,30 @@ export function useSuggestions({
   const scrollToRange = useCallback(
     (range: SuggestionRange) => {
       if (!editor) return;
-      // Scroll the editor to show the range
+      // Find the action bar widget for this range — it's rendered as a
+      // .suggestion-change-group element near the range position.
+      // The widget is placed just before the affected content in the DOM.
+      const editorDom = editor.view.dom;
+      const actionBars = editorDom.querySelectorAll('.suggestion-change-group');
       const { node } = editor.view.domAtPos(range.from);
-      const element =
+      const contentEl =
         node instanceof HTMLElement ? node : node.parentElement;
-      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Find the action bar closest to (and before) the content element
+      let target: Element | null = null;
+      for (const bar of actionBars) {
+        if (
+          contentEl &&
+          (bar.compareDocumentPosition(contentEl) &
+            Node.DOCUMENT_POSITION_FOLLOWING)
+        ) {
+          target = bar;
+        }
+      }
+
+      // Fall back to the content element if no action bar found
+      const scrollTarget = target ?? contentEl;
+      scrollTarget?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     },
     [editor],
   );

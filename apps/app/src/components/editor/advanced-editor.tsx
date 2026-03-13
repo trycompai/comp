@@ -17,6 +17,7 @@ interface AdvancedEditorProps {
   maxHeight?: string;
   additionalExtensions?: Extension[];
   onEditorReady?: (editor: TipTapEditor) => void;
+  showToolbar?: boolean;
 }
 
 const AdvancedEditor = ({
@@ -31,6 +32,7 @@ const AdvancedEditor = ({
   maxHeight,
   additionalExtensions,
   onEditorReady,
+  showToolbar,
 }: AdvancedEditorProps) => {
   return (
     <Editor
@@ -43,7 +45,7 @@ const AdvancedEditor = ({
       saveDebounceMs={saveDebounceMs}
       showSaveStatus={true}
       showWordCount={true}
-      showToolbar={true}
+      showToolbar={showToolbar}
       minHeight={minHeight}
       maxHeight={maxHeight}
       additionalExtensions={additionalExtensions}

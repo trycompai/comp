@@ -1,7 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { Button } from '@trycompai/design-system';
 import {
-  Checkmark,
   ChevronDown,
   ChevronUp,
   Close,
@@ -13,8 +12,6 @@ interface SuggestionsTopBarProps {
   currentIndex: number;
   onAcceptAll: () => void;
   onRejectAll: () => void;
-  onAcceptCurrent: () => void;
-  onRejectCurrent: () => void;
   onPrev: () => void;
   onNext: () => void;
   onDismiss: () => void;
@@ -26,33 +23,17 @@ export function SuggestionsTopBar({
   currentIndex,
   onAcceptAll,
   onRejectAll,
-  onAcceptCurrent,
-  onRejectCurrent,
   onPrev,
   onNext,
   onDismiss,
 }: SuggestionsTopBarProps) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      // Cmd/Ctrl + Shift + Enter = accept current
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'Enter') {
-        e.preventDefault();
-        onAcceptCurrent();
-        return;
-      }
-      // Cmd/Ctrl + Shift + Backspace = reject current
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'Backspace') {
-        e.preventDefault();
-        onRejectCurrent();
-        return;
-      }
-      // F7 or Cmd+] = next change
       if (e.key === 'F7' || ((e.metaKey || e.ctrlKey) && e.key === ']')) {
         e.preventDefault();
         onNext();
         return;
       }
-      // Shift+F7 or Cmd+[ = prev change
       if (
         (e.shiftKey && e.key === 'F7') ||
         ((e.metaKey || e.ctrlKey) && e.key === '[')
@@ -62,7 +43,7 @@ export function SuggestionsTopBar({
         return;
       }
     },
-    [onAcceptCurrent, onRejectCurrent, onNext, onPrev],
+    [onNext, onPrev],
   );
 
   useEffect(() => {
@@ -71,7 +52,7 @@ export function SuggestionsTopBar({
   }, [handleKeyDown]);
 
   return (
-    <div className="sticky top-0 z-20 flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-1.5 shadow-sm">
+    <div className="suggestions-top-bar">
       {/* Left: navigation */}
       <div className="flex items-center gap-1">
         <Button
@@ -102,56 +83,34 @@ export function SuggestionsTopBar({
         </span>
       </div>
 
-      {/* Center: per-change actions */}
+      {/* Right: bulk actions + dismiss */}
       <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onAcceptCurrent}
-          disabled={activeCount === 0}
-          title="Accept change (⌘⇧↩)"
-        >
-          <Checkmark size={14} />
-          Accept
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onRejectCurrent}
-          disabled={activeCount === 0}
-          title="Reject change (⌘⇧⌫)"
-        >
-          <Close size={14} />
-          Reject
-        </Button>
-        <div className="mx-1 h-4 w-px bg-border" />
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
+          type="button"
+          className="suggestions-bar-btn suggestions-bar-accept-all"
           onClick={onAcceptAll}
           disabled={activeCount === 0}
         >
           Accept all
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
+        </button>
+        <button
+          type="button"
+          className="suggestions-bar-btn suggestions-bar-reject-all"
           onClick={onRejectAll}
           disabled={activeCount === 0}
         >
           Reject all
+        </button>
+        <div className="mx-1 h-4 w-px bg-border" />
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onDismiss}
+          title="Dismiss all suggestions"
+        >
+          <Close size={14} />
         </Button>
       </div>
-
-      {/* Right: dismiss */}
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={onDismiss}
-        title="Dismiss all suggestions"
-      >
-        <Close size={14} />
-      </Button>
     </div>
   );
 }

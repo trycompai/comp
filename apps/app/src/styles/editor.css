@@ -219,6 +219,81 @@ pre .hljs-strong {
   @apply border-border my-6;
 }
 
+/* ── Suggestions navigation bar ── */
+
+.suggestions-top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.08), 0 0 0 1px hsl(0 0% 0% / 0.04);
+}
+
+:is(.dark, [data-theme='dark']) .suggestions-top-bar {
+  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.3), 0 0 0 1px hsl(0 0% 100% / 0.06);
+}
+
+.suggestions-bar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  background: transparent;
+}
+
+.suggestions-bar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.suggestions-bar-accept-all {
+  color: hsl(142 71% 28%);
+  background: hsl(142 71% 45% / 0.1);
+  border-color: hsl(142 71% 45% / 0.25);
+}
+
+.suggestions-bar-accept-all:not(:disabled):hover {
+  background: hsl(142 71% 45% / 0.2);
+  border-color: hsl(142 71% 45% / 0.4);
+}
+
+:is(.dark, [data-theme='dark']) .suggestions-bar-accept-all {
+  color: hsl(142 71% 70%);
+  background: hsl(142 71% 45% / 0.12);
+  border-color: hsl(142 71% 45% / 0.2);
+}
+
+.suggestions-bar-reject-all {
+  color: hsl(0 84% 40%);
+  background: hsl(0 84% 60% / 0.08);
+  border-color: hsl(0 84% 60% / 0.2);
+}
+
+.suggestions-bar-reject-all:not(:disabled):hover {
+  background: hsl(0 84% 60% / 0.15);
+  border-color: hsl(0 84% 60% / 0.35);
+}
+
+:is(.dark, [data-theme='dark']) .suggestions-bar-reject-all {
+  color: hsl(0 84% 68%);
+  background: hsl(0 84% 60% / 0.1);
+  border-color: hsl(0 84% 60% / 0.18);
+}
+
 /* ── Inline suggestion decorations ── */
 
 .suggestion-insert {
@@ -253,13 +328,22 @@ pre .hljs-strong {
 
 /* suggestion-modified is no longer used — modify shows as green insert + red delete */
 
+/* Shared spacing tokens for suggestion blocks */
+.ProseMirror {
+  --suggestion-padding-y: 8px;
+  --suggestion-padding-x: 12px;
+  --suggestion-border-width: 4px;
+  --suggestion-border-radius: 0 4px 4px 0;
+  --suggestion-margin-y: 4px;
+}
+
 .suggestion-new-section {
   position: relative;
   background: hsl(142 71% 45% / 0.08);
-  border-left: 4px solid hsl(142 71% 45% / 0.6);
-  padding: 8px 12px;
-  border-radius: 0 4px 4px 0;
-  margin: 4px 0;
+  border-left: var(--suggestion-border-width) solid hsl(142 71% 45% / 0.6);
+  padding: var(--suggestion-padding-y) var(--suggestion-padding-x);
+  border-radius: var(--suggestion-border-radius);
+  margin: var(--suggestion-margin-y) 0;
   font-weight: normal;
   font-size: inherit;
 }
@@ -273,11 +357,19 @@ pre .hljs-strong {
 
 .suggestion-deleted-section {
   position: relative;
-  border-left: 4px solid hsl(0 84% 60% / 0.6);
+  border-left: var(--suggestion-border-width) solid hsl(0 84% 60% / 0.6);
   background: hsl(0 84% 60% / 0.04);
   opacity: 0.5;
   text-decoration: line-through;
-  border-radius: 0 4px 4px 0;
+  padding-top: var(--suggestion-padding-y);
+  padding-bottom: var(--suggestion-padding-y);
+  padding-right: var(--suggestion-padding-x);
+  border-radius: var(--suggestion-border-radius);
+}
+
+/* For deleted list items: shift bullet to account for the border-left */
+li.suggestion-deleted-section::before {
+  left: var(--suggestion-border-width);
 }
 
 /* Focused change — the currently navigated change gets extra emphasis */
@@ -286,5 +378,93 @@ pre .hljs-strong {
   border-left-color: hsl(0 84% 60% / 0.9);
   opacity: 0.7;
   box-shadow: inset 0 0 0 1px hsl(0 84% 60% / 0.15);
+}
+
+/* ── Per-change action buttons ── */
+
+.suggestion-change-group {
+  position: relative;
+  margin: var(--suggestion-margin-y) 0;
+}
+
+.suggestion-actions {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  background: hsl(142 71% 45% / 0.06);
+  border-bottom: 1px solid hsl(142 71% 45% / 0.15);
+  border-radius: 4px 4px 0 0;
+}
+
+.suggestion-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  background: transparent;
+  color: hsl(0 0% 40%);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-action-btn {
+  color: hsl(0 0% 70%);
+}
+
+.suggestion-action-btn:hover {
+  background: hsl(0 0% 0% / 0.05);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-action-btn:hover {
+  background: hsl(0 0% 100% / 0.08);
+}
+
+.suggestion-action-accept {
+  color: hsl(142 71% 30%);
+}
+
+.suggestion-action-accept:hover {
+  background: hsl(142 71% 45% / 0.15);
+  border-color: hsl(142 71% 45% / 0.3);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-action-accept {
+  color: hsl(142 71% 65%);
+}
+
+.suggestion-action-reject {
+  color: hsl(0 84% 45%);
+}
+
+.suggestion-action-reject:hover {
+  background: hsl(0 84% 60% / 0.12);
+  border-color: hsl(0 84% 60% / 0.3);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-action-reject {
+  color: hsl(0 84% 65%);
+}
+
+.suggestion-action-feedback {
+  color: hsl(220 70% 45%);
+}
+
+.suggestion-action-feedback:hover {
+  background: hsl(220 70% 50% / 0.12);
+  border-color: hsl(220 70% 50% / 0.3);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-action-feedback {
+  color: hsl(220 70% 70%);
+}
+
+.suggestion-delete-group .suggestion-actions {
+  background: hsl(0 84% 60% / 0.06);
+  border-bottom: 1px solid hsl(0 84% 60% / 0.15);
 }
 

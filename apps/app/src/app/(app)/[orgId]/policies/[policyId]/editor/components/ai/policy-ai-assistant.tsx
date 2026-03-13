@@ -17,6 +17,7 @@ import {
   PromptInputFooter,
   PromptInputSubmit,
 } from '@/components/ai-elements/prompt-input';
+import { Shimmer } from '@/components/ai-elements/shimmer';
 import { Alert, Button } from '@trycompai/design-system';
 import { Close, MagicWand } from '@trycompai/design-system/icons';
 import type { ChatStatus } from 'ai';
@@ -143,28 +144,48 @@ function PolicyToolCard({
   const toolInput = part.input;
   const isCompleted = part.state === 'output-available';
   const isError = part.state === 'output-error';
+  const isWorking = !isCompleted && !isError;
 
-  const title = isCompleted
-    ? toolInput?.title || toolInput?.summary || 'Policy updates ready'
-    : toolInput?.title || 'Preparing policy updates';
+  // Working state: use shimmer
+  if (isWorking) {
+    const shimmerText = toolInput?.title || 'Working on your policy updates...';
+    return (
+      <div className="flex items-center gap-3 py-2">
+        <div className="relative h-5 w-5 shrink-0">
+          <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+          <div className="absolute inset-0.5 animate-pulse rounded-full bg-primary/40" />
+        </div>
+        <Shimmer className="text-sm" duration={2.5}>
+          {shimmerText}
+        </Shimmer>
+      </div>
+    );
+  }
 
-  const bodyText = toolInput?.detail || (isCompleted
-    ? (hasActiveProposal ? 'Changes are highlighted in the editor.' : 'Policy updates were generated.')
-    : 'Working on your policy updates...');
+  // Error state: keep alert
+  if (isError) {
+    return (
+      <Alert
+        variant="destructive"
+        title="Policy update failed"
+        description="Something went wrong while generating updates. Please try again."
+      />
+    );
+  }
 
+  // Completed state: subtle success message
+  const title = toolInput?.title || toolInput?.summary || 'Policy updates ready';
+  const bodyText = toolInput?.detail || (hasActiveProposal
+    ? 'Changes are highlighted in the editor.'
+    : 'Policy updates were generated.');
   const truncatedBodyText = bodyText.length > 180 ? `${bodyText.slice(0, 177)}…` : bodyText;
-
-  const variant = isCompleted
-    ? (hasActiveProposal ? 'success' : 'default')
-    : isError ? 'destructive' : 'info';
-
-  const description = hasActiveProposal && isCompleted
+  const description = hasActiveProposal
     ? `${truncatedBodyText} Review the highlighted changes in the editor.`
     : truncatedBodyText;
 
   return (
     <Alert
-      variant={variant}
+      variant={hasActiveProposal ? 'success' : 'default'}
       title={title}
       description={description}
     />

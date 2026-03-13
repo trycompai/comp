@@ -30,30 +30,89 @@ export const suggestionsPluginKey = new PluginKey<SuggestionsPluginState>(
   'suggestions'
 );
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface SuggestionsExtensionOptions {}
+export interface SuggestionsExtensionOptions {
+  onAccept?: (id: string) => void;
+  onReject?: (id: string) => void;
+  onFeedback?: (id: string) => void;
+}
+
+interface ActionCallbacks {
+  onAccept?: (id: string) => void;
+  onReject?: (id: string) => void;
+  onFeedback?: (id: string) => void;
+}
 
 // ── Widget factories ──
 
+function createActionBar(
+  rangeId: string,
+  callbacks: ActionCallbacks
+): HTMLElement {
+  const bar = document.createElement('div');
+  bar.className = 'suggestion-actions';
+
+  const acceptBtn = document.createElement('button');
+  acceptBtn.className = 'suggestion-action-btn suggestion-action-accept';
+  acceptBtn.textContent = '\u2713 Accept';
+  acceptBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    callbacks.onAccept?.(rangeId);
+  });
+
+  const rejectBtn = document.createElement('button');
+  rejectBtn.className = 'suggestion-action-btn suggestion-action-reject';
+  rejectBtn.textContent = '\u2715 Reject';
+  rejectBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    callbacks.onReject?.(rangeId);
+  });
+
+  const feedbackBtn = document.createElement('button');
+  feedbackBtn.className = 'suggestion-action-btn suggestion-action-feedback';
+  feedbackBtn.textContent = '\u270E Edit';
+  feedbackBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    callbacks.onFeedback?.(rangeId);
+  });
+
+  bar.appendChild(acceptBtn);
+  bar.appendChild(rejectBtn);
+  bar.appendChild(feedbackBtn);
+  return bar;
+}
+
 function createInsertionWidget(
+  rangeId: string,
   text: string,
-  schema: Schema
+  schema: Schema,
+  callbacks: ActionCallbacks
 ): (view: EditorView) => HTMLElement {
   return (_view: EditorView) => {
-    const div = document.createElement('div');
-    div.className = 'suggestion-new-section';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'suggestion-change-group';
+
+    // Action bar at the top
+    wrapper.appendChild(createActionBar(rangeId, callbacks));
+
+    // Content
+    const content = document.createElement('div');
+    content.className = 'suggestion-new-section';
 
     try {
       const pmNodes = markdownLinesToNodes(text, schema);
       const serializer = DOMSerializer.fromSchema(schema);
       const fragment = Fragment.from(pmNodes);
       const rendered = serializer.serializeFragment(fragment);
-      div.appendChild(rendered);
+      content.appendChild(rendered);
     } catch {
-      div.textContent = text;
+      content.textContent = text;
     }
 
-    return div;
+    wrapper.appendChild(content);
+    return wrapper;
   };
 }
 
@@ -80,7 +139,7 @@ function markdownLinesToNodes(
     const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
     const listMatch = line.match(/^[-*]\s+(.+)$/);
 
-    if (headingMatch) {
+    if (headingMatch?.[1] && headingMatch[2]) {
       flushList();
       const level = headingMatch[1].length;
       const headingType = schema.nodes.heading;
@@ -89,7 +148,7 @@ function markdownLinesToNodes(
           headingType.create({ level }, schema.text(headingMatch[2]))
         );
       }
-    } else if (listMatch && schema.nodes.listItem) {
+    } else if (listMatch?.[1] && schema.nodes.listItem) {
       const paragraph = schema.nodes.paragraph?.create(
         null,
         schema.text(listMatch[1])
@@ -129,19 +188,39 @@ function findBlockNodesInRange(
     pos: number;
     end: number;
   }> = [];
+  const seen = new Set<number>();
 
   doc.descendants((node, pos) => {
-    // We want block nodes that contain text (paragraphs, headings, list items)
-    // but not their parent containers (lists, blockquotes, doc)
     if (node.isTextblock) {
       const nodeEnd = pos + node.nodeSize;
-      // Check overlap with range
       if (pos < to && nodeEnd > from) {
-        results.push({ node, pos, end: nodeEnd });
+        // If this textblock is inside a listItem, decorate the listItem
+        // so the bullet point is included in the highlight
+        const resolved = doc.resolve(pos);
+        for (let d = resolved.depth; d >= 1; d--) {
+          const ancestor = resolved.node(d);
+          if (ancestor.type.name === 'listItem') {
+            const ancestorPos = resolved.before(d);
+            if (!seen.has(ancestorPos)) {
+              seen.add(ancestorPos);
+              results.push({
+                node: ancestor,
+                pos: ancestorPos,
+                end: ancestorPos + ancestor.nodeSize,
+              });
+            }
+            return false;
+          }
+        }
+        // Not inside a list item — use the textblock itself
+        if (!seen.has(pos)) {
+          seen.add(pos);
+          results.push({ node, pos, end: nodeEnd });
+        }
       }
-      return false; // Don't descend into text blocks
+      return false;
     }
-    return true; // Descend into containers
+    return true;
   });
 
   return results;
@@ -150,7 +229,8 @@ function findBlockNodesInRange(
 function buildDecorations(
   doc: ProseMirrorNode,
   ranges: SuggestionRange[],
-  focusedId: string | null
+  focusedId: string | null,
+  callbacks: ActionCallbacks
 ): DecorationSet {
   const decorations: Decoration[] = [];
   const schema = doc.type.schema;
@@ -167,16 +247,18 @@ function buildDecorations(
         // Place proposed content widget BEFORE the top-level ancestor
         // of the first affected block (so it's outside any nesting)
         if (blocks.length > 0) {
-          const resolved = doc.resolve(blocks[0].pos);
-          // Walk up to depth 1 (direct child of doc)
-          const topPos = resolved.before(1);
-          decorations.push(
-            Decoration.widget(
-              topPos,
-              createInsertionWidget(range.proposedText, schema),
-              { side: -1, key: `insert-${range.id}` }
-            )
-          );
+          const firstBlock = blocks[0];
+          if (firstBlock) {
+            const resolved = doc.resolve(firstBlock.pos);
+            const topPos = resolved.before(1);
+            decorations.push(
+              Decoration.widget(
+                topPos,
+                createInsertionWidget(range.id, range.proposedText, schema, callbacks),
+                { side: -1, key: `insert-${range.id}` }
+              )
+            );
+          }
         }
 
         // Mark old content as deleted (red strikethrough)
@@ -199,7 +281,7 @@ function buildDecorations(
         decorations.push(
           Decoration.widget(
             insertPos,
-            createInsertionWidget(range.proposedText, schema),
+            createInsertionWidget(range.id, range.proposedText, schema, callbacks),
             { side: 1, key: `insert-${range.id}` }
           )
         );
@@ -208,6 +290,25 @@ function buildDecorations(
 
       case 'delete': {
         const blocks = findBlockNodesInRange(doc, range.from, range.to);
+
+        // Action bar widget before the deleted blocks
+        const firstDeleteBlock = blocks[0];
+        if (firstDeleteBlock) {
+          const resolved = doc.resolve(firstDeleteBlock.pos);
+          const topPos = resolved.before(1);
+          decorations.push(
+            Decoration.widget(
+              topPos,
+              (_view: EditorView) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'suggestion-change-group suggestion-delete-group';
+                wrapper.appendChild(createActionBar(range.id, callbacks));
+                return wrapper;
+              },
+              { side: -1, key: `delete-actions-${range.id}` }
+            )
+          );
+        }
 
         for (const block of blocks) {
           decorations.push(
@@ -233,10 +334,20 @@ export const SuggestionsExtension =
     name: 'suggestions',
 
     addOptions() {
-      return {};
+      return {
+        onAccept: undefined,
+        onReject: undefined,
+        onFeedback: undefined,
+      };
     },
 
     addProseMirrorPlugins() {
+      const extensionCallbacks: ActionCallbacks = {
+        onAccept: this.options.onAccept,
+        onReject: this.options.onReject,
+        onFeedback: this.options.onFeedback,
+      };
+
       return [
         new Plugin<SuggestionsPluginState>({
           key: suggestionsPluginKey,
@@ -259,11 +370,18 @@ export const SuggestionsExtension =
                 const pendingRanges = meta.ranges.filter(
                   (r) => r.decision === 'pending'
                 );
-                const decorations = buildDecorations(
-                  tr.doc,
-                  pendingRanges,
-                  meta.focusedId
-                );
+                let decorations: DecorationSet;
+                try {
+                  decorations = buildDecorations(
+                    tr.doc,
+                    pendingRanges,
+                    meta.focusedId,
+                    extensionCallbacks
+                  );
+                } catch (err) {
+                  console.error('[SuggestionsPlugin] buildDecorations failed:', err);
+                  decorations = DecorationSet.empty;
+                }
                 return {
                   ranges: meta.ranges,
                   focusedId: meta.focusedId,
