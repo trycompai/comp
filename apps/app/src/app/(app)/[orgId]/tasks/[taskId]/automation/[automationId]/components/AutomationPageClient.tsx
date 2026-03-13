@@ -57,7 +57,6 @@ export function AutomationPageClient({
         .catch((error) => {
           console.error('Failed to generate suggestions:', error);
           setIsLoadingSuggestions(false);
-          // Keep empty array, will use static suggestions
         });
     } else {
       // Not a new automation, no need to load suggestions
