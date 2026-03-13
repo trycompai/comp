@@ -1,4 +1,5 @@
 import {
+  adminClient,
   emailOTPClient,
   magicLinkClient,
   multiSessionClient,
@@ -27,6 +28,7 @@ export const authClient = createAuthClient({
       ac,
       roles: allRoles,
     }),
+    adminClient(),
     emailOTPClient(),
     magicLinkClient(),
     multiSessionClient(),

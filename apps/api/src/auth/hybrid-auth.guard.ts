@@ -181,7 +181,7 @@ export class HybridAuthGuard implements CanActivate {
             department: true,
             user: {
               select: {
-                isPlatformAdmin: true,
+                role: true,
               },
             },
           },
@@ -196,7 +196,7 @@ export class HybridAuthGuard implements CanActivate {
         userRoles = member.role ? member.role.split(',') : null;
         request.memberId = member.id;
         request.memberDepartment = member.department;
-        request.isPlatformAdmin = member.user?.isPlatformAdmin ?? false;
+        request.isPlatformAdmin = member.user?.role === 'admin';
       }
 
       // Set request context for session auth
@@ -208,6 +208,12 @@ export class HybridAuthGuard implements CanActivate {
       request.isApiKey = false;
       request.isServiceToken = false;
       request.isPlatformAdmin = request.isPlatformAdmin ?? false;
+
+      const impersonatedBy = (sessionData as Record<string, unknown>)
+        .impersonatedBy as string | undefined;
+      if (impersonatedBy) {
+        request.impersonatedBy = impersonatedBy;
+      }
 
       return true;
     } catch (error) {

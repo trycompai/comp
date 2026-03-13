@@ -9,11 +9,19 @@ import {
   HttpStatus,
   Logger,
   UseGuards,
+  UseInterceptors,
+  Req,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { PlatformCredentialRepository } from '../repositories/platform-credential.repository';
+import {
+  CredentialVaultService,
+  type EncryptedData,
+} from '../services/credential-vault.service';
 import { getAllManifests, getManifest } from '@comp/integration-platform';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
+import { AdminAuditLogInterceptor } from '../../admin-organizations/admin-audit-log.interceptor';
 
 interface SavePlatformCredentialDto {
   providerSlug: string;
@@ -25,64 +33,93 @@ interface SavePlatformCredentialDto {
 
 @Controller({ path: 'admin/integrations', version: '1' })
 @UseGuards(PlatformAdminGuard)
+@UseInterceptors(AdminAuditLogInterceptor)
+@Throttle({ default: { ttl: 60000, limit: 30 } })
 export class AdminIntegrationsController {
   private readonly logger = new Logger(AdminIntegrationsController.name);
 
   constructor(
     private readonly oauthCredentialsService: OAuthCredentialsService,
     private readonly platformCredentialRepository: PlatformCredentialRepository,
+    private readonly credentialVaultService: CredentialVaultService,
   ) {}
 
-  /**
-   * List all integrations with their credential status
-   */
+  private maskSecret(value: string): string {
+    if (value.length <= 4) return '\u2022'.repeat(value.length);
+    return '\u2022'.repeat(value.length - 4) + value.slice(-4);
+  }
+
+  private async getCredentialHints(credential: {
+    encryptedClientId: unknown;
+    encryptedClientSecret: unknown;
+  }): Promise<{ clientIdHint: string; clientSecretHint: string }> {
+    try {
+      const [clientId, clientSecret] = await Promise.all([
+        this.credentialVaultService.decrypt(
+          credential.encryptedClientId as EncryptedData,
+        ),
+        this.credentialVaultService.decrypt(
+          credential.encryptedClientSecret as EncryptedData,
+        ),
+      ]);
+      return {
+        clientIdHint: this.maskSecret(clientId),
+        clientSecretHint: this.maskSecret(clientSecret),
+      };
+    } catch {
+      return { clientIdHint: '\u2022\u2022\u2022\u2022', clientSecretHint: '\u2022\u2022\u2022\u2022' };
+    }
+  }
+
   @Get()
   async listIntegrations() {
     const manifests = getAllManifests();
     const platformCredentials =
       await this.platformCredentialRepository.findAll();
 
-    // Create a map of configured credentials
     const configuredProviders = new Set(
       platformCredentials.map((c) => c.providerSlug),
     );
 
-    return manifests.map((manifest) => {
-      const credential = platformCredentials.find(
-        (c) => c.providerSlug === manifest.id,
-      );
+    return Promise.all(
+      manifests.map(async (manifest) => {
+        const credential = platformCredentials.find(
+          (c) => c.providerSlug === manifest.id,
+        );
 
-      return {
-        id: manifest.id,
-        name: manifest.name,
-        description: manifest.description,
-        category: manifest.category,
-        logoUrl: manifest.logoUrl,
-        authType: manifest.auth.type,
-        capabilities: manifest.capabilities,
-        isActive: manifest.isActive,
-        docsUrl: manifest.docsUrl,
-        // Credential status
-        hasCredentials: configuredProviders.has(manifest.id),
-        credentialConfiguredAt: credential?.createdAt,
-        credentialUpdatedAt: credential?.updatedAt,
-        // Encrypted credential data (decrypted client-side)
-        encryptedClientId: credential?.encryptedClientId,
-        encryptedClientSecret: credential?.encryptedClientSecret,
-        existingCustomSettings:
-          (credential as { customSettings?: Record<string, unknown> } | undefined)
-            ?.customSettings || undefined,
-        // OAuth-specific info
-        ...(manifest.auth.type === 'oauth2' && {
-          setupInstructions: manifest.auth.config.setupInstructions,
-          createAppUrl: manifest.auth.config.createAppUrl,
-          requiredScopes: manifest.auth.config.scopes,
-          authorizeUrl: manifest.auth.config.authorizeUrl,
-          additionalOAuthSettings:
-            manifest.auth.config.additionalOAuthSettings || [],
-        }),
-      };
-    });
+        const hints = credential
+          ? await this.getCredentialHints(credential)
+          : undefined;
+
+        return {
+          id: manifest.id,
+          name: manifest.name,
+          description: manifest.description,
+          category: manifest.category,
+          logoUrl: manifest.logoUrl,
+          authType: manifest.auth.type,
+          capabilities: manifest.capabilities,
+          isActive: manifest.isActive,
+          docsUrl: manifest.docsUrl,
+          hasCredentials: configuredProviders.has(manifest.id),
+          credentialConfiguredAt: credential?.createdAt,
+          credentialUpdatedAt: credential?.updatedAt,
+          clientIdHint: hints?.clientIdHint,
+          clientSecretHint: hints?.clientSecretHint,
+          existingCustomSettings:
+            (credential as { customSettings?: Record<string, unknown> } | undefined)
+              ?.customSettings || undefined,
+          ...(manifest.auth.type === 'oauth2' && {
+            setupInstructions: manifest.auth.config.setupInstructions,
+            createAppUrl: manifest.auth.config.createAppUrl,
+            requiredScopes: manifest.auth.config.scopes,
+            authorizeUrl: manifest.auth.config.authorizeUrl,
+            additionalOAuthSettings:
+              manifest.auth.config.additionalOAuthSettings || [],
+          }),
+        };
+      }),
+    );
   }
 
   /**
@@ -134,7 +171,7 @@ export class AdminIntegrationsController {
   @Post('credentials')
   async savePlatformCredentials(
     @Body() body: SavePlatformCredentialDto,
-    // TODO: Get userId from auth context
+    @Req() req: { userId: string },
   ) {
     const {
       providerSlug,
@@ -144,7 +181,6 @@ export class AdminIntegrationsController {
       customSettings,
     } = body;
 
-    // Validate provider exists
     const manifest = getManifest(providerSlug);
     if (!manifest) {
       throw new HttpException(
@@ -153,7 +189,6 @@ export class AdminIntegrationsController {
       );
     }
 
-    // Validate it's an OAuth provider
     if (manifest.auth.type !== 'oauth2') {
       throw new HttpException(
         `Provider ${providerSlug} does not use OAuth`,
@@ -161,7 +196,6 @@ export class AdminIntegrationsController {
       );
     }
 
-    // Validate required fields
     if (!clientId || !clientSecret) {
       throw new HttpException(
         'clientId and clientSecret are required',
@@ -175,19 +209,21 @@ export class AdminIntegrationsController {
       clientSecret,
       customScopes,
       customSettings,
-      // userId from auth context would go here
+      req.userId,
     );
 
-    this.logger.log(`Platform credentials saved for ${providerSlug}`);
+    this.logger.log(
+      `Platform credentials saved for ${providerSlug} by ${req.userId}`,
+    );
 
     return { success: true };
   }
 
-  /**
-   * Delete platform credentials for an integration
-   */
   @Delete('credentials/:providerSlug')
-  async deletePlatformCredentials(@Param('providerSlug') providerSlug: string) {
+  async deletePlatformCredentials(
+    @Param('providerSlug') providerSlug: string,
+    @Req() req: { userId: string },
+  ) {
     const credential =
       await this.platformCredentialRepository.findByProviderSlug(providerSlug);
 
@@ -200,7 +236,9 @@ export class AdminIntegrationsController {
 
     await this.oauthCredentialsService.deletePlatformCredentials(providerSlug);
 
-    this.logger.log(`Platform credentials deleted for ${providerSlug}`);
+    this.logger.log(
+      `Platform credentials deleted for ${providerSlug} by ${req.userId}`,
+    );
 
     return { success: true };
   }

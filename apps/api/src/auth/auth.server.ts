@@ -5,12 +5,14 @@ import { db } from '@trycompai/db';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import {
+  admin,
   bearer,
   emailOTP,
   magicLink,
   multiSession,
   organization,
 } from 'better-auth/plugins';
+import { createAuthMiddleware } from 'better-auth/api';
 import { ac, allRoles } from '@comp/auth';
 
 const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
@@ -161,6 +163,19 @@ export const auth = betterAuth({
     }),
   },
   databaseHooks: {
+    user: {
+      update: {
+        after: async (user) => {
+          const isAdmin = user.role === 'admin';
+          if (user.isPlatformAdmin !== isAdmin) {
+            await db.user.update({
+              where: { id: user.id },
+              data: { isPlatformAdmin: isAdmin },
+            });
+          }
+        },
+      },
+    },
     session: {
       create: {
         before: async (session) => {
@@ -221,6 +236,52 @@ export const auth = betterAuth({
         },
       },
     },
+  },
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      if (!ctx.path.startsWith('/admin/')) return;
+
+      const session = ctx.context?.session;
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      const descriptions: Record<string, string> = {
+        '/admin/impersonate-user': 'Impersonated a user',
+        '/admin/ban-user': 'Banned a user',
+        '/admin/unban-user': 'Unbanned a user',
+        '/admin/set-role': 'Changed a user role',
+        '/admin/set-user-password': 'Reset a user password',
+        '/admin/create-user': 'Created a user',
+        '/admin/update-user': 'Updated a user',
+      };
+
+      const description = descriptions[ctx.path];
+      if (!description) return;
+
+      try {
+        await db.auditLog.create({
+          data: {
+            userId,
+            memberId: null,
+            organizationId:
+              (session.session as Record<string, unknown>)
+                ?.activeOrganizationId as string ?? '',
+            entityType: null,
+            entityId: null,
+            description: `[Platform Admin] ${description}`,
+            data: {
+              action: description,
+              method: 'POST',
+              path: ctx.path,
+              resource: 'admin',
+              permission: 'platform-admin',
+            },
+          },
+        });
+      } catch (err) {
+        console.error('[Auth] Failed to write admin audit log:', err);
+      }
+    }),
   },
   // SECRET_KEY is validated at startup via validateSecurityConfig()
   secret: process.env.SECRET_KEY as string,
@@ -304,6 +365,9 @@ export const auth = betterAuth({
     }),
     multiSession(),
     bearer(),
+    admin({
+      defaultRole: 'user',
+    }),
   ],
   socialProviders,
   user: {
