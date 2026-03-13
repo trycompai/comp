@@ -36,60 +36,8 @@ export interface SuggestionsExtensionOptions {
   onFeedback?: (id: string) => void;
 }
 
-interface CallbackOptions {
-  onAccept?: (id: string) => void;
-  onReject?: (id: string) => void;
-  onFeedback?: (id: string) => void;
-}
 
 // ── Widget factories ──
-
-function createGutterWidget(
-  rangeId: string,
-  callbacks: CallbackOptions
-): (view: EditorView) => HTMLElement {
-  return (_view: EditorView) => {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'suggestion-gutter';
-    wrapper.dataset.suggestionId = rangeId;
-
-    const acceptBtn = document.createElement('button');
-    acceptBtn.className = 'suggestion-gutter-btn suggestion-accept-btn';
-    acceptBtn.textContent = '\u2713';
-    acceptBtn.title = 'Accept change';
-    acceptBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      callbacks.onAccept?.(rangeId);
-    });
-
-    const rejectBtn = document.createElement('button');
-    rejectBtn.className = 'suggestion-gutter-btn suggestion-reject-btn';
-    rejectBtn.textContent = '\u2715';
-    rejectBtn.title = 'Reject change';
-    rejectBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      callbacks.onReject?.(rangeId);
-    });
-
-    const feedbackBtn = document.createElement('button');
-    feedbackBtn.className = 'suggestion-gutter-btn suggestion-feedback-btn';
-    feedbackBtn.textContent = '\u270E';
-    feedbackBtn.title = 'Give feedback';
-    feedbackBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      callbacks.onFeedback?.(rangeId);
-    });
-
-    wrapper.appendChild(acceptBtn);
-    wrapper.appendChild(rejectBtn);
-    wrapper.appendChild(feedbackBtn);
-
-    return wrapper;
-  };
-}
 
 function createInsertionWidget(
   text: string,
@@ -206,8 +154,7 @@ function findBlockNodesInRange(
 function buildDecorations(
   doc: ProseMirrorNode,
   ranges: SuggestionRange[],
-  focusedId: string | null,
-  callbacks: CallbackOptions
+  focusedId: string | null
 ): DecorationSet {
   const decorations: Decoration[] = [];
   const schema = doc.type.schema;
@@ -277,24 +224,7 @@ function buildDecorations(
       }
     }
 
-    // Gutter widget — placed at top-level position before the change
-    const gutterBlocks = findBlockNodesInRange(doc, range.from, range.to);
-    let gutterPos: number;
-    if (gutterBlocks.length > 0) {
-      const resolved = doc.resolve(gutterBlocks[0].pos);
-      gutterPos = resolved.depth >= 1
-        ? resolved.before(1)
-        : gutterBlocks[0].pos;
-    } else {
-      gutterPos = Math.max(0, Math.min(range.from, doc.content.size));
-    }
-    decorations.push(
-      Decoration.widget(
-        gutterPos,
-        createGutterWidget(range.id, callbacks),
-        { side: -1, key: `gutter-${range.id}` }
-      )
-    );
+    // No separate gutter — accept/reject is handled by the top bar
   }
 
   return DecorationSet.create(doc, decorations);
@@ -315,8 +245,6 @@ export const SuggestionsExtension =
     },
 
     addProseMirrorPlugins() {
-      const { onAccept, onReject, onFeedback } = this.options;
-
       return [
         new Plugin<SuggestionsPluginState>({
           key: suggestionsPluginKey,
@@ -342,8 +270,7 @@ export const SuggestionsExtension =
                 const decorations = buildDecorations(
                   tr.doc,
                   pendingRanges,
-                  meta.focusedId,
-                  { onAccept, onReject, onFeedback }
+                  meta.focusedId
                 );
                 return {
                   ranges: meta.ranges,

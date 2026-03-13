@@ -57,7 +57,37 @@ export function computeSuggestionRanges(
     });
   }
 
-  return ranges;
+  return mergeOverlappingRanges(ranges);
+}
+
+/**
+ * Merge ranges whose [from, to] overlap or are identical.
+ * When two ranges overlap, combine them into a single 'modify' range.
+ */
+function mergeOverlappingRanges(ranges: SuggestionRange[]): SuggestionRange[] {
+  if (ranges.length <= 1) return ranges;
+
+  // Sort by from position
+  const sorted = [...ranges].sort((a, b) => a.from - b.from);
+  const merged: SuggestionRange[] = [];
+
+  for (const range of sorted) {
+    const prev = merged[merged.length - 1];
+
+    if (prev && range.from <= prev.to) {
+      // Overlapping — merge into one modify range
+      prev.to = Math.max(prev.to, range.to);
+      prev.type = 'modify';
+      prev.originalText = prev.originalText + '\n' + range.originalText;
+      prev.proposedText = prev.proposedText + '\n' + range.proposedText;
+      prev.segments = []; // Drop word-level segments for merged ranges
+      prev.id = `suggestion-merged-${prev.from}-${prev.to}`;
+    } else {
+      merged.push({ ...range });
+    }
+  }
+
+  return merged;
 }
 
 function classifyHunk(oldLines: string[], newLines: string[]): SuggestionRange['type'] {
