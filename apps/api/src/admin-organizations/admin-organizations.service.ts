@@ -273,11 +273,13 @@ export class AdminOrganizationsService {
 
   async revokeInvitation(orgId: string, invitationId: string) {
     const invitation = await db.invitation.findFirst({
-      where: { id: invitationId, organizationId: orgId },
+      where: { id: invitationId, organizationId: orgId, status: 'pending' },
     });
 
     if (!invitation) {
-      throw new NotFoundException('Invitation not found');
+      throw new NotFoundException(
+        'Pending invitation not found. It may have already been accepted, rejected, or canceled.',
+      );
     }
 
     await db.invitation.update({
