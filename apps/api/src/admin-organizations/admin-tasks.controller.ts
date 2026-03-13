@@ -28,10 +28,7 @@ import { CommentsService } from '../comments/comments.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
 import { CreateAdminTaskDto } from './dto/create-admin-task.dto';
-
-interface AdminRequest {
-  userId: string;
-}
+import type { AdminRequest } from './platform-admin-auth-context';
 
 interface UpdateTaskBody {
   status?: string;

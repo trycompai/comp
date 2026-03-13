@@ -21,10 +21,7 @@ import { FindingsService } from '../findings/findings.service';
 import { CreateFindingDto } from '../findings/dto/create-finding.dto';
 import { UpdateFindingDto } from '../findings/dto/update-finding.dto';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
-
-interface AdminRequest {
-  userId: string;
-}
+import type { AdminRequest } from './platform-admin-auth-context';
 
 @ApiTags('Admin - Findings')
 @Controller({ path: 'admin/organizations', version: '1' })

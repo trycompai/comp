@@ -264,15 +264,26 @@ export const auth = betterAuth({
       if (!description) return;
 
       try {
-        const organizationId =
+        let organizationId =
           (session.session as Record<string, unknown>)
             ?.activeOrganizationId as string | undefined;
 
         if (!organizationId) {
-          console.warn(
-            '[Auth] Skipping admin audit log: no activeOrganizationId on session',
-          );
-          return;
+          const userOrg = await db.organization.findFirst({
+            where: { members: { some: { userId } } },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true },
+          });
+
+          if (!userOrg) {
+            console.error(
+              '[Auth] SECURITY: Admin audit log dropped — no organization could be resolved for admin user',
+              { userId, path: ctx.path },
+            );
+            return;
+          }
+
+          organizationId = userOrg.id;
         }
 
         await db.auditLog.create({

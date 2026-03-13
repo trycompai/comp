@@ -37,8 +37,8 @@ export class AdminOrganizationsController {
   ) {
     return this.service.listOrganizations({
       search,
-      page: Math.max(1, parseInt(page || '1', 10)),
-      limit: Math.min(100, Math.max(1, parseInt(limit || '50', 10))),
+      page: Math.max(1, parseInt(page || '1', 10) || 1),
+      limit: Math.min(100, Math.max(1, parseInt(limit || '50', 10) || 50)),
     });
   }
 
