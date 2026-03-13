@@ -96,8 +96,29 @@ describe('AdminOrganizationsService', () => {
         expect.objectContaining({
           where: {
             OR: [
+              { id: { contains: 'acme', mode: 'insensitive' } },
               { name: { contains: 'acme', mode: 'insensitive' } },
               { slug: { contains: 'acme', mode: 'insensitive' } },
+              {
+                members: {
+                  some: {
+                    role: { contains: 'owner' },
+                    user: {
+                      name: { contains: 'acme', mode: 'insensitive' },
+                    },
+                  },
+                },
+              },
+              {
+                members: {
+                  some: {
+                    role: { contains: 'owner' },
+                    user: {
+                      email: { contains: 'acme', mode: 'insensitive' },
+                    },
+                  },
+                },
+              },
             ],
           },
         }),
