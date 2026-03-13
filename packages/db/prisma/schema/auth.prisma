@@ -108,6 +108,8 @@ model Member {
   jobTitle                        String?
   isActive                        Boolean                           @default(true)
   deactivated                     Boolean                           @default(false)
+  externalUserId                  String?
+  externalUserSource              String?
   employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
   fleetDmLabelId                  Int?
 
