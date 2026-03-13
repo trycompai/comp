@@ -92,7 +92,7 @@ export class AdminFindingsController {
       [],
       true,
       req.userId,
-      'platform-admin',
+      null,
     );
   }
 }

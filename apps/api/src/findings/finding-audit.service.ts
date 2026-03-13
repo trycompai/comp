@@ -5,7 +5,7 @@ export interface FindingAuditParams {
   findingId: string;
   organizationId: string;
   userId: string;
-  memberId: string;
+  memberId: string | null;
 }
 
 @Injectable()

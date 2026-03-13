@@ -378,7 +378,7 @@ export class FindingsService {
     userRoles: string[],
     isPlatformAdmin: boolean,
     userId: string,
-    memberId: string,
+    memberId: string | null,
   ) {
     // Verify finding exists and get current state for audit
     const finding = await this.findById(organizationId, findingId);
