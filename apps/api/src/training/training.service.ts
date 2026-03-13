@@ -1,4 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { db } from '@db';
 import { TrainingEmailService } from './training-email.service';
 import { TrainingCertificatePdfService } from './training-certificate-pdf.service';
@@ -14,6 +19,75 @@ export class TrainingService {
     private readonly trainingEmailService: TrainingEmailService,
     private readonly trainingCertificatePdfService: TrainingCertificatePdfService,
   ) {}
+
+  async getCompletions(memberId: string, organizationId: string) {
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId, deactivated: false },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Member not found');
+    }
+
+    return db.employeeTrainingVideoCompletion.findMany({
+      where: { memberId },
+    });
+  }
+
+  async markVideoComplete(
+    memberId: string,
+    organizationId: string,
+    videoId: string,
+  ) {
+    if (!TRAINING_VIDEO_IDS.includes(videoId)) {
+      throw new BadRequestException(`Invalid video ID: ${videoId}`);
+    }
+
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId, deactivated: false },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Member not found');
+    }
+
+    let record = await db.employeeTrainingVideoCompletion.findFirst({
+      where: { videoId, memberId },
+    });
+
+    if (!record) {
+      record = await db.employeeTrainingVideoCompletion.create({
+        data: {
+          videoId,
+          memberId,
+          completedAt: new Date(),
+        },
+      });
+    } else if (!record.completedAt) {
+      record = await db.employeeTrainingVideoCompletion.update({
+        where: { id: record.id },
+        data: { completedAt: new Date() },
+      });
+    }
+
+    // Check if all training is now complete and send email if so
+    const allComplete = await this.hasCompletedAllTraining(memberId);
+    if (allComplete) {
+      try {
+        await this.sendTrainingCompletionEmailIfComplete(
+          memberId,
+          organizationId,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to send training completion email for member ${memberId}:`,
+          error,
+        );
+      }
+    }
+
+    return record;
+  }
 
   /**
    * Check if a member has completed all training videos
