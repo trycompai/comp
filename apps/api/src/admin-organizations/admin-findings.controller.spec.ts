@@ -117,7 +117,7 @@ describe('AdminFindingsController', () => {
         [],
         true,
         'usr_admin',
-        'platform-admin',
+        null,
       );
       expect(result).toEqual(updated);
     });
