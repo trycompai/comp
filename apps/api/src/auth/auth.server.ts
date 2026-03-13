@@ -167,7 +167,11 @@ export const auth = betterAuth({
       update: {
         after: async (user) => {
           const isAdmin = user.role === 'admin';
-          if (user.isPlatformAdmin !== isAdmin) {
+          const current = await db.user.findUnique({
+            where: { id: user.id },
+            select: { isPlatformAdmin: true },
+          });
+          if (current && current.isPlatformAdmin !== isAdmin) {
             await db.$executeRaw`UPDATE "User" SET "isPlatformAdmin" = ${isAdmin} WHERE "id" = ${user.id}`;
           }
         },
