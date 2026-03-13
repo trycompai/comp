@@ -19,11 +19,11 @@ jest.mock('@db', () => ({
   Prisma: {},
   db: {
     auditLog: { get create() { return mockCreate; } },
-    policy: { get findFirst() { return mockPolicyFind; } },
-    taskItem: { get findFirst() { return mockTaskFind; } },
-    vendor: { get findFirst() { return mockVendorFind; } },
-    finding: { get findFirst() { return mockFindingFind; } },
-    context: { get findFirst() { return mockContextFind; } },
+    policy: { get findUnique() { return mockPolicyFind; } },
+    taskItem: { get findUnique() { return mockTaskFind; } },
+    vendor: { get findUnique() { return mockVendorFind; } },
+    finding: { get findUnique() { return mockFindingFind; } },
+    context: { get findUnique() { return mockContextFind; } },
   },
 }));
 
@@ -44,7 +44,7 @@ function buildContext(overrides: {
     url: overrides.url ?? '/v1/admin/organizations/org_1/policies/pol_1',
     params: overrides.params ?? { orgId: 'org_1' },
     body: overrides.body ?? { status: 'published' },
-    userId: 'userId' in overrides ? overrides.userId : 'usr_admin',
+    userId: overrides.userId ?? 'usr_admin',
   };
 
   return {

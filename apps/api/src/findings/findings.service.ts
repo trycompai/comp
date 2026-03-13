@@ -14,7 +14,7 @@ import {
 import {
   toDbEvidenceFormType,
   toExternalEvidenceFormType,
-} from '@trycompai/company';
+} from '@comp/company';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { FindingAuditService } from './finding-audit.service';
@@ -319,18 +319,21 @@ export class FindingsService {
       include: this.findingInclude,
     });
 
-    await this.findingAuditService.logFindingCreated({
-      findingId: finding.id,
-      organizationId,
-      userId,
-      memberId,
-      taskId: task?.id,
-      taskTitle: task?.title,
-      evidenceSubmissionId: evidenceSubmission?.id,
-      evidenceSubmissionFormType: resolvedFormType,
-      content: createDto.content,
-      type: createDto.type ?? FindingType.soc2,
-    });
+    // Log to audit trail
+    if (memberId) {
+      await this.findingAuditService.logFindingCreated({
+        findingId: finding.id,
+        organizationId,
+        userId,
+        memberId,
+        taskId: task?.id,
+        taskTitle: task?.title,
+        evidenceSubmissionId: evidenceSubmission?.id,
+        evidenceSubmissionFormType: resolvedFormType,
+        content: createDto.content,
+        type: createDto.type ?? FindingType.soc2,
+      });
+    }
 
     const actorName =
       finding.createdBy?.user?.name ||
@@ -375,7 +378,7 @@ export class FindingsService {
     userRoles: string[],
     isPlatformAdmin: boolean,
     userId: string,
-    memberId: string | null,
+    memberId: string,
   ) {
     // Verify finding exists and get current state for audit
     const finding = await this.findById(organizationId, findingId);

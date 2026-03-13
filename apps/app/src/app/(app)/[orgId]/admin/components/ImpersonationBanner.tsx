@@ -10,11 +10,9 @@ export function ImpersonationBanner() {
   const pathname = usePathname();
   const [stopping, setStopping] = useState(false);
 
-  const rawImpersonatedBy = (
+  const impersonatedBy = (
     session?.session as Record<string, unknown> | undefined
-  )?.impersonatedBy;
-  const impersonatedBy =
-    typeof rawImpersonatedBy === 'string' ? rawImpersonatedBy : undefined;
+  )?.impersonatedBy as string | undefined;
 
   if (!impersonatedBy) return null;
 
@@ -24,9 +22,6 @@ export function ImpersonationBanner() {
     setStopping(true);
     try {
       await authClient.admin.stopImpersonating();
-      (authClient.$store as { notify: (signal: string) => void }).notify(
-        '$sessionSignal',
-      );
       router.push(`/${orgId}/admin/organizations`);
       router.refresh();
     } catch {

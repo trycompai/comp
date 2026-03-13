@@ -9,8 +9,6 @@ import { AdminTasksController } from './admin-tasks.controller';
 import { AdminVendorsController } from './admin-vendors.controller';
 import { AdminContextController } from './admin-context.controller';
 import { AdminEvidenceController } from './admin-evidence.controller';
-import { AdminIntegrationsController } from '../integration-platform/controllers/admin-integrations.controller';
-import { PlatformAuditLogInterceptor } from '../integration-platform/interceptors/platform-audit-log.interceptor';
 
 jest.mock('../auth/auth.server', () => ({
   auth: { api: {} },
@@ -35,12 +33,7 @@ jest.mock('@trigger.dev/sdk', () => ({
   tasks: { trigger: jest.fn() },
 }));
 
-jest.mock('@trycompai/integration-platform', () => ({
-  getAllManifests: jest.fn().mockReturnValue([]),
-  getManifest: jest.fn(),
-}));
-
-const ORG_ADMIN_CONTROLLERS = [
+const ALL_ADMIN_CONTROLLERS = [
   { name: 'AdminOrganizationsController', controller: AdminOrganizationsController },
   { name: 'AdminFindingsController', controller: AdminFindingsController },
   { name: 'AdminPoliciesController', controller: AdminPoliciesController },
@@ -51,7 +44,7 @@ const ORG_ADMIN_CONTROLLERS = [
 ];
 
 describe('Admin controllers security baseline', () => {
-  describe.each(ORG_ADMIN_CONTROLLERS)(
+  describe.each(ALL_ADMIN_CONTROLLERS)(
     '$name',
     ({ controller }) => {
       it('has PlatformAdminGuard applied at the class level', () => {
@@ -95,56 +88,8 @@ describe('Admin controllers security baseline', () => {
     },
   );
 
-  it('covers all 7 expected org-scoped admin controllers', () => {
-    expect(ORG_ADMIN_CONTROLLERS).toHaveLength(7);
-  });
-
-  describe('AdminIntegrationsController', () => {
-    const controller = AdminIntegrationsController;
-
-    it('has PlatformAdminGuard applied at the class level', () => {
-      const guards = Reflect.getMetadata(GUARDS_METADATA, controller) ?? [];
-      const hasPlatformAdminGuard = guards.some(
-        (g: unknown) => g === PlatformAdminGuard,
-      );
-      expect(hasPlatformAdminGuard).toBe(true);
-    });
-
-    it('has PlatformAuditLogInterceptor applied at the class level', () => {
-      const interceptors =
-        Reflect.getMetadata(INTERCEPTORS_METADATA, controller) ?? [];
-      const hasAuditInterceptor = interceptors.some(
-        (i: unknown) => i === PlatformAuditLogInterceptor,
-      );
-      expect(hasAuditInterceptor).toBe(true);
-    });
-
-    it('uses the correct controller path prefix', () => {
-      const path = Reflect.getMetadata('path', controller);
-      expect(path).toBe('admin/integrations');
-    });
-
-    it('uses versioned controller format', () => {
-      const version = Reflect.getMetadata('__version__', controller);
-      expect(version).toBeDefined();
-    });
-
-    it('does NOT use HybridAuthGuard', () => {
-      const guards = Reflect.getMetadata(GUARDS_METADATA, controller) ?? [];
-      const guardNames = guards.map((g: { name?: string }) => g.name);
-      expect(guardNames).not.toContain('HybridAuthGuard');
-    });
-
-    it('does NOT use PermissionGuard', () => {
-      const guards = Reflect.getMetadata(GUARDS_METADATA, controller) ?? [];
-      const guardNames = guards.map((g: { name?: string }) => g.name);
-      expect(guardNames).not.toContain('PermissionGuard');
-    });
-  });
-
-  it('covers all 8 admin controllers (7 org-scoped + 1 platform-scoped)', () => {
-    expect(ORG_ADMIN_CONTROLLERS).toHaveLength(7);
-    expect(AdminIntegrationsController).toBeDefined();
+  it('covers all 7 expected admin controllers', () => {
+    expect(ALL_ADMIN_CONTROLLERS).toHaveLength(7);
   });
 
   describe('destructive endpoints have tighter rate limits', () => {

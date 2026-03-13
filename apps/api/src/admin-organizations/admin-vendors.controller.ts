@@ -19,7 +19,10 @@ import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { VendorsService } from '../vendors/vendors.service';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
 import { CreateAdminVendorDto } from './dto/create-admin-vendor.dto';
-import type { AdminRequest } from './platform-admin-auth-context';
+
+interface AdminRequest {
+  userId: string;
+}
 
 interface UpdateVendorBody {
   status?: string;

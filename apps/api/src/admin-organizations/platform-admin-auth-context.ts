@@ -1,9 +1,5 @@
 import type { AuthContext } from '../auth/types';
 
-export interface AdminRequest {
-  userId: string;
-}
-
 /**
  * Build an AuthContext for platform admin operations that delegate to
  * org-scoped services requiring an auth context.

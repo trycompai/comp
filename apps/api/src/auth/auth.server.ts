@@ -1,4 +1,3 @@
-import '../config/load-env';
 import { MagicLinkEmail, OTPVerificationEmail } from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
@@ -13,8 +12,8 @@ import {
   multiSession,
   organization,
 } from 'better-auth/plugins';
-import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
+import { ac, allRoles } from '@comp/auth';
 
 const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
 
@@ -22,7 +21,8 @@ const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
  * Determine the cookie domain based on environment.
  */
 function getCookieDomain(): string | undefined {
-  const baseUrl = process.env.BASE_URL || '';
+  const baseUrl =
+    process.env.BASE_URL || '';
 
   if (baseUrl.includes('staging.trycomp.ai')) {
     return '.staging.trycomp.ai';
@@ -111,7 +111,8 @@ function validateSecurityConfig(): void {
 
   // Warn about development defaults in production
   if (process.env.NODE_ENV === 'production') {
-    const baseUrl = process.env.BASE_URL || '';
+    const baseUrl =
+      process.env.BASE_URL || '';
     if (baseUrl.includes('localhost')) {
       console.warn(
         'SECURITY WARNING: BASE_URL contains "localhost" in production. ' +
@@ -162,6 +163,19 @@ export const auth = betterAuth({
     }),
   },
   databaseHooks: {
+    user: {
+      update: {
+        after: async (user) => {
+          const isAdmin = user.role === 'admin';
+          if (user.isPlatformAdmin !== isAdmin) {
+            await db.user.update({
+              where: { id: user.id },
+              data: { isPlatformAdmin: isAdmin },
+            });
+          }
+        },
+      },
+    },
     session: {
       create: {
         before: async (session) => {
@@ -233,50 +247,25 @@ export const auth = betterAuth({
 
       const descriptions: Record<string, string> = {
         '/admin/impersonate-user': 'Impersonated a user',
-        '/admin/stop-impersonating': 'Stopped impersonating a user',
         '/admin/ban-user': 'Banned a user',
         '/admin/unban-user': 'Unbanned a user',
         '/admin/set-role': 'Changed a user role',
         '/admin/set-user-password': 'Reset a user password',
         '/admin/create-user': 'Created a user',
         '/admin/update-user': 'Updated a user',
-        '/admin/remove-user': 'Removed a user',
-        '/admin/revoke-user-session': 'Revoked a user session',
-        '/admin/revoke-user-sessions': 'Revoked all user sessions',
       };
 
       const description = descriptions[ctx.path];
       if (!description) return;
 
       try {
-        let organizationId = (session.session as Record<string, unknown>)
-          ?.activeOrganizationId as string | undefined;
-
-        if (!organizationId) {
-          const userOrg = await db.organization.findFirst({
-            where: { members: { some: { userId } } },
-            orderBy: { createdAt: 'desc' },
-            select: { id: true },
-          });
-
-          if (!userOrg) {
-            console.error(
-              '[Auth] SECURITY: Admin action blocked — no organization could be resolved for admin user',
-              { userId, path: ctx.path },
-            );
-            throw new Error(
-              'Admin action blocked: unable to resolve organization for audit trail',
-            );
-          }
-
-          organizationId = userOrg.id;
-        }
-
         await db.auditLog.create({
           data: {
             userId,
             memberId: null,
-            organizationId,
+            organizationId:
+              (session.session as Record<string, unknown>)
+                ?.activeOrganizationId as string ?? '',
             entityType: null,
             entityId: null,
             description: `[Platform Admin] ${description}`,

@@ -19,9 +19,9 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { Add, Edit } from '@trycompai/design-system/icons';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
-import { Textarea } from '@trycompai/ui/textarea';
+import { Input } from '@comp/ui/input';
+import { Label } from '@comp/ui/label';
+import { Textarea } from '@comp/ui/textarea';
 import { useCallback, useEffect, useState } from 'react';
 
 interface ContextEntry {

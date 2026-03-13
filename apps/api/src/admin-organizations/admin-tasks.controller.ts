@@ -28,7 +28,10 @@ import { CommentsService } from '../comments/comments.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
 import { CreateAdminTaskDto } from './dto/create-admin-task.dto';
-import type { AdminRequest } from './platform-admin-auth-context';
+
+interface AdminRequest {
+  userId: string;
+}
 
 interface UpdateTaskBody {
   status?: string;
@@ -113,7 +116,7 @@ export class AdminTasksController {
     return db.evidenceAutomationRun.findMany({
       where: {
         taskId,
-        task: { organizationId: orgId },
+        Task: { organizationId: orgId },
       },
       include: {
         evidenceAutomation: { select: { name: true } },
