@@ -74,8 +74,8 @@ export function useChatHandlers({
         { text },
         {
           body: {
-            modelId: 'anthropic/claude-sonnet-4.6',
-            reasoningEffort: 'medium',
+            modelId: 'google/gemini-3.1-flash-lite-preview',
+            reasoningEffort: 'high',
             orgId,
             taskId,
             automationId: realAutomationId,
@@ -96,8 +96,8 @@ export function useChatHandlers({
         },
         {
           body: {
-            modelId: 'anthropic/claude-sonnet-4.6',
-            reasoningEffort: 'medium',
+            modelId: 'google/gemini-3.1-flash-lite-preview',
+            reasoningEffort: 'high',
             orgId,
             taskId,
             automationId,
@@ -120,8 +120,8 @@ export function useChatHandlers({
         },
         {
           body: {
-            modelId: 'anthropic/claude-sonnet-4.6',
-            reasoningEffort: 'medium',
+            modelId: 'google/gemini-3.1-flash-lite-preview',
+            reasoningEffort: 'high',
             orgId,
             taskId,
             automationId,

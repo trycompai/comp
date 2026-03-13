@@ -229,8 +229,8 @@ Please fix the automation script to resolve this error.`;
       { text: errorMessage },
       {
         body: {
-          modelId: 'anthropic/claude-sonnet-4.6',
-          reasoningEffort: 'medium',
+          modelId: 'google/gemini-3.1-flash-lite-preview',
+          reasoningEffort: 'high',
           orgId,
           taskId,
           automationId,
