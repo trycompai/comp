@@ -15,10 +15,6 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { PlatformCredentialRepository } from '../repositories/platform-credential.repository';
-import {
-  CredentialVaultService,
-  type EncryptedData,
-} from '../services/credential-vault.service';
 import { getAllManifests, getManifest } from '@comp/integration-platform';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
 import { PlatformAuditLogInterceptor } from '../interceptors/platform-audit-log.interceptor';
@@ -41,35 +37,7 @@ export class AdminIntegrationsController {
   constructor(
     private readonly oauthCredentialsService: OAuthCredentialsService,
     private readonly platformCredentialRepository: PlatformCredentialRepository,
-    private readonly credentialVaultService: CredentialVaultService,
   ) {}
-
-  private maskSecret(value: string): string {
-    if (value.length <= 4) return '\u2022'.repeat(value.length);
-    return '\u2022'.repeat(value.length - 4) + value.slice(-4);
-  }
-
-  private async getCredentialHints(credential: {
-    encryptedClientId: unknown;
-    encryptedClientSecret: unknown;
-  }): Promise<{ clientIdHint: string; clientSecretHint: string }> {
-    try {
-      const [clientId, clientSecret] = await Promise.all([
-        this.credentialVaultService.decrypt(
-          credential.encryptedClientId as EncryptedData,
-        ),
-        this.credentialVaultService.decrypt(
-          credential.encryptedClientSecret as EncryptedData,
-        ),
-      ]);
-      return {
-        clientIdHint: this.maskSecret(clientId),
-        clientSecretHint: this.maskSecret(clientSecret),
-      };
-    } catch {
-      return { clientIdHint: '\u2022\u2022\u2022\u2022', clientSecretHint: '\u2022\u2022\u2022\u2022' };
-    }
-  }
 
   @Get()
   async listIntegrations() {
@@ -81,45 +49,39 @@ export class AdminIntegrationsController {
       platformCredentials.map((c) => c.providerSlug),
     );
 
-    return Promise.all(
-      manifests.map(async (manifest) => {
-        const credential = platformCredentials.find(
-          (c) => c.providerSlug === manifest.id,
-        );
+    return manifests.map((manifest) => {
+      const credential = platformCredentials.find(
+        (c) => c.providerSlug === manifest.id,
+      );
 
-        const hints = credential
-          ? await this.getCredentialHints(credential)
-          : undefined;
-
-        return {
-          id: manifest.id,
-          name: manifest.name,
-          description: manifest.description,
-          category: manifest.category,
-          logoUrl: manifest.logoUrl,
-          authType: manifest.auth.type,
-          capabilities: manifest.capabilities,
-          isActive: manifest.isActive,
-          docsUrl: manifest.docsUrl,
-          hasCredentials: configuredProviders.has(manifest.id),
-          credentialConfiguredAt: credential?.createdAt,
-          credentialUpdatedAt: credential?.updatedAt,
-          clientIdHint: hints?.clientIdHint,
-          clientSecretHint: hints?.clientSecretHint,
-          existingCustomSettings:
-            (credential as { customSettings?: Record<string, unknown> } | undefined)
-              ?.customSettings || undefined,
-          ...(manifest.auth.type === 'oauth2' && {
-            setupInstructions: manifest.auth.config.setupInstructions,
-            createAppUrl: manifest.auth.config.createAppUrl,
-            requiredScopes: manifest.auth.config.scopes,
-            authorizeUrl: manifest.auth.config.authorizeUrl,
-            additionalOAuthSettings:
-              manifest.auth.config.additionalOAuthSettings || [],
-          }),
-        };
-      }),
-    );
+      return {
+        id: manifest.id,
+        name: manifest.name,
+        description: manifest.description,
+        category: manifest.category,
+        logoUrl: manifest.logoUrl,
+        authType: manifest.auth.type,
+        capabilities: manifest.capabilities,
+        isActive: manifest.isActive,
+        docsUrl: manifest.docsUrl,
+        hasCredentials: configuredProviders.has(manifest.id),
+        credentialConfiguredAt: credential?.createdAt,
+        credentialUpdatedAt: credential?.updatedAt,
+        clientIdHint: credential?.clientIdHint,
+        clientSecretHint: credential?.clientSecretHint,
+        existingCustomSettings:
+          (credential as { customSettings?: Record<string, unknown> } | undefined)
+            ?.customSettings || undefined,
+        ...(manifest.auth.type === 'oauth2' && {
+          setupInstructions: manifest.auth.config.setupInstructions,
+          createAppUrl: manifest.auth.config.createAppUrl,
+          requiredScopes: manifest.auth.config.scopes,
+          authorizeUrl: manifest.auth.config.authorizeUrl,
+          additionalOAuthSettings:
+            manifest.auth.config.additionalOAuthSettings || [],
+        }),
+      };
+    });
   }
 
   /**
