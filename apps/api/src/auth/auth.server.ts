@@ -168,10 +168,7 @@ export const auth = betterAuth({
         after: async (user) => {
           const isAdmin = user.role === 'admin';
           if (user.isPlatformAdmin !== isAdmin) {
-            await db.user.update({
-              where: { id: user.id },
-              data: { isPlatformAdmin: isAdmin },
-            });
+            await db.$executeRaw`UPDATE "User" SET "isPlatformAdmin" = ${isAdmin} WHERE "id" = ${user.id}`;
           }
         },
       },
@@ -259,13 +256,22 @@ export const auth = betterAuth({
       if (!description) return;
 
       try {
+        const organizationId =
+          (session.session as Record<string, unknown>)
+            ?.activeOrganizationId as string | undefined;
+
+        if (!organizationId) {
+          console.warn(
+            '[Auth] Skipping admin audit log: no activeOrganizationId on session',
+          );
+          return;
+        }
+
         await db.auditLog.create({
           data: {
             userId,
             memberId: null,
-            organizationId:
-              (session.session as Record<string, unknown>)
-                ?.activeOrganizationId as string ?? '',
+            organizationId,
             entityType: null,
             entityId: null,
             description: `[Platform Admin] ${description}`,
