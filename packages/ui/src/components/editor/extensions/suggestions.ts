@@ -297,8 +297,11 @@ function buildDecorations(
       }
     }
 
-    // Gutter widget for each range — placed at the first text block
-    const gutterPos = Math.max(0, Math.min(range.from, doc.content.size));
+    // Gutter widget — placed at the first text block within this range
+    const gutterBlocks = findBlockNodesInRange(doc, range.from, range.to);
+    const gutterPos = gutterBlocks.length > 0
+      ? gutterBlocks[0].pos + 1  // +1 to be inside the text block content
+      : Math.max(0, Math.min(range.from, doc.content.size));
     decorations.push(
       Decoration.widget(
         gutterPos,
@@ -388,6 +391,14 @@ export const SuggestionsExtension =
                 (r) => r.decision === 'pending'
               );
               return hasPending ? { class: 'has-suggestions' } : {};
+            },
+            editable(state) {
+              const pluginState = suggestionsPluginKey.getState(state);
+              const hasPending = pluginState?.ranges.some(
+                (r) => r.decision === 'pending'
+              );
+              // Lock editor while suggestions are active
+              return !hasPending;
             },
           },
         }),
