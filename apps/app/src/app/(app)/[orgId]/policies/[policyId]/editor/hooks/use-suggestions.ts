@@ -104,7 +104,16 @@ export function useSuggestions({
     const initial = computeSuggestionRanges(positionMap, proposedMarkdown);
     setRanges(initial);
     setCurrentIndex(0);
-  }, [editor, proposedMarkdown]);
+
+    // Auto-scroll to the first change
+    const firstPending = initial.find((r) => r.decision === 'pending');
+    if (firstPending) {
+      // Small delay to let decorations render before scrolling
+      requestAnimationFrame(() => {
+        scrollToRange(firstPending);
+      });
+    }
+  }, [editor, proposedMarkdown, scrollToRange]);
 
   // Sync ranges + focused index to ProseMirror plugin
   useEffect(() => {
