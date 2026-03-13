@@ -884,8 +884,13 @@ export function PolicyContentManager({
                     <SuggestionsTopBar
                       activeCount={suggestions.activeCount}
                       totalCount={suggestions.totalCount}
+                      currentIndex={suggestions.currentIndex}
                       onAcceptAll={suggestions.acceptAll}
                       onRejectAll={suggestions.rejectAll}
+                      onAcceptCurrent={suggestions.acceptCurrent}
+                      onRejectCurrent={suggestions.rejectCurrent}
+                      onPrev={suggestions.goToPrev}
+                      onNext={suggestions.goToNext}
                       onDismiss={() => {
                         suggestions.dismissAll();
                         if (activeProposal) setDismissedProposalKey(activeProposal.key);

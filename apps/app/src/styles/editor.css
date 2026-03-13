@@ -222,27 +222,47 @@ pre .hljs-strong {
 /* ── Inline suggestion decorations ── */
 
 .suggestion-insert {
-  background: hsl(var(--primary) / 0.15);
-  border-radius: 2px;
-  padding: 1px 2px;
+  background: hsl(142 71% 45% / 0.2);
+  color: hsl(142 71% 25%);
+  border-radius: 3px;
+  padding: 1px 4px;
+  text-decoration: underline;
+  text-decoration-color: hsl(142 71% 45% / 0.5);
+  text-underline-offset: 2px;
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-insert {
+  background: hsl(142 71% 45% / 0.15);
+  color: hsl(142 71% 70%);
 }
 
 .suggestion-delete {
-  background: hsl(var(--destructive) / 0.15);
+  background: hsl(0 84% 60% / 0.15);
+  color: hsl(0 84% 40%);
   text-decoration: line-through;
-  opacity: 0.6;
-  border-radius: 2px;
-  padding: 1px 2px;
+  text-decoration-color: hsl(0 84% 60% / 0.7);
+  opacity: 0.7;
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-delete {
+  background: hsl(0 84% 60% / 0.12);
+  color: hsl(0 84% 70%);
 }
 
 .suggestion-modified {
-  border-left: 3px solid hsl(var(--primary) / 0.4);
+  position: relative;
+  border-left: 4px solid hsl(142 71% 45% / 0.6);
   padding-left: 12px;
+  background: hsl(142 71% 45% / 0.04);
+  border-radius: 0 4px 4px 0;
 }
 
 .suggestion-new-section {
-  background: hsl(var(--primary) / 0.05);
-  border-left: 3px solid hsl(var(--primary) / 0.4);
+  position: relative;
+  background: hsl(142 71% 45% / 0.08);
+  border-left: 4px solid hsl(142 71% 45% / 0.6);
   padding: 8px 12px;
   border-radius: 0 4px 4px 0;
   margin: 4px 0;
@@ -250,57 +270,100 @@ pre .hljs-strong {
 }
 
 .suggestion-deleted-section {
-  border-left: 3px solid hsl(var(--destructive) / 0.4);
+  position: relative;
+  border-left: 4px solid hsl(0 84% 60% / 0.6);
+  background: hsl(0 84% 60% / 0.04);
   opacity: 0.5;
   text-decoration: line-through;
+  border-radius: 0 4px 4px 0;
 }
 
-/* Gutter icons — positioned in the left margin */
+/* Focused change — the currently navigated change gets extra emphasis */
+.suggestion-modified.suggestion-focused {
+  background: hsl(142 71% 45% / 0.1);
+  border-left-color: hsl(142 71% 45% / 0.9);
+  box-shadow: inset 0 0 0 1px hsl(142 71% 45% / 0.15);
+}
+
+.suggestion-deleted-section.suggestion-focused {
+  background: hsl(0 84% 60% / 0.08);
+  border-left-color: hsl(0 84% 60% / 0.9);
+  opacity: 0.7;
+  box-shadow: inset 0 0 0 1px hsl(0 84% 60% / 0.15);
+}
+
+/* When suggestions are active, add left padding for gutter */
+.ProseMirror.has-suggestions {
+  padding-left: 100px;
+}
+
+.ProseMirror.has-suggestions > * {
+  position: relative;
+}
+
+/* Gutter icons — floated in the left padding area */
 .suggestion-gutter {
   position: absolute;
-  left: -40px;
+  left: -92px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 2px;
-  z-index: 5;
+  z-index: 10;
+  top: 2px;
 }
 
 .suggestion-gutter button {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  border: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  transition: background-color 0.15s;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px hsl(0 0% 0% / 0.05);
 }
 
-.suggestion-gutter-accept {
-  background: hsl(var(--primary) / 0.1);
-  color: hsl(var(--primary));
+.suggestion-gutter-btn.suggestion-accept-btn {
+  background: hsl(142 71% 45% / 0.12);
+  color: hsl(142 71% 35%);
+  border-color: hsl(142 71% 45% / 0.25);
 }
 
-.suggestion-gutter-accept:hover {
-  background: hsl(var(--primary) / 0.2);
+.suggestion-gutter-btn.suggestion-accept-btn:hover {
+  background: hsl(142 71% 45% / 0.25);
+  border-color: hsl(142 71% 45% / 0.4);
 }
 
-.suggestion-gutter-reject {
-  background: hsl(var(--destructive) / 0.1);
-  color: hsl(var(--destructive));
+:is(.dark, [data-theme='dark']) .suggestion-gutter-btn.suggestion-accept-btn {
+  color: hsl(142 71% 70%);
 }
 
-.suggestion-gutter-reject:hover {
-  background: hsl(var(--destructive) / 0.2);
+.suggestion-gutter-btn.suggestion-reject-btn {
+  background: hsl(0 84% 60% / 0.1);
+  color: hsl(0 84% 45%);
+  border-color: hsl(0 84% 60% / 0.2);
 }
 
-.suggestion-gutter-feedback {
+.suggestion-gutter-btn.suggestion-reject-btn:hover {
+  background: hsl(0 84% 60% / 0.2);
+  border-color: hsl(0 84% 60% / 0.35);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-gutter-btn.suggestion-reject-btn {
+  color: hsl(0 84% 70%);
+}
+
+.suggestion-gutter-btn.suggestion-feedback-btn {
   background: hsl(var(--muted));
   color: hsl(var(--muted-foreground));
+  border-color: hsl(var(--muted-foreground) / 0.15);
 }
 
-.suggestion-gutter-feedback:hover {
+.suggestion-gutter-btn.suggestion-feedback-btn:hover {
   background: hsl(var(--muted-foreground) / 0.15);
+  border-color: hsl(var(--muted-foreground) / 0.25);
 }

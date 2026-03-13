@@ -2,7 +2,7 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
-import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
+import { DOMSerializer, type Node as ProseMirrorNode, type Schema } from '@tiptap/pm/model';
 
 export interface SuggestionRange {
   id: string;
@@ -17,6 +17,7 @@ export interface SuggestionRange {
 
 export interface SuggestionsPluginState {
   ranges: SuggestionRange[];
+  focusedId: string | null;
   decorations: DecorationSet;
 }
 
@@ -94,13 +95,82 @@ function createInsertionWidget(
   };
 }
 
+/**
+ * Parse a line of markdown into a ProseMirror node using the editor schema.
+ * Handles headings (##), list items (-), and plain paragraphs.
+ */
+function markdownLinesToNodes(
+  text: string,
+  schema: Schema
+): ProseMirrorNode[] {
+  const lines = text.split('\n').filter((l) => l.trim().length > 0);
+  const nodes: ProseMirrorNode[] = [];
+  let listItems: ProseMirrorNode[] = [];
+
+  const flushList = () => {
+    if (listItems.length > 0 && schema.nodes.bulletList) {
+      nodes.push(schema.nodes.bulletList.create(null, listItems));
+      listItems = [];
+    }
+  };
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    const listMatch = line.match(/^[-*]\s+(.+)$/);
+
+    if (headingMatch) {
+      flushList();
+      const level = headingMatch[1].length;
+      const headingType = schema.nodes.heading;
+      if (headingType) {
+        nodes.push(
+          headingType.create({ level }, schema.text(headingMatch[2]))
+        );
+      }
+    } else if (listMatch && schema.nodes.listItem) {
+      const paragraph = schema.nodes.paragraph?.create(
+        null,
+        schema.text(listMatch[1])
+      );
+      if (paragraph) {
+        listItems.push(schema.nodes.listItem.create(null, paragraph));
+      }
+    } else {
+      flushList();
+      const paragraph = schema.nodes.paragraph?.create(
+        null,
+        line.trim() ? schema.text(line.trim()) : undefined
+      );
+      if (paragraph) {
+        nodes.push(paragraph);
+      }
+    }
+  }
+  flushList();
+  return nodes;
+}
+
 function createNewSectionWidget(
   text: string
-): (_view: EditorView) => HTMLElement {
-  return (_view: EditorView) => {
+): (view: EditorView) => HTMLElement {
+  return (view: EditorView) => {
     const div = document.createElement('div');
     div.className = 'suggestion-new-section';
-    div.textContent = text;
+
+    try {
+      const { schema } = view.state;
+      const pmNodes = markdownLinesToNodes(text, schema);
+      const serializer = DOMSerializer.fromSchema(schema);
+
+      for (const node of pmNodes) {
+        const dom = serializer.serializeNode(node);
+        div.appendChild(dom);
+      }
+    } catch {
+      // Fallback to plain text if parsing fails
+      div.textContent = text;
+    }
+
     return div;
   };
 }
@@ -108,12 +178,15 @@ function createNewSectionWidget(
 function buildDecorations(
   doc: ProseMirrorNode,
   ranges: SuggestionRange[],
+  focusedId: string | null,
   callbacks: CallbackOptions
 ): DecorationSet {
   const decorations: Decoration[] = [];
 
   for (const range of ranges) {
     if (range.from < 0 || range.to > doc.content.size) continue;
+    const isFocused = range.id === focusedId;
+    const focusedSuffix = isFocused ? ' suggestion-focused' : '';
 
     switch (range.type) {
       case 'modify': {
@@ -126,7 +199,7 @@ function buildDecorations(
         if (nodeStart >= 0 && nodeEnd <= doc.content.size) {
           decorations.push(
             Decoration.node(nodeStart, nodeEnd, {
-              class: 'suggestion-modified',
+              class: `suggestion-modified${focusedSuffix}`,
             })
           );
         }
@@ -158,9 +231,11 @@ function buildDecorations(
 
       case 'insert': {
         decorations.push(
-          Decoration.widget(range.from, createNewSectionWidget(range.proposedText), {
-            side: 1,
-          })
+          Decoration.widget(
+            range.from,
+            createNewSectionWidget(range.proposedText),
+            { side: 1 }
+          )
         );
         break;
       }
@@ -174,7 +249,7 @@ function buildDecorations(
         if (nodeStart >= 0 && nodeEnd <= doc.content.size) {
           decorations.push(
             Decoration.node(nodeStart, nodeEnd, {
-              class: 'suggestion-deleted-section',
+              class: `suggestion-deleted-section${focusedSuffix}`,
             })
           );
         }
@@ -215,29 +290,39 @@ export const SuggestionsExtension =
 
           state: {
             init(): SuggestionsPluginState {
-              return { ranges: [], decorations: DecorationSet.empty };
+              return {
+                ranges: [],
+                focusedId: null,
+                decorations: DecorationSet.empty,
+              };
             },
 
             apply(tr, state): SuggestionsPluginState {
               const meta = tr.getMeta(suggestionsPluginKey) as
-                | SuggestionRange[]
+                | { ranges: SuggestionRange[]; focusedId: string | null }
                 | undefined;
 
               if (meta !== undefined) {
-                const pendingRanges = meta.filter(
+                const pendingRanges = meta.ranges.filter(
                   (r) => r.decision === 'pending'
                 );
-                const decorations = buildDecorations(tr.doc, pendingRanges, {
-                  onAccept,
-                  onReject,
-                  onFeedback,
-                });
-                return { ranges: meta, decorations };
+                const decorations = buildDecorations(
+                  tr.doc,
+                  pendingRanges,
+                  meta.focusedId,
+                  { onAccept, onReject, onFeedback }
+                );
+                return {
+                  ranges: meta.ranges,
+                  focusedId: meta.focusedId,
+                  decorations,
+                };
               }
 
               if (tr.docChanged) {
                 return {
                   ranges: state.ranges,
+                  focusedId: state.focusedId,
                   decorations: state.decorations.map(tr.mapping, tr.doc),
                 };
               }
@@ -252,6 +337,13 @@ export const SuggestionsExtension =
                 suggestionsPluginKey.getState(state)?.decorations ??
                 DecorationSet.empty
               );
+            },
+            attributes(state): Record<string, string> {
+              const pluginState = suggestionsPluginKey.getState(state);
+              const hasPending = pluginState?.ranges.some(
+                (r) => r.decision === 'pending'
+              );
+              return hasPending ? { class: 'has-suggestions' } : {};
             },
           },
         }),
