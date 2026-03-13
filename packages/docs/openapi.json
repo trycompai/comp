@@ -17328,6 +17328,57 @@
         ]
       }
     },
+    "/v1/training/completions": {
+      "get": {
+        "description": "Returns all training video completion records for the authenticated member. Requires session authentication.",
+        "operationId": "TrainingController_getCompletions_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of training video completion records"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get training video completions for the authenticated user",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/v1/training/completions/{videoId}/complete": {
+      "post": {
+        "description": "Marks a specific training video as completed for the authenticated member. Triggers completion email if all training is now done.",
+        "operationId": "TrainingController_markVideoComplete_v1",
+        "parameters": [
+          {
+            "name": "videoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The updated completion record"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Mark a training video as complete",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
     "/v1/training/send-completion-email": {
       "post": {
         "description": "Checks if the member has completed all training videos. If so, sends an email with the training certificate attached.",

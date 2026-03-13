@@ -92,3 +92,5 @@ scripts/sync-release-branch.sh
 /.vscode
 
 .claude/audit-findings.md
+
+.superpowers/*
