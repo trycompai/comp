@@ -56,7 +56,7 @@ async getCompletions(
 - Extracts `memberId` from `request.memberId` (session auth) — must guard against undefined
 - Validates `videoId` against known training video IDs
 - Creates or updates the `EmployeeTrainingVideoCompletion` record
-- After marking complete, checks if all training is done and triggers completion email internally via `TrainingService.sendTrainingCompletionEmailIfComplete` (replaces the old portal service-token call — no service token permission changes needed)
+- After marking complete, checks if all training is done and triggers completion email via Trigger.dev task (all emails go through Nest API → Trigger.dev for rate limiting)
 - Returns: the updated `EmployeeTrainingVideoCompletion` record
 
 ```typescript
