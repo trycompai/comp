@@ -30,12 +30,8 @@ export const suggestionsPluginKey = new PluginKey<SuggestionsPluginState>(
   'suggestions'
 );
 
-export interface SuggestionsExtensionOptions {
-  onAccept?: (id: string) => void;
-  onReject?: (id: string) => void;
-  onFeedback?: (id: string) => void;
-}
-
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface SuggestionsExtensionOptions {}
 
 // ── Widget factories ──
 
@@ -237,11 +233,7 @@ export const SuggestionsExtension =
     name: 'suggestions',
 
     addOptions() {
-      return {
-        onAccept: undefined,
-        onReject: undefined,
-        onFeedback: undefined,
-      };
+      return {};
     },
 
     addProseMirrorPlugins() {
