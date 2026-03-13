@@ -79,6 +79,8 @@ export const createMockMember = (overrides?: Partial<Member>): Member => ({
   fleetDmLabelId: null,
   jobTitle: null,
   deactivated: false,
+  externalUserId: null,
+  externalUserSource: null,
   ...overrides,
 });
 

@@ -6,6 +6,7 @@
  */
 
 import type { IntegrationManifest } from '../../types';
+import { employeeSyncCheck } from './checks';
 
 export const rampManifest: IntegrationManifest = {
   id: 'ramp',
@@ -46,8 +47,8 @@ export const rampManifest: IntegrationManifest = {
     Accept: 'application/json',
   },
 
-  capabilities: ['sync'],
-  checks: [],
+  capabilities: ['sync', 'checks'],
+  checks: [employeeSyncCheck],
 };
 
 export default rampManifest;

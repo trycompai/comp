@@ -1,10 +1,12 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   HttpCode,
   HttpStatus,
   Res,
+  Param,
   BadRequestException,
   UseGuards,
 } from '@nestjs/common';
@@ -24,7 +26,7 @@ import {
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
-import { OrganizationId } from '../auth/auth-context.decorator';
+import { OrganizationId, MemberId } from '../auth/auth-context.decorator';
 
 @ApiTags('Training')
 @Controller({ path: 'training', version: '1' })
@@ -32,6 +34,54 @@ import { OrganizationId } from '../auth/auth-context.decorator';
 @ApiSecurity('apikey')
 export class TrainingController {
   constructor(private readonly trainingService: TrainingService) {}
+
+  @Get('completions')
+  @RequirePermission('portal', 'read')
+  @ApiOperation({
+    summary: 'Get training video completions for the authenticated user',
+    description:
+      'Returns all training video completion records for the authenticated member. Requires session authentication.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of training video completion records',
+  })
+  async getCompletions(
+    @MemberId() memberId: string | undefined,
+    @OrganizationId() organizationId: string,
+  ) {
+    if (!memberId) {
+      throw new BadRequestException('Session authentication required');
+    }
+    return this.trainingService.getCompletions(memberId, organizationId);
+  }
+
+  @Post('completions/:videoId/complete')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('portal', 'update')
+  @ApiOperation({
+    summary: 'Mark a training video as complete',
+    description:
+      'Marks a specific training video as completed for the authenticated member. Triggers completion email if all training is now done.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The updated completion record',
+  })
+  async markVideoComplete(
+    @MemberId() memberId: string | undefined,
+    @OrganizationId() organizationId: string,
+    @Param('videoId') videoId: string,
+  ) {
+    if (!memberId) {
+      throw new BadRequestException('Session authentication required');
+    }
+    return this.trainingService.markVideoComplete(
+      memberId,
+      organizationId,
+      videoId,
+    );
+  }
 
   @Post('send-completion-email')
   @HttpCode(HttpStatus.OK)
