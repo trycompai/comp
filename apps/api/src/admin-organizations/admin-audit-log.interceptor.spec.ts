@@ -44,7 +44,7 @@ function buildContext(overrides: {
     url: overrides.url ?? '/v1/admin/organizations/org_1/policies/pol_1',
     params: overrides.params ?? { orgId: 'org_1' },
     body: overrides.body ?? { status: 'published' },
-    userId: overrides.userId ?? 'usr_admin',
+    userId: 'userId' in overrides ? overrides.userId : 'usr_admin',
   };
 
   return {

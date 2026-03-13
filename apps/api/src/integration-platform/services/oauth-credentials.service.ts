@@ -161,6 +161,11 @@ export class OAuthCredentialsService {
     );
   }
 
+  static maskSecret(value: string): string {
+    if (value.length <= 4) return '\u2022'.repeat(value.length);
+    return '\u2022'.repeat(value.length - 4) + value.slice(-4);
+  }
+
   /**
    * Save platform-wide OAuth credentials (admin only)
    */
@@ -181,6 +186,8 @@ export class OAuthCredentialsService {
       providerSlug,
       encryptedClientId,
       encryptedClientSecret,
+      clientIdHint: OAuthCredentialsService.maskSecret(clientId),
+      clientSecretHint: OAuthCredentialsService.maskSecret(clientSecret),
       customScopes,
       customSettings: customSettings as Prisma.InputJsonValue | undefined,
       createdById: userId,
