@@ -13,16 +13,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import { ProposedChangesCard } from './ai/proposed-changes-card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { validateAndFixTipTapContent } from '@comp/ui/editor';
+import { validateAndFixTipTapContent, SuggestionsExtension } from '@comp/ui/editor';
 import { PolicyStatus, type Member, type PolicyDisplayFormat, type PolicyVersion, type User } from '@db';
-import type { JSONContent } from '@tiptap/react';
+import type { JSONContent, Editor as TipTapEditor } from '@tiptap/react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,8 +44,6 @@ import {
 import { Close, MagicWand } from '@trycompai/design-system/icons';
 import { DefaultChatTransport } from 'ai';
 import { format } from 'date-fns';
-import { parseDiff } from '@comp/ui/diff/utils/index';
-import { structuredPatch } from 'diff';
 import { ArrowDownUp, ChevronDown, ChevronLeft, ChevronRight, FileText, Trash2, Upload } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -57,8 +54,9 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { PdfViewer } from '../../components/PdfViewer';
 import { PublishVersionDialog } from '../../components/PublishVersionDialog';
 import type { PolicyChatUIMessage } from '../types';
-import { markdownToTipTapJSON } from './ai/markdown-utils';
 import { PolicyAiAssistant } from './ai/policy-ai-assistant';
+import { useSuggestions } from '../hooks/use-suggestions';
+import { SuggestionsTopBar } from './ai/suggestions-top-bar';
 
 type PolicyVersionWithPublisher = PolicyVersion & {
   publishedBy: (Member & { user: User }) | null;
@@ -203,8 +201,14 @@ export function PolicyContentManager({
   });
 
   const [dismissedProposalKey, setDismissedProposalKey] = useState<string | null>(null);
-  const [isApplying, setIsApplying] = useState(false);
+  const [editorInstance, setEditorInstance] = useState<TipTapEditor | null>(null);
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
+
+  const suggestionsExtension = useMemo(
+    () => SuggestionsExtension.configure({}),
+    [],
+  );
+
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
   const [localHasChanges, setLocalHasChanges] = useState(hasUnpublishedChanges);
 
@@ -463,20 +467,6 @@ export function PolicyContentManager({
     [messages],
   );
 
-  const isProposalStreaming = useMemo(
-    () =>
-      messages.some(
-        (m) =>
-          m.role === 'assistant' &&
-          m.parts?.some(
-            (part) =>
-              part.type === 'tool-proposePolicy' &&
-              (part.state === 'input-streaming' || part.state === 'input-available'),
-          ),
-      ),
-    [messages],
-  );
-
   // The last fully-completed, non-dismissed proposal the user can act on.
   const activeProposal =
     latestCompletedProposal && latestCompletedProposal.key !== dismissedProposalKey
@@ -501,81 +491,20 @@ export function PolicyContentManager({
     }
   };
 
-  const currentPolicyMarkdown = useMemo(
-    () => convertContentToMarkdown(currentContent),
-    [currentContent],
-  );
-
-  const diffPatch = useMemo(() => {
-    if (!proposedPolicyMarkdown) return null;
-    return createGitPatch('Proposed Changes', currentPolicyMarkdown, proposedPolicyMarkdown);
-  }, [currentPolicyMarkdown, proposedPolicyMarkdown]);
-
-  // ── Per-hunk feedback ────────────────────────────────────────────
-  // When the user gives feedback on a single hunk, we:
-  //   1. Snapshot the current diffPatch so the card stays mounted
-  //   2. Show a shimmer on the targeted hunk
-  //   3. Send a hidden message to the AI
-  //   4. Once a new completed proposal arrives, swap in the new diff
-
-  const [feedbackHunkIndex, setFeedbackHunkIndex] = useState<number | null>(null);
-  // Snapshot of the diff at the moment feedback was sent — keeps the card alive
-  const [frozenPatch, setFrozenPatch] = useState<string | null>(null);
-  // The proposal key that was active when feedback was sent
-  const [feedbackSourceKey, setFeedbackSourceKey] = useState<string | null>(null);
-
-  const isFeedbackInFlight = feedbackSourceKey !== null;
-
-  // The patch to render: frozen during feedback, live otherwise
-  const displayPatch = frozenPatch ?? diffPatch;
-
-  // Clear feedback state when the AI finishes responding.
-  // We track whether the AI has started working (status left 'ready') so we
-  // don't immediately clear on the same render that sets feedbackSourceKey.
-  const feedbackStartedRef = useRef(false);
-
-  useEffect(() => {
-    if (!isFeedbackInFlight) {
-      feedbackStartedRef.current = false;
-      return;
-    }
-    if (status !== 'ready') {
-      feedbackStartedRef.current = true;
-    }
-    if (feedbackStartedRef.current && status === 'ready') {
-      setFeedbackHunkIndex(null);
-      setFrozenPatch(null);
-      setFeedbackSourceKey(null);
-    }
-  }, [status, isFeedbackInFlight]);
-
   const FEEDBACK_MARKER = '___hunk_feedback___';
 
-  function handleHunkFeedback(hunkIndex: number, feedback: string) {
-    if (!diffPatch) return;
+  const suggestions = useSuggestions({
+    editor: editorInstance,
+    proposedMarkdown: proposedPolicyMarkdown,
+    onFeedback: (rangeId, feedback) => {
+      const range = suggestions.ranges.find((r) => r.id === rangeId);
+      if (!range) return;
 
-    const [file] = parseDiff(diffPatch);
-    if (!file) return;
-
-    const hunk = file.hunks[hunkIndex];
-    if (!hunk || hunk.type !== 'hunk') return;
-
-    // Build the proposed (new) text for this hunk so the AI knows exactly what section to edit
-    const proposedText = hunk.lines
-      .filter((line) => line.type !== 'delete')
-      .map((line) => line.content.map((seg) => seg.value).join(''))
-      .join('\n')
-      .trim();
-
-    // Freeze current state before the AI starts streaming
-    setFeedbackHunkIndex(hunkIndex);
-    setFrozenPatch(diffPatch);
-    setFeedbackSourceKey(activeProposal?.key ?? null);
-
-    sendMessage({
-      text: `For the section that says:\n"""\n${proposedText}\n"""\n\nFeedback: ${feedback}\n\nApply this feedback ONLY to the section above. Do not change any other sections.\n${FEEDBACK_MARKER}`,
-    });
-  }
+      sendMessage({
+        text: `For the section that says:\n"""\n${range.proposedText}\n"""\n\nFeedback: ${feedback}\n\nApply this feedback ONLY to the section above. Do not change any other sections.\n${FEEDBACK_MARKER}`,
+      });
+    },
+  });
 
   // Filter out per-hunk feedback messages (and their AI responses) from chat display
   const displayMessages = useMemo(() => {
@@ -598,59 +527,6 @@ export function PolicyContentManager({
     }
     return result;
   }, [messages]);
-
-  async function applyProposedChanges() {
-    if (!activeProposal || !viewingVersion) return;
-
-    // Don't allow applying changes to read-only versions
-    if (isVersionReadOnly) {
-      toast.error('Cannot modify a published or pending version. Create a new version first.');
-      return;
-    }
-
-    const { content, key } = activeProposal;
-
-    setIsApplying(true);
-    try {
-      const jsonContent = markdownToTipTapJSON(content);
-      await updateVersionContent(viewingVersion, jsonContent);
-      setCurrentContent(jsonContent);
-      setEditorKey((prev) => prev + 1);
-      setDismissedProposalKey(key);
-      toast.success('Policy updated with AI suggestions');
-    } catch {
-      toast.error('Failed to apply changes');
-    } finally {
-      setIsApplying(false);
-    }
-  }
-
-  async function applySelectedChanges(patch: string, selectedHunkIndices: number[]) {
-    if (!activeProposal || !viewingVersion) return;
-    if (isVersionReadOnly) {
-      toast.error('Cannot modify a published or pending version. Create a new version first.');
-      return;
-    }
-
-    setIsApplying(true);
-    try {
-      const mergedMarkdown = applySelectedHunks(
-        currentPolicyMarkdown,
-        patch,
-        selectedHunkIndices,
-      );
-      const jsonContent = markdownToTipTapJSON(mergedMarkdown);
-      await updateVersionContent(viewingVersion, jsonContent);
-      setCurrentContent(jsonContent);
-      setEditorKey((prev) => prev + 1);
-      setDismissedProposalKey(activeProposal.key);
-      toast.success('Selected changes applied');
-    } catch {
-      toast.error('Failed to apply changes');
-    } finally {
-      setIsApplying(false);
-    }
-  }
 
   // Track local changes made in editor (after save)
   const handleContentSaved = (content: Array<JSONContent>) => {
@@ -991,7 +867,7 @@ export function PolicyContentManager({
                 errorMessage={chatErrorMessage}
                 sendMessage={sendMessage}
                 close={() => setShowAiAssistant(false)}
-                hasActiveProposal={!!activeProposal && !isProposalStreaming}
+                hasActiveProposal={suggestions.isActive}
               />
             </div>
           )}
@@ -1004,23 +880,16 @@ export function PolicyContentManager({
             <div className={showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex-[7] min-w-0' : 'w-full'}>
               <Stack gap="sm">
                 <TabsContent value="EDITOR">
-                  {displayPatch && (activeProposal || isFeedbackInFlight) && (
-                    <ProposedChangesCard
-                      patch={displayPatch}
-                      originalText={currentPolicyMarkdown}
-                      onApplyAll={applyProposedChanges}
-                      onApplySelected={(selectedHunkIndices) =>
-                        applySelectedChanges(displayPatch, selectedHunkIndices)
-                      }
+                  {suggestions.isActive && (
+                    <SuggestionsTopBar
+                      activeCount={suggestions.activeCount}
+                      totalCount={suggestions.totalCount}
+                      onAcceptAll={suggestions.acceptAll}
+                      onRejectAll={suggestions.rejectAll}
                       onDismiss={() => {
+                        suggestions.dismissAll();
                         if (activeProposal) setDismissedProposalKey(activeProposal.key);
-                        setFrozenPatch(null);
-                        setFeedbackSourceKey(null);
-                        setFeedbackHunkIndex(null);
                       }}
-                      isApplying={isApplying}
-                      onHunkFeedback={handleHunkFeedback}
-                      feedbackHunkIndex={feedbackHunkIndex}
                     />
                   )}
                   <PolicyEditorWrapper
@@ -1036,6 +905,8 @@ export function PolicyContentManager({
                     onContentChange={handleContentSaved}
                     onVersionContentChange={onVersionContentChange}
                     saveVersionContent={updateVersionContent}
+                    onEditorReady={setEditorInstance}
+                    additionalExtensions={[suggestionsExtension]}
                   />
                 </TabsContent>
                 <TabsContent value="PDF">
@@ -1063,7 +934,7 @@ export function PolicyContentManager({
                   errorMessage={chatErrorMessage}
                   sendMessage={sendMessage}
                   close={() => setShowAiAssistant(false)}
-                  hasActiveProposal={!!activeProposal && !isProposalStreaming}
+                  hasActiveProposal={suggestions.isActive}
                 />
               </div>
             )}
@@ -1165,147 +1036,6 @@ export function PolicyContentManager({
   );
 }
 
-function createGitPatch(fileName: string, oldStr: string, newStr: string): string {
-  const patch = structuredPatch(fileName, fileName, oldStr, newStr, '', '', { context: 1 });
-  const lines: string[] = [
-    `diff --git a/${fileName} b/${fileName}`,
-    `--- a/${fileName}`,
-    `+++ b/${fileName}`,
-  ];
-
-  for (const hunk of patch.hunks) {
-    lines.push(`@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@`);
-    for (const line of hunk.lines) {
-      lines.push(line);
-    }
-  }
-
-  return lines.join('\n');
-}
-
-/**
- * Apply only selected hunks from a patch to the original text.
- * selectedHunkIndices are indices into parseDiff's file.hunks array (which includes skip blocks).
- */
-function applySelectedHunks(
-  originalText: string,
-  patch: string,
-  selectedHunkIndices: number[],
-): string {
-  const [file] = parseDiff(patch);
-  if (!file) return originalText;
-
-  // Map selected absolute indices to ordinal hunk positions (0th, 1st, 2nd actual hunk)
-  const selectedOrdinals = new Set<number>();
-  let ordinal = 0;
-  for (let i = 0; i < file.hunks.length; i++) {
-    if (file.hunks[i]?.type === 'hunk') {
-      if (selectedHunkIndices.includes(i)) {
-        selectedOrdinals.add(ordinal);
-      }
-      ordinal++;
-    }
-  }
-
-  // Re-create the patch using structuredPatch to get raw hunks with line-level data
-  const rawPatch = structuredPatch('f', 'f', originalText, '', '', '', { context: 1 });
-
-  // But we actually need the real new text — parse from the git patch directly
-  // Instead, reconstruct by applying selected raw hunks to original lines
-  const originalLines = originalText.split('\n');
-  const result: string[] = [];
-  let cursor = 0; // current position in originalLines
-
-  // Get raw hunks from the patch string by re-parsing with structuredPatch
-  // We need to extract the actual hunks from the diff — use gitdiff-parser's output
-  // The file.hunks (type==='hunk') in order correspond to the raw diff hunks
-  const actualHunks = file.hunks.filter((h) => h.type === 'hunk');
-
-  for (let i = 0; i < actualHunks.length; i++) {
-    const hunk = actualHunks[i];
-    if (!hunk || hunk.type !== 'hunk') continue;
-
-    const hunkOldStart = hunk.oldStart - 1; // 0-indexed
-
-    // Copy unchanged lines before this hunk
-    while (cursor < hunkOldStart && cursor < originalLines.length) {
-      result.push(originalLines[cursor]!);
-      cursor++;
-    }
-
-    if (selectedOrdinals.has(i)) {
-      // Apply this hunk: use its lines to build the new content
-      for (const line of hunk.lines) {
-        const text = line.content.map((seg) => seg.value).join('');
-        if (line.type === 'insert' || line.type === 'normal') {
-          // For inline diffs (type==='normal' with mixed segments), use only insert/normal segments
-          if (line.content.some((seg) => seg.type !== 'normal')) {
-            // Inline diff line — take insert and normal segments
-            const newText = line.content
-              .filter((seg) => seg.type !== 'delete')
-              .map((seg) => seg.value)
-              .join('');
-            result.push(newText);
-          } else {
-            result.push(text);
-          }
-        }
-        // delete lines: skip (don't add to result)
-      }
-      cursor = hunkOldStart + hunk.oldLines;
-    } else {
-      // Keep original lines for this hunk region
-      const end = hunkOldStart + hunk.oldLines;
-      while (cursor < end && cursor < originalLines.length) {
-        result.push(originalLines[cursor]!);
-        cursor++;
-      }
-    }
-  }
-
-  // Copy remaining lines after last hunk
-  while (cursor < originalLines.length) {
-    result.push(originalLines[cursor]!);
-    cursor++;
-  }
-
-  return result.join('\n');
-}
-
-function convertContentToMarkdown(content: Array<JSONContent>): string {
-  function extractText(node: JSONContent): string {
-    if (node.type === 'text' && typeof node.text === 'string') {
-      return node.text;
-    }
-
-    if (Array.isArray(node.content)) {
-      const texts = node.content.map(extractText).filter(Boolean);
-
-      switch (node.type) {
-        case 'heading': {
-          const level = (node.attrs as Record<string, unknown>)?.level || 1;
-          return '\n' + '#'.repeat(Number(level)) + ' ' + texts.join('') + '\n';
-        }
-        case 'paragraph':
-          return texts.join('') + '\n';
-        case 'bulletList':
-        case 'orderedList':
-          return '\n' + texts.join('');
-        case 'listItem':
-          return '- ' + texts.join('') + '\n';
-        case 'blockquote':
-          return '\n> ' + texts.join('\n> ') + '\n';
-        default:
-          return texts.join('');
-      }
-    }
-
-    return '';
-  }
-
-  return content.map(extractText).join('\n').trim();
-}
-
 function PolicyEditorWrapper({
   policyId,
   versionId,
@@ -1318,6 +1048,8 @@ function PolicyEditorWrapper({
   onContentChange,
   onVersionContentChange,
   saveVersionContent,
+  onEditorReady,
+  additionalExtensions,
 }: {
   policyId: string;
   versionId: string;
@@ -1330,6 +1062,8 @@ function PolicyEditorWrapper({
   onContentChange?: (content: Array<JSONContent>) => void;
   onVersionContentChange?: (versionId: string, content: JSONContent[]) => void;
   saveVersionContent: (versionId: string, content: JSONContent[]) => Promise<unknown>;
+  onEditorReady?: (editor: TipTapEditor) => void;
+  additionalExtensions?: import('@tiptap/core').Extension[];
 }) {
   const { hasPermission } = usePermissions();
   const canUpdatePolicy = hasPermission('policy', 'update');
@@ -1418,6 +1152,8 @@ function PolicyEditorWrapper({
           content={normalizedContent}
           onSave={savePolicy}
           readOnly={isReadOnly}
+          onEditorReady={onEditorReady}
+          additionalExtensions={additionalExtensions}
         />
       </Stack>
     </Section>

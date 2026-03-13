@@ -149,7 +149,7 @@ function PolicyToolCard({
     : toolInput?.title || 'Preparing policy updates';
 
   const bodyText = toolInput?.detail || (isCompleted
-    ? (hasActiveProposal ? 'Review the proposed changes below before applying.' : 'Policy updates were generated.')
+    ? (hasActiveProposal ? 'Changes are highlighted in the editor.' : 'Policy updates were generated.')
     : 'Working on your policy updates...');
 
   const truncatedBodyText = bodyText.length > 180 ? `${bodyText.slice(0, 177)}…` : bodyText;
@@ -159,7 +159,7 @@ function PolicyToolCard({
     : isError ? 'destructive' : 'info';
 
   const description = hasActiveProposal && isCompleted
-    ? `${truncatedBodyText} ↓ View proposed changes below.`
+    ? `${truncatedBodyText} Review the highlighted changes in the editor.`
     : truncatedBodyText;
 
   return (
