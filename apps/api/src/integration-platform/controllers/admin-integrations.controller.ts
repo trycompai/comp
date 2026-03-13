@@ -21,7 +21,7 @@ import {
 } from '../services/credential-vault.service';
 import { getAllManifests, getManifest } from '@comp/integration-platform';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
-import { AdminAuditLogInterceptor } from '../../admin-organizations/admin-audit-log.interceptor';
+import { PlatformAuditLogInterceptor } from '../interceptors/platform-audit-log.interceptor';
 
 interface SavePlatformCredentialDto {
   providerSlug: string;
@@ -33,7 +33,7 @@ interface SavePlatformCredentialDto {
 
 @Controller({ path: 'admin/integrations', version: '1' })
 @UseGuards(PlatformAdminGuard)
-@UseInterceptors(AdminAuditLogInterceptor)
+@UseInterceptors(PlatformAuditLogInterceptor)
 @Throttle({ default: { ttl: 60000, limit: 30 } })
 export class AdminIntegrationsController {
   private readonly logger = new Logger(AdminIntegrationsController.name);
