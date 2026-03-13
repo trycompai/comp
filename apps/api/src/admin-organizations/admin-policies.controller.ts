@@ -110,7 +110,7 @@ export class AdminPoliciesController {
         );
       }
       updateData.frequency =
-        body.frequency === null ? undefined : (body.frequency as Frequency);
+        body.frequency === null ? null : (body.frequency as Frequency);
     }
 
     if (Object.keys(updateData).length === 0) {
