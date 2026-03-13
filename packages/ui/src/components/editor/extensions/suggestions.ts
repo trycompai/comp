@@ -219,55 +219,26 @@ function buildDecorations(
 
     switch (range.type) {
       case 'modify': {
-        // Find all text blocks in this range and decorate each
         const blocks = findBlockNodesInRange(doc, range.from, range.to);
 
-        for (const block of blocks) {
+        // Show proposed content ABOVE the old content as a green block
+        if (blocks.length > 0) {
           decorations.push(
-            Decoration.node(block.pos, block.end, {
-              class: `suggestion-modified${focusedSuffix}`,
-            })
+            Decoration.widget(
+              blocks[0].pos,
+              createInsertionWidget(range.proposedText, schema),
+              { side: -1, key: `insert-${range.id}` }
+            )
           );
         }
 
-        // For single-block modifications, try inline word-level diffs
-        if (blocks.length === 1 && range.segments.length > 0) {
-          const block = blocks[0];
-          // Text content starts at block.pos + 1 (after open token)
-          let pos = block.pos + 1;
-          const textEnd = block.end - 1; // before close token
-
-          for (const segment of range.segments) {
-            if (pos >= textEnd) break;
-
-            if (segment.type === 'delete') {
-              const end = Math.min(pos + segment.text.length, textEnd);
-              if (end > pos) {
-                decorations.push(
-                  Decoration.inline(pos, end, {
-                    class: 'suggestion-delete',
-                  })
-                );
-              }
-              pos = end;
-            } else if (segment.type === 'insert') {
-              decorations.push(
-                Decoration.widget(
-                  pos,
-                  (_view: EditorView) => {
-                    const span = document.createElement('span');
-                    span.className = 'suggestion-insert';
-                    span.textContent = segment.text;
-                    return span;
-                  },
-                  { side: 1 }
-                )
-              );
-            } else {
-              // unchanged — advance position
-              pos += segment.text.length;
-            }
-          }
+        // Mark old content as deleted (red strikethrough)
+        for (const block of blocks) {
+          decorations.push(
+            Decoration.node(block.pos, block.end, {
+              class: `suggestion-deleted-section${focusedSuffix}`,
+            })
+          );
         }
         break;
       }
@@ -385,12 +356,8 @@ export const SuggestionsExtension =
                 DecorationSet.empty
               );
             },
-            attributes(state): Record<string, string> {
-              const pluginState = suggestionsPluginKey.getState(state);
-              const hasPending = pluginState?.ranges.some(
-                (r) => r.decision === 'pending'
-              );
-              return hasPending ? { class: 'has-suggestions' } : {};
+            attributes(): Record<string, string> {
+              return {};
             },
             editable(state) {
               const pluginState = suggestionsPluginKey.getState(state);

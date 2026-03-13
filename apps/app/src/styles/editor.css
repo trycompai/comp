@@ -251,13 +251,7 @@ pre .hljs-strong {
   color: hsl(0 84% 70%);
 }
 
-.suggestion-modified {
-  position: relative;
-  border-left: 4px solid hsl(142 71% 45% / 0.6);
-  padding-left: 12px;
-  background: hsl(142 71% 45% / 0.04);
-  border-radius: 0 4px 4px 0;
-}
+/* suggestion-modified is no longer used — modify shows as green insert + red delete */
 
 .suggestion-new-section {
   position: relative;
@@ -279,12 +273,6 @@ pre .hljs-strong {
 }
 
 /* Focused change — the currently navigated change gets extra emphasis */
-.suggestion-modified.suggestion-focused {
-  background: hsl(142 71% 45% / 0.1);
-  border-left-color: hsl(142 71% 45% / 0.9);
-  box-shadow: inset 0 0 0 1px hsl(142 71% 45% / 0.15);
-}
-
 .suggestion-deleted-section.suggestion-focused {
   background: hsl(0 84% 60% / 0.08);
   border-left-color: hsl(0 84% 60% / 0.9);
@@ -292,39 +280,27 @@ pre .hljs-strong {
   box-shadow: inset 0 0 0 1px hsl(0 84% 60% / 0.15);
 }
 
-/* When suggestions are active, add left padding for gutter */
-.ProseMirror.has-suggestions {
-  padding-left: 100px;
-}
-
-.ProseMirror.has-suggestions > * {
-  position: relative;
-}
-
-/* Gutter icons — floated in the left padding area */
+/* Gutter — inline toolbar above the change, no extra margin */
 .suggestion-gutter {
-  position: absolute;
-  left: -92px;
-  display: flex;
-  flex-direction: row;
+  display: inline-flex;
   gap: 2px;
   z-index: 10;
-  top: 2px;
+  vertical-align: top;
+  margin-right: 6px;
 }
 
 .suggestion-gutter button {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 6px;
   border: 1px solid transparent;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   transition: all 0.15s ease;
-  box-shadow: 0 1px 2px hsl(0 0% 0% / 0.05);
 }
 
 .suggestion-gutter-btn.suggestion-accept-btn {
