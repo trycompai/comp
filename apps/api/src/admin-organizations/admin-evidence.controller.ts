@@ -54,8 +54,8 @@ export class AdminEvidenceController {
       authContext: buildPlatformAdminAuthContext(req.userId, orgId),
       formType,
       search,
-      limit,
-      offset,
+      limit: limit ? String(Math.min(200, Math.max(1, parseInt(limit, 10)))) : undefined,
+      offset: offset ? String(Math.max(0, parseInt(offset, 10))) : undefined,
     });
   }
 }

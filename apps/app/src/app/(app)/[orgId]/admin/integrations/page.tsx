@@ -47,7 +47,7 @@ export default function AdminIntegrationsPage() {
   const otherIntegrations = filteredIntegrations?.filter((i) => i.authType !== 'oauth2') || [];
 
   const configuredCount = integrations?.filter((i) => i.hasCredentials).length || 0;
-  const totalOAuth = oauthIntegrations.length;
+  const oauthPendingCount = integrations?.filter((i) => i.authType === 'oauth2' && !i.hasCredentials).length || 0;
 
   return (
     <PageLayout
@@ -57,7 +57,7 @@ export default function AdminIntegrationsPage() {
         <div className="grid grid-cols-3 gap-4">
           <StatCard label="Total Integrations" value={integrations?.length || 0} />
           <StatCard label="Configured" value={configuredCount} variant="success" />
-          <StatCard label="OAuth Pending Setup" value={totalOAuth - configuredCount} variant="warning" />
+          <StatCard label="OAuth Pending Setup" value={oauthPendingCount} variant="warning" />
         </div>
 
         <div className="flex items-center gap-4">
