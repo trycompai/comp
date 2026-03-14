@@ -18,7 +18,13 @@ import { db } from '@db';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
-import { getManifest, type OAuthConfig } from '@comp/integration-platform';
+import {
+  getManifest,
+  type OAuthConfig,
+  type RampUser,
+  type RampUserStatus,
+  type RampUsersResponse,
+} from '@comp/integration-platform';
 
 interface GoogleWorkspaceUser {
   id: string;
@@ -36,22 +42,6 @@ interface GoogleWorkspaceUser {
 interface GoogleWorkspaceUsersResponse {
   users?: GoogleWorkspaceUser[];
   nextPageToken?: string;
-}
-
-interface RampUser {
-  id: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  employee_id?: string | null;
-  status?: 'USER_ACTIVE' | 'USER_INACTIVE' | 'USER_SUSPENDED';
-}
-
-interface RampUsersResponse {
-  data: RampUser[];
-  page: {
-    next?: string | null;
-  };
 }
 
 type GoogleWorkspaceSyncFilterMode = 'all' | 'exclude' | 'include';
@@ -363,7 +353,7 @@ export class SyncController {
           | 'reactivated'
           | 'error';
         reason?: string;
-        rampStatus?: RampUser['status'] | 'USER_MISSING';
+        rampStatus?: RampUserStatus | 'USER_MISSING';
       }>,
     };
 
@@ -825,7 +815,7 @@ export class SyncController {
           | 'reactivated'
           | 'error';
         reason?: string;
-        rampStatus?: RampUser['status'] | 'USER_MISSING';
+        rampStatus?: RampUserStatus | 'USER_MISSING';
       }>,
     };
 
@@ -1081,7 +1071,9 @@ export class SyncController {
       );
     }
 
-    const fetchRampUsers = async (status?: RampUser['status']) => {
+    const MAX_RETRIES = 3;
+
+    const fetchRampUsers = async (status?: RampUserStatus) => {
       const users: RampUser[] = [];
       let nextUrl: string | null = null;
 
@@ -1097,12 +1089,39 @@ export class SyncController {
             }
           }
 
-          const response = await fetch(url.toString(), {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
-          });
+          let response: Response | null = null;
+          for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            response = await fetch(url.toString(), {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+            });
+
+            if (
+              response.status === 429 ||
+              (response.status >= 500 && response.status < 600)
+            ) {
+              const retryAfter = response.headers.get('Retry-After');
+              const delay = retryAfter
+                ? parseInt(retryAfter, 10) * 1000
+                : Math.min(1000 * 2 ** attempt, 30000);
+              this.logger.warn(
+                `Ramp API returned ${response.status}, retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES})`,
+              );
+              await new Promise((r) => setTimeout(r, delay));
+              continue;
+            }
+
+            break;
+          }
+
+          if (!response) {
+            throw new HttpException(
+              'Failed to fetch users from Ramp',
+              HttpStatus.BAD_GATEWAY,
+            );
+          }
 
           if (!response.ok) {
             if (response.status === 401) {
@@ -1151,6 +1170,21 @@ export class SyncController {
     const suspendedUsers = await fetchRampUsers('USER_SUSPENDED');
     const users = [...baseUsers, ...suspendedUsers];
 
+    // Filter out non-syncable statuses (pending invites, onboarding, expired)
+    const syncableStatuses = new Set<RampUserStatus>([
+      'USER_ACTIVE',
+      'USER_INACTIVE',
+      'USER_SUSPENDED',
+    ]);
+    const skippedStatuses = users.filter(
+      (u) => u.status && !syncableStatuses.has(u.status),
+    );
+    if (skippedStatuses.length > 0) {
+      this.logger.log(
+        `Skipping ${skippedStatuses.length} Ramp users with non-syncable statuses (INVITE_PENDING, INVITE_EXPIRED, USER_ONBOARDING)`,
+      );
+    }
+
     const activeUsers = users.filter((u) => u.status === 'USER_ACTIVE');
     const inactiveUsers = users.filter((u) => u.status === 'USER_INACTIVE');
 
@@ -1189,7 +1223,7 @@ export class SyncController {
           | 'reactivated'
           | 'error';
         reason?: string;
-        rampStatus?: RampUser['status'] | 'USER_MISSING';
+        rampStatus?: RampUserStatus | 'USER_MISSING';
       }>,
     };
 
@@ -1200,37 +1234,45 @@ export class SyncController {
       }
 
       try {
-        const existingUser = await db.user.findUnique({
-          where: { email: normalizedEmail },
-        });
+        // Try external ID match first (handles email changes)
+        let existingMember = rampUser.id
+          ? await db.member.findFirst({
+              where: {
+                organizationId,
+                externalUserId: rampUser.id,
+                externalUserSource: 'ramp',
+              },
+            })
+          : null;
 
-        let userId: string;
-
-        if (existingUser) {
-          userId = existingUser.id;
-        } else {
-          const displayName =
-            `${rampUser.first_name ?? ''} ${rampUser.last_name ?? ''}`.trim() ||
-            normalizedEmail.split('@')[0];
-
-          const newUser = await db.user.create({
-            data: {
-              email: normalizedEmail,
-              name: displayName,
-              emailVerified: true,
-            },
+        // Fall back to email match
+        if (!existingMember) {
+          const existingUser = await db.user.findUnique({
+            where: { email: normalizedEmail },
           });
-          userId = newUser.id;
+          if (existingUser) {
+            existingMember = await db.member.findFirst({
+              where: { organizationId, userId: existingUser.id },
+            });
+          }
         }
 
-        const existingMember = await db.member.findFirst({
-          where: {
-            organizationId,
-            userId,
-          },
-        });
-
         if (existingMember) {
+          // Backfill external ID if not set
+          if (
+            rampUser.id &&
+            (!existingMember.externalUserId ||
+              existingMember.externalUserSource !== 'ramp')
+          ) {
+            await db.member.update({
+              where: { id: existingMember.id },
+              data: {
+                externalUserId: rampUser.id,
+                externalUserSource: 'ramp',
+              },
+            });
+          }
+
           if (existingMember.deactivated) {
             await db.member.update({
               where: { id: existingMember.id },
@@ -1253,12 +1295,33 @@ export class SyncController {
           continue;
         }
 
+        // Create new user if needed
+        let existingUser = await db.user.findUnique({
+          where: { email: normalizedEmail },
+        });
+
+        if (!existingUser) {
+          const displayName =
+            `${rampUser.first_name ?? ''} ${rampUser.last_name ?? ''}`.trim() ||
+            normalizedEmail.split('@')[0];
+
+          existingUser = await db.user.create({
+            data: {
+              email: normalizedEmail,
+              name: displayName,
+              emailVerified: true,
+            },
+          });
+        }
+
         await db.member.create({
           data: {
             organizationId,
-            userId,
+            userId: existingUser.id,
             role: 'employee',
             isActive: true,
+            externalUserId: rampUser.id || null,
+            externalUserSource: rampUser.id ? 'ramp' : null,
           },
         });
 
@@ -1302,11 +1365,23 @@ export class SyncController {
         continue;
       }
 
+      // Safety guard: never auto-deactivate privileged members via sync
+      const memberRoles = member.role
+        .split(',')
+        .map((r) => r.trim().toLowerCase());
+      if (
+        memberRoles.includes('owner') ||
+        memberRoles.includes('admin') ||
+        memberRoles.includes('auditor')
+      ) {
+        continue;
+      }
+
       const isSuspended = suspendedEmails.has(memberEmail);
       const isInactive = inactiveEmails.has(memberEmail);
       const isRemoved =
         !activeEmails.has(memberEmail) && !isSuspended && !isInactive;
-      const rampStatus: RampUser['status'] | 'USER_MISSING' = isSuspended
+      const rampStatus: RampUserStatus | 'USER_MISSING' = isSuspended
         ? 'USER_SUSPENDED'
         : isInactive
           ? 'USER_INACTIVE'
