@@ -1168,7 +1168,7 @@ export class SyncController {
 
     const baseUsers = await fetchRampUsers();
     const suspendedUsers = await fetchRampUsers('USER_SUSPENDED');
-    const users = [...baseUsers, ...suspendedUsers];
+    const allUsers = [...baseUsers, ...suspendedUsers];
 
     // Filter out non-syncable statuses (pending invites, onboarding, expired)
     const syncableStatuses = new Set<RampUserStatus>([
@@ -1176,7 +1176,7 @@ export class SyncController {
       'USER_INACTIVE',
       'USER_SUSPENDED',
     ]);
-    const skippedStatuses = users.filter(
+    const skippedStatuses = allUsers.filter(
       (u) => u.status && !syncableStatuses.has(u.status),
     );
     if (skippedStatuses.length > 0) {
@@ -1185,8 +1185,13 @@ export class SyncController {
       );
     }
 
-    const activeUsers = users.filter((u) => u.status === 'USER_ACTIVE');
-    const inactiveUsers = users.filter((u) => u.status === 'USER_INACTIVE');
+    const syncableUsers = allUsers.filter(
+      (u) => u.status && syncableStatuses.has(u.status),
+    );
+    const activeUsers = syncableUsers.filter((u) => u.status === 'USER_ACTIVE');
+    const inactiveUsers = syncableUsers.filter(
+      (u) => u.status === 'USER_INACTIVE',
+    );
 
     const activeEmails = new Set(
       activeUsers
@@ -1227,6 +1232,8 @@ export class SyncController {
       }>,
     };
 
+    const activeRampMemberIds = new Set<string>();
+
     for (const rampUser of activeUsers) {
       const normalizedEmail = rampUser.email?.toLowerCase();
       if (!normalizedEmail) {
@@ -1245,19 +1252,25 @@ export class SyncController {
             })
           : null;
 
+        let existingUserByEmail: Awaited<
+          ReturnType<typeof db.user.findUnique>
+        > = null;
+
         // Fall back to email match
         if (!existingMember) {
-          const existingUser = await db.user.findUnique({
+          existingUserByEmail = await db.user.findUnique({
             where: { email: normalizedEmail },
           });
-          if (existingUser) {
+          if (existingUserByEmail) {
             existingMember = await db.member.findFirst({
-              where: { organizationId, userId: existingUser.id },
+              where: { organizationId, userId: existingUserByEmail.id },
             });
           }
         }
 
         if (existingMember) {
+          activeRampMemberIds.add(existingMember.id);
+
           // Backfill external ID if not set
           if (
             rampUser.id &&
@@ -1296,9 +1309,7 @@ export class SyncController {
         }
 
         // Create new user if needed
-        let existingUser = await db.user.findUnique({
-          where: { email: normalizedEmail },
-        });
+        let existingUser = existingUserByEmail;
 
         if (!existingUser) {
           const displayName =
@@ -1314,7 +1325,7 @@ export class SyncController {
           });
         }
 
-        await db.member.create({
+        const createdMember = await db.member.create({
           data: {
             organizationId,
             userId: existingUser.id,
@@ -1324,6 +1335,7 @@ export class SyncController {
             externalUserSource: rampUser.id ? 'ramp' : null,
           },
         });
+        activeRampMemberIds.add(createdMember.id);
 
         results.imported++;
         results.details.push({
@@ -1352,7 +1364,7 @@ export class SyncController {
     });
 
     const rampDomains = new Set(
-      users
+      syncableUsers
         .map((u) => u.email?.split('@')[1]?.toLowerCase())
         .filter((domain): domain is string => Boolean(domain)),
     );
@@ -1374,6 +1386,10 @@ export class SyncController {
         memberRoles.includes('admin') ||
         memberRoles.includes('auditor')
       ) {
+        continue;
+      }
+
+      if (activeRampMemberIds.has(member.id)) {
         continue;
       }
 
