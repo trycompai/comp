@@ -24,6 +24,7 @@ import { streamText, convertToModelMessages, stepCountIs, type UIMessage } from 
 import type { Response, Request } from 'express';
 import { AuthContext } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { SessionOnlyGuard } from '../auth/session-only.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
@@ -36,7 +37,7 @@ import { RolesService } from '../roles/roles.service';
 
 @ApiTags('Assistant Chat')
 @Controller({ path: 'assistant-chat', version: '1' })
-@UseGuards(HybridAuthGuard, PermissionGuard)
+@UseGuards(HybridAuthGuard, SessionOnlyGuard, PermissionGuard)
 @RequirePermission('app', 'read')
 @ApiSecurity('apikey')
 export class AssistantChatController {
@@ -53,12 +54,6 @@ export class AssistantChatController {
   } {
     if (!auth.organizationId) {
       throw new BadRequestException('Organization ID is required');
-    }
-
-    if (auth.isApiKey) {
-      throw new BadRequestException(
-        'Assistant chat is only available for user-authenticated requests.',
-      );
     }
 
     if (!auth.userId) {
