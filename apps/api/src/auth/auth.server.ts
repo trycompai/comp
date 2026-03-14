@@ -5,12 +5,14 @@ import { db } from '@trycompai/db';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import {
+  admin,
   bearer,
   emailOTP,
   magicLink,
   multiSession,
   organization,
 } from 'better-auth/plugins';
+import { createAuthMiddleware } from 'better-auth/api';
 import { ac, allRoles } from '@comp/auth';
 
 const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
@@ -161,6 +163,20 @@ export const auth = betterAuth({
     }),
   },
   databaseHooks: {
+    user: {
+      update: {
+        after: async (user) => {
+          const isAdmin = user.role === 'admin';
+          const current = await db.user.findUnique({
+            where: { id: user.id },
+            select: { isPlatformAdmin: true },
+          });
+          if (current && current.isPlatformAdmin !== isAdmin) {
+            await db.$executeRaw`UPDATE "User" SET "isPlatformAdmin" = ${isAdmin} WHERE "id" = ${user.id}`;
+          }
+        },
+      },
+    },
     session: {
       create: {
         before: async (session) => {
@@ -221,6 +237,76 @@ export const auth = betterAuth({
         },
       },
     },
+  },
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      if (!ctx.path.startsWith('/admin/')) return;
+
+      const session = ctx.context?.session;
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      const descriptions: Record<string, string> = {
+        '/admin/impersonate-user': 'Impersonated a user',
+        '/admin/stop-impersonating': 'Stopped impersonating a user',
+        '/admin/ban-user': 'Banned a user',
+        '/admin/unban-user': 'Unbanned a user',
+        '/admin/set-role': 'Changed a user role',
+        '/admin/set-user-password': 'Reset a user password',
+        '/admin/create-user': 'Created a user',
+        '/admin/update-user': 'Updated a user',
+        '/admin/remove-user': 'Removed a user',
+        '/admin/revoke-user-session': 'Revoked a user session',
+        '/admin/revoke-user-sessions': 'Revoked all user sessions',
+      };
+
+      const description = descriptions[ctx.path];
+      if (!description) return;
+
+      try {
+        let organizationId =
+          (session.session as Record<string, unknown>)
+            ?.activeOrganizationId as string | undefined;
+
+        if (!organizationId) {
+          const userOrg = await db.organization.findFirst({
+            where: { members: { some: { userId } } },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true },
+          });
+
+          if (!userOrg) {
+            console.error(
+              '[Auth] SECURITY: Admin audit log dropped — no organization could be resolved for admin user',
+              { userId, path: ctx.path },
+            );
+            return;
+          }
+
+          organizationId = userOrg.id;
+        }
+
+        await db.auditLog.create({
+          data: {
+            userId,
+            memberId: null,
+            organizationId,
+            entityType: null,
+            entityId: null,
+            description: `[Platform Admin] ${description}`,
+            data: {
+              action: description,
+              method: 'POST',
+              path: ctx.path,
+              resource: 'admin',
+              permission: 'platform-admin',
+            },
+          },
+        });
+      } catch (err) {
+        console.error('[Auth] Failed to write admin audit log:', err);
+      }
+    }),
   },
   // SECRET_KEY is validated at startup via validateSecurityConfig()
   secret: process.env.SECRET_KEY as string,
@@ -304,6 +390,9 @@ export const auth = betterAuth({
     }),
     multiSession(),
     bearer(),
+    admin({
+      defaultRole: 'user',
+    }),
   ],
   socialProviders,
   user: {

@@ -48,13 +48,13 @@ export class PlatformAdminGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or expired session');
     }
 
-    // Fetch user from database to check isPlatformAdmin
+    // Verify admin role from the database (better-auth managed field)
     const user = await db.user.findUnique({
       where: { id: session.user.id },
       select: {
         id: true,
         email: true,
-        isPlatformAdmin: true,
+        role: true,
       },
     });
 
@@ -62,7 +62,7 @@ export class PlatformAdminGuard implements CanActivate {
       throw new UnauthorizedException('User not found');
     }
 
-    if (!user.isPlatformAdmin) {
+    if (user.role !== 'admin') {
       throw new ForbiddenException(
         'Access denied: Platform admin privileges required',
       );
