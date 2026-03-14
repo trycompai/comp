@@ -1,6 +1,8 @@
 'use client';
 
 import '@/styles/editor.css';
+import type { Extension } from '@tiptap/core';
+import type { Editor as TipTapEditor } from '@tiptap/react';
 import { Editor, type JSONContent } from '@comp/ui/editor';
 
 interface AdvancedEditorProps {
@@ -13,6 +15,9 @@ interface AdvancedEditorProps {
   saveDebounceMs?: number;
   minHeight?: string;
   maxHeight?: string;
+  additionalExtensions?: Extension[];
+  onEditorReady?: (editor: TipTapEditor) => void;
+  showToolbar?: boolean;
 }
 
 const AdvancedEditor = ({
@@ -25,6 +30,9 @@ const AdvancedEditor = ({
   saveDebounceMs = 500,
   minHeight,
   maxHeight,
+  additionalExtensions,
+  onEditorReady,
+  showToolbar,
 }: AdvancedEditorProps) => {
   return (
     <Editor
@@ -37,9 +45,11 @@ const AdvancedEditor = ({
       saveDebounceMs={saveDebounceMs}
       showSaveStatus={true}
       showWordCount={true}
-      showToolbar={true}
+      showToolbar={showToolbar}
       minHeight={minHeight}
       maxHeight={maxHeight}
+      additionalExtensions={additionalExtensions}
+      onEditorReady={onEditorReady}
     />
   );
 };

@@ -424,6 +424,10 @@
       "types": "./dist/components/editor/selectors/link-selector.d.ts",
       "import": "./dist/components/editor/selectors/link-selector.js"
     },
+    "./editor/extensions/suggestions": {
+      "types": "./dist/components/editor/extensions/suggestions.d.ts",
+      "import": "./dist/components/editor/extensions/suggestions.js"
+    },
     "./editor/extensions/mention": {
       "types": "./dist/components/editor/extensions/mention.d.ts",
       "import": "./dist/components/editor/extensions/mention.js"

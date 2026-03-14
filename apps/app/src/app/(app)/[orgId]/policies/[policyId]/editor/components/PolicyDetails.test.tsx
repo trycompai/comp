@@ -8,6 +8,21 @@ import {
 } from '@/test-utils/mocks/permissions';
 import { PolicyStatus } from '@db';
 
+// Mock matchMedia for useMediaQuery
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
@@ -86,6 +101,27 @@ vi.mock('diff', () => ({
 // Mock editor CSS import
 vi.mock('@/styles/editor.css', () => ({}));
 
+// Mock useSuggestions hook
+vi.mock('../hooks/use-suggestions', () => ({
+  useSuggestions: () => ({
+    ranges: [],
+    activeCount: 0,
+    totalCount: 0,
+    currentIndex: 0,
+    accept: vi.fn(),
+    reject: vi.fn(),
+    acceptCurrent: vi.fn(),
+    rejectCurrent: vi.fn(),
+    acceptAll: vi.fn(),
+    rejectAll: vi.fn(),
+    dismissAll: vi.fn(),
+    giveFeedback: vi.fn(),
+    goToNext: vi.fn(),
+    goToPrev: vi.fn(),
+    isActive: false,
+  }),
+}));
+
 // Mock PolicyEditor
 vi.mock('@/components/editor/policy-editor', () => ({
   PolicyEditor: ({
@@ -98,6 +134,8 @@ vi.mock('@/components/editor/policy-editor', () => ({
 // Mock editor utils
 vi.mock('@comp/ui/editor', () => ({
   validateAndFixTipTapContent: (content: unknown) => ({ content }),
+  SuggestionsExtension: { configure: () => ({}) },
+  suggestionsPluginKey: { key: 'suggestions$' },
 }));
 
 // Mock DiffViewer
