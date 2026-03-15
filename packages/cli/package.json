@@ -6,6 +6,7 @@
     "comp": "./bin/comp"
   },
   "scripts": {
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
