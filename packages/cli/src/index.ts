@@ -1,5 +1,7 @@
 import { showHelp } from './help';
 import { initCommand } from './commands/init';
+import { loginCommand } from './commands/login';
+import { logoutCommand } from './commands/logout';
 import { envCommand } from './commands/env';
 import { statsCommand } from './commands/stats';
 import { orgsCommand } from './commands/orgs';
@@ -15,6 +17,12 @@ async function main(): Promise<void> {
   switch (command) {
     case 'init':
       await initCommand(commandArgs);
+      break;
+    case 'login':
+      await loginCommand(commandArgs);
+      break;
+    case 'logout':
+      logoutCommand();
       break;
     case 'env':
       envCommand(commandArgs);

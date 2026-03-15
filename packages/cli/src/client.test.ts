@@ -1,10 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach, mock, spyOn } from 'bun:test';
+import { describe, it, expect, afterEach, mock } from 'bun:test';
 
 // Mock config module before importing client
 mock.module('./config', () => ({
   getActiveEnv: () => ({
     apiUrl: 'http://localhost:9999',
-    adminSecret: 'test-secret',
+  }),
+  getActiveSession: () => ({
+    token: 'test-session-token',
+    email: 'admin@test.com',
+    expiresAt: '2099-01-01T00:00:00.000Z',
   }),
 }));
 
@@ -15,7 +19,7 @@ describe('adminFetch', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('should call fetch with correct URL and Bearer auth', async () => {
+  it('should call fetch with correct URL and Bearer session token', async () => {
     let capturedUrl = '';
     let capturedInit: RequestInit | undefined;
 
@@ -25,14 +29,13 @@ describe('adminFetch', () => {
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }) as typeof fetch;
 
-    // Re-import to pick up the mock
     const { adminFetch } = await import('./client');
     await adminFetch('stats');
 
     expect(capturedUrl).toBe('http://localhost:9999/v1/admin/stats');
     expect(capturedInit?.headers).toEqual(
       expect.objectContaining({
-        Authorization: 'Bearer test-secret',
+        Authorization: 'Bearer test-session-token',
         'Content-Type': 'application/json',
       }),
     );

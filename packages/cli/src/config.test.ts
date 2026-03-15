@@ -1,11 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, afterEach } from 'bun:test';
 import { existsSync, unlinkSync, writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-
-// We test the config logic by directly importing internals.
-// Since config.ts uses a hardcoded path (~/.comprc), we test the
-// serialization/deserialization logic and defaults.
 
 describe('config', () => {
   const testConfigPath = join(tmpdir(), `.comprc-test-${Date.now()}`);
@@ -16,13 +12,17 @@ describe('config', () => {
     }
   });
 
-  it('should serialize config to JSON', () => {
+  it('should serialize config with session to JSON', () => {
     const config = {
       activeEnv: 'local',
       environments: {
         local: {
           apiUrl: 'http://localhost:3333',
-          adminSecret: 'test-secret',
+          session: {
+            token: 'abc123',
+            email: 'admin@test.com',
+            expiresAt: '2099-01-01T00:00:00.000Z',
+          },
         },
       },
     };
@@ -33,24 +33,16 @@ describe('config', () => {
 
     expect(parsed.activeEnv).toBe('local');
     expect(parsed.environments.local.apiUrl).toBe('http://localhost:3333');
-    expect(parsed.environments.local.adminSecret).toBe('test-secret');
+    expect(parsed.environments.local.session.token).toBe('abc123');
+    expect(parsed.environments.local.session.email).toBe('admin@test.com');
   });
 
-  it('should handle multiple environments', () => {
+  it('should handle config without session', () => {
     const config = {
       activeEnv: 'staging',
       environments: {
-        local: {
-          apiUrl: 'http://localhost:3333',
-          adminSecret: 'local-secret',
-        },
         staging: {
           apiUrl: 'https://staging-api.trycomp.ai',
-          adminSecret: 'staging-secret',
-        },
-        production: {
-          apiUrl: 'https://api.trycomp.ai',
-          adminSecret: 'prod-secret',
         },
       },
     };
@@ -58,43 +50,50 @@ describe('config', () => {
     writeFileSync(testConfigPath, JSON.stringify(config, null, 2));
     const parsed = JSON.parse(readFileSync(testConfigPath, 'utf-8'));
 
-    expect(parsed.activeEnv).toBe('staging');
-    expect(Object.keys(parsed.environments)).toEqual([
-      'local',
-      'staging',
-      'production',
-    ]);
-    expect(parsed.environments.staging.apiUrl).toBe(
-      'https://staging-api.trycomp.ai',
-    );
+    expect(parsed.environments.staging.session).toBeUndefined();
   });
 
-  it('should return correct active env', () => {
+  it('should handle multiple environments with independent sessions', () => {
     const config = {
-      activeEnv: 'production',
+      activeEnv: 'staging',
       environments: {
-        local: { apiUrl: 'http://localhost:3333', adminSecret: 's1' },
-        production: { apiUrl: 'https://api.trycomp.ai', adminSecret: 's2' },
+        local: {
+          apiUrl: 'http://localhost:3333',
+          session: { token: 'local-tok', email: 'a@t.com', expiresAt: '2099-01-01T00:00:00Z' },
+        },
+        staging: {
+          apiUrl: 'https://staging-api.trycomp.ai',
+          session: { token: 'staging-tok', email: 'b@t.com', expiresAt: '2099-01-01T00:00:00Z' },
+        },
+        production: {
+          apiUrl: 'https://api.trycomp.ai',
+        },
       },
     };
 
-    const activeEnv = config.environments[config.activeEnv];
-    expect(activeEnv).toBeDefined();
-    expect(activeEnv?.apiUrl).toBe('https://api.trycomp.ai');
+    const active = config.environments[config.activeEnv];
+    expect(active.session?.token).toBe('staging-tok');
   });
 
-  it('should return undefined for non-existent env', () => {
-    const config = {
-      activeEnv: 'doesnotexist',
-      environments: {
-        local: { apiUrl: 'http://localhost:3333', adminSecret: 's1' },
-      },
+  it('should detect expired sessions', () => {
+    const session = {
+      token: 'expired-tok',
+      email: 'x@t.com',
+      expiresAt: '2020-01-01T00:00:00.000Z',
     };
 
-    const activeEnv =
-      config.environments[
-        config.activeEnv as keyof typeof config.environments
-      ];
-    expect(activeEnv).toBeUndefined();
+    const expiresAt = new Date(session.expiresAt);
+    expect(expiresAt <= new Date()).toBe(true);
+  });
+
+  it('should detect valid sessions', () => {
+    const session = {
+      token: 'valid-tok',
+      email: 'x@t.com',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+    };
+
+    const expiresAt = new Date(session.expiresAt);
+    expect(expiresAt > new Date()).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-import { getActiveEnv } from './config';
+import { getActiveEnv, getActiveSession } from './config';
 import { die } from './utils';
 
 export async function adminFetch(
@@ -10,6 +10,11 @@ export async function adminFetch(
     die('No environment configured. Run: comp init');
   }
 
+  const session = getActiveSession();
+  if (!session) {
+    die('Session expired or not logged in. Run: comp login');
+  }
+
   const url = `${env.apiUrl}/v1/admin/${path}`;
 
   let response: Response;
@@ -18,12 +23,20 @@ export async function adminFetch(
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${env.adminSecret}`,
+        Authorization: `Bearer ${session.token}`,
         ...options.headers,
       },
     });
   } catch {
     die(`Cannot connect to ${env.apiUrl} — is the API running?`);
+  }
+
+  if (response.status === 401) {
+    die('Session expired. Run: comp login');
+  }
+
+  if (response.status === 403) {
+    die('Access denied — your account does not have platform admin privileges.');
   }
 
   if (!response.ok) {

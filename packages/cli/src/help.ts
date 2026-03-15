@@ -12,6 +12,8 @@ ${YELLOW}Usage:${RESET}
 
 ${YELLOW}Commands:${RESET}
   ${CYAN}init${RESET}              Configure environment ${DIM}[--local|--staging|--production]${RESET}
+  ${CYAN}login${RESET}             Authenticate via OAuth ${DIM}[--local|--staging|--production]${RESET}
+  ${CYAN}logout${RESET}            Clear session
   ${CYAN}env${RESET}               Show or switch active environment ${DIM}[name]${RESET}
   ${CYAN}stats${RESET}             Platform overview
   ${CYAN}orgs${RESET}              List organizations ${DIM}[id] [--limit N] [--offset N]${RESET}
@@ -23,6 +25,7 @@ ${YELLOW}Commands:${RESET}
 
 ${YELLOW}Examples:${RESET}
   comp init --local
+  comp login
   comp stats
   comp orgs --limit 10
   comp users search --email john@
@@ -41,7 +44,21 @@ ${YELLOW}Options:${RESET}
   ${CYAN}--staging${RESET}      Pre-fill with staging defaults
   ${CYAN}--production${RESET}   Pre-fill with production defaults
 
-Prompts for API URL and admin secret, saves to ~/.comprc
+Prompts for API URL, saves to ~/.comprc. Run ${CYAN}comp login${RESET} after to authenticate.
+`,
+  login: `
+${BOLD}comp login${RESET} — Authenticate via OAuth
+
+${YELLOW}Usage:${RESET}
+  comp login [--local|--staging|--production]
+
+Opens your browser for Google OAuth. On success, stores a session token
+that expires in 1 hour. Your account must have ${BOLD}isPlatformAdmin${RESET} enabled.
+`,
+  logout: `
+${BOLD}comp logout${RESET} — Clear session
+
+Removes the stored session token for the active environment.
 `,
   env: `
 ${BOLD}comp env${RESET} — Show or switch active environment

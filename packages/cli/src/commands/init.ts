@@ -29,18 +29,13 @@ export async function initCommand(args: string[]): Promise<void> {
 
   const apiUrl =
     (await prompt(`API URL (${defaultUrl}): `)) || defaultUrl;
-  const adminSecret = await prompt('Admin secret: ');
-
-  if (!adminSecret) {
-    console.error('\x1b[31merror:\x1b[0m Admin secret is required');
-    process.exit(1);
-  }
 
   const config = loadConfig();
-  config.environments[envName] = { apiUrl, adminSecret };
+  config.environments[envName] = { apiUrl };
   config.activeEnv = envName;
   saveConfig(config);
 
   console.log(`\n\x1b[32m✓\x1b[0m Saved to ${configPath()}`);
-  console.log(`\x1b[32m✓\x1b[0m Active environment: ${envName}\n`);
+  console.log(`\x1b[32m✓\x1b[0m Active environment: ${envName}`);
+  console.log(`\nRun \x1b[1mcomp login\x1b[0m to authenticate.\n`);
 }
