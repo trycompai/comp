@@ -36,23 +36,41 @@ export async function loginCommand(args: string[]): Promise<void> {
   const apiUrl = envConfig.apiUrl;
   const appUrl = getAppUrl(apiUrl);
 
-  // After OAuth, better-auth redirects to this app route which relays
-  // the session token to our local server via localhost redirect.
-  const cliCallbackPath = `/api/cli/callback?port=${CALLBACK_PORT}`;
-
-  // better-auth social sign-in with callbackURL pointing to our relay
-  const signInUrl =
-    `${appUrl}/api/auth/sign-in/social?` +
-    `provider=google&` +
-    `callbackURL=${encodeURIComponent(cliCallbackPath)}`;
+  // After OAuth, better-auth redirects to the app's relay route which
+  // reads the session cookie and redirects to the CLI's local server.
+  const cliCallbackPath = `${appUrl}/api/cli/callback?port=${CALLBACK_PORT}`;
 
   console.log(`\n\x1b[1mLogging in to ${envName}\x1b[0m (${apiUrl})\n`);
   console.log('Opening browser for authentication...');
+
+  // better-auth's sign-in/social is a POST endpoint that returns
+  // { url: "<oauth-provider-url>", redirect: true }
+  const signInRes = await fetch(`${apiUrl}/api/auth/sign-in/social`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      provider: 'google',
+      callbackURL: cliCallbackPath,
+    }),
+  });
+
+  if (!signInRes.ok) {
+    die(
+      `Failed to initiate OAuth flow (HTTP ${signInRes.status}).\n` +
+        'Is the API running and Google OAuth configured?',
+    );
+  }
+
+  const { url: oauthUrl } = (await signInRes.json()) as { url: string };
+  if (!oauthUrl) {
+    die('API did not return an OAuth URL. Check social provider config.');
+  }
+
   console.log(
-    `\x1b[2mIf the browser doesn't open, visit:\x1b[0m\n${signInUrl}\n`,
+    `\x1b[2mIf the browser doesn't open, visit:\x1b[0m\n${oauthUrl}\n`,
   );
 
-  const token = await captureToken(signInUrl);
+  const token = await captureToken(oauthUrl);
 
   // Verify the token works against the admin API
   let verifyResponse: Response | null = null;
@@ -75,7 +93,7 @@ export async function loginCommand(args: string[]): Promise<void> {
   let email = 'unknown';
   try {
     const sessionRes = await fetch(
-      `${appUrl}/api/auth/get-session`,
+      `${apiUrl}/api/auth/get-session`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

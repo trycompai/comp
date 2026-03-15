@@ -34,9 +34,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  // The cookie value is "token.hmacSignature". The bearer plugin only
+  // accepts the token portion (before the dot), so strip the signature.
+  const bearerToken = sessionToken.split('.')[0];
+
   // Redirect to the CLI's local server with the token
   const redirectUrl = new URL(`http://localhost:${portNum}/callback`);
-  redirectUrl.searchParams.set('token', sessionToken);
+  redirectUrl.searchParams.set('token', bearerToken);
 
   return NextResponse.redirect(redirectUrl.toString());
 }
