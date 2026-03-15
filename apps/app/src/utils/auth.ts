@@ -14,9 +14,7 @@ import { ac, allRoles } from './permissions';
 // Re-export permissions for convenience
 export { ac, allRoles };
 
-// IMPORTANT: This must point to the actual API server, not the app itself.
-// Use BACKEND_API_URL for server-to-server communication, or fall back to NEXT_PUBLIC_API_URL.
-// Do NOT use BETTER_AUTH_URL here - that may be the app's URL for the client-side auth.
+// Must point to the API server for server-to-server auth calls.
 const API_URL =
   process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 

@@ -1,3 +1,61 @@
+# [3.6.0](https://github.com/trycompai/comp/compare/v3.5.0...v3.6.0) (2026-03-14)
+
+
+### Features
+
+* **auth:** add SessionOnlyGuard to enforce user session authentication for assistant chat ([ac97916](https://github.com/trycompai/comp/commit/ac97916c6092d3d8f913921787c205fae571ba4a))
+
+# [3.5.0](https://github.com/trycompai/comp/compare/v3.4.0...v3.5.0) (2026-03-14)
+
+
+### Features
+
+* **integration-platform:** enhance sync controller with Ramp user integration and external user ID support ([#2298](https://github.com/trycompai/comp/issues/2298)) ([3f8cb4b](https://github.com/trycompai/comp/commit/3f8cb4b7b8717f0e3d63458b1c4818155a6603ed))
+* **training:** update download training certificate action to forward session cookies for authentication ([#2300](https://github.com/trycompai/comp/issues/2300)) ([7d12e56](https://github.com/trycompai/comp/commit/7d12e5693bbee42e1b9913e888d31077ac35112e))
+
+# [3.4.0](https://github.com/trycompai/comp/compare/v3.3.0...v3.4.0) (2026-03-14)
+
+
+### Features
+
+* **training:** update download training certificate action to forward session cookies for authentication ([7558b7b](https://github.com/trycompai/comp/commit/7558b7bca46c9987d2f2ee1e4670e22f0c65438c))
+
+# [3.3.0](https://github.com/trycompai/comp/compare/v3.2.1...v3.3.0) (2026-03-13)
+
+
+### Features
+
+* **api:** add getCompletions and markVideoComplete to TrainingService ([68343a5](https://github.com/trycompai/comp/commit/68343a5f00e908c79f1a20fedf48bd80b18adca5))
+* **api:** add new training video completion endpoints to OpenAPI spec ([3ab13eb](https://github.com/trycompai/comp/commit/3ab13eb732c267636917c9b50042c5c0fa962f6c))
+* **api:** add portal training completion endpoints ([e0c0739](https://github.com/trycompai/comp/commit/e0c0739684c6a267bbc0b4772c3a8d20c13d8d8d))
+* **auth:** add portal permission resource for employee self-service ([58b4604](https://github.com/trycompai/comp/commit/58b46041590bd0240abb82b15aa610ddb67bce36))
+
+## [3.2.1](https://github.com/trycompai/comp/compare/v3.2.0...v3.2.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* **app:** prevent integration dialog content from overflowing modal ([#2292](https://github.com/trycompai/comp/issues/2292)) ([184e29a](https://github.com/trycompai/comp/commit/184e29a605c56cbf7015508da4b5f6cb17fe0da8))
+
+# [3.2.0](https://github.com/trycompai/comp/compare/v3.1.0...v3.2.0) (2026-03-11)
+
+
+### Bug Fixes
+
+* **workflow:** streamline CodeSignTool extraction process in device-agent-release.yml ([#2283](https://github.com/trycompai/comp/issues/2283)) ([5c35bf1](https://github.com/trycompai/comp/commit/5c35bf16428ed18a7366ed117c8af31a9737696b))
+
+
+### Features
+
+* **device-agent:** implement device registration and authentication flow ([#2281](https://github.com/trycompai/comp/issues/2281)) ([542dcb3](https://github.com/trycompai/comp/commit/542dcb3e4ae826d649d4dd866ac41dfbb8af48ef))
+
+# [3.1.0](https://github.com/trycompai/comp/compare/v3.0.0...v3.1.0) (2026-03-11)
+
+
+### Features
+
+* **auth:** enhance security with rate limiting and redirect URL validation ([#2273](https://github.com/trycompai/comp/issues/2273)) ([34ea67f](https://github.com/trycompai/comp/commit/34ea67f10c4d0fad3e57f5e8b0e522bae13d3934))
+
 # [3.0.0](https://github.com/trycompai/comp/compare/v2.0.0...v3.0.0) (2026-03-10)
 
 

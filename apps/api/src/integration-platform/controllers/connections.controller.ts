@@ -260,8 +260,11 @@ export class ConnectionsController {
    */
   @Get(':id')
   @RequirePermission('integration', 'read')
-  async getConnection(@Param('id') id: string) {
-    const connection = await this.connectionService.getConnection(id);
+  async getConnection(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    const connection = await this.connectionService.getConnectionForOrg(id, organizationId);
     const providerSlug = (connection as { provider?: { slug: string } })
       .provider?.slug;
 
@@ -654,8 +657,11 @@ export class ConnectionsController {
    */
   @Post(':id/test')
   @RequirePermission('integration', 'update')
-  async testConnection(@Param('id') id: string) {
-    const connection = await this.connectionService.getConnection(id);
+  async testConnection(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    const connection = await this.connectionService.getConnectionForOrg(id, organizationId);
     const providerSlug = (connection as any).provider?.slug;
 
     if (!providerSlug) {
@@ -744,7 +750,11 @@ export class ConnectionsController {
    */
   @Post(':id/pause')
   @RequirePermission('integration', 'update')
-  async pauseConnection(@Param('id') id: string) {
+  async pauseConnection(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    await this.connectionService.getConnectionForOrg(id, organizationId);
     const connection = await this.connectionService.pauseConnection(id);
     return { id: connection.id, status: connection.status };
   }
@@ -754,7 +764,11 @@ export class ConnectionsController {
    */
   @Post(':id/resume')
   @RequirePermission('integration', 'update')
-  async resumeConnection(@Param('id') id: string) {
+  async resumeConnection(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    await this.connectionService.getConnectionForOrg(id, organizationId);
     const connection = await this.connectionService.activateConnection(id);
     return { id: connection.id, status: connection.status };
   }
@@ -764,7 +778,11 @@ export class ConnectionsController {
    */
   @Post(':id/disconnect')
   @RequirePermission('integration', 'delete')
-  async disconnectConnection(@Param('id') id: string) {
+  async disconnectConnection(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    await this.connectionService.getConnectionForOrg(id, organizationId);
     const connection = await this.connectionService.disconnectConnection(id);
     return { id: connection.id, status: connection.status };
   }
@@ -774,7 +792,11 @@ export class ConnectionsController {
    */
   @Delete(':id')
   @RequirePermission('integration', 'delete')
-  async deleteConnection(@Param('id') id: string) {
+  async deleteConnection(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    await this.connectionService.getConnectionForOrg(id, organizationId);
     await this.connectionService.deleteConnection(id);
     return { success: true };
   }
@@ -789,13 +811,7 @@ export class ConnectionsController {
     @OrganizationId() organizationId: string,
     @Body() body: { metadata?: Record<string, unknown> },
   ) {
-    const connection = await this.connectionService.getConnection(id);
-    if (connection.organizationId !== organizationId) {
-      throw new HttpException(
-        'Connection does not belong to this organization',
-        HttpStatus.FORBIDDEN,
-      );
-    }
+    const connection = await this.connectionService.getConnectionForOrg(id, organizationId);
 
     if (body.metadata && Object.keys(body.metadata).length > 0) {
       // Merge with existing metadata
@@ -824,11 +840,7 @@ export class ConnectionsController {
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
   ) {
-    const connection = await this.connectionService.getConnection(id);
-
-    if (connection.organizationId !== organizationId) {
-      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
-    }
+    const connection = await this.connectionService.getConnectionForOrg(id, organizationId);
 
     if (connection.status !== 'active') {
       throw new HttpException(
@@ -988,11 +1000,7 @@ export class ConnectionsController {
     @OrganizationId() organizationId: string,
     @Body() body: { credentials: Record<string, string | string[]> },
   ) {
-    const connection = await this.connectionService.getConnection(id);
-
-    if (connection.organizationId !== organizationId) {
-      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
-    }
+    const connection = await this.connectionService.getConnectionForOrg(id, organizationId);
 
     const providerSlug = (connection as { provider?: { slug: string } })
       .provider?.slug;

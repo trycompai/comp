@@ -61,9 +61,9 @@ function FindingsList({
                     <span className="text-sm font-medium text-foreground line-clamp-1">
                       {finding.task?.title ??
                         (finding.evidenceFormType
-                          ? `Document: ${finding.evidenceFormType}`
+                          ? `Document: ${finding.evidenceFormType.replace(/-/g, ' ')}`
                           : finding.evidenceSubmission
-                            ? `Document: ${finding.evidenceSubmission.formType}`
+                            ? `Document: ${finding.evidenceSubmission.formType.replace(/-/g, ' ')}`
                             : 'Finding')}
                     </span>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">

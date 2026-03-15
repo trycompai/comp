@@ -13,8 +13,10 @@ import { ApiTags, ApiSecurity } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
+import { OrganizationId } from '../../auth/auth-context.decorator';
 import { getManifest, type CheckVariable } from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
+import { ConnectionService } from '../services/connection.service';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { AutoCheckRunnerService } from '../services/auto-check-runner.service';
@@ -52,6 +54,7 @@ export class VariablesController {
     private readonly providerRepository: ProviderRepository,
     private readonly credentialVaultService: CredentialVaultService,
     private readonly autoCheckRunnerService: AutoCheckRunnerService,
+    private readonly connectionService: ConnectionService,
   ) {}
 
   /**
@@ -109,7 +112,12 @@ export class VariablesController {
    */
   @Get('connections/:connectionId')
   @RequirePermission('integration', 'read')
-  async getConnectionVariables(@Param('connectionId') connectionId: string) {
+  async getConnectionVariables(
+    @Param('connectionId') connectionId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
@@ -179,7 +187,10 @@ export class VariablesController {
   async fetchVariableOptions(
     @Param('connectionId') connectionId: string,
     @Param('variableId') variableId: string,
+    @OrganizationId() organizationId: string,
   ): Promise<{ options: VariableOption[] }> {
+    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
@@ -386,7 +397,10 @@ export class VariablesController {
   async saveConnectionVariables(
     @Param('connectionId') connectionId: string,
     @Body() body: SaveVariablesDto,
+    @OrganizationId() organizationId: string,
   ) {
+    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);

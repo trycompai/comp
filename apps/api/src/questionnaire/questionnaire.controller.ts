@@ -169,7 +169,11 @@ export class QuestionnaireController {
       },
     },
   })
-  async answerSingleQuestion(@Body() dto: AnswerSingleQuestionDto) {
+  async answerSingleQuestion(
+    @Body() dto: AnswerSingleQuestionDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    dto.organizationId = organizationId;
     const result = await this.questionnaireService.answerSingleQuestion(dto);
     return {
       success: result.success,
@@ -196,7 +200,11 @@ export class QuestionnaireController {
       },
     },
   })
-  async saveAnswer(@Body() dto: SaveAnswerDto) {
+  async saveAnswer(
+    @Body() dto: SaveAnswerDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    dto.organizationId = organizationId;
     return this.questionnaireService.saveAnswer(dto);
   }
 
@@ -213,7 +221,11 @@ export class QuestionnaireController {
       },
     },
   })
-  async deleteAnswer(@Body() dto: DeleteAnswerDto) {
+  async deleteAnswer(
+    @Body() dto: DeleteAnswerDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    dto.organizationId = organizationId;
     return this.questionnaireService.deleteAnswer(dto);
   }
 
@@ -232,7 +244,9 @@ export class QuestionnaireController {
   async exportById(
     @Body() dto: ExportByIdDto,
     @Res({ passthrough: true }) res: Response,
+    @OrganizationId() organizationId: string,
   ): Promise<void> {
+    dto.organizationId = organizationId;
     const result = await this.questionnaireService.exportById(dto);
 
     res.setHeader('Content-Type', result.mimeType);
@@ -258,7 +272,11 @@ export class QuestionnaireController {
       },
     },
   })
-  async uploadAndParse(@Body() dto: UploadAndParseDto) {
+  async uploadAndParse(
+    @Body() dto: UploadAndParseDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    dto.organizationId = organizationId;
     return this.questionnaireService.uploadAndParse(dto);
   }
 
@@ -307,16 +325,14 @@ export class QuestionnaireController {
       organizationId: string;
       source?: 'internal' | 'external';
     },
+    @OrganizationId() organizationId: string,
   ) {
     if (!file) {
       throw new BadRequestException('file is required');
     }
-    if (!body.organizationId) {
-      throw new BadRequestException('organizationId is required');
-    }
 
     const dto: UploadAndParseDto = {
-      organizationId: body.organizationId,
+      organizationId,
       fileName: file.originalname,
       fileType: file.mimetype,
       fileData: file.buffer.toString('base64'),
@@ -374,18 +390,16 @@ export class QuestionnaireController {
       source?: 'internal' | 'external';
     },
     @Res({ passthrough: true }) res: Response,
+    @OrganizationId() organizationId: string,
   ): Promise<void> {
     if (!file) {
       throw new BadRequestException('file is required');
-    }
-    if (!body.organizationId) {
-      throw new BadRequestException('organizationId is required');
     }
 
     const dto: ExportQuestionnaireDto = {
       fileData: file.buffer.toString('base64'),
       fileType: file.mimetype,
-      organizationId: body.organizationId,
+      organizationId,
       fileName: file.originalname,
       vendorName: undefined,
       format: body.format || 'xlsx',
@@ -498,7 +512,9 @@ export class QuestionnaireController {
   async autoAnswerAndExport(
     @Body() dto: ExportQuestionnaireDto,
     @Res({ passthrough: true }) res: Response,
+    @OrganizationId() organizationId: string,
   ): Promise<void> {
+    dto.organizationId = organizationId;
     const result = await this.questionnaireService.autoAnswerAndExport(dto);
 
     res.setHeader('Content-Type', result.mimeType);
@@ -550,18 +566,16 @@ export class QuestionnaireController {
     @UploadedFile() file: Express.Multer.File,
     @Body() body: { organizationId: string; format?: 'pdf' | 'csv' | 'xlsx' },
     @Res({ passthrough: true }) res: Response,
+    @OrganizationId() organizationId: string,
   ): Promise<void> {
     if (!file) {
       throw new BadRequestException('file is required');
-    }
-    if (!body.organizationId) {
-      throw new BadRequestException('organizationId is required');
     }
 
     const dto: ExportQuestionnaireDto = {
       fileData: file.buffer.toString('base64'),
       fileType: file.mimetype,
-      organizationId: body.organizationId,
+      organizationId,
       fileName: file.originalname,
       vendorName: undefined,
       format: body.format || 'xlsx',
@@ -589,7 +603,9 @@ export class QuestionnaireController {
   async autoAnswer(
     @Body() dto: AutoAnswerDto,
     @Res() res: Response,
+    @OrganizationId() organizationId: string,
   ): Promise<void> {
+    dto.organizationId = organizationId;
     setupSSEHeaders(res);
     const send = createSafeSSESender(res);
 

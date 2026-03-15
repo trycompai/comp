@@ -51,7 +51,7 @@ class IntegrationPlatformExtension implements BuildExtension {
       name: 'resolve-integration-platform',
       setup(build) {
         // Resolve bare import
-        build.onResolve({ filter: /^@comp\/integration-platform$/ }, () => {
+        build.onResolve({ filter: /^@trycompai\/integration-platform$/ }, () => {
           return {
             path: resolve(packagePath, 'dist/index.js'),
           };
@@ -59,7 +59,7 @@ class IntegrationPlatformExtension implements BuildExtension {
 
         // Resolve subpath imports like @trycompai/integration-platform/types
         build.onResolve(
-          { filter: /^@comp\/integration-platform\// },
+          { filter: /^@trycompai\/integration-platform\// },
           (args) => {
             const subpath = args.path.replace(`${PACKAGE_NAME}/`, '');
             return {

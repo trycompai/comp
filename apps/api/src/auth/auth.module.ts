@@ -14,6 +14,13 @@ import { PermissionGuard } from './permission.guard';
       auth,
       // Don't register global auth guard - we use HybridAuthGuard
       disableGlobalAuthGuard: true,
+      // CORS is already configured in main.ts — prevent the module from
+      // overriding it with its own trustedOrigins-based CORS.
+      disableTrustedOriginsCors: true,
+      // Body parsing for non-auth routes is handled in main.ts with a
+      // custom middleware that skips /api/auth paths. Disable the module's
+      // own SkipBodyParsingMiddleware to avoid conflicts.
+      disableBodyParser: true,
     }),
   ],
   controllers: [AuthController],

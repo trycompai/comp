@@ -5,6 +5,13 @@ jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
 
+jest.mock('@trycompai/auth', () => ({
+  statement: {},
+  ac: {},
+  allRoles: {},
+  BUILT_IN_ROLE_PERMISSIONS: {},
+}));
+
 jest.mock('@/vector-store/lib', () => ({
   syncOrganizationEmbeddings: jest.fn(),
   findSimilarContentBatch: jest.fn(),
@@ -211,12 +218,39 @@ describe('QuestionnaireController', () => {
         error: undefined,
       });
 
-      const result = await controller.answerSingleQuestion(dto as any);
+      const result = await controller.answerSingleQuestion(
+        dto as any,
+        'org_1',
+      );
 
       expect(result.success).toBe(true);
       expect(result.data.answer).toBe('Our policy covers...');
       expect(result.data.questionIndex).toBe(0);
       expect(result.data.sources).toHaveLength(1);
+    });
+
+    it('should override body organizationId with auth-derived org', async () => {
+      const dto = {
+        question: 'What is your policy?',
+        organizationId: 'org_attacker',
+        questionIndex: 0,
+        totalQuestions: 5,
+      };
+      mockService.answerSingleQuestion.mockResolvedValue({
+        success: true,
+        questionIndex: 0,
+        question: 'What is your policy?',
+        answer: 'Answer',
+        sources: [],
+        error: undefined,
+      });
+
+      await controller.answerSingleQuestion(dto as any, 'org_1');
+
+      expect(dto.organizationId).toBe('org_1');
+      expect(service.answerSingleQuestion).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org_1' }),
+      );
     });
   });
 
@@ -231,9 +265,24 @@ describe('QuestionnaireController', () => {
       };
       mockService.saveAnswer.mockResolvedValue({ success: true });
 
-      const result = await controller.saveAnswer(dto as any);
+      const result = await controller.saveAnswer(dto as any, 'org_1');
 
       expect(result).toEqual({ success: true });
+    });
+
+    it('should override body organizationId with auth-derived org', async () => {
+      const dto = {
+        questionnaireId: 'q1',
+        organizationId: 'org_attacker',
+        questionIndex: 0,
+        answer: 'Yes',
+        status: 'manual',
+      };
+      mockService.saveAnswer.mockResolvedValue({ success: true });
+
+      await controller.saveAnswer(dto as any, 'org_1');
+
+      expect(dto.organizationId).toBe('org_1');
     });
   });
 
@@ -246,9 +295,22 @@ describe('QuestionnaireController', () => {
       };
       mockService.deleteAnswer.mockResolvedValue({ success: true });
 
-      const result = await controller.deleteAnswer(dto as any);
+      const result = await controller.deleteAnswer(dto as any, 'org_1');
 
       expect(result).toEqual({ success: true });
+    });
+
+    it('should override body organizationId with auth-derived org', async () => {
+      const dto = {
+        questionnaireId: 'q1',
+        organizationId: 'org_attacker',
+        questionAnswerId: 'qa1',
+      };
+      mockService.deleteAnswer.mockResolvedValue({ success: true });
+
+      await controller.deleteAnswer(dto as any, 'org_1');
+
+      expect(dto.organizationId).toBe('org_1');
     });
   });
 
@@ -266,9 +328,30 @@ describe('QuestionnaireController', () => {
         totalQuestions: 10,
       });
 
-      const result = await controller.uploadAndParse(dto as any);
+      const result = await controller.uploadAndParse(dto as any, 'org_1');
 
       expect(result).toEqual({ questionnaireId: 'q1', totalQuestions: 10 });
+    });
+
+    it('should override body organizationId with auth-derived org', async () => {
+      const dto = {
+        organizationId: 'org_attacker',
+        fileName: 'test.pdf',
+        fileType: 'application/pdf',
+        fileData: 'base64data',
+        source: 'internal',
+      };
+      mockService.uploadAndParse.mockResolvedValue({
+        questionnaireId: 'q1',
+        totalQuestions: 10,
+      });
+
+      await controller.uploadAndParse(dto as any, 'org_1');
+
+      expect(dto.organizationId).toBe('org_1');
+      expect(service.uploadAndParse).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org_1' }),
+      );
     });
   });
 });
