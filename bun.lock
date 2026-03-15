@@ -417,6 +417,16 @@
         "@prisma/client": ">=5.0.0",
       },
     },
+    "packages/cli": {
+      "name": "@comp/cli",
+      "version": "1.0.0",
+      "bin": {
+        "comp": "./bin/comp",
+      },
+      "devDependencies": {
+        "typescript": "^5.9.3",
+      },
+    },
     "packages/company": {
       "name": "@comp/company",
       "version": "1.0.0",
@@ -1049,6 +1059,8 @@
     "@comp/app": ["@comp/app@workspace:apps/app"],
 
     "@comp/auth": ["@comp/auth@workspace:packages/auth"],
+
+    "@comp/cli": ["@comp/cli@workspace:packages/cli"],
 
     "@comp/company": ["@comp/company@workspace:packages/company"],
 

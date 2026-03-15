@@ -1,0 +1,14 @@
+{
+  "name": "@comp/cli",
+  "version": "1.0.0",
+  "private": true,
+  "bin": {
+    "comp": "./bin/comp"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
