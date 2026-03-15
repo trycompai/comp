@@ -231,38 +231,38 @@ export class AdminService {
   }
 
   async togglePlatformAdmin(id: string) {
-    const user = await db.user.findUnique({
-      where: { id },
-      select: { id: true, isPlatformAdmin: true },
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User ${id} not found`);
-    }
-
-    // Prevent removing the last platform admin
-    if (user.isPlatformAdmin) {
-      const adminCount = await db.user.count({
-        where: { isPlatformAdmin: true },
+    return db.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id },
+        select: { id: true, isPlatformAdmin: true },
       });
-      if (adminCount <= 1) {
-        throw new BadRequestException(
-          'Cannot demote the last platform admin. Promote another user first.',
-        );
+
+      if (!user) {
+        throw new NotFoundException(`User ${id} not found`);
       }
-    }
 
-    const updated = await db.user.update({
-      where: { id },
-      data: { isPlatformAdmin: !user.isPlatformAdmin },
-      select: {
-        id: true,
-        email: true,
-        isPlatformAdmin: true,
-      },
+      // Prevent removing the last platform admin
+      if (user.isPlatformAdmin) {
+        const adminCount = await tx.user.count({
+          where: { isPlatformAdmin: true },
+        });
+        if (adminCount <= 1) {
+          throw new BadRequestException(
+            'Cannot demote the last platform admin. Promote another user first.',
+          );
+        }
+      }
+
+      return tx.user.update({
+        where: { id },
+        data: { isPlatformAdmin: !user.isPlatformAdmin },
+        select: {
+          id: true,
+          email: true,
+          isPlatformAdmin: true,
+        },
+      });
     });
-
-    return updated;
   }
 
   async getAuditLogs({ orgId, entityType, limit, offset }: AuditLogParams) {

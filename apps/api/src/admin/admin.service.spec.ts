@@ -1,3 +1,11 @@
+const mockTx = {
+  user: {
+    findUnique: jest.fn(),
+    count: jest.fn(),
+    update: jest.fn(),
+  },
+};
+
 jest.mock('@trycompai/db', () => ({
   db: {
     organization: {
@@ -23,6 +31,7 @@ jest.mock('@trycompai/db', () => ({
       findMany: jest.fn(),
       count: jest.fn(),
     },
+    $transaction: jest.fn((fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx)),
   },
 }));
 
@@ -349,12 +358,16 @@ describe('AdminService', () => {
   });
 
   describe('togglePlatformAdmin', () => {
-    it('should toggle isPlatformAdmin from false to true', async () => {
-      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should toggle isPlatformAdmin from false to true in a transaction', async () => {
+      (mockTx.user.findUnique as jest.Mock).mockResolvedValue({
         id: 'usr_1',
         isPlatformAdmin: false,
       });
-      (mockDb.user.update as jest.Mock).mockResolvedValue({
+      (mockTx.user.update as jest.Mock).mockResolvedValue({
         id: 'usr_1',
         email: 'test@test.com',
         isPlatformAdmin: true,
@@ -363,7 +376,7 @@ describe('AdminService', () => {
       const result = await service.togglePlatformAdmin('usr_1');
 
       expect(result.isPlatformAdmin).toBe(true);
-      expect(mockDb.user.update).toHaveBeenCalledWith({
+      expect(mockTx.user.update).toHaveBeenCalledWith({
         where: { id: 'usr_1' },
         data: { isPlatformAdmin: true },
         select: { id: true, email: true, isPlatformAdmin: true },
@@ -371,12 +384,12 @@ describe('AdminService', () => {
     });
 
     it('should toggle isPlatformAdmin from true to false when multiple admins exist', async () => {
-      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({
+      (mockTx.user.findUnique as jest.Mock).mockResolvedValue({
         id: 'usr_1',
         isPlatformAdmin: true,
       });
-      (mockDb.user.count as jest.Mock).mockResolvedValue(2);
-      (mockDb.user.update as jest.Mock).mockResolvedValue({
+      (mockTx.user.count as jest.Mock).mockResolvedValue(2);
+      (mockTx.user.update as jest.Mock).mockResolvedValue({
         id: 'usr_1',
         email: 'test@test.com',
         isPlatformAdmin: false,
@@ -385,7 +398,7 @@ describe('AdminService', () => {
       const result = await service.togglePlatformAdmin('usr_1');
 
       expect(result.isPlatformAdmin).toBe(false);
-      expect(mockDb.user.update).toHaveBeenCalledWith({
+      expect(mockTx.user.update).toHaveBeenCalledWith({
         where: { id: 'usr_1' },
         data: { isPlatformAdmin: false },
         select: { id: true, email: true, isPlatformAdmin: true },
@@ -393,20 +406,20 @@ describe('AdminService', () => {
     });
 
     it('should prevent demoting the last platform admin', async () => {
-      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({
+      (mockTx.user.findUnique as jest.Mock).mockResolvedValue({
         id: 'usr_1',
         isPlatformAdmin: true,
       });
-      (mockDb.user.count as jest.Mock).mockResolvedValue(1);
+      (mockTx.user.count as jest.Mock).mockResolvedValue(1);
 
       await expect(service.togglePlatformAdmin('usr_1')).rejects.toThrow(
         'Cannot demote the last platform admin',
       );
-      expect(mockDb.user.update).not.toHaveBeenCalled();
+      expect(mockTx.user.update).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when user not found', async () => {
-      (mockDb.user.findUnique as jest.Mock).mockResolvedValue(null);
+      (mockTx.user.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.togglePlatformAdmin('usr_nonexistent'),
