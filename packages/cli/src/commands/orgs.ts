@@ -1,5 +1,5 @@
 import { adminFetch } from '../client';
-import { extractFlag, output } from '../utils';
+import { extractFlag, output, die } from '../utils';
 
 export async function orgsCommand(args: string[]): Promise<void> {
   const sub = args[0];
