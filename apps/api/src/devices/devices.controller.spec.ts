@@ -34,7 +34,9 @@ describe('DevicesController', () => {
     userEmail: 'user@example.com',
     organizationId: 'org_1',
     memberId: 'mem_1',
-    permissions: [],
+    isApiKey: false,
+    isPlatformAdmin: false,
+    userRoles: [],
   };
 
   beforeEach(async () => {
@@ -92,8 +94,10 @@ describe('DevicesController', () => {
       const authContextNoUser: AuthContextType = {
         authType: 'api-key' as const,
         organizationId: 'org_1',
-        permissions: [],
-      } as AuthContextType;
+        isApiKey: true,
+        isPlatformAdmin: false,
+        userRoles: null,
+      };
 
       const result = await controller.getAllDevices('org_1', authContextNoUser);
 
@@ -154,8 +158,10 @@ describe('DevicesController', () => {
       const authContextNoUser: AuthContextType = {
         authType: 'api-key' as const,
         organizationId: 'org_1',
-        permissions: [],
-      } as AuthContextType;
+        isApiKey: true,
+        isPlatformAdmin: false,
+        userRoles: null,
+      };
 
       const result = await controller.getDevicesByMember(
         'mem_1',

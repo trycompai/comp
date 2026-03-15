@@ -247,7 +247,7 @@ describe('TasksController', () => {
         ...authContext,
         userId: undefined as unknown as string,
         isApiKey: true,
-        authType: 'apiKey',
+        authType: 'api-key',
       };
       mockTasksService.getApiKeyActorUserId.mockResolvedValue('usr_api');
       mockTasksService.updateTasksStatus.mockResolvedValue({
@@ -608,7 +608,7 @@ describe('TasksController', () => {
         ...authContext,
         userId: undefined as unknown as string,
         isApiKey: true,
-        authType: 'apiKey',
+        authType: 'api-key',
       };
       mockTasksService.getApiKeyActorUserId.mockResolvedValue('usr_api');
       mockTasksService.updateTask.mockResolvedValue({ id: 'tsk_1' });
@@ -817,7 +817,7 @@ describe('TasksController', () => {
       const apiKeyAuth: AuthContext = {
         ...authContext,
         isApiKey: true,
-        authType: 'apiKey',
+        authType: 'api-key',
       };
       mockTasksService.verifyTaskAccess.mockResolvedValue(undefined);
 
@@ -832,7 +832,7 @@ describe('TasksController', () => {
       const apiKeyAuth: AuthContext = {
         ...authContext,
         isApiKey: true,
-        authType: 'apiKey',
+        authType: 'api-key',
       };
       const uploadDto = {
         fileName: 'file.pdf',

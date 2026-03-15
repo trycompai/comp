@@ -110,7 +110,12 @@ async function getSession(options: { headers: ReadonlyHeaders | Headers }): Prom
     return data as Session;
   } catch (error) {
     if (IS_DEVELOPMENT) {
-      console.error('[auth] Failed to get session:', error);
+      const code = (error as NodeJS.ErrnoException)?.cause?.['code'];
+      if (code === 'ECONNREFUSED') {
+        console.warn('[auth] API not ready yet — session check skipped');
+      } else {
+        console.error('[auth] Failed to get session:', error);
+      }
     }
     return null;
   }

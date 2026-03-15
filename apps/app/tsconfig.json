@@ -107,12 +107,6 @@
       ],
       "@trycompai/tsconfig/*": [
         "../../packages/tsconfig/*"
-      ],
-      "@trycompai/email": [
-        "../../packages/email/index.ts"
-      ],
-      "@trycompai/email/*": [
-        "../../packages/email/*"
       ]
     }
   },

@@ -39,15 +39,15 @@ describeIfEnabled('Maced provider contract canary (e2e)', () => {
     expect(Number.isNaN(Date.parse(run.updatedAt))).toBe(false);
 
     if (run.repoUrl) {
-      expect(() => new URL(run.repoUrl)).not.toThrow();
+      expect(() => new URL(run.repoUrl!)).not.toThrow();
     }
 
     if (run.temporalUiUrl) {
-      expect(() => new URL(run.temporalUiUrl)).not.toThrow();
+      expect(() => new URL(run.temporalUiUrl!)).not.toThrow();
     }
 
     if (run.webhookUrl) {
-      expect(() => new URL(run.webhookUrl)).not.toThrow();
+      expect(() => new URL(run.webhookUrl!)).not.toThrow();
     }
   };
 

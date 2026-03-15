@@ -28,9 +28,27 @@ apps/
   portal/       # Employee portal
 packages/
   auth/         # RBAC definitions (permissions.ts) — single source of truth
+  cli/          # Admin CLI (`comp`) — wraps admin API for platform ops
   db/           # Prisma schema + client
   ui/           # Legacy component library (being phased out)
 ```
+
+## Admin CLI (`packages/cli`)
+
+Thin Bun CLI for platform admin operations. Wraps the Admin API (`/v1/admin/*`). Use the `/comp-admin-cli` skill when adding commands or endpoints.
+
+```bash
+bun run cli:install                    # symlinks `comp` globally via bun link
+comp init --local                      # configure environment
+comp login                             # authenticate via browser OAuth
+comp stats                             # test connection
+comp users search --email someone@     # search users
+```
+
+- **Auth:** OAuth via browser → better-auth session token (1-hour TTL) stored in `~/.comprc`
+- **Guard:** `PlatformAdminGuard` — checks `isPlatformAdmin` on the user record (separate from org-scoped RBAC)
+- **Tests:** API tests with Jest (`apps/api/src/admin/`), CLI tests with `bun test` (`packages/cli/`)
+- **Callback relay:** `apps/app/src/app/api/cli/callback/route.ts` — bridges OAuth cookie to CLI's local server
 
 ## Authentication & Session
 

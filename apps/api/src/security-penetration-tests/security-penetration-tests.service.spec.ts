@@ -737,7 +737,9 @@ describe('SecurityPenetrationTestsService', () => {
 
   it('throws when MACED API key is missing', async () => {
     process.env.MACED_API_KEY = '';
-    const serviceWithoutKey = new SecurityPenetrationTestsService();
+    const serviceWithoutKey = new SecurityPenetrationTestsService(
+      mockCredentialVaultService as unknown as CredentialVaultService,
+    );
 
     await expect(serviceWithoutKey.listReports('org_123')).rejects.toThrow(
       'Maced API key not configured on server',
