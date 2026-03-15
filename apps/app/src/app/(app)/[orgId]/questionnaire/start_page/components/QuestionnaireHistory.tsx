@@ -1,9 +1,9 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { Card } from '@comp/ui';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
+import { Card } from '@trycompai/ui';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,

@@ -1,8 +1,8 @@
 import { getInitials } from '@/lib/utils';
 import { serverApi } from '@/lib/api-server';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { ScrollArea } from '@comp/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
 import Link from 'next/link';
 
 interface RiskStatByAssignee {

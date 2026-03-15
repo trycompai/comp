@@ -1,7 +1,7 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import { evidenceFormDefinitionList } from '@comp/company';
+import { evidenceFormDefinitionList } from '@trycompai/company';
 import type { Device, EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
 import { Accordion, Button, Card, CardContent } from '@trycompai/design-system';
 import { CheckmarkFilled } from '@trycompai/design-system/icons';

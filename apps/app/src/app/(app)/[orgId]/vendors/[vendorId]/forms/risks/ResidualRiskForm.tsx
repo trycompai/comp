@@ -2,10 +2,10 @@
 
 import { usePermissions } from '@/hooks/use-permissions';
 import { useVendorActions } from '@/hooks/use-vendors';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { Select, SelectItem, Stack } from '@trycompai/design-system';
 import { useState } from 'react';
 import { useQueryState } from 'nuqs';

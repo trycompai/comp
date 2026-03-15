@@ -2,10 +2,10 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useTaskMutations } from '@/hooks/use-task-mutations';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
 import type { Member, Task, User } from '@db';
 import { TaskStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';

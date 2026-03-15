@@ -1,9 +1,9 @@
 'use client';
 
-import { useMediaQuery } from '@comp/ui/hooks';
-import { Sheet, SheetContent } from '@comp/ui/sheet';
+import { useMediaQuery } from '@trycompai/ui/hooks';
+import { Sheet, SheetContent } from '@trycompai/ui/sheet';
 
-import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
+import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
 import '@/styles/editor.css';
 import { useQueryState } from 'nuqs';
 import Chat from '../ai/chat';

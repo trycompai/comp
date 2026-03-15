@@ -6,7 +6,7 @@ import {
   Switch,
   Text,
 } from '@trycompai/design-system';
-import { statement } from '@comp/auth';
+import { statement } from '@trycompai/auth';
 
 /** Access toggles — binary on/off permissions shown as switches above the matrix */
 const ACCESS_TOGGLES = [
@@ -55,7 +55,7 @@ const RESOURCE_SECTIONS: Array<{ label: string; keys: string[] }> = [
 ];
 
 /**
- * Resources available for permission assignment — derived from @comp/auth statement.
+ * Resources available for permission assignment — derived from @trycompai/auth statement.
  * Only includes resources that have a UI label (excludes internal ones like 'ac', 'team', 'app').
  */
 const RESOURCES = Object.keys(RESOURCE_LABELS)
@@ -82,7 +82,7 @@ type AccessLevel = 'none' | 'view' | 'edit';
 
 /**
  * Maps access levels to the actual permission actions for each resource.
- * Derived from the @comp/auth statement (single source of truth).
+ * Derived from the @trycompai/auth statement (single source of truth).
  * - view = ['read']
  * - edit = all actions the resource supports
  */

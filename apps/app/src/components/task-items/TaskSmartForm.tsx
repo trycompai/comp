@@ -2,16 +2,16 @@
 
 import { useOptimisticTaskItems } from '@/hooks/use-task-items';
 import { useAssignableMembers } from '@/hooks/use-organization-members';
-import { Button } from '@comp/ui/button';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
+import { Button } from '@trycompai/ui/button';
+import { Input } from '@trycompai/ui/input';
+import { Label } from '@trycompai/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@comp/ui/select';
+} from '@trycompai/ui/select';
 import type {
   TaskItemEntityType,
   TaskItemFilters,

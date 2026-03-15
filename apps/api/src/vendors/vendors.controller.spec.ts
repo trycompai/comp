@@ -12,7 +12,7 @@ jest.mock('../auth/auth.server', () => ({
   },
 }));
 
-jest.mock('@comp/auth', () => ({
+jest.mock('@trycompai/auth', () => ({
   statement: {
     vendor: ['create', 'read', 'update', 'delete'],
   },

@@ -10,7 +10,7 @@ import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { useDataTable } from '@/hooks/use-data-table';
 import { apiClient } from '@/lib/api-client';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import type { Policy } from '@db';
 import { useParams } from 'next/navigation';
 import { getPolicyColumns } from './policies-table-columns';

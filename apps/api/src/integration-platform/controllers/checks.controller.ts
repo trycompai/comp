@@ -17,7 +17,7 @@ import {
   getManifest,
   getAvailableChecks,
   runAllChecks,
-} from '@comp/integration-platform';
+} from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { ProviderRepository } from '../repositories/provider.repository';

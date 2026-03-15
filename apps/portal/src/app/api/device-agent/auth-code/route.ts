@@ -1,5 +1,5 @@
 import { auth } from '@/app/lib/auth';
-import { client as kv } from '@comp/kv';
+import { client as kv } from '@trycompai/kv';
 import { randomBytes } from 'crypto';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';

@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { Shield } from 'lucide-react';
 import { useMemo } from 'react';
 import { parseVendorRiskAssessmentDescription } from './parse-vendor-risk-assessment-description';

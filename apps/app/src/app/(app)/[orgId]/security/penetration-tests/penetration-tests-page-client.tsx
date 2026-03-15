@@ -1,7 +1,7 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { Badge } from '@trycompai/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -9,16 +9,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
+} from '@trycompai/ui/dialog';
+import { Input } from '@trycompai/ui/input';
+import { Label } from '@trycompai/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@comp/ui/select';
+} from '@trycompai/ui/select';
 import {
   Table,
   TableBody,
@@ -26,7 +26,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@comp/ui/table';
+} from '@trycompai/ui/table';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';

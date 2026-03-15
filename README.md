@@ -344,10 +344,10 @@ Steps to deploy Comp AI on Vercel are coming soon.
 
 This repository uses semantic-release to automatically publish packages to npm when merging to the `release` branch. The following packages are published:
 
-- `@comp/db` - Database utilities with Prisma client
-- `@comp/email` - Email templates and components
-- `@comp/kv` - Key-value store utilities using Upstash Redis
-- `@comp/ui` - UI component library with Tailwind CSS
+- `@trycompai/db` - Database utilities with Prisma client
+- `@trycompai/email` - Email templates and components
+- `@trycompai/kv` - Key-value store utilities using Upstash Redis
+- `@trycompai/ui` - UI component library with Tailwind CSS
 
 ### Setup
 
@@ -359,11 +359,11 @@ This repository uses semantic-release to automatically publish packages to npm w
 
 ```bash
 # Install a published package
-npm install @comp/ui
+npm install @trycompai/ui
 
 # Use in your project
-import { Button } from '@comp/ui/button'
-import { client } from '@comp/kv'
+import { Button } from '@trycompai/ui/button'
+import { client } from '@trycompai/kv'
 ```
 
 ### Development
@@ -373,7 +373,7 @@ import { client } from '@comp/kv'
 bun run build
 
 # Build specific package
-bun run -F @comp/ui build
+bun run -F @trycompai/ui build
 
 # Test packages locally
 bun run release:packages --dry-run

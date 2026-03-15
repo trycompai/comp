@@ -7,8 +7,8 @@ import type { TaskIntegrationCheck, StoredCheckRun } from '../hooks/useIntegrati
 import { useIntegrationChecks } from '../hooks/useIntegrationChecks';
 import { cn } from '@/lib/utils';
 import { useActiveOrganization } from '@/utils/auth-client';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
 import { addDays, formatDistanceToNow, isBefore, setHours, setMinutes } from 'date-fns';
 import {
   AlertCircle,

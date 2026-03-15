@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 import { Check } from 'lucide-react';
 
 interface SelectionIndicatorProps {

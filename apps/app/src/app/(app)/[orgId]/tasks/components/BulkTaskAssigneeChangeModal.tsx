@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,10 +9,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Label } from '@comp/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@comp/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
+} from '@trycompai/ui/dialog';
+import { Label } from '@trycompai/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@trycompai/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
 import { Member, User } from '@db';
 import { Loader2, UserIcon } from 'lucide-react';
 import { toast } from 'sonner';

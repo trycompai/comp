@@ -13,7 +13,7 @@ import { ApiTags, ApiSecurity } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
-import { getManifest, type CheckVariable } from '@comp/integration-platform';
+import { getManifest, type CheckVariable } from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';

@@ -16,7 +16,7 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { db } from '@db';
-import { validateIntegrationDefinition } from '@comp/integration-platform';
+import { validateIntegrationDefinition } from '@trycompai/integration-platform';
 
 async function main() {
   const filePath = process.argv[2];

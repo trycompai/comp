@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { SelectPills } from '@comp/ui/select-pills';
+import { SelectPills } from '@trycompai/ui/select-pills';
 import type { Control } from '@db';
 import { Section } from '@trycompai/design-system';
 import { useParams } from 'next/navigation';

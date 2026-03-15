@@ -1,7 +1,7 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Badge } from '@comp/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { Badge } from '@trycompai/ui/badge';
 import { VendorStatus } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';

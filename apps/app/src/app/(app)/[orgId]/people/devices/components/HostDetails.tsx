@@ -1,5 +1,5 @@
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import type { Host } from '../types';
 import { PolicyItem } from './PolicyItem';

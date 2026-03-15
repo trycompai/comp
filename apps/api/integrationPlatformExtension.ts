@@ -8,12 +8,12 @@ import { existsSync } from 'node:fs';
 import { cp, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
-const PACKAGE_NAME = '@comp/integration-platform';
+const PACKAGE_NAME = '@trycompai/integration-platform';
 
 /**
- * Custom Trigger.dev build extension for @comp/integration-platform workspace package.
+ * Custom Trigger.dev build extension for @trycompai/integration-platform workspace package.
  *
- * Since @comp/integration-platform is a workspace package (not published to npm),
+ * Since @trycompai/integration-platform is a workspace package (not published to npm),
  * we need to:
  * 1. Add an esbuild plugin to resolve the import path during build
  * 2. Copy the built dist files into the trigger.dev deployment
@@ -57,7 +57,7 @@ class IntegrationPlatformExtension implements BuildExtension {
           };
         });
 
-        // Resolve subpath imports like @comp/integration-platform/types
+        // Resolve subpath imports like @trycompai/integration-platform/types
         build.onResolve(
           { filter: /^@comp\/integration-platform\// },
           (args) => {
@@ -88,7 +88,7 @@ class IntegrationPlatformExtension implements BuildExtension {
     // Copy the entire dist to the build output
     const destPath = resolve(
       manifest.outputPath,
-      'node_modules/@comp/integration-platform',
+      'node_modules/@trycompai/integration-platform',
     );
     const destDistPath = resolve(destPath, 'dist');
 
@@ -104,7 +104,7 @@ class IntegrationPlatformExtension implements BuildExtension {
     }
 
     context.logger.log(
-      'Copied @comp/integration-platform to deployment bundle',
+      'Copied @trycompai/integration-platform to deployment bundle',
     );
   }
 

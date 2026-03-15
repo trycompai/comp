@@ -6,13 +6,13 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@comp/ui/breadcrumb';
+} from '@trycompai/ui/breadcrumb';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
+} from '@trycompai/ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import React from 'react';

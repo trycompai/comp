@@ -19,7 +19,7 @@ bunx <cmd>           # Execute binary
 
 ## Components
 
-**Use `@trycompai/design-system` first**, `@comp/ui` only as fallback.
+**Use `@trycompai/design-system` first**, `@trycompai/ui` only as fallback.
 
 ```tsx
 // ✅ Design system
@@ -27,7 +27,7 @@ import { Button, Card, Input, Select } from '@trycompai/design-system';
 import { Add, Close } from '@trycompai/design-system/icons';
 
 // ❌ Don't use when DS has the component
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { Plus } from 'lucide-react';
 ```
 

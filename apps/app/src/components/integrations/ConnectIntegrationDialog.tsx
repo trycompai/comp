@@ -7,15 +7,15 @@ import {
   useIntegrationProviders,
 } from '@/hooks/use-integration-platform';
 import { usePermissions } from '@/hooks/use-permissions';
-import { ComboboxDropdown } from '@comp/ui/combobox-dropdown';
+import { ComboboxDropdown } from '@trycompai/ui/combobox-dropdown';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import MultipleSelector from '@comp/ui/multiple-selector';
+} from '@trycompai/ui/dialog';
+import MultipleSelector from '@trycompai/ui/multiple-selector';
 import {
   Button,
   Input,

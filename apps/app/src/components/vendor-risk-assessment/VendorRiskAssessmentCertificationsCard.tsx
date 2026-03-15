@@ -1,9 +1,9 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@comp/ui/collapsible';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@trycompai/ui/collapsible';
 import { Clock, ExternalLink, Shield, ShieldCheck, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { filterCertifications } from './filter-certifications';

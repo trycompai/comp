@@ -80,8 +80,8 @@ vi.mock('@/hooks/use-integration-platform', () => ({
   }),
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/button', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({
     children,
     onClick,
@@ -107,11 +107,11 @@ vi.mock('@comp/ui/button', () => ({
   ),
 }));
 
-vi.mock('@comp/ui/combobox-dropdown', () => ({
+vi.mock('@trycompai/ui/combobox-dropdown', () => ({
   ComboboxDropdown: () => <div data-testid="combobox" />,
 }));
 
-vi.mock('@comp/ui/dialog', () => ({
+vi.mock('@trycompai/ui/dialog', () => ({
   Dialog: ({
     children,
     open,
@@ -139,11 +139,11 @@ vi.mock('@comp/ui/dialog', () => ({
   }) => <h2>{children}</h2>,
 }));
 
-vi.mock('@comp/ui/input', () => ({
+vi.mock('@trycompai/ui/input', () => ({
   Input: (props: Record<string, unknown>) => <input {...props} />,
 }));
 
-vi.mock('@comp/ui/label', () => ({
+vi.mock('@trycompai/ui/label', () => ({
   Label: ({
     children,
   }: {
@@ -152,11 +152,11 @@ vi.mock('@comp/ui/label', () => ({
   }) => <label>{children}</label>,
 }));
 
-vi.mock('@comp/ui/multiple-selector', () => ({
+vi.mock('@trycompai/ui/multiple-selector', () => ({
   default: () => <div data-testid="multi-selector" />,
 }));
 
-vi.mock('@comp/ui/select', () => ({
+vi.mock('@trycompai/ui/select', () => ({
   Select: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -172,7 +172,7 @@ vi.mock('@comp/ui/select', () => ({
   SelectValue: () => <span />,
 }));
 
-vi.mock('@comp/ui/textarea', () => ({
+vi.mock('@trycompai/ui/textarea', () => ({
   Textarea: (props: Record<string, unknown>) => <textarea {...props} />,
 }));
 

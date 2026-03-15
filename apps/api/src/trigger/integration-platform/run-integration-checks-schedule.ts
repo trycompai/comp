@@ -1,4 +1,4 @@
-import { getManifest } from '@comp/integration-platform';
+import { getManifest } from '@trycompai/integration-platform';
 import { db } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runTaskIntegrationChecks } from './run-task-integration-checks';

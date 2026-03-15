@@ -2,7 +2,7 @@ import {
   evidenceFormDefinitionList,
   meetingSubTypeValues,
   toDbEvidenceFormType,
-} from '@comp/company';
+} from '@trycompai/company';
 import { db } from '@trycompai/db';
 import { filterComplianceMembers } from '../utils/compliance-filters';
 

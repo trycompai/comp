@@ -1,7 +1,7 @@
 'use client';
 
-import { cn } from '@comp/ui/cn';
-import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
+import { cn } from '@trycompai/ui/cn';
+import { Table, TableBody, TableCell, TableRow } from '@trycompai/ui/table';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { type RiskRegisterType, useColumns as getColumns } from './columns';
 import { DataTableHeader } from './data-table-header';

@@ -1,9 +1,9 @@
 'use client';
 
 import type { OrganizationFromMe } from '@/types';
-import { Button } from '@comp/ui/button';
-import { Icons } from '@comp/ui/icons';
-import { Sheet, SheetContent } from '@comp/ui/sheet';
+import { Button } from '@trycompai/ui/button';
+import { Icons } from '@trycompai/ui/icons';
+import { Sheet, SheetContent } from '@trycompai/ui/sheet';
 import { useState } from 'react';
 import { MainMenu } from './main-menu';
 import { OrganizationSwitcher } from './organization-switcher';

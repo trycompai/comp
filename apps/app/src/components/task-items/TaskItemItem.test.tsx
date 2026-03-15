@@ -60,14 +60,14 @@ vi.mock('date-fns', () => ({
   format: () => 'Jan 1',
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/avatar', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/avatar', () => ({
   Avatar: ({ children, ...props }: { children: React.ReactNode }) => <div {...props}>{children}</div>,
   AvatarFallback: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
   AvatarImage: () => null,
 }));
 
-vi.mock('@comp/ui/button', () => ({
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({
     children,
     onClick,
@@ -89,7 +89,7 @@ vi.mock('@comp/ui/button', () => ({
   ),
 }));
 
-vi.mock('@comp/ui/dialog', () => ({
+vi.mock('@trycompai/ui/dialog', () => ({
   Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
     open ? <div data-testid="dialog">{children}</div> : null,
   DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -99,7 +99,7 @@ vi.mock('@comp/ui/dialog', () => ({
   DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock('@comp/ui/dropdown-menu', () => ({
+vi.mock('@trycompai/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DropdownMenuItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -114,17 +114,17 @@ vi.mock('@comp/ui/dropdown-menu', () => ({
   }) => <div data-disabled={disabled}>{children}</div>,
 }));
 
-vi.mock('@comp/ui/input', () => ({
+vi.mock('@trycompai/ui/input', () => ({
   Input: (props: any) => <input {...props} />,
 }));
 
-vi.mock('@comp/ui/label', () => ({
+vi.mock('@trycompai/ui/label', () => ({
   Label: ({ children, ...props }: { children: React.ReactNode }) => (
     <label {...props}>{children}</label>
   ),
 }));
 
-vi.mock('@comp/ui/select', () => ({
+vi.mock('@trycompai/ui/select', () => ({
   Select: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -132,7 +132,7 @@ vi.mock('@comp/ui/select', () => ({
   SelectValue: () => null,
 }));
 
-vi.mock('@comp/ui/textarea', () => ({
+vi.mock('@trycompai/ui/textarea', () => ({
   Textarea: (props: any) => <textarea {...props} />,
 }));
 

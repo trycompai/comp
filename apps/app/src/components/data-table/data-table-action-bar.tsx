@@ -1,8 +1,8 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@comp/ui/tooltip';
+import { Button } from '@trycompai/ui/button';
+import { cn } from '@trycompai/ui/cn';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@trycompai/ui/tooltip';
 import type { Table } from '@tanstack/react-table';
 import { Loader } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';

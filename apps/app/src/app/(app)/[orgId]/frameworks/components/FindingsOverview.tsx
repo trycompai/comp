@@ -1,9 +1,9 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { ScrollArea } from '@comp/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
 import { Finding, FindingStatus } from '@db';
 import { ArrowRight, CheckCircle2, FileWarning } from 'lucide-react';
 import Link from 'next/link';

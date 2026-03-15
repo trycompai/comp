@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Checkbox } from '@comp/ui/checkbox';
+import { Button } from '@trycompai/ui/button';
+import { Checkbox } from '@trycompai/ui/checkbox';
 import { useState } from 'react';
 import { toast } from 'sonner';
 

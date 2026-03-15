@@ -1,12 +1,12 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
+} from '@trycompai/ui/dropdown-menu';
 import type { Control } from '@db';
 import { MoreVertical, Trash2 } from 'lucide-react';
 import { useState } from 'react';

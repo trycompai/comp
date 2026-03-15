@@ -1,4 +1,4 @@
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 import type { TaskStatus } from '@db';
 import { BadgeCheck, Circle, CircleDashed, Eye, Loader2, OctagonX } from 'lucide-react';
 

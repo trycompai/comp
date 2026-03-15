@@ -1,4 +1,4 @@
-import { client as kv } from '@comp/kv';
+import { client as kv } from '@trycompai/kv';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
