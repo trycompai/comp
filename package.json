@@ -80,6 +80,7 @@
     "prepare": "husky",
     "test": "turbo test --parallel",
     "test:release": "node scripts/test-release.js",
+    "cli:install": "cd packages/cli && bun link",
     "typecheck": "turbo typecheck",
     "typecheck:ci": "turbo typecheck --filter={apps/**} --filter={packages/**} --filter=!@trycompai/integrations --filter=!@trycompai/ui"
   },

@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import {
   CanActivate,
   ExecutionContext,
@@ -23,10 +24,33 @@ interface PlatformAdminRequest {
 export class PlatformAdminGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<PlatformAdminRequest>();
+    const authHeader = request.headers['authorization'];
+
+    // Check for INTERNAL_API_SECRET Bearer token (CLI / service auth)
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7);
+      const secret = process.env.INTERNAL_API_SECRET;
+
+      if (secret && token.length > 0) {
+        const tokenBuffer = Buffer.from(token);
+        const secretBuffer = Buffer.from(secret);
+
+        if (
+          tokenBuffer.length === secretBuffer.length &&
+          timingSafeEqual(tokenBuffer, secretBuffer)
+        ) {
+          request.userId = 'system-admin';
+          request.userEmail = 'admin@internal';
+          request.isPlatformAdmin = true;
+          return true;
+        }
+      }
+      // Don't return here — fall through to session-based auth
+      // since better-auth also uses Bearer tokens
+    }
 
     // Build headers for better-auth SDK
     const headers = new Headers();
-    const authHeader = request.headers['authorization'];
     if (authHeader) {
       headers.set('authorization', authHeader);
     }
