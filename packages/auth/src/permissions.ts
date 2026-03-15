@@ -42,6 +42,8 @@ export const statement = {
   pentest: ['create', 'read', 'delete'],
   // Training management
   training: ['read', 'update'],
+  // Portal self-service
+  portal: ['read', 'update'],
 } as const;
 
 export const ac = createAccessControl(statement);
@@ -77,6 +79,8 @@ export const owner = ac.newRole({
   pentest: ['create', 'read', 'delete'],
   // Training management
   training: ['read', 'update'],
+  // Portal self-service
+  portal: ['read', 'update'],
 });
 
 /**
@@ -110,6 +114,8 @@ export const admin = ac.newRole({
   pentest: ['create', 'read', 'delete'],
   // Training management
   training: ['read', 'update'],
+  // Portal self-service
+  portal: ['read', 'update'],
 });
 
 /**
@@ -147,6 +153,7 @@ export const auditor = ac.newRole({
 export const employee = ac.newRole({
   // Portal access only — can read policies to sign them
   policy: ['read'],
+  portal: ['read', 'update'],
 });
 
 /**
@@ -157,6 +164,7 @@ export const employee = ac.newRole({
 export const contractor = ac.newRole({
   // Portal access only — can read policies to sign them
   policy: ['read'],
+  portal: ['read', 'update'],
 });
 
 /**

@@ -2,6 +2,7 @@ import {
   evidenceFormDefinitionList,
   meetingSubTypeValues,
   toDbEvidenceFormType,
+  toExternalEvidenceFormType,
 } from '@comp/company';
 import { db } from '@trycompai/db';
 import { filterComplianceMembers } from '../utils/compliance-filters';
@@ -142,7 +143,7 @@ async function computeDocumentsScore(organizationId: string) {
 }
 
 async function getOrganizationFindings(organizationId: string) {
-  return db.finding.findMany({
+  const findings = await db.finding.findMany({
     where: { organizationId },
     include: {
       task: { select: { id: true, title: true } },
@@ -150,6 +151,19 @@ async function getOrganizationFindings(organizationId: string) {
     },
     orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
   });
+
+  return findings.map((finding) => ({
+    ...finding,
+    evidenceFormType: toExternalEvidenceFormType(finding.evidenceFormType),
+    evidenceSubmission: finding.evidenceSubmission
+      ? {
+          ...finding.evidenceSubmission,
+          formType:
+            toExternalEvidenceFormType(finding.evidenceSubmission.formType) ??
+            'meeting',
+        }
+      : null,
+  }));
 }
 
 export async function getCurrentMember(

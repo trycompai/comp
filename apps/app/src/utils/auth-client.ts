@@ -10,20 +10,15 @@ import { ac, allRoles } from './permissions';
 /**
  * Auth client for browser-side authentication.
  *
- * This client uses the app's own URL as the base, which routes through the
- * auth proxy at /api/auth/[...all]. This ensures cookies are set for the
- * correct domain (the app's domain).
+ * Points directly to the API server. Cross-subdomain cookies (.trycomp.ai)
+ * ensure the session works across all apps (app, portal, etc.).
  *
  * For server-side session validation, use auth.ts instead.
  *
  * SECURITY NOTE: Authentication is handled via httpOnly cookies set by the API.
  * We do not store tokens in localStorage to prevent XSS attacks.
  */
-
-// Use empty string for relative URLs - this makes all auth requests go through
-// the app's own /api/auth/* routes, which proxy to the API server.
-// This ensures cookies are set for the app's domain, not the API's domain.
-const BASE_URL = '';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
 export const authClient = createAuthClient({
   baseURL: BASE_URL,

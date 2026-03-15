@@ -281,6 +281,7 @@ export class PeopleService {
 
       const updatedMember = await MemberQueries.updateMember(
         memberId,
+        organizationId,
         updateData,
       );
 
@@ -345,7 +346,7 @@ export class PeopleService {
     await removeMemberFromOrgChart({ organizationId, memberId });
 
     await db.member.update({
-      where: { id: memberId },
+      where: { id: memberId, organizationId },
       data: { deactivated: true, isActive: false },
     });
 
@@ -404,7 +405,7 @@ export class PeopleService {
     }
 
     return db.member.update({
-      where: { id: memberId },
+      where: { id: memberId, organizationId },
       data: { deactivated: false, isActive: true },
       select: MemberQueries.MEMBER_SELECT,
     });
@@ -472,7 +473,7 @@ export class PeopleService {
         );
       }
 
-      const updatedMember = await MemberQueries.unlinkDevice(memberId);
+      const updatedMember = await MemberQueries.unlinkDevice(memberId, organizationId);
 
       this.logger.log(
         `Unlinked device for member: ${updatedMember.user.name} (${memberId})`,

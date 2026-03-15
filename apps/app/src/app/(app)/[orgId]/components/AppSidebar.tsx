@@ -103,12 +103,6 @@ export function AppSidebar({
       name: 'Cloud Tests',
       hidden: !canAccessRoute(permissions, 'cloud-tests'),
     },
-    {
-      id: 'penetration-tests',
-      path: `/${organization.id}/security/penetration-tests`,
-      name: 'Penetration Tests',
-      hidden: !canAccessRoute(permissions, 'penetration-tests'),
-    },
   ];
 
   const isPathActive = (itemPath: string) => {

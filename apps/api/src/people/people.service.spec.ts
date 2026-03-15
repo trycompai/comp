@@ -241,6 +241,7 @@ describe('PeopleService', () => {
       expect(result).toEqual(updatedMember);
       expect(MemberQueries.updateMember).toHaveBeenCalledWith(
         'mem_1',
+        'org_123',
         updateData,
       );
     });
@@ -333,7 +334,7 @@ describe('PeopleService', () => {
       expect(result.success).toBe(true);
       expect(result.deletedMember.id).toBe('mem_1');
       expect(db.member.update).toHaveBeenCalledWith({
-        where: { id: 'mem_1' },
+        where: { id: 'mem_1', organizationId: 'org_123' },
         data: { deactivated: true, isActive: false },
       });
       expect(db.session.deleteMany).toHaveBeenCalledWith({
@@ -440,6 +441,10 @@ describe('PeopleService', () => {
 
       expect(result.fleetDmLabelId).toBeNull();
       expect(fleetService.removeHostsByLabel).toHaveBeenCalledWith(42);
+      expect(MemberQueries.unlinkDevice).toHaveBeenCalledWith(
+        'mem_1',
+        'org_123',
+      );
     });
 
     it('should skip fleet removal when no label exists', async () => {
