@@ -65,8 +65,8 @@ vi.mock('@db', () => ({
   },
 }));
 
-// Mock @comp/ui/button
-vi.mock('@comp/ui/button', () => ({
+// Mock @trycompai/ui/button
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
 }));
 

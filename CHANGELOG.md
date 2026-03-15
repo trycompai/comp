@@ -176,7 +176,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 * feat(rbac): add shared auth package and API integration
 
-- Add @comp/auth package with centralized permissions and role definitions
+- Add @trycompai/auth package with centralized permissions and role definitions
 - Update API auth module to integrate with better-auth server
 - Add 403 responses to policy and risk endpoints for Swagger
 - Add assignment filter and department visibility utilities with tests
@@ -603,7 +603,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 * feat(rbac): add shared auth package and API integration
 
-- Add @comp/auth package with centralized permissions and role definitions
+- Add @trycompai/auth package with centralized permissions and role definitions
 - Update API auth module to integrate with better-auth server
 - Add 403 responses to policy and risk endpoints for Swagger
 - Add assignment filter and department visibility utilities with tests
@@ -1056,7 +1056,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
 ### Bug Fixes
 
-* **api:** add @comp/company package to Dockerfile ([#2148](https://github.com/trycompai/comp/issues/2148)) ([d91bcaa](https://github.com/trycompai/comp/commit/d91bcaa5a92557a1b47a12ec6b396715744fca7f))
+* **api:** add @trycompai/company package to Dockerfile ([#2148](https://github.com/trycompai/comp/issues/2148)) ([d91bcaa](https://github.com/trycompai/comp/commit/d91bcaa5a92557a1b47a12ec6b396715744fca7f))
 * **api:** inline mergeDeviceLists to fix production runtime crash ([#2146](https://github.com/trycompai/comp/issues/2146)) ([04ef343](https://github.com/trycompai/comp/commit/04ef343011defa91609ba9ba69b85776063198db))
 
 ## [1.83.1](https://github.com/trycompai/comp/compare/v1.83.0...v1.83.1) (2026-02-17)

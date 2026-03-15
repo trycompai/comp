@@ -1,10 +1,10 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
-import { Form, FormControl, FormField, FormItem } from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
+import { Button } from '@trycompai/ui/button';
+import { cn } from '@trycompai/ui/cn';
+import { Form, FormControl, FormField, FormItem } from '@trycompai/ui/form';
+import { Input } from '@trycompai/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Spinner } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';

@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent } from '@comp/ui/dialog';
+import { Dialog, DialogContent } from '@trycompai/ui/dialog';
 import { AlertCircle, Bug, CheckCircle2, Loader2, Sparkles, Terminal } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { TestResult } from '../types';

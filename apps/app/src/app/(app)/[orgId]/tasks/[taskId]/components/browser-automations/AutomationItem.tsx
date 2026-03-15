@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { ChevronDown, Loader2, MonitorPlay, Settings } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { BrowserAutomation, BrowserAutomationRun } from '../../hooks/types';

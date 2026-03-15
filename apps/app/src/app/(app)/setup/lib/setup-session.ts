@@ -1,6 +1,6 @@
 'use server';
 
-import { client } from '@comp/kv';
+import { client } from '@trycompai/kv';
 
 // Generate URL-safe unique IDs using Math.random and Date.now
 const generateSetupId = (): string => {

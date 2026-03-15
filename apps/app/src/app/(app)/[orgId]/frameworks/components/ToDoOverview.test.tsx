@@ -30,8 +30,8 @@ vi.mock('next/link', () => ({
   default: ({ children, href }: any) => <a href={href}>{children}</a>,
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/button', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({ children, disabled, asChild, ...props }: any) => (
     <button disabled={disabled} {...props}>
       {children}
@@ -39,18 +39,18 @@ vi.mock('@comp/ui/button', () => ({
   ),
 }));
 
-vi.mock('@comp/ui/card', () => ({
+vi.mock('@trycompai/ui/card', () => ({
   Card: ({ children }: any) => <div data-testid="card">{children}</div>,
   CardContent: ({ children }: any) => <div>{children}</div>,
   CardHeader: ({ children }: any) => <div>{children}</div>,
   CardTitle: ({ children }: any) => <h3>{children}</h3>,
 }));
 
-vi.mock('@comp/ui/scroll-area', () => ({
+vi.mock('@trycompai/ui/scroll-area', () => ({
   ScrollArea: ({ children }: any) => <div>{children}</div>,
 }));
 
-vi.mock('@comp/ui/tabs', () => ({
+vi.mock('@trycompai/ui/tabs', () => ({
   Tabs: ({ children, defaultValue }: any) => (
     <div data-testid="tabs" data-default={defaultValue}>
       {children}

@@ -16,8 +16,8 @@ vi.mock('@/hooks/use-permissions', () => ({
   }),
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/button', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({
     children,
     onClick,
@@ -40,7 +40,7 @@ vi.mock('@comp/ui/button', () => ({
   ),
 }));
 
-vi.mock('@comp/ui/checkbox', () => ({
+vi.mock('@trycompai/ui/checkbox', () => ({
   Checkbox: ({
     checked,
     onCheckedChange,

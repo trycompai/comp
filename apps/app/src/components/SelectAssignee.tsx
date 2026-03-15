@@ -1,6 +1,6 @@
 import { authClient } from '@/utils/auth-client';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@comp/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@trycompai/ui/select';
 import { Member, User } from '@db';
 import { UserIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';

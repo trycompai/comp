@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { RolesService } from './roles.service';
 
-// Mock @comp/auth to avoid ESM import issues with better-auth in Jest
-jest.mock('@comp/auth', () => {
+// Mock @trycompai/auth to avoid ESM import issues with better-auth in Jest
+jest.mock('@trycompai/auth', () => {
   const statement = {
     organization: ['read', 'update', 'delete'],
     member: ['create', 'read', 'update', 'delete'],

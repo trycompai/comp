@@ -4,7 +4,7 @@ import { parseRolesString } from '@/lib/permissions';
 import type { Role } from '@db';
 import * as React from 'react';
 
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
 import { MultiRoleComboboxContent } from './MultiRoleComboboxContent';
 import { MultiRoleComboboxTrigger } from './MultiRoleComboboxTrigger';
 

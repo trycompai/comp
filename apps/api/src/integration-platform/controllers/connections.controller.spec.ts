@@ -13,14 +13,14 @@ jest.mock('../../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
 
-jest.mock('@comp/auth', () => ({
+jest.mock('@trycompai/auth', () => ({
   statement: {
     integration: ['create', 'read', 'update', 'delete'],
   },
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));
 
-jest.mock('@comp/integration-platform', () => ({
+jest.mock('@trycompai/integration-platform', () => ({
   getManifest: jest.fn(),
   getAllManifests: jest.fn(),
   getActiveManifests: jest.fn(),
@@ -31,7 +31,7 @@ import {
   getManifest,
   getAllManifests,
   getActiveManifests,
-} from '@comp/integration-platform';
+} from '@trycompai/integration-platform';
 
 const mockedGetManifest = getManifest as jest.MockedFunction<
   typeof getManifest

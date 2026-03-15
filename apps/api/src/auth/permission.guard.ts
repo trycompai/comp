@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RESTRICTED_ROLES, PRIVILEGED_ROLES } from '@comp/auth';
+import { RESTRICTED_ROLES, PRIVILEGED_ROLES } from '@trycompai/auth';
 import { auth } from './auth.server';
 import { resolveServiceByName } from './service-token.config';
 import { AuthenticatedRequest } from './types';

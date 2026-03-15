@@ -1,5 +1,5 @@
 {
-  "name": "@comp/cli",
+  "name": "@trycompai/cli",
   "version": "1.0.0",
   "private": true,
   "bin": {

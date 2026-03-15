@@ -5,7 +5,7 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "paths": {
-      "@comp/app/*": ["../../apps/app/*"]
+      "@trycompai/app/*": ["../../apps/app/*"]
     }
   }
 }

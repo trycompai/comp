@@ -1,6 +1,6 @@
 'use client';
 
-import { Skeleton } from '@comp/ui/skeleton';
+import { Skeleton } from '@trycompai/ui/skeleton';
 import { Time, Locked } from '@trycompai/design-system/icons';
 
 /**

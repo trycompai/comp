@@ -1,4 +1,4 @@
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CarouselControlsProps {
