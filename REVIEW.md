@@ -19,7 +19,7 @@
 - Multi-step orchestration should use Next.js API routes (`apps/app/src/app/api/...`), not server actions
 
 ### Design System
-- New UI must use `@trycompai/design-system` components, not `@comp/ui` (legacy, being phased out)
+- New UI must use `@trycompai/design-system` components, not `@trycompai/ui` (legacy, being phased out)
 - Icons must come from `@trycompai/design-system/icons` (Carbon icons), not `lucide-react`
 - DS components `Text`, `Stack`, `HStack`, `Badge`, `Button` do not accept `className` — wrap in a `<div>` for custom styling
 - Use DS `Button` props like `loading`, `iconLeft`, `iconRight` instead of manually rendering spinners/icons inside buttons
@@ -49,7 +49,7 @@
 - No `useState` for form field values — use the form's state management
 
 ## Skip
-- Pre-existing `@comp/ui` usage in files not touched by the PR
+- Pre-existing `@trycompai/ui` usage in files not touched by the PR
 - Pre-existing `lucide-react` usage in files not touched by the PR
 - Pre-existing server actions in files not touched by the PR
 - Test files using simplified mock types

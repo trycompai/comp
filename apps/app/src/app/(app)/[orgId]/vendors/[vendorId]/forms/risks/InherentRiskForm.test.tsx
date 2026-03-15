@@ -34,8 +34,8 @@ vi.mock('nuqs', () => ({
   useQueryState: () => [null, vi.fn()],
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/button', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({ children, disabled, ...props }: any) => (
     <button disabled={disabled} {...props}>
       {children}
@@ -43,7 +43,7 @@ vi.mock('@comp/ui/button', () => ({
   ),
 }));
 
-vi.mock('@comp/ui/form', () => ({
+vi.mock('@trycompai/ui/form', () => ({
   Form: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   FormControl: ({ children }: any) => <div>{children}</div>,
   FormField: ({ render, name }: any) => (

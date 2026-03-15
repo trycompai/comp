@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Badge } from '@comp/ui/badge';
+import { Badge } from '@trycompai/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ChevronDown, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';

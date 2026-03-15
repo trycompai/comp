@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { Loader2, MonitorPlay, MonitorSmartphone, RefreshCw } from 'lucide-react';
 
 interface BrowserLiveViewProps {

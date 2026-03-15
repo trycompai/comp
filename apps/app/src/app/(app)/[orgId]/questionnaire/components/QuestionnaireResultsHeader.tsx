@@ -20,8 +20,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Button as CompButton } from '@comp/ui/button';
+} from '@trycompai/ui/dropdown-menu';
+import { Button as CompButton } from '@trycompai/ui/button';
 import {
   ChevronDown,
   Download,

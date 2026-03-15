@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@trycompai/design-system';
 import { ClipboardList, ExternalLink, Search } from 'lucide-react';
 import Link from 'next/link';

@@ -1,7 +1,7 @@
 'use client';
 
 import { SelectAssignee } from '@/components/SelectAssignee';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,9 +9,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Label } from '@comp/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+} from '@trycompai/ui/dialog';
+import { Label } from '@trycompai/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
 import { Member, TaskStatus, User } from '@db';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';

@@ -29,8 +29,8 @@ vi.mock('@/hooks/use-integration-platform', () => ({
   }),
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/button', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({
     children,
     onClick,
@@ -49,11 +49,11 @@ vi.mock('@comp/ui/button', () => ({
   ),
 }));
 
-vi.mock('@comp/ui/cn', () => ({
+vi.mock('@trycompai/ui/cn', () => ({
   cn: (...args: string[]) => args.filter(Boolean).join(' '),
 }));
 
-vi.mock('@comp/ui/dialog', () => ({
+vi.mock('@trycompai/ui/dialog', () => ({
   Dialog: ({
     children,
     open,
@@ -84,7 +84,7 @@ vi.mock('@comp/ui/dialog', () => ({
   ),
 }));
 
-vi.mock('@comp/ui/tabs', () => ({
+vi.mock('@trycompai/ui/tabs', () => ({
   Tabs: ({
     children,
   }: {

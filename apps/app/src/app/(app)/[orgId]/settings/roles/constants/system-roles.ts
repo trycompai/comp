@@ -1,4 +1,4 @@
-import { BUILT_IN_ROLE_PERMISSIONS } from '@comp/auth';
+import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
 
 export interface SystemRole {
   name: string;
@@ -35,7 +35,7 @@ export const SYSTEM_ROLES: SystemRole[] = [
 ];
 
 /**
- * Built-in role permissions — re-exported from @comp/auth (single source of truth).
+ * Built-in role permissions — re-exported from @trycompai/auth (single source of truth).
  * These are read-only and cannot be modified by users.
  */
 export const SYSTEM_ROLE_PERMISSIONS = BUILT_IN_ROLE_PERMISSIONS;

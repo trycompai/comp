@@ -3,9 +3,9 @@
 import type { Finding } from '@/hooks/use-findings-api';
 import { FINDING_TYPE_LABELS } from '@/hooks/use-findings-api';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -13,15 +13,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Textarea } from '@comp/ui/textarea';
+} from '@trycompai/ui/dropdown-menu';
+import { Textarea } from '@trycompai/ui/textarea';
 import { FindingStatus, FindingType } from '@db';
 import { formatDistanceToNow } from 'date-fns';
 import { ChevronDown, ChevronUp, MoreVertical, Trash2 } from 'lucide-react';

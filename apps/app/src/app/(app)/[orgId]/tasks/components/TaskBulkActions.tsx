@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { Pencil, X } from 'lucide-react';
 
 interface TaskBulkActionsProps {

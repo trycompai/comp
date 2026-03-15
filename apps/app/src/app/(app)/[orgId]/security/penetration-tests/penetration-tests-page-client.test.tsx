@@ -55,7 +55,7 @@ vi.mock('@/hooks/use-integration-platform', () => ({
   useIntegrationMutations: vi.fn().mockReturnValue({ startOAuth: startOAuthMock }),
 }));
 
-vi.mock('@comp/ui/select', () => ({
+vi.mock('@trycompai/ui/select', () => ({
   Select: ({ children, onValueChange }: { children: ReactNode; onValueChange?: (value: string) => void }) => (
     <div data-testid="github-repo-select">{children}</div>
   ),
@@ -67,15 +67,15 @@ vi.mock('@comp/ui/select', () => ({
   SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
 }));
 
-vi.mock('@comp/ui/input', () => ({
+vi.mock('@trycompai/ui/input', () => ({
   Input: (props: React.ComponentProps<'input'>) => <input {...props} />,
 }));
 
-vi.mock('@comp/ui/label', () => ({
+vi.mock('@trycompai/ui/label', () => ({
   Label: ({ children, ...props }: React.ComponentProps<'label'>) => <label {...props}>{children}</label>,
 }));
 
-vi.mock('@comp/ui/table', () => ({
+vi.mock('@trycompai/ui/table', () => ({
   Table: ({ children }: { children: ReactNode }) => <table>{children}</table>,
   TableBody: ({ children }: { children: ReactNode }) => <tbody>{children}</tbody>,
   TableCell: ({ children }: { children: ReactNode }) => <td>{children}</td>,
@@ -84,7 +84,7 @@ vi.mock('@comp/ui/table', () => ({
   TableRow: ({ children }: { children: ReactNode }) => <tr>{children}</tr>,
 }));
 
-vi.mock('@comp/ui/dialog', () => ({
+vi.mock('@trycompai/ui/dialog', () => ({
   Dialog: ({ children, open }: { children: ReactNode; open: boolean }) => (
     <div data-open={String(open)}>{children}</div>
   ),
@@ -95,7 +95,7 @@ vi.mock('@comp/ui/dialog', () => ({
   DialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
 }));
 
-vi.mock('@comp/ui/card', () => ({
+vi.mock('@trycompai/ui/card', () => ({
   Card: ({ children }: { children: ReactNode }) => <section>{children}</section>,
   CardContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   CardDescription: ({ children }: { children: ReactNode }) => <p>{children}</p>,
@@ -103,7 +103,7 @@ vi.mock('@comp/ui/card', () => ({
   CardTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
 }));
 
-vi.mock('@comp/ui/badge', () => ({
+vi.mock('@trycompai/ui/badge', () => ({
   Badge: ({ children }: { children: ReactNode }) => <span>{children}</span>,
 }));
 

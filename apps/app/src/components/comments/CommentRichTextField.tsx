@@ -1,8 +1,8 @@
 'use client';
 
 import '@/styles/editor.css';
-import { createMentionExtension, type MentionUser } from '@comp/ui/editor';
-import { defaultExtensions } from '@comp/ui/editor/extensions';
+import { createMentionExtension, type MentionUser } from '@trycompai/ui/editor';
+import { defaultExtensions } from '@trycompai/ui/editor/extensions';
 import type { JSONContent } from '@tiptap/react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import type { CSSProperties } from 'react';

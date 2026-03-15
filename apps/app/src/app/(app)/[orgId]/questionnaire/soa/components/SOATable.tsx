@@ -1,6 +1,6 @@
 'use client';
 
-import { Card } from '@comp/ui';
+import { Card } from '@trycompai/ui';
 import { Button } from '@trycompai/design-system';
 import { ChevronUp, ChevronDown } from '@trycompai/design-system/icons';
 import { SOATableRow } from './SOATableRow';

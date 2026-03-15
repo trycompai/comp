@@ -6,7 +6,7 @@
 
 import * as React from 'react';
 
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 import { type TargetAndTransition, motion } from 'motion/react';
 
 interface Dimensions extends TargetAndTransition {

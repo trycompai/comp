@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Card, CardContent } from '@comp/ui/card';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent } from '@trycompai/ui/card';
 import { FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';

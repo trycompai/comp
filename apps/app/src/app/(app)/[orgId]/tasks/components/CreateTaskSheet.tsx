@@ -2,9 +2,9 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useTaskTemplates } from '@/hooks/use-task-template-api';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { useMediaQuery } from '@comp/ui/hooks';
-import MultipleSelector, { Option } from '@comp/ui/multiple-selector';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { useMediaQuery } from '@trycompai/ui/hooks';
+import MultipleSelector, { Option } from '@trycompai/ui/multiple-selector';
 import { Departments, Member, TaskFrequency, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {

@@ -14,7 +14,7 @@ Use parallel subagents to run all four audits simultaneously:
 
 Then run full monorepo verification:
 ```bash
-npx turbo run typecheck --filter=@comp/api --filter=@comp/app
+npx turbo run typecheck --filter=@trycompai/api --filter=@trycompai/app
 cd apps/app && npx vitest run
 ```
 

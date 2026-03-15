@@ -3,7 +3,7 @@ import { UserMenu } from '@/components/user-menu';
 import { serverApi } from '@/lib/api-server';
 import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
-import { Skeleton } from '@comp/ui/skeleton';
+import { Skeleton } from '@trycompai/ui/skeleton';
 import { headers } from 'next/headers';
 import { Suspense } from 'react';
 import { AssistantButton } from './ai/chat-button';

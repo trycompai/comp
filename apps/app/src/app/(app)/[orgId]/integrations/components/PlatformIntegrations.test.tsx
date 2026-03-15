@@ -95,12 +95,12 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/badge', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/badge', () => ({
   Badge: ({ children }: any) => <span data-testid="badge">{children}</span>,
 }));
 
-vi.mock('@comp/ui/button', () => ({
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({ children, disabled, onClick, ...props }: any) => (
     <button disabled={disabled} onClick={onClick} {...props}>
       {children}
@@ -108,7 +108,7 @@ vi.mock('@comp/ui/button', () => ({
   ),
 }));
 
-vi.mock('@comp/ui/card', () => ({
+vi.mock('@trycompai/ui/card', () => ({
   Card: ({ children, ...props }: any) => <div data-testid="card" {...props}>{children}</div>,
   CardContent: ({ children }: any) => <div>{children}</div>,
   CardDescription: ({ children }: any) => <p>{children}</p>,
@@ -116,7 +116,7 @@ vi.mock('@comp/ui/card', () => ({
   CardTitle: ({ children }: any) => <h3>{children}</h3>,
 }));
 
-vi.mock('@comp/ui/dialog', () => ({
+vi.mock('@trycompai/ui/dialog', () => ({
   Dialog: ({ children, open }: any) => open ? <div data-testid="dialog">{children}</div> : null,
   DialogContent: ({ children }: any) => <div>{children}</div>,
   DialogDescription: ({ children }: any) => <p>{children}</p>,
@@ -124,7 +124,7 @@ vi.mock('@comp/ui/dialog', () => ({
   DialogTitle: ({ children }: any) => <h2>{children}</h2>,
 }));
 
-vi.mock('@comp/ui/skeleton', () => ({
+vi.mock('@trycompai/ui/skeleton', () => ({
   Skeleton: () => <div data-testid="skeleton" />,
 }));
 

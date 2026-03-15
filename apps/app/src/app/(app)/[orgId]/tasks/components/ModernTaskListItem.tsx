@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 
 import type { Member, Task, User } from '@db';
-import { Checkbox } from '@comp/ui/checkbox';
+import { Checkbox } from '@trycompai/ui/checkbox';
 import Image from 'next/image';
 import { AutomationIndicator } from './AutomationIndicator';
 import { TaskStatusSelector } from './TaskStatusSelector';

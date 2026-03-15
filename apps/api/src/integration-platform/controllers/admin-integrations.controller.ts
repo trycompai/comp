@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { PlatformCredentialRepository } from '../repositories/platform-credential.repository';
-import { getAllManifests, getManifest } from '@comp/integration-platform';
+import { getAllManifests, getManifest } from '@trycompai/integration-platform';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
 
 interface SavePlatformCredentialDto {

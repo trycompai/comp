@@ -1,6 +1,6 @@
 'use client';
 
-import { AnalyticsProvider } from '@comp/analytics';
+import { AnalyticsProvider } from '@trycompai/analytics';
 import { Session, User } from 'better-auth';
 import type { ReactNode } from 'react';
 

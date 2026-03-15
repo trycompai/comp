@@ -1,8 +1,8 @@
 'use client';
 
 import { usePermissions } from '@/hooks/use-permissions';
-import { Button } from '@comp/ui/button';
-import { Card } from '@comp/ui';
+import { Button } from '@trycompai/ui/button';
+import { Card } from '@trycompai/ui';
 import { Plus, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
 import type { Departments, Member, User } from '@db';
 import {
   Button,

@@ -40,7 +40,7 @@ vi.mock('nuqs', () => ({
 }));
 
 // Mock media query hook
-vi.mock('@comp/ui/hooks', () => ({
+vi.mock('@trycompai/ui/hooks', () => ({
   useMediaQuery: vi.fn(() => true),
 }));
 
