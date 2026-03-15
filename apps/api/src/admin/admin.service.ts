@@ -73,8 +73,9 @@ export class AdminService {
     return { data, count };
   }
 
-  async searchOrgs(query: string) {
-    if (!query || query.length < 2) {
+  async searchOrgs(query: string | string[]) {
+    const q = Array.isArray(query) ? query[0] : query;
+    if (!q || q.length < 2) {
       return { data: [] };
     }
 
@@ -82,13 +83,13 @@ export class AdminService {
     const data = await db.organization.findMany({
       where: {
         OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { slug: { contains: query, mode: 'insensitive' } },
-          { id: { contains: query, mode: 'insensitive' } },
+          { name: { contains: q, mode: 'insensitive' } },
+          { slug: { contains: q, mode: 'insensitive' } },
+          { id: { contains: q, mode: 'insensitive' } },
           {
             members: {
               some: {
-                user: { email: { contains: query, mode: 'insensitive' } },
+                user: { email: { contains: q, mode: 'insensitive' } },
               },
             },
           },
@@ -156,14 +157,15 @@ export class AdminService {
     return { data, count };
   }
 
-  async searchUsers(email: string) {
-    if (!email || email.length < 2) {
+  async searchUsers(email: string | string[]) {
+    const e = Array.isArray(email) ? email[0] : email;
+    if (!e || e.length < 2) {
       return { data: [] };
     }
 
     const data = await db.user.findMany({
       where: {
-        email: { contains: email, mode: 'insensitive' },
+        email: { contains: e, mode: 'insensitive' },
       },
       take: 20,
       select: {
