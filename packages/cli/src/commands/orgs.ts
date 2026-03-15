@@ -6,7 +6,8 @@ export async function orgsCommand(args: string[]): Promise<void> {
 
   if (sub === 'search') {
     const query = extractFlag(args, '--query') ?? extractFlag(args, '-q') ?? args[1];
-    const result = await adminFetch(`orgs/search?q=${encodeURIComponent(query ?? '')}`);
+    if (!query) die('Search query required. Usage: comp orgs search --query <q>');
+    const result = await adminFetch(`orgs/search?q=${encodeURIComponent(query)}`);
     output(result);
     return;
   }

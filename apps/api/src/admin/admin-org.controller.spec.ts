@@ -3,22 +3,25 @@ jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
 jest.mock('./admin-org.service');
+jest.mock('./admin-org-data.service');
 
 import { Test } from '@nestjs/testing';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { AdminOrgController } from './admin-org.controller';
 import { AdminOrgService } from './admin-org.service';
+import { AdminOrgDataService } from './admin-org-data.service';
 
 describe('AdminOrgController', () => {
   let controller: AdminOrgController;
   let service: jest.Mocked<AdminOrgService>;
+  let dataService: jest.Mocked<AdminOrgDataService>;
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       controllers: [AdminOrgController],
-      providers: [AdminOrgService],
+      providers: [AdminOrgService, AdminOrgDataService],
     })
       .overrideGuard(PlatformAdminGuard)
       .useValue(mockGuard)
@@ -26,6 +29,7 @@ describe('AdminOrgController', () => {
 
     controller = module.get(AdminOrgController);
     service = module.get(AdminOrgService) as jest.Mocked<AdminOrgService>;
+    dataService = module.get(AdminOrgDataService) as jest.Mocked<AdminOrgDataService>;
   });
 
   afterEach(() => {
@@ -130,12 +134,12 @@ describe('AdminOrgController', () => {
   });
 
   describe('getOrgVendors', () => {
-    it('should pass default pagination', async () => {
-      service.getOrgVendors = jest.fn().mockResolvedValue({ data: [], count: 0 });
+    it('should delegate to data service', async () => {
+      dataService.getOrgVendors = jest.fn().mockResolvedValue({ data: [], count: 0 });
 
       await controller.getOrgVendors('org_1');
 
-      expect(service.getOrgVendors).toHaveBeenCalledWith({
+      expect(dataService.getOrgVendors).toHaveBeenCalledWith({
         orgId: 'org_1',
         limit: 20,
         offset: 0,
@@ -144,12 +148,12 @@ describe('AdminOrgController', () => {
   });
 
   describe('getOrgFrameworks', () => {
-    it('should pass default pagination', async () => {
-      service.getOrgFrameworks = jest.fn().mockResolvedValue({ data: [], count: 0 });
+    it('should delegate to data service', async () => {
+      dataService.getOrgFrameworks = jest.fn().mockResolvedValue({ data: [], count: 0 });
 
       await controller.getOrgFrameworks('org_1');
 
-      expect(service.getOrgFrameworks).toHaveBeenCalledWith({
+      expect(dataService.getOrgFrameworks).toHaveBeenCalledWith({
         orgId: 'org_1',
         limit: 20,
         offset: 0,
@@ -158,12 +162,12 @@ describe('AdminOrgController', () => {
   });
 
   describe('getOrgFindings', () => {
-    it('should pass status filter', async () => {
-      service.getOrgFindings = jest.fn().mockResolvedValue({ data: [], count: 0 });
+    it('should delegate to data service with status filter', async () => {
+      dataService.getOrgFindings = jest.fn().mockResolvedValue({ data: [], count: 0 });
 
       await controller.getOrgFindings('org_1', 'open');
 
-      expect(service.getOrgFindings).toHaveBeenCalledWith({
+      expect(dataService.getOrgFindings).toHaveBeenCalledWith({
         orgId: 'org_1',
         status: 'open',
         limit: 20,
@@ -173,12 +177,12 @@ describe('AdminOrgController', () => {
   });
 
   describe('getOrgIntegrations', () => {
-    it('should pass default pagination', async () => {
-      service.getOrgIntegrations = jest.fn().mockResolvedValue({ data: [], count: 0 });
+    it('should delegate to data service', async () => {
+      dataService.getOrgIntegrations = jest.fn().mockResolvedValue({ data: [], count: 0 });
 
       await controller.getOrgIntegrations('org_1');
 
-      expect(service.getOrgIntegrations).toHaveBeenCalledWith({
+      expect(dataService.getOrgIntegrations).toHaveBeenCalledWith({
         orgId: 'org_1',
         limit: 20,
         offset: 0,
@@ -187,12 +191,12 @@ describe('AdminOrgController', () => {
   });
 
   describe('getOrgComments', () => {
-    it('should pass default pagination', async () => {
-      service.getOrgComments = jest.fn().mockResolvedValue({ data: [], count: 0 });
+    it('should delegate to data service', async () => {
+      dataService.getOrgComments = jest.fn().mockResolvedValue({ data: [], count: 0 });
 
       await controller.getOrgComments('org_1');
 
-      expect(service.getOrgComments).toHaveBeenCalledWith({
+      expect(dataService.getOrgComments).toHaveBeenCalledWith({
         orgId: 'org_1',
         limit: 20,
         offset: 0,
@@ -201,12 +205,12 @@ describe('AdminOrgController', () => {
   });
 
   describe('getOrgAuditLogs', () => {
-    it('should pass default pagination with limit 50', async () => {
-      service.getOrgAuditLogs = jest.fn().mockResolvedValue({ data: [], count: 0 });
+    it('should delegate to data service with limit 50', async () => {
+      dataService.getOrgAuditLogs = jest.fn().mockResolvedValue({ data: [], count: 0 });
 
       await controller.getOrgAuditLogs('org_1');
 
-      expect(service.getOrgAuditLogs).toHaveBeenCalledWith({
+      expect(dataService.getOrgAuditLogs).toHaveBeenCalledWith({
         orgId: 'org_1',
         limit: 50,
         offset: 0,

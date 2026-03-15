@@ -1,11 +1,15 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { AdminOrgService } from './admin-org.service';
+import { AdminOrgDataService } from './admin-org-data.service';
 
 @Controller({ path: 'admin', version: '1' })
 @UseGuards(PlatformAdminGuard)
 export class AdminOrgController {
-  constructor(private readonly adminOrgService: AdminOrgService) {}
+  constructor(
+    private readonly adminOrgService: AdminOrgService,
+    private readonly adminOrgDataService: AdminOrgDataService,
+  ) {}
 
   @Get('orgs/:orgId/health')
   async getOrgHealth(@Param('orgId') orgId: string) {
@@ -89,7 +93,7 @@ export class AdminOrgController {
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
-    return this.adminOrgService.getOrgVendors({
+    return this.adminOrgDataService.getOrgVendors({
       orgId,
       limit: limit ? parseInt(limit, 10) : 20,
       offset: offset ? parseInt(offset, 10) : 0,
@@ -102,7 +106,7 @@ export class AdminOrgController {
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
-    return this.adminOrgService.getOrgFrameworks({
+    return this.adminOrgDataService.getOrgFrameworks({
       orgId,
       limit: limit ? parseInt(limit, 10) : 20,
       offset: offset ? parseInt(offset, 10) : 0,
@@ -116,7 +120,7 @@ export class AdminOrgController {
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
-    return this.adminOrgService.getOrgFindings({
+    return this.adminOrgDataService.getOrgFindings({
       orgId,
       status,
       limit: limit ? parseInt(limit, 10) : 20,
@@ -130,7 +134,7 @@ export class AdminOrgController {
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
-    return this.adminOrgService.getOrgIntegrations({
+    return this.adminOrgDataService.getOrgIntegrations({
       orgId,
       limit: limit ? parseInt(limit, 10) : 20,
       offset: offset ? parseInt(offset, 10) : 0,
@@ -143,7 +147,7 @@ export class AdminOrgController {
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
-    return this.adminOrgService.getOrgComments({
+    return this.adminOrgDataService.getOrgComments({
       orgId,
       limit: limit ? parseInt(limit, 10) : 20,
       offset: offset ? parseInt(offset, 10) : 0,
@@ -156,7 +160,7 @@ export class AdminOrgController {
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
-    return this.adminOrgService.getOrgAuditLogs({
+    return this.adminOrgDataService.getOrgAuditLogs({
       orgId,
       limit: limit ? parseInt(limit, 10) : 50,
       offset: offset ? parseInt(offset, 10) : 0,
