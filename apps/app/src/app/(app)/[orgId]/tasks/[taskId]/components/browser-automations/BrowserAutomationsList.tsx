@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
+import { Badge } from '@trycompai/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { Globe, Plus } from 'lucide-react';
 import { useState } from 'react';

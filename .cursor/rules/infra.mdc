@@ -26,7 +26,7 @@ comp/
 │   ├── app/             # Next.js main app
 │   └── portal/          # Next.js portal
 ├── packages/
-│   ├── db/              # Prisma (@comp/db)
+│   ├── db/              # Prisma (@trycompai/db)
 │   ├── ui/              # UI components (@trycompai/ui)
 │   └── ...
 ├── turbo.json
@@ -44,7 +44,7 @@ bun run dev              # Dev all
 
 # Single package
 bun run -F apps/app dev
-bun run -F @comp/db prisma:generate
+bun run -F @trycompai/db prisma:generate
 turbo build --filter=@trycompai/ui
 ```
 
@@ -53,7 +53,7 @@ turbo build --filter=@trycompai/ui
 ```tsx
 // ✅ Import from package name
 import { Button } from '@trycompai/design-system';
-import { prisma } from '@comp/db';
+import { prisma } from '@trycompai/db';
 
 // ❌ Never relative paths across packages
 import { Button } from '../../../packages/ui/src/button';
@@ -116,7 +116,7 @@ mkdir packages/my-package
 ```json
 // packages/my-package/tsconfig.json
 {
-  "extends": "@comp/tsconfig/base.json",
+  "extends": "@trycompai/tsconfig/base.json",
   "include": ["src"]
 }
 ```

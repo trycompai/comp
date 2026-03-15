@@ -22,7 +22,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { Comments } from '../comments/Comments';

@@ -73,10 +73,10 @@ npx jest src/<module-name> --passWithNoTests
 npx jest --onlyChanged
 
 # Run all API tests (from repo root)
-npx turbo run test --filter=@comp/api
+npx turbo run test --filter=@trycompai/api
 
 # Type-check before committing
-npx turbo run typecheck --filter=@comp/api
+npx turbo run typecheck --filter=@trycompai/api
 ```
 
 ### Test Patterns
@@ -138,7 +138,7 @@ const module = await Test.createTestingModule({
 1. **Before coding**: Read existing code patterns in the module
 2. **During coding**: Follow established patterns, add types
 3. **After coding**:
-   - Run `npx turbo run typecheck --filter=@comp/api`
+   - Run `npx turbo run typecheck --filter=@trycompai/api`
    - Write and run tests: `npx jest src/<module>`
    - Commit with conventional commit message
 
@@ -146,10 +146,10 @@ const module = await Test.createTestingModule({
 
 ```bash
 # Start API in development
-npx turbo run dev --filter=@comp/api
+npx turbo run dev --filter=@trycompai/api
 
 # Type-check
-npx turbo run typecheck --filter=@comp/api
+npx turbo run typecheck --filter=@trycompai/api
 
 # Run specific test file
 npx jest src/roles/roles.service.spec.ts

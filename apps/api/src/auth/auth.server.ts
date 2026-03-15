@@ -11,7 +11,7 @@ import {
   multiSession,
   organization,
 } from 'better-auth/plugins';
-import { ac, allRoles } from '@comp/auth';
+import { ac, allRoles } from '@trycompai/auth';
 
 const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
 

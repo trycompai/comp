@@ -1,13 +1,13 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
-import { cn } from '@comp/ui/cn';
+import { Badge } from '@trycompai/ui/badge';
+import { cn } from '@trycompai/ui/cn';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@comp/ui/tooltip';
+} from '@trycompai/ui/tooltip';
 import type { TaskAutomationStatus } from '@db';
 
 interface TaskAutomationStatusBadgeProps {

@@ -1,6 +1,6 @@
 import { LoginForm } from '@/app/components/login-form';
 import { OtpSignIn } from '@/app/components/otp';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   Card,
   CardContent,
@@ -8,8 +8,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@comp/ui/card';
-import { Icons } from '@comp/ui/icons';
+} from '@trycompai/ui/card';
+import { Icons } from '@trycompai/ui/icons';
 import { ArrowRight } from '@trycompai/design-system/icons';
 import type { Metadata } from 'next';
 import Link from 'next/link';

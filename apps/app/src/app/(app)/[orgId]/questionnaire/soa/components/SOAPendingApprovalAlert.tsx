@@ -1,6 +1,6 @@
 'use client';
 
-import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@trycompai/ui/alert';
 import { Button } from '@trycompai/design-system';
 import { Checkmark, CloseOutline, WarningAlt } from '@trycompai/design-system/icons';
 import type { Member, User } from '@db';

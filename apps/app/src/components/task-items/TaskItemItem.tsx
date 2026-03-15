@@ -8,8 +8,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
+} from '@trycompai/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import type {
   TaskItem,
   TaskItemEntityType,

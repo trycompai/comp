@@ -39,4 +39,4 @@ Audit the specified files or directories for RBAC and audit log compliance. **Fi
 1. Read files specified in `$ARGUMENTS` (or scan the directory)
 2. Check each rule above
 3. **Fix every violation immediately** — don't just report
-4. Run typecheck to verify: `npx turbo run typecheck --filter=@comp/api --filter=@comp/app`
+4. Run typecheck to verify: `npx turbo run typecheck --filter=@trycompai/api --filter=@trycompai/app`

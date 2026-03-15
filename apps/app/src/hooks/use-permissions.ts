@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
-import { BUILT_IN_ROLE_OBLIGATIONS } from '@comp/auth';
+import { BUILT_IN_ROLE_OBLIGATIONS } from '@trycompai/auth';
 import { useActiveMember } from '@/utils/auth-client';
 import { apiClient } from '@/lib/api-client';
 import {

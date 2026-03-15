@@ -18,7 +18,7 @@ import { DynamicIntegrationRepository } from '../repositories/dynamic-integratio
 import { DynamicCheckRepository } from '../repositories/dynamic-check.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { DynamicManifestLoaderService } from '../services/dynamic-manifest-loader.service';
-import { validateIntegrationDefinition } from '@comp/integration-platform';
+import { validateIntegrationDefinition } from '@trycompai/integration-platform';
 
 @Controller({ path: 'internal/dynamic-integrations', version: '1' })
 @UseGuards(InternalTokenGuard)

@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@trycompai/design-system';
-import { Textarea } from '@comp/ui/textarea';
+import { Textarea } from '@trycompai/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@comp/ui/select';
+} from '@trycompai/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import { X, Loader2, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSOADocument } from '../../hooks/useSOADocument';

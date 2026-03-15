@@ -1,10 +1,10 @@
 'use client';
 
 import { api } from '@/lib/api-client';
-import { Badge } from '@comp/ui/badge';
-import { Card, CardContent } from '@comp/ui/card';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
+import { Badge } from '@trycompai/ui/badge';
+import { Card, CardContent } from '@trycompai/ui/card';
+import { Input } from '@trycompai/ui/input';
+import { Label } from '@trycompai/ui/label';
 import { Button } from '@trycompai/design-system';
 import {
   CheckmarkFilled,

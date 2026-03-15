@@ -2,7 +2,7 @@
 
 import type { TaskItemEntityType, TaskItemFilters, TaskItemSortBy, TaskItemSortOrder } from '@/hooks/use-task-items';
 import { usePermissions } from '@/hooks/use-permissions';
-import { useMediaQuery } from '@comp/ui/hooks';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import {
   Drawer,
   DrawerContent,

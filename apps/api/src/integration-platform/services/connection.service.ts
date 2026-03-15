@@ -3,7 +3,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { getManifest } from '@comp/integration-platform';
+import { getManifest } from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionAuthTeardownService } from './connection-auth-teardown.service';

@@ -3,7 +3,7 @@ import '@trycompai/design-system/globals.css';
 import { LinkedInInsight } from '@/components/tracking/LinkedInInsight';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 import { Analytics as DubAnalytics } from '@dub/analytics/react';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/next';
 import { GeistMono } from 'geist/font/mono';

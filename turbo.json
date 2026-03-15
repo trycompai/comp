@@ -92,7 +92,7 @@
             "persistent": true,
             "cache": false
         },
-        "@comp/device-agent#dev": {
+        "@trycompai/device-agent#dev": {
             "persistent": true,
             "cache": false,
             "interactive": true

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { tasks } from '@trigger.dev/sdk';
-import { getManifest } from '@comp/integration-platform';
+import { getManifest } from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
+import { Badge } from '@trycompai/ui/badge';
 import { FindingStatus } from '@db';
 import { cn } from '@/lib/utils';
 

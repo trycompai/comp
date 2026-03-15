@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@comp/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@trycompai/ui/dialog';
 import Image from 'next/image';
 import { CarouselControls } from '../video/CarouselControls';
 

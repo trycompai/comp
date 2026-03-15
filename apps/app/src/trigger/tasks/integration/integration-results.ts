@@ -1,5 +1,5 @@
-import { decrypt } from '@comp/app/src/lib/encryption';
-import { type DecryptFunction, getIntegrationHandler } from '@comp/integrations';
+import { decrypt } from '@trycompai/app/src/lib/encryption';
+import { type DecryptFunction, getIntegrationHandler } from '@trycompai/integrations';
 import { db } from '@db';
 import { logger, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';

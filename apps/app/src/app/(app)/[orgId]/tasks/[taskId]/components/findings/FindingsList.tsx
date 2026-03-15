@@ -1,7 +1,7 @@
 'use client';
 
 import { useFindingActions, useTaskFindings, type Finding } from '@/hooks/use-findings-api';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { FindingStatus } from '@db';
 import { AlertTriangle, ChevronDown, ChevronUp, FileWarning, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';

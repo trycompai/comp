@@ -2,11 +2,11 @@
 
 import { apiClient } from '@/lib/api-client';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Input } from '@trycompai/ui/input';
+import { Label } from '@trycompai/ui/label';
 import { Globe, Loader2, MonitorSmartphone, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 

@@ -36,7 +36,7 @@ import {
   type OAuthConfig,
   type TaskTemplateId,
   type IntegrationCredentials,
-} from '@comp/integration-platform';
+} from '@trycompai/integration-platform';
 
 interface CreateConnectionDto {
   providerSlug: string;

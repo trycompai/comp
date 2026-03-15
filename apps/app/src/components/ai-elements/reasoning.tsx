@@ -7,8 +7,8 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@comp/ui/collapsible";
-import { cn } from "@comp/ui/cn";
+} from "@trycompai/ui/collapsible";
+import { cn } from "@trycompai/ui/cn";
 import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";

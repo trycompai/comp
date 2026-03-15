@@ -37,15 +37,15 @@ vi.mock('@/components/SelectAssignee', () => ({
   SelectAssignee: () => <div data-testid="select-assignee" />,
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/accordion', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/accordion', () => ({
   Accordion: ({ children }: any) => <div>{children}</div>,
   AccordionContent: ({ children }: any) => <div>{children}</div>,
   AccordionItem: ({ children }: any) => <div>{children}</div>,
   AccordionTrigger: ({ children }: any) => <div>{children}</div>,
 }));
 
-vi.mock('@comp/ui/button', () => ({
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({ children, disabled, ...props }: any) => (
     <button disabled={disabled} {...props}>
       {children}
@@ -53,15 +53,15 @@ vi.mock('@comp/ui/button', () => ({
   ),
 }));
 
-vi.mock('@comp/ui/calendar', () => ({
+vi.mock('@trycompai/ui/calendar', () => ({
   Calendar: () => <div data-testid="calendar" />,
 }));
 
-vi.mock('@comp/ui/cn', () => ({
+vi.mock('@trycompai/ui/cn', () => ({
   cn: (...args: any[]) => args.filter(Boolean).join(' '),
 }));
 
-vi.mock('@comp/ui/form', () => ({
+vi.mock('@trycompai/ui/form', () => ({
   Form: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   FormControl: ({ children }: any) => <div>{children}</div>,
   FormField: ({ render, name }: any) => (
@@ -74,17 +74,17 @@ vi.mock('@comp/ui/form', () => ({
   FormMessage: () => null,
 }));
 
-vi.mock('@comp/ui/input', () => ({
+vi.mock('@trycompai/ui/input', () => ({
   Input: (props: any) => <input {...props} />,
 }));
 
-vi.mock('@comp/ui/popover', () => ({
+vi.mock('@trycompai/ui/popover', () => ({
   Popover: ({ children }: any) => <div>{children}</div>,
   PopoverContent: ({ children }: any) => <div>{children}</div>,
   PopoverTrigger: ({ children }: any) => <div>{children}</div>,
 }));
 
-vi.mock('@comp/ui/textarea', () => ({
+vi.mock('@trycompai/ui/textarea', () => ({
   Textarea: (props: any) => <textarea {...props} />,
 }));
 

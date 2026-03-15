@@ -8,9 +8,9 @@ import {
   useFindingTemplates,
   type FindingTemplate,
 } from '@/hooks/use-findings-api';
-import type { EvidenceFormType } from '@comp/company';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { useMediaQuery } from '@comp/ui/hooks';
+import type { EvidenceFormType } from '@trycompai/company';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import { FindingType } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {

@@ -11,8 +11,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@comp/ui/alert-dialog';
-import { Button } from '@comp/ui/button';
+} from '@trycompai/ui/alert-dialog';
+import { Button } from '@trycompai/ui/button';
 import {
   Card,
   CardContent,
@@ -20,16 +20,16 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@comp/ui/card';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
+} from '@trycompai/ui/card';
+import { Input } from '@trycompai/ui/input';
+import { Label } from '@trycompai/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@comp/ui/select';
+} from '@trycompai/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

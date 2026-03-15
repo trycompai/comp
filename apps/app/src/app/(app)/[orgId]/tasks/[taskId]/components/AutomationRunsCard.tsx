@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
+import { Badge } from '@trycompai/ui/badge';
 import { EvidenceAutomationRun, EvidenceAutomationRunStatus } from '@db';
 import { Stack, Text, Button } from '@trycompai/design-system';
 import { formatDistanceToNow } from 'date-fns';

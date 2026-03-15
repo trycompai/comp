@@ -1,4 +1,4 @@
-import { Skeleton } from '@comp/ui/skeleton';
+import { Skeleton } from '@trycompai/ui/skeleton';
 import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
 
 export default function NewRoleLoading() {

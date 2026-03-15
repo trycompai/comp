@@ -1,8 +1,8 @@
 'use client';
 
 import { env } from '@/env.mjs';
-import { AnalyticsProvider } from '@comp/analytics';
-import { Toaster } from '@comp/ui/sooner';
+import { AnalyticsProvider } from '@trycompai/analytics';
+import { Toaster } from '@trycompai/ui/sooner';
 import { GoogleTagManager } from '@next/third-parties/google';
 import {
   defaultShouldDehydrateQuery,

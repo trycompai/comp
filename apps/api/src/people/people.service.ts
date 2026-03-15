@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
 import { FleetService } from '../lib/fleet.service';
-import { BUILT_IN_ROLE_PERMISSIONS } from '@comp/auth';
+import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
 import type { PeopleResponseDto } from './dto/people-responses.dto';
 import type { CreatePeopleDto } from './dto/create-people.dto';
 import type { UpdatePeopleDto } from './dto/update-people.dto';

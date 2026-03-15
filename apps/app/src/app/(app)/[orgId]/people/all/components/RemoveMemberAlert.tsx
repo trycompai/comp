@@ -8,8 +8,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@comp/ui/alert-dialog';
-import { Button } from '@comp/ui/button';
+} from '@trycompai/ui/alert-dialog';
+import { Button } from '@trycompai/ui/button';
 
 interface RemoveMemberAlertProps {
   open: boolean;

@@ -1,6 +1,6 @@
 'use client';
 
-import { Card } from '@comp/ui';
+import { Card } from '@trycompai/ui';
 import { Button } from '@trycompai/design-system';
 import type { Member, User } from '@db';
 

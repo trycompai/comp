@@ -1,14 +1,14 @@
 'use client';
 
 import { authClient } from '@/utils/auth-client';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
+} from '@trycompai/ui/dropdown-menu';
 import type { Organization } from '@db';
 import { Check, ChevronsUpDown, Loader2, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';

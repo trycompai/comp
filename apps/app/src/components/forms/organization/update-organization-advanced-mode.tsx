@@ -9,8 +9,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@comp/ui/card';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
+} from '@trycompai/ui/card';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Switch } from '@trycompai/design-system';
 import { Loader2 } from 'lucide-react';

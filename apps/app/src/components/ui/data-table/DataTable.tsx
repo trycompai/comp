@@ -1,8 +1,8 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
+import { cn } from '@trycompai/ui/cn';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -10,9 +10,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Input } from '@comp/ui/input';
-import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
+} from '@trycompai/ui/dropdown-menu';
+import { Input } from '@trycompai/ui/input';
+import { Table, TableBody, TableCell, TableRow } from '@trycompai/ui/table';
 import {
   type ColumnDef,
   type SortingState,

@@ -3,8 +3,8 @@
 ## Tooling
 
 - **Package manager**: `bun` (never npm/yarn/pnpm)
-- **Build**: `bun run build` (uses turbo). Filter: `bun run --filter '@comp/app' build`
-- **Typecheck**: `bun run typecheck` or `npx turbo run typecheck --filter=@comp/api`
+- **Build**: `bun run build` (uses turbo). Filter: `bun run --filter '@trycompai/app' build`
+- **Typecheck**: `bun run typecheck` or `npx turbo run typecheck --filter=@trycompai/api`
 - **Tests (app)**: `cd apps/app && npx vitest run`
 - **Tests (api)**: `cd apps/api && npx jest src/<module> --passWithNoTests`
 - **Lint**: `bun run lint`
@@ -106,13 +106,13 @@ Every customer-facing API endpoint MUST have:
 
 ## Design System
 
-- **Always prefer `@trycompai/design-system`** over `@comp/ui`. Check DS exports first.
-- `@comp/ui` is the legacy library being phased out — only use as last resort.
+- **Always prefer `@trycompai/design-system`** over `@trycompai/ui`. Check DS exports first.
+- `@trycompai/ui` is the legacy library being phased out — only use as last resort.
 - **Icons**: `@trycompai/design-system/icons` (Carbon icons), NOT `lucide-react`
 - **DS components that do NOT accept `className`**: `Text`, `Stack`, `HStack`, `Badge`, `Button` — wrap in `<div>` for custom styling
 - **Layout**: Use `PageLayout`, `PageHeader`, `Stack`, `HStack`, `Section`, `SettingGroup`
 - **Patterns**: Sheet (`Sheet > SheetContent > SheetHeader + SheetBody`), Drawer, Collapsible
-- **After editing any frontend component**: Run the `audit-design-system` skill to catch `@comp/ui` or `lucide-react` imports that should be migrated
+- **After editing any frontend component**: Run the `audit-design-system` skill to catch `@trycompai/ui` or `lucide-react` imports that should be migrated
 
 ## Data Fetching
 

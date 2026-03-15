@@ -2,7 +2,7 @@ import {
   evidenceFormDefinitionList,
   meetingSubTypeValues,
   toDbEvidenceFormType,
-} from '@comp/company';
+} from '@trycompai/company';
 import { db } from '@db';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
