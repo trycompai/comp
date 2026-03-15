@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 
@@ -30,7 +30,9 @@ export function loadConfig(): Config {
 }
 
 export function saveConfig(config: Config): void {
-  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n');
+  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n', {
+    mode: 0o600,
+  });
 }
 
 export function getActiveEnv(): EnvironmentConfig | null {
