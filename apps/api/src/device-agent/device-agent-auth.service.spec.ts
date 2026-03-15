@@ -54,7 +54,7 @@ describe('DeviceAgentAuthService', () => {
 
   describe('generateAuthCode', () => {
     it('should generate an auth code and store it in KV', async () => {
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue({
+      (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue({
         user: { id: 'user-1' },
         session: { token: 'raw-session-token' },
       });
@@ -77,7 +77,7 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should throw UnauthorizedException if no session', async () => {
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue(null);
+      (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue(null);
 
       const headers = new Headers();
       await expect(
@@ -88,7 +88,7 @@ describe('DeviceAgentAuthService', () => {
 
   describe('exchangeCode', () => {
     it('should return session token for valid code', async () => {
-      (mockKv.getdel as jest.Mock).mockResolvedValue({
+      (mockKv.getdel as unknown as jest.Mock).mockResolvedValue({
         sessionToken: 'session-123',
         userId: 'user-1',
         state: 'state-1',
@@ -105,7 +105,7 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should throw UnauthorizedException for invalid/expired code', async () => {
-      (mockKv.getdel as jest.Mock).mockResolvedValue(null);
+      (mockKv.getdel as unknown as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.exchangeCode({ code: 'invalid-code' }),
@@ -115,7 +115,7 @@ describe('DeviceAgentAuthService', () => {
 
   describe('getMyOrganizations', () => {
     it('should return user organizations', async () => {
-      (mockDb.member.findMany as jest.Mock).mockResolvedValue([
+      (mockDb.member.findMany as unknown as jest.Mock).mockResolvedValue([
         {
           organization: { id: 'org-1', name: 'Org One', slug: 'org-one' },
           role: 'admin',
@@ -152,7 +152,7 @@ describe('DeviceAgentAuthService', () => {
     };
 
     it('should throw ForbiddenException if user is not a member', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.member.findFirst as unknown as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.registerDevice({ userId: 'user-1', dto: baseDto }),
@@ -160,9 +160,9 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should create a new device without serial number', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'member-1' });
-      (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
-      (mockDb.device.create as jest.Mock).mockResolvedValue({ id: 'dev-1' });
+      (mockDb.member.findFirst as unknown as jest.Mock).mockResolvedValue({ id: 'member-1' });
+      (mockDb.device.findFirst as unknown as jest.Mock).mockResolvedValue(null);
+      (mockDb.device.create as unknown as jest.Mock).mockResolvedValue({ id: 'dev-1' });
 
       const result = await service.registerDevice({ userId: 'user-1', dto: baseDto });
 
@@ -178,9 +178,9 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should create a new device with serial number', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'member-1' });
-      (mockDb.device.findUnique as jest.Mock).mockResolvedValue(null);
-      (mockDb.device.create as jest.Mock).mockResolvedValue({ id: 'dev-2' });
+      (mockDb.member.findFirst as unknown as jest.Mock).mockResolvedValue({ id: 'member-1' });
+      (mockDb.device.findUnique as unknown as jest.Mock).mockResolvedValue(null);
+      (mockDb.device.create as unknown as jest.Mock).mockResolvedValue({ id: 'dev-2' });
 
       const dto = { ...baseDto, serialNumber: 'ABC123' };
       const result = await service.registerDevice({ userId: 'user-1', dto });
@@ -189,12 +189,12 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should update existing device when same member re-registers', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'member-1' });
-      (mockDb.device.findUnique as jest.Mock).mockResolvedValue({
+      (mockDb.member.findFirst as unknown as jest.Mock).mockResolvedValue({ id: 'member-1' });
+      (mockDb.device.findUnique as unknown as jest.Mock).mockResolvedValue({
         id: 'dev-existing',
         memberId: 'member-1',
       });
-      (mockDb.device.update as jest.Mock).mockResolvedValue({ id: 'dev-existing' });
+      (mockDb.device.update as unknown as jest.Mock).mockResolvedValue({ id: 'dev-existing' });
 
       const dto = { ...baseDto, serialNumber: 'ABC123' };
       const result = await service.registerDevice({ userId: 'user-1', dto });
@@ -204,14 +204,14 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should use fallback serial when serial belongs to different member', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'member-2' });
-      (mockDb.device.findUnique as jest.Mock).mockResolvedValue({
+      (mockDb.member.findFirst as unknown as jest.Mock).mockResolvedValue({ id: 'member-2' });
+      (mockDb.device.findUnique as unknown as jest.Mock).mockResolvedValue({
         id: 'dev-other',
         memberId: 'member-1',
       });
       // No existing fallback
-      (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
-      (mockDb.device.create as jest.Mock).mockResolvedValue({ id: 'dev-fallback' });
+      (mockDb.device.findFirst as unknown as jest.Mock).mockResolvedValue(null);
+      (mockDb.device.create as unknown as jest.Mock).mockResolvedValue({ id: 'dev-fallback' });
 
       const dto = { ...baseDto, serialNumber: 'GENERIC-SERIAL' };
       const result = await service.registerDevice({ userId: 'user-1', dto });
@@ -227,7 +227,7 @@ describe('DeviceAgentAuthService', () => {
 
   describe('checkIn', () => {
     it('should update device compliance fields', async () => {
-      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+      (mockDb.device.findFirst as unknown as jest.Mock).mockResolvedValue({
         id: 'dev-1',
         diskEncryptionEnabled: false,
         antivirusEnabled: false,
@@ -235,7 +235,7 @@ describe('DeviceAgentAuthService', () => {
         screenLockEnabled: false,
         checkDetails: {},
       });
-      (mockDb.device.update as jest.Mock).mockResolvedValue({ isCompliant: true });
+      (mockDb.device.update as unknown as jest.Mock).mockResolvedValue({ isCompliant: true });
 
       const result = await service.checkIn({
         userId: 'user-1',
@@ -265,7 +265,7 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should throw NotFoundException if device not found', async () => {
-      (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.device.findFirst as unknown as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.checkIn({
@@ -281,7 +281,7 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should set isCompliant to false when not all checks pass', async () => {
-      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+      (mockDb.device.findFirst as unknown as jest.Mock).mockResolvedValue({
         id: 'dev-1',
         diskEncryptionEnabled: false,
         antivirusEnabled: false,
@@ -289,7 +289,7 @@ describe('DeviceAgentAuthService', () => {
         screenLockEnabled: false,
         checkDetails: {},
       });
-      (mockDb.device.update as jest.Mock).mockResolvedValue({ isCompliant: false });
+      (mockDb.device.update as unknown as jest.Mock).mockResolvedValue({ isCompliant: false });
 
       const result = await service.checkIn({
         userId: 'user-1',
@@ -312,7 +312,7 @@ describe('DeviceAgentAuthService', () => {
         { id: 'dev-1', name: 'Mac 1' },
         { id: 'dev-2', name: 'Mac 2' },
       ];
-      (mockDb.device.findMany as jest.Mock).mockResolvedValue(devices);
+      (mockDb.device.findMany as unknown as jest.Mock).mockResolvedValue(devices);
 
       const result = await service.getDeviceStatus({ userId: 'user-1' });
 
@@ -321,7 +321,7 @@ describe('DeviceAgentAuthService', () => {
 
     it('should return a specific device', async () => {
       const device = { id: 'dev-1', name: 'Mac 1' };
-      (mockDb.device.findFirst as jest.Mock).mockResolvedValue(device);
+      (mockDb.device.findFirst as unknown as jest.Mock).mockResolvedValue(device);
 
       const result = await service.getDeviceStatus({
         userId: 'user-1',
@@ -332,7 +332,7 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should throw NotFoundException for missing device', async () => {
-      (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.device.findFirst as unknown as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.getDeviceStatus({ userId: 'user-1', deviceId: 'dev-missing' }),

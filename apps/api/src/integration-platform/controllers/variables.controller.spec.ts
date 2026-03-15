@@ -5,6 +5,7 @@ import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
+import { ConnectionService } from '../services/connection.service';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { AutoCheckRunnerService } from '../services/auto-check-runner.service';
 
@@ -45,6 +46,10 @@ describe('VariablesController', () => {
     getDecryptedCredentials: jest.fn(),
   };
 
+  const mockConnectionService = {
+    getConnectionForOrg: jest.fn(),
+  };
+
   const mockAutoCheckRunnerService = {
     tryAutoRunChecks: jest.fn().mockResolvedValue(false),
   };
@@ -57,6 +62,7 @@ describe('VariablesController', () => {
       providers: [
         { provide: ConnectionRepository, useValue: mockConnectionRepository },
         { provide: ProviderRepository, useValue: mockProviderRepository },
+        { provide: ConnectionService, useValue: mockConnectionService },
         {
           provide: CredentialVaultService,
           useValue: mockCredentialVaultService,
@@ -183,6 +189,10 @@ describe('VariablesController', () => {
 
   describe('getConnectionVariables', () => {
     it('should return variables with current values', async () => {
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
+        id: 'conn_1',
+        providerId: 'prov_1',
+      });
       mockConnectionRepository.findById.mockResolvedValue({
         id: 'conn_1',
         providerId: 'prov_1',
@@ -204,7 +214,7 @@ describe('VariablesController', () => {
         checks: [],
       } as never);
 
-      const result = await controller.getConnectionVariables('conn_1');
+      const result = await controller.getConnectionVariables('conn_1', 'org_1');
 
       expect(result.connectionId).toBe('conn_1');
       expect(result.providerSlug).toBe('github');
@@ -213,14 +223,21 @@ describe('VariablesController', () => {
     });
 
     it('should throw NOT_FOUND when connection does not exist', async () => {
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
+        id: 'nonexistent',
+      });
       mockConnectionRepository.findById.mockResolvedValue(null);
 
       await expect(
-        controller.getConnectionVariables('nonexistent'),
+        controller.getConnectionVariables('nonexistent', 'org_1'),
       ).rejects.toThrow(HttpException);
     });
 
     it('should throw NOT_FOUND when provider does not exist', async () => {
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
+        id: 'conn_1',
+        providerId: 'prov_1',
+      });
       mockConnectionRepository.findById.mockResolvedValue({
         id: 'conn_1',
         providerId: 'prov_1',
@@ -229,11 +246,15 @@ describe('VariablesController', () => {
       mockProviderRepository.findById.mockResolvedValue(null);
 
       await expect(
-        controller.getConnectionVariables('conn_1'),
+        controller.getConnectionVariables('conn_1', 'org_1'),
       ).rejects.toThrow(HttpException);
     });
 
     it('should throw NOT_FOUND when manifest does not exist', async () => {
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
+        id: 'conn_1',
+        providerId: 'prov_1',
+      });
       mockConnectionRepository.findById.mockResolvedValue({
         id: 'conn_1',
         providerId: 'prov_1',
@@ -246,21 +267,27 @@ describe('VariablesController', () => {
       mockedGetManifest.mockReturnValue(undefined as never);
 
       await expect(
-        controller.getConnectionVariables('conn_1'),
+        controller.getConnectionVariables('conn_1', 'org_1'),
       ).rejects.toThrow(HttpException);
     });
   });
 
   describe('fetchVariableOptions', () => {
     it('should throw NOT_FOUND when connection does not exist', async () => {
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
+        id: 'nonexistent',
+      });
       mockConnectionRepository.findById.mockResolvedValue(null);
 
       await expect(
-        controller.fetchVariableOptions('nonexistent', 'var_1'),
+        controller.fetchVariableOptions('nonexistent', 'var_1', 'org_1'),
       ).rejects.toThrow(HttpException);
     });
 
     it('should throw BAD_REQUEST when connection is not active', async () => {
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
+        id: 'conn_1',
+      });
       mockConnectionRepository.findById.mockResolvedValue({
         id: 'conn_1',
         providerId: 'prov_1',
@@ -268,11 +295,14 @@ describe('VariablesController', () => {
       });
 
       await expect(
-        controller.fetchVariableOptions('conn_1', 'var_1'),
+        controller.fetchVariableOptions('conn_1', 'var_1', 'org_1'),
       ).rejects.toThrow(HttpException);
     });
 
     it('should return static options when no fetchOptions defined', async () => {
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
+        id: 'conn_1',
+      });
       mockConnectionRepository.findById.mockResolvedValue({
         id: 'conn_1',
         providerId: 'prov_1',
@@ -294,12 +324,15 @@ describe('VariablesController', () => {
         checks: [],
       } as never);
 
-      const result = await controller.fetchVariableOptions('conn_1', 'var_1');
+      const result = await controller.fetchVariableOptions('conn_1', 'var_1', 'org_1');
 
       expect(result.options).toEqual([{ value: 'a', label: 'A' }]);
     });
 
     it('should throw NOT_FOUND when variable does not exist', async () => {
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
+        id: 'conn_1',
+      });
       mockConnectionRepository.findById.mockResolvedValue({
         id: 'conn_1',
         providerId: 'prov_1',
@@ -315,13 +348,16 @@ describe('VariablesController', () => {
       } as never);
 
       await expect(
-        controller.fetchVariableOptions('conn_1', 'missing_var'),
+        controller.fetchVariableOptions('conn_1', 'missing_var', 'org_1'),
       ).rejects.toThrow(HttpException);
     });
   });
 
   describe('saveConnectionVariables', () => {
     it('should merge and save variables', async () => {
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
+        id: 'conn_1',
+      });
       mockConnectionRepository.findById.mockResolvedValue({
         id: 'conn_1',
         variables: { existing: 'value' },
@@ -330,7 +366,7 @@ describe('VariablesController', () => {
 
       const result = await controller.saveConnectionVariables('conn_1', {
         variables: { newVar: 'newValue' },
-      });
+      }, 'org_1');
 
       expect(mockConnectionRepository.update).toHaveBeenCalledWith('conn_1', {
         variables: { existing: 'value', newVar: 'newValue' },
@@ -343,16 +379,22 @@ describe('VariablesController', () => {
     });
 
     it('should throw NOT_FOUND when connection does not exist', async () => {
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
+        id: 'nonexistent',
+      });
       mockConnectionRepository.findById.mockResolvedValue(null);
 
       await expect(
         controller.saveConnectionVariables('nonexistent', {
           variables: { key: 'val' },
-        }),
+        }, 'org_1'),
       ).rejects.toThrow(HttpException);
     });
 
     it('should handle empty existing variables', async () => {
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
+        id: 'conn_1',
+      });
       mockConnectionRepository.findById.mockResolvedValue({
         id: 'conn_1',
         variables: null,
@@ -361,7 +403,7 @@ describe('VariablesController', () => {
 
       const result = await controller.saveConnectionVariables('conn_1', {
         variables: { newVar: 'value' },
-      });
+      }, 'org_1');
 
       expect(mockConnectionRepository.update).toHaveBeenCalledWith('conn_1', {
         variables: { newVar: 'value' },
@@ -370,6 +412,9 @@ describe('VariablesController', () => {
     });
 
     it('should trigger auto-run checks after saving', async () => {
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
+        id: 'conn_1',
+      });
       mockConnectionRepository.findById.mockResolvedValue({
         id: 'conn_1',
         variables: {},
@@ -378,7 +423,7 @@ describe('VariablesController', () => {
 
       await controller.saveConnectionVariables('conn_1', {
         variables: { key: 'val' },
-      });
+      }, 'org_1');
 
       expect(
         mockAutoCheckRunnerService.tryAutoRunChecks,

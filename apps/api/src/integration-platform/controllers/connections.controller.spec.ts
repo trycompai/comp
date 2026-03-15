@@ -49,6 +49,7 @@ describe('ConnectionsController', () => {
   const mockConnectionService = {
     getOrganizationConnections: jest.fn(),
     getConnection: jest.fn(),
+    getConnectionForOrg: jest.fn(),
     createConnection: jest.fn(),
     activateConnection: jest.fn(),
     pauseConnection: jest.fn(),
@@ -233,13 +234,14 @@ describe('ConnectionsController', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      mockConnectionService.getConnection.mockResolvedValue(connection);
+      mockConnectionService.getConnectionForOrg.mockResolvedValue(connection);
       mockedGetManifest.mockReturnValue(undefined as never);
 
-      const result = await controller.getConnection('conn_1');
+      const result = await controller.getConnection('conn_1', 'org_1');
 
-      expect(mockConnectionService.getConnection).toHaveBeenCalledWith(
+      expect(mockConnectionService.getConnectionForOrg).toHaveBeenCalledWith(
         'conn_1',
+        'org_1',
       );
       expect(result.id).toBe('conn_1');
       expect(result.providerSlug).toBe('github');
@@ -318,18 +320,18 @@ describe('ConnectionsController', () => {
 
   describe('testConnection', () => {
     it('should throw NOT_FOUND when provider slug is missing', async () => {
-      mockConnectionService.getConnection.mockResolvedValue({
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
         id: 'conn_1',
         provider: undefined,
       });
 
-      await expect(controller.testConnection('conn_1')).rejects.toThrow(
+      await expect(controller.testConnection('conn_1', 'org_1')).rejects.toThrow(
         HttpException,
       );
     });
 
     it('should throw BAD_REQUEST when no credentials found', async () => {
-      mockConnectionService.getConnection.mockResolvedValue({
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
         id: 'conn_1',
         provider: { slug: 'datadog' },
       });
@@ -337,13 +339,13 @@ describe('ConnectionsController', () => {
         null,
       );
 
-      await expect(controller.testConnection('conn_1')).rejects.toThrow(
+      await expect(controller.testConnection('conn_1', 'org_1')).rejects.toThrow(
         HttpException,
       );
     });
 
     it('should activate connection when no handler is defined', async () => {
-      mockConnectionService.getConnection.mockResolvedValue({
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
         id: 'conn_1',
         provider: { slug: 'custom-provider' },
       });
@@ -356,7 +358,7 @@ describe('ConnectionsController', () => {
       } as never);
       mockConnectionService.activateConnection.mockResolvedValue(undefined);
 
-      const result = await controller.testConnection('conn_1');
+      const result = await controller.testConnection('conn_1', 'org_1');
 
       expect(mockConnectionService.activateConnection).toHaveBeenCalledWith(
         'conn_1',
@@ -372,7 +374,7 @@ describe('ConnectionsController', () => {
         status: 'paused',
       });
 
-      const result = await controller.pauseConnection('conn_1');
+      const result = await controller.pauseConnection('conn_1', 'org_1');
 
       expect(mockConnectionService.pauseConnection).toHaveBeenCalledWith(
         'conn_1',
@@ -388,7 +390,7 @@ describe('ConnectionsController', () => {
         status: 'active',
       });
 
-      const result = await controller.resumeConnection('conn_1');
+      const result = await controller.resumeConnection('conn_1', 'org_1');
 
       expect(mockConnectionService.activateConnection).toHaveBeenCalledWith(
         'conn_1',
@@ -404,7 +406,7 @@ describe('ConnectionsController', () => {
         status: 'disconnected',
       });
 
-      const result = await controller.disconnectConnection('conn_1');
+      const result = await controller.disconnectConnection('conn_1', 'org_1');
 
       expect(mockConnectionService.disconnectConnection).toHaveBeenCalledWith(
         'conn_1',
@@ -417,7 +419,7 @@ describe('ConnectionsController', () => {
     it('should call service.deleteConnection', async () => {
       mockConnectionService.deleteConnection.mockResolvedValue(undefined);
 
-      const result = await controller.deleteConnection('conn_1');
+      const result = await controller.deleteConnection('conn_1', 'org_1');
 
       expect(mockConnectionService.deleteConnection).toHaveBeenCalledWith(
         'conn_1',
@@ -428,7 +430,7 @@ describe('ConnectionsController', () => {
 
   describe('updateConnection', () => {
     it('should merge metadata and update', async () => {
-      mockConnectionService.getConnection.mockResolvedValue({
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
         id: 'conn_1',
         organizationId: 'org_1',
         metadata: { existing: 'value' },
@@ -451,11 +453,9 @@ describe('ConnectionsController', () => {
     });
 
     it('should throw FORBIDDEN when org does not match', async () => {
-      mockConnectionService.getConnection.mockResolvedValue({
-        id: 'conn_1',
-        organizationId: 'org_other',
-        metadata: {},
-      });
+      mockConnectionService.getConnectionForOrg.mockRejectedValue(
+        new HttpException('Connection not found', 404),
+      );
 
       await expect(
         controller.updateConnection('conn_1', 'org_1', {
@@ -467,11 +467,9 @@ describe('ConnectionsController', () => {
 
   describe('ensureValidCredentials', () => {
     it('should throw NOT_FOUND when org does not match', async () => {
-      mockConnectionService.getConnection.mockResolvedValue({
-        id: 'conn_1',
-        organizationId: 'org_other',
-        status: 'active',
-      });
+      mockConnectionService.getConnectionForOrg.mockRejectedValue(
+        new HttpException('Connection not found', 404),
+      );
 
       await expect(
         controller.ensureValidCredentials('conn_1', 'org_1'),
@@ -479,7 +477,7 @@ describe('ConnectionsController', () => {
     });
 
     it('should throw BAD_REQUEST when connection is not active', async () => {
-      mockConnectionService.getConnection.mockResolvedValue({
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
         id: 'conn_1',
         organizationId: 'org_1',
         status: 'paused',
@@ -491,7 +489,7 @@ describe('ConnectionsController', () => {
     });
 
     it('should return credentials for api_key auth', async () => {
-      mockConnectionService.getConnection.mockResolvedValue({
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
         id: 'conn_1',
         organizationId: 'org_1',
         status: 'active',
@@ -516,11 +514,9 @@ describe('ConnectionsController', () => {
 
   describe('updateCredentials', () => {
     it('should throw NOT_FOUND when org does not match', async () => {
-      mockConnectionService.getConnection.mockResolvedValue({
-        id: 'conn_1',
-        organizationId: 'org_other',
-        provider: { slug: 'datadog' },
-      });
+      mockConnectionService.getConnectionForOrg.mockRejectedValue(
+        new HttpException('Connection not found', 404),
+      );
 
       await expect(
         controller.updateCredentials('conn_1', 'org_1', {
@@ -530,7 +526,7 @@ describe('ConnectionsController', () => {
     });
 
     it('should throw BAD_REQUEST for OAuth integrations', async () => {
-      mockConnectionService.getConnection.mockResolvedValue({
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
         id: 'conn_1',
         organizationId: 'org_1',
         provider: { slug: 'github' },
@@ -547,7 +543,7 @@ describe('ConnectionsController', () => {
     });
 
     it('should merge and store credentials', async () => {
-      mockConnectionService.getConnection.mockResolvedValue({
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
         id: 'conn_1',
         organizationId: 'org_1',
         status: 'active',
@@ -576,7 +572,7 @@ describe('ConnectionsController', () => {
     });
 
     it('should activate connection if it was in error state', async () => {
-      mockConnectionService.getConnection.mockResolvedValue({
+      mockConnectionService.getConnectionForOrg.mockResolvedValue({
         id: 'conn_1',
         organizationId: 'org_1',
         status: 'error',

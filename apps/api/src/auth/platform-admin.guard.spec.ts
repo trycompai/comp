@@ -67,7 +67,7 @@ describe('PlatformAdminGuard', () => {
         authorization: 'Bearer session-token-abc',
       });
 
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue({
+      (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue({
         user: { id: 'usr_1' },
       });
       (mockDb.user.findUnique as jest.Mock).mockResolvedValue({
@@ -90,7 +90,7 @@ describe('PlatformAdminGuard', () => {
         cookie: 'better-auth.session_token=abc123',
       });
 
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue({
+      (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue({
         user: { id: 'usr_1' },
       });
       (mockDb.user.findUnique as jest.Mock).mockResolvedValue({
@@ -109,7 +109,7 @@ describe('PlatformAdminGuard', () => {
         authorization: 'Bearer my-token',
       });
 
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue({
+      (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue({
         user: { id: 'usr_1' },
       });
       (mockDb.user.findUnique as jest.Mock).mockResolvedValue({
@@ -120,7 +120,7 @@ describe('PlatformAdminGuard', () => {
 
       await guard.canActivate(context);
 
-      const callArg = (mockAuth.api.getSession as jest.Mock).mock.calls[0][0];
+      const callArg = (mockAuth.api.getSession as unknown as jest.Mock).mock.calls[0][0];
       expect(callArg.headers.get('authorization')).toBe('Bearer my-token');
     });
 
@@ -136,7 +136,7 @@ describe('PlatformAdminGuard', () => {
       const context = createMockContext({
         authorization: 'Bearer invalid-token',
       });
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue(null);
+      (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue(null);
 
       await expect(guard.canActivate(context)).rejects.toThrow(
         UnauthorizedException,
@@ -147,7 +147,7 @@ describe('PlatformAdminGuard', () => {
       const context = createMockContext({
         cookie: 'session=abc',
       });
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue({
+      (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue({
         user: null,
       });
 
@@ -160,7 +160,7 @@ describe('PlatformAdminGuard', () => {
       const context = createMockContext({
         cookie: 'session=abc',
       });
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue({
+      (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue({
         user: { id: 'usr_gone' },
       });
       (mockDb.user.findUnique as jest.Mock).mockResolvedValue(null);
@@ -174,7 +174,7 @@ describe('PlatformAdminGuard', () => {
       const context = createMockContext({
         cookie: 'session=abc',
       });
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue({
+      (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue({
         user: { id: 'usr_1' },
       });
       (mockDb.user.findUnique as jest.Mock).mockResolvedValue({
@@ -192,7 +192,7 @@ describe('PlatformAdminGuard', () => {
       const context = createMockContext({
         authorization: 'Bearer token',
       });
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue({
+      (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue({
         user: { id: 'usr_1' },
       });
       (mockDb.user.findUnique as jest.Mock).mockResolvedValue({
