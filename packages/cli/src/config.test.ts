@@ -71,8 +71,8 @@ describe('config', () => {
       },
     };
 
-    const active = config.environments[config.activeEnv];
-    expect(active.session?.token).toBe('staging-tok');
+    const active = config.environments[config.activeEnv as keyof typeof config.environments];
+    expect(active?.session?.token).toBe('staging-tok');
   });
 
   it('should detect expired sessions', () => {
