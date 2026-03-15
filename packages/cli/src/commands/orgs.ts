@@ -2,10 +2,17 @@ import { adminFetch } from '../client';
 import { extractFlag, output } from '../utils';
 
 export async function orgsCommand(args: string[]): Promise<void> {
-  const id = args[0];
+  const sub = args[0];
 
-  if (id && !id.startsWith('--')) {
-    const org = await adminFetch(`orgs/${id}`);
+  if (sub === 'search') {
+    const query = extractFlag(args, '--query') ?? extractFlag(args, '-q') ?? args[1];
+    const result = await adminFetch(`orgs/search?q=${encodeURIComponent(query ?? '')}`);
+    output(result);
+    return;
+  }
+
+  if (sub && !sub.startsWith('--')) {
+    const org = await adminFetch(`orgs/${sub}`);
     output(org);
     return;
   }

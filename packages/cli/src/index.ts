@@ -4,6 +4,7 @@ import { loginCommand } from './commands/login';
 import { logoutCommand } from './commands/logout';
 import { envCommand } from './commands/env';
 import { statsCommand } from './commands/stats';
+import { orgCommand } from './commands/org';
 import { orgsCommand } from './commands/orgs';
 import { usersCommand } from './commands/users';
 import { auditLogsCommand } from './commands/audit-logs';
@@ -29,6 +30,9 @@ async function main(): Promise<void> {
       break;
     case 'stats':
       await statsCommand();
+      break;
+    case 'org':
+      await orgCommand(commandArgs);
       break;
     case 'orgs':
       await orgsCommand(commandArgs);

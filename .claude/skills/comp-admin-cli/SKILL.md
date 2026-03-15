@@ -183,6 +183,19 @@ comp users search --email someone@
 | `comp stats` | GET | `/v1/admin/stats` |
 | `comp orgs` | GET | `/v1/admin/orgs` |
 | `comp orgs <id>` | GET | `/v1/admin/orgs/:id` |
+| `comp orgs search --query <q>` | GET | `/v1/admin/orgs/search?q=` |
+| `comp org <id> health` | GET | `/v1/admin/orgs/:orgId/health` |
+| `comp org <id> members` | GET | `/v1/admin/orgs/:orgId/members` |
+| `comp org <id> policies` | GET | `/v1/admin/orgs/:orgId/policies` |
+| `comp org <id> tasks` | GET | `/v1/admin/orgs/:orgId/tasks` |
+| `comp org <id> controls` | GET | `/v1/admin/orgs/:orgId/controls` |
+| `comp org <id> risks` | GET | `/v1/admin/orgs/:orgId/risks` |
+| `comp org <id> vendors` | GET | `/v1/admin/orgs/:orgId/vendors` |
+| `comp org <id> frameworks` | GET | `/v1/admin/orgs/:orgId/frameworks` |
+| `comp org <id> findings` | GET | `/v1/admin/orgs/:orgId/findings` |
+| `comp org <id> integrations` | GET | `/v1/admin/orgs/:orgId/integrations` |
+| `comp org <id> comments` | GET | `/v1/admin/orgs/:orgId/comments` |
+| `comp org <id> audit-logs` | GET | `/v1/admin/orgs/:orgId/audit-logs` |
 | `comp users` | GET | `/v1/admin/users` |
 | `comp users search --email <q>` | GET | `/v1/admin/users/search?email=` |
 | `comp users <id>` | GET | `/v1/admin/users/:id` |

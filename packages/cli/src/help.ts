@@ -17,6 +17,8 @@ ${YELLOW}Commands:${RESET}
   ${CYAN}env${RESET}               Show or switch active environment ${DIM}[name]${RESET}
   ${CYAN}stats${RESET}             Platform overview
   ${CYAN}orgs${RESET}              List organizations ${DIM}[id] [--limit N] [--offset N]${RESET}
+  ${CYAN}orgs search${RESET}       Search orgs by name, slug, id, or member email ${DIM}--query <q>${RESET}
+  ${CYAN}org${RESET}               Drill into an org ${DIM}<orgId> <subcommand> [options]${RESET}
   ${CYAN}users${RESET}             List users ${DIM}[id] [--limit N] [--offset N]${RESET}
   ${CYAN}users search${RESET}      Search users by email ${DIM}--email <query>${RESET}
   ${CYAN}users platform-admin${RESET}  Toggle platform admin ${DIM}<id>${RESET}
@@ -28,6 +30,8 @@ ${YELLOW}Examples:${RESET}
   comp login
   comp stats
   comp orgs --limit 10
+  comp org org_abc123 health
+  comp org org_abc123 tasks --status todo --limit 5
   comp users search --email john@
   comp users platform-admin usr_abc123
 `;
@@ -74,12 +78,42 @@ Shows counts of organizations, users, members, controls, policies,
 risks, vendors, tasks, frameworks, and findings.
 `,
   orgs: `
-${BOLD}comp orgs${RESET} — List or get organizations
+${BOLD}comp orgs${RESET} — List, get, or search organizations
 
 ${YELLOW}Usage:${RESET}
-  comp orgs                    List organizations
-  comp orgs <id>               Get organization details
-  comp orgs --limit 10         Limit results
+  comp orgs                              List organizations
+  comp orgs <id>                         Get organization details
+  comp orgs search --query <q>           Search by name, slug, id, or member email
+  comp orgs --limit 10                   Limit results
+
+${YELLOW}Examples:${RESET}
+  comp orgs search --query acme
+  comp orgs search --query john@example.com
+`,
+  org: `
+${BOLD}comp org${RESET} — Drill into an organization
+
+${YELLOW}Usage:${RESET}
+  comp org <orgId> <subcommand> [options]
+
+${YELLOW}Subcommands:${RESET}
+  ${CYAN}health${RESET}          Diagnostic summary (overdue tasks, stale integrations, etc.)
+  ${CYAN}members${RESET}         List members with roles ${DIM}[--limit N]${RESET}
+  ${CYAN}policies${RESET}        List policies ${DIM}[--limit N] [--status draft|published|...]${RESET}
+  ${CYAN}tasks${RESET}           List tasks ${DIM}[--limit N] [--status todo|in_progress|done|...]${RESET}
+  ${CYAN}controls${RESET}        List controls ${DIM}[--limit N]${RESET}
+  ${CYAN}risks${RESET}           List risks ${DIM}[--limit N] [--status open|closed|...]${RESET}
+  ${CYAN}vendors${RESET}         List vendors ${DIM}[--limit N]${RESET}
+  ${CYAN}frameworks${RESET}      List frameworks
+  ${CYAN}findings${RESET}        List findings ${DIM}[--limit N] [--status open|closed|...]${RESET}
+  ${CYAN}integrations${RESET}    List integrations
+  ${CYAN}comments${RESET}        Recent comments ${DIM}[--limit N]${RESET}
+  ${CYAN}audit-logs${RESET}      Org audit logs ${DIM}[--limit N]${RESET}
+
+${YELLOW}Examples:${RESET}
+  comp org org_abc123 health
+  comp org org_abc123 tasks --status todo --limit 5
+  comp org org_abc123 members
 `,
   users: `
 ${BOLD}comp users${RESET} — List, search, or get users

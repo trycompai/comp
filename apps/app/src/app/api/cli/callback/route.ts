@@ -20,7 +20,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   // Read the session token from the better-auth cookie
+  // HTTPS environments use the __Secure- prefix
   const sessionToken =
+    request.cookies.get('__Secure-better-auth.session_token')?.value ??
     request.cookies.get('better-auth.session_token')?.value;
 
   if (!sessionToken) {

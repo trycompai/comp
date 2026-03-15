@@ -13,8 +13,7 @@ const LOGIN_TIMEOUT_MS = 120_000; // 2 minutes
 
 function getAppUrl(apiUrl: string): string {
   if (apiUrl.includes('localhost:3333')) return 'http://localhost:3000';
-  if (apiUrl.includes('staging-api.trycomp.ai'))
-    return 'https://app.staging.trycomp.ai';
+  if (apiUrl.includes('staging')) return 'https://app.staging.trycomp.ai';
   return 'https://app.trycomp.ai';
 }
 

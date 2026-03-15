@@ -130,6 +130,44 @@ describe('AdminService', () => {
     });
   });
 
+  describe('searchOrgs', () => {
+    it('should search orgs by name, slug, id, or member email', async () => {
+      const mockOrgs = [
+        { id: 'org_1', name: 'Acme Corp', _count: { members: 5, frameworkInstances: 2 } },
+      ];
+      (mockDb.organization.findMany as jest.Mock).mockResolvedValue(mockOrgs);
+
+      const result = await service.searchOrgs('acme');
+
+      expect(result).toEqual({ data: mockOrgs });
+      expect(mockDb.organization.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            OR: expect.arrayContaining([
+              { name: { contains: 'acme', mode: 'insensitive' } },
+              { slug: { contains: 'acme', mode: 'insensitive' } },
+            ]),
+          },
+          take: 20,
+        }),
+      );
+    });
+
+    it('should return empty data for short queries', async () => {
+      const result = await service.searchOrgs('a');
+
+      expect(result).toEqual({ data: [] });
+      expect(mockDb.organization.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should return empty data for empty query', async () => {
+      const result = await service.searchOrgs('');
+
+      expect(result).toEqual({ data: [] });
+      expect(mockDb.organization.findMany).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getOrg', () => {
     it('should return organization details with counts', async () => {
       const mockOrg = {
@@ -209,7 +247,7 @@ describe('AdminService', () => {
   });
 
   describe('searchUsers', () => {
-    it('should search users by email (case insensitive)', async () => {
+    it('should search users by email with org memberships', async () => {
       const mockUsers = [
         {
           id: 'usr_1',
@@ -218,7 +256,14 @@ describe('AdminService', () => {
           isPlatformAdmin: false,
           createdAt: new Date(),
           lastLogin: null,
-          _count: { members: 1, sessions: 1 },
+          members: [
+            {
+              id: 'mem_1',
+              role: 'admin',
+              deactivated: false,
+              organization: { id: 'org_1', name: 'Acme', slug: 'acme' },
+            },
+          ],
         },
       ];
       (mockDb.user.findMany as jest.Mock).mockResolvedValue(mockUsers);
@@ -325,11 +370,12 @@ describe('AdminService', () => {
       });
     });
 
-    it('should toggle isPlatformAdmin from true to false', async () => {
+    it('should toggle isPlatformAdmin from true to false when multiple admins exist', async () => {
       (mockDb.user.findUnique as jest.Mock).mockResolvedValue({
         id: 'usr_1',
         isPlatformAdmin: true,
       });
+      (mockDb.user.count as jest.Mock).mockResolvedValue(2);
       (mockDb.user.update as jest.Mock).mockResolvedValue({
         id: 'usr_1',
         email: 'test@test.com',
@@ -344,6 +390,19 @@ describe('AdminService', () => {
         data: { isPlatformAdmin: false },
         select: { id: true, email: true, isPlatformAdmin: true },
       });
+    });
+
+    it('should prevent demoting the last platform admin', async () => {
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({
+        id: 'usr_1',
+        isPlatformAdmin: true,
+      });
+      (mockDb.user.count as jest.Mock).mockResolvedValue(1);
+
+      await expect(service.togglePlatformAdmin('usr_1')).rejects.toThrow(
+        'Cannot demote the last platform admin',
+      );
+      expect(mockDb.user.update).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when user not found', async () => {

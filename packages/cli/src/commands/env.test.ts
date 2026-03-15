@@ -21,7 +21,7 @@ describe('envCommand', () => {
       activeEnv: 'local',
       environments: {
         local: { apiUrl: 'http://localhost:3333' },
-        staging: { apiUrl: 'https://staging-api.trycomp.ai' },
+        staging: { apiUrl: 'https://api.staging.trycomp.ai' },
       },
     };
 
@@ -50,7 +50,7 @@ describe('envCommand', () => {
       activeEnv: 'local',
       environments: {
         local: { apiUrl: 'http://localhost:3333' },
-        staging: { apiUrl: 'https://staging-api.trycomp.ai' },
+        staging: { apiUrl: 'https://api.staging.trycomp.ai' },
       },
     };
 

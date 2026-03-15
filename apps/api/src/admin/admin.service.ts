@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@trycompai/db';
 
 interface PaginationParams {
@@ -73,6 +73,39 @@ export class AdminService {
     return { data, count };
   }
 
+  async searchOrgs(query: string) {
+    if (!query || query.length < 2) {
+      return { data: [] };
+    }
+
+    // Search by org name, slug, or member email
+    const data = await db.organization.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { slug: { contains: query, mode: 'insensitive' } },
+          { id: { contains: query, mode: 'insensitive' } },
+          {
+            members: {
+              some: {
+                user: { email: { contains: query, mode: 'insensitive' } },
+              },
+            },
+          },
+        ],
+      },
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: { members: true, frameworkInstances: true },
+        },
+      },
+    });
+
+    return { data };
+  }
+
   async getOrg(id: string) {
     const org = await db.organization.findUnique({
       where: { id },
@@ -140,8 +173,15 @@ export class AdminService {
         isPlatformAdmin: true,
         createdAt: true,
         lastLogin: true,
-        _count: {
-          select: { members: true, sessions: true },
+        members: {
+          select: {
+            id: true,
+            role: true,
+            deactivated: true,
+            organization: {
+              select: { id: true, name: true, slug: true },
+            },
+          },
         },
       },
     });
@@ -198,6 +238,18 @@ export class AdminService {
 
     if (!user) {
       throw new NotFoundException(`User ${id} not found`);
+    }
+
+    // Prevent removing the last platform admin
+    if (user.isPlatformAdmin) {
+      const adminCount = await db.user.count({
+        where: { isPlatformAdmin: true },
+      });
+      if (adminCount <= 1) {
+        throw new BadRequestException(
+          'Cannot demote the last platform admin. Promote another user first.',
+        );
+      }
     }
 
     const updated = await db.user.update({

@@ -40,7 +40,7 @@ describe('config serialization', () => {
     const config = {
       activeEnv: 'staging',
       environments: {
-        staging: { apiUrl: 'https://staging-api.trycomp.ai' },
+        staging: { apiUrl: 'https://api.staging.trycomp.ai' },
       },
     };
 
@@ -59,7 +59,7 @@ describe('config serialization', () => {
           session: { token: 'local-tok', email: 'a@t.com', expiresAt: '2099-01-01T00:00:00Z' },
         },
         staging: {
-          apiUrl: 'https://staging-api.trycomp.ai',
+          apiUrl: 'https://api.staging.trycomp.ai',
           session: { token: 'staging-tok', email: 'b@t.com', expiresAt: '2099-01-01T00:00:00Z' },
         },
         production: {

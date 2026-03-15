@@ -79,6 +79,19 @@ describe('AdminController', () => {
     });
   });
 
+  describe('searchOrgs', () => {
+    it('should pass query to service', async () => {
+      service.searchOrgs = jest
+        .fn()
+        .mockResolvedValue({ data: [{ id: 'org_1', name: 'Acme' }] });
+
+      const result = await controller.searchOrgs('acme');
+
+      expect(result).toEqual({ data: [{ id: 'org_1', name: 'Acme' }] });
+      expect(service.searchOrgs).toHaveBeenCalledWith('acme');
+    });
+  });
+
   describe('getOrg', () => {
     it('should pass id to service', async () => {
       const org = { id: 'org_1', name: 'Test' };

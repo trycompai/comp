@@ -24,7 +24,7 @@ const CONFIG_PATH = join(homedir(), '.comprc');
 
 const DEFAULT_ENVIRONMENTS: Record<string, { apiUrl: string }> = {
   local: { apiUrl: 'http://localhost:3333' },
-  staging: { apiUrl: 'https://staging-api.trycomp.ai' },
+  staging: { apiUrl: 'https://api.staging.trycomp.ai' },
   production: { apiUrl: 'https://api.trycomp.ai' },
 };
 
@@ -103,6 +103,3 @@ export function configPath(): string {
   return CONFIG_PATH;
 }
 
-export function sessionTtlMs(): number {
-  return SESSION_TTL_MS;
-}

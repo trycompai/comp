@@ -30,6 +30,11 @@ export class AdminController {
     });
   }
 
+  @Get('orgs/search')
+  async searchOrgs(@Query('q') query: string) {
+    return this.adminService.searchOrgs(query);
+  }
+
   @Get('orgs/:id')
   async getOrg(@Param('id') id: string) {
     return this.adminService.getOrg(id);
