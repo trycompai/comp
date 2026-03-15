@@ -79,6 +79,32 @@ describe('CLI callback route', () => {
     expect(res.status).toBe(400);
   });
 
+  it('should prefer __Secure- prefixed cookie for HTTPS environments', async () => {
+    const req = createRequest(
+      { port: '8417' },
+      { '__Secure-better-auth.session_token': 'secure-token-456' },
+    );
+
+    const res = await GET(req);
+
+    expect(res.status).toBe(307);
+    const location = res.headers.get('location') ?? '';
+    expect(location).toContain('token=secure-token-456');
+  });
+
+  it('should fall back to unprefixed cookie when __Secure- is absent', async () => {
+    const req = createRequest(
+      { port: '8417' },
+      { 'better-auth.session_token': 'plain-token-789' },
+    );
+
+    const res = await GET(req);
+
+    expect(res.status).toBe(307);
+    const location = res.headers.get('location') ?? '';
+    expect(location).toContain('token=plain-token-789');
+  });
+
   it('should return 401 when session cookie is missing', async () => {
     const req = createRequest({ port: '8417' });
 

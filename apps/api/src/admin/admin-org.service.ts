@@ -82,7 +82,10 @@ export class AdminOrgService {
       db.integration.count({
         where: {
           organizationId: orgId,
-          lastRunAt: { lt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) },
+          OR: [
+            { lastRunAt: null },
+            { lastRunAt: { lt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) } },
+          ],
         },
       }),
       db.vendor.count({ where: { organizationId: orgId } }),
