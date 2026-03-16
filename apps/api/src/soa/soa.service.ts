@@ -394,9 +394,9 @@ export class SOAService {
     // Cannot assign a platform admin as approver
     const approverUser = await db.user.findUnique({
       where: { id: approverMember.userId },
-      select: { isPlatformAdmin: true },
+      select: { role: true },
     });
-    if (approverUser?.isPlatformAdmin) {
+    if (approverUser?.role === 'admin') {
       throw new BadRequestException('Cannot assign a platform admin as approver');
     }
 

@@ -18,7 +18,7 @@ export const weeklyTaskReminder = schedules.task({
           where: {
             deactivated: false,
             OR: [
-              { user: { isPlatformAdmin: false } },
+              { user: { role: { not: 'admin' } } },
               { role: { contains: 'owner' } },
             ],
           },

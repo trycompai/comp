@@ -9,7 +9,10 @@ model User {
   lastLogin                      DateTime?
   emailNotificationsUnsubscribed Boolean   @default(false)
   emailPreferences               Json?     @default("{\"policyNotifications\":true,\"taskReminders\":true,\"weeklyTaskDigest\":true,\"unassignedItemsNotifications\":true}")
-  isPlatformAdmin                Boolean   @default(false)
+  role                           String?   @default("user")
+  banned                         Boolean?
+  banReason                      String?
+  banExpires                     DateTime?
 
   accounts           Account[]
   auditLog           AuditLog[]
@@ -20,6 +23,7 @@ model User {
   fleetPolicyResults FleetPolicyResult[]
   evidenceSubmissions EvidenceSubmission[] @relation("EvidenceSubmitter")
   evidenceReviews     EvidenceSubmission[] @relation("EvidenceReviewer")
+  adminFindings       Finding[]            @relation("AdminFindingCreator")
 
   @@unique([email])
 }
@@ -46,6 +50,7 @@ model Session {
   userAgent            String?
   userId               String
   activeOrganizationId String?
+  impersonatedBy       String?
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([token])

@@ -9,11 +9,15 @@ import {
   HttpStatus,
   Logger,
   UseGuards,
+  UseInterceptors,
+  Req,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { PlatformCredentialRepository } from '../repositories/platform-credential.repository';
 import { getAllManifests, getManifest } from '@trycompai/integration-platform';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
+import { PlatformAuditLogInterceptor } from '../interceptors/platform-audit-log.interceptor';
 
 interface SavePlatformCredentialDto {
   providerSlug: string;
@@ -25,6 +29,8 @@ interface SavePlatformCredentialDto {
 
 @Controller({ path: 'admin/integrations', version: '1' })
 @UseGuards(PlatformAdminGuard)
+@UseInterceptors(PlatformAuditLogInterceptor)
+@Throttle({ default: { ttl: 60000, limit: 30 } })
 export class AdminIntegrationsController {
   private readonly logger = new Logger(AdminIntegrationsController.name);
 
@@ -33,16 +39,12 @@ export class AdminIntegrationsController {
     private readonly platformCredentialRepository: PlatformCredentialRepository,
   ) {}
 
-  /**
-   * List all integrations with their credential status
-   */
   @Get()
   async listIntegrations() {
     const manifests = getAllManifests();
     const platformCredentials =
       await this.platformCredentialRepository.findAll();
 
-    // Create a map of configured credentials
     const configuredProviders = new Set(
       platformCredentials.map((c) => c.providerSlug),
     );
@@ -62,17 +64,14 @@ export class AdminIntegrationsController {
         capabilities: manifest.capabilities,
         isActive: manifest.isActive,
         docsUrl: manifest.docsUrl,
-        // Credential status
         hasCredentials: configuredProviders.has(manifest.id),
         credentialConfiguredAt: credential?.createdAt,
         credentialUpdatedAt: credential?.updatedAt,
-        // Encrypted credential data (decrypted client-side)
-        encryptedClientId: credential?.encryptedClientId,
-        encryptedClientSecret: credential?.encryptedClientSecret,
+        clientIdHint: credential?.clientIdHint,
+        clientSecretHint: credential?.clientSecretHint,
         existingCustomSettings:
           (credential as { customSettings?: Record<string, unknown> } | undefined)
             ?.customSettings || undefined,
-        // OAuth-specific info
         ...(manifest.auth.type === 'oauth2' && {
           setupInstructions: manifest.auth.config.setupInstructions,
           createAppUrl: manifest.auth.config.createAppUrl,
@@ -134,7 +133,7 @@ export class AdminIntegrationsController {
   @Post('credentials')
   async savePlatformCredentials(
     @Body() body: SavePlatformCredentialDto,
-    // TODO: Get userId from auth context
+    @Req() req: { userId: string },
   ) {
     const {
       providerSlug,
@@ -144,7 +143,6 @@ export class AdminIntegrationsController {
       customSettings,
     } = body;
 
-    // Validate provider exists
     const manifest = getManifest(providerSlug);
     if (!manifest) {
       throw new HttpException(
@@ -153,7 +151,6 @@ export class AdminIntegrationsController {
       );
     }
 
-    // Validate it's an OAuth provider
     if (manifest.auth.type !== 'oauth2') {
       throw new HttpException(
         `Provider ${providerSlug} does not use OAuth`,
@@ -161,7 +158,6 @@ export class AdminIntegrationsController {
       );
     }
 
-    // Validate required fields
     if (!clientId || !clientSecret) {
       throw new HttpException(
         'clientId and clientSecret are required',
@@ -175,19 +171,21 @@ export class AdminIntegrationsController {
       clientSecret,
       customScopes,
       customSettings,
-      // userId from auth context would go here
+      req.userId,
     );
 
-    this.logger.log(`Platform credentials saved for ${providerSlug}`);
+    this.logger.log(
+      `Platform credentials saved for ${providerSlug} by ${req.userId}`,
+    );
 
     return { success: true };
   }
 
-  /**
-   * Delete platform credentials for an integration
-   */
   @Delete('credentials/:providerSlug')
-  async deletePlatformCredentials(@Param('providerSlug') providerSlug: string) {
+  async deletePlatformCredentials(
+    @Param('providerSlug') providerSlug: string,
+    @Req() req: { userId: string },
+  ) {
     const credential =
       await this.platformCredentialRepository.findByProviderSlug(providerSlug);
 
@@ -200,7 +198,9 @@ export class AdminIntegrationsController {
 
     await this.oauthCredentialsService.deletePlatformCredentials(providerSlug);
 
-    this.logger.log(`Platform credentials deleted for ${providerSlug}`);
+    this.logger.log(
+      `Platform credentials deleted for ${providerSlug} by ${req.userId}`,
+    );
 
     return { success: true };
   }

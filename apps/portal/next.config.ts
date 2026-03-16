@@ -5,6 +5,7 @@ const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const config = {
   transpilePackages: [
+    '@trycompai/auth',
     '@trycompai/db',
     '@trycompai/design-system',
     '@carbon/icons-react',

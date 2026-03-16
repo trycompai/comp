@@ -54,7 +54,7 @@ export class AuditLogController {
       where,
       include: {
         user: {
-          select: { id: true, name: true, email: true, image: true, isPlatformAdmin: true },
+          select: { id: true, name: true, email: true, image: true, role: true },
         },
         member: true,
         organization: true,

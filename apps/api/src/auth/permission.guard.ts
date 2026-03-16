@@ -47,11 +47,9 @@ export class PermissionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Get required permissions from route metadata
-    const requiredPermissions =
-      this.reflector.getAllAndOverride<RequiredPermission[]>(PERMISSIONS_KEY, [
-        context.getHandler(),
-        context.getClass(),
-      ]);
+    const requiredPermissions = this.reflector.getAllAndOverride<
+      RequiredPermission[]
+    >(PERMISSIONS_KEY, [context.getHandler(), context.getClass()]);
 
     // No permissions required - allow access
     if (!requiredPermissions || requiredPermissions.length === 0) {
@@ -77,9 +75,7 @@ export class PermissionGuard implements CanActivate {
       );
 
       if (!hasAllPerms) {
-        throw new ForbiddenException(
-          'API key lacks required permission scope',
-        );
+        throw new ForbiddenException('API key lacks required permission scope');
       }
       return true;
     }
@@ -101,9 +97,7 @@ export class PermissionGuard implements CanActivate {
         this.logger.warn(
           `[PermissionGuard] Service "${request.serviceName}" denied: missing permission for ${requiredPermissions.map((p) => `${p.resource}:${p.actions.join(',')}`).join('; ')}`,
         );
-        throw new ForbiddenException(
-          'Service token lacks required permission',
-        );
+        throw new ForbiddenException('Service token lacks required permission');
       }
 
       return true;
@@ -124,10 +118,7 @@ export class PermissionGuard implements CanActivate {
     }
 
     try {
-      const hasPermission = await this.checkPermission(
-        request,
-        permissionBody,
-      );
+      const hasPermission = await this.checkPermission(request, permissionBody);
 
       if (!hasPermission) {
         this.logger.warn(
@@ -141,7 +132,10 @@ export class PermissionGuard implements CanActivate {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error(`[PermissionGuard] Error checking permissions for ${request.method} ${request.url}:`, error);
+      this.logger.error(
+        `[PermissionGuard] Error checking permissions for ${request.method} ${request.url}:`,
+        error,
+      );
       throw new ForbiddenException('Unable to verify permissions');
     }
   }
@@ -192,9 +186,7 @@ export class PermissionGuard implements CanActivate {
     // If user has any privileged role, they're not restricted
     const privileged: readonly string[] = PRIVILEGED_ROLES;
     const restricted: readonly string[] = RESTRICTED_ROLES;
-    const hasPrivilegedRole = roles.some((role) =>
-      privileged.includes(role),
-    );
+    const hasPrivilegedRole = roles.some((role) => privileged.includes(role));
     if (hasPrivilegedRole) {
       return false;
     }

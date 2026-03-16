@@ -69,7 +69,7 @@ export class TaskNotifierService {
               organizationId,
               deactivated: false,
               OR: [
-                { user: { isPlatformAdmin: false } },
+                { user: { role: { not: 'admin' } } },
                 { role: { contains: 'owner' } },
               ],
             },
@@ -420,7 +420,7 @@ export class TaskNotifierService {
               organizationId,
               deactivated: false,
               OR: [
-                { user: { isPlatformAdmin: false } },
+                { user: { role: { not: 'admin' } } },
                 { role: { contains: 'owner' } },
               ],
             },
@@ -1096,7 +1096,7 @@ export class TaskNotifierService {
             organizationId,
             deactivated: false,
             OR: [
-              { user: { isPlatformAdmin: false } },
+              { user: { role: { not: 'admin' } } },
               { role: { contains: 'owner' } },
             ],
           },
@@ -1303,7 +1303,7 @@ export class TaskNotifierService {
             organizationId,
             deactivated: false,
             OR: [
-              { user: { isPlatformAdmin: false } },
+              { user: { role: { not: 'admin' } } },
               { role: { contains: 'owner' } },
             ],
           },

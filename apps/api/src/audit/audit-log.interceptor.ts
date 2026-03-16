@@ -70,7 +70,7 @@ export class AuditLogInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    const { organizationId, userId, memberId } = request;
+    const { organizationId, userId, memberId, impersonatedBy } = request;
     if (!organizationId || !userId) {
       return next.handle();
     }
@@ -189,6 +189,7 @@ export class AuditLogInterceptor implements NestInterceptor {
                 changes,
                 commentCtx,
                 descriptionOverride,
+                impersonatedBy,
               ).catch((err) => {
                 this.logger.error('Failed to create audit log entry', err);
               });
@@ -253,6 +254,7 @@ export class AuditLogInterceptor implements NestInterceptor {
     changes: ChangesRecord | null,
     commentContext: AuditContextOverride | null,
     descriptionOverride: string | null,
+    impersonatedBy?: string,
   ): Promise<void> {
     const entityType =
       commentContext?.entityType ?? RESOURCE_TO_ENTITY_TYPE[resource] ?? null;
@@ -273,6 +275,9 @@ export class AuditLogInterceptor implements NestInterceptor {
     if (changes) {
       auditData.changes = changes;
     }
+    if (impersonatedBy) {
+      auditData.impersonatedBy = impersonatedBy;
+    }
 
     await db.auditLog.create({
       data: {
@@ -281,7 +286,9 @@ export class AuditLogInterceptor implements NestInterceptor {
         memberId: memberId ?? null,
         entityType,
         entityId,
-        description,
+        description: impersonatedBy
+          ? `[Impersonated] ${description}`
+          : description,
         data: auditData as Prisma.InputJsonValue,
       },
     });

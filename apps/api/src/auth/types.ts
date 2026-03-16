@@ -15,6 +15,7 @@ export interface AuthenticatedRequest extends Request {
   memberId?: string; // Member ID for assignment filtering (only available for session auth)
   memberDepartment?: Departments; // Member department for visibility filtering (only available for session auth)
   apiKeyScopes?: string[]; // Scopes for API key auth (empty = legacy full access)
+  impersonatedBy?: string; // User ID of the admin who initiated impersonation (only set during impersonation sessions)
 }
 
 export interface AuthContext {
@@ -30,4 +31,5 @@ export interface AuthContext {
   memberId?: string; // Member ID for assignment filtering (only available for session auth)
   memberDepartment?: Departments; // Member department for visibility filtering (only available for session auth)
   apiKeyScopes?: string[]; // Scopes for API key auth (empty = legacy full access)
+  impersonatedBy?: string; // User ID of the admin who initiated impersonation (only set during impersonation sessions)
 }

@@ -44,6 +44,7 @@ const config: NextConfig = {
       : '',
   reactStrictMode: false,
   transpilePackages: [
+    '@trycompai/auth',
     '@trycompai/db',
     '@prisma/client',
     '@trycompai/design-system',

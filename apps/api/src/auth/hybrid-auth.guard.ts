@@ -44,10 +44,10 @@ export class HybridAuthGuard implements CanActivate {
     }
 
     // Try session-based authentication (bearer token or cookies)
-    const skipOrgCheck = this.reflector.getAllAndOverride<boolean>(SKIP_ORG_CHECK_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const skipOrgCheck = this.reflector.getAllAndOverride<boolean>(
+      SKIP_ORG_CHECK_KEY,
+      [context.getHandler(), context.getClass()],
+    );
     return this.handleSessionAuth(request, skipOrgCheck);
   }
 
@@ -179,11 +179,6 @@ export class HybridAuthGuard implements CanActivate {
             id: true,
             role: true,
             department: true,
-            user: {
-              select: {
-                isPlatformAdmin: true,
-              },
-            },
           },
         });
 
@@ -196,7 +191,6 @@ export class HybridAuthGuard implements CanActivate {
         userRoles = member.role ? member.role.split(',') : null;
         request.memberId = member.id;
         request.memberDepartment = member.department;
-        request.isPlatformAdmin = member.user?.isPlatformAdmin ?? false;
       }
 
       // Set request context for session auth
@@ -207,7 +201,17 @@ export class HybridAuthGuard implements CanActivate {
       request.authType = 'session';
       request.isApiKey = false;
       request.isServiceToken = false;
-      request.isPlatformAdmin = request.isPlatformAdmin ?? false;
+      // Resolve isPlatformAdmin from the User.role column (via better-auth session),
+      // not from the member relation. This ensures the flag is set regardless of
+      // org membership or skipOrgCheck.
+      request.isPlatformAdmin =
+        (user as { role?: string | null }).role === 'admin';
+
+      const rawImpersonatedBy = (sessionData as Record<string, unknown>)
+        .impersonatedBy;
+      if (typeof rawImpersonatedBy === 'string' && rawImpersonatedBy) {
+        request.impersonatedBy = rawImpersonatedBy;
+      }
 
       return true;
     } catch (error) {

@@ -28,9 +28,9 @@ export class RisksService {
   private async validateAssigneeNotPlatformAdmin(assigneeId: string, organizationId: string) {
     const member = await db.member.findFirst({
       where: { id: assigneeId, organizationId },
-      include: { user: { select: { isPlatformAdmin: true } } },
+      include: { user: { select: { role: true } } },
     });
-    if (member?.user.isPlatformAdmin) {
+    if (member?.user.role === 'admin') {
       throw new BadRequestException('Cannot assign a platform admin as assignee');
     }
   }

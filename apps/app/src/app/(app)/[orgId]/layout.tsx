@@ -3,8 +3,8 @@ import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
 import { serverApi } from '@/lib/api-server';
 import { canAccessApp, parseRolesString } from '@/lib/permissions';
-import type { OrganizationFromMe } from '@/types';
 import { resolveUserPermissions } from '@/lib/permissions.server';
+import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -96,14 +96,16 @@ export default async function Layout({
   // Parse roles for UI display purposes (auditor-specific UI)
   const roles = parseRolesString(member.role);
 
-  // If this org is not accessible on current plan, redirect to upgrade
-  if (!organization.hasAccess) {
-    return redirect(`/upgrade/${organization.id}`);
-  }
+  const isUserAdmin = session.user.role === 'admin';
 
-  // If onboarding is required and user isn't already on onboarding, redirect
-  if (!organization.onboardingCompleted) {
-    return redirect(`/onboarding/${organization.id}`);
+  if (!isUserAdmin) {
+    if (!organization.hasAccess) {
+      return redirect(`/upgrade/${organization.id}`);
+    }
+
+    if (!organization.onboardingCompleted) {
+      return redirect(`/onboarding/${organization.id}`);
+    }
   }
 
   const onboarding = await db.onboarding.findFirst({
@@ -149,7 +151,8 @@ export default async function Layout({
     isWebAutomationsEnabled =
       flags['is-web-automations-enabled'] === true ||
       flags['is-web-automations-enabled'] === 'true';
-    isSecurityEnabled = flags['is-security-enabled'] === true || flags['is-security-enabled'] === 'true';
+    isSecurityEnabled =
+      flags['is-security-enabled'] === true || flags['is-security-enabled'] === 'true';
   }
 
   // Check auditor role
@@ -182,6 +185,7 @@ export default async function Layout({
         isOnlyAuditor={isOnlyAuditor}
         permissions={permissions}
         user={user}
+        isAdmin={isUserAdmin}
       >
         {children}
       </AppShellWrapper>

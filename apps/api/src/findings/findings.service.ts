@@ -37,6 +37,14 @@ export class FindingsService {
         },
       },
     },
+    createdByAdmin: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+      },
+    },
     template: {
       select: {
         id: true,
@@ -206,10 +214,11 @@ export class FindingsService {
 
   /**
    * Create a new finding (auditor or platform admin only)
+   * When memberId is null, createdByAdminId is used for platform admin attribution.
    */
   async create(
     organizationId: string,
-    memberId: string,
+    memberId: string | null,
     userId: string,
     createDto: CreateFindingDto,
   ) {
@@ -303,13 +312,13 @@ export class FindingsService {
         content: createDto.content,
         templateId: createDto.templateId,
         createdById: memberId,
+        createdByAdminId: memberId ? null : userId,
         organizationId,
         status: FindingStatus.open,
       },
       include: this.findingInclude,
     });
 
-    // Log to audit trail
     await this.findingAuditService.logFindingCreated({
       findingId: finding.id,
       organizationId,
@@ -323,10 +332,11 @@ export class FindingsService {
       type: createDto.type ?? FindingType.soc2,
     });
 
-    // Send notifications (fire-and-forget)
     const actorName =
       finding.createdBy?.user?.name ||
       finding.createdBy?.user?.email ||
+      finding.createdByAdmin?.name ||
+      finding.createdByAdmin?.email ||
       'Someone';
     void this.findingNotifierService.notifyFindingCreated({
       organizationId,
@@ -365,7 +375,7 @@ export class FindingsService {
     userRoles: string[],
     isPlatformAdmin: boolean,
     userId: string,
-    memberId: string,
+    memberId: string | null,
   ) {
     // Verify finding exists and get current state for audit
     const finding = await this.findById(organizationId, findingId);
@@ -517,10 +527,12 @@ export class FindingsService {
           this.logger.log(
             `Triggering 'ready_for_review' notification for finding ${findingId}`,
           );
-          void this.findingNotifierService.notifyReadyForReview({
-            ...notificationParams,
-            findingCreatorMemberId: finding.createdById,
-          });
+          if (finding.createdById) {
+            void this.findingNotifierService.notifyReadyForReview({
+              ...notificationParams,
+              findingCreatorMemberId: finding.createdById,
+            });
+          }
           break;
         case FindingStatus.needs_revision:
           this.logger.log(

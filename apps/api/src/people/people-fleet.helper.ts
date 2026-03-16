@@ -104,7 +104,7 @@ export async function getAllEmployeeDevices(
         organizationId,
         deactivated: false,
         OR: [
-          { user: { isPlatformAdmin: false } },
+          { user: { role: { not: 'admin' } } },
           { role: { contains: 'owner' } },
         ],
       },

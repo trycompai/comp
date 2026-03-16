@@ -45,7 +45,6 @@ export default async function TaskPage({
   const members = membersRes.data?.data ?? [];
   const evidenceApprovalEnabled = optionsRes.data?.evidenceApprovalEnabled ?? false;
 
-  // Feature flags and platform admin check
   let isWebAutomationsEnabled = false;
   let isPlatformAdmin = false;
 
@@ -59,11 +58,7 @@ export default async function TaskPage({
       flags['is-web-automations-enabled'] === true ||
       flags['is-web-automations-enabled'] === 'true';
 
-    // Find current user's member to check isPlatformAdmin
-    const currentMember = members.find(
-      (m) => m.userId === session.user.id,
-    );
-    isPlatformAdmin = currentMember?.user?.isPlatformAdmin ?? false;
+    isPlatformAdmin = session.user.role === 'admin';
   }
 
   return (

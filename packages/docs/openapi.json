@@ -19102,6 +19102,918 @@
           "Pentest Billing"
         ]
       }
+    },
+    "/v1/admin/organizations": {
+      "get": {
+        "operationId": "AdminOrganizationsController_list_v1",
+        "parameters": [
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List all organizations (platform admin)",
+        "tags": [
+          "Admin - Organizations"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{id}": {
+      "get": {
+        "operationId": "AdminOrganizationsController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get organization details (platform admin)",
+        "tags": [
+          "Admin - Organizations"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{id}/activate": {
+      "patch": {
+        "operationId": "AdminOrganizationsController_activate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Activate organization access (platform admin)",
+        "tags": [
+          "Admin - Organizations"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{id}/deactivate": {
+      "patch": {
+        "operationId": "AdminOrganizationsController_deactivate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Deactivate organization access (platform admin)",
+        "tags": [
+          "Admin - Organizations"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{id}/invite": {
+      "post": {
+        "operationId": "AdminOrganizationsController_inviteMember_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Invite member to organization (platform admin)",
+        "tags": [
+          "Admin - Organizations"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{id}/audit-logs": {
+      "get": {
+        "operationId": "AdminOrganizationsController_getAuditLogs_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "required": false,
+            "in": "query",
+            "description": "Filter by entity type (e.g. policy, task)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "description": "Number of logs to return (max 100, default 100)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get audit logs for an organization (platform admin)",
+        "tags": [
+          "Admin - Organizations"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{id}/invitations": {
+      "get": {
+        "operationId": "AdminOrganizationsController_listInvitations_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List pending invitations (platform admin)",
+        "tags": [
+          "Admin - Organizations"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{id}/invitations/{invId}": {
+      "delete": {
+        "operationId": "AdminOrganizationsController_revokeInvitation_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Revoke invitation (platform admin)",
+        "tags": [
+          "Admin - Organizations"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/findings": {
+      "get": {
+        "operationId": "AdminFindingsController_list_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List all findings for an organization (admin)",
+        "tags": [
+          "Admin - Findings"
+        ]
+      },
+      "post": {
+        "operationId": "AdminFindingsController_create_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFindingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a finding for an organization (admin)",
+        "tags": [
+          "Admin - Findings"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/findings/{findingId}": {
+      "patch": {
+        "operationId": "AdminFindingsController_update_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "findingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFindingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update a finding for an organization (admin)",
+        "tags": [
+          "Admin - Findings"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/policies": {
+      "get": {
+        "operationId": "AdminPoliciesController_list_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List all policies for an organization (admin)",
+        "tags": [
+          "Admin - Policies"
+        ]
+      },
+      "post": {
+        "operationId": "AdminPoliciesController_create_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminPolicyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a policy for an organization (admin)",
+        "tags": [
+          "Admin - Policies"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/policies/{policyId}": {
+      "patch": {
+        "operationId": "AdminPoliciesController_update_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "policyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update a policy for an organization (admin)",
+        "tags": [
+          "Admin - Policies"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/policies/{policyId}/regenerate": {
+      "post": {
+        "operationId": "AdminPoliciesController_regenerate_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "policyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Regenerate policy content using AI (admin)",
+        "tags": [
+          "Admin - Policies"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/tasks": {
+      "get": {
+        "operationId": "AdminTasksController_list_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List all tasks for an organization (admin)",
+        "tags": [
+          "Admin - Tasks"
+        ]
+      },
+      "post": {
+        "operationId": "AdminTasksController_create_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a task for an organization (admin)",
+        "tags": [
+          "Admin - Tasks"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/tasks/{taskId}/details": {
+      "get": {
+        "operationId": "AdminTasksController_getDetails_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get task details with comments, attachments, and evidence (admin)",
+        "tags": [
+          "Admin - Tasks"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/tasks/{taskId}": {
+      "patch": {
+        "operationId": "AdminTasksController_update_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update a task for an organization (admin)",
+        "tags": [
+          "Admin - Tasks"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/vendors": {
+      "get": {
+        "operationId": "AdminVendorsController_list_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List all vendors for an organization (admin)",
+        "tags": [
+          "Admin - Vendors"
+        ]
+      },
+      "post": {
+        "operationId": "AdminVendorsController_create_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminVendorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a vendor for an organization (admin)",
+        "tags": [
+          "Admin - Vendors"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/vendors/{vendorId}": {
+      "patch": {
+        "operationId": "AdminVendorsController_update_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update a vendor for an organization (admin)",
+        "tags": [
+          "Admin - Vendors"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/vendors/{vendorId}/trigger-assessment": {
+      "post": {
+        "operationId": "AdminVendorsController_triggerAssessment_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Trigger vendor risk assessment (admin)",
+        "tags": [
+          "Admin - Vendors"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/context": {
+      "get": {
+        "operationId": "AdminContextController_list_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "perPage",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List context entries for an organization (admin)",
+        "tags": [
+          "Admin - Context"
+        ]
+      },
+      "post": {
+        "operationId": "AdminContextController_create_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContextDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a context entry for an organization (admin)",
+        "tags": [
+          "Admin - Context"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/context/{contextId}": {
+      "patch": {
+        "operationId": "AdminContextController_update_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "contextId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateContextDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update a context entry for an organization (admin)",
+        "tags": [
+          "Admin - Context"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/evidence-forms": {
+      "get": {
+        "operationId": "AdminEvidenceController_listFormStatuses_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List evidence form statuses for an organization (admin)",
+        "tags": [
+          "Admin - Evidence"
+        ]
+      }
+    },
+    "/v1/admin/organizations/{orgId}/evidence-forms/{formType}": {
+      "get": {
+        "operationId": "AdminEvidenceController_getFormWithSubmissions_v1",
+        "parameters": [
+          {
+            "name": "orgId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get evidence form with submissions (admin)",
+        "tags": [
+          "Admin - Evidence"
+        ]
+      }
     }
   },
   "info": {
@@ -19178,10 +20090,11 @@
             "example": "2024-01-15T12:00:00Z",
             "nullable": true
           },
-          "isPlatformAdmin": {
-            "type": "boolean",
-            "description": "Whether the user is a platform admin (Comp AI team member)",
-            "example": false
+          "role": {
+            "type": "object",
+            "description": "Platform role of the user (managed by Better Auth admin plugin)",
+            "example": "user",
+            "nullable": true
           }
         },
         "required": [
@@ -19193,7 +20106,7 @@
           "createdAt",
           "updatedAt",
           "lastLogin",
-          "isPlatformAdmin"
+          "role"
         ]
       },
       "PeopleResponseDto": {
@@ -23352,6 +24265,185 @@
       "ChargeDto": {
         "type": "object",
         "properties": {}
+      },
+      "InviteMemberDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address of the user to invite",
+            "example": "user@example.com"
+          },
+          "role": {
+            "type": "string",
+            "description": "Role to assign to the invited member",
+            "enum": [
+              "admin",
+              "auditor",
+              "employee",
+              "contractor"
+            ],
+            "example": "admin"
+          }
+        },
+        "required": [
+          "email",
+          "role"
+        ]
+      },
+      "CreateAdminPolicyDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the policy",
+            "example": "Data Privacy Policy"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the policy",
+            "example": "Outlines data handling procedures"
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the policy",
+            "enum": [
+              "draft",
+              "published",
+              "needs_review"
+            ],
+            "example": "draft"
+          },
+          "frequency": {
+            "type": "string",
+            "description": "Review frequency",
+            "enum": [
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "example": "yearly"
+          },
+          "department": {
+            "type": "string",
+            "description": "Department this policy applies to",
+            "enum": [
+              "none",
+              "admin",
+              "gov",
+              "hr",
+              "it",
+              "itsm",
+              "qms"
+            ],
+            "example": "it"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CreateAdminTaskDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title of the task",
+            "example": "Review access controls"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the task",
+            "example": "Review and update access control policies quarterly"
+          },
+          "status": {
+            "type": "string",
+            "description": "Task status",
+            "enum": [
+              "todo",
+              "in_progress",
+              "in_review",
+              "done",
+              "not_relevant",
+              "failed"
+            ]
+          },
+          "frequency": {
+            "type": "string",
+            "description": "Task frequency",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ]
+          },
+          "department": {
+            "type": "string",
+            "description": "Department",
+            "enum": [
+              "none",
+              "admin",
+              "gov",
+              "hr",
+              "it",
+              "itsm",
+              "qms"
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "description"
+        ]
+      },
+      "CreateAdminVendorDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Vendor name",
+            "example": "CloudTech Solutions"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the vendor and services",
+            "example": "Cloud infrastructure provider for compute and storage"
+          },
+          "category": {
+            "type": "string",
+            "description": "Vendor category",
+            "enum": [
+              "cloud",
+              "infrastructure",
+              "software_as_a_service",
+              "finance",
+              "marketing",
+              "sales",
+              "hr",
+              "other"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Assessment status",
+            "enum": [
+              "not_assessed",
+              "in_progress",
+              "assessed"
+            ]
+          },
+          "website": {
+            "type": "string",
+            "description": "Vendor website URL",
+            "example": "https://example.com"
+          }
+        },
+        "required": [
+          "name",
+          "description"
+        ]
       }
     }
   }

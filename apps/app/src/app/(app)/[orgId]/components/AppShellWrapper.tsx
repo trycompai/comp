@@ -8,7 +8,7 @@ import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
 import { canAccessCompliance, canAccessRoute, hasAnyPermission, type UserPermissions } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
-import { Badge, Globe, Logout, ManageProtection, Settings } from '@carbon/icons-react';
+import { Badge, Globe, Locked, Logout, ManageProtection, Settings } from '@carbon/icons-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +46,8 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { AdminSidebar } from '../admin/components/AdminSidebar';
+import { ImpersonationBanner } from '../admin/components/ImpersonationBanner';
 import { SettingsSidebar } from '../settings/components/SettingsSidebar';
 import { SecuritySidebar } from '../security/components/SecuritySidebar';
 import { TrustSidebar } from '../trust/components/TrustSidebar';
@@ -72,6 +74,7 @@ interface AppShellWrapperProps {
     email: string;
     image: string | null;
   };
+  isAdmin: boolean;
 }
 
 type AppShellWrapperContentProps = Omit<AppShellWrapperProps, 'isCollapsed'>;
@@ -98,6 +101,7 @@ function AppShellWrapperContent({
   isOnlyAuditor,
   permissions,
   user,
+  isAdmin,
 }: AppShellWrapperContentProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const pathname = usePathname();
@@ -107,6 +111,7 @@ function AppShellWrapperContent({
   const isSettingsActive = pathname?.startsWith(`/${organization.id}/settings`);
   const isTrustActive = pathname?.startsWith(`/${organization.id}/trust`);
   const isSecurityActive = pathname?.startsWith(`/${organization.id}/security`);
+  const isAdminActive = pathname?.startsWith(`/${organization.id}/admin`);
   const [logoVariant, setLogoVariant] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
@@ -147,6 +152,7 @@ function AppShellWrapperContent({
 
   return (
     <TooltipProvider>
+      <ImpersonationBanner />
       <AppShell
         showAIChat
         aiChatContent={<Chat />}
@@ -245,7 +251,7 @@ function AppShellWrapperContent({
             {canAccessCompliance(permissions) && (
               <ShellRailNavItem
                 href={`/${organization.id}/frameworks`}
-                isActive={!isSettingsActive && !isTrustActive && !isSecurityActive}
+                isActive={!isSettingsActive && !isTrustActive && !isSecurityActive && !isAdminActive}
                 icon={<Badge className="size-5" />}
                 label="Compliance"
               />
@@ -274,21 +280,33 @@ function AppShellWrapperContent({
                 label="Settings"
               />
             )}
+            {isAdmin && (
+              <ShellRailNavItem
+                href={`/${organization.id}/admin`}
+                isActive={!!isAdminActive}
+                icon={<Locked className="size-5" />}
+                label="Admin"
+              />
+            )}
           </AppShellRail>
           <AppShellMain>
             <AppShellSidebar collapsible>
               <AppShellSidebarHeader
                 title={
-                  isSettingsActive
-                    ? 'Settings'
-                    : isTrustActive
-                      ? 'Trust'
-                      : isSecurityActive
-                        ? 'Security'
-                        : 'Compliance'
+                  isAdminActive
+                    ? 'Admin'
+                    : isSettingsActive
+                      ? 'Settings'
+                      : isTrustActive
+                        ? 'Trust'
+                        : isSecurityActive
+                          ? 'Security'
+                          : 'Compliance'
                 }
               />
-              {isSettingsActive ? (
+              {isAdminActive && isAdmin ? (
+                <AdminSidebar orgId={organization.id} />
+              ) : isSettingsActive ? (
                 <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} showBillingTab={isSecurityEnabled} />
               ) : isTrustActive ? (
                 <TrustSidebar orgId={organization.id} />

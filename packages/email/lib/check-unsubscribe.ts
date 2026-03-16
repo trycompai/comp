@@ -62,12 +62,12 @@ export async function isUserUnsubscribed(
         select: {
           emailNotificationsUnsubscribed: boolean;
           emailPreferences: boolean;
-          isPlatformAdmin: boolean;
+          role: boolean;
         };
       }) => Promise<{
         emailNotificationsUnsubscribed: boolean;
         emailPreferences: unknown;
-        isPlatformAdmin: boolean;
+        role: string | null;
       } | null>;
     };
     member?: {
@@ -96,7 +96,7 @@ export async function isUserUnsubscribed(
       select: {
         emailNotificationsUnsubscribed: true,
         emailPreferences: true,
-        isPlatformAdmin: true,
+        role: true,
       },
     });
 
@@ -105,7 +105,7 @@ export async function isUserUnsubscribed(
     }
 
     // Platform admins only receive notifications for organizations they own
-    if (user.isPlatformAdmin) {
+    if (user.role === 'admin') {
       if (!organizationId || !db.member) {
         return true; // No org context — block notifications
       }

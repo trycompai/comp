@@ -12,7 +12,7 @@ import {
 
 interface MemberWithRole {
   role: string;
-  user?: { isPlatformAdmin?: boolean } | null;
+  user?: { role?: string | null } | null;
 }
 
 /**
@@ -111,7 +111,7 @@ export async function filterComplianceMembers<T extends MemberWithRole>(
   return memberRoles
     .filter(({ member, roleNames }) => {
       // Platform admins are excluded — they join customer orgs to debug
-      if (member.user?.isPlatformAdmin) return false;
+      if (member.user?.role === 'admin') return false;
       for (const name of roleNames) {
         const builtIn = BUILT_IN_ROLE_OBLIGATIONS[name];
         if (builtIn?.compliance) return true;

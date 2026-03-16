@@ -53,10 +53,11 @@ export class UserResponseDto {
   lastLogin: Date | null;
 
   @ApiProperty({
-    description: 'Whether the user is a platform admin (Comp AI team member)',
-    example: false,
+    description: 'Platform role of the user (managed by Better Auth admin plugin)',
+    example: 'user',
+    nullable: true,
   })
-  isPlatformAdmin: boolean;
+  role: string | null;
 }
 
 export class PeopleResponseDto {
