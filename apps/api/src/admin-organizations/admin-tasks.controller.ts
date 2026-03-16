@@ -113,7 +113,7 @@ export class AdminTasksController {
     return db.evidenceAutomationRun.findMany({
       where: {
         taskId,
-        Task: { organizationId: orgId },
+        task: { organizationId: orgId },
       },
       include: {
         evidenceAutomation: { select: { name: true } },

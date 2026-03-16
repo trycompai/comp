@@ -26,7 +26,7 @@ model EvidenceAutomationRun {
   triggeredBy EvidenceAutomationTrigger @default(scheduled)
   runDuration Int? // in milliseconds
   version     Int? // Version number that was executed (null = draft)
-  Task        Task?                     @relation(fields: [taskId], references: [id])
+  task        Task?                     @relation(fields: [taskId], references: [id])
   taskId      String?
 
   @@index([evidenceAutomationId])
