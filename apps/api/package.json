@@ -80,6 +80,7 @@
         "@types/node": "^24.0.3",
         "@types/supertest": "^6.0.2",
         "@types/swagger-ui-express": "^4.1.8",
+        "@vercel/node": "^5.6.15",
         "eslint": "^9.18.0",
         "eslint-config-prettier": "^10.0.1",
         "eslint-plugin-prettier": "^5.2.2",
