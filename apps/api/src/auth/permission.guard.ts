@@ -47,13 +47,9 @@ export class PermissionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Get required permissions from route metadata
-    const requiredPermissions =
-      this.reflector.getAllAndOverride<RequiredPermission[]>(PERMISSIONS_KEY, [
-        context.getHandler(),
-        context.getClass(),
-      ]);
-
-    // No permissions required - allow access
+    const requiredPermissions = RequiredPermission[]
+      
+    RMISSIONS_KEY, [conte No permissions required - allow access
     if (!requiredPermissions || requiredPermissions.length === 0) {
       return true;
     }
@@ -77,13 +73,9 @@ export class PermissionGuard implements CanActivate {
       );
 
       if (!hasAllPerms) {
-        throw new ForbiddenException(
-          'API key lacks required permission scope',
-        );
+        throw new ForbiddenException('API key lacks required permission scope');
       }
       return true;
-    }
-
     // Service tokens: check scoped permissions (NOT a blanket bypass)
     if (request.isServiceToken) {
       const service = resolveServiceByName(request.serviceName);
@@ -101,15 +93,11 @@ export class PermissionGuard implements CanActivate {
         this.logger.warn(
           `[PermissionGuard] Service "${request.serviceName}" denied: missing permission for ${requiredPermissions.map((p) => `${p.resource}:${p.actions.join(',')}`).join('; ')}`,
         );
-        throw new ForbiddenException(
-          'Service token lacks required permission',
-        );
+        throw new ForbiddenException('Service token lacks required permission');
       }
 
       return true;
-    }
-
-    // Platform admins bypass permission checks (full access)
+    }latform admins bypass permission checks (full access)
     if (request.isPlatformAdmin) {
       return true;
     }
@@ -124,30 +112,30 @@ export class PermissionGuard implements CanActivate {
     }
 
     try {
-      const hasPermission = await this.checkPermission(
-        request,
-        permissionBody,
-      );
+      const hasPermission = await this.checkPermission(request, permissionBody);
 
       if (!hasPermission) {
         this.logger.warn(
           `[PermissionGuard] Access denied for ${request.method} ${request.url}. Required: ${JSON.stringify(permissionBody)}`,
         );
-        throw new ForbiddenException('Access denied');
-      }
-
-      return true;
+        throw new ForbiddenException('Access denied');return true;
     } catch (error) {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error(`[PermissionGuard] Error checking permissions for ${request.method} ${request.url}:`, error);
+      this.logger.error(
+        `[PermissionGuard] Error checking permissions for ${request.method} ${request.url}:`,
+        error,
+      );
       throw new ForbiddenException('Unable to verify permissions');
     }
   }
 
   /**
-   * Check permissions using better-auth's hasPermission SDK.
+   * Check permissions u
+        sing better-auth's hasPermission SDK.
+       ,
+      
    * Forwards both authorization and cookie headers so better-auth
    * can resolve the user session (and activeOrganizationId), then
    * checks the required permissions against the role definitions
@@ -192,14 +180,10 @@ export class PermissionGuard implements CanActivate {
     // If user has any privileged role, they're not restricted
     const privileged: readonly string[] = PRIVILEGED_ROLES;
     const restricted: readonly string[] = RESTRICTED_ROLES;
-    const hasPrivilegedRole = roles.some((role) =>
-      privileged.includes(role),
-    );
+    const hasPrivilegedRole = roles.some((role) => privileged.includes(role));
     if (hasPrivilegedRole) {
       return false;
     }
 
     // Check if all roles are restricted
-    return roles.every((role) => restricted.includes(role));
-  }
-}
+    return roles.every((role) => restricted.includ
