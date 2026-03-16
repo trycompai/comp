@@ -10,8 +10,8 @@ import {
   Stack,
   Text,
 } from '@trycompai/design-system';
-import { Label } from '@comp/ui/label';
-import { Textarea } from '@comp/ui/textarea';
+import { Label } from '@trycompai/ui/label';
+import { Textarea } from '@trycompai/ui/textarea';
 import { useEffect, useState } from 'react';
 
 interface FindingFormProps {
