@@ -1,22 +1,24 @@
 import type { Request, Response, NextFunction } from 'express';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
-const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 10;
-const CLEANUP_INTERVAL_MS = 5 * 60_000;
+const WINDOW = '60 s';
 
-interface RateEntry {
-  count: number;
-  resetAt: number;
-}
+const hasUpstashConfig =
+  !!process.env.UPSTASH_REDIS_REST_URL &&
+  !!process.env.UPSTASH_REDIS_REST_TOKEN;
 
-const hits = new Map<string, RateEntry>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of hits) {
-    if (now > entry.resetAt) hits.delete(key);
-  }
-}, CLEANUP_INTERVAL_MS).unref();
+const ratelimit = hasUpstashConfig
+  ? new Ratelimit({
+      redis: new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL!,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+      }),
+      limiter: Ratelimit.slidingWindow(MAX_REQUESTS, WINDOW),
+      prefix: 'ratelimit:admin-auth',
+    })
+  : null;
 
 /**
  * Express middleware that rate-limits requests to /api/auth/admin/*.
@@ -24,33 +26,36 @@ setInterval(() => {
  * better-auth admin routes (impersonation, set-role, ban, etc.) are handled
  * by better-auth's own request handler and never reach NestJS controllers,
  * so the global ThrottlerGuard does not apply to them. This middleware fills
- * that gap with a per-IP sliding window (10 req/min by default).
+ * that gap with a per-IP sliding window (10 req/min) backed by Upstash Redis
+ * so limits are shared across all ECS instances.
  */
-export function adminAuthRateLimiter(
+export async function adminAuthRateLimiter(
   req: Request,
   res: Response,
   next: NextFunction,
-): void {
+): Promise<void> {
   if (!req.path.startsWith('/api/auth/admin')) {
     return next();
   }
 
-  const ip = req.ip || req.socket.remoteAddress || 'unknown';
-  const now = Date.now();
-  const entry = hits.get(ip);
-
-  if (!entry || now > entry.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+  if (!ratelimit) {
     return next();
   }
 
-  entry.count++;
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
 
-  if (entry.count > MAX_REQUESTS) {
-    res.status(429).json({
-      error: 'Too many requests to admin endpoints. Try again later.',
-    });
-    return;
+  try {
+    const { success } = await ratelimit.limit(ip);
+
+    if (!success) {
+      res.status(429).json({
+        error: 'Too many requests to admin endpoints. Try again later.',
+      });
+      return;
+    }
+  } catch {
+    // If Redis is unreachable, allow the request through rather than
+    // blocking all admin operations. The WAF still provides baseline protection.
   }
 
   return next();
