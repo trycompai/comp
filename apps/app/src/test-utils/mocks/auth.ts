@@ -63,6 +63,7 @@ export const createMockUser = (overrides?: Partial<User>): User => ({
   banned: null,
   banReason: null,
   banExpires: null,
+  isPlatformAdmin: false,
   ...overrides,
 });
 
