@@ -1,4 +1,7 @@
-import { createAccessControl } from 'better-auth/plugins/access';
+import {
+  createAccessControl,
+  type AccessControl,
+} from 'better-auth/plugins/access';
 import {
   defaultStatements,
   adminAc,
@@ -46,7 +49,7 @@ export const statement = {
   portal: ['read', 'update'],
 } as const;
 
-export const ac = createAccessControl(statement);
+export const ac: AccessControl = createAccessControl(statement);
 
 /**
  * Owner role - Full access to everything
