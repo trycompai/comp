@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 import { CheckCircle2, Image as ImageIcon, MoreVertical, XCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
@@ -8,10 +8,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
+} from '@trycompai/ui/dropdown-menu';
 
 import { FleetPolicy } from "../types";
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { PolicyImagePreviewModal } from './PolicyImagePreviewModal';
 
 interface PolicyItemProps {

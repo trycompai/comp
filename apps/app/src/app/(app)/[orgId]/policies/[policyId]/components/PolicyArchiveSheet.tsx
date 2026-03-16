@@ -1,6 +1,6 @@
 'use client';
 
-import { useMediaQuery } from '@comp/ui/hooks';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import type { Policy } from '@db';
 import {
   Button,

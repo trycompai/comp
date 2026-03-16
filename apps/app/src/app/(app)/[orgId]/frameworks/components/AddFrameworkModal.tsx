@@ -1,14 +1,14 @@
 'use client';
 
 import { FrameworkCard } from '@/components/framework-card';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import type { FrameworkEditorFramework } from '@db';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Loader2 } from 'lucide-react';

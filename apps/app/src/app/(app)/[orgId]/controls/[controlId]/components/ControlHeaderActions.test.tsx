@@ -16,14 +16,14 @@ vi.mock('@/hooks/use-permissions', () => ({
   }),
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/button', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({ children, ...props }: any) => (
     <button {...props}>{children}</button>
   ),
 }));
 
-vi.mock('@comp/ui/dropdown-menu', () => ({
+vi.mock('@trycompai/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children, open }: any) => (
     <div data-testid="dropdown-menu" data-open={open}>
       {children}

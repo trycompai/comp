@@ -14,7 +14,7 @@ import {
 
 /**
  * Resolve effective permissions for a member's comma-separated role string.
- * Handles both built-in roles (from @comp/auth) and custom roles (from DB).
+ * Handles both built-in roles (from @trycompai/auth) and custom roles (from DB).
  */
 export async function resolveUserPermissions(
   roleString: string | null | undefined,

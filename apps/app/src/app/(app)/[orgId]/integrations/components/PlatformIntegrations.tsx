@@ -10,17 +10,17 @@ import {
   useIntegrationMutations,
   useIntegrationProviders,
 } from '@/hooks/use-integration-platform';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Skeleton } from '@comp/ui/skeleton';
+} from '@trycompai/ui/dialog';
+import { Skeleton } from '@trycompai/ui/skeleton';
 import {
   AlertCircle,
   AlertTriangle,

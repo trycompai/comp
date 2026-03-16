@@ -1,5 +1,5 @@
 {
-    "name": "@comp/app",
+    "name": "@trycompai/app",
     "version": "0.1.0",
     "type": "module",
     "dependencies": {
@@ -19,9 +19,9 @@
         "@browserbasehq/stagehand": "^3.0.5",
         "@calcom/atoms": "^1.0.102-framer",
         "@calcom/embed-react": "^1.5.3",
-        "@comp/auth": "workspace:*",
-        "@comp/company": "workspace:*",
-        "@comp/integration-platform": "workspace:*",
+        "@trycompai/auth": "workspace:*",
+        "@trycompai/company": "workspace:*",
+        "@trycompai/integration-platform": "workspace:*",
         "@date-fns/tz": "^1.2.0",
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/modifiers": "^9.0.0",

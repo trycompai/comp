@@ -48,7 +48,7 @@ const config: NextConfig = {
     '@prisma/client',
     '@trycompai/design-system',
     '@carbon/icons-react',
-    '@comp/company',
+    '@trycompai/company',
   ],
   images: {
     remotePatterns: [

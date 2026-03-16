@@ -2,7 +2,7 @@ import {
   BUILT_IN_ROLE_OBLIGATIONS,
   type RoleObligations,
   allRoles,
-} from '@comp/auth';
+} from '@trycompai/auth';
 import { db } from '@trycompai/db';
 
 /**

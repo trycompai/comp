@@ -12,8 +12,8 @@ import {
   multiSession,
   organization,
 } from 'better-auth/plugins';
+import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
-import { ac, allRoles } from '@comp/auth';
 
 const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
 
@@ -21,8 +21,7 @@ const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
  * Determine the cookie domain based on environment.
  */
 function getCookieDomain(): string | undefined {
-  const baseUrl =
-    process.env.BASE_URL || '';
+  const baseUrl = process.env.BASE_URL || '';
 
   if (baseUrl.includes('staging.trycomp.ai')) {
     return '.staging.trycomp.ai';
@@ -111,8 +110,7 @@ function validateSecurityConfig(): void {
 
   // Warn about development defaults in production
   if (process.env.NODE_ENV === 'production') {
-    const baseUrl =
-      process.env.BASE_URL || '';
+    const baseUrl = process.env.BASE_URL || '';
     if (baseUrl.includes('localhost')) {
       console.warn(
         'SECURITY WARNING: BASE_URL contains "localhost" in production. ' +
@@ -264,9 +262,8 @@ export const auth = betterAuth({
       if (!description) return;
 
       try {
-        let organizationId =
-          (session.session as Record<string, unknown>)
-            ?.activeOrganizationId as string | undefined;
+        let organizationId = (session.session as Record<string, unknown>)
+          ?.activeOrganizationId as string | undefined;
 
         if (!organizationId) {
           const userOrg = await db.organization.findFirst({

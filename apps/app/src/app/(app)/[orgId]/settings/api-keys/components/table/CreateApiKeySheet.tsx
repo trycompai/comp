@@ -2,7 +2,7 @@
 
 import { useApiKeys } from '@/hooks/use-api-keys';
 import { usePermissions } from '@/hooks/use-permissions';
-import { useMediaQuery } from '@comp/ui/hooks';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import type { ScopePreset } from '../../lib/scope-presets';
 import {
   Button,

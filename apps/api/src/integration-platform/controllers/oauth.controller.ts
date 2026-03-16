@@ -24,7 +24,7 @@ import { CredentialVaultService } from '../services/credential-vault.service';
 import { ConnectionService } from '../services/connection.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { AutoCheckRunnerService } from '../services/auto-check-runner.service';
-import { getManifest, type OAuthConfig } from '@comp/integration-platform';
+import { getManifest, type OAuthConfig } from '@trycompai/integration-platform';
 
 interface StartOAuthDto {
   providerSlug: string;

@@ -2,11 +2,11 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useVendorActions } from '@/hooks/use-vendors';
-import { Button } from '@comp/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Textarea } from '@comp/ui/textarea';
+import { Button } from '@trycompai/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { Input } from '@trycompai/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
+import { Textarea } from '@trycompai/ui/textarea';
 import { type Member, type User, VendorCategory, VendorStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';

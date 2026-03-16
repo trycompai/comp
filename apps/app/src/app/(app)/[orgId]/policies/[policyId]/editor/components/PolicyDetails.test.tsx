@@ -96,12 +96,12 @@ vi.mock('@/components/editor/policy-editor', () => ({
 }));
 
 // Mock editor utils
-vi.mock('@comp/ui/editor', () => ({
+vi.mock('@trycompai/ui/editor', () => ({
   validateAndFixTipTapContent: (content: unknown) => ({ content }),
 }));
 
 // Mock DiffViewer
-vi.mock('@comp/ui/diff-viewer', () => ({
+vi.mock('@trycompai/ui/diff-viewer', () => ({
   DiffViewer: () => <div data-testid="diff-viewer" />,
 }));
 

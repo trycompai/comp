@@ -1,6 +1,6 @@
 import { serverApi } from '@/lib/api-server';
 import { Button } from '@trycompai/design-system';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { BillingActions } from './billing-actions';

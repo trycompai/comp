@@ -1,9 +1,9 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
-import { Dialog } from '@comp/ui/dialog';
-import { ScrollArea } from '@comp/ui/scroll-area';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Dialog } from '@trycompai/ui/dialog';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
 import type { FrameworkEditorFramework } from '@db';
 import { PlusIcon } from 'lucide-react';
 import Image from 'next/image';

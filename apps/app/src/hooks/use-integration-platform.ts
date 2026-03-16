@@ -9,7 +9,7 @@ import type {
   OAuthAvailabilityResponse,
   OAuthStartResponse,
   TestConnectionResponse,
-} from '@comp/integration-platform';
+} from '@trycompai/integration-platform';
 import { useParams } from 'next/navigation';
 import { useCallback } from 'react';
 import useSWR, { mutate as globalMutate } from 'swr';

@@ -1,6 +1,6 @@
 'use client';
 
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@comp/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@trycompai/ui/collapsible';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import remarkGfm from 'remark-gfm';

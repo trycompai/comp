@@ -1,5 +1,5 @@
 /**
- * Re-export all permissions from the shared @comp/auth package.
+ * Re-export all permissions from the shared @trycompai/auth package.
  * This ensures a single source of truth for role definitions.
  */
 export {
@@ -14,4 +14,4 @@ export {
   RESTRICTED_ROLES,
   PRIVILEGED_ROLES,
   type RoleName,
-} from '@comp/auth';
+} from '@trycompai/auth';

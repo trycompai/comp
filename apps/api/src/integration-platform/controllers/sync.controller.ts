@@ -24,7 +24,7 @@ import {
   type RampUser,
   type RampUserStatus,
   type RampUsersResponse,
-} from '@comp/integration-platform';
+} from '@trycompai/integration-platform';
 
 interface GoogleWorkspaceUser {
   id: string;

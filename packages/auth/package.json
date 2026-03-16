@@ -1,5 +1,5 @@
 {
-  "name": "@comp/auth",
+  "name": "@trycompai/auth",
   "version": "0.0.1",
   "private": true,
   "main": "./dist/permissions.js",

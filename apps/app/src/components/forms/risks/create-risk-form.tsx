@@ -3,7 +3,7 @@
 import { createRiskSchema } from '@/actions/schema';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useRiskActions } from '@/hooks/use-risks';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import type { Member, User } from '@db';
 import { Departments, RiskCategory } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';

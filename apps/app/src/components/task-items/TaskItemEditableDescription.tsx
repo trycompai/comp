@@ -1,5 +1,5 @@
 import type { JSONContent } from '@tiptap/react';
-import type { MentionUser } from '@comp/ui/editor';
+import type { MentionUser } from '@trycompai/ui/editor';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 

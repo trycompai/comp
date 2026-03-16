@@ -2,7 +2,7 @@
 
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import type { EvidenceAutomation, EvidenceAutomationRun, EvidenceAutomationVersion, Task } from '@db';
 import {
   Breadcrumb,

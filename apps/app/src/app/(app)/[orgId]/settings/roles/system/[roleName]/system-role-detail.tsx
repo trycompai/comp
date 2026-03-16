@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent } from '@comp/ui/card';
+import { Card, CardContent } from '@trycompai/ui/card';
 import { Stack, Text } from '@trycompai/design-system';
 import { PermissionMatrix } from '../../components/PermissionMatrix';
 

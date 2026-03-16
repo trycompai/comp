@@ -39,7 +39,7 @@ vi.mock('sonner', () => ({
 }));
 
 // Mock SelectPills
-vi.mock('@comp/ui/select-pills', () => ({
+vi.mock('@trycompai/ui/select-pills', () => ({
   SelectPills: ({
     disabled,
     placeholder,

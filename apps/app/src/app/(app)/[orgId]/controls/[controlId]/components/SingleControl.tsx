@@ -1,7 +1,7 @@
 'use client';
 
 import { StatusIndicator } from '@/components/status-indicator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
 import type {
   Control,
   FrameworkEditorFramework,

@@ -1,5 +1,5 @@
 import { serverApi } from '@/lib/api-server';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { DepartmentChart } from './department-chart';
 
 const ALL_DEPARTMENTS = ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'];

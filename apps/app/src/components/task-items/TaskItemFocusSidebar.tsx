@@ -1,12 +1,12 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
+} from '@trycompai/ui/dropdown-menu';
 import { Checkmark, ArrowLeft, Link, Tag, TrashCan, User as UserIcon } from '@trycompai/design-system/icons';
 import { cn } from '@/lib/utils';
 import { SelectAssignee } from '@/components/SelectAssignee';

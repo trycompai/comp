@@ -9,7 +9,7 @@ Read CLAUDE.md at the repo root and apps/api/CLAUDE.md for comprehensive project
 - **Max 300 lines** per file.
 - **Session auth only** — no JWT. Use `credentials: 'include'` for API calls.
 - **RBAC**: `@RequirePermission('resource', 'action')` on every API endpoint. Gate UI with `hasPermission()`.
-- **Design system**: Always `@trycompai/design-system` first, `@comp/ui` only as fallback. Icons from `@trycompai/design-system/icons`.
+- **Design system**: Always `@trycompai/design-system` first, `@trycompai/ui` only as fallback. Icons from `@trycompai/design-system/icons`.
 - **Data fetching**: Server components use `serverApi`. Client components use SWR hooks with `apiClient`.
 - **No server actions** for new features. Call NestJS API directly.
 - **Tests required** for every new feature. TDD preferred.

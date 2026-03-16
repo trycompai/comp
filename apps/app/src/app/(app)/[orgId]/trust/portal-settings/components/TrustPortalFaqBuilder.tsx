@@ -2,10 +2,10 @@
 
 import { useApi } from '@/hooks/use-api';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Button } from '@comp/ui/button';
-import { Input } from '@comp/ui/input';
-import { Textarea } from '@comp/ui/textarea';
-import { Card } from '@comp/ui/card';
+import { Button } from '@trycompai/ui/button';
+import { Input } from '@trycompai/ui/input';
+import { Textarea } from '@trycompai/ui/textarea';
+import { Card } from '@trycompai/ui/card';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { Plus, Trash2, ChevronUp, ChevronDown, Save, Loader2 } from 'lucide-react';

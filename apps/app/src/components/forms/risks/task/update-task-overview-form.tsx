@@ -2,10 +2,10 @@
 
 import { updateTaskSchema } from '@/actions/schema';
 import { useTaskMutations } from '@/hooks/use-task-mutations';
-import { Button } from '@comp/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
-import { Textarea } from '@comp/ui/textarea';
+import { Button } from '@trycompai/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { Input } from '@trycompai/ui/input';
+import { Textarea } from '@trycompai/ui/textarea';
 import type { Task } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';

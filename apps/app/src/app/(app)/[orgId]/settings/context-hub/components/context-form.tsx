@@ -1,10 +1,10 @@
 'use client';
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
-import { Button } from '@comp/ui/button';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
-import { Textarea } from '@comp/ui/textarea';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui/accordion';
+import { Button } from '@trycompai/ui/button';
+import { Input } from '@trycompai/ui/input';
+import { Label } from '@trycompai/ui/label';
+import { Textarea } from '@trycompai/ui/textarea';
 import type { Context } from '@db';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';

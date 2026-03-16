@@ -2,7 +2,7 @@
 
 import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { generatePolicyPDF } from '@/lib/pdf-generator';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { useSWRConfig } from 'swr';
 import {
   Dialog,
@@ -11,15 +11,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Icons } from '@comp/ui/icons';
+} from '@trycompai/ui/dropdown-menu';
+import { Icons } from '@trycompai/ui/icons';
 import type { Member, Policy, PolicyVersion, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';

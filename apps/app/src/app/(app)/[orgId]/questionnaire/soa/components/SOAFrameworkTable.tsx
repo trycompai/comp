@@ -1,6 +1,6 @@
 'use client';
 
-import { Card } from '@comp/ui';
+import { Card } from '@trycompai/ui';
 import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useSOAAutoFill } from '../hooks/useSOAAutoFill';

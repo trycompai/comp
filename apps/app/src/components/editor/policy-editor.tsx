@@ -1,6 +1,6 @@
 'use client';
 
-import { validateAndFixTipTapContent } from '@comp/ui/editor';
+import { validateAndFixTipTapContent } from '@trycompai/ui/editor';
 import type { JSONContent } from '@tiptap/react';
 import AdvancedEditor from './advanced-editor';
 

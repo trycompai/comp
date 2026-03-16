@@ -3,8 +3,8 @@
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { useApi } from '@/hooks/use-api';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import MultipleSelector from '@comp/ui/multiple-selector';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
+import MultipleSelector from '@trycompai/ui/multiple-selector';
 import {
   Button,
   Input,

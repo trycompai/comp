@@ -1,6 +1,6 @@
 'use client';
 
-import { ScrollArea } from '@comp/ui/scroll-area';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
 import { Search } from 'lucide-react';
 import type { QuestionAnswer } from './types';
 import { QuestionnaireResultsCards } from './QuestionnaireResultsCards';

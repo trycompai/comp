@@ -7,7 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import { CarouselControls } from './CarouselControls';
 import { PolicyImagePreview } from './PolicyImagePreview';
 

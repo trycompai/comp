@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import type { Member, User } from '@db';
 

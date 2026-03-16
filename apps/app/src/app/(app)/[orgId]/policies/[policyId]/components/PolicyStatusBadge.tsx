@@ -1,7 +1,7 @@
 'use client';
 
 import { getStatusTranslation, type StatusType } from '@/components/status-indicator';
-import { Badge } from '@comp/ui/badge';
+import { Badge } from '@trycompai/ui/badge';
 import type { PolicyStatus } from '@db';
 
 interface PolicyStatusBadgeProps {

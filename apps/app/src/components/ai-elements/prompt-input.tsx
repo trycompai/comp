@@ -23,38 +23,38 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@comp/ui/command";
+} from "@trycompai/ui/command";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@comp/ui/dropdown-menu";
+} from "@trycompai/ui/dropdown-menu";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "@comp/ui/hover-card";
+} from "@trycompai/ui/hover-card";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupTextarea,
-} from "@comp/ui/input-group";
+} from "@trycompai/ui/input-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@comp/ui/select";
-import { Spinner } from "@comp/ui/spinner";
+} from "@trycompai/ui/select";
+import { Spinner } from "@trycompai/ui/spinner";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@comp/ui/tooltip";
-import { cn } from "@comp/ui/cn";
+} from "@trycompai/ui/tooltip";
+import { cn } from "@trycompai/ui/cn";
 import {
   CornerDownLeftIcon,
   ImageIcon,

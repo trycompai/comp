@@ -1,6 +1,6 @@
 import { db } from '@db';
-import { AllPolicyNotificationEmail } from '@comp/email';
-import { isUserUnsubscribed } from '@comp/email/lib/check-unsubscribe';
+import { AllPolicyNotificationEmail } from '@trycompai/email';
+import { isUserUnsubscribed } from '@trycompai/email/lib/check-unsubscribe';
 import { logger, queue, task } from '@trigger.dev/sdk';
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
 

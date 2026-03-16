@@ -1,4 +1,4 @@
-import { allRoles, type RoleName } from '@comp/auth';
+import { allRoles, type RoleName } from '@trycompai/auth';
 
 /**
  * Effective user permissions — flat map of resource -> actions[].
@@ -6,7 +6,7 @@ import { allRoles, type RoleName } from '@comp/auth';
  */
 export type UserPermissions = Record<string, string[]>;
 
-/** Built-in role names derived from @comp/auth */
+/** Built-in role names derived from @trycompai/auth */
 const BUILT_IN_ROLE_NAMES_SET = new Set<string>(Object.keys(allRoles));
 
 /**
@@ -185,7 +185,7 @@ const BUILT_IN_ROLE_NAMES = Object.keys(allRoles);
 
 /**
  * Resolve effective permissions for a member's comma-separated role string.
- * Handles built-in roles (from @comp/auth). For custom roles, pass them
+ * Handles built-in roles (from @trycompai/auth). For custom roles, pass them
  * via the customRolePermissions parameter.
  */
 export function resolveBuiltInPermissions(roleString: string | null | undefined): {

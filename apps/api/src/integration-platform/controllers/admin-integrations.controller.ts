@@ -15,7 +15,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { PlatformCredentialRepository } from '../repositories/platform-credential.repository';
-import { getAllManifests, getManifest } from '@comp/integration-platform';
+import { getAllManifests, getManifest } from '@trycompai/integration-platform';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
 import { PlatformAuditLogInterceptor } from '../interceptors/platform-audit-log.interceptor';
 

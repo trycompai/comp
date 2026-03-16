@@ -1,6 +1,6 @@
 'use client';
 
-import type { EvidenceFormType } from '@comp/company';
+import type { EvidenceFormType } from '@trycompai/company';
 import { Button } from '@trycompai/design-system';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';

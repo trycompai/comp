@@ -3,7 +3,7 @@
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { StatusIndicator } from '@/components/status-indicator';
 import { formatDate } from '@/lib/format';
-import { Badge } from '@comp/ui/badge';
+import { Badge } from '@trycompai/ui/badge';
 import { Policy } from '@db';
 import { type ColumnDef, type Row } from '@tanstack/react-table';
 import { ExternalLink, Loader2 } from 'lucide-react';

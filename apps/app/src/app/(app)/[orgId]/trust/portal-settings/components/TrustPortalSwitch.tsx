@@ -3,7 +3,7 @@
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
-import { Form } from '@comp/ui/form';
+import { Form } from '@trycompai/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,

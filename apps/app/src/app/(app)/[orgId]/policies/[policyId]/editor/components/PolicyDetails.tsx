@@ -3,7 +3,7 @@
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { PolicyEditor } from '@/components/editor/policy-editor';
 import { useChat } from '@ai-sdk/react';
-import { Badge } from '@comp/ui/badge';
+import { Badge } from '@trycompai/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -11,15 +11,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { DiffViewer } from '@comp/ui/diff-viewer';
+} from '@trycompai/ui/dialog';
+import { DiffViewer } from '@trycompai/ui/diff-viewer';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { validateAndFixTipTapContent } from '@comp/ui/editor';
+} from '@trycompai/ui/dropdown-menu';
+import { validateAndFixTipTapContent } from '@trycompai/ui/editor';
 import { PolicyStatus, type Member, type PolicyDisplayFormat, type PolicyVersion, type User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import {

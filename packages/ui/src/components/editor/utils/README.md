@@ -5,7 +5,7 @@ This module provides utilities to validate and fix common TipTap JSON schema iss
 ## Quick Start
 
 ```typescript
-import { validateAndFixTipTapContent } from '@comp/ui/editor';
+import { validateAndFixTipTapContent } from '@trycompai/ui/editor';
 
 // Fix AI-generated content before using with TipTap
 const aiGeneratedContent = {
@@ -54,7 +54,7 @@ Main utility function that validates and fixes TipTap JSON schema issues.
 Checks if content is already valid TipTap format.
 
 ```typescript
-import { isValidTipTapContent } from '@comp/ui/editor';
+import { isValidTipTapContent } from '@trycompai/ui/editor';
 
 if (!isValidTipTapContent(myContent)) {
   myContent = validateAndFixTipTapContent(myContent);
@@ -66,7 +66,7 @@ if (!isValidTipTapContent(myContent)) {
 Debug utility that logs detailed information about content structure issues.
 
 ```typescript
-import { debugTipTapContent } from '@comp/ui/editor';
+import { debugTipTapContent } from '@trycompai/ui/editor';
 
 // Log detailed structure analysis
 debugTipTapContent(suspiciousContent);
@@ -149,7 +149,7 @@ debugTipTapContent(suspiciousContent);
 ### With AI Policy Generation
 
 ```typescript
-import { validateAndFixTipTapContent } from '@comp/ui/editor';
+import { validateAndFixTipTapContent } from '@trycompai/ui/editor';
 
 async function generatePolicy(prompt: string) {
   const aiResponse = await callAI(prompt);
@@ -164,7 +164,7 @@ async function generatePolicy(prompt: string) {
 ### In React Components
 
 ```typescript
-import { Editor, validateAndFixTipTapContent } from '@comp/ui/editor';
+import { Editor, validateAndFixTipTapContent } from '@trycompai/ui/editor';
 
 function PolicyEditor({ aiGeneratedContent }) {
   // Content is automatically fixed by the Editor component now,
@@ -183,7 +183,7 @@ function PolicyEditor({ aiGeneratedContent }) {
 ### Batch Processing
 
 ```typescript
-import { validateAndFixTipTapContent } from '@comp/ui/editor';
+import { validateAndFixTipTapContent } from '@trycompai/ui/editor';
 
 function processPolicyBatch(policies: any[]) {
   return policies.map((policy) => ({
@@ -222,7 +222,7 @@ Full TypeScript support with proper type inference:
 
 ```typescript
 import type { JSONContent } from '@tiptap/react';
-import { validateAndFixTipTapContent } from '@comp/ui/editor';
+import { validateAndFixTipTapContent } from '@trycompai/ui/editor';
 
 const content: any = getAIContent();
 const validContent: JSONContent = validateAndFixTipTapContent(content);

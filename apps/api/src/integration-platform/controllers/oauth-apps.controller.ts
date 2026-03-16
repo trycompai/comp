@@ -18,7 +18,7 @@ import { RequirePermission } from '../../auth/require-permission.decorator';
 import { OrganizationId } from '../../auth/auth-context.decorator';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { OAuthAppRepository } from '../repositories/oauth-app.repository';
-import { getManifest } from '@comp/integration-platform';
+import { getManifest } from '@trycompai/integration-platform';
 
 interface SaveOAuthAppDto {
   providerSlug: string;

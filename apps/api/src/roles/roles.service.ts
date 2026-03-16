@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { db } from '@trycompai/db';
-import { statement, allRoles, BUILT_IN_ROLE_PERMISSIONS, BUILT_IN_ROLE_OBLIGATIONS, type RoleObligations } from '@comp/auth';
+import { statement, allRoles, BUILT_IN_ROLE_PERMISSIONS, BUILT_IN_ROLE_OBLIGATIONS, type RoleObligations } from '@trycompai/auth';
 import type { CreateRoleDto } from './dto/create-role.dto';
 import type { UpdateRoleDto } from './dto/update-role.dto';
 

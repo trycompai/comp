@@ -2,7 +2,7 @@
 
 import { updateRiskSchema } from '@/actions/schema';
 import { useRiskActions } from '@/hooks/use-risks';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { Departments, type Risk } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Stack, Textarea } from '@trycompai/design-system';

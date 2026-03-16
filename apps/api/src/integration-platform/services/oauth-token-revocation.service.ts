@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { getManifest } from '@comp/integration-platform';
+import { getManifest } from '@trycompai/integration-platform';
 import { OAuthCredentialsService } from './oauth-credentials.service';
 
 type OAuthRevokeConfig = {

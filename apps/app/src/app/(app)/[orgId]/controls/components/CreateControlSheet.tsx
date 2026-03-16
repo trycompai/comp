@@ -1,13 +1,13 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { useMediaQuery } from '@comp/ui/hooks';
-import { Input } from '@comp/ui/input';
-import MultipleSelector, { Option } from '@comp/ui/multiple-selector';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
-import { Textarea } from '@comp/ui/textarea';
+import { Button } from '@trycompai/ui/button';
+import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { useMediaQuery } from '@trycompai/ui/hooks';
+import { Input } from '@trycompai/ui/input';
+import MultipleSelector, { Option } from '@trycompai/ui/multiple-selector';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@trycompai/ui/sheet';
+import { Textarea } from '@trycompai/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon, X } from 'lucide-react';
 import { useQueryState } from 'nuqs';

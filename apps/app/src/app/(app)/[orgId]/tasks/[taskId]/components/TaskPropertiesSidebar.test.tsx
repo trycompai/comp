@@ -94,8 +94,8 @@ vi.mock('date-fns', () => ({
   format: (date: Date, fmt: string) => '1/1/2024',
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/avatar', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/avatar', () => ({
   Avatar: ({ children, ...props }: { children: React.ReactNode; className?: string }) => (
     <div {...props}>{children}</div>
   ),
@@ -103,13 +103,13 @@ vi.mock('@comp/ui/avatar', () => ({
   AvatarImage: () => null,
 }));
 
-vi.mock('@comp/ui/badge', () => ({
+vi.mock('@trycompai/ui/badge', () => ({
   Badge: ({ children, ...props }: { children: React.ReactNode }) => (
     <span {...props}>{children}</span>
   ),
 }));
 
-vi.mock('@comp/ui/button', () => ({
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({
     children,
     disabled,

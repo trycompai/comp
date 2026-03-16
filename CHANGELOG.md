@@ -1,3 +1,25 @@
+# [3.6.0](https://github.com/trycompai/comp/compare/v3.5.0...v3.6.0) (2026-03-14)
+
+
+### Features
+
+* **auth:** add SessionOnlyGuard to enforce user session authentication for assistant chat ([ac97916](https://github.com/trycompai/comp/commit/ac97916c6092d3d8f913921787c205fae571ba4a))
+
+# [3.5.0](https://github.com/trycompai/comp/compare/v3.4.0...v3.5.0) (2026-03-14)
+
+
+### Features
+
+* **integration-platform:** enhance sync controller with Ramp user integration and external user ID support ([#2298](https://github.com/trycompai/comp/issues/2298)) ([3f8cb4b](https://github.com/trycompai/comp/commit/3f8cb4b7b8717f0e3d63458b1c4818155a6603ed))
+* **training:** update download training certificate action to forward session cookies for authentication ([#2300](https://github.com/trycompai/comp/issues/2300)) ([7d12e56](https://github.com/trycompai/comp/commit/7d12e5693bbee42e1b9913e888d31077ac35112e))
+
+# [3.4.0](https://github.com/trycompai/comp/compare/v3.3.0...v3.4.0) (2026-03-14)
+
+
+### Features
+
+* **training:** update download training certificate action to forward session cookies for authentication ([7558b7b](https://github.com/trycompai/comp/commit/7558b7bca46c9987d2f2ee1e4670e22f0c65438c))
+
 # [3.3.0](https://github.com/trycompai/comp/compare/v3.2.1...v3.3.0) (2026-03-13)
 
 
@@ -154,7 +176,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 * feat(rbac): add shared auth package and API integration
 
-- Add @comp/auth package with centralized permissions and role definitions
+- Add @trycompai/auth package with centralized permissions and role definitions
 - Update API auth module to integrate with better-auth server
 - Add 403 responses to policy and risk endpoints for Swagger
 - Add assignment filter and department visibility utilities with tests
@@ -581,7 +603,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 * feat(rbac): add shared auth package and API integration
 
-- Add @comp/auth package with centralized permissions and role definitions
+- Add @trycompai/auth package with centralized permissions and role definitions
 - Update API auth module to integrate with better-auth server
 - Add 403 responses to policy and risk endpoints for Swagger
 - Add assignment filter and department visibility utilities with tests
@@ -1034,7 +1056,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
 ### Bug Fixes
 
-* **api:** add @comp/company package to Dockerfile ([#2148](https://github.com/trycompai/comp/issues/2148)) ([d91bcaa](https://github.com/trycompai/comp/commit/d91bcaa5a92557a1b47a12ec6b396715744fca7f))
+* **api:** add @trycompai/company package to Dockerfile ([#2148](https://github.com/trycompai/comp/issues/2148)) ([d91bcaa](https://github.com/trycompai/comp/commit/d91bcaa5a92557a1b47a12ec6b396715744fca7f))
 * **api:** inline mergeDeviceLists to fix production runtime crash ([#2146](https://github.com/trycompai/comp/issues/2146)) ([04ef343](https://github.com/trycompai/comp/commit/04ef343011defa91609ba9ba69b85776063198db))
 
 ## [1.83.1](https://github.com/trycompai/comp/compare/v1.83.0...v1.83.1) (2026-02-17)

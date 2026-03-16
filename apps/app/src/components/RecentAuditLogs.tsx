@@ -1,6 +1,6 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
 import type { AuditLog } from '@db';
 import {
   Badge,

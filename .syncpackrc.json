@@ -4,8 +4,8 @@
   "semverGroups": [
     {
       "label": "Use exact versions for internal packages",
-      "packages": ["@comp/**"],
-      "dependencies": ["@comp/**"],
+      "packages": ["@trycompai/**"],
+      "dependencies": ["@trycompai/**"],
       "range": "workspace:*"
     }
   ],

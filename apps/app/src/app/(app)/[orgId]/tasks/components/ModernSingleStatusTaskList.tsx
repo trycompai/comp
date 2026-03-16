@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { Button } from '@comp/ui/button';
-import { Checkbox } from '@comp/ui/checkbox';
+import { Button } from '@trycompai/ui/button';
+import { Checkbox } from '@trycompai/ui/checkbox';
 import { Member, Task, User } from '@db';
 import { RefreshCw, Trash2, User as UserIcon } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';

@@ -8,7 +8,7 @@
  * can execute under Jest, while still testing the real role definitions.
  */
 
-// Mock better-auth ESM modules before importing @comp/auth
+// Mock better-auth ESM modules before importing @trycompai/auth
 jest.mock('better-auth/plugins/access', () => ({
   createAccessControl: (stmt: Record<string, readonly string[]>) => ({
     newRole: (statements: Record<string, readonly string[]>) => ({
@@ -45,7 +45,7 @@ jest.mock('better-auth/plugins/organization/access', () => ({
 import {
   BUILT_IN_ROLE_PERMISSIONS,
   BUILT_IN_ROLE_OBLIGATIONS,
-} from '@comp/auth';
+} from '@trycompai/auth';
 
 describe('Built-in role permissions — regression', () => {
   // ─── Owner ──────────────────────────────────────────────────────────

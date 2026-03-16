@@ -654,7 +654,7 @@ export interface IntegrationCheck {
    * Use TASK_TEMPLATES helper for autocomplete.
    *
    * @example
-   * import { TASK_TEMPLATES } from '@comp/integration-platform';
+   * import { TASK_TEMPLATES } from '@trycompai/integration-platform';
    * taskMapping: TASK_TEMPLATES.codeChanges, // Branch protection
    * taskMapping: TASK_TEMPLATES.secureCode,  // Dependabot
    */

@@ -14,7 +14,7 @@ import {
 import {
   toDbEvidenceFormType,
   toExternalEvidenceFormType,
-} from '@comp/company';
+} from '@trycompai/company';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { FindingAuditService } from './finding-audit.service';

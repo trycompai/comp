@@ -8,7 +8,7 @@ const config = {
     '@trycompai/db',
     '@trycompai/design-system',
     '@carbon/icons-react',
-    '@comp/company',
+    '@trycompai/company',
   ],
   images: {
     remotePatterns: [
