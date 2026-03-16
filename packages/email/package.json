@@ -2,6 +2,12 @@
   "name": "@trycompai/email",
   "description": "Email templates and utilities for Comp AI",
   "version": "1.0.0",
+  "private": true,
+  "exports": {
+    ".": "./index.ts",
+    "./emails/*": "./emails/*.tsx",
+    "./lib/*": "./lib/*.ts"
+  },
   "dependencies": {
     "@react-email/components": "^0.0.41",
     "@react-email/render": "^1.1.2",
@@ -16,49 +22,14 @@
   "devDependencies": {
     "react": "^19.1.1",
     "react-dom": "^19.1.0",
-    "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    },
-    "./emails/*": "./emails/*",
-    "./lib/*": "./lib/*"
-  },
-  "files": [
-    "dist/**",
-    "README.md"
-  ],
-  "keywords": [
-    "comp-ai",
-    "email-templates",
-    "react-email"
-  ],
-  "license": "MIT",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
   "peerDependencies": {
     "react": "^19.1.1",
     "react-dom": "^19.1.0"
   },
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/comp-ai/comp.git",
-    "directory": "packages/email"
-  },
   "scripts": {
-    "build": "tsup index.ts --format cjs,esm --dts",
-    "clean": "rm -rf .turbo node_modules dist",
-    "dev": "tsup index.ts --format cjs,esm --watch --dts",
-    "format": "prettier --write .",
-    "lint": "prettier --check .",
+    "clean": "rm -rf .turbo node_modules",
     "typecheck": "tsc --noEmit"
-  },
-  "types": "./dist/index.d.ts"
+  }
 }

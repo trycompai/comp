@@ -1,5 +1,8 @@
 {
   "extends": "@trycompai/tsconfig/base.json",
-  "include": ["."],
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src"],
   "exclude": ["node_modules"]
 }

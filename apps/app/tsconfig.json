@@ -36,42 +36,6 @@
       "@/trigger/*": [
         "./src/trigger/*"
       ],
-      "@trycompai/email": [
-        "../../packages/email/index.ts"
-      ],
-      "@trycompai/email/*": [
-        "../../packages/email/*"
-      ],
-      "@trycompai/utils": [
-        "../../packages/utils/src/index.ts"
-      ],
-      "@trycompai/utils/*": [
-        "../../packages/utils/src/*"
-      ],
-      "@trycompai/integrations": [
-        "../../packages/integrations/src/index.ts"
-      ],
-      "@trycompai/integrations/*": [
-        "../../packages/integrations/src/*"
-      ],
-      "@trycompai/integration-platform": [
-        "../../packages/integration-platform/src/index.ts"
-      ],
-      "@trycompai/integration-platform/*": [
-        "../../packages/integration-platform/src/*"
-      ],
-      "@trycompai/analytics": [
-        "../../packages/analytics/src/index.ts"
-      ],
-      "@trycompai/analytics/*": [
-        "../../packages/analytics/src/*"
-      ],
-      "@trycompai/ui": [
-        "../../packages/ui/src/components/index.ts"
-      ],
-      "@trycompai/ui/*": [
-        "../../packages/ui/src/components/*"
-      ],
       "@trycompai/ui/hooks": [
         "../../packages/ui/src/hooks/index.ts"
       ],
@@ -87,6 +51,9 @@
       "@trycompai/ui/truncate": [
         "../../packages/ui/src/utils/truncate.ts"
       ],
+      "@trycompai/ui/editor": [
+        "../../packages/ui/src/components/editor/index.tsx"
+      ],
       "@trycompai/ui/globals.css": [
         "../../packages/ui/src/globals.css"
       ],
@@ -96,23 +63,11 @@
       "@trycompai/ui/tailwind.config": [
         "../../packages/ui/tailwind.config.ts"
       ],
-      "@trycompai/kv": [
-        "../../packages/kv/src/index.ts"
+      "@trycompai/email/emails/*": [
+        "../../packages/email/emails/*"
       ],
-      "@trycompai/kv/*": [
-        "../../packages/kv/src/*"
-      ],
-      "@trycompai/tsconfig": [
-        "../../packages/tsconfig/index.ts"
-      ],
-      "@trycompai/tsconfig/*": [
-        "../../packages/tsconfig/*"
-      ],
-      "@trycompai/email": [
-        "../../packages/email/index.ts"
-      ],
-      "@trycompai/email/*": [
-        "../../packages/email/*"
+      "@trycompai/email/lib/*": [
+        "../../packages/email/lib/*"
       ]
     }
   },

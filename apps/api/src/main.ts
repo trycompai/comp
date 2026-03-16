@@ -109,15 +109,38 @@ async function bootstrap(): Promise<void> {
     )
     .addServer('https://api.trycomp.ai', 'API Server')
     .build();
-  const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
+  try {
+    const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
 
-  // Setup Swagger UI at /api/docs
-  SwaggerModule.setup('api/docs', app, document, {
-    raw: ['json'],
-    swaggerOptions: {
-      persistAuthorization: true, // Keep auth between page refreshes
-    },
-  });
+    SwaggerModule.setup('api/docs', app, document, {
+      raw: ['json'],
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+    });
+
+    if (process.env.NODE_ENV !== 'production') {
+      const openapiPath = path.join(
+        __dirname,
+        '../../../../packages/docs/openapi.json',
+      );
+
+      const docsDir = path.dirname(openapiPath);
+      if (!existsSync(docsDir)) {
+        mkdirSync(docsDir, { recursive: true });
+      }
+
+      writeFileSync(openapiPath, JSON.stringify(document, null, 2));
+      console.log(
+        'OpenAPI documentation written to packages/docs/openapi.json',
+      );
+    }
+  } catch (swaggerError) {
+    console.warn(
+      'Swagger document generation failed (API will still start):',
+      swaggerError instanceof Error ? swaggerError.message : swaggerError,
+    );
+  }
 
   const server = await app.listen(port);
   const address = server.address();
@@ -125,22 +148,8 @@ async function bootstrap(): Promise<void> {
   const actualUrl = `http://localhost:${actualPort}`;
 
   console.log(`Application is running on: ${actualUrl}`);
-  console.log(`API Documentation available at: ${actualUrl}/api/docs`);
-
-  // Write OpenAPI documentation to packages/docs/openapi.json only in development
   if (process.env.NODE_ENV !== 'production') {
-    const openapiPath = path.join(
-      __dirname,
-      '../../../../packages/docs/openapi.json',
-    );
-
-    const docsDir = path.dirname(openapiPath);
-    if (!existsSync(docsDir)) {
-      mkdirSync(docsDir, { recursive: true });
-    }
-
-    writeFileSync(openapiPath, JSON.stringify(document, null, 2));
-    console.log('OpenAPI documentation written to packages/docs/openapi.json');
+    console.log(`API Documentation available at: ${actualUrl}/api/docs`);
   }
 }
 

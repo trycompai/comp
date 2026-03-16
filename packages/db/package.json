@@ -2,6 +2,10 @@
     "name": "@trycompai/db",
     "description": "Database package with Prisma client and schema for Comp AI",
     "version": "1.3.22",
+    "exports": {
+        ".": "./src/index.ts",
+        "./postinstall": "./src/postinstall.ts"
+    },
     "dependencies": {
         "@prisma/client": "6.18.0",
         "dotenv": "^16.4.5",
@@ -10,39 +14,12 @@
     "devDependencies": {
         "@types/node": "^24.2.0",
         "prisma": "6.18.0",
-        "ts-node": "^10.9.2",
         "typescript": "^5.9.2"
     },
-    "exports": {
-        ".": {
-            "import": "./dist/index.js",
-            "types": "./src/index.ts",
-            "default": "./dist/index.js"
-        },
-        "./postinstall": {
-            "import": "./dist/postinstall.js",
-            "types": "./src/postinstall.ts",
-            "default": "./dist/postinstall.js"
-        }
-    },
-    "bin": {
-        "comp-prisma-postinstall": "./dist/postinstall.js"
-    },
-    "files": [
-        "dist", "README.md", "INTEGRATION_GUIDE.md"
-    ],
-    "publishConfig": {
-        "access": "public"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/trycompai/comp.git",
-        "directory": "packages/db"
-    },
     "scripts": {
-        "build": "rm -rf dist && rm -rf ./prisma/generated && node scripts/combine-schemas.js && prisma generate --schema=dist/schema.prisma && tsc",
-        "check-types": "tsc --noEmit",
         "db:generate": "node scripts/combine-schemas.js && prisma generate --schema=dist/schema.prisma",
+        "check-types": "tsc --noEmit",
+        "typecheck": "tsc --noEmit",
         "db:migrate": "prisma migrate dev",
         "db:migrate:reset": "prisma migrate reset",
         "db:push": "prisma db push",
@@ -51,7 +28,6 @@
         "docker:clean": "docker compose down -v",
         "docker:down": "docker compose down",
         "docker:up": "docker compose up -d",
-        "lint": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json}' 'prisma/**/*.prisma' && tsc --noEmit",
-        "prepublishOnly": "bun run build"
+        "lint": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json}' 'prisma/**/*.prisma' && tsc --noEmit"
     }
 }

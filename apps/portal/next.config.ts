@@ -7,9 +7,16 @@ const config = {
   transpilePackages: [
     '@trycompai/auth',
     '@trycompai/db',
+    '@trycompai/company',
+    '@trycompai/email',
+    '@trycompai/analytics',
+    '@trycompai/kv',
+    '@trycompai/utils',
+    '@trycompai/integrations',
+    '@trycompai/integration-platform',
     '@trycompai/design-system',
     '@carbon/icons-react',
-    '@trycompai/company',
+    '@prisma/client',
   ],
   images: {
     remotePatterns: [

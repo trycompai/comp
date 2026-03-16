@@ -2,24 +2,12 @@
   "name": "@trycompai/auth",
   "version": "0.0.1",
   "private": true,
-  "main": "./src/permissions.ts",
-  "types": "./src/permissions.ts",
   "exports": {
-    ".": {
-      "types": "./src/permissions.ts",
-      "default": "./src/permissions.ts"
-    },
-    "./permissions": {
-      "types": "./src/permissions.ts",
-      "default": "./src/permissions.ts"
-    },
-    "./server": {
-      "types": "./src/server.ts",
-      "default": "./src/server.ts"
-    }
+    ".": "./src/permissions.ts",
+    "./permissions": "./src/permissions.ts",
+    "./server": "./src/server.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
