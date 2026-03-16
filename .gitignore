@@ -19,6 +19,7 @@ build
 
 # misc
 .DS_Store
+.webpack-cache
 *.pem
 
 # debug
