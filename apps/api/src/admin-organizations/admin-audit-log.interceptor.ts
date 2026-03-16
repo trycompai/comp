@@ -9,7 +9,10 @@ import { AuditLogEntityType, db, Prisma } from '@db';
 import { Observable, tap } from 'rxjs';
 import { MUTATION_METHODS, SENSITIVE_KEYS } from '../audit/audit-log.constants';
 
-const SEGMENT_TO_RESOURCE: Record<string, { entity: AuditLogEntityType; singular: string }> = {
+const SEGMENT_TO_RESOURCE: Record<
+  string,
+  { entity: AuditLogEntityType; singular: string }
+> = {
   findings: { entity: AuditLogEntityType.finding, singular: 'finding' },
   policies: { entity: AuditLogEntityType.policy, singular: 'policy' },
   tasks: { entity: AuditLogEntityType.task, singular: 'task' },
@@ -53,7 +56,7 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
     if (!organizationId || !userId) {
       this.logger.warn(
         `Admin audit log skipped for ${method} ${request.url}: ` +
-        `missing ${!organizationId ? 'organizationId' : 'userId'}`,
+          `missing ${!organizationId ? 'organizationId' : 'userId'}`,
       );
       return next.handle();
     }
@@ -88,7 +91,10 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
               _failed: { previous: null, current: err.message },
             },
           }).catch((logErr) => {
-            this.logger.error('Failed to write admin audit log for failed request', logErr);
+            this.logger.error(
+              'Failed to write admin audit log for failed request',
+              logErr,
+            );
           });
         },
       }),
@@ -140,8 +146,15 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
     };
   }
 
-  private buildDescription(method: string, parsed: ParsedPath, entityName: string | null): string {
-    if (parsed.actionSegment && SPECIAL_ACTION_DESCRIPTIONS[parsed.actionSegment]) {
+  private buildDescription(
+    method: string,
+    parsed: ParsedPath,
+    entityName: string | null,
+  ): string {
+    if (
+      parsed.actionSegment &&
+      SPECIAL_ACTION_DESCRIPTIONS[parsed.actionSegment]
+    ) {
       const base = SPECIAL_ACTION_DESCRIPTIONS[parsed.actionSegment];
       return entityName ? `${base} '${entityName}'` : base;
     }
@@ -178,7 +191,7 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
           return p?.name ?? null;
         }
         case 'task': {
-          const t = await db.taskItem.findFirst({
+          const t = await db.task.findFirst({
             where: { id: entityId, organizationId },
             select: { title: true },
           });
@@ -204,7 +217,9 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
             select: { question: true },
           });
           if (!c?.question) return null;
-          return c.question.length > 60 ? `${c.question.slice(0, 57)}...` : c.question;
+          return c.question.length > 60
+            ? `${c.question.slice(0, 57)}...`
+            : c.question;
         }
         default:
           return null;
@@ -238,7 +253,11 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
       params.parsed.entityId,
       params.organizationId,
     );
-    const description = this.buildDescription(params.method, params.parsed, entityName);
+    const description = this.buildDescription(
+      params.method,
+      params.parsed,
+      entityName,
+    );
 
     const auditData: Record<string, unknown> = {
       action: description,
