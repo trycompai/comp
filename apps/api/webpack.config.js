@@ -54,6 +54,12 @@ module.exports = function (options) {
     optimization: {
       ...options.optimization,
       minimize: false,
+      splitChunks: false,
+      runtimeChunk: false,
+    },
+    output: {
+      ...options.output,
+      asyncChunks: false,
     },
     externals: [
       function ({ request }, callback) {
