@@ -166,14 +166,6 @@ export class BrowserbaseService {
           id: contextId,
           persist: true,
         },
-        fingerprint: {
-          screen: {
-            maxHeight: BROWSER_HEIGHT,
-            maxWidth: BROWSER_WIDTH,
-            minHeight: BROWSER_HEIGHT,
-            minWidth: BROWSER_WIDTH,
-          },
-        },
         viewport: { width: BROWSER_WIDTH, height: BROWSER_HEIGHT },
       },
       keepAlive: true,
