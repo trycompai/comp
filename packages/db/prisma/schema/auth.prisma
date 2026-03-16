@@ -13,14 +13,15 @@ model User {
   banned                         Boolean?
   banReason                      String?
   banExpires                     DateTime?
+  isPlatformAdmin                Boolean   @default(false)
 
-  accounts           Account[]
-  auditLog           AuditLog[]
-  integrationResults IntegrationResult[]
-  invitations        Invitation[]
-  members            Member[]
-  sessions           Session[]
-  fleetPolicyResults FleetPolicyResult[]
+  accounts            Account[]
+  auditLog            AuditLog[]
+  integrationResults  IntegrationResult[]
+  invitations         Invitation[]
+  members             Member[]
+  sessions            Session[]
+  fleetPolicyResults  FleetPolicyResult[]
   evidenceSubmissions EvidenceSubmission[] @relation("EvidenceSubmitter")
   evidenceReviews     EvidenceSubmission[] @relation("EvidenceReviewer")
   adminFindings       Finding[]            @relation("AdminFindingCreator")
@@ -112,22 +113,22 @@ model Member {
   employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
   fleetDmLabelId                  Int?
 
-  assignedPolicies       Policy[]             @relation("PolicyAssignee") // Policies where this member is an assignee
-  approvedPolicies       Policy[]             @relation("PolicyApprover") // Policies where this member is an approver
-  approvedSOADocuments   SOADocument[]        @relation("SOADocumentApprover") // SOA documents where this member is an approver
-  risks                  Risk[]
-  tasks                  Task[]
-  vendors                Vendor[]
-  comments               Comment[]
-  auditLogs              AuditLog[]
-  reviewedAccessRequests TrustAccessRequest[] @relation("TrustAccessRequestReviewer")
-  issuedGrants           TrustAccessGrant[]   @relation("IssuedGrants")
-  revokedGrants          TrustAccessGrant[]   @relation("RevokedGrants")
-  createdTaskItems       TaskItem[]           @relation("TaskItemCreator")
-  updatedTaskItems       TaskItem[]           @relation("TaskItemUpdater")
-  assignedTaskItems      TaskItem[]           @relation("TaskItemAssignee")
-  createdFindings        Finding[]            @relation("FindingCreatedBy")
-  publishedPolicyVersions PolicyVersion[]     @relation("PolicyVersionPublisher")
+  assignedPolicies        Policy[]             @relation("PolicyAssignee") // Policies where this member is an assignee
+  approvedPolicies        Policy[]             @relation("PolicyApprover") // Policies where this member is an approver
+  approvedSOADocuments    SOADocument[]        @relation("SOADocumentApprover") // SOA documents where this member is an approver
+  risks                   Risk[]
+  tasks                   Task[]
+  vendors                 Vendor[]
+  comments                Comment[]
+  auditLogs               AuditLog[]
+  reviewedAccessRequests  TrustAccessRequest[] @relation("TrustAccessRequestReviewer")
+  issuedGrants            TrustAccessGrant[]   @relation("IssuedGrants")
+  revokedGrants           TrustAccessGrant[]   @relation("RevokedGrants")
+  createdTaskItems        TaskItem[]           @relation("TaskItemCreator")
+  updatedTaskItems        TaskItem[]           @relation("TaskItemUpdater")
+  assignedTaskItems       TaskItem[]           @relation("TaskItemAssignee")
+  createdFindings         Finding[]            @relation("FindingCreatedBy")
+  publishedPolicyVersions PolicyVersion[]      @relation("PolicyVersionPublisher")
   approvedTasks           Task[]               @relation("TaskApprover")
   devices                 Device[]
 }
