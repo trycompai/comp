@@ -99,6 +99,9 @@ module.exports = function (options) {
                 transform: {
                   legacyDecorator: true,
                   decoratorMetadata: true,
+                  react: {
+                    runtime: 'automatic',
+                  },
                 },
                 target: 'es2022',
               },
