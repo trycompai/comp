@@ -1,5 +1,22 @@
-const { readFileSync } = require('fs');
+const { readFileSync, existsSync } = require('fs');
 const path = require('path');
+
+const FORCE_BUNDLE = [
+  /^@trycompai\//,
+  /^better-auth/,
+  /^@better-auth\//,
+  /^nanoid/,
+  /^jose/,
+  /^@ai-sdk\//,
+  /^ai$/,
+  /^@mendable\//,
+  /^@upstash\//,
+];
+
+const FORCE_EXTERNAL = [
+  /^@prisma\//,
+  /^prisma$/,
+];
 
 const esmCache = new Map();
 
@@ -10,20 +27,20 @@ function isEsmPackage(request) {
 
   if (esmCache.has(pkgName)) return esmCache.get(pkgName);
 
-  const candidates = [
-    path.resolve(__dirname, 'node_modules', pkgName, 'package.json'),
-    path.resolve(__dirname, '../../node_modules', pkgName, 'package.json'),
-  ];
-
-  for (const candidate of candidates) {
-    try {
-      const pkg = JSON.parse(readFileSync(candidate, 'utf-8'));
-      const isEsm = pkg.type === 'module';
-      esmCache.set(pkgName, isEsm);
-      return isEsm;
-    } catch {
-      continue;
+  let dir = __dirname;
+  while (dir !== path.dirname(dir)) {
+    const candidate = path.join(dir, 'node_modules', pkgName, 'package.json');
+    if (existsSync(candidate)) {
+      try {
+        const pkg = JSON.parse(readFileSync(candidate, 'utf-8'));
+        const isEsm = pkg.type === 'module';
+        esmCache.set(pkgName, isEsm);
+        return isEsm;
+      } catch {
+        break;
+      }
     }
+    dir = path.dirname(dir);
   }
 
   esmCache.set(pkgName, false);
@@ -46,8 +63,11 @@ module.exports = function (options) {
         if (request === '@db' || request.startsWith('@/')) {
           return callback();
         }
-        if (/^@trycompai\//.test(request)) {
+        if (FORCE_BUNDLE.some((p) => p.test(request))) {
           return callback();
+        }
+        if (FORCE_EXTERNAL.some((p) => p.test(request))) {
+          return callback(null, `commonjs ${request}`);
         }
         if (isEsmPackage(request)) {
           return callback();
