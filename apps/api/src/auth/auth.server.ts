@@ -163,20 +163,6 @@ export const auth = betterAuth({
     }),
   },
   databaseHooks: {
-    user: {
-      update: {
-        after: async (user) => {
-          const isAdmin = user.role === 'admin';
-          const current = await db.user.findUnique({
-            where: { id: user.id },
-            select: { isPlatformAdmin: true },
-          });
-          if (current && current.isPlatformAdmin !== isAdmin) {
-            await db.$executeRaw`UPDATE "User" SET "isPlatformAdmin" = ${isAdmin} WHERE "id" = ${user.id}`;
-          }
-        },
-      },
-    },
     session: {
       create: {
         before: async (session) => {
@@ -277,10 +263,12 @@ export const auth = betterAuth({
 
           if (!userOrg) {
             console.error(
-              '[Auth] SECURITY: Admin audit log dropped — no organization could be resolved for admin user',
+              '[Auth] SECURITY: Admin action blocked — no organization could be resolved for admin user',
               { userId, path: ctx.path },
             );
-            return;
+            throw new Error(
+              'Admin action blocked: unable to resolve organization for audit trail',
+            );
           }
 
           organizationId = userOrg.id;

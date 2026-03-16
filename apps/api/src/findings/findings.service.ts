@@ -319,21 +319,18 @@ export class FindingsService {
       include: this.findingInclude,
     });
 
-    // Log to audit trail
-    if (memberId) {
-      await this.findingAuditService.logFindingCreated({
-        findingId: finding.id,
-        organizationId,
-        userId,
-        memberId,
-        taskId: task?.id,
-        taskTitle: task?.title,
-        evidenceSubmissionId: evidenceSubmission?.id,
-        evidenceSubmissionFormType: resolvedFormType,
-        content: createDto.content,
-        type: createDto.type ?? FindingType.soc2,
-      });
-    }
+    await this.findingAuditService.logFindingCreated({
+      findingId: finding.id,
+      organizationId,
+      userId,
+      memberId,
+      taskId: task?.id,
+      taskTitle: task?.title,
+      evidenceSubmissionId: evidenceSubmission?.id,
+      evidenceSubmissionFormType: resolvedFormType,
+      content: createDto.content,
+      type: createDto.type ?? FindingType.soc2,
+    });
 
     const actorName =
       finding.createdBy?.user?.name ||
