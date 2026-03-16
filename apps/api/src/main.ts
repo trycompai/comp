@@ -14,14 +14,12 @@ import { auth } from './auth/auth.server';
 
 let app: INestApplication | null = null;
 
-async function bootstrap(): Promise<void> {
+async function bootstrap(): Promise<express.Application> {
   console.log('[bootstrap] Creating NestJS application...');
   app = await NestFactory.create(AppModule, {
     bodyParser: false,
     logger:
-      process.env.NODE_ENV === 'production'
-        ? ['error', 'warn']
-        : ['error', 'warn', 'log'],
+      process.env.NODE_ENV === 'production' ? ['error', 'warn'] : undefined,
   });
   console.log('[bootstrap] NestJS application created');
 
@@ -46,8 +44,10 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
+  console.log('[bootstrap] Loading better-auth handler...');
   const { toNodeHandler } = await import('better-auth/node');
   const betterAuthHandler = toNodeHandler(auth);
+  console.log('[bootstrap] better-auth handler loaded');
 
   const jsonParser = express.json({ limit: '150mb' });
   const urlencodedParser = express.urlencoded({
@@ -132,10 +132,16 @@ async function bootstrap(): Promise<void> {
     }
   }
 
-  const port = process.env.PORT ?? 3333;
-  console.log(`[bootstrap] Listening on port ${port}...`);
-  await app.listen(port);
-  console.log(`[bootstrap] Application is running on port ${port}`);
+  if (process.env.VERCEL) {
+    await app.init();
+    console.log('[bootstrap] NestJS initialized (Vercel mode)');
+  } else {
+    const port = process.env.PORT ?? 3333;
+    await app.listen(port);
+    console.log(`[bootstrap] Application is running on port ${port}`);
+  }
+
+  return app.getHttpAdapter().getInstance() as express.Application;
 }
 
 async function shutdown(signal: string): Promise<void> {
@@ -150,7 +156,7 @@ async function shutdown(signal: string): Promise<void> {
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
 process.on('SIGINT', () => void shutdown('SIGINT'));
 
-void bootstrap().catch((error: unknown) => {
+module.exports = bootstrap().catch((error: unknown) => {
   console.error('[bootstrap] FATAL ERROR:', error);
   process.exit(1);
 });
