@@ -30,7 +30,7 @@ export class MemberQueries {
         createdAt: true,
         updatedAt: true,
         lastLogin: true,
-        isPlatformAdmin: true,
+        role: true,
       },
     },
   } as const;

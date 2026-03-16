@@ -218,7 +218,7 @@ describe('SOAService', () => {
         userId: 'user-1',
         role: 'employee',
       });
-      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ isPlatformAdmin: false });
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ role: 'user' });
       await expect(service.submitForApproval(dto)).rejects.toThrow(
         ForbiddenException,
       );
@@ -230,7 +230,7 @@ describe('SOAService', () => {
         userId: 'user-1',
         role: 'admin',
       });
-      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ isPlatformAdmin: true });
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ role: 'admin' });
       await expect(service.submitForApproval(dto)).rejects.toThrow(
         BadRequestException,
       );
@@ -242,7 +242,7 @@ describe('SOAService', () => {
         userId: 'user-1',
         role: 'admin',
       });
-      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ isPlatformAdmin: false });
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ role: 'user' });
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
       await expect(service.submitForApproval(dto)).rejects.toThrow(
         NotFoundException,
@@ -255,7 +255,7 @@ describe('SOAService', () => {
         userId: 'user-1',
         role: 'admin',
       });
-      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ isPlatformAdmin: false });
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ role: 'user' });
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc-1',
         status: 'needs_review',
@@ -271,7 +271,7 @@ describe('SOAService', () => {
         userId: 'user-1',
         role: 'owner',
       });
-      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ isPlatformAdmin: false });
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ role: 'user' });
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc-1',
         status: 'draft',

@@ -209,10 +209,10 @@ export class HybridAuthGuard implements CanActivate {
       request.isServiceToken = false;
       request.isPlatformAdmin = request.isPlatformAdmin ?? false;
 
-      const impersonatedBy = (sessionData as Record<string, unknown>)
-        .impersonatedBy as string | undefined;
-      if (impersonatedBy) {
-        request.impersonatedBy = impersonatedBy;
+      const rawImpersonatedBy = (sessionData as Record<string, unknown>)
+        .impersonatedBy;
+      if (typeof rawImpersonatedBy === 'string' && rawImpersonatedBy) {
+        request.impersonatedBy = rawImpersonatedBy;
       }
 
       return true;

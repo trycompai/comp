@@ -22,7 +22,7 @@ export const SelectAssignee = ({
 }: SelectAssigneeProps) => {
   const { data: activeMember } = authClient.useActiveMember();
   // Exclude platform admins from assignee selection
-  const assignees = rawAssignees.filter((a) => !a.user.isPlatformAdmin);
+  const assignees = rawAssignees.filter((a) => a.user.role !== 'admin');
   const [selectedAssignee, setSelectedAssignee] = useState<(Member & { user: User }) | null>(null);
 
   // Initialize selectedAssignee based on assigneeId prop

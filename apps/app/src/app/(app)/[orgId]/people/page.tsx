@@ -53,7 +53,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
         select: {
           name: true,
           email: true,
-          isPlatformAdmin: true,
+          role: true,
         },
       },
     },

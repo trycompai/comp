@@ -473,9 +473,9 @@ export class FindingsController {
 
     const user = await db.user.findUnique({
       where: { id: userId },
-      select: { isPlatformAdmin: true },
+      select: { role: true },
     });
 
-    return user?.isPlatformAdmin ?? false;
+    return user?.role === 'admin';
   }
 }

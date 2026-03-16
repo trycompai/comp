@@ -107,7 +107,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
           organizationId: session.activeOrganizationId,
           isActive: true,
           deactivated: false,
-          user: { isPlatformAdmin: false },
+          user: { role: { not: 'admin' } },
         },
         include: {
           user: true,

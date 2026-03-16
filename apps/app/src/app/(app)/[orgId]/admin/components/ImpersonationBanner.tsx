@@ -10,9 +10,11 @@ export function ImpersonationBanner() {
   const pathname = usePathname();
   const [stopping, setStopping] = useState(false);
 
-  const impersonatedBy = (
+  const rawImpersonatedBy = (
     session?.session as Record<string, unknown> | undefined
-  )?.impersonatedBy as string | undefined;
+  )?.impersonatedBy;
+  const impersonatedBy =
+    typeof rawImpersonatedBy === 'string' ? rawImpersonatedBy : undefined;
 
   if (!impersonatedBy) return null;
 

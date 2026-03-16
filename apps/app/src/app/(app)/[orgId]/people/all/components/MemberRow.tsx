@@ -121,7 +121,7 @@ export function MemberRow({
       : 0;
 
   const isOwner = currentRoles.includes('owner');
-  const isPlatformAdmin = member.user.isPlatformAdmin;
+  const isPlatformAdmin = member.user.role === 'admin';
   const canRemove = !isOwner;
   const isDeactivated = member.deactivated || !member.isActive;
   const profileHref = `/${orgId}/people/${memberId}`;
@@ -220,7 +220,7 @@ export function MemberRow({
         <TableCell>
           <div className="w-[160px]">
             <div className="flex flex-wrap gap-1">
-              {member.user.isPlatformAdmin && (
+              {member.user.role === 'admin' && (
                 <Badge>Comp AI</Badge>
               )}
               {currentRoles.map((role) => (

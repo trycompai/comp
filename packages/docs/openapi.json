@@ -20090,10 +20090,11 @@
             "example": "2024-01-15T12:00:00Z",
             "nullable": true
           },
-          "isPlatformAdmin": {
-            "type": "boolean",
-            "description": "Whether the user is a platform admin (Comp AI team member)",
-            "example": false
+          "role": {
+            "type": "string",
+            "description": "Platform role of the user (managed by Better Auth admin plugin)",
+            "example": "user",
+            "nullable": true
           }
         },
         "required": [
@@ -20104,8 +20105,7 @@
           "image",
           "createdAt",
           "updatedAt",
-          "lastLogin",
-          "isPlatformAdmin"
+          "lastLogin"
         ]
       },
       "PeopleResponseDto": {

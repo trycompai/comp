@@ -5,6 +5,7 @@ import {
   Logger,
   NestInterceptor,
 } from '@nestjs/common';
+import { db } from '@trycompai/db';
 import { Observable, tap } from 'rxjs';
 import { MUTATION_METHODS } from '../../audit/audit-log.constants';
 
@@ -34,35 +35,70 @@ export class PlatformAuditLogInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap({
         next: () => {
-          this.logger.log(
-            JSON.stringify({
-              type: 'platform-admin-audit',
-              userId,
-              action,
-              method,
-              path: request.url,
-              providerSlug,
-              timestamp: new Date().toISOString(),
-            }),
-          );
+          void this.persistAuditEntry(userId, action, method, request.url, providerSlug, false);
         },
         error: (err: Error) => {
-          this.logger.warn(
-            JSON.stringify({
-              type: 'platform-admin-audit',
-              userId,
-              action,
-              method,
-              path: request.url,
-              providerSlug,
-              timestamp: new Date().toISOString(),
-              failed: true,
-              error: err.message,
-            }),
-          );
+          void this.persistAuditEntry(userId, action, method, request.url, providerSlug, true, err.message);
         },
       }),
     );
+  }
+
+  private async persistAuditEntry(
+    userId: string,
+    action: string,
+    method: string,
+    path: string,
+    providerSlug: string | null,
+    failed: boolean,
+    errorMessage?: string,
+  ): Promise<void> {
+    const logPayload = {
+      type: 'platform-admin-audit',
+      userId,
+      action,
+      method,
+      path,
+      providerSlug,
+      timestamp: new Date().toISOString(),
+      ...(failed && { failed: true, error: errorMessage }),
+    };
+
+    if (failed) {
+      this.logger.warn(JSON.stringify(logPayload));
+    } else {
+      this.logger.log(JSON.stringify(logPayload));
+    }
+
+    try {
+      const userOrg = await db.organization.findFirst({
+        where: { members: { some: { userId } } },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true },
+      });
+
+      await db.auditLog.create({
+        data: {
+          userId,
+          memberId: null,
+          organizationId: userOrg?.id ?? 'platform',
+          entityType: 'integration',
+          entityId: providerSlug,
+          description: `[Platform Admin] ${action}${failed ? ' (failed)' : ''}`,
+          data: {
+            action,
+            method,
+            path,
+            resource: 'admin',
+            permission: 'platform-admin',
+            providerSlug,
+            ...(failed && { failed: true, error: errorMessage }),
+          },
+        },
+      });
+    } catch (err) {
+      this.logger.error('Failed to persist platform audit log entry:', err);
+    }
   }
 
   private extractProviderSlug(request: {

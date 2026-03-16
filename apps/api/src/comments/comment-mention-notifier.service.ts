@@ -247,7 +247,7 @@ export class CommentMentionNotifierService {
           deactivated: false,
           user: { id: { in: mentionedUserIds } },
           OR: [
-            { user: { isPlatformAdmin: false } },
+            { user: { role: { not: 'admin' } } },
             { role: { contains: 'owner' } },
           ],
         },

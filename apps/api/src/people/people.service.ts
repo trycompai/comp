@@ -333,7 +333,7 @@ export class PeopleService {
       throw new ForbiddenException('Cannot remove the organization owner');
     }
 
-    if (member.user.isPlatformAdmin) {
+    if (member.user.role === 'admin') {
       throw new ForbiddenException('Cannot remove a platform admin');
     }
 
