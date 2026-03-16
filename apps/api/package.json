@@ -30,7 +30,6 @@
         "@react-email/render": "^2.0.4",
         "@trigger.dev/build": "4.0.6",
         "@trigger.dev/sdk": "4.0.6",
-        "@thallesp/nestjs-better-auth": "^2.4.0",
         "@trycompai/db": "1.3.22",
         "@trycompai/email": "workspace:*",
         "@upstash/redis": "^1.34.2",

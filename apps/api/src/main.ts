@@ -9,12 +9,13 @@ import helmet from 'helmet';
 import path from 'path';
 import { AppModule } from './app.module';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
+import { auth } from './auth/auth.server';
 
 let app: INestApplication | null = null;
 
 async function bootstrap(): Promise<void> {
-  // Disable body parser - required for better-auth NestJS integration
-  // The library will re-add body parsers after handling auth routes
+  // Disable built-in body parser — auth routes need the raw request stream,
+  // and non-auth routes use a custom parser with a higher size limit.
   app = await NestFactory.create(AppModule, {
     bodyParser: false,
   });
@@ -42,24 +43,33 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // STEP 3: Configure body parser
-  // NOTE: Attachment uploads are sent as base64 in JSON, so request payloads are
-  // larger than the raw file size. Keep this above the user-facing max file size.
-  // IMPORTANT: Skip body parsing for /api/auth routes — better-auth needs the raw
-  // request stream to properly read the body (including OAuth callbackURL).
-  // Express-level middleware runs BEFORE NestJS module middleware, so without this
-  // skip, express.json() would consume the stream before better-auth's handler.
+  // STEP 3: Mount better-auth handler and configure body parsing.
+  // Dynamic import() avoids the CJS/ESM incompatibility — better-auth/node is
+  // ESM-only and cannot be loaded via require().
+  const { toNodeHandler } = await import('better-auth/node');
+  const betterAuthHandler = toNodeHandler(auth);
+
   const jsonParser = express.json({ limit: '150mb' });
-  const urlencodedParser = express.urlencoded({ limit: '150mb', extended: true });
-  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (req.path.startsWith('/api/auth')) {
-      return next();
-    }
-    jsonParser(req, res, (err?: unknown) => {
-      if (err) return next(err);
-      urlencodedParser(req, res, next);
-    });
+  const urlencodedParser = express.urlencoded({
+    limit: '150mb',
+    extended: true,
   });
+  app.use(
+    (
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction,
+    ) => {
+      if (req.path.startsWith('/api/auth')) {
+        void betterAuthHandler(req, res);
+        return;
+      }
+      jsonParser(req, res, (err?: unknown) => {
+        if (err) return next(err);
+        urlencodedParser(req, res, next);
+      });
+    },
+  );
 
   // STEP 4: Enable global pipes and filters
   app.useGlobalPipes(
