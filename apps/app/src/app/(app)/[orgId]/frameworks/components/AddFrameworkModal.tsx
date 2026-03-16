@@ -1,7 +1,7 @@
 'use client';
 
 import { FrameworkCard } from '@/components/framework-card';
-import { Button } from '@trycompai/ui/button';
+import { Alert, Button, Spinner } from '@trycompai/design-system';
 import {
   DialogContent,
   DialogDescription,
@@ -10,8 +10,7 @@ import {
   DialogTitle,
 } from '@trycompai/ui/dialog';
 import type { FrameworkEditorFramework } from '@db';
-import { usePermissions } from '@/hooks/use-permissions';
-import { Loader2 } from 'lucide-react';
+import { useSession } from '@/utils/auth-client';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useFrameworks } from '../hooks/useFrameworks';
@@ -30,13 +29,21 @@ export function AddFrameworkModal({
   availableFrameworks,
 }: Props) {
   const { addFrameworks } = useFrameworks();
-  const { hasPermission } = usePermissions();
-  const canCreateFramework = hasPermission('framework', 'create');
+  const { data: session } = useSession();
+  const isImpersonating = typeof (session?.session as Record<string, unknown>)?.impersonatedBy === 'string';
+  const canAddFramework = session?.user?.role === 'admin' || isImpersonating;
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showContactMessage, setShowContactMessage] = useState(false);
 
   const handleSubmit = async () => {
     if (selectedIds.length === 0) return;
+
+    if (!canAddFramework) {
+      setShowContactMessage(true);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -61,6 +68,7 @@ export function AddFrameworkModal({
   };
 
   const toggleFramework = (id: string, checked: boolean) => {
+    setShowContactMessage(false);
     setSelectedIds((prev) =>
       checked ? [...prev, id] : prev.filter((fid) => fid !== id),
     );
@@ -96,9 +104,16 @@ export function AddFrameworkModal({
               ))}
           </div>
 
+          {showContactMessage && (
+            <Alert
+              variant="info"
+              title="Contact your account manager"
+              description="To add frameworks to your organization, please reach out to your account manager."
+            />
+          )}
+
           <DialogFooter className="gap-2 border-t pt-4">
             <Button
-              type="button"
               variant="outline"
               size="sm"
               onClick={() => handleOpenChange(false)}
@@ -107,14 +122,11 @@ export function AddFrameworkModal({
               Cancel
             </Button>
             <Button
-              type="button"
               size="sm"
-              disabled={isSubmitting || selectedIds.length === 0 || !canCreateFramework}
+              disabled={isSubmitting || selectedIds.length === 0}
+              loading={isSubmitting}
               onClick={handleSubmit}
             >
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-              )}
               Add Selected
             </Button>
           </DialogFooter>
@@ -128,7 +140,6 @@ export function AddFrameworkModal({
           </div>
           <DialogFooter className="mt-6 border-t pt-4">
             <Button
-              type="button"
               variant="outline"
               size="sm"
               onClick={() => handleOpenChange(false)}
@@ -141,7 +152,7 @@ export function AddFrameworkModal({
 
       {isSubmitting && (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+          <Spinner />
           <span className="text-muted-foreground ml-3 text-sm">
             Adding frameworks...
           </span>
