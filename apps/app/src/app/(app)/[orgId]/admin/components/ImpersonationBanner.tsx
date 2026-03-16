@@ -1,11 +1,12 @@
 'use client';
 
 import { authClient, useSession } from '@/utils/auth-client';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export function ImpersonationBanner() {
   const { data: session } = useSession();
+  const router = useRouter();
   const pathname = usePathname();
   const [stopping, setStopping] = useState(false);
 
@@ -23,7 +24,11 @@ export function ImpersonationBanner() {
     setStopping(true);
     try {
       await authClient.admin.stopImpersonating();
-      window.location.href = `/${orgId}/admin/organizations`;
+      (authClient.$store as { notify: (signal: string) => void }).notify(
+        '$sessionSignal',
+      );
+      router.push(`/${orgId}/admin/organizations`);
+      router.refresh();
     } catch {
       setStopping(false);
     }
