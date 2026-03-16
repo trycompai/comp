@@ -21,8 +21,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@trycompai/design-system';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
+import { Input } from '@trycompai/ui/input';
+import { Label } from '@trycompai/ui/label';
 import { OrganizationDetail } from './OrganizationDetail';
 import { MembersTab } from './MembersTab';
 import { FindingsTab } from './FindingsTab';

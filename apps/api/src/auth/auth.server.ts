@@ -1,3 +1,4 @@
+import '../config/load-env';
 import { MagicLinkEmail, OTPVerificationEmail } from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';

@@ -2,20 +2,20 @@
   "name": "@trycompai/auth",
   "version": "0.0.1",
   "private": true,
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/permissions.ts",
+  "types": "./src/permissions.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "types": "./src/permissions.ts",
+      "default": "./src/permissions.ts"
     },
     "./permissions": {
-      "types": "./dist/permissions.d.ts",
-      "default": "./dist/permissions.js"
+      "types": "./src/permissions.ts",
+      "default": "./src/permissions.ts"
     },
     "./server": {
-      "types": "./dist/server.d.ts",
-      "default": "./dist/server.js"
+      "types": "./src/server.ts",
+      "default": "./src/server.ts"
     }
   },
   "scripts": {

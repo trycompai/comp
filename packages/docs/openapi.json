@@ -20091,7 +20091,7 @@
             "nullable": true
           },
           "role": {
-            "type": "string",
+            "type": "object",
             "description": "Platform role of the user (managed by Better Auth admin plugin)",
             "example": "user",
             "nullable": true
@@ -20105,7 +20105,8 @@
           "image",
           "createdAt",
           "updatedAt",
-          "lastLogin"
+          "lastLogin",
+          "role"
         ]
       },
       "PeopleResponseDto": {

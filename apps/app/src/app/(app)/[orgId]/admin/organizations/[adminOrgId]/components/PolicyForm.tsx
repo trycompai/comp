@@ -11,7 +11,7 @@ import {
   Stack,
   Text,
 } from '@trycompai/design-system';
-import { Label } from '@comp/ui/label';
+import { Label } from '@trycompai/ui/label';
 import { useState } from 'react';
 
 interface PolicyFormProps {
