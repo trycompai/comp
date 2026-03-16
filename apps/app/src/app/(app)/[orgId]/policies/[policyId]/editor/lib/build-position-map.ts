@@ -8,8 +8,28 @@ export function buildPositionMap(doc: ProseMirrorNode): PositionMap {
 
   doc.forEach((node, offset) => {
     const nodeFrom = offset + 1; // +1 because doc node itself takes position 0
-    const nodeTo = nodeFrom + node.nodeSize - 2; // -2 for open/close tokens of block
 
+    // Lists: map each list item to its own position range
+    // so diffs can target individual items instead of the whole list
+    if (node.type.name === 'bulletList' || node.type.name === 'orderedList') {
+      markdownLines.push('');
+      currentLine++;
+
+      node.forEach((listItem, childOffset) => {
+        const itemFrom = nodeFrom + 1 + childOffset; // +1 for list open tag
+        const itemTo = itemFrom + listItem.nodeSize;
+        const text = extractText(listItem);
+        markdownLines.push('- ' + text);
+        lineToPos.set(currentLine, { from: itemFrom, to: itemTo });
+        currentLine++;
+      });
+
+      markdownLines.push('');
+      currentLine++;
+      return;
+    }
+
+    const nodeTo = nodeFrom + node.nodeSize - 2; // -2 for open/close tokens of block
     const lines = nodeToMarkdownLines(node);
 
     for (const line of lines) {

@@ -7,7 +7,7 @@ export function computeSuggestionRanges(
 ): SuggestionRange[] {
   const { markdown: currentMarkdown, lineToPos } = positionMap;
 
-  if (normalizeWhitespace(currentMarkdown) === normalizeWhitespace(proposedMarkdown)) {
+  if (normalizeContent(currentMarkdown) === normalizeContent(proposedMarkdown)) {
     return [];
   }
 
@@ -40,7 +40,9 @@ export function computeSuggestionRanges(
     const oldText = oldLines.join('\n');
     const newText = newLines.join('\n');
 
-    if (normalizeWhitespace(oldText) === normalizeWhitespace(newText)) {
+    // Skip hunks where the only difference is whitespace, punctuation tweaks,
+    // or list marker formatting
+    if (normalizeContent(oldText) === normalizeContent(newText)) {
       continue;
     }
 
@@ -156,6 +158,20 @@ function computeWordDiff(oldText: string, newText: string): DiffSegment[] {
   }));
 }
 
-function normalizeWhitespace(text: string): string {
-  return text.replace(/\s+/g, ' ').trim();
+/**
+ * Aggressively normalize text for comparison:
+ * - Strip list markers (- , * , 1. )
+ * - Strip heading markers (# ## ### etc.)
+ * - Collapse all whitespace
+ * - Lowercase
+ * This catches formatting-only diffs the AI introduces.
+ */
+function normalizeContent(text: string): string {
+  return text
+    .replace(/^[\s]*[-*]\s+/gm, '')    // strip list markers
+    .replace(/^[\s]*#{1,6}\s+/gm, '')  // strip heading markers
+    .replace(/^[\s]*>\s+/gm, '')       // strip blockquote markers
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 }

@@ -17,7 +17,7 @@ export interface SuggestionRange {
   /** The original text being replaced (for modifications and deletions) */
   originalText: string;
   /** User decision */
-  decision: 'pending' | 'accepted' | 'rejected';
+  decision: 'pending' | 'accepted' | 'rejected' | 'loading';
 }
 
 export interface PositionMap {

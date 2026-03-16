@@ -25,6 +25,10 @@ interface UseSuggestionsReturn {
   rejectAll: () => void;
   dismissAll: () => void;
   giveFeedback: (id: string, feedback: string) => void;
+  resetLoading: () => void;
+  editingRangeId: string | null;
+  startEditing: (id: string) => void;
+  cancelEditing: () => void;
   goToNext: () => void;
   goToPrev: () => void;
   isActive: boolean;
@@ -37,6 +41,7 @@ export function useSuggestions({
 }: UseSuggestionsOptions): UseSuggestionsReturn {
   const [ranges, setRanges] = useState<SuggestionRange[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [editingRangeId, setEditingRangeId] = useState<string | null>(null);
   const proposedMarkdownRef = useRef(proposedMarkdown);
   const rangesRef = useRef(ranges);
 
@@ -48,6 +53,30 @@ export function useSuggestions({
     () => ranges.filter((r) => r.decision === 'pending'),
     [ranges],
   );
+
+  const loadingRanges = useMemo(
+    () => ranges.filter((r) => r.decision === 'loading'),
+    [ranges],
+  );
+
+  // Lock/unlock editor based on whether there are active suggestions.
+  // Save the original editable state so we restore it correctly
+  // (e.g., if the editor was already read-only due to permissions).
+  const wasEditableRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (!editor) return;
+    const hasPendingOrLoading = pendingRanges.length > 0 || loadingRanges.length > 0;
+    if (hasPendingOrLoading) {
+      if (wasEditableRef.current === null) {
+        wasEditableRef.current = editor.isEditable;
+      }
+      editor.setEditable(false);
+    } else if (wasEditableRef.current !== null) {
+      editor.setEditable(wasEditableRef.current);
+      wasEditableRef.current = null;
+    }
+  }, [editor, pendingRanges.length, loadingRanges.length]);
 
   // Clamp currentIndex when pending ranges change
   useEffect(() => {
@@ -115,6 +144,7 @@ export function useSuggestions({
 
   // Compute initial ranges when proposedMarkdown changes
   useEffect(() => {
+    setEditingRangeId(null);
     if (!editor || !proposedMarkdown) {
       setRanges([]);
       return;
@@ -142,9 +172,9 @@ export function useSuggestions({
       pendingRanges.length > 0
         ? pendingRanges[Math.min(currentIndex, pendingRanges.length - 1)]?.id
         : null;
-    tr.setMeta(suggestionsPluginKey, { ranges, focusedId });
+    tr.setMeta(suggestionsPluginKey, { ranges, focusedId, editingRangeId });
     editor.view.dispatch(tr);
-  }, [editor, ranges, currentIndex, pendingRanges]);
+  }, [editor, ranges, currentIndex, pendingRanges, editingRangeId]);
 
   const applyRangeToDoc = useCallback(
     (range: SuggestionRange) => {
@@ -173,13 +203,17 @@ export function useSuggestions({
 
       applyRangeToDoc(range);
 
-      const updatedRanges = rangesRef.current.map((r) =>
-        r.id === id ? { ...r, decision: 'accepted' as const } : r,
+      // Simply mark as accepted — don't recompute ranges.
+      // Recomputing re-diffs the modified doc against proposed markdown,
+      // which creates phantom ranges when inserted content doesn't
+      // round-trip identically through markdown extraction.
+      setRanges((prev) =>
+        prev.map((r) =>
+          r.id === id ? { ...r, decision: 'accepted' as const } : r,
+        ),
       );
-      const recomputed = recomputeRanges(updatedRanges);
-      setRanges(recomputed);
     },
-    [applyRangeToDoc, recomputeRanges],
+    [applyRangeToDoc],
   );
 
   const reject = useCallback(
@@ -264,19 +298,42 @@ export function useSuggestions({
   }, []);
 
   const dismissAll = useCallback(() => {
+    setEditingRangeId(null);
     setRanges([]);
   }, []);
 
   const giveFeedback = useCallback(
     (id: string, feedback: string) => {
+      setEditingRangeId(null);
+      setRanges((prev) =>
+        prev.map((r) =>
+          r.id === id ? { ...r, decision: 'loading' as const } : r,
+        ),
+      );
       onFeedback?.(id, feedback);
     },
     [onFeedback],
   );
 
+  const resetLoading = useCallback(() => {
+    setRanges((prev) =>
+      prev.map((r) =>
+        r.decision === 'loading' ? { ...r, decision: 'pending' as const } : r,
+      ),
+    );
+  }, []);
+
+  const startEditing = useCallback((id: string) => {
+    setEditingRangeId(id);
+  }, []);
+
+  const cancelEditing = useCallback(() => {
+    setEditingRangeId(null);
+  }, []);
+
   const activeCount = pendingRanges.length;
   const totalCount = ranges.length;
-  const isActive = ranges.length > 0;
+  const isActive = pendingRanges.length > 0;
 
   return {
     ranges,
@@ -291,6 +348,10 @@ export function useSuggestions({
     rejectAll,
     dismissAll,
     giveFeedback,
+    resetLoading,
+    editingRangeId,
+    startEditing,
+    cancelEditing,
     goToNext,
     goToPrev,
     isActive,

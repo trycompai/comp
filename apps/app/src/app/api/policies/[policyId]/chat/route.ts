@@ -31,7 +31,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ policyI
       );
     }
 
-    const { messages }: { messages: Array<UIMessage> } = await req.json();
+    const { messages, currentContent }: { messages: Array<UIMessage>; currentContent?: string } = await req.json();
 
     const member = await db.member.findFirst({
       where: {
@@ -68,7 +68,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ policyI
       );
     }
 
-    const policyContentText = convertPolicyContentToText(policy.content);
+    // Prefer live editor content (sent from client) over DB content,
+    // since the editor may have unsaved accepted changes
+    const policyContentText = currentContent || convertPolicyContentToText(policy.content);
 
     const systemPrompt = `You are an expert GRC (Governance, Risk, and Compliance) policy editor. You help users edit and improve their organizational policies to meet compliance requirements like SOC 2, ISO 27001, and GDPR.
 
@@ -76,9 +78,9 @@ Current Policy Name: ${policy.name}
 ${policy.description ? `Policy Description: ${policy.description}` : ''}
 
 Current Policy Content:
----
+<current_policy>
 ${policyContentText}
----
+</current_policy>
 
 IMPORTANT: This assistant is ONLY for editing policies. You MUST always use one of the available tools.
 
@@ -86,6 +88,16 @@ Your role:
 1. Edit and improve policies when asked
 2. Ensure policies remain compliant with relevant frameworks
 3. Maintain professional, clear language appropriate for official documentation
+
+ORGANIZATIONAL CONTEXT TOOLS:
+You have access to tools that let you look up real organizational data. Use them when the user asks you to incorporate specific information or when you need context to write accurate policy content:
+- listVendors: Get a list of all vendors (name, category, status). Use this when adding vendor-related sections.
+- getVendor: Get full details for a specific vendor (contacts, risk assessment, compliance). Use after listVendors to get specifics.
+- listPolicies: List all other policies in the organization. Use for cross-referencing or ensuring consistency.
+- getPolicy: Get the full content of another policy. Use when the user wants to align language or reference another policy.
+- listEvidence: List evidence submissions (meeting minutes, access requests, pen tests, etc.). Use when referencing compliance evidence.
+
+When incorporating organizational data into the policy, use the real names, categories, and details from the tools rather than generic placeholders.
 
 WHEN TO USE THE proposePolicy TOOL:
 - When the user explicitly asks you to make changes, edits, or improvements
@@ -122,11 +134,15 @@ When using the proposePolicy tool:
 - Keep title, detail, and reviewHint focused, specific, and free of markdown formatting.
 
 CRITICAL — PRESERVE UNCHANGED TEXT EXACTLY:
+This is the most important rule. Violating it causes bugs in the diff UI.
 - Copy every section you are NOT changing VERBATIM, character-for-character.
 - Do NOT rephrase, reformat, reword, or "improve" sections the user did not ask you to change.
 - Do NOT add, remove, or change punctuation, whitespace, line breaks, or list formatting in untouched sections.
-- The ONLY differences between the current policy and your output should be the specific changes the user requested.
+- Do NOT "fix" grammar, spelling, or style in sections the user didn't mention.
+- Do NOT consolidate, merge, reorder, or restructure existing sections unless explicitly asked.
+- The ONLY differences between the current policy and your output should be the specific changes the user requested. Nothing more.
 - If you are adding a new section, insert it at the appropriate location and leave ALL existing text identical.
+- SELF-CHECK: Before returning, mentally diff your output against the current policy. If ANY line changed that the user did not ask you to change, revert that line to the original.
 
 PER-SECTION FEEDBACK:
 - When the user's message references a specific section (e.g., "For the section that says '...'"), they are giving targeted feedback on ONLY that part of the policy.
@@ -141,7 +157,7 @@ Keep responses helpful and focused on the policy editing task.`;
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       toolChoice: 'auto',
-      tools: getPolicyTools(),
+      tools: getPolicyTools({ organizationId, currentPolicyId: policyId }),
     });
 
     return result.toUIMessageStreamResponse();

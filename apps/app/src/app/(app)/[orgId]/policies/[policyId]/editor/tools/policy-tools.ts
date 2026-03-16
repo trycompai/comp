@@ -1,7 +1,13 @@
 import { type InferUITools, tool } from 'ai';
+import { db } from '@db';
 import { z } from 'zod';
 
-export function getPolicyTools() {
+interface PolicyToolsOptions {
+  organizationId: string;
+  currentPolicyId: string;
+}
+
+export function getPolicyTools({ organizationId, currentPolicyId }: PolicyToolsOptions) {
   return {
     proposePolicy: tool({
       description:
@@ -38,6 +44,142 @@ export function getPolicyTools() {
         detail,
         reviewHint,
       }),
+    }),
+
+    listVendors: tool({
+      description:
+        'List all vendors in the organization. Returns basic info: name, category, status, website. Use getVendor to get full details for a specific vendor.',
+      inputSchema: z.object({}),
+      execute: async () => {
+        const vendors = await db.vendor.findMany({
+          where: { organizationId },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            category: true,
+            status: true,
+            website: true,
+          },
+          orderBy: { name: 'asc' },
+        });
+        return { vendors, count: vendors.length };
+      },
+    }),
+
+    getVendor: tool({
+      description:
+        'Get full details for a specific vendor by ID, including contacts, risk assessment, and compliance badges.',
+      inputSchema: z.object({
+        vendorId: z.string().describe('The vendor ID to look up'),
+      }),
+      execute: async ({ vendorId }) => {
+        const vendor = await db.vendor.findFirst({
+          where: { id: vendorId, organizationId },
+          include: {
+            contacts: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+            assignee: {
+              select: {
+                user: {
+                  select: { name: true, email: true },
+                },
+              },
+            },
+          },
+        });
+        if (!vendor) return { error: 'Vendor not found' };
+        return { vendor };
+      },
+    }),
+
+    listPolicies: tool({
+      description:
+        'List all other policies in the organization. Returns name, description, status, and department. Useful for cross-referencing or ensuring consistency across policies.',
+      inputSchema: z.object({}),
+      execute: async () => {
+        const policies = await db.policy.findMany({
+          where: {
+            organizationId,
+            id: { not: currentPolicyId },
+            isArchived: false,
+          },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            status: true,
+            department: true,
+          },
+          orderBy: { name: 'asc' },
+        });
+        return { policies, count: policies.length };
+      },
+    }),
+
+    getPolicy: tool({
+      description:
+        'Get the full content of another policy by ID. Useful for referencing specific policy language or ensuring consistency.',
+      inputSchema: z.object({
+        policyId: z.string().describe('The policy ID to look up'),
+      }),
+      execute: async ({ policyId }) => {
+        if (policyId === currentPolicyId) {
+          return { error: 'This is the current policy. Its content is already in context.' };
+        }
+        const policy = await db.policy.findFirst({
+          where: { id: policyId, organizationId, isArchived: false },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            status: true,
+            department: true,
+            content: true,
+          },
+        });
+        if (!policy) return { error: 'Policy not found' };
+        return { policy };
+      },
+    }),
+
+    listEvidence: tool({
+      description:
+        'List evidence submissions in the organization. Returns form type, status, submission date, and submitter info. Useful for referencing compliance evidence when editing policies.',
+      inputSchema: z.object({
+        formType: z
+          .string()
+          .optional()
+          .describe(
+            'Optional filter by form type: board-meeting, it-leadership-meeting, risk-committee-meeting, meeting, access-request, whistleblower-report, penetration-test, rbac-matrix, infrastructure-inventory, employee-performance-evaluation, network-diagram, tabletop-exercise',
+          ),
+      }),
+      execute: async ({ formType }) => {
+        const where: Record<string, unknown> = { organizationId };
+        if (formType) {
+          where.formType = formType;
+        }
+        const evidence = await db.evidenceSubmission.findMany({
+          where,
+          select: {
+            id: true,
+            formType: true,
+            status: true,
+            submittedAt: true,
+            submittedBy: {
+              select: { name: true, email: true },
+            },
+          },
+          orderBy: { submittedAt: 'desc' },
+          take: 50,
+        });
+        return { evidence, count: evidence.length };
+      },
     }),
   };
 }

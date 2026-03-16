@@ -47,6 +47,7 @@ const config: NextConfig = {
     '@trycompai/db',
     '@prisma/client',
     '@trycompai/design-system',
+    '@trycompai/ui',
     '@carbon/icons-react',
     '@comp/company',
   ],

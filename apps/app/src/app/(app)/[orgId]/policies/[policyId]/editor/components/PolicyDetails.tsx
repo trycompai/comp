@@ -56,6 +56,8 @@ import { PublishVersionDialog } from '../../components/PublishVersionDialog';
 import type { PolicyChatUIMessage } from '../types';
 import { PolicyAiAssistant } from './ai/policy-ai-assistant';
 import { useSuggestions } from '../hooks/use-suggestions';
+import { buildPositionMap } from '../lib/build-position-map';
+
 import { SuggestionsTopBar } from './ai/suggestions-top-bar';
 
 type PolicyVersionWithPublisher = PolicyVersion & {
@@ -209,11 +211,15 @@ export function PolicyContentManager({
   const suggestionCallbacksRef = useRef<{
     onAccept: (id: string) => void;
     onReject: (id: string) => void;
-    onFeedback: (id: string) => void;
+    onEditClick: (id: string) => void;
+    onFeedbackSubmit: (id: string, feedback: string) => void;
+    onFeedbackCancel: () => void;
   }>({
     onAccept: () => {},
     onReject: () => {},
-    onFeedback: () => {},
+    onEditClick: () => {},
+    onFeedbackSubmit: () => {},
+    onFeedbackCancel: () => {},
   });
 
   const suggestionsExtension = useMemo(
@@ -221,7 +227,9 @@ export function PolicyContentManager({
       SuggestionsExtension.configure({
         onAccept: (id: string) => suggestionCallbacksRef.current.onAccept(id),
         onReject: (id: string) => suggestionCallbacksRef.current.onReject(id),
-        onFeedback: (id: string) => suggestionCallbacksRef.current.onFeedback(id),
+        onEditClick: (id: string) => suggestionCallbacksRef.current.onEditClick(id),
+        onFeedbackSubmit: (id: string, feedback: string) => suggestionCallbacksRef.current.onFeedbackSubmit(id, feedback),
+        onFeedbackCancel: () => suggestionCallbacksRef.current.onFeedbackCancel(),
       }),
     [],
   );
@@ -470,7 +478,12 @@ export function PolicyContentManager({
 
   const sendMessage = (payload: { text: string }) => {
     setChatErrorMessage(null);
-    baseSendMessage(payload);
+    // Send current editor content so the AI sees the latest state,
+    // not stale DB content (e.g. after accepting changes)
+    const currentContent = editorInstance
+      ? buildPositionMap(editorInstance.state.doc).markdown
+      : '';
+    baseSendMessage(payload, { body: { currentContent } });
   };
 
   // ── Proposal state management ──────────────────────────────────────
@@ -523,14 +536,20 @@ export function PolicyContentManager({
     },
   });
 
+  // Reset loading state when AI finishes responding or errors
+  useEffect(() => {
+    if (status === 'ready' || status === 'error') {
+      suggestions.resetLoading();
+    }
+  }, [status, suggestions.resetLoading]);
+
   // Wire suggestion callbacks via refs (avoids recreating the extension)
   suggestionCallbacksRef.current = {
     onAccept: suggestions.accept,
     onReject: suggestions.reject,
-    onFeedback: (id: string) => {
-      const feedback = window.prompt('How should this section be changed?');
-      if (feedback) suggestions.giveFeedback(id, feedback);
-    },
+    onEditClick: suggestions.startEditing,
+    onFeedbackSubmit: suggestions.giveFeedback,
+    onFeedbackCancel: suggestions.cancelEditing,
   };
 
   // Filter out per-hunk feedback messages (and their AI responses) from chat display

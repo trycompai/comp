@@ -340,10 +340,10 @@ pre .hljs-strong {
 .suggestion-new-section {
   position: relative;
   background: hsl(142 71% 45% / 0.08);
-  border-left: var(--suggestion-border-width) solid hsl(142 71% 45% / 0.6);
-  padding: var(--suggestion-padding-y) var(--suggestion-padding-x);
-  border-radius: var(--suggestion-border-radius);
+  box-shadow: inset var(--suggestion-border-width) 0 0 hsl(142 71% 45% / 0.6);
   margin: var(--suggestion-margin-y) 0;
+  padding: var(--suggestion-padding-y) var(--suggestion-padding-x)
+    var(--suggestion-padding-y) calc(var(--suggestion-border-width) + var(--suggestion-padding-x));
   font-weight: normal;
   font-size: inherit;
 }
@@ -355,29 +355,52 @@ pre .hljs-strong {
   font-weight: 600;
 }
 
-.suggestion-deleted-section {
-  position: relative;
-  border-left: var(--suggestion-border-width) solid hsl(0 84% 60% / 0.6);
-  background: hsl(0 84% 60% / 0.04);
-  opacity: 0.5;
-  text-decoration: line-through;
-  padding-top: var(--suggestion-padding-y);
-  padding-bottom: var(--suggestion-padding-y);
-  padding-right: var(--suggestion-padding-x);
-  border-radius: var(--suggestion-border-radius);
+/* Green block paragraphs inherit editor p styles — tighten spacing */
+.suggestion-new-section p {
+  @apply my-1;
 }
 
-/* For deleted list items: shift bullet to account for the border-left */
-li.suggestion-deleted-section::before {
+.suggestion-deleted-section {
+  position: relative;
+  background: hsl(0 84% 60% / 0.04);
+  box-shadow: inset var(--suggestion-border-width) 0 0 hsl(0 84% 60% / 0.6);
+  opacity: 0.5;
+  text-decoration: line-through;
+  padding: var(--suggestion-padding-y) var(--suggestion-padding-x)
+    var(--suggestion-padding-y) calc(var(--suggestion-border-width) + var(--suggestion-padding-x));
+}
+
+/* Shift bullet dots right so they don't overlap with the inset border */
+.ProseMirror ul > li.suggestion-deleted-section::before,
+.ProseMirror ul > li.suggestion-focused::before {
   left: var(--suggestion-border-width);
+}
+
+/* Merge consecutive deleted sections into one continuous red block.
+ * Remove margins between adjacent deleted nodes so backgrounds join seamlessly. */
+.ProseMirror > .suggestion-change-group + .suggestion-deleted-section,
+.ProseMirror > .suggestion-deleted-section + .suggestion-deleted-section {
+  margin-top: 0 !important;
+}
+
+.ProseMirror > .suggestion-deleted-section:has(+ .suggestion-deleted-section) {
+  margin-bottom: 0 !important;
+}
+
+/* When individual ul nodes are decorated as deleted, extend background
+ * to left edge so they merge visually with adjacent h2/p deleted blocks.
+ * TipTap renders each bullet as a separate <ul> with ml-6 (24px indent). */
+.ProseMirror > ul.suggestion-deleted-section,
+.ProseMirror > ol.suggestion-deleted-section {
+  margin-left: 0 !important;
+  padding-left: calc(var(--suggestion-border-width) + var(--suggestion-padding-x) + 24px) !important;
 }
 
 /* Focused change — the currently navigated change gets extra emphasis */
 .suggestion-deleted-section.suggestion-focused {
   background: hsl(0 84% 60% / 0.08);
-  border-left-color: hsl(0 84% 60% / 0.9);
+  box-shadow: inset var(--suggestion-border-width) 0 0 hsl(0 84% 60% / 0.9);
   opacity: 0.7;
-  box-shadow: inset 0 0 0 1px hsl(0 84% 60% / 0.15);
 }
 
 /* ── Per-change action buttons ── */
@@ -389,11 +412,44 @@ li.suggestion-deleted-section::before {
 
 .suggestion-actions {
   display: flex;
+  flex-direction: column;
   gap: 4px;
   padding: 4px 8px;
   background: hsl(142 71% 45% / 0.06);
   border-bottom: 1px solid hsl(142 71% 45% / 0.15);
   border-radius: 4px 4px 0 0;
+}
+
+.suggestion-actions-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.suggestion-feedback-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.suggestion-feedback-input {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  border: 1px solid hsl(var(--border));
+  border-radius: 4px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  outline: none;
+}
+
+.suggestion-feedback-input:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3);
+}
+
+.suggestion-feedback-input::placeholder {
+  color: hsl(var(--muted-foreground));
 }
 
 .suggestion-action-btn {
@@ -466,5 +522,58 @@ li.suggestion-deleted-section::before {
 .suggestion-delete-group .suggestion-actions {
   background: hsl(0 84% 60% / 0.06);
   border-bottom: 1px solid hsl(0 84% 60% / 0.15);
+}
+
+
+/* ── Loading skeleton ── */
+
+.suggestion-loading {
+  padding: var(--suggestion-padding-y) var(--suggestion-padding-x)
+    var(--suggestion-padding-y) calc(var(--suggestion-border-width) + var(--suggestion-padding-x));
+  background: hsl(142 71% 45% / 0.04);
+  box-shadow: inset var(--suggestion-border-width) 0 0 hsl(142 71% 45% / 0.3);
+}
+
+.suggestion-skeleton-line {
+  position: relative;
+  overflow: hidden;
+  background: hsl(0 0% 0% / 0.08);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-skeleton-line {
+  background: hsl(0 0% 100% / 0.1);
+}
+
+.suggestion-skeleton-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(0 0% 0% / 0.06) 50%,
+    transparent 100%
+  );
+  animation: suggestion-shimmer 1.6s ease-in-out infinite;
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-skeleton-line::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(0 0% 100% / 0.08) 50%,
+    transparent 100%
+  );
+}
+
+@keyframes suggestion-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.suggestion-loading-content {
+  opacity: 0.3;
+  pointer-events: none;
 }
 

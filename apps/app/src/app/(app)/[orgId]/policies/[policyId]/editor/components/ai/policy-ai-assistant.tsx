@@ -146,15 +146,21 @@ function PolicyToolCard({
   const isError = part.state === 'output-error';
   const isWorking = !isCompleted && !isError;
 
-  // Working state: use shimmer
+  // Working state: spinner + shimmer text
   if (isWorking) {
     const shimmerText = toolInput?.title || 'Working on your policy updates...';
     return (
-      <div className="flex items-center gap-3 py-2">
-        <div className="relative h-5 w-5 shrink-0">
-          <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
-          <div className="absolute inset-0.5 animate-pulse rounded-full bg-primary/40" />
-        </div>
+      <div className="flex items-center gap-2.5 py-2">
+        <svg
+          className="h-4 w-4 shrink-0 animate-spin text-primary"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        >
+          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+        </svg>
         <Shimmer className="text-sm" duration={2.5}>
           {shimmerText}
         </Shimmer>
