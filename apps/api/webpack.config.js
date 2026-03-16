@@ -10,16 +10,24 @@ function isEsmPackage(request) {
 
   if (esmCache.has(pkgName)) return esmCache.get(pkgName);
 
-  try {
-    const pkgJsonPath = require.resolve(`${pkgName}/package.json`);
-    const pkg = JSON.parse(readFileSync(pkgJsonPath, 'utf-8'));
-    const isEsm = pkg.type === 'module';
-    esmCache.set(pkgName, isEsm);
-    return isEsm;
-  } catch {
-    esmCache.set(pkgName, false);
-    return false;
+  const candidates = [
+    path.resolve(__dirname, 'node_modules', pkgName, 'package.json'),
+    path.resolve(__dirname, '../../node_modules', pkgName, 'package.json'),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      const pkg = JSON.parse(readFileSync(candidate, 'utf-8'));
+      const isEsm = pkg.type === 'module';
+      esmCache.set(pkgName, isEsm);
+      return isEsm;
+    } catch {
+      continue;
+    }
   }
+
+  esmCache.set(pkgName, false);
+  return false;
 }
 
 module.exports = function (options) {
