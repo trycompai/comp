@@ -60,6 +60,7 @@ module.exports = function (options) {
     output: {
       ...options.output,
       asyncChunks: false,
+      libraryTarget: 'commonjs2',
     },
     externals: [
       function ({ request }, callback) {

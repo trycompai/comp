@@ -12,41 +12,36 @@ import { AppModule } from './app.module';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 import { auth } from './auth/auth.server';
 
-let app: INestApplication | null = null;
+let cachedApp: INestApplication | null = null;
 
-async function bootstrap(): Promise<void> {
-  // Disable built-in body parser — auth routes need the raw request stream,
-  // and non-auth routes use a custom parser with a higher size limit.
-  app = await NestFactory.create(AppModule, {
+async function createApp(): Promise<INestApplication> {
+  if (cachedApp) return cachedApp;
+
+  const app = await NestFactory.create(AppModule, {
     bodyParser: false,
   });
 
-  // Enable CORS for all origins - security is handled by authentication
   app.enableCors({
     origin: true,
     credentials: true,
     exposedHeaders: ['Content-Disposition'],
   });
 
-  // STEP 2: Security headers
   app.use(
     helmet({
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"], // Swagger needs inline styles
-          scriptSrc: ["'self'", "'unsafe-inline'"], // Swagger needs inline scripts
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
           imgSrc: ["'self'", 'data:', 'https:'],
           connectSrc: ["'self'"],
         },
       },
-      crossOriginEmbedderPolicy: false, // Allow embedding
+      crossOriginEmbedderPolicy: false,
     }),
   );
 
-  // STEP 3: Mount better-auth handler and configure body parsing.
-  // Dynamic import() avoids the CJS/ESM incompatibility — better-auth/node is
-  // ESM-only and cannot be loaded via require().
   const { toNodeHandler } = await import('better-auth/node');
   const betterAuthHandler = toNodeHandler(auth);
 
@@ -72,7 +67,6 @@ async function bootstrap(): Promise<void> {
     },
   );
 
-  // STEP 4: Enable global pipes and filters
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -84,92 +78,108 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // Enable API versioning
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
   });
 
-  // Get server configuration from environment variables
-  const port = process.env.PORT ?? 3333;
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      const config = new DocumentBuilder()
+        .setTitle('API Documentation')
+        .setDescription('The API documentation for this application')
+        .setVersion('1.0')
+        .addServer('http://localhost:3333', 'Local API Server')
+        .addApiKey(
+          {
+            type: 'apiKey',
+            name: 'X-API-Key',
+            in: 'header',
+            description: 'API key for authentication',
+          },
+          'apikey',
+        )
+        .addServer('https://api.trycomp.ai', 'API Server')
+        .build();
+      const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
 
-  // Swagger/OpenAPI configuration
-  const config = new DocumentBuilder()
-    .setTitle('API Documentation')
-    .setDescription('The API documentation for this application')
-    .setVersion('1.0')
-    .addServer('http://localhost:3333', 'Local API Server')
-    .addApiKey(
-      {
-        type: 'apiKey',
-        name: 'X-API-Key',
-        in: 'header',
-        description: 'API key for authentication',
-      },
-      'apikey',
-    )
-    .addServer('https://api.trycomp.ai', 'API Server')
-    .build();
-  try {
-    const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
+      SwaggerModule.setup('api/docs', app, document, {
+        raw: ['json'],
+        swaggerOptions: { persistAuthorization: true },
+      });
 
-    SwaggerModule.setup('api/docs', app, document, {
-      raw: ['json'],
-      swaggerOptions: {
-        persistAuthorization: true,
-      },
-    });
-
-    if (process.env.NODE_ENV !== 'production') {
       const openapiPath = path.join(
         __dirname,
         '../../../../packages/docs/openapi.json',
       );
-
       const docsDir = path.dirname(openapiPath);
       if (!existsSync(docsDir)) {
         mkdirSync(docsDir, { recursive: true });
       }
-
       writeFileSync(openapiPath, JSON.stringify(document, null, 2));
       console.log(
         'OpenAPI documentation written to packages/docs/openapi.json',
       );
+    } catch (swaggerError) {
+      console.warn(
+        'Swagger document generation failed:',
+        swaggerError instanceof Error ? swaggerError.message : swaggerError,
+      );
     }
-  } catch (swaggerError) {
-    console.warn(
-      'Swagger document generation failed (API will still start):',
-      swaggerError instanceof Error ? swaggerError.message : swaggerError,
+  }
+
+  await app.init();
+  cachedApp = app;
+  return app;
+}
+
+function getExpressInstance(app: INestApplication): express.Application {
+  return app.getHttpAdapter().getInstance() as express.Application;
+}
+
+const isVercel = !!process.env.VERCEL;
+
+if (isVercel) {
+  // Vercel serverless: export a handler, don't listen on a port.
+  // The NestJS app is initialized once and cached across warm invocations.
+  module.exports = async (
+    req: express.Request,
+    res: express.Response,
+  ): Promise<void> => {
+    const app = await createApp();
+    const expressApp = getExpressInstance(app);
+    expressApp(req, res);
+  };
+} else {
+  // Local / traditional server: listen on a port.
+  async function bootstrap(): Promise<void> {
+    const app = await createApp();
+    const port = process.env.PORT ?? 3333;
+    const server = await app.listen(port);
+    const address = server.address();
+    const actualPort =
+      typeof address === 'string' ? port : address?.port || port;
+
+    console.log(`Application is running on: http://localhost:${actualPort}`);
+    console.log(
+      `API Documentation available at: http://localhost:${actualPort}/api/docs`,
     );
   }
 
-  const server = await app.listen(port);
-  const address = server.address();
-  const actualPort = typeof address === 'string' ? port : address?.port || port;
-  const actualUrl = `http://localhost:${actualPort}`;
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
 
-  console.log(`Application is running on: ${actualUrl}`);
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`API Documentation available at: ${actualUrl}/api/docs`);
-  }
+  void bootstrap().catch((error: unknown) => {
+    console.error('Error starting application:', error);
+    process.exit(1);
+  });
 }
 
-// Graceful shutdown handler
 async function shutdown(signal: string): Promise<void> {
   console.log(`\n${signal} received, shutting down gracefully...`);
-  if (app) {
-    await app.close();
+  if (cachedApp) {
+    await cachedApp.close();
     console.log('Application closed');
   }
   process.exit(0);
 }
-
-// Handle shutdown signals (important for hot reload)
-process.on('SIGTERM', () => void shutdown('SIGTERM'));
-process.on('SIGINT', () => void shutdown('SIGINT'));
-
-// Handle bootstrap errors properly
-void bootstrap().catch((error: unknown) => {
-  console.error('Error starting application:', error);
-  process.exit(1);
-});
