@@ -30,6 +30,18 @@ const ROLE_SETTING_FIELDS: Partial<Record<EmailPreferenceType, string>> = {
 
 const ADMIN_ROLES = new Set(['owner', 'admin']);
 
+// Portal-only roles should not receive app notifications by default.
+// When no role_notification_setting DB record exists, these defaults apply.
+const PORTAL_ONLY_ROLES = new Set(['employee', 'contractor']);
+const PORTAL_ONLY_DEFAULTS: RoleNotificationRecord = {
+  policyNotifications: true,
+  taskReminders: false,
+  taskAssignments: false,
+  taskMentions: false,
+  weeklyTaskDigest: false,
+  findingNotifications: false,
+};
+
 interface RoleNotificationRecord {
   policyNotifications: boolean;
   taskReminders: boolean;
@@ -47,7 +59,8 @@ interface RoleNotificationRecord {
  * 2. Check role notification settings for the user's roles in the org.
  *    - If ALL roles disable this notification, the user is unsubscribed (no override).
  *    - If ANY role enables it, fall through to personal preferences.
- *    - If no role settings are configured, fall through to personal preferences.
+ *    - If no role settings are configured, portal-only roles (employee/contractor)
+ *      use built-in defaults; other roles fall through to personal preferences.
  * 3. Check personal preferences — any user who previously opted out stays opted out.
  *    Owners/admins can toggle freely; non-admin users see these as read-only in the UI
  *    but their existing opt-outs are still honored so we don't re-subscribe people.
@@ -182,6 +195,20 @@ export async function isUserUnsubscribed(
           // Role says ON — fall through to personal preferences.
           // This ensures users who previously opted out stay opted out,
           // even if their role matrix now enables the notification.
+        } else {
+          // No DB records — use built-in defaults for portal-only roles
+          const allPortalOnly = userRoles.every((r) =>
+            PORTAL_ONLY_ROLES.has(r),
+          );
+          if (allPortalOnly) {
+            const enabled =
+              PORTAL_ONLY_DEFAULTS[
+                roleSettingField as keyof RoleNotificationRecord
+              ];
+            if (!enabled) {
+              return true;
+            }
+          }
         }
       }
     }
