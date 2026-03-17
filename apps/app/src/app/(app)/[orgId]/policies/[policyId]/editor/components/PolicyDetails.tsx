@@ -57,6 +57,7 @@ import type { PolicyChatUIMessage } from '../types';
 import { PolicyAiAssistant } from './ai/policy-ai-assistant';
 import { useSuggestions } from '../hooks/use-suggestions';
 import { buildPositionMap } from '../lib/build-position-map';
+import { InlineEditBubble } from './ai/inline-edit-bubble';
 import { markdownToTipTapJSON } from './ai/markdown-utils';
 
 import { SuggestionsTopBar } from './ai/suggestions-top-bar';
@@ -925,6 +926,13 @@ export function PolicyContentManager({
                         suggestions.dismissAll();
                         if (activeProposal) setDismissedProposalKey(activeProposal.key);
                       }}
+                    />
+                  )}
+                  {editorInstance && !isVersionReadOnly && canUpdatePolicy && (
+                    <InlineEditBubble
+                      editor={editorInstance}
+                      policyId={policyId}
+                      disabled={suggestions.isActive}
                     />
                   )}
                   <PolicyEditorWrapper

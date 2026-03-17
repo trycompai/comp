@@ -33,8 +33,12 @@ export async function POST(req: Request) {
 
     const result = await generateText({
       model: anthropic('claude-sonnet-4-6'),
-      system: `You are a GRC policy editor. You will receive a section of a policy and feedback on how to change it. Return ONLY the updated section text in markdown format. Do not include explanations, preamble, or anything other than the updated section content. Preserve the heading level and structure.`,
-      prompt: `Here is the current section:\n\n${sectionText}\n\nFeedback: ${feedback}\n\nReturn the updated section:`,
+      system: `You are a GRC policy editor. You will receive text from a policy and feedback on how to change it. Return ONLY the updated text. Rules:
+- Do not include explanations, preamble, or commentary — just the updated text.
+- If the input is a plain sentence or paragraph, return a plain sentence or paragraph. Do NOT add markdown formatting (no ##, no **, no -) unless the input already uses it.
+- If the input includes markdown headings (##) or bullet lists (- ), preserve that structure.
+- Match the tone and style of the input.`,
+      prompt: `Text to edit:\n${sectionText}\n\nInstruction: ${feedback}`,
     });
 
     return NextResponse.json({ updatedText: result.text.trim() });
