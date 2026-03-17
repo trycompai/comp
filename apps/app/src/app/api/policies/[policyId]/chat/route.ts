@@ -1,7 +1,7 @@
 import { auth } from '@/utils/auth';
 import { anthropic } from '@ai-sdk/anthropic';
 import { db } from '@db';
-import { convertToModelMessages, streamText, type UIMessage } from 'ai';
+import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from 'ai';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getPolicyTools } from '../../../../(app)/[orgId]/policies/[policyId]/editor/tools/policy-tools';
@@ -157,6 +157,7 @@ Keep responses helpful and focused on the policy editing task.`;
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       toolChoice: 'auto',
+      stopWhen: stepCountIs(5),
       tools: getPolicyTools({ organizationId, currentPolicyId: policyId }),
     });
 

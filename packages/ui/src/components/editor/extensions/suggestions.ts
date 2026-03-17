@@ -3,6 +3,8 @@ import { Plugin, PluginKey } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import {
+  DOMSerializer,
+  Fragment,
   type Node as ProseMirrorNode,
   type Schema,
 } from '@tiptap/pm/model';
@@ -158,22 +160,29 @@ function createActionBar(
 function createInsertionWidget(
   rangeId: string,
   text: string,
-  _schema: Schema,
+  schema: Schema,
   callbacks: ActionCallbacks,
   isEditing: boolean
 ): (view: EditorView) => HTMLElement {
-  return (_view: EditorView) => {
+  return (view: EditorView) => {
     const wrapper = document.createElement('div');
     wrapper.className = 'suggestion-change-group';
 
     // Action bar at the top
     wrapper.appendChild(createActionBar(rangeId, callbacks, isEditing));
 
-    // Content — rendered as plain DOM to avoid inheriting
-    // editor list styles that cause alignment issues
+    // Content — render using the editor's serializer so the preview
+    // looks identical to what gets inserted on accept.
     const content = document.createElement('div');
     content.className = 'suggestion-new-section';
-    renderProposedContent(text, content);
+    const nodes = markdownToNodes(text, schema);
+    const fragment = Fragment.from(nodes);
+    const tempDoc = schema.topNodeType.create(null, fragment);
+    const dom = DOMSerializer.fromSchema(schema).serializeFragment(
+      tempDoc.content,
+      { document }
+    );
+    content.appendChild(dom);
 
     wrapper.appendChild(content);
     return wrapper;
@@ -181,32 +190,75 @@ function createInsertionWidget(
 }
 
 /**
- * Parse markdown text into simple DOM content.
- * Renders directly to DOM instead of ProseMirror nodes to avoid
- * inheriting editor list styles that cause alignment issues.
+ * Parse markdown text into ProseMirror nodes using the editor's schema.
+ * This ensures the preview matches exactly what gets inserted on accept.
  */
-function renderProposedContent(
-  text: string,
-  container: HTMLElement
-): void {
-  const lines = text.split('\n').filter((l) => l.trim().length > 0);
+function markdownToNodes(
+  markdown: string,
+  schema: Schema
+): ProseMirrorNode[] {
+  const lines = markdown.split('\n');
+  const result: ProseMirrorNode[] = [];
+  let listItems: ProseMirrorNode[] = [];
 
-  for (const line of lines) {
-    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
-    const listMatch = line.match(/^[-*]\s+(.+)$/);
-
-    if (headingMatch?.[1] && headingMatch[2]) {
-      const level = Math.min(headingMatch[1].length, 6);
-      const el = document.createElement(`h${level}`);
-      el.textContent = headingMatch[2];
-      container.appendChild(el);
-    } else {
-      const p = document.createElement('p');
-      // Strip list marker if present
-      p.textContent = listMatch?.[1] ?? line.trim();
-      container.appendChild(p);
+  function flushList() {
+    if (listItems.length > 0) {
+      const listType = schema.nodes.bulletList;
+      if (listType) {
+        result.push(listType.create(null, listItems));
+      }
+      listItems = [];
     }
   }
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushList();
+      continue;
+    }
+
+    const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch?.[1] && headingMatch[2]) {
+      flushList();
+      const headingType = schema.nodes.heading;
+      if (headingType) {
+        result.push(
+          headingType.create(
+            { level: headingMatch[1].length },
+            schema.text(headingMatch[2])
+          )
+        );
+      }
+      continue;
+    }
+
+    const bulletMatch = trimmed.match(/^[-*]\s+(.+)$/);
+    if (bulletMatch?.[1]) {
+      const listItemType = schema.nodes.listItem;
+      const paragraphType = schema.nodes.paragraph;
+      if (listItemType && paragraphType) {
+        listItems.push(
+          listItemType.create(
+            null,
+            paragraphType.create(null, schema.text(bulletMatch[1]))
+          )
+        );
+      }
+      continue;
+    }
+
+    flushList();
+    const paragraphType = schema.nodes.paragraph;
+    if (paragraphType) {
+      result.push(
+        paragraphType.create(null, schema.text(trimmed))
+      );
+    }
+  }
+
+  flushList();
+  return result;
 }
 
 /**

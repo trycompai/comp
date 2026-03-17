@@ -85,22 +85,22 @@ export function SuggestionsTopBar({
 
       {/* Right: bulk actions + dismiss */}
       <div className="flex items-center gap-1">
-        <button
-          type="button"
-          className="suggestions-bar-btn suggestions-bar-accept-all"
+        <Button
+          variant="default"
+          size="sm"
           onClick={onAcceptAll}
           disabled={activeCount === 0}
         >
           Accept all
-        </button>
-        <button
-          type="button"
-          className="suggestions-bar-btn suggestions-bar-reject-all"
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={onRejectAll}
           disabled={activeCount === 0}
         >
           Reject all
-        </button>
+        </Button>
         <div className="mx-1 h-4 w-px bg-border" />
         <Button
           variant="ghost"

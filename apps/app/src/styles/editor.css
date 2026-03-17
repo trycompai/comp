@@ -229,15 +229,16 @@ pre .hljs-strong {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 6px 12px;
+  margin: 0 16px;
+  padding: 8px;
   border-radius: 8px;
   border: 1px solid hsl(var(--border));
   background: hsl(var(--background));
-  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.08), 0 0 0 1px hsl(0 0% 0% / 0.04);
+  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.1), 0 0 0 1px hsl(0 0% 0% / 0.04);
 }
 
 :is(.dark, [data-theme='dark']) .suggestions-top-bar {
-  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.3), 0 0 0 1px hsl(0 0% 100% / 0.06);
+  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.35), 0 0 0 1px hsl(0 0% 100% / 0.06);
 }
 
 .suggestions-bar-btn {

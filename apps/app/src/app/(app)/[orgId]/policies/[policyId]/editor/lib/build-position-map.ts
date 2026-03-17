@@ -6,14 +6,21 @@ export function buildPositionMap(doc: ProseMirrorNode): PositionMap {
   const markdownLines: string[] = [];
   let currentLine = 1;
 
+  let prevWasList = false;
+
   doc.forEach((node, offset) => {
     const nodeFrom = offset + 1; // +1 because doc node itself takes position 0
+    const isList = node.type.name === 'bulletList' || node.type.name === 'orderedList';
 
     // Lists: map each list item to its own position range
-    // so diffs can target individual items instead of the whole list
-    if (node.type.name === 'bulletList' || node.type.name === 'orderedList') {
-      markdownLines.push('');
-      currentLine++;
+    // so diffs can target individual items instead of the whole list.
+    // TipTap renders each bullet as a separate <ul>, so skip blank lines
+    // between consecutive lists to match the AI's markdown format.
+    if (isList) {
+      if (!prevWasList) {
+        markdownLines.push('');
+        currentLine++;
+      }
 
       node.forEach((listItem, childOffset) => {
         const itemFrom = nodeFrom + 1 + childOffset; // +1 for list open tag
@@ -24,9 +31,15 @@ export function buildPositionMap(doc: ProseMirrorNode): PositionMap {
         currentLine++;
       });
 
+      prevWasList = true;
+      return;
+    }
+
+    // Non-list node: close any preceding list group with a blank line
+    if (prevWasList) {
       markdownLines.push('');
       currentLine++;
-      return;
+      prevWasList = false;
     }
 
     const nodeTo = nodeFrom + node.nodeSize - 2; // -2 for open/close tokens of block

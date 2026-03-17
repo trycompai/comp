@@ -190,7 +190,7 @@ export function PolicyContentManager({
   const canDeletePolicy = hasPermission('policy', 'delete');
 
   const [showAiAssistant, setShowAiAssistant] = useState(false);
-  const isWideDesktop = useMediaQuery('(min-width: 1536px)');
+  const isWideDesktop = useMediaQuery('(min-width: 1280px)');
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [editorKey, setEditorKey] = useState(0);
   const [activeTab, setActiveTab] = useState<string>(displayFormat);
@@ -466,6 +466,7 @@ export function PolicyContentManager({
     messages,
     status,
     sendMessage: baseSendMessage,
+    stop: stopChat,
   } = useChat<PolicyChatUIMessage>({
     transport: new DefaultChatTransport({
       api: `/api/policies/${policyId}/chat`,
@@ -912,15 +913,15 @@ export function PolicyContentManager({
                 status={status}
                 errorMessage={chatErrorMessage}
                 sendMessage={sendMessage}
+                stop={stopChat}
                 close={() => setShowAiAssistant(false)}
-                hasActiveProposal={suggestions.isActive}
               />
             </div>
           )}
 
           <div
             className={
-              showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex flex-row gap-6' : ''
+              showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex flex-row items-start gap-6' : ''
             }
           >
             <div className={showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex-[7] min-w-0' : 'w-full'}>
@@ -977,14 +978,14 @@ export function PolicyContentManager({
 
             {/* Wide desktop (1536px+): AI assistant side panel */}
             {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && isWideDesktop && (
-              <div className="flex-[3] min-w-[320px] self-stretch">
+              <div className="flex-[3] min-w-[320px] sticky top-2 max-h-[calc(100vh-100px)] overflow-hidden">
                 <PolicyAiAssistant
                   messages={messages}
                   status={status}
                   errorMessage={chatErrorMessage}
                   sendMessage={sendMessage}
+                  stop={stopChat}
                   close={() => setShowAiAssistant(false)}
-                  hasActiveProposal={suggestions.isActive}
                 />
               </div>
             )}
@@ -1200,14 +1201,16 @@ function PolicyEditorWrapper({
             <span>{statusInfo.message}</span>
           </div>
         )}
-        <PolicyEditor
-          content={normalizedContent}
-          onSave={savePolicy}
-          readOnly={isReadOnly}
-          onEditorReady={onEditorReady}
-          additionalExtensions={additionalExtensions}
-          showToolbar={!suggestionsActive}
-        />
+        <div className="border-b pb-6">
+          <PolicyEditor
+            content={normalizedContent}
+            onSave={savePolicy}
+            readOnly={isReadOnly}
+            onEditorReady={onEditorReady}
+            additionalExtensions={additionalExtensions}
+            showToolbar={!suggestionsActive}
+          />
+        </div>
       </Stack>
     </Section>
   );

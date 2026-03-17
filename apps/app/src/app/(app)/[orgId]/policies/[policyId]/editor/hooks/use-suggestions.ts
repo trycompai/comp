@@ -44,10 +44,15 @@ export function useSuggestions({
   const [editingRangeId, setEditingRangeId] = useState<string | null>(null);
   const proposedMarkdownRef = useRef(proposedMarkdown);
   const rangesRef = useRef(ranges);
+  const rangesHistoryRef = useRef<SuggestionRange[][]>([]);
 
   // Keep refs in sync
   proposedMarkdownRef.current = proposedMarkdown;
   rangesRef.current = ranges;
+
+  const pushRangesSnapshot = useCallback(() => {
+    rangesHistoryRef.current.push([...rangesRef.current]);
+  }, []);
 
   const pendingRanges = useMemo(
     () => ranges.filter((r) => r.decision === 'pending'),
@@ -113,7 +118,20 @@ export function useSuggestions({
 
       // Fall back to the content element if no action bar found
       const scrollTarget = target ?? contentEl;
-      scrollTarget?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (!scrollTarget) return;
+
+      // Find the scrollable container and scroll so the target sits
+      // near the top with some breathing room, not dead center.
+      const scrollContainer = scrollTarget.closest('[class*="overflow"]')
+        ?? scrollTarget.closest('.ProseMirror')?.parentElement;
+      if (scrollContainer) {
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const targetRect = scrollTarget.getBoundingClientRect();
+        const offset = targetRect.top - containerRect.top + scrollContainer.scrollTop - 20;
+        scrollContainer.scrollTo({ top: offset, behavior: 'smooth' });
+      } else {
+        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     },
     [editor],
   );
@@ -153,6 +171,7 @@ export function useSuggestions({
     const initial = computeSuggestionRanges(positionMap, proposedMarkdown);
     setRanges(initial);
     setCurrentIndex(0);
+    rangesHistoryRef.current = [];
 
     // Auto-scroll to the first change
     const firstPending = initial.find((r) => r.decision === 'pending');
@@ -163,6 +182,29 @@ export function useSuggestions({
       });
     }
   }, [editor, proposedMarkdown, scrollToRange]);
+
+  // Listen for undo transactions to restore previous ranges state
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleTransaction = ({ transaction }: { transaction: { getMeta: (key: string) => unknown } }) => {
+      // ProseMirror's history plugin sets 'history$' meta on undo/redo
+      const historyMeta = transaction.getMeta('history$');
+      if (!historyMeta) return;
+      const isUndo = (historyMeta as { redo?: boolean }).redo === false;
+      if (isUndo && rangesHistoryRef.current.length > 0) {
+        const previousRanges = rangesHistoryRef.current.pop();
+        if (previousRanges) {
+          setRanges(previousRanges);
+        }
+      }
+    };
+
+    editor.on('transaction', handleTransaction);
+    return () => {
+      editor.off('transaction', handleTransaction);
+    };
+  }, [editor]);
 
   // Sync ranges + focused index to ProseMirror plugin
   useEffect(() => {
@@ -201,6 +243,7 @@ export function useSuggestions({
       const range = rangesRef.current.find((r) => r.id === id);
       if (!range || range.decision !== 'pending') return;
 
+      pushRangesSnapshot();
       applyRangeToDoc(range);
 
       // Simply mark as accepted — don't recompute ranges.
@@ -213,18 +256,19 @@ export function useSuggestions({
         ),
       );
     },
-    [applyRangeToDoc],
+    [applyRangeToDoc, pushRangesSnapshot],
   );
 
   const reject = useCallback(
     (id: string) => {
+      pushRangesSnapshot();
       setRanges((prev) =>
         prev.map((r) =>
           r.id === id ? { ...r, decision: 'rejected' as const } : r,
         ),
       );
     },
-    [],
+    [pushRangesSnapshot],
   );
 
   const acceptCurrent = useCallback(() => {
@@ -257,6 +301,7 @@ export function useSuggestions({
   const acceptAll = useCallback(() => {
     if (!editor) return;
 
+    pushRangesSnapshot();
     // Apply all pending ranges in reverse doc order within a single transaction
     const pending = rangesRef.current
       .filter((r) => r.decision === 'pending')
@@ -285,9 +330,10 @@ export function useSuggestions({
           : r,
       ),
     );
-  }, [editor]);
+  }, [editor, pushRangesSnapshot]);
 
   const rejectAll = useCallback(() => {
+    pushRangesSnapshot();
     setRanges((prev) =>
       prev.map((r) =>
         r.decision === 'pending'
@@ -295,11 +341,12 @@ export function useSuggestions({
           : r,
       ),
     );
-  }, []);
+  }, [pushRangesSnapshot]);
 
   const dismissAll = useCallback(() => {
     setEditingRangeId(null);
     setRanges([]);
+    rangesHistoryRef.current = [];
   }, []);
 
   const giveFeedback = useCallback(

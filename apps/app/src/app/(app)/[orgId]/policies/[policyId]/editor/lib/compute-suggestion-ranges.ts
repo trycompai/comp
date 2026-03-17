@@ -58,8 +58,8 @@ export function computeSuggestionRanges(
       from: positions.from,
       to: positions.to,
       segments,
-      proposedText: newText,
-      originalText: oldText,
+      proposedText: newText.trim(),
+      originalText: oldText.trim(),
       decision: 'pending',
     });
   }
