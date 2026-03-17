@@ -425,7 +425,7 @@ describe('QuestionnaireService', () => {
         mimeType: 'text/csv',
         filename: 'test.csv',
       };
-      (generateExportFile as jest.Mock).mockReturnValue(mockExport);
+      (generateExportFile as jest.Mock).mockResolvedValue(mockExport);
 
       const result = await service.exportById({
         questionnaireId: 'q1',

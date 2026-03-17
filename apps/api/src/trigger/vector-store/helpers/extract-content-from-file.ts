@@ -1,8 +1,20 @@
 import { logger } from '@/vector-store/logger';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import mammoth from 'mammoth';
+
+/**
+ * Loads an Excel workbook from a Uint8Array/Buffer.
+ * ExcelJS type declarations are incompatible with Node 22+ / TS 5.8+ Buffer types,
+ * so we use a typed wrapper to avoid the mismatch.
+ */
+async function loadWorkbook(data: Uint8Array): Promise<ExcelJS.Workbook> {
+  const workbook = new ExcelJS.Workbook();
+  type LoadFn = (data: Uint8Array) => Promise<ExcelJS.Workbook>;
+  await (workbook.xlsx.load as unknown as LoadFn)(data);
+  return workbook;
+}
 
 const htmlEntityMap = {
   '&nbsp;': ' ',
@@ -54,42 +66,39 @@ export async function extractContentFromFile(
         fileSizeMB,
       });
 
-      const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+      const workbook = await loadWorkbook(fileBuffer);
 
       // Process sheets sequentially
       const sheets: string[] = [];
 
-      for (const sheetName of workbook.SheetNames) {
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-          header: 1,
-          defval: '',
+      for (const worksheet of workbook.worksheets) {
+        const lines: string[] = [];
+
+        worksheet.eachRow((row) => {
+          const cells = row.values as unknown[];
+          // ExcelJS row.values is 1-indexed (index 0 is undefined)
+          const filtered = cells
+            .slice(1)
+            .filter(
+              (cell) => cell !== null && cell !== undefined && cell !== '',
+            )
+            .map((cell) => String(cell));
+
+          if (filtered.length > 0) {
+            lines.push(filtered.join(' | '));
+          }
         });
 
-        // Convert to readable text format
-        const sheetText = jsonData
-          .map((row: any) => {
-            if (Array.isArray(row)) {
-              return row
-                .filter(
-                  (cell) => cell !== null && cell !== undefined && cell !== '',
-                )
-                .join(' | ');
-            }
-            return String(row);
-          })
-          .filter((line: string) => line.trim() !== '')
-          .join('\n');
-
+        const sheetText = lines.join('\n');
         if (sheetText.trim()) {
-          sheets.push(`Sheet: ${sheetName}\n${sheetText}`);
+          sheets.push(`Sheet: ${worksheet.name}\n${sheetText}`);
         }
       }
 
       const extractionTime = ((Date.now() - excelStartTime) / 1000).toFixed(2);
       logger.info('Excel file processed', {
         fileSizeMB,
-        totalSheets: workbook.SheetNames.length,
+        totalSheets: workbook.worksheets.length,
         extractedLength: sheets.join('\n\n').length,
         extractionTimeSeconds: extractionTime,
       });

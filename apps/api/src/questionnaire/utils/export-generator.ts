@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import type { QuestionAnswer } from './question-parser';
 
@@ -13,11 +13,11 @@ export interface ExportResult {
 /**
  * Generates an export file in the specified format
  */
-export function generateExportFile(
+export async function generateExportFile(
   questionsAndAnswers: QuestionAnswer[],
   format: ExportFormat,
   vendorName: string,
-): ExportResult {
+): Promise<ExportResult> {
   // Remove original extension if present and get base name
   const baseName = vendorName.replace(/\.[^/.]+$/, '');
   // Keep the original name but sanitize only dangerous characters for filenames
@@ -26,7 +26,7 @@ export function generateExportFile(
   switch (format) {
     case 'xlsx':
       return {
-        fileBuffer: generateXLSX(questionsAndAnswers),
+        fileBuffer: await generateXLSX(questionsAndAnswers),
         mimeType:
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         filename: `${sanitizedBaseName}.xlsx`,
@@ -52,20 +52,27 @@ export function generateExportFile(
 /**
  * Generates an XLSX file buffer from questions and answers
  */
-export function generateXLSX(questionsAndAnswers: QuestionAnswer[]): Buffer {
-  const workbook = XLSX.utils.book_new();
-  const worksheetData = [
-    ['#', 'Question', 'Answer'],
-    ...questionsAndAnswers.map((qa, index) => [
-      index + 1,
-      qa.question,
-      qa.answer || '',
-    ]),
+export async function generateXLSX(
+  questionsAndAnswers: QuestionAnswer[],
+): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Questionnaire');
+
+  // Set column widths
+  worksheet.columns = [
+    { header: '#', key: 'num', width: 5 },
+    { header: 'Question', key: 'question', width: 60 },
+    { header: 'Answer', key: 'answer', width: 60 },
   ];
-  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-  worksheet['!cols'] = [{ wch: 5 }, { wch: 60 }, { wch: 60 }];
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Questionnaire');
-  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+  // Add data rows
+  for (let i = 0; i < questionsAndAnswers.length; i++) {
+    const qa = questionsAndAnswers[i];
+    worksheet.addRow({ num: i + 1, question: qa.question, answer: qa.answer || '' });
+  }
+
+  const xlsxBuffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(xlsxBuffer);
 }
 
 /**

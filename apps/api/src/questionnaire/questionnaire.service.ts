@@ -148,7 +148,7 @@ export class QuestionnaireService {
       const zip = new AdmZip();
 
       for (const format of formats) {
-        const exportFile = generateExportFile(
+        const exportFile = await generateExportFile(
           answered.map((a) => ({ question: a.question, answer: a.answer })),
           format,
           vendorName,
@@ -182,7 +182,7 @@ export class QuestionnaireService {
     }
 
     // Single format export (default behavior)
-    const exportFile = generateExportFile(
+    const exportFile = await generateExportFile(
       answered.map((a) => ({ question: a.question, answer: a.answer })),
       dto.format as ExportFormat,
       vendorName,
@@ -433,7 +433,7 @@ export class QuestionnaireService {
       format: dto.format,
     });
 
-    return generateExportFile(
+    return await generateExportFile(
       questionsAndAnswers,
       dto.format as ExportFormat,
       questionnaire.filename,

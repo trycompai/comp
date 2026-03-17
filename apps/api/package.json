@@ -49,7 +49,7 @@
         "express": "^4.21.2",
         "helmet": "^8.1.0",
         "jose": "^6.0.12",
-        "jspdf": "^3.0.3",
+        "jspdf": "^4.2.0",
         "mammoth": "^1.8.0",
         "nanoid": "^5.1.6",
         "pdf-lib": "^1.17.1",
@@ -63,7 +63,6 @@
         "safe-stable-stringify": "^2.5.0",
         "stripe": "^20.4.0",
         "swagger-ui-express": "^5.0.1",
-        "xlsx": "^0.18.5",
         "zod": "^4.0.14"
     },
     "devDependencies": {
