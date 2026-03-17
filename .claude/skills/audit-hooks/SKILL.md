@@ -31,4 +31,4 @@ Audit the specified files for hook and API usage compliance. **Fix every issue f
 1. Read files specified in `$ARGUMENTS`
 2. Find forbidden patterns and fix them
 3. Ensure all data fetching uses SWR hooks
-4. Run typecheck to verify: `npx turbo run typecheck --filter=@comp/app`
+4. Run typecheck to verify: `npx turbo run typecheck --filter=@trycompai/app`

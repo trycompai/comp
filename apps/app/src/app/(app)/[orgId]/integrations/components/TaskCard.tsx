@@ -1,6 +1,6 @@
 'use client';
 
-import { Skeleton } from '@comp/ui/skeleton';
+import { Skeleton } from '@trycompai/ui/skeleton';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

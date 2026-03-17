@@ -1,7 +1,7 @@
 'use client';
 
 import { useTaskAttachmentActions, useTaskAttachments } from '@/hooks/use-tasks-api';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import { Camera, FileIcon, FileText, ImageIcon, Loader2, Upload, X } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';

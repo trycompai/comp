@@ -15,9 +15,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@comp/ui/alert-dialog';
-import { Button } from '@comp/ui/button';
-import { Card } from '@comp/ui/card';
+} from '@trycompai/ui/alert-dialog';
+import { Button } from '@trycompai/ui/button';
+import { Card } from '@trycompai/ui/card';
 import { Download, FileText, Trash2, Upload } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';

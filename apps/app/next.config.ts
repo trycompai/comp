@@ -44,12 +44,13 @@ const config: NextConfig = {
       : '',
   reactStrictMode: false,
   transpilePackages: [
+    '@trycompai/auth',
     '@trycompai/db',
     '@prisma/client',
     '@trycompai/design-system',
     '@trycompai/ui',
     '@carbon/icons-react',
-    '@comp/company',
+    '@trycompai/company',
   ],
   images: {
     remotePatterns: [

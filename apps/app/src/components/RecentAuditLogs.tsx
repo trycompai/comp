@@ -1,6 +1,6 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
 import type { AuditLog } from '@db';
 import {
   Badge,
@@ -84,7 +84,7 @@ function LogRow({ log }: { log: AuditLogWithRelations }) {
 
         <Text size="sm" as="span">
           <Text as="span" size="sm" weight="medium">{userName}</Text>
-          {log.user?.isPlatformAdmin && (
+          {log.user?.role === 'admin' && (
             <>
               {' '}<Badge>Comp AI</Badge>
             </>

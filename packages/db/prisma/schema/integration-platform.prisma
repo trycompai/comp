@@ -392,6 +392,12 @@ model IntegrationPlatformCredential {
     /// Encrypted client secret
     encryptedClientSecret Json
 
+    /// Masked display hint for client ID (computed at write time)
+    clientIdHint String?
+
+    /// Masked display hint for client secret (computed at write time)
+    clientSecretHint String?
+
     /// Optional: custom scopes (overrides manifest defaults)
     customScopes String[]
 

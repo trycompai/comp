@@ -1,4 +1,4 @@
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 import { motion } from 'framer-motion';
 
 export const ButtonIcon = ({

@@ -2,8 +2,8 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { getInitials } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Badge } from '@comp/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { Badge } from '@trycompai/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -11,13 +11,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
+} from '@trycompai/ui/dropdown-menu';
 import { PolicyStatus, type Member, type Policy, type PolicyVersion, type User } from '@db';
 import {
   AlertDialog,

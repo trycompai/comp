@@ -1,7 +1,8 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import { evidenceFormDefinitionList } from '@comp/company';
+import { useTrainingCompletions } from '@/hooks/use-training-completions';
+import { evidenceFormDefinitionList } from '@trycompai/company';
 import type { Device, EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
 import { Accordion, Button, Card, CardContent } from '@trycompai/design-system';
 import { CheckmarkFilled } from '@trycompai/design-system/icons';
@@ -45,6 +46,10 @@ export const EmployeeTasksList = ({
   whistleblowerReportEnabled,
   accessRequestFormEnabled,
 }: EmployeeTasksListProps) => {
+  const { completions: trainingCompletions } = useTrainingCompletions({
+    fallbackData: trainingVideoCompletions,
+  });
+
   const {
     data: response,
     isValidating,
@@ -114,9 +119,10 @@ export const EmployeeTasksList = ({
     .filter((video) => video.id.startsWith('sat-'))
     .map((video) => video.id);
 
-  const completedGeneralTrainingCount = trainingVideoCompletions.filter(
+  const completedGeneralTrainingCount = trainingCompletions.filter(
     (completion) =>
-      generalTrainingVideoIds.includes(completion.videoId) && completion.completedAt !== null,
+      generalTrainingVideoIds.includes(completion.videoId) &&
+      completion.completedAt !== null,
   ).length;
 
   const hasCompletedGeneralTraining =
@@ -155,9 +161,7 @@ export const EmployeeTasksList = ({
           {
             title: 'Complete general security awareness training',
             content: (
-              <GeneralTrainingAccordionItem
-                trainingVideoCompletions={trainingVideoCompletions}
-              />
+              <GeneralTrainingAccordionItem />
             ),
           },
         ]

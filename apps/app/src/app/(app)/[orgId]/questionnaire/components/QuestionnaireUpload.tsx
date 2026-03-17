@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
+import { Button } from '@trycompai/ui/button';
+import { cn } from '@trycompai/ui/cn';
 import {
   FileText,
   Loader2,

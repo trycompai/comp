@@ -8,6 +8,7 @@ import * as express from 'express';
 import helmet from 'helmet';
 import path from 'path';
 import { AppModule } from './app.module';
+import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
 let app: INestApplication | null = null;
@@ -42,7 +43,11 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // STEP 3: Configure body parser
+  // STEP 3: Rate-limit better-auth admin routes (impersonation, ban, set-role, etc.)
+  // These bypass NestJS controllers so the global ThrottlerGuard doesn't apply.
+  app.use(adminAuthRateLimiter);
+
+  // STEP 4a: Configure body parser
   // NOTE: Attachment uploads are sent as base64 in JSON, so request payloads are
   // larger than the raw file size. Keep this above the user-facing max file size.
   // IMPORTANT: Skip body parsing for /api/auth routes — better-auth needs the raw
@@ -61,7 +66,7 @@ async function bootstrap(): Promise<void> {
     });
   });
 
-  // STEP 4: Enable global pipes and filters
+  // STEP 4b: Enable global pipes and filters
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

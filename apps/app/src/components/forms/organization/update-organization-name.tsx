@@ -3,7 +3,7 @@
 import { organizationNameSchema } from '@/actions/schema';
 import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   Card,
   CardContent,
@@ -11,9 +11,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@comp/ui/card';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
+} from '@trycompai/ui/card';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
+import { Input } from '@trycompai/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';

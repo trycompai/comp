@@ -1,7 +1,7 @@
 'use client';
 
-import { Icons } from '@comp/ui/icons';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Icons } from '@trycompai/ui/icons';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';

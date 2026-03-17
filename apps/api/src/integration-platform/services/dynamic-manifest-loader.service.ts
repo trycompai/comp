@@ -8,7 +8,7 @@ import {
   type IntegrationCapability,
   type FindingSeverity,
   type CheckVariable,
-} from '@comp/integration-platform';
+} from '@trycompai/integration-platform';
 import { DynamicIntegrationRepository, type DynamicIntegrationWithChecks } from '../repositories/dynamic-integration.repository';
 import type { DynamicCheck } from '@prisma/client';
 

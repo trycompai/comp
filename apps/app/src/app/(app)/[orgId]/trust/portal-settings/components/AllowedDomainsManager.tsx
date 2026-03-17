@@ -5,22 +5,22 @@ import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Plus, X, Info } from 'lucide-react';
-import { Button } from '@comp/ui/button';
-import { Input } from '@comp/ui/input';
-import { Badge } from '@comp/ui/badge';
+import { Button } from '@trycompai/ui/button';
+import { Input } from '@trycompai/ui/input';
+import { Badge } from '@trycompai/ui/badge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@comp/ui/card';
+} from '@trycompai/ui/card';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@comp/ui/tooltip';
+} from '@trycompai/ui/tooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@comp/ui/alert-dialog';
+} from '@trycompai/ui/alert-dialog';
 
 interface AllowedDomainsManagerProps {
   initialDomains: string[];

@@ -4,7 +4,7 @@ import { db, EvidenceFormType as DbEvidenceFormType } from '@trycompai/db';
 import {
   toDbEvidenceFormType,
   toExternalEvidenceFormType,
-} from '@comp/company';
+} from '@trycompai/company';
 import {
   BadRequestException,
   Injectable,

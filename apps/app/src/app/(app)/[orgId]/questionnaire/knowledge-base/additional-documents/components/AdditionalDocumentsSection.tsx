@@ -2,7 +2,7 @@
 
 import { FileUploader } from '@/components/file-uploader';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui/accordion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,9 +12,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@comp/ui/alert-dialog';
-import { Button } from '@comp/ui/button';
-import { Card } from '@comp/ui';
+} from '@trycompai/ui/alert-dialog';
+import { Button } from '@trycompai/ui/button';
+import { Card } from '@trycompai/ui';
 import { ChevronLeft, ChevronRight, Download, FileText, Loader2, Trash2, Upload } from 'lucide-react';
 import { useState, useRef, useCallback } from 'react';
 import { toast } from 'sonner';

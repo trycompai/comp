@@ -41,8 +41,8 @@ vi.mock('sonner', () => ({
   toast: { info: vi.fn(), error: vi.fn(), success: vi.fn() },
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/button', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({ children, disabled, ...props }: any) => (
     <button disabled={disabled} {...props}>
       {children}
@@ -50,7 +50,7 @@ vi.mock('@comp/ui/button', () => ({
   ),
 }));
 
-vi.mock('@comp/ui/dialog', () => ({
+vi.mock('@trycompai/ui/dialog', () => ({
   Dialog: ({ children, open }: any) =>
     open ? <div data-testid="dialog">{children}</div> : null,
   DialogContent: ({ children }: any) => (
@@ -62,7 +62,7 @@ vi.mock('@comp/ui/dialog', () => ({
   DialogTitle: ({ children }: any) => <h2>{children}</h2>,
 }));
 
-vi.mock('@comp/ui/form', () => ({
+vi.mock('@trycompai/ui/form', () => ({
   Form: ({ children, ...props }: any) => (
     <div data-testid="form-provider" {...props}>
       {children}

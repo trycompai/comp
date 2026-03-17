@@ -61,15 +61,15 @@ vi.mock('@/components/file-uploader', () => ({
   ),
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/accordion', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/accordion', () => ({
   Accordion: ({ children }: any) => <div data-testid="accordion">{children}</div>,
   AccordionContent: ({ children }: any) => <div data-testid="accordion-content">{children}</div>,
   AccordionItem: ({ children }: any) => <div>{children}</div>,
   AccordionTrigger: ({ children }: any) => <div data-testid="accordion-trigger">{children}</div>,
 }));
 
-vi.mock('@comp/ui/alert-dialog', () => ({
+vi.mock('@trycompai/ui/alert-dialog', () => ({
   AlertDialog: ({ children, open }: any) =>
     open ? <div data-testid="alert-dialog">{children}</div> : null,
   AlertDialogAction: ({ children, onClick }: any) => (
@@ -83,7 +83,7 @@ vi.mock('@comp/ui/alert-dialog', () => ({
   AlertDialogTitle: ({ children }: any) => <h2>{children}</h2>,
 }));
 
-vi.mock('@comp/ui/button', () => ({
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({ children, onClick, disabled, ...props }: any) => (
     <button onClick={onClick} disabled={disabled} {...props}>
       {children}
@@ -91,7 +91,7 @@ vi.mock('@comp/ui/button', () => ({
   ),
 }));
 
-vi.mock('@comp/ui', () => ({
+vi.mock('@trycompai/ui', () => ({
   Card: ({ children, ...props }: any) => <div data-testid="card" {...props}>{children}</div>,
 }));
 

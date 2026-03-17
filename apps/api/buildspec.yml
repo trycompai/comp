@@ -33,7 +33,7 @@ phases:
 
       # Install only API workspace dependencies
       - echo "Installing API dependencies only..."
-      - bun install --filter=@comp/api --frozen-lockfile || bun install --filter=@comp/api --ignore-scripts || bun install --ignore-scripts
+      - bun install --filter=@trycompai/api --frozen-lockfile || bun install --filter=@trycompai/api --ignore-scripts || bun install --ignore-scripts
 
       # Build workspace packages
       - echo "Building workspace packages..."
@@ -78,28 +78,28 @@ phases:
       # Remove workspace symlinks and replace with built versions
       - rm -rf ../docker-build/node_modules/@trycompai/utils
       - rm -rf ../docker-build/node_modules/@trycompai/db
-      - rm -rf ../docker-build/node_modules/@comp/integration-platform
-      - rm -rf ../docker-build/node_modules/@comp/auth
-      - rm -rf ../docker-build/node_modules/@comp/company
+      - rm -rf ../docker-build/node_modules/@trycompai/integration-platform
+      - rm -rf ../docker-build/node_modules/@trycompai/auth
+      - rm -rf ../docker-build/node_modules/@trycompai/company
       - mkdir -p ../docker-build/node_modules/@trycompai/utils
       - mkdir -p ../docker-build/node_modules/@trycompai/db
-      - mkdir -p ../docker-build/node_modules/@comp/integration-platform
-      - mkdir -p ../docker-build/node_modules/@comp/auth
-      - mkdir -p ../docker-build/node_modules/@comp/company
+      - mkdir -p ../docker-build/node_modules/@trycompai/integration-platform
+      - mkdir -p ../docker-build/node_modules/@trycompai/auth
+      - mkdir -p ../docker-build/node_modules/@trycompai/company
       - cp -r ../../packages/utils/src ../docker-build/node_modules/@trycompai/utils/
       - cp ../../packages/utils/package.json ../docker-build/node_modules/@trycompai/utils/
       - cp -r ../../packages/db/dist ../docker-build/node_modules/@trycompai/db/
       - cp ../../packages/db/package.json ../docker-build/node_modules/@trycompai/db/
-      - cp -r ../../packages/integration-platform/dist ../docker-build/node_modules/@comp/integration-platform/
-      - cp ../../packages/integration-platform/package.json ../docker-build/node_modules/@comp/integration-platform/
-      - cp -r ../../packages/auth/dist ../docker-build/node_modules/@comp/auth/
-      - cp ../../packages/auth/package.json ../docker-build/node_modules/@comp/auth/
-      - cp -r ../../packages/company/dist ../docker-build/node_modules/@comp/company/
-      - cp ../../packages/company/package.json ../docker-build/node_modules/@comp/company/
+      - cp -r ../../packages/integration-platform/dist ../docker-build/node_modules/@trycompai/integration-platform/
+      - cp ../../packages/integration-platform/package.json ../docker-build/node_modules/@trycompai/integration-platform/
+      - cp -r ../../packages/auth/dist ../docker-build/node_modules/@trycompai/auth/
+      - cp ../../packages/auth/package.json ../docker-build/node_modules/@trycompai/auth/
+      - cp -r ../../packages/company/dist ../docker-build/node_modules/@trycompai/company/
+      - cp ../../packages/company/package.json ../docker-build/node_modules/@trycompai/company/
 
       - cp Dockerfile ../docker-build/
       # Remove workspace dependencies from package.json (they're copied manually above)
-      - cat package.json | jq 'del(.dependencies["@comp/integration-platform"]) | del(.dependencies["@comp/auth"]) | del(.dependencies["@comp/company"])' > ../docker-build/package.json
+      - cat package.json | jq 'del(.dependencies["@trycompai/integration-platform"]) | del(.dependencies["@trycompai/auth"]) | del(.dependencies["@trycompai/company"])' > ../docker-build/package.json
       - cp ../../bun.lock ../docker-build/ || true
 
       - echo "Building Docker image..."

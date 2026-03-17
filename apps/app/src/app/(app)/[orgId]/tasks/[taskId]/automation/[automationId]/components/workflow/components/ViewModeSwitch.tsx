@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { Code2, Eye } from 'lucide-react';
 
 interface Props {

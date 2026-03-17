@@ -3,7 +3,7 @@
 import type { TrainingVideo } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion, Member, Organization, Policy, User } from '@db';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import {
   Badge,
   Section,

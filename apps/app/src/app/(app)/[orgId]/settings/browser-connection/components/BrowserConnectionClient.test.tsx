@@ -21,11 +21,11 @@ vi.mock('@/lib/api-client', () => ({
   },
 }));
 
-vi.mock('@comp/ui/badge', () => ({
+vi.mock('@trycompai/ui/badge', () => ({
   Badge: ({ children }: any) => <span data-testid="badge">{children}</span>,
 }));
 
-vi.mock('@comp/ui/button', () => ({
+vi.mock('@trycompai/ui/button', () => ({
   Button: ({ children, disabled, onClick, ...props }: any) => (
     <button disabled={disabled} onClick={onClick} {...props}>
       {children}
@@ -33,7 +33,7 @@ vi.mock('@comp/ui/button', () => ({
   ),
 }));
 
-vi.mock('@comp/ui/card', () => ({
+vi.mock('@trycompai/ui/card', () => ({
   Card: ({ children }: any) => <div>{children}</div>,
   CardContent: ({ children }: any) => <div>{children}</div>,
   CardDescription: ({ children }: any) => <p>{children}</p>,
@@ -41,11 +41,11 @@ vi.mock('@comp/ui/card', () => ({
   CardTitle: ({ children }: any) => <h3>{children}</h3>,
 }));
 
-vi.mock('@comp/ui/input', () => ({
+vi.mock('@trycompai/ui/input', () => ({
   Input: (props: any) => <input {...props} />,
 }));
 
-vi.mock('@comp/ui/label', () => ({
+vi.mock('@trycompai/ui/label', () => ({
   Label: ({ children, ...props }: any) => <label {...props}>{children}</label>,
 }));
 

@@ -268,9 +268,9 @@ export class TaskManagementService {
       if (createTaskItemDto.assigneeId) {
         const assigneeMember = await db.member.findFirst({
           where: { id: createTaskItemDto.assigneeId, organizationId },
-          include: { user: { select: { isPlatformAdmin: true } } },
+          include: { user: { select: { role: true } } },
         });
-        if (assigneeMember?.user.isPlatformAdmin) {
+        if (assigneeMember?.user.role === 'admin') {
           throw new BadRequestException('Cannot assign a platform admin as assignee');
         }
       }
@@ -483,9 +483,9 @@ export class TaskManagementService {
         if (updateTaskItemDto.assigneeId) {
           const assigneeMember = await db.member.findFirst({
             where: { id: updateTaskItemDto.assigneeId, organizationId },
-            include: { user: { select: { isPlatformAdmin: true } } },
+            include: { user: { select: { role: true } } },
           });
-          if (assigneeMember?.user.isPlatformAdmin) {
+          if (assigneeMember?.user.role === 'admin') {
             throw new BadRequestException('Cannot assign a platform admin as assignee');
           }
         }

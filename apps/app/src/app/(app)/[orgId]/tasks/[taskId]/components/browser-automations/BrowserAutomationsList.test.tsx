@@ -15,8 +15,8 @@ vi.mock('@/hooks/use-permissions', () => ({
   }),
 }));
 
-// Mock @comp/ui/badge
-vi.mock('@comp/ui/badge', () => ({
+// Mock @trycompai/ui/badge
+vi.mock('@trycompai/ui/badge', () => ({
   Badge: ({ children, ...props }: any) => <span {...props}>{children}</span>,
 }));
 

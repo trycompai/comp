@@ -4,7 +4,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from '@trycompai/design-system';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@trycompai/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';

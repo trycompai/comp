@@ -1,8 +1,8 @@
 'use client';
 
 import { useVendorActions } from '@/hooks/use-vendors';
-import { Button } from '@comp/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Button } from '@trycompai/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import type { Vendor } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input, Stack, Textarea } from '@trycompai/design-system';

@@ -1,7 +1,7 @@
 import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
-import { initializeServer } from '@comp/analytics/server';
-import { cn } from '@comp/ui/cn';
+import { initializeServer } from '@trycompai/analytics/server';
+import { cn } from '@trycompai/ui/cn';
 import './globals.css';
 import '@trycompai/design-system/globals.css';
 import { GeistMono } from 'geist/font/mono';

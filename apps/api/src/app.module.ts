@@ -44,6 +44,7 @@ import { EmailModule } from './email/email.module';
 import { SecretsModule } from './secrets/secrets.module';
 import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
 import { StripeModule } from './stripe/stripe.module';
+import { AdminOrganizationsModule } from './admin-organizations/admin-organizations.module';
 
 @Module({
   imports: [
@@ -100,6 +101,7 @@ import { StripeModule } from './stripe/stripe.module';
     SecretsModule,
     SecurityPenetrationTestsModule,
     StripeModule,
+    AdminOrganizationsModule,
   ],
   controllers: [AppController],
   providers: [

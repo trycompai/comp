@@ -49,8 +49,8 @@ vi.mock('@db', () => ({
   },
 }));
 
-// Mock @comp/ui components
-vi.mock('@comp/ui/form', () => ({
+// Mock @trycompai/ui components
+vi.mock('@trycompai/ui/form', () => ({
   Form: ({ children, ...props }: any) => <form {...props}>{children}</form>,
   FormControl: ({ children }: any) => <div>{children}</div>,
   FormField: ({ render, name }: any) => {
@@ -62,7 +62,7 @@ vi.mock('@comp/ui/form', () => ({
   FormMessage: () => null,
 }));
 
-vi.mock('@comp/ui/hooks', () => ({
+vi.mock('@trycompai/ui/hooks', () => ({
   useMediaQuery: () => true, // always desktop
 }));
 

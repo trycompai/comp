@@ -40,7 +40,7 @@ export class AuthController {
           email: true,
           name: true,
           image: true,
-          isPlatformAdmin: true,
+          role: true,
         },
       }),
       db.member.findMany({

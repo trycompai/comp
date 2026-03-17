@@ -13,7 +13,7 @@ jest.mock('../auth/auth.server', () => ({
   },
 }));
 
-jest.mock('@comp/auth', () => ({
+jest.mock('@trycompai/auth', () => ({
   statement: {
     policy: ['create', 'read', 'update', 'delete'],
     control: ['create', 'read', 'update', 'delete'],

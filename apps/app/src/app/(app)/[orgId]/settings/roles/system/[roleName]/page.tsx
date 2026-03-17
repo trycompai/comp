@@ -2,7 +2,7 @@ import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { BUILT_IN_ROLE_OBLIGATIONS } from '@comp/auth';
+import { BUILT_IN_ROLE_OBLIGATIONS } from '@trycompai/auth';
 import { SYSTEM_ROLES, SYSTEM_ROLE_PERMISSIONS } from '../../constants/system-roles';
 import { SystemRoleDetail } from './system-role-detail';
 

@@ -1,5 +1,5 @@
 {
-    "name": "@comp/portal",
+    "name": "@trycompai/portal",
     "version": "0.1.0",
     "dependencies": {
         "@aws-sdk/client-s3": "^3.859.0",
@@ -9,8 +9,8 @@
         "@react-email/components": "^0.0.41",
         "@react-email/render": "^1.1.2",
         "@t3-oss/env-nextjs": "^0.13.8",
-        "@comp/auth": "workspace:*",
-        "@comp/company": "workspace:*",
+        "@trycompai/auth": "workspace:*",
+        "@trycompai/company": "workspace:*",
         "@trycompai/analytics": "workspace:*",
         "@trycompai/db": "1.3.22",
         "@trycompai/design-system": "^1.0.43",
@@ -23,7 +23,7 @@
         "better-auth": "^1.4.5",
         "class-variance-authority": "^0.7.1",
         "geist": "^1.3.1",
-        "jspdf": "^3.0.3",
+        "jspdf": "^4.2.0",
         "jszip": "^3.10.1",
         "next": "^16.0.10",
         "next-safe-action": "^8.0.3",

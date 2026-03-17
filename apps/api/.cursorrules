@@ -24,10 +24,10 @@ Read CLAUDE.md in this directory for comprehensive API development guidelines.
 npx jest src/<module-name> --passWithNoTests
 
 # Run all API tests
-npx turbo run test --filter=@comp/api
+npx turbo run test --filter=@trycompai/api
 
 # Type-check
-npx turbo run typecheck --filter=@comp/api
+npx turbo run typecheck --filter=@trycompai/api
 ```
 
 ### Test File Conventions

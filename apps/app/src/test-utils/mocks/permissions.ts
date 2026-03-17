@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { BUILT_IN_ROLE_PERMISSIONS } from '@comp/auth';
+import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
 import type { UserPermissions } from '@/lib/permissions';
 
 /**

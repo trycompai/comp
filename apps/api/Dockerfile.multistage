@@ -1,5 +1,5 @@
 # =============================================================================
-# STAGE 1: Dependencies - Install workspace dependencies
+# STAGE 1: Dependencies - Install only what the API needs
 # =============================================================================
 FROM oven/bun:1.2.8 AS deps
 
@@ -8,7 +8,16 @@ WORKDIR /app
 # Copy root workspace config
 COPY package.json bun.lock ./
 
-# Copy all workspace package.json files
+# Strip root package.json to only keep workspaces config.
+# The root has frontend deps (design-system, react-dnd, sharp, semantic-release, etc.)
+# that the API doesn't need. Removing them cuts ~800 packages from the install.
+RUN cat package.json | bun -e " \
+  const pkg = JSON.parse(await Bun.stdin.text()); \
+  delete pkg.dependencies; delete pkg.devDependencies; delete pkg.scripts; \
+  console.log(JSON.stringify(pkg, null, 2));" > package.min.json \
+  && mv package.min.json package.json
+
+# Copy only the workspace package.json files the API depends on
 COPY packages/auth/package.json ./packages/auth/
 COPY packages/db/package.json ./packages/db/
 COPY packages/utils/package.json ./packages/utils/
@@ -20,15 +29,22 @@ COPY packages/company/package.json ./packages/company/
 # Copy API package.json
 COPY apps/api/package.json ./apps/api/
 
-# Install all dependencies (including workspace deps)
-RUN bun install
+# Install dependencies — skip lifecycle scripts (husky, etc. not needed in Docker)
+RUN bun install --ignore-scripts
 
 # =============================================================================
 # STAGE 2: Builder - Build workspace packages and NestJS app
 # =============================================================================
-FROM deps AS builder
+FROM oven/bun:1.2.8 AS builder
 
 WORKDIR /app
+
+# Copy node_modules first (from deps stage), then source on top.
+# This avoids conflicts between workspace symlinks and local node_modules
+# that get included from the build context.
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/bun.lock ./bun.lock
 
 # Copy workspace packages source
 COPY packages/auth ./packages/auth
@@ -42,65 +58,58 @@ COPY packages/company ./packages/company
 # Copy API source
 COPY apps/api ./apps/api
 
-# Bring in node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Build db first — generates Prisma client needed by other packages
+RUN cd packages/db && bun run build
 
-# Build workspace packages
-RUN cd packages/auth && bun run build && cd ../..
-RUN cd packages/db && bun run build && cd ../..
-RUN cd packages/integration-platform && bun run build && cd ../..
-RUN cd packages/email && bun run build && cd ../..
-RUN cd packages/company && bun run build && cd ../..
+# Build remaining workspace packages
+RUN cd packages/auth && bun run build \
+  && cd ../integration-platform && bun run build \
+  && cd ../email && bun run build \
+  && cd ../company && bun run build
 
-# Generate Prisma client for API (copy schema and generate)
-RUN cd packages/db && node scripts/combine-schemas.js && cd ../..
-RUN cp packages/db/dist/schema.prisma apps/api/prisma/schema.prisma
-RUN cd apps/api && bunx prisma generate
-
-# Build NestJS application (skip prebuild since we already generated Prisma)
-RUN cd apps/api && bunx nest build
+# Generate Prisma schema for API and build NestJS app
+RUN cd packages/db && node scripts/combine-schemas.js \
+  && cp /app/packages/db/dist/schema.prisma /app/apps/api/prisma/schema.prisma \
+  && cd /app/apps/api && bunx prisma generate && bunx nest build
 
 # =============================================================================
 # STAGE 3: Production Runtime
 # =============================================================================
 FROM node:20-slim AS production
 
+# Create non-root user before copying files so COPY --chown can use it
+RUN groupadd --system nestjs && useradd --system --gid nestjs --create-home nestjs
+
 WORKDIR /app
+RUN chown nestjs:nestjs /app
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends wget openssl && rm -rf /var/lib/apt/lists/*
 
 # Copy built NestJS app
-COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder --chown=nestjs:nestjs /app/apps/api/dist ./dist
 
-# Copy prisma files
-COPY --from=builder /app/apps/api/prisma ./prisma
+# Copy prisma schema (for reference only — client is already generated in node_modules)
+COPY --from=builder --chown=nestjs:nestjs /app/apps/api/prisma ./prisma
 
 # Copy package.json (for any runtime needs)
-COPY --from=builder /app/apps/api/package.json ./package.json
+COPY --from=builder --chown=nestjs:nestjs /app/apps/api/package.json ./package.json
 
 # Copy workspace packages that are referenced by node_modules symlinks
-COPY --from=builder /app/packages/auth ./packages/auth
-COPY --from=builder /app/packages/db ./packages/db
-COPY --from=builder /app/packages/utils ./packages/utils
-COPY --from=builder /app/packages/integration-platform ./packages/integration-platform
-COPY --from=builder /app/packages/tsconfig ./packages/tsconfig
-COPY --from=builder /app/packages/email ./packages/email
-COPY --from=builder /app/packages/company ./packages/company
+COPY --from=builder --chown=nestjs:nestjs /app/packages/auth ./packages/auth
+COPY --from=builder --chown=nestjs:nestjs /app/packages/db ./packages/db
+COPY --from=builder --chown=nestjs:nestjs /app/packages/utils ./packages/utils
+COPY --from=builder --chown=nestjs:nestjs /app/packages/integration-platform ./packages/integration-platform
+COPY --from=builder --chown=nestjs:nestjs /app/packages/tsconfig ./packages/tsconfig
+COPY --from=builder --chown=nestjs:nestjs /app/packages/email ./packages/email
+COPY --from=builder --chown=nestjs:nestjs /app/packages/company ./packages/company
 
-# Copy production node_modules (includes symlinks to workspace packages above)
-COPY --from=builder /app/node_modules ./node_modules
+# Copy production node_modules (includes Prisma client already generated for linux/amd64)
+COPY --from=builder --chown=nestjs:nestjs /app/node_modules ./node_modules
 
 # Set production environment
 ENV NODE_ENV=production
 ENV PORT=3333
-
-# Regenerate Prisma client for this runtime environment
-RUN npx prisma generate --schema=./prisma/schema.prisma
-
-# Create non-root user
-RUN groupadd --system nestjs && useradd --system --gid nestjs nestjs \
-  && chown -R nestjs:nestjs /app
 
 USER nestjs
 

@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { db } from '@db';
 import { StatusChart } from './status-chart';
 interface Props {

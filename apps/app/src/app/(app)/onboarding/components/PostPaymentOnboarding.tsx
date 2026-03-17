@@ -3,8 +3,8 @@
 import { OnboardingStepInput } from '@/app/(app)/setup/components/OnboardingStepInput';
 import { AnimatedWrapper } from '@/components/animated-wrapper';
 import { LogoSpinner } from '@/components/logo-spinner';
-import { Button } from '@comp/ui/button';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
+import { Button } from '@trycompai/ui/button';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
 import type { Organization } from '@db';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, Loader2 } from 'lucide-react';

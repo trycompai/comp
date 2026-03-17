@@ -1,12 +1,12 @@
 'use client';
 
-import { Button } from '@comp/ui';
+import { Button } from '@trycompai/ui';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
+} from '@trycompai/ui/dropdown-menu';
 import { Laptop, MoreHorizontal } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Host } from '../types';

@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Card, CardContent } from '@comp/ui/card';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent } from '@trycompai/ui/card';
 import type { Onboarding } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';

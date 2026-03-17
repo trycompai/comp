@@ -2,9 +2,9 @@
 
 import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Input } from '@trycompai/ui/input';
+import { Label } from '@trycompai/ui/label';
 import {
   AlertDialog,
   AlertDialogAction,

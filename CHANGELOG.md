@@ -1,3 +1,63 @@
+## [3.7.1](https://github.com/trycompai/comp/compare/v3.7.0...v3.7.1) (2026-03-17)
+
+
+### Bug Fixes
+
+* optimize api build and update dependencies ([64cbd78](https://github.com/trycompai/comp/commit/64cbd788efb2bbe8a2ba2a314d892146363a3c93))
+* **organization:** disable non-portal notifications for employee and contractor roles ([80fe633](https://github.com/trycompai/comp/commit/80fe633880086d670ab3581c8da4791c36b1dc28))
+
+# [3.7.0](https://github.com/trycompai/comp/compare/v3.6.0...v3.7.0) (2026-03-16)
+
+
+### Bug Fixes
+
+* **auth:** add rate limiting for admin endpoints ([f81148b](https://github.com/trycompai/comp/commit/f81148babdd66b05a55d3ce4b6eaaeb07cef4d50))
+* fall back to workflow scanning when code scanning API returns 403 ([#2311](https://github.com/trycompai/comp/issues/2311)) ([5a5fe85](https://github.com/trycompai/comp/commit/5a5fe854cc6c6f448072fcc4cf37f641f2a319a3))
+
+
+### Features
+
+* **admin-organizations:** add admin dashboard ([e5318ec](https://github.com/trycompai/comp/commit/e5318ecc8372b7f2bea9f100eb4026082ecb9a4b))
+
+# [3.6.0](https://github.com/trycompai/comp/compare/v3.5.0...v3.6.0) (2026-03-14)
+
+
+### Features
+
+* **auth:** add SessionOnlyGuard to enforce user session authentication for assistant chat ([ac97916](https://github.com/trycompai/comp/commit/ac97916c6092d3d8f913921787c205fae571ba4a))
+
+# [3.5.0](https://github.com/trycompai/comp/compare/v3.4.0...v3.5.0) (2026-03-14)
+
+
+### Features
+
+* **integration-platform:** enhance sync controller with Ramp user integration and external user ID support ([#2298](https://github.com/trycompai/comp/issues/2298)) ([3f8cb4b](https://github.com/trycompai/comp/commit/3f8cb4b7b8717f0e3d63458b1c4818155a6603ed))
+* **training:** update download training certificate action to forward session cookies for authentication ([#2300](https://github.com/trycompai/comp/issues/2300)) ([7d12e56](https://github.com/trycompai/comp/commit/7d12e5693bbee42e1b9913e888d31077ac35112e))
+
+# [3.4.0](https://github.com/trycompai/comp/compare/v3.3.0...v3.4.0) (2026-03-14)
+
+
+### Features
+
+* **training:** update download training certificate action to forward session cookies for authentication ([7558b7b](https://github.com/trycompai/comp/commit/7558b7bca46c9987d2f2ee1e4670e22f0c65438c))
+
+# [3.3.0](https://github.com/trycompai/comp/compare/v3.2.1...v3.3.0) (2026-03-13)
+
+
+### Features
+
+* **api:** add getCompletions and markVideoComplete to TrainingService ([68343a5](https://github.com/trycompai/comp/commit/68343a5f00e908c79f1a20fedf48bd80b18adca5))
+* **api:** add new training video completion endpoints to OpenAPI spec ([3ab13eb](https://github.com/trycompai/comp/commit/3ab13eb732c267636917c9b50042c5c0fa962f6c))
+* **api:** add portal training completion endpoints ([e0c0739](https://github.com/trycompai/comp/commit/e0c0739684c6a267bbc0b4772c3a8d20c13d8d8d))
+* **auth:** add portal permission resource for employee self-service ([58b4604](https://github.com/trycompai/comp/commit/58b46041590bd0240abb82b15aa610ddb67bce36))
+
+## [3.2.1](https://github.com/trycompai/comp/compare/v3.2.0...v3.2.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* **app:** prevent integration dialog content from overflowing modal ([#2292](https://github.com/trycompai/comp/issues/2292)) ([184e29a](https://github.com/trycompai/comp/commit/184e29a605c56cbf7015508da4b5f6cb17fe0da8))
+
 # [3.2.0](https://github.com/trycompai/comp/compare/v3.1.0...v3.2.0) (2026-03-11)
 
 
@@ -137,7 +197,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 * feat(rbac): add shared auth package and API integration
 
-- Add @comp/auth package with centralized permissions and role definitions
+- Add @trycompai/auth package with centralized permissions and role definitions
 - Update API auth module to integrate with better-auth server
 - Add 403 responses to policy and risk endpoints for Swagger
 - Add assignment filter and department visibility utilities with tests
@@ -564,7 +624,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 * feat(rbac): add shared auth package and API integration
 
-- Add @comp/auth package with centralized permissions and role definitions
+- Add @trycompai/auth package with centralized permissions and role definitions
 - Update API auth module to integrate with better-auth server
 - Add 403 responses to policy and risk endpoints for Swagger
 - Add assignment filter and department visibility utilities with tests
@@ -1017,7 +1077,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
 ### Bug Fixes
 
-* **api:** add @comp/company package to Dockerfile ([#2148](https://github.com/trycompai/comp/issues/2148)) ([d91bcaa](https://github.com/trycompai/comp/commit/d91bcaa5a92557a1b47a12ec6b396715744fca7f))
+* **api:** add @trycompai/company package to Dockerfile ([#2148](https://github.com/trycompai/comp/issues/2148)) ([d91bcaa](https://github.com/trycompai/comp/commit/d91bcaa5a92557a1b47a12ec6b396715744fca7f))
 * **api:** inline mergeDeviceLists to fix production runtime crash ([#2146](https://github.com/trycompai/comp/issues/2146)) ([04ef343](https://github.com/trycompai/comp/commit/04ef343011defa91609ba9ba69b85776063198db))
 
 ## [1.83.1](https://github.com/trycompai/comp/compare/v1.83.0...v1.83.1) (2026-02-17)

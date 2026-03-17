@@ -49,7 +49,7 @@ jest.mock('@trycompai/db', () => ({
   },
 }));
 
-jest.mock('@comp/auth', () => ({
+jest.mock('@trycompai/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {
     owner: { organization: ['read', 'update', 'delete'], member: ['create', 'read', 'update', 'delete'] },
     admin: { organization: ['read', 'update'], member: ['create', 'read', 'update', 'delete'] },
@@ -303,7 +303,7 @@ describe('PeopleService', () => {
         id: 'usr_1',
         name: 'Alice',
         email: 'alice@test.com',
-        isPlatformAdmin: false,
+        role: 'user',
       },
     };
 
@@ -356,7 +356,7 @@ describe('PeopleService', () => {
     it('should throw ForbiddenException when deleting a platform admin', async () => {
       (db.member.findFirst as jest.Mock).mockResolvedValue({
         ...mockMember,
-        user: { ...mockMember.user, isPlatformAdmin: true },
+        user: { ...mockMember.user, role: 'admin' },
       });
 
       await expect(

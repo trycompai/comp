@@ -1,7 +1,7 @@
 'use server';
 
 import { encrypt } from '@/lib/encryption';
-import { getIntegrationHandler } from '@comp/integrations';
+import { getIntegrationHandler } from '@trycompai/integrations';
 import { db } from '@db';
 import { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';

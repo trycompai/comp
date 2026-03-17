@@ -11,6 +11,7 @@ import { useTaskItems, useTaskItemActions } from '@/hooks/use-task-items';
 import { useVendor, useVendorActions, type VendorResponse } from '@/hooks/use-vendors';
 import { usePermissions } from '@/hooks/use-permissions';
 import { SecondaryFields } from './secondary-fields/secondary-fields';
+import { VendorResearchBadges, VendorResearchLinks } from './VendorResearchSection';
 import { VendorInherentRiskChart } from './VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './VendorResidualRiskChart';
 import type { Member, User, Vendor } from '@db';
@@ -259,7 +260,7 @@ export function VendorDetailTabs({
       />
 
       <Stack gap="xs">
-        <HStack justify="between" align="center">
+        <div className="flex items-center gap-3 self-start">
           {isEditingTitle ? (
             <input
               value={titleValue}
@@ -280,41 +281,47 @@ export function VendorDetailTabs({
               {isViewingTask ? (selectedTaskTitle || 'Task') : resolvedVendor.name}
             </h1>
           )}
-        </HStack>
+          {!isViewingTask && (
+            <VendorResearchBadges riskAssessmentData={resolvedVendor.riskAssessmentData} />
+          )}
+        </div>
+          {!isViewingTask && (
+            isEditingDescription ? (
+              <textarea
+                value={descriptionValue}
+                onChange={(e) => {
+                  setDescriptionValue(e.target.value);
+                  const el = e.target;
+                  el.style.height = 'auto';
+                  el.style.height = `${el.scrollHeight}px`;
+                }}
+                onFocus={(e) => {
+                  const el = e.target;
+                  el.style.height = 'auto';
+                  el.style.height = `${el.scrollHeight}px`;
+                }}
+                onBlur={saveDescriptionEdit}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setIsEditingDescription(false);
+                }}
+                className="text-sm text-muted-foreground bg-transparent border-b border-primary outline-none resize-none overflow-hidden w-full"
+                rows={1}
+                autoFocus
+              />
+            ) : (
+              <Text
+                size="sm"
+                variant="muted"
+                as="p"
+                onClick={startEditingDescription}
+                style={canUpdate ? { cursor: 'pointer' } : undefined}
+              >
+                {resolvedVendor.description || (canUpdate ? 'Add a description...' : '')}
+              </Text>
+            )
+          )}
         {!isViewingTask && (
-          isEditingDescription ? (
-            <textarea
-              value={descriptionValue}
-              onChange={(e) => {
-                setDescriptionValue(e.target.value);
-                const el = e.target;
-                el.style.height = 'auto';
-                el.style.height = `${el.scrollHeight}px`;
-              }}
-              onFocus={(e) => {
-                const el = e.target;
-                el.style.height = 'auto';
-                el.style.height = `${el.scrollHeight}px`;
-              }}
-              onBlur={saveDescriptionEdit}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') setIsEditingDescription(false);
-              }}
-              className="text-sm text-muted-foreground bg-transparent border-b border-primary outline-none resize-none overflow-hidden w-full"
-              rows={1}
-              autoFocus
-            />
-          ) : (
-            <Text
-              size="sm"
-              variant="muted"
-              as="p"
-              onClick={startEditingDescription}
-              style={canUpdate ? { cursor: 'pointer' } : undefined}
-            >
-              {resolvedVendor.description || (canUpdate ? 'Add a description...' : '')}
-            </Text>
-          )
+          <VendorResearchLinks riskAssessmentData={resolvedVendor.riskAssessmentData} />
         )}
       </Stack>
 

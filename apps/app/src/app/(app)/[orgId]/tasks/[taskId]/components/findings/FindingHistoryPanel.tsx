@@ -1,9 +1,9 @@
 'use client';
 
 import { useFindingHistory, type FindingHistoryEntry } from '@/hooks/use-findings-api';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Button } from '@comp/ui/button';
-import { ScrollArea } from '@comp/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { Button } from '@trycompai/ui/button';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import { History, Loader2, X } from 'lucide-react';
 

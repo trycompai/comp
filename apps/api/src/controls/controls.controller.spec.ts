@@ -11,7 +11,7 @@ jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
 
-jest.mock('@comp/auth', () => ({
+jest.mock('@trycompai/auth', () => ({
   statement: {
     control: ['create', 'read', 'update', 'delete'],
   },

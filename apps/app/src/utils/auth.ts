@@ -43,6 +43,7 @@ export interface Session {
     image?: string | null;
     createdAt: Date;
     updatedAt: Date;
+    role?: string | null;
   };
 }
 

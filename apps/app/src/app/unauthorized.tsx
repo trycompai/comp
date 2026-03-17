@@ -1,5 +1,5 @@
-import { Button } from '@comp/ui/button';
-import { Card } from '@comp/ui/card';
+import { Button } from '@trycompai/ui/button';
+import { Card } from '@trycompai/ui/card';
 import Link from 'next/link';
 
 export default async function UnauthorizedPage() {

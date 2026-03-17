@@ -3,9 +3,9 @@
 import { EditorContent, useEditor } from '@tiptap/react';
 import type { JSONContent } from '@tiptap/react';
 import { useMemo, useEffect, useCallback } from 'react';
-import { defaultExtensions } from '@comp/ui/editor/extensions';
-import { createMentionExtension, type MentionUser, validateAndFixTipTapContent } from '@comp/ui/editor';
-import { FileAttachment } from '@comp/ui/editor/extensions/file-attachment';
+import { defaultExtensions } from '@trycompai/ui/editor/extensions';
+import { createMentionExtension, type MentionUser, validateAndFixTipTapContent } from '@trycompai/ui/editor';
+import { FileAttachment } from '@trycompai/ui/editor/extensions/file-attachment';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { useAttachments } from '@/hooks/use-attachments';
 import { toast } from 'sonner';

@@ -240,9 +240,9 @@ export class PoliciesService {
       if (createData.assigneeId) {
         const assignee = await db.member.findFirst({
           where: { id: createData.assigneeId, organizationId },
-          include: { user: { select: { isPlatformAdmin: true } } },
+          include: { user: { select: { role: true } } },
         });
-        if (assignee?.user.isPlatformAdmin) {
+        if (assignee?.user.role === 'admin') {
           throw new BadRequestException('Cannot assign a platform admin as assignee');
         }
       }
@@ -983,9 +983,9 @@ export class PoliciesService {
     // Cannot assign a platform admin as approver
     const approverUser = await db.user.findUnique({
       where: { id: approver.userId },
-      select: { isPlatformAdmin: true },
+      select: { role: true },
     });
-    if (approverUser?.isPlatformAdmin) {
+    if (approverUser?.role === 'admin') {
       throw new BadRequestException(
         'Cannot assign a platform admin as approver',
       );

@@ -1,14 +1,15 @@
 name: Maced contract canary
 
 on:
-  pull_request:
-    paths:
-      - 'apps/api/src/security-penetration-tests/**'
-      - 'apps/api/test/maced-contract.e2e-spec.ts'
-      - 'apps/api/package.json'
-      - '.github/workflows/maced-contract-canary.yml'
-  schedule:
-    - cron: '0 * * * *'
+  # Temporarily disabled — Maced API is unavailable
+  # pull_request:
+  #   paths:
+  #     - 'apps/api/src/security-penetration-tests/**'
+  #     - 'apps/api/test/maced-contract.e2e-spec.ts'
+  #     - 'apps/api/package.json'
+  #     - '.github/workflows/maced-contract-canary.yml'
+  # schedule:
+  #   - cron: '0 * * * *'
   workflow_dispatch:
 
 permissions:

@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Textarea } from '@comp/ui/textarea';
+import { Button } from '@trycompai/ui/button';
+import { Textarea } from '@trycompai/ui/textarea';
 import { Save } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';

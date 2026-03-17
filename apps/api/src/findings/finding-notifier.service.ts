@@ -617,7 +617,7 @@ export class FindingNotifierService {
             organizationId,
             deactivated: false,
             OR: [
-              { user: { isPlatformAdmin: false } },
+              { user: { role: { not: 'admin' } } },
               { role: { contains: 'owner' } },
             ],
           },
