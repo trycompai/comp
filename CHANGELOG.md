@@ -1,3 +1,10 @@
+## [3.7.2](https://github.com/trycompai/comp/compare/v3.7.1...v3.7.2) (2026-03-17)
+
+
+### Bug Fixes
+
+* bring back vendor research ([4c9d53c](https://github.com/trycompai/comp/commit/4c9d53cabafc49756c1b3c2227272d08492c82a2))
+
 ## [3.7.1](https://github.com/trycompai/comp/compare/v3.7.0...v3.7.1) (2026-03-17)
 
 

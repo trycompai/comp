@@ -43,17 +43,7 @@
       "@trycompai/analytics": ["../../packages/analytics/src/index.ts"],
       "@trycompai/analytics/*": ["../../packages/analytics/src/*"],
       "@trycompai/tsconfig": ["../../packages/tsconfig"],
-      "@trycompai/tsconfig/*": ["../../packages/tsconfig/*"],
-      "@trycompai/email": ["../../packages/email/index.ts"],
-      "@trycompai/email/*": ["../../packages/email/*"],
-      "@trycompai/kv": ["../../packages/kv/src/index.ts"],
-      "@trycompai/kv/*": ["../../packages/kv/src/*"],
-      "@trycompai/ui": ["../../packages/ui/src/components/index.ts"],
-      "@trycompai/ui/*": ["../../packages/ui/src/components/*"],
-      "@trycompai/utils": ["../../packages/utils/src/index.ts"],
-      "@trycompai/utils/*": ["../../packages/utils/src/*"],
-      "@trycompai/analytics": ["../../packages/analytics/src/index.ts"],
-      "@trycompai/analytics/*": ["../../packages/analytics/src/*"]
+      "@trycompai/tsconfig/*": ["../../packages/tsconfig/*"]
     }
   },
   "include": [

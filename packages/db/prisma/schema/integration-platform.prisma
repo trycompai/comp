@@ -72,6 +72,7 @@ model IntegrationConnection {
     runs               IntegrationRun[]
     findings           IntegrationPlatformFinding[]
     checkRuns          IntegrationCheckRun[]
+    syncLogs           IntegrationSyncLog[]
 
     @@index([organizationId])
     @@index([providerId])

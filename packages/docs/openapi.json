@@ -15664,6 +15664,87 @@
         ]
       }
     },
+    "/v1/integrations/sync/ramp/discover-roles": {
+      "post": {
+        "operationId": "RampRoleMappingController_discoverRoles_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "refresh",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/v1/integrations/sync/ramp/role-mapping": {
+      "post": {
+        "operationId": "RampRoleMappingController_saveRoleMapping_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      },
+      "get": {
+        "operationId": "RampRoleMappingController_getRoleMapping_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
     "/v1/cloud-security/providers": {
       "get": {
         "operationId": "CloudSecurityController_getProviders_v1",

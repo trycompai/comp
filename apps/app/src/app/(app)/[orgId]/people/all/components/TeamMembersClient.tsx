@@ -32,12 +32,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Button,
 } from '@trycompai/design-system';
 import { Search } from '@trycompai/design-system/icons';
 
 import { apiClient } from '@/lib/api-client';
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
+import { RampRoleMappingSheet } from './RampRoleMappingSheet';
 import type { MemberWithUser, TeamMembersData } from './TeamMembers';
 
 import type { EmployeeSyncConnectionsData } from '../data/queries';
@@ -114,6 +116,11 @@ export function TeamMembersClient({
     hasAnyConnection,
     getProviderName,
     getProviderLogo,
+    showRoleMappingSheet,
+    roleMappingData,
+    handleRoleMappingClose,
+    handleRoleMappingSaved,
+    openRoleMappingEditor,
   } = useEmployeeSync({ organizationId, initialData: employeeSyncData });
 
   const lastSyncAt = employeeSyncData.lastSyncAt;
@@ -336,39 +343,40 @@ export function TeamMembersClient({
           </Select>
         </div>
         {hasAnyConnection && (
-          <div className="w-[200px]">
-            <Select
-              onValueChange={(value) => {
-                if (value) {
-                  handleEmployeeSync(
-                    value as 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp',
-                  );
-                }
-              }}
-              disabled={isSyncing || !canManageMembers}
-            >
-              <SelectTrigger>
-                {isSyncing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Syncing...
-                  </>
-                ) : selectedProvider ? (
-                  <div className="flex items-center gap-2">
-                    <Image
-                      src={getProviderLogo(selectedProvider)}
-                      alt={getProviderName(selectedProvider)}
-                      width={16}
-                      height={16}
-                      className="rounded-sm"
-                      unoptimized
-                    />
-                    <span className="truncate">{getProviderName(selectedProvider)}</span>
-                  </div>
-                ) : (
-                  <SelectValue placeholder="Select sync source" />
-                )}
-              </SelectTrigger>
+          <div className="flex items-center gap-2">
+            <div className="w-[200px]">
+              <Select
+                onValueChange={(value) => {
+                  if (value) {
+                    handleEmployeeSync(
+                      value as 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp',
+                    );
+                  }
+                }}
+                disabled={isSyncing || !canManageMembers}
+              >
+                <SelectTrigger>
+                  {isSyncing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Syncing...
+                    </>
+                  ) : selectedProvider ? (
+                    <div className="flex items-center gap-2">
+                      <Image
+                        src={getProviderLogo(selectedProvider)}
+                        alt={getProviderName(selectedProvider)}
+                        width={16}
+                        height={16}
+                        className="rounded-sm"
+                        unoptimized
+                      />
+                      <span className="truncate">{getProviderName(selectedProvider)}</span>
+                    </div>
+                  ) : (
+                    <SelectValue placeholder="Select sync source" />
+                  )}
+                </SelectTrigger>
               <SelectContent>
                 <div className="px-2 py-1.5 text-xs text-muted-foreground space-y-1">
                   {selectedProvider ? (
@@ -463,7 +471,8 @@ export function TeamMembersClient({
                   </SelectItem>
                 )}
               </SelectContent>
-            </Select>
+              </Select>
+            </div>
           </div>
         )}
       </div>
@@ -535,6 +544,17 @@ export function TeamMembersClient({
             )}
           </TableBody>
         </Table>
+      )}
+      {roleMappingData && (
+        <RampRoleMappingSheet
+          open={showRoleMappingSheet}
+          onOpenChange={(open) => {
+            if (!open) handleRoleMappingClose();
+          }}
+          organizationId={organizationId}
+          data={roleMappingData}
+          onSaved={handleRoleMappingSaved}
+        />
       )}
     </Stack>
   );

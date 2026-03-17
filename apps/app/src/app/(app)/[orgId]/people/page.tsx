@@ -8,7 +8,9 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { TeamMembers } from './all/components/TeamMembers';
+import { getEmployeeSyncConnections } from './all/data/queries';
 import { PeoplePageTabs } from './components/PeoplePageTabs';
+import { RoleMappingTab } from './role-mapping/components/RoleMappingTab';
 import { EmployeesOverview } from './dashboard/components/EmployeesOverview';
 import { DeviceComplianceChart } from './devices/components/DeviceComplianceChart';
 import { DeviceAgentDevicesList } from './devices/components/DeviceAgentDevicesList';
@@ -123,9 +125,10 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   let agentDevices: DeviceWithChecks[] = [];
   let fleetDevices: Host[] = [];
 
-  const [agentResult, fleetResult] = await Promise.allSettled([
+  const [agentResult, fleetResult, employeeSyncData] = await Promise.allSettled([
     getEmployeeDevicesFromDB(),
     getFleetHosts(),
+    getEmployeeSyncConnections(orgId),
   ]);
 
   if (agentResult.status === 'fulfilled') {
@@ -139,6 +142,10 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   } else {
     console.error('Error fetching Fleet devices:', fleetResult.reason);
   }
+
+  const syncConnections = employeeSyncData.status === 'fulfilled'
+    ? employeeSyncData.value
+    : null;
 
   // Filter out Fleet hosts for members who already have device-agent devices
   // Device agent takes priority over Fleet
@@ -178,6 +185,15 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           chartData={orgChartData as any}
           members={membersWithUsers}
         />
+      }
+      showRoleMapping={!!syncConnections?.rampConnectionId}
+      roleMappingContent={
+        syncConnections?.rampConnectionId ? (
+          <RoleMappingTab
+            organizationId={orgId}
+            rampConnectionId={syncConnections.rampConnectionId}
+          />
+        ) : null
       }
       showEmployeeTasks={showEmployeeTasks}
       canInviteUsers={canInviteUsers}

@@ -58,6 +58,7 @@ model Organization {
   // Integration Platform
   integrationConnections IntegrationConnection[]
   integrationOAuthApps   IntegrationOAuthApp[]
+  integrationSyncLogs    IntegrationSyncLog[]
 
   // Pentest Subscription
   pentestSubscription PentestSubscription?

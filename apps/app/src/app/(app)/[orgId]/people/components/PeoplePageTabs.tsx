@@ -19,6 +19,8 @@ interface PeoplePageTabsProps {
   employeeTasksContent: ReactNode | null;
   devicesContent: ReactNode;
   orgChartContent: ReactNode;
+  roleMappingContent: ReactNode | null;
+  showRoleMapping: boolean;
   showEmployeeTasks: boolean;
   canInviteUsers: boolean;
   canManageMembers: boolean;
@@ -30,6 +32,8 @@ export function PeoplePageTabs({
   employeeTasksContent,
   devicesContent,
   orgChartContent,
+  roleMappingContent,
+  showRoleMapping,
   showEmployeeTasks,
   canInviteUsers,
   canManageMembers,
@@ -49,6 +53,7 @@ export function PeoplePageTabs({
                 {showEmployeeTasks && <TabsTrigger value="employee-tasks">Tasks</TabsTrigger>}
                 <TabsTrigger value="devices">Devices</TabsTrigger>
                 <TabsTrigger value="org-chart">Chart</TabsTrigger>
+                {showRoleMapping && <TabsTrigger value="role-mapping">Role Mapping</TabsTrigger>}
               </TabsList>
             }
             actions={
@@ -69,6 +74,9 @@ export function PeoplePageTabs({
         )}
         <TabsContent value="devices">{devicesContent}</TabsContent>
         <TabsContent value="org-chart">{orgChartContent}</TabsContent>
+        {showRoleMapping && (
+          <TabsContent value="role-mapping">{roleMappingContent}</TabsContent>
+        )}
       </PageLayout>
 
       <InviteMembersModal

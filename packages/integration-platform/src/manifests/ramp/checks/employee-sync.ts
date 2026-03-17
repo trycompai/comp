@@ -66,7 +66,7 @@ export const employeeSyncCheck: IntegrationCheck = {
       while (currentUrl) {
         const response: RampUsersResponse = await ctx.fetch<RampUsersResponse>(
           currentUrl,
-          isFirst ? { baseUrl: 'https://api.ramp.com' } : undefined,
+          isFirst ? { baseUrl: 'https://demo-api.ramp.com' } : undefined,
         );
         isFirst = false;
 

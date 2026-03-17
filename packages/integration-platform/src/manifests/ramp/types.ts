@@ -6,7 +6,7 @@ export type RampUserStatus =
   | 'INVITE_EXPIRED'
   | 'USER_ONBOARDING';
 
-export type RampUserRole =
+export type RampKnownRole =
   | 'AUDITOR'
   | 'BUSINESS_ADMIN'
   | 'BUSINESS_BOOKKEEPER'
@@ -14,6 +14,9 @@ export type RampUserRole =
   | 'BUSINESS_USER'
   | 'GUEST_USER'
   | 'IT_ADMIN';
+
+// Ramp can also have custom roles — allow any string
+export type RampUserRole = RampKnownRole | (string & {});
 
 export interface RampUser {
   id: string;
@@ -56,4 +59,12 @@ export interface RampPage {
 export interface RampUsersResponse {
   data: RampUser[];
   page: RampPage;
+}
+
+export interface RoleMappingEntry {
+  rampRole: string;
+  compRole: string;
+  isBuiltIn: boolean;
+  permissions?: Record<string, string[]>;
+  obligations?: Record<string, boolean>;
 }

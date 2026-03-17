@@ -141,7 +141,10 @@ export class AzureSecurityService {
       for (const assessment of unhealthy.slice(0, 50)) {
         findings.push({
           id: assessment.name,
-          title: assessment.properties.displayName,
+          title:
+            assessment.properties.displayName ||
+            assessment.name ||
+            'Unhealthy security assessment',
           description:
             assessment.properties.metadata?.description ||
             assessment.properties.status.description ||

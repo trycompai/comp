@@ -13,7 +13,11 @@ import { ApiTags, ApiSecurity } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
-import { OrganizationId } from '../../auth/auth-context.decorator';
+import {
+  OrganizationId,
+  AuthContext,
+} from '../../auth/auth-context.decorator';
+import type { AuthContext as AuthContextType } from '../../auth/types';
 import { db } from '@db';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
@@ -24,7 +28,11 @@ import {
   type RampUser,
   type RampUserStatus,
   type RampUsersResponse,
+  type RoleMappingEntry,
 } from '@trycompai/integration-platform';
+import { RampRoleMappingService } from '../services/ramp-role-mapping.service';
+import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
+import { RampApiService } from '../services/ramp-api.service';
 
 interface GoogleWorkspaceUser {
   id: string;
@@ -103,6 +111,9 @@ export class SyncController {
     private readonly connectionRepository: ConnectionRepository,
     private readonly credentialVaultService: CredentialVaultService,
     private readonly oauthCredentialsService: OAuthCredentialsService,
+    private readonly rampRoleMappingService: RampRoleMappingService,
+    private readonly syncLoggerService: IntegrationSyncLoggerService,
+    private readonly rampApiService: RampApiService,
   ) {}
 
   /**
@@ -977,6 +988,7 @@ export class SyncController {
   async syncRampEmployees(
     @OrganizationId() organizationId: string,
     @Query('connectionId') connectionId: string,
+    @AuthContext() authContext: AuthContextType,
   ) {
     if (!connectionId) {
       throw new HttpException(
@@ -1005,169 +1017,50 @@ export class SyncController {
       );
     }
 
-    const manifest = getManifest('ramp');
-    if (!manifest) {
-      throw new HttpException(
-        'Ramp manifest not found',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+    const triggeredBy =
+      authContext.authType === 'service'
+        ? 'scheduled'
+        : authContext.authType === 'api-key'
+          ? 'api'
+          : 'manual';
+
+    const logId = await this.syncLoggerService.startLog({
+      connectionId,
+      organizationId,
+      provider: 'ramp',
+      eventType: 'employee_sync',
+      triggeredBy,
+      userId: authContext.userId ?? undefined,
+    });
+
+    try {
+      return await this.syncRampEmployeesInner(
+        organizationId,
+        connectionId,
+        authContext,
+        connection,
+        logId,
       );
-    }
-
-    let credentials =
-      await this.credentialVaultService.getDecryptedCredentials(connectionId);
-
-    if (!credentials?.access_token) {
-      throw new HttpException(
-        'No valid credentials found. Please reconnect the integration.',
-        HttpStatus.UNAUTHORIZED,
+    } catch (error) {
+      await this.syncLoggerService.failLog(
+        logId,
+        error instanceof Error ? error.message : String(error),
       );
+      throw error;
     }
+  }
 
-    const oauthConfig =
-      manifest.auth.type === 'oauth2' ? manifest.auth.config : null;
+  private async syncRampEmployeesInner(
+    organizationId: string,
+    connectionId: string,
+    authContext: AuthContextType,
+    connection: { variables: unknown },
+    logId: string,
+  ) {
+    const accessToken = await this.rampApiService.getAccessToken(connectionId, organizationId);
 
-    if (oauthConfig?.supportsRefreshToken && credentials.refresh_token) {
-      try {
-        const oauthCredentials =
-          await this.oauthCredentialsService.getCredentials(
-            'ramp',
-            organizationId,
-          );
-
-        if (oauthCredentials) {
-          const newToken = await this.credentialVaultService.refreshOAuthTokens(
-            connectionId,
-            {
-              tokenUrl: oauthConfig.tokenUrl,
-              refreshUrl: oauthConfig.refreshUrl,
-              clientId: oauthCredentials.clientId,
-              clientSecret: oauthCredentials.clientSecret,
-              clientAuthMethod: oauthConfig.clientAuthMethod,
-            },
-          );
-          if (newToken) {
-            credentials =
-              await this.credentialVaultService.getDecryptedCredentials(
-                connectionId,
-              );
-            if (!credentials?.access_token) {
-              throw new Error('Failed to get refreshed credentials');
-            }
-            this.logger.log('Successfully refreshed Ramp OAuth token');
-          }
-        }
-      } catch (refreshError) {
-        this.logger.warn(
-          `Token refresh failed, trying with existing token: ${refreshError}`,
-        );
-      }
-    }
-
-    const accessToken = credentials?.access_token;
-    if (!accessToken) {
-      throw new HttpException(
-        'No valid credentials found. Please reconnect the integration.',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
-    const MAX_RETRIES = 3;
-
-    const fetchRampUsers = async (status?: RampUserStatus) => {
-      const users: RampUser[] = [];
-      let nextUrl: string | null = null;
-
-      try {
-        do {
-          const url = nextUrl
-            ? new URL(nextUrl)
-            : new URL('https://api.ramp.com/developer/v1/users');
-          if (!nextUrl) {
-            url.searchParams.set('page_size', '100');
-            if (status) {
-              url.searchParams.set('status', status);
-            }
-          }
-
-          let response: Response | null = null;
-          for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-            response = await fetch(url.toString(), {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-              },
-            });
-
-            if (
-              response.status === 429 ||
-              (response.status >= 500 && response.status < 600)
-            ) {
-              const retryAfter = response.headers.get('Retry-After');
-              const delay = retryAfter
-                ? parseInt(retryAfter, 10) * 1000
-                : Math.min(1000 * 2 ** attempt, 30000);
-              this.logger.warn(
-                `Ramp API returned ${response.status}, retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES})`,
-              );
-              await new Promise((r) => setTimeout(r, delay));
-              continue;
-            }
-
-            break;
-          }
-
-          if (!response) {
-            throw new HttpException(
-              'Failed to fetch users from Ramp',
-              HttpStatus.BAD_GATEWAY,
-            );
-          }
-
-          if (!response.ok) {
-            if (response.status === 401) {
-              throw new HttpException(
-                'Ramp credentials expired. Please reconnect.',
-                HttpStatus.UNAUTHORIZED,
-              );
-            }
-            if (response.status === 403) {
-              throw new HttpException(
-                'Ramp access denied. Ensure users:read scope is granted.',
-                HttpStatus.FORBIDDEN,
-              );
-            }
-
-            const errorText = await response.text();
-            this.logger.error(
-              `Ramp API error: ${response.status} ${response.statusText} - ${errorText}`,
-            );
-            throw new HttpException(
-              'Failed to fetch users from Ramp',
-              HttpStatus.BAD_GATEWAY,
-            );
-          }
-
-          const data: RampUsersResponse = await response.json();
-          if (data.data?.length) {
-            users.push(...data.data);
-          }
-
-          nextUrl = data.page?.next ?? null;
-        } while (nextUrl);
-      } catch (error) {
-        if (error instanceof HttpException) throw error;
-        this.logger.error(`Error fetching Ramp users: ${error}`);
-        throw new HttpException(
-          'Failed to fetch users from Ramp',
-          HttpStatus.BAD_GATEWAY,
-        );
-      }
-
-      return users;
-    };
-
-    const baseUsers = await fetchRampUsers();
-    const suspendedUsers = await fetchRampUsers('USER_SUSPENDED');
+    const baseUsers = await this.rampApiService.fetchUsers(accessToken);
+    const suspendedUsers = await this.rampApiService.fetchUsers(accessToken, 'USER_SUSPENDED');
     const users = [...baseUsers, ...suspendedUsers];
 
     // Filter out non-syncable statuses (pending invites, onboarding, expired)
@@ -1208,8 +1101,120 @@ export class SyncController {
       `Found ${activeUsers.length} active, ${inactiveUsers.length} inactive, and ${suspendedUsers.length} suspended Ramp users`,
     );
 
+    // Load role mapping from connection variables
+    const connectionVars = (connection.variables ?? {}) as Record<
+      string,
+      unknown
+    >;
+    let roleMapping = Array.isArray(connectionVars.role_mapping)
+      ? (connectionVars.role_mapping as RoleMappingEntry[])
+      : null;
+
+    if (!roleMapping) {
+      const isAutomatedSync = authContext.authType === 'service';
+
+      if (!isAutomatedSync) {
+        // Manual sync — prompt user to configure mapping via UI
+        await this.syncLoggerService.completeLog(logId, {
+          requiresRoleMapping: true,
+          message: 'Role mapping is not configured',
+        });
+        return {
+          success: false,
+          requiresRoleMapping: true,
+          message:
+            'Role mapping is not configured. Please configure role mapping before syncing.',
+        };
+      }
+
+      // Automated sync (cron) — auto-generate default mapping
+      const allRampRolesForDefault = [
+        ...new Set(
+          activeUsers
+            .map((u) => u.role)
+            .filter((r): r is string => Boolean(r)),
+        ),
+      ];
+
+      if (allRampRolesForDefault.length === 0) {
+        this.logger.warn(
+          'No Ramp roles found to auto-generate mapping',
+        );
+        const emptyResult = {
+          totalFound: 0,
+          imported: 0,
+          skipped: 0,
+          deactivated: 0,
+          reactivated: 0,
+          errors: 0,
+          details: [],
+        };
+        await this.syncLoggerService.completeLog(logId, emptyResult);
+        return { success: true, ...emptyResult };
+      }
+
+      const defaultEntries =
+        this.rampRoleMappingService.getDefaultMapping(
+          allRampRolesForDefault,
+        );
+
+      await this.rampRoleMappingService.ensureCustomRolesExist(
+        organizationId,
+        defaultEntries,
+      );
+      await this.rampRoleMappingService.saveMapping(
+        connectionId,
+        defaultEntries,
+      );
+
+      roleMapping = defaultEntries;
+
+      this.logger.log(
+        `Auto-generated default role mapping for Ramp sync (${defaultEntries.length} roles)`,
+      );
+    }
+
+    // Discover all Ramp roles in this batch and auto-create mappings for unknown ones
+    const allRampRoles = new Set(
+      activeUsers
+        .map((u) => u.role)
+        .filter((r): r is string => Boolean(r)),
+    );
+    const mappedRoles = new Set(roleMapping.map((m) => m.rampRole));
+    const newRoles = [...allRampRoles].filter((r) => !mappedRoles.has(r));
+
+    if (newRoles.length > 0) {
+      this.logger.log(
+        `Found ${newRoles.length} new Ramp roles not in mapping: ${newRoles.join(', ')}`,
+      );
+
+      const newEntries =
+        this.rampRoleMappingService.getDefaultMapping(newRoles);
+
+      // Create custom roles in DB for new entries
+      await this.rampRoleMappingService.ensureCustomRolesExist(
+        organizationId,
+        newEntries,
+      );
+
+      // Add to mapping and save
+      const updatedMapping = [...roleMapping, ...newEntries];
+      await this.rampRoleMappingService.saveMapping(
+        connectionId,
+        updatedMapping,
+      );
+
+      // Use the updated mapping
+      roleMapping.push(...newEntries);
+    }
+
+    const roleMappingLookup = new Map(
+      roleMapping.map((m) => [m.rampRole, m.compRole]),
+    );
+
     const results = {
       imported: 0,
+      updated: 0,
       skipped: 0,
       deactivated: 0,
       reactivated: 0,
@@ -1218,6 +1223,7 @@ export class SyncController {
         email: string;
         status:
           | 'imported'
+          | 'updated'
           | 'skipped'
           | 'deactivated'
           | 'reactivated'
@@ -1258,25 +1264,41 @@ export class SyncController {
         }
 
         if (existingMember) {
-          // Backfill external ID if not set
+          const mappedRole =
+            roleMappingLookup.get(rampUser.role ?? '') ?? 'employee';
+
+          // Build update data: backfill external ID + update role if changed
+          const updateData: Record<string, unknown> = {};
+
           if (
             rampUser.id &&
             (!existingMember.externalUserId ||
               existingMember.externalUserSource !== 'ramp')
           ) {
-            await db.member.update({
-              where: { id: existingMember.id },
-              data: {
-                externalUserId: rampUser.id,
-                externalUserSource: 'ramp',
-              },
-            });
+            updateData.externalUserId = rampUser.id;
+            updateData.externalUserSource = 'ramp';
+          }
+
+          // Update role if it changed (but don't downgrade privileged roles)
+          const currentRoles = existingMember.role
+            .split(',')
+            .map((r) => r.trim().toLowerCase());
+          const isPrivileged =
+            currentRoles.includes('owner') ||
+            currentRoles.includes('admin') ||
+            currentRoles.includes('auditor');
+
+          if (!isPrivileged && existingMember.role !== mappedRole) {
+            updateData.role = mappedRole;
           }
 
           if (existingMember.deactivated) {
+            updateData.deactivated = false;
+            updateData.isActive = true;
+
             await db.member.update({
               where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
+              data: updateData,
             });
             results.reactivated++;
             results.details.push({
@@ -1284,6 +1306,26 @@ export class SyncController {
               status: 'reactivated',
               reason: 'User is active again in Ramp',
             });
+          } else if (Object.keys(updateData).length > 0) {
+            await db.member.update({
+              where: { id: existingMember.id },
+              data: updateData,
+            });
+            if (updateData.role) {
+              results.updated++;
+              results.details.push({
+                email: normalizedEmail,
+                status: 'updated',
+                reason: `Role updated to ${mappedRole}`,
+              });
+            } else {
+              results.skipped++;
+              results.details.push({
+                email: normalizedEmail,
+                status: 'skipped',
+                reason: 'Already a member (external ID backfilled)',
+              });
+            }
           } else {
             results.skipped++;
             results.details.push({
@@ -1314,11 +1356,14 @@ export class SyncController {
           });
         }
 
+        const mappedRole =
+          roleMappingLookup.get(rampUser.role ?? '') ?? 'employee';
+
         await db.member.create({
           data: {
             organizationId,
             userId: existingUser.id,
-            role: 'employee',
+            role: mappedRole,
             isActive: true,
             externalUserId: rampUser.id || null,
             externalUserSource: rampUser.id ? 'ramp' : null,
@@ -1411,21 +1456,46 @@ export class SyncController {
           );
         } catch (error) {
           this.logger.error(`Error deactivating member: ${error}`);
+          results.errors++;
+          results.details.push({
+            email: memberEmail,
+            status: 'error',
+            reason: `Failed to deactivate: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          });
         }
       }
     }
 
     this.logger.log(
-      `Ramp sync complete: ${results.imported} imported, ${results.reactivated} reactivated, ${results.deactivated} deactivated, ${results.skipped} skipped, ${results.errors} errors`,
+      `Ramp sync complete: ${results.imported} imported, ${results.updated} updated, ${results.reactivated} reactivated, ${results.deactivated} deactivated, ${results.skipped} skipped, ${results.errors} errors`,
     );
 
-    return {
+    // Update lastSyncAt on the connection
+    await db.integrationConnection.update({
+      where: { id: connectionId },
+      data: { lastSyncAt: new Date() },
+    });
+
+    const syncResult = {
       success: true,
       totalFound: activeUsers.length,
       totalInactive: inactiveUsers.length,
       totalSuspended: suspendedUsers.length,
       ...results,
     };
+
+    await this.syncLoggerService.completeLog(logId, {
+      imported: results.imported,
+      updated: results.updated,
+      deactivated: results.deactivated,
+      reactivated: results.reactivated,
+      skipped: results.skipped,
+      errors: results.errors,
+      totalFound: activeUsers.length,
+      details: results.details,
+    });
+
+    return syncResult;
   }
 
   /**

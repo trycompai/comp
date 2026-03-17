@@ -1,0 +1,45 @@
+// ===== Integration Sync Log =====
+// Generic audit trail for integration sync operations (employee sync, role discovery, etc.)
+
+model IntegrationSyncLog {
+  id             String                   @id @default(dbgenerated("generate_prefixed_cuid('isl'::text)"))
+  connectionId   String
+  connection     IntegrationConnection    @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  /// Provider slug (e.g., "ramp", "google-workspace", "rippling", "jumpcloud")
+  provider    String
+  /// Event type (e.g., "employee_sync", "role_discovery", "role_mapping_save")
+  eventType   String
+  /// Execution status
+  status      IntegrationSyncLogStatus @default(pending)
+  /// When the operation started executing
+  startedAt   DateTime?
+  /// When the operation completed (success or failure)
+  completedAt DateTime?
+  /// Duration in milliseconds
+  durationMs  Int?
+  /// Flexible result payload (e.g., { imported, deactivated, reactivated, skipped, errors })
+  result      Json?
+  /// Error message if failed
+  error       String?
+  /// How the sync was triggered: "manual", "scheduled", "api"
+  triggeredBy String?
+  /// User who triggered the sync (null for automated/cron)
+  userId      String?
+
+  createdAt DateTime @default(now())
+
+  @@index([connectionId])
+  @@index([organizationId])
+  @@index([provider])
+  @@index([createdAt])
+}
+
+enum IntegrationSyncLogStatus {
+  pending
+  running
+  success
+  failed
+}

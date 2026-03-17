@@ -11,12 +11,39 @@ type SyncProvider = 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp';
 
 interface SyncResult {
   success: boolean;
+  requiresRoleMapping?: boolean;
   totalFound: number;
   imported: number;
+  updated: number;
   reactivated: number;
   deactivated: number;
   skipped: number;
   errors: number;
+}
+
+interface DiscoveredRole {
+  role: string;
+  userCount: number;
+}
+
+interface RoleMappingEntry {
+  rampRole: string;
+  compRole: string;
+  isBuiltIn: boolean;
+  permissions?: Record<string, string[]>;
+  obligations?: Record<string, boolean>;
+}
+
+export interface RoleMappingData {
+  discoveredRoles: DiscoveredRole[];
+  defaultMapping: RoleMappingEntry[];
+  existingMapping: RoleMappingEntry[] | null;
+  existingCustomRoles: Array<{
+    name: string;
+    permissions: Record<string, string[]>;
+    obligations: Record<string, boolean>;
+  }>;
+  connectionId: string;
 }
 
 interface UseEmployeeSyncOptions {
@@ -36,6 +63,11 @@ interface UseEmployeeSyncReturn {
   hasAnyConnection: boolean;
   getProviderName: (provider: SyncProvider) => string;
   getProviderLogo: (provider: SyncProvider) => string;
+  showRoleMappingSheet: boolean;
+  roleMappingData: RoleMappingData | null;
+  handleRoleMappingClose: () => void;
+  handleRoleMappingSaved: () => void;
+  openRoleMappingEditor: () => Promise<void>;
 }
 
 const PROVIDER_CONFIG = {
@@ -66,6 +98,9 @@ export const useEmployeeSync = ({
   initialData,
 }: UseEmployeeSyncOptions): UseEmployeeSyncReturn => {
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showRoleMappingSheet, setShowRoleMappingSheet] = useState(false);
+  const [roleMappingData, setRoleMappingData] = useState<RoleMappingData | null>(null);
+  const [pendingSyncProvider, setPendingSyncProvider] = useState<SyncProvider | null>(null);
 
   const { data, mutate } = useSWR<EmployeeSyncConnectionsData>(
     ['employee-sync-connections', organizationId],
@@ -126,11 +161,44 @@ export const useEmployeeSync = ({
         `/v1/integrations/sync/${provider}/employees?organizationId=${organizationId}&connectionId=${connectionId}`,
       );
 
+      // Handle role mapping requirement (Ramp only)
+      if (response.data?.requiresRoleMapping && provider === 'ramp' && connectionId) {
+        setPendingSyncProvider(provider);
+        try {
+          const discoverResponse = await apiClient.post<{
+            discoveredRoles: DiscoveredRole[];
+            defaultMapping: RoleMappingEntry[];
+            existingMapping: RoleMappingEntry[] | null;
+            existingCustomRoles: Array<{
+              name: string;
+              permissions: Record<string, string[]>;
+              obligations: Record<string, boolean>;
+            }>;
+          }>(
+            `/v1/integrations/sync/ramp/discover-roles?organizationId=${organizationId}&connectionId=${connectionId}`,
+          );
+
+          if (discoverResponse.data) {
+            setRoleMappingData({
+              ...discoverResponse.data,
+              connectionId,
+            });
+            setShowRoleMappingSheet(true);
+          }
+        } catch {
+          toast.error('Failed to discover Ramp roles');
+        }
+        return null;
+      }
+
       if (response.data?.success) {
-        const { imported, reactivated, deactivated, skipped, errors } = response.data;
+        const { imported, updated, reactivated, deactivated, skipped, errors } = response.data;
 
         if (imported > 0) {
           toast.success(`Imported ${imported} new employee${imported > 1 ? 's' : ''}`);
+        }
+        if (updated > 0) {
+          toast.success(`Updated roles for ${updated} employee${updated > 1 ? 's' : ''}`);
         }
         if (reactivated > 0) {
           toast.success(`Reactivated ${reactivated} employee${reactivated > 1 ? 's' : ''}`);
@@ -140,7 +208,7 @@ export const useEmployeeSync = ({
             `Deactivated ${deactivated} employee${deactivated > 1 ? 's' : ''} (no longer in ${config.name})`,
           );
         }
-        if (imported === 0 && reactivated === 0 && deactivated === 0 && skipped > 0) {
+        if (imported === 0 && updated === 0 && reactivated === 0 && deactivated === 0 && skipped > 0) {
           toast.info('All employees are already synced');
         }
         if (errors > 0) {
@@ -166,6 +234,57 @@ export const useEmployeeSync = ({
   const getProviderName = (provider: SyncProvider) => PROVIDER_CONFIG[provider].shortName;
   const getProviderLogo = (provider: SyncProvider) => PROVIDER_CONFIG[provider].logo;
 
+  const openRoleMappingEditor = async () => {
+    if (!rampConnectionId) {
+      toast.error('Ramp is not connected');
+      return;
+    }
+
+    try {
+      const discoverResponse = await apiClient.post<{
+        discoveredRoles: DiscoveredRole[];
+        defaultMapping: RoleMappingEntry[];
+        existingMapping: RoleMappingEntry[] | null;
+        existingCustomRoles: Array<{
+          name: string;
+          permissions: Record<string, string[]>;
+          obligations: Record<string, boolean>;
+        }>;
+      }>(
+        `/v1/integrations/sync/ramp/discover-roles?organizationId=${organizationId}&connectionId=${rampConnectionId}`,
+      );
+
+      if (discoverResponse.data) {
+        setRoleMappingData({
+          ...discoverResponse.data,
+          connectionId: rampConnectionId,
+        });
+        setShowRoleMappingSheet(true);
+      }
+    } catch {
+      toast.error('Failed to load role mapping');
+    }
+  };
+
+  const handleRoleMappingClose = () => {
+    setShowRoleMappingSheet(false);
+    setRoleMappingData(null);
+    setPendingSyncProvider(null);
+    setIsSyncing(false);
+  };
+
+  const handleRoleMappingSaved = () => {
+    setShowRoleMappingSheet(false);
+    setRoleMappingData(null);
+
+    // Retry sync with the pending provider now that mapping is saved
+    if (pendingSyncProvider) {
+      const provider = pendingSyncProvider;
+      setPendingSyncProvider(null);
+      syncEmployees(provider);
+    }
+  };
+
   return {
     googleWorkspaceConnectionId,
     ripplingConnectionId,
@@ -183,5 +302,10 @@ export const useEmployeeSync = ({
     ),
     getProviderName,
     getProviderLogo,
+    showRoleMappingSheet,
+    roleMappingData,
+    handleRoleMappingClose,
+    handleRoleMappingSaved,
+    openRoleMappingEditor,
   };
 };

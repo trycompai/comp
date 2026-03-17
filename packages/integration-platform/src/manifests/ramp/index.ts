@@ -20,14 +20,14 @@ export const rampManifest: IntegrationManifest = {
   auth: {
     type: 'oauth2',
     config: {
-      authorizeUrl: 'https://app.ramp.com/v1/authorize',
-      tokenUrl: 'https://api.ramp.com/developer/v1/token',
+      authorizeUrl: 'https://demo.ramp.com/v1/authorize',
+      tokenUrl: 'https://demo-api.ramp.com/developer/v1/token',
       scopes: ['users:read'],
       pkce: false,
       clientAuthMethod: 'header',
       supportsRefreshToken: true,
       revoke: {
-        url: 'https://api.ramp.com/developer/v1/token/revoke',
+        url: 'https://demo-api.ramp.com/developer/v1/token/revoke',
         method: 'POST',
         auth: 'basic',
         body: 'form',
@@ -42,7 +42,7 @@ export const rampManifest: IntegrationManifest = {
     },
   },
 
-  baseUrl: 'https://api.ramp.com',
+  baseUrl: 'https://demo-api.ramp.com',
   defaultHeaders: {
     Accept: 'application/json',
   },

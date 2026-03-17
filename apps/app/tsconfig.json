@@ -107,7 +107,7 @@
       ],
       "@trycompai/tsconfig/*": [
         "../../packages/tsconfig/*"
-      ],
+      ]
     }
   },
   "include": [
