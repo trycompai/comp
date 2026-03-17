@@ -65,44 +65,44 @@ RUN cd apps/api && bunx nest build
 # =============================================================================
 FROM node:20-slim AS production
 
+# Create non-root user before copying files so COPY --chown can use it
+RUN groupadd --system nestjs && useradd --system --gid nestjs --create-home nestjs
+
 WORKDIR /app
+RUN chown nestjs:nestjs /app
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends wget openssl && rm -rf /var/lib/apt/lists/*
 
 # Copy built NestJS app
-COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder --chown=nestjs:nestjs /app/apps/api/dist ./dist
 
 # Copy prisma files
-COPY --from=builder /app/apps/api/prisma ./prisma
+COPY --from=builder --chown=nestjs:nestjs /app/apps/api/prisma ./prisma
 
 # Copy package.json (for any runtime needs)
-COPY --from=builder /app/apps/api/package.json ./package.json
+COPY --from=builder --chown=nestjs:nestjs /app/apps/api/package.json ./package.json
 
 # Copy workspace packages that are referenced by node_modules symlinks
-COPY --from=builder /app/packages/auth ./packages/auth
-COPY --from=builder /app/packages/db ./packages/db
-COPY --from=builder /app/packages/utils ./packages/utils
-COPY --from=builder /app/packages/integration-platform ./packages/integration-platform
-COPY --from=builder /app/packages/tsconfig ./packages/tsconfig
-COPY --from=builder /app/packages/email ./packages/email
-COPY --from=builder /app/packages/company ./packages/company
+COPY --from=builder --chown=nestjs:nestjs /app/packages/auth ./packages/auth
+COPY --from=builder --chown=nestjs:nestjs /app/packages/db ./packages/db
+COPY --from=builder --chown=nestjs:nestjs /app/packages/utils ./packages/utils
+COPY --from=builder --chown=nestjs:nestjs /app/packages/integration-platform ./packages/integration-platform
+COPY --from=builder --chown=nestjs:nestjs /app/packages/tsconfig ./packages/tsconfig
+COPY --from=builder --chown=nestjs:nestjs /app/packages/email ./packages/email
+COPY --from=builder --chown=nestjs:nestjs /app/packages/company ./packages/company
 
 # Copy production node_modules (includes symlinks to workspace packages above)
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder --chown=nestjs:nestjs /app/node_modules ./node_modules
 
 # Set production environment
 ENV NODE_ENV=production
 ENV PORT=3333
 
-# Regenerate Prisma client for this runtime environment
-RUN npx prisma generate --schema=./prisma/schema.prisma
-
-# Create non-root user
-RUN groupadd --system nestjs && useradd --system --gid nestjs nestjs \
-  && chown -R nestjs:nestjs /app
-
 USER nestjs
+
+# Regenerate Prisma client for this runtime environment (run as nestjs to keep consistent ownership)
+RUN npx prisma generate --schema=./prisma/schema.prisma
 
 EXPOSE 3333
 
