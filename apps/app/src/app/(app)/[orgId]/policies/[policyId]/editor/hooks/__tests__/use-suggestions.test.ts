@@ -813,28 +813,6 @@ describe('useSuggestions', () => {
   });
 
   describe('giveFeedback(id, feedback)', () => {
-    it('calls the onFeedback callback with id and feedback', () => {
-      const onFeedback = vi.fn();
-      const range = makeSuggestionRange({ id: 'suggestion-1-1' });
-      vi.mocked(computeSuggestionRanges).mockReturnValue([range]);
-      const editor = makeMockEditor();
-
-      const { result } = renderHook(() =>
-        useSuggestions({
-          editor: editor as never,
-          proposedMarkdown: 'Hello world updated',
-          onFeedback,
-        }),
-      );
-
-      act(() => {
-        result.current.giveFeedback('suggestion-1-1', 'Make it shorter');
-      });
-
-      expect(onFeedback).toHaveBeenCalledOnce();
-      expect(onFeedback).toHaveBeenCalledWith('suggestion-1-1', 'Make it shorter');
-    });
-
     it('marks the range as loading', () => {
       const range = makeSuggestionRange({ id: 'suggestion-1-1' });
       vi.mocked(computeSuggestionRanges).mockReturnValue([range]);
@@ -879,24 +857,6 @@ describe('useSuggestions', () => {
       expect(result.current.editingRangeId).toBeNull();
     });
 
-    it('does not throw when onFeedback is not provided', () => {
-      const range = makeSuggestionRange({ id: 'suggestion-1-1' });
-      vi.mocked(computeSuggestionRanges).mockReturnValue([range]);
-      const editor = makeMockEditor();
-
-      const { result } = renderHook(() =>
-        useSuggestions({
-          editor: editor as never,
-          proposedMarkdown: 'Hello world updated',
-        }),
-      );
-
-      expect(() => {
-        act(() => {
-          result.current.giveFeedback('suggestion-1-1', 'Make it shorter');
-        });
-      }).not.toThrow();
-    });
   });
 
   describe('resetLoading()', () => {

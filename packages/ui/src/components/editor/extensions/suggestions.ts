@@ -66,6 +66,7 @@ function createActionBar(
   buttonsRow.className = 'suggestion-actions-buttons';
 
   const acceptBtn = document.createElement('button');
+  acceptBtn.type = 'button';
   acceptBtn.className = 'suggestion-action-btn suggestion-action-accept';
   acceptBtn.textContent = '\u2713';
   acceptBtn.title = 'Accept';
@@ -76,6 +77,7 @@ function createActionBar(
   });
 
   const rejectBtn = document.createElement('button');
+  rejectBtn.type = 'button';
   rejectBtn.className = 'suggestion-action-btn suggestion-action-reject';
   rejectBtn.textContent = '\u2715';
   rejectBtn.title = 'Reject';
@@ -86,6 +88,7 @@ function createActionBar(
   });
 
   const feedbackBtn = document.createElement('button');
+  feedbackBtn.type = 'button';
   feedbackBtn.className = 'suggestion-action-btn suggestion-action-feedback';
   feedbackBtn.textContent = '\u270E';
   feedbackBtn.title = 'Edit';
@@ -111,11 +114,13 @@ function createActionBar(
     input.placeholder = 'How should this section be changed?';
 
     const sendBtn = document.createElement('button');
+    sendBtn.type = 'button';
     sendBtn.className = 'suggestion-action-btn suggestion-action-feedback';
     sendBtn.textContent = 'Send';
     sendBtn.disabled = true;
 
     const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
     cancelBtn.className = 'suggestion-action-btn';
     cancelBtn.textContent = 'Cancel';
 
@@ -125,9 +130,12 @@ function createActionBar(
 
     input.addEventListener('keydown', (e) => {
       e.stopPropagation();
-      if (e.key === 'Enter' && input.value.trim()) {
+      // Cmd/Ctrl+Enter to submit, plain Enter does nothing
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && input.value.trim()) {
         e.preventDefault();
         callbacks.onFeedbackSubmit?.(rangeId, input.value.trim());
+      } else if (e.key === 'Enter') {
+        e.preventDefault(); // prevent any default form behavior
       } else if (e.key === 'Escape') {
         e.preventDefault();
         callbacks.onFeedbackCancel?.();
@@ -474,7 +482,7 @@ function buildDecorations(
               Decoration.widget(
                 widgetPos,
                 createInsertionWidget(range.id, range.proposedText, schema, callbacks, isEditing, markdownToJSON),
-                { side: -1, key: `insert-${range.id}-${isEditing ? 'edit' : 'view'}` }
+                { side: -1, key: `insert-${range.id}-${isEditing ? 'edit' : 'view'}-${range.proposedText.length}` }
               )
             );
           }
@@ -497,7 +505,7 @@ function buildDecorations(
           Decoration.widget(
             widgetPos,
             createInsertionWidget(range.id, range.proposedText, schema, callbacks, isEditing, markdownToJSON),
-            { side: 1, key: `insert-${range.id}-${isEditing ? 'edit' : 'view'}` }
+            { side: 1, key: `insert-${range.id}-${isEditing ? 'edit' : 'view'}-${range.proposedText.length}` }
           )
         );
         break;

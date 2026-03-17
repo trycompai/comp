@@ -9,7 +9,6 @@ import type { SuggestionRange } from '../lib/suggestion-types';
 interface UseSuggestionsOptions {
   editor: Editor | null;
   proposedMarkdown: string | null;
-  onFeedback?: (rangeId: string, feedback: string) => void;
 }
 
 interface UseSuggestionsReturn {
@@ -37,7 +36,6 @@ interface UseSuggestionsReturn {
 export function useSuggestions({
   editor,
   proposedMarkdown,
-  onFeedback,
 }: UseSuggestionsOptions): UseSuggestionsReturn {
   const [ranges, setRanges] = useState<SuggestionRange[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -406,16 +404,49 @@ export function useSuggestions({
   }, []);
 
   const giveFeedback = useCallback(
-    (id: string, feedback: string) => {
+    async (id: string, feedback: string) => {
+      const range = rangesRef.current.find((r) => r.id === id);
+      if (!range) return;
+
       setEditingRangeId(null);
       setRanges((prev) =>
         prev.map((r) =>
           r.id === id ? { ...r, decision: 'loading' as const } : r,
         ),
       );
-      onFeedback?.(id, feedback);
+
+      try {
+        const policyId = window.location.pathname.match(/policies\/([^/]+)/)?.[1];
+        const res = await fetch(`/api/policies/${policyId}/edit-section`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            sectionText: range.proposedText,
+            feedback,
+          }),
+        });
+
+        if (!res.ok) throw new Error('Failed to edit section');
+        const { updatedText } = await res.json() as { updatedText: string };
+
+        setRanges((prev) =>
+          prev.map((r) =>
+            r.id === id
+              ? { ...r, proposedText: updatedText, decision: 'pending' as const }
+              : r,
+          ),
+        );
+      } catch (err) {
+        console.error('Section edit failed:', err);
+        setRanges((prev) =>
+          prev.map((r) =>
+            r.id === id ? { ...r, decision: 'pending' as const } : r,
+          ),
+        );
+      }
     },
-    [onFeedback],
+    [],
   );
 
   const resetLoading = useCallback(() => {
@@ -436,7 +467,7 @@ export function useSuggestions({
 
   const activeCount = pendingRanges.length;
   const totalCount = ranges.length;
-  const isActive = pendingRanges.length > 0;
+  const isActive = pendingRanges.length > 0 || loadingRanges.length > 0;
 
   return {
     ranges,

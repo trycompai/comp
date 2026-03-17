@@ -526,19 +526,9 @@ export function PolicyContentManager({
     }
   };
 
-  const FEEDBACK_MARKER = '___hunk_feedback___';
-
   const suggestions = useSuggestions({
     editor: editorInstance,
     proposedMarkdown: proposedPolicyMarkdown,
-    onFeedback: (rangeId, feedback) => {
-      const range = suggestions.ranges.find((r) => r.id === rangeId);
-      if (!range) return;
-
-      sendMessage({
-        text: `For the section that says:\n"""\n${range.proposedText}\n"""\n\nFeedback: ${feedback}\n\nApply this feedback ONLY to the section above. Do not change any other sections.\n${FEEDBACK_MARKER}`,
-      });
-    },
   });
 
   // Auto-dismiss proposal when ranges transition from active → inactive
@@ -570,27 +560,6 @@ export function PolicyContentManager({
   };
 
   // Filter out per-hunk feedback messages (and their AI responses) from chat display
-  const displayMessages = useMemo(() => {
-    const result: typeof messages = [];
-    for (let i = 0; i < messages.length; i++) {
-      const msg = messages[i];
-      if (!msg) continue;
-      const isFeedbackMsg =
-        msg.role === 'user' &&
-        msg.parts?.some(
-          (part) => part.type === 'text' && part.text.includes(FEEDBACK_MARKER),
-        );
-      if (isFeedbackMsg) {
-        // Skip this user message and the following assistant response
-        const next = messages[i + 1];
-        if (next?.role === 'assistant') i++;
-        continue;
-      }
-      result.push(msg);
-    }
-    return result;
-  }, [messages]);
-
   // Track local changes made in editor (after save)
   const handleContentSaved = (content: Array<JSONContent>) => {
     setCurrentContent(content);
@@ -925,7 +894,7 @@ export function PolicyContentManager({
           {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && !isWideDesktop && (
             <div className="h-[400px]">
               <PolicyAiAssistant
-                messages={displayMessages}
+                messages={messages}
                 status={status}
                 errorMessage={chatErrorMessage}
                 sendMessage={sendMessage}
