@@ -13,9 +13,8 @@ COPY package.json bun.lock ./
 # that the API doesn't need. Removing them cuts ~800 packages from the install.
 RUN cat package.json | bun -e " \
   const pkg = JSON.parse(await Bun.stdin.text()); \
-  const keep = { name: pkg.name, version: pkg.version, private: pkg.private, \
-    workspaces: pkg.workspaces, packageManager: pkg.packageManager }; \
-  console.log(JSON.stringify(keep, null, 2));" > package.min.json \
+  delete pkg.dependencies; delete pkg.devDependencies; delete pkg.scripts; \
+  console.log(JSON.stringify(pkg, null, 2));" > package.min.json \
   && mv package.min.json package.json
 
 # Copy only the workspace package.json files the API depends on
