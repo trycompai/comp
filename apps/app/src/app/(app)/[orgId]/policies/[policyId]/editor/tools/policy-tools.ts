@@ -1,13 +1,42 @@
+import { env } from '@/env.mjs';
 import { type InferUITools, tool } from 'ai';
-import { db } from '@db';
 import { z } from 'zod';
 
 interface PolicyToolsOptions {
-  organizationId: string;
   currentPolicyId: string;
+  cookieHeader: string;
 }
 
-export function getPolicyTools({ organizationId, currentPolicyId }: PolicyToolsOptions) {
+/**
+ * Make an authenticated API call to the NestJS backend,
+ * forwarding the user's session cookies for RBAC enforcement.
+ */
+async function apiCall<T = unknown>({
+  endpoint,
+  cookieHeader,
+}: {
+  endpoint: string;
+  cookieHeader: string;
+}): Promise<T> {
+  const baseUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+  const response = await fetch(`${baseUrl}${endpoint}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: cookieHeader,
+    },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`API error ${response.status}: ${text}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export function getPolicyTools({ currentPolicyId, cookieHeader }: PolicyToolsOptions) {
   return {
     proposePolicy: tool({
       description:
@@ -51,19 +80,11 @@ export function getPolicyTools({ organizationId, currentPolicyId }: PolicyToolsO
         'List all vendors in the organization. Returns basic info: name, category, status, website. Use getVendor to get full details for a specific vendor.',
       inputSchema: z.object({}),
       execute: async () => {
-        const vendors = await db.vendor.findMany({
-          where: { organizationId },
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            category: true,
-            status: true,
-            website: true,
-          },
-          orderBy: { name: 'asc' },
+        const result = await apiCall<{ data: Array<Record<string, unknown>>; count: number }>({
+          endpoint: '/v1/vendors',
+          cookieHeader,
         });
-        return { vendors, count: vendors.length };
+        return { vendors: result.data, count: result.count };
       },
     }),
 
@@ -74,27 +95,15 @@ export function getPolicyTools({ organizationId, currentPolicyId }: PolicyToolsO
         vendorId: z.string().describe('The vendor ID to look up'),
       }),
       execute: async ({ vendorId }) => {
-        const vendor = await db.vendor.findFirst({
-          where: { id: vendorId, organizationId },
-          include: {
-            contacts: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-            assignee: {
-              select: {
-                user: {
-                  select: { name: true, email: true },
-                },
-              },
-            },
-          },
-        });
-        if (!vendor) return { error: 'Vendor not found' };
-        return { vendor };
+        try {
+          const vendor = await apiCall<Record<string, unknown>>({
+            endpoint: `/v1/vendors/${vendorId}`,
+            cookieHeader,
+          });
+          return { vendor };
+        } catch {
+          return { error: 'Vendor not found' };
+        }
       },
     }),
 
@@ -103,22 +112,15 @@ export function getPolicyTools({ organizationId, currentPolicyId }: PolicyToolsO
         'List all other policies in the organization. Returns name, description, status, and department. Useful for cross-referencing or ensuring consistency across policies.',
       inputSchema: z.object({}),
       execute: async () => {
-        const policies = await db.policy.findMany({
-          where: {
-            organizationId,
-            id: { not: currentPolicyId },
-            isArchived: false,
-          },
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            status: true,
-            department: true,
-          },
-          orderBy: { name: 'asc' },
+        const result = await apiCall<{ data: Array<Record<string, unknown>>; count: number }>({
+          endpoint: '/v1/policies',
+          cookieHeader,
         });
-        return { policies, count: policies.length };
+        // Filter out the current policy
+        const filtered = result.data.filter(
+          (p) => p.id !== currentPolicyId,
+        );
+        return { policies: filtered, count: filtered.length };
       },
     }),
 
@@ -132,19 +134,15 @@ export function getPolicyTools({ organizationId, currentPolicyId }: PolicyToolsO
         if (policyId === currentPolicyId) {
           return { error: 'This is the current policy. Its content is already in context.' };
         }
-        const policy = await db.policy.findFirst({
-          where: { id: policyId, organizationId, isArchived: false },
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            status: true,
-            department: true,
-            content: true,
-          },
-        });
-        if (!policy) return { error: 'Policy not found' };
-        return { policy };
+        try {
+          const policy = await apiCall<Record<string, unknown>>({
+            endpoint: `/v1/policies/${policyId}`,
+            cookieHeader,
+          });
+          return { policy };
+        } catch {
+          return { error: 'Policy not found' };
+        }
       },
     }),
 
@@ -160,25 +158,12 @@ export function getPolicyTools({ organizationId, currentPolicyId }: PolicyToolsO
           ),
       }),
       execute: async ({ formType }) => {
-        const where: Record<string, unknown> = { organizationId };
-        if (formType) {
-          where.formType = formType;
-        }
-        const evidence = await db.evidenceSubmission.findMany({
-          where,
-          select: {
-            id: true,
-            formType: true,
-            status: true,
-            submittedAt: true,
-            submittedBy: {
-              select: { name: true, email: true },
-            },
-          },
-          orderBy: { submittedAt: 'desc' },
-          take: 50,
+        const params = formType ? `?formType=${formType}` : '';
+        const result = await apiCall<{ data: Array<Record<string, unknown>>; count: number }>({
+          endpoint: `/v1/evidence${params}`,
+          cookieHeader,
         });
-        return { evidence, count: evidence.length };
+        return { evidence: result.data, count: result.count };
       },
     }),
   };

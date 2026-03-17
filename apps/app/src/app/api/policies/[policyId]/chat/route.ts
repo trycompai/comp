@@ -31,6 +31,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ policyI
       );
     }
 
+    const headerStore = await headers();
+    const cookieStr = headerStore.get('cookie') ?? '';
+
     const { messages, currentContent }: { messages: Array<UIMessage>; currentContent?: string } = await req.json();
 
     const member = await db.member.findFirst({
@@ -99,6 +102,9 @@ You have access to tools that let you look up real organizational data. Use them
 
 When incorporating organizational data into the policy, use the real names, categories, and details from the tools rather than generic placeholders.
 
+IMPORTANT — FRESH PROPOSALS:
+Each time the user requests a change, you MUST generate the proposed policy content from scratch using the <current_policy> provided in this prompt. NEVER copy or reuse content from a previous proposePolicy tool call in this conversation. The current policy content above is always the source of truth — previous proposals may have been rejected or modified.
+
 WHEN TO USE THE proposePolicy TOOL:
 - When the user explicitly asks you to make changes, edits, or improvements
 - When you have a clear understanding of what changes to make
@@ -133,6 +139,13 @@ When using the proposePolicy tool:
 - Always fill in title, detail, and reviewHint so the UI can show a small banner indicating that changes are ready to review.
 - Keep title, detail, and reviewHint focused, specific, and free of markdown formatting.
 
+SECTION BOUNDARIES:
+A "section" is defined as a heading (##, ###, etc.) plus ALL content following it until the next heading of the same or higher level. This includes paragraphs, bullet lists, numbered lists, and any other content between headings.
+- When asked to "remove a section", remove the heading AND everything below it up to (but not including) the next heading of the same or higher level.
+- When asked to "edit a section", modify content within those same boundaries.
+- Bullet lists that appear between two headings belong to the section started by the FIRST heading — never leave orphaned bullets after removing a section.
+- A closing paragraph at the end of a section (e.g., "Retain records for...") is PART of that section and must be included in removals.
+
 CRITICAL — PRESERVE UNCHANGED TEXT EXACTLY:
 This is the most important rule. Violating it causes bugs in the diff UI.
 - Copy every section you are NOT changing VERBATIM, character-for-character.
@@ -150,15 +163,37 @@ PER-SECTION FEEDBACK:
 - Follow the user's instructions literally — if they say to insert text "in the middle", place it in the middle of that section, not at the end.
 - Still provide the COMPLETE policy content via the proposePolicy tool, but only the targeted section should differ from the current policy.
 
-Keep responses helpful and focused on the policy editing task.`;
+Keep responses helpful and focused on the policy editing task.
+
+FINAL REMINDER — THIS OVERRIDES EVERYTHING:
+You MUST produce the policy by starting from the <current_policy> text above and making ONLY the specific change the user asked for. Every other line must be identical to <current_policy>. If your output has ANY differences beyond the user's request, you have made an error. Do not incorporate changes from previous proposePolicy calls in this conversation — those may have been rejected. The <current_policy> is the ONLY source of truth.`;
+
+    // Strip previous proposePolicy tool content from the conversation history.
+    // This prevents the AI from copying/reusing old proposals instead of
+    // working from the current policy content in the system prompt.
+    const cleanedMessages = messages.map((msg) => ({
+      ...msg,
+      parts: msg.parts.map((part) => {
+        if (
+          part.type === 'tool-invocation' &&
+          (part as { toolName?: string }).toolName === 'proposePolicy'
+        ) {
+          return {
+            ...part,
+            args: { content: '[previous proposal removed — use <current_policy> from system prompt]', summary: '', title: '', detail: '', reviewHint: '' },
+          };
+        }
+        return part;
+      }),
+    })) as Array<UIMessage>;
 
     const result = streamText({
       model: anthropic('claude-sonnet-4-6'),
       system: systemPrompt,
-      messages: await convertToModelMessages(messages),
+      messages: await convertToModelMessages(cleanedMessages),
       toolChoice: 'auto',
       stopWhen: stepCountIs(5),
-      tools: getPolicyTools({ organizationId, currentPolicyId: policyId }),
+      tools: getPolicyTools({ currentPolicyId: policyId, cookieHeader: cookieStr }),
     });
 
     return result.toUIMessageStreamResponse();

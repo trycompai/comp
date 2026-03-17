@@ -57,6 +57,7 @@ import type { PolicyChatUIMessage } from '../types';
 import { PolicyAiAssistant } from './ai/policy-ai-assistant';
 import { useSuggestions } from '../hooks/use-suggestions';
 import { buildPositionMap } from '../lib/build-position-map';
+import { markdownToTipTapJSON } from './ai/markdown-utils';
 
 import { SuggestionsTopBar } from './ai/suggestions-top-bar';
 
@@ -230,6 +231,7 @@ export function PolicyContentManager({
         onEditClick: (id: string) => suggestionCallbacksRef.current.onEditClick(id),
         onFeedbackSubmit: (id: string, feedback: string) => suggestionCallbacksRef.current.onFeedbackSubmit(id, feedback),
         onFeedbackCancel: () => suggestionCallbacksRef.current.onFeedbackCancel(),
+        markdownToJSON: markdownToTipTapJSON,
       }),
     [],
   );
@@ -499,10 +501,12 @@ export function PolicyContentManager({
   );
 
   // The last fully-completed, non-dismissed proposal the user can act on.
-  const activeProposal =
-    latestCompletedProposal && latestCompletedProposal.key !== dismissedProposalKey
-      ? latestCompletedProposal
-      : null;
+  // Clear dismissedProposalKey when a new proposal arrives so it's not blocked.
+  const activeProposal = useMemo(() => {
+    if (!latestCompletedProposal) return null;
+    if (latestCompletedProposal.key === dismissedProposalKey) return null;
+    return latestCompletedProposal;
+  }, [latestCompletedProposal, dismissedProposalKey]);
 
   const proposedPolicyMarkdown = activeProposal?.content ?? null;
 
@@ -536,6 +540,18 @@ export function PolicyContentManager({
       });
     },
   });
+
+  // Auto-dismiss proposal when ranges transition from active → inactive
+  const wasActiveRef = useRef(false);
+  useEffect(() => {
+    if (suggestions.isActive) {
+      wasActiveRef.current = true;
+    } else if (wasActiveRef.current && activeProposal) {
+      // Was active, now inactive — all ranges resolved
+      wasActiveRef.current = false;
+      setDismissedProposalKey(activeProposal.key);
+    }
+  }, [suggestions.isActive, activeProposal]);
 
   // Reset loading state when AI finishes responding or errors
   useEffect(() => {
@@ -924,7 +940,7 @@ export function PolicyContentManager({
               showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex flex-row items-start gap-6' : ''
             }
           >
-            <div className={showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex-[7] min-w-0' : 'w-full'}>
+            <div className={showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex-[7] min-w-0 max-h-[calc(100dvh-24rem)] overflow-y-auto' : 'w-full'}>
               <Stack gap="sm">
                 <TabsContent value="EDITOR">
                   {suggestions.isActive && (
@@ -978,7 +994,7 @@ export function PolicyContentManager({
 
             {/* Wide desktop (1536px+): AI assistant side panel */}
             {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && isWideDesktop && (
-              <div className="flex-[3] min-w-[320px] sticky top-2 max-h-[calc(100vh-100px)] overflow-hidden">
+              <div className="flex-[3] min-w-[320px] sticky top-0 h-[calc(100dvh-24rem)]">
                 <PolicyAiAssistant
                   messages={messages}
                   status={status}
@@ -1201,7 +1217,7 @@ function PolicyEditorWrapper({
             <span>{statusInfo.message}</span>
           </div>
         )}
-        <div className="border-b pb-6">
+        <div className="pb-6 rounded-b-xl shadow-[0_8px_16px_-10px_hsl(0_0%_0%/0.1)]">
           <PolicyEditor
             content={normalizedContent}
             onSave={savePolicy}

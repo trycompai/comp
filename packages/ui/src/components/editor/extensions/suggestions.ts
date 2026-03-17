@@ -31,12 +31,15 @@ export const suggestionsPluginKey = new PluginKey<SuggestionsPluginState>(
   'suggestions'
 );
 
+export type MarkdownToJSONFn = (markdown: string) => Array<Record<string, unknown>>;
+
 export interface SuggestionsExtensionOptions {
   onAccept?: (id: string) => void;
   onReject?: (id: string) => void;
   onEditClick?: (id: string) => void;
   onFeedbackSubmit?: (id: string, feedback: string) => void;
   onFeedbackCancel?: () => void;
+  markdownToJSON?: MarkdownToJSONFn;
 }
 
 interface ActionCallbacks {
@@ -162,7 +165,8 @@ function createInsertionWidget(
   text: string,
   schema: Schema,
   callbacks: ActionCallbacks,
-  isEditing: boolean
+  isEditing: boolean,
+  markdownToJSON?: (markdown: string) => Array<Record<string, unknown>>
 ): (view: EditorView) => HTMLElement {
   return (view: EditorView) => {
     const wrapper = document.createElement('div');
@@ -171,11 +175,20 @@ function createInsertionWidget(
     // Action bar at the top
     wrapper.appendChild(createActionBar(rangeId, callbacks, isEditing));
 
-    // Content — render using the editor's serializer so the preview
-    // looks identical to what gets inserted on accept.
+    // Content — render using the same parser that accept uses,
+    // serialized through ProseMirror's DOMSerializer for identical output.
     const content = document.createElement('div');
     content.className = 'suggestion-new-section';
-    const nodes = markdownToNodes(text, schema);
+
+    let nodes: ProseMirrorNode[];
+    if (markdownToJSON) {
+      // Use the same parser as accept for identical rendering
+      const jsonNodes = markdownToJSON(text);
+      nodes = jsonNodes.map((json) => schema.nodeFromJSON(json));
+    } else {
+      nodes = markdownToNodes(text, schema);
+    }
+
     const fragment = Fragment.from(nodes);
     const tempDoc = schema.topNodeType.create(null, fragment);
     const dom = DOMSerializer.fromSchema(schema).serializeFragment(
@@ -234,14 +247,16 @@ function markdownToNodes(
     }
 
     const bulletMatch = trimmed.match(/^[-*]\s+(.+)$/);
-    if (bulletMatch?.[1]) {
+    const orderedMatch = !bulletMatch ? trimmed.match(/^\d+\.\s+(.+)$/) : null;
+    const listMatch = bulletMatch?.[1] ?? orderedMatch?.[1];
+    if (listMatch) {
       const listItemType = schema.nodes.listItem;
       const paragraphType = schema.nodes.paragraph;
       if (listItemType && paragraphType) {
         listItems.push(
           listItemType.create(
             null,
-            paragraphType.create(null, schema.text(bulletMatch[1]))
+            paragraphType.create(null, schema.text(listMatch))
           )
         );
       }
@@ -405,7 +420,8 @@ function buildDecorations(
   ranges: SuggestionRange[],
   focusedId: string | null,
   editingRangeId: string | null,
-  callbacks: ActionCallbacks
+  callbacks: ActionCallbacks,
+  markdownToJSON?: MarkdownToJSONFn
 ): DecorationSet {
   const decorations: Decoration[] = [];
   const schema = doc.type.schema;
@@ -457,7 +473,7 @@ function buildDecorations(
             decorations.push(
               Decoration.widget(
                 widgetPos,
-                createInsertionWidget(range.id, range.proposedText, schema, callbacks, isEditing),
+                createInsertionWidget(range.id, range.proposedText, schema, callbacks, isEditing, markdownToJSON),
                 { side: -1, key: `insert-${range.id}-${isEditing ? 'edit' : 'view'}` }
               )
             );
@@ -480,7 +496,7 @@ function buildDecorations(
         decorations.push(
           Decoration.widget(
             widgetPos,
-            createInsertionWidget(range.id, range.proposedText, schema, callbacks, isEditing),
+            createInsertionWidget(range.id, range.proposedText, schema, callbacks, isEditing, markdownToJSON),
             { side: 1, key: `insert-${range.id}-${isEditing ? 'edit' : 'view'}` }
           )
         );
@@ -536,16 +552,18 @@ export const SuggestionsExtension =
         onEditClick: undefined,
         onFeedbackSubmit: undefined,
         onFeedbackCancel: undefined,
+        markdownToJSON: undefined,
       };
     },
 
     addProseMirrorPlugins() {
+      const extensionOptions = this.options;
       const extensionCallbacks: ActionCallbacks = {
-        onAccept: this.options.onAccept,
-        onReject: this.options.onReject,
-        onEditClick: this.options.onEditClick,
-        onFeedbackSubmit: this.options.onFeedbackSubmit,
-        onFeedbackCancel: this.options.onFeedbackCancel,
+        onAccept: extensionOptions.onAccept,
+        onReject: extensionOptions.onReject,
+        onEditClick: extensionOptions.onEditClick,
+        onFeedbackSubmit: extensionOptions.onFeedbackSubmit,
+        onFeedbackCancel: extensionOptions.onFeedbackCancel,
       };
 
       return [
@@ -579,7 +597,8 @@ export const SuggestionsExtension =
                     pendingRanges,
                     meta.focusedId,
                     editingRangeId,
-                    extensionCallbacks
+                    extensionCallbacks,
+                    extensionOptions.markdownToJSON
                   );
                 } catch (err) {
                   console.error('[SuggestionsPlugin] buildDecorations failed:', err);

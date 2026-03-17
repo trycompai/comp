@@ -169,7 +169,45 @@ export function useSuggestions({
     }
     const positionMap = buildPositionMap(editor.state.doc);
     const initial = computeSuggestionRanges(positionMap, proposedMarkdown);
-    setRanges(initial);
+    // For delete ranges that start at a heading, extend to the next heading
+    // of the same or higher level. This ensures full section deletions
+    // include all content between headings, even if the AI left some.
+    const doc = editor.state.doc;
+    const extended = initial.map((range) => {
+      if (range.type !== 'delete') return range;
+
+      // Find the first block node in the range to check if it's a heading.
+      // range.from may point inside a node, so resolve to find the parent.
+      let headingLevel: number | null = null;
+      doc.nodesBetween(range.from, Math.min(range.from + 5, range.to), (node) => {
+        if (node.type.name === 'heading' && headingLevel === null) {
+          headingLevel = (node.attrs as { level?: number }).level ?? 1;
+        }
+      });
+      if (headingLevel === null) return range;
+
+      // Walk forward from the end of the range to find the next heading
+      // of the same or higher level.
+      let nextHeadingPos: number | null = null;
+      doc.nodesBetween(range.to, doc.content.size, (node, pos) => {
+        if (nextHeadingPos !== null) return false;
+        if (node.type.name === 'heading') {
+          const level = (node.attrs as { level?: number }).level ?? 1;
+          if (headingLevel !== null && level <= headingLevel) {
+            nextHeadingPos = pos;
+            return false;
+          }
+        }
+        return true;
+      });
+
+      const extendTo = nextHeadingPos ?? doc.content.size;
+      if (extendTo > range.to) {
+        return { ...range, to: extendTo };
+      }
+      return range;
+    });
+    setRanges(extended);
     setCurrentIndex(0);
     rangesHistoryRef.current = [];
 
@@ -224,7 +262,17 @@ export function useSuggestions({
       const { tr } = editor.state;
       if (range.type === 'delete') {
         tr.delete(range.from, range.to);
+      } else if (range.type === 'insert') {
+        // Insert at the end of the anchor position, not replacing it
+        const jsonNodes = markdownToTipTapJSON(range.proposedText);
+        const pmNodes = jsonNodes.map((json) =>
+          editor.state.schema.nodeFromJSON(json),
+        );
+        if (pmNodes.length > 0) {
+          tr.insert(range.to, pmNodes);
+        }
       } else {
+        // Modify: replace old content with new
         const jsonNodes = markdownToTipTapJSON(range.proposedText);
         const pmNodes = jsonNodes.map((json) =>
           editor.state.schema.nodeFromJSON(json),
@@ -311,6 +359,14 @@ export function useSuggestions({
     for (const range of pending) {
       if (range.type === 'delete') {
         tr.delete(range.from, range.to);
+      } else if (range.type === 'insert') {
+        const jsonNodes = markdownToTipTapJSON(range.proposedText);
+        const pmNodes = jsonNodes.map((json) =>
+          editor.state.schema.nodeFromJSON(json),
+        );
+        if (pmNodes.length > 0) {
+          tr.insert(range.to, pmNodes);
+        }
       } else {
         const jsonNodes = markdownToTipTapJSON(range.proposedText);
         const pmNodes = jsonNodes.map((json) =>

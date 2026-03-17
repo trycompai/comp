@@ -68,26 +68,40 @@ export function computeSuggestionRanges(
 }
 
 /**
- * Merge ranges whose [from, to] overlap or are identical.
- * When two ranges overlap, combine them into a single 'modify' range.
+ * Merge ranges that overlap, are adjacent, or are close together.
+ * The diff library splits section deletions into multiple hunks when
+ * blank lines between them match as "unchanged context". Merging
+ * nearby ranges of the same type fixes this.
  */
 function mergeOverlappingRanges(ranges: SuggestionRange[]): SuggestionRange[] {
   if (ranges.length <= 1) return ranges;
 
-  // Sort by from position
   const sorted = [...ranges].sort((a, b) => a.from - b.from);
   const merged: SuggestionRange[] = [];
 
   for (const range of sorted) {
     const prev = merged[merged.length - 1];
 
-    if (prev && range.from <= prev.to) {
-      // Overlapping — merge into one modify range
+    if (!prev) {
+      merged.push({ ...range });
+      continue;
+    }
+
+    // Merge if overlapping or adjacent (gap of ≤20 positions, which covers
+    // a few empty paragraphs / blank lines between hunks).
+    // Always merge two adjacent deletes — they're almost certainly one section.
+    const gap = range.from - prev.to;
+    const shouldMerge =
+      gap <= 0 || // overlapping
+      (gap <= 20 && prev.type === range.type) || // same type, close together
+      (gap <= 20 && prev.type === 'delete' && range.type === 'delete'); // adjacent deletes
+
+    if (shouldMerge) {
       prev.to = Math.max(prev.to, range.to);
-      prev.type = 'modify';
+      prev.type = prev.type === range.type ? prev.type : 'modify';
       prev.originalText = prev.originalText + '\n' + range.originalText;
       prev.proposedText = prev.proposedText + '\n' + range.proposedText;
-      prev.segments = []; // Drop word-level segments for merged ranges
+      prev.segments = [];
       prev.id = `suggestion-merged-${prev.from}-${prev.to}`;
     } else {
       merged.push({ ...range });

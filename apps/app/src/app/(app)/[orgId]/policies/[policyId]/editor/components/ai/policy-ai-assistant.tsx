@@ -151,7 +151,7 @@ export function PolicyAiAssistant({
             sendMessage({ text });
           }}
         >
-          <PromptInputTextarea placeholder="Let me know what to edit..." disabled={isBusy} />
+          <PromptInputTextarea placeholder="Let me know what to edit..." disabled={isBusy} className="min-h-[2rem] max-h-[4rem]" />
           <PromptInputFooter>
             <div />
             {isBusy && stop ? (
