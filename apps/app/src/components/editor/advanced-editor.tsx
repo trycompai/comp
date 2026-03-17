@@ -3,7 +3,7 @@
 import '@/styles/editor.css';
 import type { Extension } from '@tiptap/core';
 import type { Editor as TipTapEditor } from '@tiptap/react';
-import { Editor, type JSONContent } from '@comp/ui/editor';
+import { Editor, type JSONContent } from '@trycompai/ui/editor';
 
 interface AdvancedEditorProps {
   initialContent?: JSONContent | JSONContent[];

@@ -189,7 +189,7 @@
         "db:getschema": "node ../../packages/db/scripts/combine-schemas.js && cp ../../packages/db/dist/schema.prisma prisma/schema.prisma",
         "db:migrate": "cd ../../packages/db && bunx prisma migrate dev && cd ../../apps/app",
         "deploy:trigger-prod": "npx trigger.dev@4.0.6 deploy",
-        "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"trigger dev\"",
+        "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"NODE_OPTIONS='--no-deprecation' next dev --turbo -p 3000\" \"NODE_OPTIONS='--no-deprecation' trigger dev\"",
         "lint": "eslint . && prettier --check .",
         "prebuild": "bun run db:generate",
         "postinstall": "prisma generate --schema=./prisma/schema.prisma || exit 0",

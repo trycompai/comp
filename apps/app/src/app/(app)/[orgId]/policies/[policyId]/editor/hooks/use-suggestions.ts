@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { suggestionsPluginKey } from '@comp/ui/editor';
+import { suggestionsPluginKey } from '@trycompai/ui/editor';
 import { markdownToTipTapJSON } from '../components/ai/markdown-utils';
 import { buildPositionMap } from '../lib/build-position-map';
 import { computeSuggestionRanges } from '../lib/compute-suggestion-ranges';

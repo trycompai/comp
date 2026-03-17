@@ -1,6 +1,6 @@
 'use client';
 
-import { validateAndFixTipTapContent } from '@comp/ui/editor';
+import { validateAndFixTipTapContent } from '@trycompai/ui/editor';
 import type { Extension } from '@tiptap/core';
 import type { JSONContent, Editor as TipTapEditor } from '@tiptap/react';
 import AdvancedEditor from './advanced-editor';
@@ -17,7 +17,17 @@ interface PolicyEditorProps {
   showToolbar?: boolean;
 }
 
-export function PolicyEditor({ content, readOnly = false, onSave, className, minHeight, maxHeight, additionalExtensions, onEditorReady, showToolbar }: PolicyEditorProps) {
+export function PolicyEditor({
+  content,
+  readOnly = false,
+  onSave,
+  className,
+  minHeight,
+  maxHeight,
+  additionalExtensions,
+  onEditorReady,
+  showToolbar,
+}: PolicyEditorProps) {
   const documentContent = validateAndFixTipTapContent({
     type: 'doc',
     content: Array.isArray(content) && content.length > 0 ? content : [],
@@ -38,7 +48,17 @@ export function PolicyEditor({ content, readOnly = false, onSave, className, min
 
   return (
     <>
-      <AdvancedEditor initialContent={documentContent} onSave={handleSave} readOnly={readOnly} className={className} minHeight={minHeight} maxHeight={maxHeight} additionalExtensions={additionalExtensions} onEditorReady={onEditorReady} showToolbar={showToolbar} />
+      <AdvancedEditor
+        initialContent={documentContent}
+        onSave={handleSave}
+        readOnly={readOnly}
+        className={className}
+        minHeight={minHeight}
+        maxHeight={maxHeight}
+        additionalExtensions={additionalExtensions}
+        onEditorReady={onEditorReady}
+        showToolbar={showToolbar}
+      />
     </>
   );
 }
