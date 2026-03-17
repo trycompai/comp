@@ -1,9 +1,11 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Shield } from 'lucide-react';
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@trycompai/design-system';
+import { Launch, Security } from '@trycompai/design-system/icons';
 import { useMemo } from 'react';
 import { parseVendorRiskAssessmentDescription } from './parse-vendor-risk-assessment-description';
+import { filterCertifications } from './filter-certifications';
+import { VendorRiskAssessmentCertificationsCard } from './VendorRiskAssessmentCertificationsCard';
 import { VendorRiskAssessmentTimelineCard } from './VendorRiskAssessmentTimelineCard';
 import { SecurityAssessmentContent } from './SecurityAssessmentContent';
 
@@ -21,38 +23,76 @@ export function VendorRiskAssessmentView({ source }: { source: VendorRiskAssessm
     return parseVendorRiskAssessmentDescription(source.description);
   }, [source.description]);
 
+  const certifications = data?.certifications ?? [];
+  const filteredCerts = useMemo(() => filterCertifications(certifications), [certifications]);
+  const verifiedCount = useMemo(
+    () => filteredCerts.filter((c) => c.status === 'verified').length,
+    [filteredCerts],
+  );
   const links = data?.links ?? [];
   const news = data?.news ?? [];
 
   return (
     <div className="space-y-6">
-      <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <div className="text-sm font-semibold flex items-center gap-2">
+              <Security size={16} />
+              Security Assessment
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data?.securityAssessment ? (
+            <SecurityAssessmentContent
+              text={
+                data.securityAssessment.includes('Framework-specific checks:')
+                  ? data.securityAssessment.split('Framework-specific checks:')[0].trim()
+                  : data.securityAssessment
+              }
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground italic">
+              No automated security assessment found.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {certifications.length > 0 && (
+        <VendorRiskAssessmentCertificationsCard
+          certifications={certifications}
+          verifiedCount={verifiedCount}
+        />
+      )}
+
+      {links.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Security Assessment
+            <CardTitle>
+              <div className="text-sm font-semibold">Links</div>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {data?.securityAssessment ? (
-              <SecurityAssessmentContent
-                text={
-                  data.securityAssessment.includes('Framework-specific checks:')
-                    ? data.securityAssessment.split('Framework-specific checks:')[0].trim()
-                    : data.securityAssessment
-                }
-              />
-            ) : (
-              <p className="text-sm text-muted-foreground italic">
-                No automated security assessment found.
-              </p>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {links.map((link, index) => (
+                <Button
+                  key={`${link.url}-${link.label}-${index}`}
+                  variant="outline"
+                  size="sm"
+                  iconRight={<Launch size={12} />}
+                  onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}
+                >
+                  {link.label}
+                </Button>
+              ))}
+            </div>
           </CardContent>
         </Card>
+      )}
 
-        <VendorRiskAssessmentTimelineCard news={news} />
-      </div>
+      <VendorRiskAssessmentTimelineCard news={news} />
     </div>
   );
 }

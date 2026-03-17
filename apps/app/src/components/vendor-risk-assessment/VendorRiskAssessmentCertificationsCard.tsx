@@ -1,10 +1,7 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@trycompai/ui/collapsible';
-import { Clock, ExternalLink, Shield, ShieldCheck, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Collapsible, CollapsibleContent, CollapsibleTrigger } from '@trycompai/design-system';
+import { CheckmarkFilled, ChevronDown, ChevronUp, CloseOutline, Launch, Security, Time } from '@trycompai/design-system/icons';
 import { useMemo, useState } from 'react';
 import { filterCertifications } from './filter-certifications';
 import type { VendorRiskAssessmentCertification } from './vendor-risk-assessment-types';
@@ -12,18 +9,18 @@ import type { VendorRiskAssessmentCertification } from './vendor-risk-assessment
 function CertificationRow({ cert }: { cert: VendorRiskAssessmentCertification }) {
   const statusIcon =
     cert.status === 'verified' ? (
-      <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+      <div className="text-primary shrink-0"><CheckmarkFilled size={16} /></div>
     ) : cert.status === 'expired' ? (
-      <XCircle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
+      <div className="text-red-600 dark:text-red-400 shrink-0"><CloseOutline size={16} /></div>
     ) : cert.status === 'not_certified' ? (
-      <XCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+      <div className="text-muted-foreground shrink-0"><CloseOutline size={16} /></div>
     ) : (
-      <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+      <div className="text-muted-foreground shrink-0"><Time size={16} /></div>
     );
 
   const statusBadge =
     cert.status === 'verified' ? (
-      <Badge variant="success">verified</Badge>
+      <Badge variant="default">verified</Badge>
     ) : cert.status === 'expired' ? (
       <Badge variant="destructive">expired</Badge>
     ) : cert.status === 'not_certified' ? (
@@ -46,7 +43,7 @@ function CertificationRow({ cert }: { cert: VendorRiskAssessmentCertification })
               onClick={() => window.open(cert.url ?? undefined, '_blank', 'noopener,noreferrer')}
               aria-label="Open certification link"
             >
-              <ExternalLink className="h-4 w-4" />
+              <Launch size={16} />
             </Button>
           ) : null}
         </div>
@@ -79,17 +76,19 @@ export function VendorRiskAssessmentCertificationsCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-semibold flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Certifications
+        <CardTitle>
+          <div className="text-sm font-semibold flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Security size={16} />
+              Certifications
+            </div>
+            {filteredCerts.length > 0 ? (
+              <Badge variant="outline">{filteredVerifiedCount} verified</Badge>
+            ) : null}
           </div>
-          {filteredCerts.length > 0 ? (
-            <Badge variant="outline">{filteredVerifiedCount} verified</Badge>
-          ) : null}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent>
         {filteredCerts.length === 0 ? (
           <p className="text-sm text-muted-foreground italic">No certifications found.</p>
         ) : (
@@ -113,23 +112,20 @@ export function VendorRiskAssessmentCertificationsCard({
 
             {rest.length > 0 ? (
               <div className="pt-1">
-                <CollapsibleTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {open ? (
-                      <>
-                        <span>Show less</span>
-                        <ChevronUp className="h-3.5 w-3.5" />
-                      </>
-                    ) : (
-                      <>
-                        <span>Show {rest.length} more</span>
-                        <ChevronDown className="h-3.5 w-3.5" />
-                      </>
-                    )}
-                  </button>
+                <CollapsibleTrigger
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {open ? (
+                    <>
+                      <span>Show less</span>
+                      <ChevronUp size={14} />
+                    </>
+                  ) : (
+                    <>
+                      <span>Show {rest.length} more</span>
+                      <ChevronDown size={14} />
+                    </>
+                  )}
                 </CollapsibleTrigger>
               </div>
             ) : null}
