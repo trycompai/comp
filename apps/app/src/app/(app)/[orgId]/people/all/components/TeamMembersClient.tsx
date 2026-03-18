@@ -182,13 +182,15 @@ export function TeamMembersClient({
     // Check if the role filter matches any of the member's roles
     const matchesRole = !roleFilter || item.processedRoles.includes(roleFilter);
 
-    // Status filter: 'active' shows non-deactivated members + pending invitations
+    // Status filter: by default (no filter), hide deactivated members
+    // 'active' explicitly shows non-deactivated members + pending invitations
     // 'deactivated' shows only deactivated members
-    // empty shows everything
+    // 'all' shows everything
     const matchesStatus =
-      !statusFilter ||
-      (statusFilter === 'active' && item.displayStatus !== 'deactivated') ||
-      (statusFilter === 'deactivated' && item.displayStatus === 'deactivated');
+      (statusFilter === 'all') ||
+      (statusFilter === 'deactivated' && item.displayStatus === 'deactivated') ||
+      (!statusFilter && item.displayStatus !== 'deactivated') ||
+      (statusFilter === 'active' && item.displayStatus !== 'deactivated');
 
     return matchesSearch && matchesRole && matchesStatus;
   });
@@ -307,12 +309,12 @@ export function TeamMembersClient({
           <Select
             value={statusFilter || undefined}
             onValueChange={(value) => {
-              setStatusFilter(value === 'all' ? '' : (value ?? ''));
+              setStatusFilter(value ?? '');
               setPage(1);
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="All People" />
+              <SelectValue placeholder="Active" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All People</SelectItem>
@@ -511,6 +513,7 @@ export function TeamMembersClient({
               <TableHead>
                 <div className="w-[160px]">ROLE</div>
               </TableHead>
+              <TableHead>AGENT</TableHead>
               <TableHead>TASKS</TableHead>
               <TableHead>ACTIONS</TableHead>
             </TableRow>
