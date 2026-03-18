@@ -33,6 +33,7 @@ import {
 import { RampRoleMappingService } from '../services/ramp-role-mapping.service';
 import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
 import { RampApiService } from '../services/ramp-api.service';
+import { filterUsersByOrgUnits } from './sync-ou-filter';
 
 interface GoogleWorkspaceUser {
   id: string;
@@ -284,6 +285,19 @@ export class SyncController {
       string,
       unknown
     >;
+
+    // Filter by organizational unit if configured
+    const targetOrgUnits = Array.isArray(syncVariables.target_org_units)
+      ? (syncVariables.target_org_units as string[])
+      : undefined;
+    const ouFilteredUsers = filterUsersByOrgUnits(users, targetOrgUnits);
+
+    if (targetOrgUnits && targetOrgUnits.length > 0) {
+      this.logger.log(
+        `Google Workspace OU filter kept ${ouFilteredUsers.length}/${users.length} users (OUs: ${targetOrgUnits.join(', ')})`,
+      );
+    }
+
     const rawSyncFilterMode = syncVariables.sync_user_filter_mode;
     const syncFilterMode: GoogleWorkspaceSyncFilterMode =
       typeof rawSyncFilterMode === 'string' &&
@@ -307,7 +321,7 @@ export class SyncController {
       effectiveSyncFilterMode = 'all';
     }
 
-    const filteredUsers = users.filter((user) => {
+    const filteredUsers = ouFilteredUsers.filter((user) => {
       const email = user.primaryEmail.toLowerCase();
 
       if (effectiveSyncFilterMode === 'exclude' && excludedTerms.length > 0) {
@@ -322,7 +336,7 @@ export class SyncController {
     });
 
     this.logger.log(
-      `Google Workspace sync filter mode "${effectiveSyncFilterMode}" kept ${filteredUsers.length}/${users.length} users`,
+      `Google Workspace sync filter mode "${effectiveSyncFilterMode}" kept ${filteredUsers.length}/${ouFilteredUsers.length} users`,
     );
 
     // Active users to import/reactivate are based on the selected filter mode
@@ -336,10 +350,10 @@ export class SyncController {
       activeUsers.map((u) => u.primaryEmail.toLowerCase()),
     );
     const allSuspendedEmails = new Set(
-      users.filter((u) => u.suspended).map((u) => u.primaryEmail.toLowerCase()),
+      ouFilteredUsers.filter((u) => u.suspended).map((u) => u.primaryEmail.toLowerCase()),
     );
     const allActiveEmails = new Set(
-      users
+      ouFilteredUsers
         .filter((u) => !u.suspended)
         .map((u) => u.primaryEmail.toLowerCase()),
     );
@@ -467,7 +481,7 @@ export class SyncController {
 
     const deactivationGwDomains =
       effectiveSyncFilterMode === 'include'
-        ? new Set(users.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()))
+        ? new Set(ouFilteredUsers.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()))
         : new Set(
             filteredUsers.map((u) =>
               u.primaryEmail.split('@')[1]?.toLowerCase(),
