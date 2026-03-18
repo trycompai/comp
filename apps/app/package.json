@@ -130,6 +130,7 @@
         "sonner": "^2.0.5",
         "streamdown": "^2.3.0",
         "stripe": "^20.0.0",
+        "superjson": "^2.2.6",
         "swr": "^2.3.4",
         "three": "^0.182.0",
         "ts-pattern": "^5.7.0",
