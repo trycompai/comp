@@ -48,4 +48,4 @@ jobs:
         timeout-minutes: 20
         env:
           TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
-        run: bunx trigger.dev@4.0.6 deploy --env staging --log-level debug
+        run: bunx trigger.dev@4.4.3 deploy --env staging --log-level debug

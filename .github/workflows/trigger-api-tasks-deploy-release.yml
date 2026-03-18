@@ -54,4 +54,4 @@ jobs:
         working-directory: ./apps/api
         env:
           TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
-        run: bunx trigger.dev@4.0.6 deploy
+        run: bunx trigger.dev@4.4.3 deploy

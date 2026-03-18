@@ -151,6 +151,141 @@ describe('PolicyPdfRendererService', () => {
       expect(result.length).toBeGreaterThan(0);
     });
 
+    it('handles emoji characters without producing garbled output', () => {
+      // Regression test for CS-191: flag emojis like 🇬🇧🇫🇷 were rendered as
+      // garbled text "Ø<ÝìØ<Ýç +þ" because Helvetica can't render emojis
+      const result = service.renderPoliciesPdfBuffer(
+        [
+          {
+            name: 'Policy with Emojis',
+            content: {
+              type: 'doc',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [
+                    {
+                      type: 'text',
+                      text: '🇬🇧🇫🇷 English version available bellow',
+                    },
+                  ],
+                },
+                {
+                  type: 'paragraph',
+                  content: [
+                    {
+                      type: 'text',
+                      text: '🎉 Welcome to our policy 🌍',
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+        'Test Org',
+      );
+
+      expect(result).toBeInstanceOf(Buffer);
+      expect(result.length).toBeGreaterThan(0);
+      expect(result.subarray(0, 5).toString()).toBe('%PDF-');
+
+      // Verify the PDF text does NOT contain garbled emoji byte sequences
+      const pdfText = result.toString('latin1');
+      expect(pdfText).not.toContain('Ø<Ýì');
+      expect(pdfText).not.toContain('Ø<Ýç');
+    });
+
+    it('preserves accented characters alongside emojis', () => {
+      const result = service.renderPoliciesPdfBuffer(
+        [
+          {
+            name: 'Politique d\'Authentification',
+            content: {
+              type: 'doc',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [
+                    {
+                      type: 'text',
+                      text: '🇫🇷 Résumé des règles d\'authentification café',
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+        'Test Org',
+      );
+
+      expect(result).toBeInstanceOf(Buffer);
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('handles content with only emojis', () => {
+      const result = service.renderPoliciesPdfBuffer(
+        [
+          {
+            name: 'Emoji Only',
+            content: {
+              type: 'doc',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: '🎉🌍😀🇬🇧' }],
+                },
+              ],
+            },
+          },
+        ],
+        'Test Org',
+      );
+
+      expect(result).toBeInstanceOf(Buffer);
+    });
+
+    it('handles emojis in headings and list items', () => {
+      const result = service.renderPoliciesPdfBuffer(
+        [
+          {
+            name: '📋 Policy Title',
+            content: {
+              type: 'doc',
+              content: [
+                {
+                  type: 'heading',
+                  attrs: { level: 1 },
+                  content: [{ type: 'text', text: '🔒 Security Section' }],
+                },
+                {
+                  type: 'bulletList',
+                  content: [
+                    {
+                      type: 'listItem',
+                      content: [
+                        {
+                          type: 'paragraph',
+                          content: [
+                            { type: 'text', text: '✅ Requirement met' },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+        'Test Org',
+      );
+
+      expect(result).toBeInstanceOf(Buffer);
+      expect(result.length).toBeGreaterThan(0);
+    });
+
     it('applies custom primary color', () => {
       const result = service.renderPoliciesPdfBuffer(
         [
