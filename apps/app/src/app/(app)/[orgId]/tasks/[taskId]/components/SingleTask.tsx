@@ -291,7 +291,7 @@ export function SingleTask({
             variant="muted"
             as="p"
             onClick={startEditingDescription}
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: 'pointer', whiteSpace: 'pre-line' }}
           >
             {task.description || 'Add a description...'}
           </Text>
