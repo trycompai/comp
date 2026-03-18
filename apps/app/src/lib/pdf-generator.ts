@@ -30,90 +30,57 @@ interface PDFConfig {
   yPosition: number;
 }
 
-// Helper function to clean text for PDF rendering
+
+/**
+ * Clean text for safe rendering with standard PDF fonts (Helvetica).
+ * Strips invisible chars, emojis, and maps typographic chars to ASCII.
+ *
+ * NOTE: Keep in sync with apps/api/src/trust-portal/policy-pdf-renderer.service.ts cleanTextForPDF
+ */
 const cleanTextForPDF = (text: string): string => {
-  // Strip invisible/control-ish unicode chars that commonly appear via copy/paste.
-  // These aren't visible in the editor, but our previous implementation converted them
-  // into "?" which *is* visible and looks like random corruption in PDFs.
-  //
-  // - U+00AD: soft hyphen
-  // - U+200B..U+200F: zero-width space/joiners + direction marks
-  // - U+202A..U+202E: bidi embedding/override marks
-  // - U+2060..U+206F: word joiner + other format chars
-  // - U+FEFF: byte order mark
-  // - U+FFFD: replacement character
-  const stripInvisibleChars = (value: string): string => {
-    return value
-      .replace(/\u00AD/g, '')
-      .replace(/[\u200B-\u200F]/g, '')
-      .replace(/[\u202A-\u202E]/g, '')
-      .replace(/[\u2060-\u206F]/g, '')
-      .replace(/\uFEFF/g, '')
-      .replace(/\uFFFD/g, '');
-  };
+  const strippedText = text
+    .replace(/\u00AD/g, '')
+    .replace(/[\u200B-\u200F]/g, '')
+    .replace(/[\u202A-\u202E]/g, '')
+    .replace(/[\u2060-\u206F]/g, '')
+    .replace(/\uFEFF/g, '')
+    .replace(/\uFFFD/g, '')
+    // Strip emoji characters — standard PDF fonts cannot render them
+    .replace(
+      /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{231A}-\u{231B}\u{23E9}-\u{23F3}\u{23F8}-\u{23FA}\u{25AA}-\u{25AB}\u{25B6}\u{25C0}\u{25FB}-\u{25FE}\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]/gu,
+      '',
+    );
 
-  const strippedText = stripInvisibleChars(text);
-
-  // First, handle specific problematic characters that cause font issues
   const replacements: { [key: string]: string } = {
-    '\u2018': "'", // left single quotation mark
-    '\u2019': "'", // right single quotation mark
-    '\u201C': '"', // left double quotation mark
-    '\u201D': '"', // right double quotation mark
-    '\u2013': '-', // en dash
-    '\u2014': '-', // em dash
-    '\u2026': '...', // horizontal ellipsis
-    '\u2265': '>=', // greater than or equal to (≥)
-    '\u2264': '<=', // less than or equal to (≤)
-    '\u00B0': 'deg', // degree symbol (°)
-    '\u00A9': '(c)', // copyright symbol (©)
-    '\u00AE': '(R)', // registered trademark (®)
-    '\u2122': 'TM', // trademark symbol (™)
-    '\u00A0': ' ', // non-breaking space
-    '\u2022': '•', // bullet point (ensure consistent bullet)
-    '\u00B1': '+/-', // plus-minus symbol (±)
-    '\u00D7': 'x', // multiplication sign (×)
-    '\u00F7': '/', // division sign (÷)
-    '\u2192': '->', // right arrow (→)
-    '\u2190': '<-', // left arrow (←)
-    '\u2194': '<->', // left-right arrow (↔)
+    '\u2018': "'", '\u2019': "'", '\u201C': '"', '\u201D': '"',
+    '\u2013': '-', '\u2014': '-', '\u2026': '...',
+    '\u2265': '>=', '\u2264': '<=', '\u00B0': 'deg',
+    '\u00A9': '(c)', '\u00AE': '(R)', '\u2122': 'TM',
+    '\u00A0': ' ', '\u2022': '•', '\u00B1': '+/-',
+    '\u00D7': 'x', '\u00F7': '/', '\u2192': '->',
+    '\u2190': '<-', '\u2194': '<->',
   };
 
-  // Replace known problematic characters
   let cleanedText = strippedText;
   for (const [unicode, replacement] of Object.entries(replacements)) {
     cleanedText = cleanedText.replace(new RegExp(unicode, 'g'), replacement);
   }
 
-  // For any remaining non-ASCII characters, try to preserve them first
-  // Only replace if they cause font rendering issues
-  return cleanedText.replace(/[^\x00-\x7F]/g, function (char) {
-    // Common accented characters that should work fine in most PDF fonts
+  return cleanedText.replace(/[^\x00-\x7F]/g, (char) => {
     const safeChars = /[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞß]/;
-    
     if (safeChars.test(char)) {
-      return char; // Keep safe accented characters
+      return char;
     }
-    
-    // For other characters, provide basic ASCII fallbacks
     const fallbacks: { [key: string]: string } = {
-      'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a', 'æ': 'ae',
-      'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
-      'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
-      'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o', 'ø': 'o',
-      'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
-      'ñ': 'n', 'ç': 'c', 'ß': 'ss', 'ÿ': 'y',
-      'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A', 'Æ': 'AE',
-      'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
-      'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
-      'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O', 'Ø': 'O',
-      'Ù': 'U', 'Ú': 'U', 'Û': 'U', 'Ü': 'U',
-      'Ñ': 'N', 'Ç': 'C', 'Ý': 'Y'
+      à: 'a', á: 'a', â: 'a', ã: 'a', ä: 'a', å: 'a', æ: 'ae',
+      è: 'e', é: 'e', ê: 'e', ë: 'e', ì: 'i', í: 'i', î: 'i', ï: 'i',
+      ò: 'o', ó: 'o', ô: 'o', õ: 'o', ö: 'o', ø: 'o',
+      ù: 'u', ú: 'u', û: 'u', ü: 'u', ñ: 'n', ç: 'c', ß: 'ss', ÿ: 'y',
+      À: 'A', Á: 'A', Â: 'A', Ã: 'A', Ä: 'A', Å: 'A', Æ: 'AE',
+      È: 'E', É: 'E', Ê: 'E', Ë: 'E', Ì: 'I', Í: 'I', Î: 'I', Ï: 'I',
+      Ò: 'O', Ó: 'O', Ô: 'O', Õ: 'O', Ö: 'O', Ø: 'O',
+      Ù: 'U', Ú: 'U', Û: 'U', Ü: 'U', Ñ: 'N', Ç: 'C', Ý: 'Y',
     };
-    
-    // Preserve unknown characters instead of coercing to "?".
-    // If the active PDF font can't render a glyph, viewers may show a tofu box,
-    // but that's still preferable to inserting random "?" where the editor shows nothing.
     return fallbacks[char] ?? char;
   });
 };

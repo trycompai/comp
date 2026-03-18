@@ -1,3 +1,15 @@
+# [3.9.0](https://github.com/trycompai/comp/compare/v3.8.0...v3.9.0) (2026-03-18)
+
+
+### Bug Fixes
+
+* strip emoji characters in policy PDF export and update trigger.dev to 4.4.3 ([65ccbe9](https://github.com/trycompai/comp/commit/65ccbe9c4a7460237b0225504764fa79aa718136))
+
+
+### Features
+
+* **trust-portal:** enhance domain verification process with Vercel API integration ([06a9336](https://github.com/trycompai/comp/commit/06a9336db276f294760881e4a677e622da559d7e))
+
 # [3.8.0](https://github.com/trycompai/comp/compare/v3.7.2...v3.8.0) (2026-03-17)
 
 

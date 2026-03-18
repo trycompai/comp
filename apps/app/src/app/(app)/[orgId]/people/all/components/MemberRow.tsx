@@ -1,6 +1,5 @@
 'use client';
 
-import { Laptop } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -33,7 +32,7 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Checkmark, Edit, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
+import { Checkmark, Edit, Laptop, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 
 import { toast } from 'sonner';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
@@ -232,6 +231,26 @@ export function MemberRow({
           </div>
         </TableCell>
 
+        {/* AGENT */}
+        <TableCell>
+          {isPlatformAdmin || isDeactivated ? (
+            <Text size="sm" variant="muted">
+              —
+            </Text>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-block h-2 w-2 rounded-full ${
+                  hasDeviceAgentDevice ? 'bg-green-500' : 'bg-red-400'
+                }`}
+              />
+              <span className={`text-sm ${hasDeviceAgentDevice ? 'text-foreground' : 'text-muted-foreground'}`}>
+                {hasDeviceAgentDevice ? 'Installed' : 'Not Installed'}
+              </span>
+            </div>
+          )}
+        </TableCell>
+
         {/* TASKS */}
         <TableCell>
           {taskCompletion ? (
@@ -284,7 +303,7 @@ export function MemberRow({
                         setIsRemoveDeviceAlertOpen(true);
                       }}
                     >
-                      <Laptop className="mr-2 h-4 w-4" />
+                      <Laptop size={16} className="mr-2" />
                       <span>Remove Device</span>
                     </DropdownMenuItem>
                   )}
