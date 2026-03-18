@@ -2,6 +2,7 @@ import Firecrawl from '@mendable/firecrawl-js';
 import { logger } from '@trigger.dev/sdk';
 import { vendorRiskAssessmentAgentSchema } from './agent-schema';
 import type { VendorRiskAssessmentDataV1 } from './agent-types';
+import { extractVendorDomain, validateVendorUrl } from './url-validation';
 
 function normalizeUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -58,19 +59,30 @@ export async function firecrawlAgentVendorRiskAssessment(params: {
 
   const firecrawlClient = new Firecrawl({ apiKey });
 
+  // Extract vendor domain for URL validation
+  const vendorDomain = extractVendorDomain(vendorWebsite);
+  if (!vendorDomain) {
+    logger.warn('Could not extract vendor domain for URL validation', {
+      vendorWebsite,
+    });
+    return null;
+  }
+
   const prompt = `Complete cyber security research on the vendor "${vendorName}" with website ${vendorWebsite}.
+
+CRITICAL: Only return URLs that belong to the domain "${vendorDomain}" or its subdomains (e.g., trust.${vendorDomain}, security.${vendorDomain}). Do NOT return URLs from any other domain. If you cannot find a page on ${vendorDomain}, return an empty string for that field rather than a URL from another website.
 
 Extract the following information:
 1. **Certifications**: Find any security certifications they have (SOC 2 Type I, SOC 2 Type II, ISO 27001 etc). For each certification found, determine:
    - The type of certification
    - Whether it's verified/current, expired, or not certified
    - Any issue or expiry dates mentioned
-   - Link to the compliance/trust page or report if available
+   - Link to the compliance/trust page or report if available (must be on ${vendorDomain})
 
-2. **Legal & Security Documents**: Find the direct URLs to:
+2. **Legal & Security Documents**: Find the direct URLs on ${vendorDomain} to:
    - Privacy Policy page (usually at /privacy, /privacy-policy, or linked in the footer)
    - Terms of Service page (usually at /terms, /tos, /terms-of-service, or linked in the footer)
-   - Trust Center or Security page (typically could be at /trust, /security or trust.website.com or security.website.com)
+   - Trust Center or Security page (typically could be at /trust, /security or trust.${vendorDomain} or security.${vendorDomain})
 
 3. **Recent News**: Find recent news articles (last 12 months) about the company, especially:
    - Security incidents or data breaches
@@ -81,13 +93,26 @@ Extract the following information:
 
 4. **Summary**: Provide an overall assessment of the vendor's security posture.
 
-Focus on their official website (especially trust/security/compliance pages), press releases, and reputable news sources.`;
+Focus on their official website ${vendorWebsite} (especially trust/security/compliance pages), press releases, and reputable news sources.`;
 
-  // Using SDK (no maxCredits override, no explicit polling here)
-  // Important: avoid crawling huge sites with a wildcard (e.g. workspace.google.com).
+  // Provide seed URLs covering common legal/security paths so the agent
+  // stays on the vendor's domain instead of wandering to unrelated sites.
+  const seedUrls = [
+    origin,
+    `${origin}/privacy`,
+    `${origin}/privacy-policy`,
+    `${origin}/terms`,
+    `${origin}/terms-of-service`,
+    `${origin}/security`,
+    `${origin}/trust`,
+    `${origin}/legal`,
+    `${origin}/compliance`,
+  ];
+
   const agentResponse = await firecrawlClient.agent({
     prompt,
-    urls: [origin],
+    urls: seedUrls,
+    strictConstrainToURLs: false, // allow following links from seed URLs, but seeds anchor it to the right domain
     schema: {
       type: 'object',
       properties: {
@@ -173,7 +198,10 @@ Focus on their official website (especially trust/security/compliance pages), pr
     });
 
   const normalizedLinks = linkPairs
-    .map((l) => ({ ...l, url: normalizeUrl(l.url) }))
+    .map((l) => ({
+      ...l,
+      url: validateVendorUrl(l.url, vendorDomain, l.label),
+    }))
     .filter((l): l is { label: string; url: string } => Boolean(l.url));
 
   const certifications =
@@ -182,7 +210,7 @@ Focus on their official website (especially trust/security/compliance pages), pr
       status: c.status ?? 'unknown',
       issuedAt: normalizeIso(c.issued_at ?? null),
       expiresAt: normalizeIso(c.expires_at ?? null),
-      url: normalizeUrl(c.url ?? null),
+      url: validateVendorUrl(c.url ?? null, vendorDomain, `cert:${c.type}`),
     })) ?? [];
 
   const news =
