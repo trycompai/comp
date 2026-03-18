@@ -175,9 +175,9 @@ export const EmployeeTasksList = ({
 
   const allCompleted = completedCount === accordionItems.length;
 
-  if (allCompleted) {
-    return (
-      <div className="space-y-4">
+  return (
+    <div className="space-y-4">
+      {allCompleted ? (
         <Card>
           <CardContent>
             <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -191,32 +191,30 @@ export const EmployeeTasksList = ({
             </div>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
+      ) : (
+        <>
+          {/* Progress indicator */}
+          <div>
+            <div className="text-muted-foreground text-sm">
+              {completedCount} of {accordionItems.length} tasks completed
+            </div>
+            <div className="w-full bg-muted rounded-full h-2.5">
+              <div
+                className="bg-primary h-full rounded-full"
+                style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
+              ></div>
+            </div>
+          </div>
 
-  return (
-    <div className="space-y-4">
-      {/* Progress indicator */}
-      <div>
-        <div className="text-muted-foreground text-sm">
-          {completedCount} of {accordionItems.length} tasks completed
-        </div>
-        <div className="w-full bg-muted rounded-full h-2.5">
-          <div
-            className="bg-primary h-full rounded-full"
-            style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
-          ></div>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <Accordion>
-          {accordionItems.map((item, idx) => (
-            <div key={item.title ?? idx}>{item.content}</div>
-          ))}
-        </Accordion>
-      </div>
+          <div className="space-y-3">
+            <Accordion>
+              {accordionItems.map((item, idx) => (
+                <div key={item.title ?? idx}>{item.content}</div>
+              ))}
+            </Accordion>
+          </div>
+        </>
+      )}
 
       {/* Company forms */}
       {visiblePortalForms.length > 0 && (
