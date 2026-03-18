@@ -1,4 +1,5 @@
 import { logger } from '@trigger.dev/sdk';
+import { getDomain } from 'tldts';
 
 /**
  * Checks whether a URL belongs to the given vendor domain (including subdomains).
@@ -20,7 +21,9 @@ export function isUrlFromVendorDomain(
 }
 
 /**
- * Extracts the vendor domain from a website URL, stripping www. prefix.
+ * Extracts the root registrable domain from a vendor website URL.
+ * Strips subdomains (including www.) to return the base domain.
+ * For example, "https://app.slack.com" → "slack.com".
  * Returns null if the URL is invalid.
  */
 export function extractVendorDomain(
@@ -30,7 +33,8 @@ export function extractVendorDomain(
     const urlObj = new URL(
       /^https?:\/\//i.test(website) ? website : `https://${website}`,
     );
-    return urlObj.hostname.toLowerCase().replace(/^www\./, '');
+    const domain = getDomain(urlObj.hostname);
+    return domain?.toLowerCase() ?? null;
   } catch {
     return null;
   }

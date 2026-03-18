@@ -81,8 +81,19 @@ describe('extractVendorDomain', () => {
     expect(extractVendorDomain('')).toBe(null);
   });
 
-  it('preserves subdomains other than www', () => {
-    expect(extractVendorDomain('https://trust.wix.com')).toBe('trust.wix.com');
+  it('extracts root domain from subdomain websites', () => {
+    expect(extractVendorDomain('https://app.slack.com')).toBe('slack.com');
+    expect(extractVendorDomain('https://trust.wix.com')).toBe('wix.com');
+    expect(extractVendorDomain('https://dashboard.stripe.com')).toBe('stripe.com');
+  });
+
+  it('extracts root domain from multi-level subdomains', () => {
+    expect(extractVendorDomain('https://app.us.slack.com')).toBe('slack.com');
+  });
+
+  it('handles two-part TLDs correctly', () => {
+    expect(extractVendorDomain('https://app.example.co.uk')).toBe('example.co.uk');
+    expect(extractVendorDomain('https://www.example.com.au')).toBe('example.com.au');
   });
 });
 
@@ -115,5 +126,21 @@ describe('validateVendorUrl', () => {
     expect(
       validateVendorUrl('https://trust.wix.com', 'wix.com', 'trust'),
     ).toBe('https://trust.wix.com/');
+  });
+
+  it('accepts parent domain URLs when vendor website is a subdomain', () => {
+    // Vendor website is app.slack.com → domain extracts to slack.com
+    // Privacy policy at slack.com/privacy should be accepted
+    expect(
+      validateVendorUrl('https://slack.com/privacy', 'slack.com', 'privacy'),
+    ).toBe('https://slack.com/privacy');
+  });
+
+  it('accepts sibling subdomain URLs', () => {
+    // Vendor website is app.slack.com → domain extracts to slack.com
+    // Trust center at trust.slack.com should be accepted
+    expect(
+      validateVendorUrl('https://trust.slack.com', 'slack.com', 'trust'),
+    ).toBe('https://trust.slack.com/');
   });
 });
