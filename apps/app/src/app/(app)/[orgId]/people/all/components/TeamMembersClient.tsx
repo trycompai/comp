@@ -513,7 +513,7 @@ export function TeamMembersClient({
               <TableHead>
                 <div className="w-[160px]">ROLE</div>
               </TableHead>
-              <TableHead>AGENT</TableHead>
+              <TableHead>DEVICE</TableHead>
               <TableHead>TASKS</TableHead>
               <TableHead>ACTIONS</TableHead>
             </TableRow>
