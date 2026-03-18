@@ -993,8 +993,11 @@ export class TrustPortalService {
       });
     }
 
+    const requiresVercelTxt = trustRecord?.isVercelDomain === true;
     const isVerified =
-      isCnameVerified && isTxtVerified && isVercelTxtVerified;
+      isCnameVerified &&
+      isTxtVerified &&
+      (!requiresVercelTxt || isVercelTxtVerified);
 
     if (!isVerified) {
       return {
@@ -1016,6 +1019,24 @@ export class TrustPortalService {
         status: 'published',
       },
     });
+
+    // Trigger Vercel to re-verify the domain so it provisions SSL and starts serving.
+    // Without this, Vercel doesn't know DNS has been configured and the domain stays inactive
+    // (previously required CS to manually click "Refresh" in Vercel dashboard).
+    if (process.env.TRUST_PORTAL_PROJECT_ID && process.env.VERCEL_TEAM_ID) {
+      try {
+        await this.vercelApi.post(
+          `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${domain}/verify`,
+          {},
+          { params: { teamId: process.env.VERCEL_TEAM_ID } },
+        );
+      } catch (error) {
+        // Non-fatal — domain is verified on our side, Vercel will eventually pick it up
+        this.logger.warn(
+          `Failed to trigger Vercel domain verification for ${domain}: ${error}`,
+        );
+      }
+    }
 
     return {
       success: true,
