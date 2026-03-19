@@ -17,6 +17,11 @@ export const RESOURCE_LABELS: Record<string, string> = {
   questionnaire: 'Questionnaires',
   integration: 'Integrations',
   apiKey: 'API Keys',
+  app: 'App Access',
+  trust: 'Trust Center',
+  pentest: 'Penetration Tests',
+  training: 'Training',
+  portal: 'Employee Portal',
 };
 
 export const ACTION_LABELS: Record<string, string> = {
