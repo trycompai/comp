@@ -61,15 +61,13 @@ export class ApiKeyService {
         'API keys must have at least one scope. Use the "Full Access" preset to grant all permissions.',
       );
     }
-    const validatedScopes = scopes;
-    if (validatedScopes.length > 0) {
-      const availableScopes = this.getAvailableScopes();
-      const invalid = validatedScopes.filter((s) => !availableScopes.includes(s));
-      if (invalid.length > 0) {
-        throw new BadRequestException(
-          `Invalid scopes: ${invalid.join(', ')}`,
-        );
-      }
+    // Validate all scopes against the allowlist
+    const availableScopes = this.getAvailableScopes();
+    const invalid = scopes.filter((s) => !availableScopes.includes(s));
+    if (invalid.length > 0) {
+      throw new BadRequestException(
+        `Invalid scopes: ${invalid.join(', ')}`,
+      );
     }
 
     const apiKey = this.generateApiKey();
@@ -108,7 +106,7 @@ export class ApiKeyService {
         salt,
         expiresAt: expirationDate,
         organizationId,
-        scopes: validatedScopes,
+        scopes,
       },
       select: {
         id: true,
@@ -284,7 +282,6 @@ export class ApiKeyService {
   private static readonly INTERNAL_ONLY_RESOURCES = [
     'invitation',
     'team',
-    'ac', // better-auth internal access control resource
   ];
 
   /**

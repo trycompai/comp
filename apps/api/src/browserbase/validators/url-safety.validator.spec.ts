@@ -39,4 +39,24 @@ describe('isSafeUrl', () => {
     expect(isSafeUrl('not-a-url')).toBe(false);
     expect(isSafeUrl('')).toBe(false);
   });
+
+  it('should block IPv4-mapped IPv6 addresses', () => {
+    expect(isSafeUrl('http://[::ffff:169.254.169.254]/')).toBe(false);
+    expect(isSafeUrl('http://[::ffff:10.0.0.1]/')).toBe(false);
+    expect(isSafeUrl('http://[::ffff:127.0.0.1]/')).toBe(false);
+    expect(isSafeUrl('http://[::ffff:192.168.1.1]/')).toBe(false);
+  });
+
+  it('should block IPv4-mapped IPv6 in hex form', () => {
+    // ::ffff:a9fe:a9fe = 169.254.169.254
+    expect(isSafeUrl('http://[::ffff:a9fe:a9fe]/')).toBe(false);
+    // ::ffff:a00:1 = 10.0.0.1
+    expect(isSafeUrl('http://[::ffff:a00:1]/')).toBe(false);
+    // ::ffff:7f00:1 = 127.0.0.1
+    expect(isSafeUrl('http://[::ffff:7f00:1]/')).toBe(false);
+  });
+
+  it('should allow valid IPv6 public addresses', () => {
+    expect(isSafeUrl('http://[2607:f8b0:4004:800::200e]/')).toBe(true);
+  });
 });

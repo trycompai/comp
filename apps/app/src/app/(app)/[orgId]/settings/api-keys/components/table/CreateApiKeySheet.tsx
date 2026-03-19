@@ -142,7 +142,7 @@ export function CreateApiKeySheet({ open, onOpenChange }: CreateApiKeySheetProps
 
       <Button
         onClick={handleSubmit}
-        disabled={isCreating || !name.trim() || (preset !== 'full' && selectedScopes.length === 0) || !canCreateApiKey}
+        disabled={isCreating || !name.trim() || selectedScopes.length === 0 || !canCreateApiKey}
         width="full"
       >
         {isCreating ? 'Creating...' : 'Create'}
