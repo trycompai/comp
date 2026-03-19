@@ -46,4 +46,30 @@ describe('validateFileContent', () => {
     const csvBuffer = Buffer.from('name,email\njohn,john@example.com');
     expect(() => validateFileContent(csvBuffer, 'text/csv', 'data.csv')).not.toThrow();
   });
+
+  it('should accept a valid WebP file', () => {
+    // WebP: RIFF (4 bytes) + size (4 bytes) + WEBP (4 bytes)
+    const webpBuffer = Buffer.alloc(16);
+    webpBuffer.write('RIFF', 0);
+    webpBuffer.writeUInt32LE(8, 4);
+    webpBuffer.write('WEBP', 8);
+    expect(() => validateFileContent(webpBuffer, 'image/webp', 'photo.webp')).not.toThrow();
+  });
+
+  it('should reject a WAV file disguised as WebP', () => {
+    // WAV also starts with RIFF but has WAVE at offset 8, not WEBP
+    const wavBuffer = Buffer.alloc(16);
+    wavBuffer.write('RIFF', 0);
+    wavBuffer.writeUInt32LE(8, 4);
+    wavBuffer.write('WAVE', 8);
+    expect(() => validateFileContent(wavBuffer, 'image/webp', 'fake.webp')).toThrow(BadRequestException);
+  });
+
+  it('should reject a RIFF file with script content disguised as WebP', () => {
+    const malicious = Buffer.alloc(64);
+    malicious.write('RIFF', 0);
+    malicious.writeUInt32LE(56, 4);
+    malicious.write('AVI ', 8); // Not WEBP
+    expect(() => validateFileContent(malicious, 'image/webp', 'evil.webp')).toThrow(BadRequestException);
+  });
 });

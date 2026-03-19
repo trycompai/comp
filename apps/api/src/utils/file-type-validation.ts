@@ -4,13 +4,23 @@ const MAGIC_BYTES: Record<string, Buffer[]> = {
   'image/png': [Buffer.from([0x89, 0x50, 0x4e, 0x47])],
   'image/jpeg': [Buffer.from([0xff, 0xd8, 0xff])],
   'image/gif': [Buffer.from('GIF87a'), Buffer.from('GIF89a')],
-  'image/webp': [Buffer.from('RIFF')],
   'application/pdf': [Buffer.from('%PDF')],
   'application/zip': [Buffer.from([0x50, 0x4b, 0x03, 0x04])],
 };
 
+/**
+ * RIFF-based formats need extra validation — RIFF is shared by WAV, AVI, WebP, etc.
+ * WebP files are: RIFF (4 bytes) + file size (4 bytes) + WEBP (4 bytes at offset 8).
+ */
+function isValidWebP(fileBuffer: Buffer): boolean {
+  if (fileBuffer.length < 12) return false;
+  const riff = fileBuffer.subarray(0, 4).toString('ascii');
+  const webp = fileBuffer.subarray(8, 12).toString('ascii');
+  return riff === 'RIFF' && webp === 'WEBP';
+}
+
 /** MIME types that are verified binary — skip text pattern scanning for these. */
-const BINARY_MIME_TYPES = new Set(Object.keys(MAGIC_BYTES));
+const BINARY_MIME_TYPES = new Set([...Object.keys(MAGIC_BYTES), 'image/webp']);
 
 /**
  * Patterns that indicate potentially dangerous HTML/script content.
@@ -34,7 +44,17 @@ export function validateFileContent(
 ): void {
   const lowerMime = declaredMimeType.toLowerCase();
 
-  // Check magic bytes for known binary types
+  // WebP needs special handling — RIFF prefix is shared with WAV, AVI, etc.
+  if (lowerMime === 'image/webp') {
+    if (!isValidWebP(fileBuffer)) {
+      throw new BadRequestException(
+        'The uploaded file is invalid or corrupted. Please try again with a valid file.',
+      );
+    }
+    return;
+  }
+
+  // Check magic bytes for other known binary types
   const expectedSignatures = MAGIC_BYTES[lowerMime];
   if (expectedSignatures) {
     const matchesSignature = expectedSignatures.some((sig) =>
@@ -46,7 +66,6 @@ export function validateFileContent(
       );
     }
     // Binary file passed magic byte check — skip text pattern scanning
-    // to avoid false positives from binary data matching text patterns
     return;
   }
 
