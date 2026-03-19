@@ -71,11 +71,11 @@ function ScopeBadge({ apiKey }: { apiKey: ApiKey }) {
           </Badge>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-72">
+      <PopoverContent align="start">
         <PopoverHeader>
           <PopoverTitle>Permissions</PopoverTitle>
         </PopoverHeader>
-        <div className="max-h-[300px] space-y-2 overflow-y-auto pt-2">
+        <div className="max-h-[300px] space-y-2 overflow-y-auto">
           {groups.map((group) => (
             <div key={group.resource}>
               <Text size="xs" weight="medium">
