@@ -418,26 +418,17 @@ export class SyncController {
         });
 
         if (existingMember) {
-          // If member was deactivated but is now active in GW, reactivate them
-          if (existingMember.deactivated) {
-            await db.member.update({
-              where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
-            });
-            results.reactivated++;
-            results.details.push({
-              email: normalizedEmail,
-              status: 'reactivated',
-              reason: 'User is active again in Google Workspace',
-            });
-          } else {
-            results.skipped++;
-            results.details.push({
-              email: normalizedEmail,
-              status: 'skipped',
-              reason: 'Already a member',
-            });
-          }
+          // Never reactivate deactivated members — whether deactivated manually
+          // by an admin or by a previous sync, they should stay deactivated.
+          // Admins can reactivate manually if needed.
+          results.skipped++;
+          results.details.push({
+            email: normalizedEmail,
+            status: 'skipped',
+            reason: existingMember.deactivated
+              ? 'Member is deactivated'
+              : 'Already a member',
+          });
           continue;
         }
 
