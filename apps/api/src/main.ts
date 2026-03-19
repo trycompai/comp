@@ -10,6 +10,7 @@ import path from 'path';
 import { AppModule } from './app.module';
 import { getTrustedOrigins } from './auth/auth.server';
 import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
+import { originCheckMiddleware } from './auth/origin-check.middleware';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
 let app: INestApplication | null = null;
@@ -44,7 +45,12 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // STEP 3: Rate-limit better-auth admin routes (impersonation, ban, set-role, etc.)
+  // STEP 3a: Origin header validation for CSRF protection
+  // Rejects state-changing requests from untrusted origins.
+  // Defense-in-depth: CORS blocks fetch-based CSRF, this blocks form-based CSRF.
+  app.use(originCheckMiddleware);
+
+  // STEP 3b: Rate-limit better-auth admin routes (impersonation, ban, set-role, etc.)
   // These bypass NestJS controllers so the global ThrottlerGuard doesn't apply.
   app.use(adminAuthRateLimiter);
 
