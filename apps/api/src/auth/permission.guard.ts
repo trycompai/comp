@@ -62,9 +62,14 @@ export class PermissionGuard implements CanActivate {
     if (request.isApiKey) {
       const scopes = request.apiKeyScopes;
 
-      // Legacy keys (empty scopes) = full access for backward compatibility
+      // API keys with no scopes have no permissions — deny access
       if (!scopes || scopes.length === 0) {
-        return true;
+        this.logger.warn(
+          `[PermissionGuard] API key with empty scopes denied access to ${request.method} ${request.url}. Migrate this key to use scoped permissions.`,
+        );
+        throw new ForbiddenException(
+          'This API key has no permission scopes configured. Please regenerate the key with the required scopes.',
+        );
       }
 
       // Scoped keys: enforce permissions
