@@ -1,3 +1,18 @@
+# [3.10.0](https://github.com/trycompai/comp/compare/v3.9.0...v3.10.0) (2026-03-19)
+
+
+### Bug Fixes
+
+* **integrations:** filter GWS employee sync by organizational units ([#2336](https://github.com/trycompai/comp/issues/2336)) ([e3a9867](https://github.com/trycompai/comp/commit/e3a98674ea4e4f2d2c470d873c3f11ebb3067d02))
+* **portal:** show Company Forms section even when all tasks are completed ([#2334](https://github.com/trycompai/comp/issues/2334)) ([5661cd6](https://github.com/trycompai/comp/commit/5661cd650247a4cc13192c1d1dd3a8aa28141cba))
+* **vendors:** extract root domain from subdomain vendor websites ([#2337](https://github.com/trycompai/comp/issues/2337)) ([8c6865b](https://github.com/trycompai/comp/commit/8c6865bd07a11d986b03ab111764a9a73e793ae1))
+* **vendors:** validate vendor research URLs belong to correct domain ([#2335](https://github.com/trycompai/comp/issues/2335)) ([37a9813](https://github.com/trycompai/comp/commit/37a9813b5e52d88c3c623aab40028fbb6389a4ea))
+
+
+### Features
+
+* **people:** add Agent Installed column and hide deactivated users by default ([#2331](https://github.com/trycompai/comp/issues/2331)) ([67041ab](https://github.com/trycompai/comp/commit/67041ab42e5ce916c5cab01d6dae27f847df0abc))
+
 # [3.9.0](https://github.com/trycompai/comp/compare/v3.8.0...v3.9.0) (2026-03-18)
 
 

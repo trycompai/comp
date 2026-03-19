@@ -4,6 +4,7 @@ import {
   syncExcludedEmailsVariable,
   syncIncludedEmailsVariable,
   syncUserFilterModeVariable,
+  targetOrgUnitsVariable,
 } from './variables';
 
 export const googleWorkspaceManifest: IntegrationManifest = {
@@ -52,7 +53,7 @@ Note: The user authorizing must be a Google Workspace admin.`,
 
   capabilities: ['checks', 'sync'],
 
-  variables: [syncUserFilterModeVariable, syncExcludedEmailsVariable, syncIncludedEmailsVariable],
+  variables: [targetOrgUnitsVariable, syncUserFilterModeVariable, syncExcludedEmailsVariable, syncIncludedEmailsVariable],
 
   checks: [twoFactorAuthCheck, employeeAccessCheck],
 };
