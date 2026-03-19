@@ -72,7 +72,7 @@ describe('PermissionGuard', () => {
       expect(result).toBe(true);
     });
 
-    it('should deny access for API keys with empty scopes', async () => {
+    it('should allow access for legacy API keys with empty scopes (backward compat)', async () => {
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
         { resource: 'control', actions: ['delete'] },
       ]);
@@ -84,12 +84,11 @@ describe('PermissionGuard', () => {
         url: '/v1/controls',
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
+      const result = await guard.canActivate(context);
+      expect(result).toBe(true);
     });
 
-    it('should deny access for API keys with undefined scopes', async () => {
+    it('should allow access for legacy API keys with undefined scopes (backward compat)', async () => {
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
         { resource: 'control', actions: ['read'] },
       ]);
@@ -101,9 +100,8 @@ describe('PermissionGuard', () => {
         url: '/v1/controls',
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
+      const result = await guard.canActivate(context);
+      expect(result).toBe(true);
     });
 
     it('should allow access for API keys with matching scopes', async () => {
