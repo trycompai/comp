@@ -150,14 +150,6 @@ export const auth = betterAuth({
     database: {
       generateId: false,
     },
-    // Prevent cookie collisions between environments.
-    // Production keeps the default 'better-auth' prefix (no change).
-    ...(cookieDomain === '.staging.trycomp.ai' && {
-      cookiePrefix: 'staging',
-    }),
-    ...(!cookieDomain && {
-      cookiePrefix: 'local',
-    }),
     ...(cookieDomain && {
       crossSubDomainCookies: {
         enabled: true,
