@@ -70,7 +70,7 @@ export class PermissionGuard implements CanActivate {
             `[PermissionGuard] Legacy API key with empty scopes BLOCKED after deprecation date on ${request.method} ${request.url}.`,
           );
           throw new ForbiddenException(
-            'Legacy API keys with no scopes are no longer supported as of April 20, 2026. Please regenerate your API key with explicit scopes.',
+            'This API key is no longer supported. Please regenerate your API key with explicit scopes.',
           );
         }
         this.logger.warn(

@@ -49,7 +49,7 @@ export class IsSafeUrlConstraint implements ValidatorConstraintInterface {
   }
 
   defaultMessage(): string {
-    return 'URL must be a public HTTP(S) URL. Private IPs, localhost, and metadata endpoints are not allowed.';
+    return 'The provided URL is not allowed.';
   }
 }
 

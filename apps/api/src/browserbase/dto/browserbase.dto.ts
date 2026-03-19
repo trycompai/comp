@@ -19,7 +19,7 @@ export class NavigateToUrlDto {
 
   @ApiProperty({ description: 'URL to navigate to' })
   @IsUrl({}, { message: 'url must be a valid URL' })
-  @IsSafeUrl({ message: 'URL must be a public HTTP(S) URL. Private IPs and metadata endpoints are blocked.' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
   @IsString()
   @IsNotEmpty()
   url: string;
@@ -33,7 +33,7 @@ export class CheckAuthDto {
 
   @ApiProperty({ description: 'URL to check auth status on' })
   @IsUrl({}, { message: 'url must be a valid URL' })
-  @IsSafeUrl({ message: 'URL must be a public HTTP(S) URL. Private IPs and metadata endpoints are blocked.' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
   @IsString()
   @IsNotEmpty()
   url: string;
@@ -66,7 +66,7 @@ export class CreateBrowserAutomationDto {
 
   @ApiProperty({ description: 'Target URL to start from' })
   @IsUrl({}, { message: 'url must be a valid URL' })
-  @IsSafeUrl({ message: 'URL must be a public HTTP(S) URL. Private IPs and metadata endpoints are blocked.' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
   @IsString()
   @IsNotEmpty()
   targetUrl: string;
@@ -95,7 +95,7 @@ export class UpdateBrowserAutomationDto {
 
   @ApiPropertyOptional({ description: 'Target URL to start from' })
   @IsUrl({}, { message: 'url must be a valid URL' })
-  @IsSafeUrl({ message: 'URL must be a public HTTP(S) URL. Private IPs and metadata endpoints are blocked.' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
   @IsString()
   @IsOptional()
   targetUrl?: string;
