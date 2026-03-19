@@ -150,6 +150,10 @@ export const auth = betterAuth({
     database: {
       generateId: false,
     },
+    // Staging-only: prevent cookie collision with production (.trycomp.ai parent domain)
+    ...(cookieDomain === '.staging.trycomp.ai' && {
+      cookiePrefix: 'staging',
+    }),
     ...(cookieDomain && {
       crossSubDomainCookies: {
         enabled: true,
