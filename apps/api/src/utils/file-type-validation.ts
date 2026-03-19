@@ -12,15 +12,16 @@ const MAGIC_BYTES: Record<string, Buffer[]> = {
  * RIFF-based formats need extra validation — RIFF is shared by WAV, AVI, WebP, etc.
  * WebP files are: RIFF (4 bytes) + file size (4 bytes) + WEBP (4 bytes at offset 8).
  */
+const RIFF_HEADER = Buffer.from([0x52, 0x49, 0x46, 0x46]); // RIFF
+const WEBP_MARKER = Buffer.from([0x57, 0x45, 0x42, 0x50]); // WEBP
+
 function isValidWebP(fileBuffer: Buffer): boolean {
   if (fileBuffer.length < 12) return false;
-  const riff = fileBuffer.subarray(0, 4).toString('ascii');
-  const webp = fileBuffer.subarray(8, 12).toString('ascii');
-  return riff === 'RIFF' && webp === 'WEBP';
+  return (
+    fileBuffer.subarray(0, 4).equals(RIFF_HEADER) &&
+    fileBuffer.subarray(8, 12).equals(WEBP_MARKER)
+  );
 }
-
-/** MIME types that are verified binary — skip text pattern scanning for these. */
-const BINARY_MIME_TYPES = new Set([...Object.keys(MAGIC_BYTES), 'image/webp']);
 
 /**
  * Patterns that indicate potentially dangerous HTML/script content.
