@@ -284,6 +284,7 @@ export class ApiKeyService {
   private static readonly INTERNAL_ONLY_RESOURCES = [
     'invitation',
     'team',
+    'ac', // better-auth internal access control resource
   ];
 
   /**
