@@ -27,13 +27,13 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    const secureCookieName = '__Secure-better-auth.session_token';
-    const fallbackCookieName = 'better-auth.session_token';
-
-    let sessionToken = request.cookies.get(secureCookieName)?.value;
-    if (!sessionToken) {
-      sessionToken = request.cookies.get(fallbackCookieName)?.value;
-    }
+    // Check for session cookies across all environment prefixes
+    const sessionToken =
+      request.cookies.get('__Secure-better-auth.session_token')?.value ||
+      request.cookies.get('better-auth.session_token')?.value ||
+      request.cookies.get('__Secure-staging.session_token')?.value ||
+      request.cookies.get('staging.session_token')?.value ||
+      request.cookies.get('local.session_token')?.value;
     const hasToken = Boolean(sessionToken);
     const nextUrl = request.nextUrl;
     const requestHeaders = new Headers(request.headers);
