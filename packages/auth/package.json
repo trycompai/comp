@@ -23,7 +23,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "better-auth": "^1.4.5"
+    "better-auth": "^1.4.22"
   },
   "peerDependencies": {
     "@prisma/client": ">=5.0.0"
