@@ -123,6 +123,7 @@
         "react-use-draggable-scroll": "^0.4.7",
         "react-wrap-balancer": "^1.1.1",
         "rehype-raw": "^7.0.0",
+        "rehype-sanitize": "^6.0.0",
         "remark-gfm": "^4.0.1",
         "remark-parse": "^11.0.0",
         "resend": "^4.4.1",

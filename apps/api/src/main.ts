@@ -8,6 +8,7 @@ import * as express from 'express';
 import helmet from 'helmet';
 import path from 'path';
 import { AppModule } from './app.module';
+import { getTrustedOrigins } from './auth/auth.server';
 import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
@@ -20,9 +21,9 @@ async function bootstrap(): Promise<void> {
     bodyParser: false,
   });
 
-  // Enable CORS for all origins - security is handled by authentication
+  // Enable CORS with explicit origin allowlist
   app.enableCors({
-    origin: true,
+    origin: getTrustedOrigins(),
     credentials: true,
     exposedHeaders: ['Content-Disposition'],
   });

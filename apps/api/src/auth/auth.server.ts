@@ -36,7 +36,7 @@ function getCookieDomain(): string | undefined {
 /**
  * Get trusted origins for CORS/auth
  */
-function getTrustedOrigins(): string[] {
+export function getTrustedOrigins(): string[] {
   const origins = process.env.AUTH_TRUSTED_ORIGINS;
   if (origins) {
     return origins.split(',').map((o) => o.trim());
