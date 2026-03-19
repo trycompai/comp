@@ -16,6 +16,7 @@ import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from './dto/task-responses.dto';
 import { UploadAttachmentDto } from './dto/upload-attachment.dto';
 import { s3Client } from '@/app/s3';
+import { validateFileContent } from '../utils/file-type-validation';
 
 @Injectable()
 export class AttachmentsService {
@@ -122,6 +123,9 @@ export class AttachmentsService {
           `File size exceeds maximum allowed size of ${this.MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB`,
         );
       }
+
+      // Validate file content matches declared MIME type
+      validateFileContent(fileBuffer, uploadDto.fileType, uploadDto.fileName);
 
       // Generate unique file key
       const fileId = randomBytes(16).toString('hex');
