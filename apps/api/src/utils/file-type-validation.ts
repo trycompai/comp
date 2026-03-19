@@ -33,7 +33,7 @@ export function validateFileContent(
     );
     if (!matchesSignature) {
       throw new BadRequestException(
-        `File content does not match declared type '${declaredMimeType}'.`,
+        'The uploaded file is invalid or corrupted. Please try again with a valid file.',
       );
     }
   }
@@ -42,7 +42,7 @@ export function validateFileContent(
   for (const pattern of DANGEROUS_CONTENT_PATTERNS) {
     if (pattern.test(headStr)) {
       throw new BadRequestException(
-        `File '${fileName}' contains potentially dangerous content.`,
+        'The uploaded file is invalid or corrupted. Please try again with a valid file.',
       );
     }
   }
