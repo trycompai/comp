@@ -65,11 +65,11 @@ function ScopeBadge({ apiKey }: { apiKey: ApiKey }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button type="button" className="cursor-pointer">
+        <span role="button" tabIndex={0} className="cursor-pointer">
           <Badge variant="outline">
             {apiKey.scopes.length} {apiKey.scopes.length === 1 ? 'scope' : 'scopes'}
           </Badge>
-        </button>
+        </span>
       </PopoverTrigger>
       <PopoverContent align="start">
         <PopoverHeader>
