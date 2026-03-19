@@ -437,67 +437,132 @@ describe('SyncController - Google Workspace employees', () => {
     });
 
     it('should NOT deactivate privileged members (owner)', async () => {
-      setupSync({ gwUsers: [] });
+      // Need a GWS user on the same domain so the domain check passes
+      // and the role guard is actually exercised
+      setupSync({ gwUsers: [makeGwUser('active@example.com')] });
 
+      (mockedDb.user.findUnique as jest.Mock).mockResolvedValue({
+        id: 'user_active',
+        email: 'active@example.com',
+      });
+      (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(
+        makeMember('active@example.com', { userId: 'user_active' }),
+      );
+
+      // Owner is not in GWS active list — would be deactivated if not privileged
+      // Include an unprivileged member to prove deactivation works for non-privileged
       (mockedDb.member.findMany as jest.Mock).mockResolvedValue([
+        makeMember('active@example.com'),
         makeMember('owner@example.com', { role: 'owner' }),
+        makeMember('gone@example.com', { role: 'employee' }),
       ]);
+      (mockedDb.member.update as jest.Mock).mockResolvedValue({});
 
       const result = await controller.syncGoogleWorkspaceEmployees(
         orgId,
         connectionId,
       );
 
-      expect(result.deactivated).toBe(0);
-      expect(mockedDb.member.update).not.toHaveBeenCalled();
+      // gone@ gets deactivated, owner@ does not
+      expect(result.deactivated).toBe(1);
+      const deactivatedEmails = result.details
+        .filter((d) => d.status === 'deactivated')
+        .map((d) => d.email);
+      expect(deactivatedEmails).toContain('gone@example.com');
+      expect(deactivatedEmails).not.toContain('owner@example.com');
     });
 
     it('should NOT deactivate privileged members (admin)', async () => {
-      setupSync({ gwUsers: [] });
+      setupSync({ gwUsers: [makeGwUser('active@example.com')] });
+
+      (mockedDb.user.findUnique as jest.Mock).mockResolvedValue({
+        id: 'user_active',
+        email: 'active@example.com',
+      });
+      (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(
+        makeMember('active@example.com', { userId: 'user_active' }),
+      );
 
       (mockedDb.member.findMany as jest.Mock).mockResolvedValue([
+        makeMember('active@example.com'),
         makeMember('admin@example.com', { role: 'admin' }),
+        makeMember('gone@example.com', { role: 'employee' }),
       ]);
+      (mockedDb.member.update as jest.Mock).mockResolvedValue({});
 
       const result = await controller.syncGoogleWorkspaceEmployees(
         orgId,
         connectionId,
       );
 
-      expect(result.deactivated).toBe(0);
-      expect(mockedDb.member.update).not.toHaveBeenCalled();
+      expect(result.deactivated).toBe(1);
+      const deactivatedEmails = result.details
+        .filter((d) => d.status === 'deactivated')
+        .map((d) => d.email);
+      expect(deactivatedEmails).toContain('gone@example.com');
+      expect(deactivatedEmails).not.toContain('admin@example.com');
     });
 
     it('should NOT deactivate privileged members (auditor)', async () => {
-      setupSync({ gwUsers: [] });
+      setupSync({ gwUsers: [makeGwUser('active@example.com')] });
+
+      (mockedDb.user.findUnique as jest.Mock).mockResolvedValue({
+        id: 'user_active',
+        email: 'active@example.com',
+      });
+      (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(
+        makeMember('active@example.com', { userId: 'user_active' }),
+      );
 
       (mockedDb.member.findMany as jest.Mock).mockResolvedValue([
+        makeMember('active@example.com'),
         makeMember('auditor@example.com', { role: 'auditor' }),
+        makeMember('gone@example.com', { role: 'employee' }),
       ]);
+      (mockedDb.member.update as jest.Mock).mockResolvedValue({});
 
       const result = await controller.syncGoogleWorkspaceEmployees(
         orgId,
         connectionId,
       );
 
-      expect(result.deactivated).toBe(0);
-      expect(mockedDb.member.update).not.toHaveBeenCalled();
+      expect(result.deactivated).toBe(1);
+      const deactivatedEmails = result.details
+        .filter((d) => d.status === 'deactivated')
+        .map((d) => d.email);
+      expect(deactivatedEmails).toContain('gone@example.com');
+      expect(deactivatedEmails).not.toContain('auditor@example.com');
     });
 
     it('should NOT deactivate members with comma-separated roles including a privileged role', async () => {
-      setupSync({ gwUsers: [] });
+      setupSync({ gwUsers: [makeGwUser('active@example.com')] });
+
+      (mockedDb.user.findUnique as jest.Mock).mockResolvedValue({
+        id: 'user_active',
+        email: 'active@example.com',
+      });
+      (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(
+        makeMember('active@example.com', { userId: 'user_active' }),
+      );
 
       (mockedDb.member.findMany as jest.Mock).mockResolvedValue([
+        makeMember('active@example.com'),
         makeMember('multi@example.com', { role: 'employee,admin' }),
+        makeMember('gone@example.com', { role: 'employee' }),
       ]);
+      (mockedDb.member.update as jest.Mock).mockResolvedValue({});
 
       const result = await controller.syncGoogleWorkspaceEmployees(
         orgId,
         connectionId,
       );
 
-      expect(result.deactivated).toBe(0);
-      expect(mockedDb.member.update).not.toHaveBeenCalled();
+      expect(result.deactivated).toBe(1);
+      const deactivatedEmails = result.details
+        .filter((d) => d.status === 'deactivated')
+        .map((d) => d.email);
+      expect(deactivatedEmails).toContain('gone@example.com');
+      expect(deactivatedEmails).not.toContain('multi@example.com');
     });
 
     it('should NOT deactivate members whose domain does not match GWS domain', async () => {
