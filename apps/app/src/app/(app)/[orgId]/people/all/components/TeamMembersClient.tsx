@@ -189,8 +189,9 @@ export function TeamMembersClient({
     const matchesStatus =
       (statusFilter === 'all') ||
       (statusFilter === 'deactivated' && item.displayStatus === 'deactivated') ||
+      (statusFilter === 'pending' && item.displayStatus === 'pending') ||
       (!statusFilter && item.displayStatus !== 'deactivated') ||
-      (statusFilter === 'active' && item.displayStatus !== 'deactivated');
+      (statusFilter === 'active' && item.displayStatus === 'active');
 
     return matchesSearch && matchesRole && matchesStatus;
   });
@@ -319,6 +320,7 @@ export function TeamMembersClient({
             <SelectContent>
               <SelectItem value="all">All People</SelectItem>
               <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="deactivated">Deactivated</SelectItem>
             </SelectContent>
           </Select>
