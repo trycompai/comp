@@ -817,6 +817,13 @@ export class PoliciesService {
       throw new NotFoundException(`Policy with ID ${policyId} not found`);
     }
 
+    // Prevent direct publishing when approval workflow is active
+    if (policy.pendingVersionId && policy.approverId) {
+      throw new BadRequestException(
+        'Cannot publish directly while an approval is pending. Either accept or reject the pending changes first.',
+      );
+    }
+
     const contentToPublish = (
       policy.draftContent && policy.draftContent.length > 0
         ? policy.draftContent
