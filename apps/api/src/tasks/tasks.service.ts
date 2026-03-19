@@ -302,13 +302,21 @@ export class TasksService {
     changedByUserId: string,
   ): Promise<{ updatedCount: number }> {
     try {
+      // Enforce approval workflow: exclude tasks that can't be bulk-updated
+      const where: Record<string, unknown> = {
+        id: { in: taskIds },
+        organizationId,
+        // Cannot change status of tasks currently in review
+        status: { not: 'in_review' as TaskStatus },
+      };
+
+      // Cannot mark tasks as done if they have an approver assigned
+      if (status === TaskStatus.done) {
+        where.approverId = null;
+      }
+
       const result = await db.task.updateMany({
-        where: {
-          id: {
-            in: taskIds,
-          },
-          organizationId,
-        },
+        where,
         data: {
           status,
           updatedAt: new Date(),
