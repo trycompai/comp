@@ -22,6 +22,11 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
   Stack,
   Table,
   TableBody,
@@ -32,6 +37,7 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { Add, OverflowMenuVertical, Search, TrashCan } from '@trycompai/design-system/icons';
+import { groupScopesByResource, RESOURCE_LABELS, ACTION_LABELS } from '../../lib/scope-presets';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateApiKeySheet } from './CreateApiKeySheet';
@@ -54,10 +60,39 @@ function ScopeBadge({ apiKey }: { apiKey: ApiKey }) {
     return <Badge variant="destructive">Full Access (Legacy)</Badge>;
   }
 
+  const groups = groupScopesByResource(apiKey.scopes);
+
   return (
-    <Badge variant="outline">
-      {apiKey.scopes.length} {apiKey.scopes.length === 1 ? 'scope' : 'scopes'}
-    </Badge>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button type="button" className="cursor-pointer">
+          <Badge variant="outline">
+            {apiKey.scopes.length} {apiKey.scopes.length === 1 ? 'scope' : 'scopes'}
+          </Badge>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72">
+        <PopoverHeader>
+          <PopoverTitle>Permissions</PopoverTitle>
+        </PopoverHeader>
+        <div className="max-h-[300px] space-y-2 overflow-y-auto pt-2">
+          {groups.map((group) => (
+            <div key={group.resource}>
+              <Text size="xs" weight="medium">
+                {group.label}
+              </Text>
+              <div className="flex flex-wrap gap-1 pt-0.5">
+                {group.scopes.map((s) => (
+                  <Badge key={s.scope} variant="secondary">
+                    {s.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
