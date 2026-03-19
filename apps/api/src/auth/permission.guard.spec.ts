@@ -72,7 +72,10 @@ describe('PermissionGuard', () => {
       expect(result).toBe(true);
     });
 
-    it('should allow access for legacy API keys with empty scopes (backward compat)', async () => {
+    it('should allow access for legacy API keys with empty scopes before deprecation date', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-04-19T23:59:59Z'));
+
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
         { resource: 'control', actions: ['delete'] },
       ]);
@@ -86,9 +89,36 @@ describe('PermissionGuard', () => {
 
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
+
+      jest.useRealTimers();
     });
 
-    it('should allow access for legacy API keys with undefined scopes (backward compat)', async () => {
+    it('should deny access for legacy API keys with empty scopes after deprecation date', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-04-20T00:00:00Z'));
+
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
+        { resource: 'control', actions: ['read'] },
+      ]);
+
+      const context = createMockExecutionContext({
+        isApiKey: true,
+        apiKeyScopes: [],
+        method: 'GET',
+        url: '/v1/controls',
+      });
+
+      await expect(guard.canActivate(context)).rejects.toThrow(
+        ForbiddenException,
+      );
+
+      jest.useRealTimers();
+    });
+
+    it('should deny access for legacy API keys with undefined scopes after deprecation date', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-05-01T00:00:00Z'));
+
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
         { resource: 'control', actions: ['read'] },
       ]);
@@ -100,8 +130,11 @@ describe('PermissionGuard', () => {
         url: '/v1/controls',
       });
 
-      const result = await guard.canActivate(context);
-      expect(result).toBe(true);
+      await expect(guard.canActivate(context)).rejects.toThrow(
+        ForbiddenException,
+      );
+
+      jest.useRealTimers();
     });
 
     it('should allow access for API keys with matching scopes', async () => {

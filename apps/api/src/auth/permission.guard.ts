@@ -62,10 +62,19 @@ export class PermissionGuard implements CanActivate {
     if (request.isApiKey) {
       const scopes = request.apiKeyScopes;
 
-      // Legacy keys (empty scopes) = full access, but log for migration tracking
+      // Legacy keys (empty scopes): full access until April 20, 2026, then blocked
       if (!scopes || scopes.length === 0) {
+        const deprecationDate = new Date('2026-04-20T00:00:00Z');
+        if (new Date() >= deprecationDate) {
+          this.logger.warn(
+            `[PermissionGuard] Legacy API key with empty scopes BLOCKED after deprecation date on ${request.method} ${request.url}.`,
+          );
+          throw new ForbiddenException(
+            'Legacy API keys with no scopes are no longer supported as of April 20, 2026. Please regenerate your API key with explicit scopes.',
+          );
+        }
         this.logger.warn(
-          `[PermissionGuard] Legacy API key with empty scopes used on ${request.method} ${request.url}. This key should be migrated to scoped permissions.`,
+          `[PermissionGuard] Legacy API key with empty scopes used on ${request.method} ${request.url}. This key will stop working after April 20, 2026.`,
         );
         return true;
       }

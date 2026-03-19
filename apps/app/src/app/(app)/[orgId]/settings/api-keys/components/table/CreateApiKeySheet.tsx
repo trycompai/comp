@@ -58,8 +58,8 @@ export function CreateApiKeySheet({ open, onOpenChange }: CreateApiKeySheetProps
   const handleSubmit = async () => {
     setIsCreating(true);
     try {
-      // Full access preset sends empty scopes (legacy behavior)
-      const scopes = preset === 'full' ? [] : selectedScopes;
+      // Full access sends all scopes explicitly (no more empty-scope legacy keys)
+      const scopes = selectedScopes;
       const result = await createApiKey({ name, expiresAt: expiration, scopes });
       if (result.key) {
         setCreatedApiKey(result.key);

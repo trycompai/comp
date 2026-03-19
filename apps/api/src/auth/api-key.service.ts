@@ -55,8 +55,13 @@ export class ApiKeyService {
     expiresAt?: string,
     scopes?: string[],
   ) {
-    // Validate scopes if provided
-    const validatedScopes = scopes?.length ? scopes : [];
+    // New keys must have explicit scopes — no more legacy empty-scope keys
+    if (!scopes || scopes.length === 0) {
+      throw new BadRequestException(
+        'API keys must have at least one scope. Use the "Full Access" preset to grant all permissions.',
+      );
+    }
+    const validatedScopes = scopes;
     if (validatedScopes.length > 0) {
       const availableScopes = this.getAvailableScopes();
       const invalid = validatedScopes.filter((s) => !availableScopes.includes(s));
