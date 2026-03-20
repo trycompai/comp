@@ -69,11 +69,15 @@ export const twoFactorAuthCheck: IntegrationCheck = {
         return false;
       }
 
-      // Filter by org unit if specified
+      // Org units first, then sync email filter — same order as employee sync (sync.controller.ts)
       if (targetOrgUnits && targetOrgUnits.length > 0) {
-        return targetOrgUnits.some(
-          (ou) => user.orgUnitPath === ou || user.orgUnitPath.startsWith(`${ou}/`),
+        const userOu = user.orgUnitPath ?? '/';
+        const inOrgUnit = targetOrgUnits.some(
+          (ou) => ou === '/' || userOu === ou || userOu.startsWith(`${ou}/`),
         );
+        if (!inOrgUnit) {
+          return false;
+        }
       }
 
       const email = user.primaryEmail.toLowerCase();
