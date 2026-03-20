@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { matchesSyncFilterTerms, parseSyncFilterTerms } from './email-exclusion-terms';
+import { matchesSyncFilterTerms, parseSyncFilterTerms } from '../email-exclusion-terms';
 
 describe('parseSyncFilterTerms', () => {
   it('normalizes and dedupes terms', () => {
