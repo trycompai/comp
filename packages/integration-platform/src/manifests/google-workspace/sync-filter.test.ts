@@ -23,4 +23,8 @@ describe('matchesGoogleWorkspaceSyncFilterTerms', () => {
   it('matches @domain suffix', () => {
     expect(matchesGoogleWorkspaceSyncFilterTerms('user@company.com', ['@company.com'])).toBe(true);
   });
+
+  it('treats multi-segment domains as full-email terms (no substring false positives)', () => {
+    expect(matchesGoogleWorkspaceSyncFilterTerms('user@domain.co.uk', ['other@domain.co.uk'])).toBe(false);
+  });
 });
