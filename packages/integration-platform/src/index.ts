@@ -120,6 +120,12 @@ export type {
 // Individual manifests (for direct import if needed)
 export { manifest as githubManifest } from './manifests/github';
 
+// Google Workspace sync filter (shared with API employee sync)
+export {
+  matchesGoogleWorkspaceSyncFilterTerms,
+  parseGoogleWorkspaceSyncFilterTerms,
+} from './manifests/google-workspace/sync-filter';
+
 // Ramp types (used by sync controller)
 export type {
   RampUser,
