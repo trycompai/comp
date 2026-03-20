@@ -1,9 +1,9 @@
 /**
- * Google Workspace employee sync filter terms — shared by API sync and integration checks.
- * Terms may be full emails, @domain suffixes, or other patterns per Admin UI copy.
+ * Email exclusion / inclusion terms for directory sync and checks (Google Workspace, JumpCloud, etc.).
+ * Terms may be full emails, @domain suffixes, or other patterns per integration Admin UI copy.
  */
 
-export const parseGoogleWorkspaceSyncFilterTerms = (value: unknown): string[] => {
+export const parseSyncFilterTerms = (value: unknown): string[] => {
   const rawValues = Array.isArray(value)
     ? value.map((item) => String(item))
     : typeof value === 'string'
@@ -48,7 +48,7 @@ const isFullEmailTerm = (term: string): boolean => {
   return true;
 };
 
-const matchesGoogleWorkspaceSyncFilterTerm = (email: string, term: string): boolean => {
+const matchesSyncFilterTerm = (email: string, term: string): boolean => {
   if (email === term) {
     return true;
   }
@@ -68,5 +68,5 @@ const matchesGoogleWorkspaceSyncFilterTerm = (email: string, term: string): bool
   return email.endsWith(`@${term}`) || email.includes(term);
 };
 
-export const matchesGoogleWorkspaceSyncFilterTerms = (email: string, terms: string[]): boolean =>
-  terms.some((term) => matchesGoogleWorkspaceSyncFilterTerm(email, term));
+export const matchesSyncFilterTerms = (email: string, terms: string[]): boolean =>
+  terms.some((term) => matchesSyncFilterTerm(email, term));

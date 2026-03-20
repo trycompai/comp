@@ -24,8 +24,8 @@ import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import {
   getManifest,
-  matchesGoogleWorkspaceSyncFilterTerms,
-  parseGoogleWorkspaceSyncFilterTerms,
+  matchesSyncFilterTerms,
+  parseSyncFilterTerms,
   type OAuthConfig,
   type RampUser,
   type RampUserStatus,
@@ -265,10 +265,10 @@ export class SyncController {
       )
         ? (rawSyncFilterMode as GoogleWorkspaceSyncFilterMode)
         : 'all';
-    const excludedTerms = parseGoogleWorkspaceSyncFilterTerms(
+    const excludedTerms = parseSyncFilterTerms(
       syncVariables.sync_excluded_emails,
     );
-    const includedTerms = parseGoogleWorkspaceSyncFilterTerms(
+    const includedTerms = parseSyncFilterTerms(
       syncVariables.sync_included_emails,
     );
 
@@ -284,11 +284,11 @@ export class SyncController {
       const email = user.primaryEmail.toLowerCase();
 
       if (effectiveSyncFilterMode === 'exclude' && excludedTerms.length > 0) {
-        return !matchesGoogleWorkspaceSyncFilterTerms(email, excludedTerms);
+        return !matchesSyncFilterTerms(email, excludedTerms);
       }
 
       if (effectiveSyncFilterMode === 'include') {
-        return matchesGoogleWorkspaceSyncFilterTerms(email, includedTerms);
+        return matchesSyncFilterTerms(email, includedTerms);
       }
 
       return true;
@@ -471,7 +471,7 @@ export class SyncController {
       if (
         effectiveSyncFilterMode === 'exclude' &&
         excludedTerms.length > 0 &&
-        matchesGoogleWorkspaceSyncFilterTerms(memberEmail, excludedTerms)
+        matchesSyncFilterTerms(memberEmail, excludedTerms)
       ) {
         continue;
       }
@@ -1636,7 +1636,7 @@ export class SyncController {
       string,
       unknown
     >;
-    const excludedTerms = parseGoogleWorkspaceSyncFilterTerms(
+    const excludedTerms = parseSyncFilterTerms(
       syncVariables.sync_excluded_emails,
     );
     const filteredUsers =
@@ -1644,7 +1644,7 @@ export class SyncController {
         ? users
         : users.filter(
             (user) =>
-              !matchesGoogleWorkspaceSyncFilterTerms(user.email.toLowerCase(), excludedTerms),
+              !matchesSyncFilterTerms(user.email.toLowerCase(), excludedTerms),
           );
 
     this.logger.log(
@@ -1750,7 +1750,7 @@ export class SyncController {
         ? allActiveUsers
         : allActiveUsers.filter(
             (user) =>
-              !matchesGoogleWorkspaceSyncFilterTerms(user.email.toLowerCase(), excludedTerms),
+              !matchesSyncFilterTerms(user.email.toLowerCase(), excludedTerms),
           );
     const suspendedEmails = new Set(
       users
