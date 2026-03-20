@@ -24,6 +24,8 @@ import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import {
   getManifest,
+  matchesGoogleWorkspaceSyncFilterTerms,
+  parseGoogleWorkspaceSyncFilterTerms,
   type OAuthConfig,
   type RampUser,
   type RampUserStatus,
@@ -57,49 +59,6 @@ type GoogleWorkspaceSyncFilterMode = 'all' | 'exclude' | 'include';
 
 const GOOGLE_WORKSPACE_SYNC_FILTER_MODES =
   new Set<GoogleWorkspaceSyncFilterMode>(['all', 'exclude', 'include']);
-
-const parseSyncFilterTerms = (value: unknown): string[] => {
-  const rawValues = Array.isArray(value)
-    ? value.map((item) => String(item))
-    : typeof value === 'string'
-      ? [value]
-      : [];
-
-  return Array.from(
-    new Set(
-      rawValues
-        .flatMap((item) => item.split(/[\n,;]+/))
-        .map((item) => item.trim().toLowerCase())
-        .filter((item) => item.length > 0),
-    ),
-  );
-};
-
-const isFullEmailTerm = (term: string): boolean =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(term);
-
-const matchesSyncFilterTerm = (email: string, term: string): boolean => {
-  if (email === term) {
-    return true;
-  }
-
-  if (term.startsWith('@')) {
-    return email.endsWith(term);
-  }
-
-  if (isFullEmailTerm(term)) {
-    return false;
-  }
-
-  if (term.includes('@')) {
-    return email.includes(term);
-  }
-
-  return email.endsWith(`@${term}`) || email.includes(term);
-};
-
-const matchesSyncFilterTerms = (email: string, terms: string[]): boolean =>
-  terms.some((term) => matchesSyncFilterTerm(email, term));
 
 @Controller({ path: 'integrations/sync', version: '1' })
 @ApiTags('Integrations')
@@ -306,10 +265,10 @@ export class SyncController {
       )
         ? (rawSyncFilterMode as GoogleWorkspaceSyncFilterMode)
         : 'all';
-    const excludedTerms = parseSyncFilterTerms(
+    const excludedTerms = parseGoogleWorkspaceSyncFilterTerms(
       syncVariables.sync_excluded_emails,
     );
-    const includedTerms = parseSyncFilterTerms(
+    const includedTerms = parseGoogleWorkspaceSyncFilterTerms(
       syncVariables.sync_included_emails,
     );
 
@@ -325,11 +284,11 @@ export class SyncController {
       const email = user.primaryEmail.toLowerCase();
 
       if (effectiveSyncFilterMode === 'exclude' && excludedTerms.length > 0) {
-        return !matchesSyncFilterTerms(email, excludedTerms);
+        return !matchesGoogleWorkspaceSyncFilterTerms(email, excludedTerms);
       }
 
       if (effectiveSyncFilterMode === 'include') {
-        return matchesSyncFilterTerms(email, includedTerms);
+        return matchesGoogleWorkspaceSyncFilterTerms(email, includedTerms);
       }
 
       return true;
@@ -512,7 +471,7 @@ export class SyncController {
       if (
         effectiveSyncFilterMode === 'exclude' &&
         excludedTerms.length > 0 &&
-        matchesSyncFilterTerms(memberEmail, excludedTerms)
+        matchesGoogleWorkspaceSyncFilterTerms(memberEmail, excludedTerms)
       ) {
         continue;
       }
@@ -1677,7 +1636,7 @@ export class SyncController {
       string,
       unknown
     >;
-    const excludedTerms = parseSyncFilterTerms(
+    const excludedTerms = parseGoogleWorkspaceSyncFilterTerms(
       syncVariables.sync_excluded_emails,
     );
     const filteredUsers =
@@ -1685,7 +1644,7 @@ export class SyncController {
         ? users
         : users.filter(
             (user) =>
-              !matchesSyncFilterTerms(user.email.toLowerCase(), excludedTerms),
+              !matchesGoogleWorkspaceSyncFilterTerms(user.email.toLowerCase(), excludedTerms),
           );
 
     this.logger.log(
@@ -1791,7 +1750,7 @@ export class SyncController {
         ? allActiveUsers
         : allActiveUsers.filter(
             (user) =>
-              !matchesSyncFilterTerms(user.email.toLowerCase(), excludedTerms),
+              !matchesGoogleWorkspaceSyncFilterTerms(user.email.toLowerCase(), excludedTerms),
           );
     const suspendedEmails = new Set(
       users

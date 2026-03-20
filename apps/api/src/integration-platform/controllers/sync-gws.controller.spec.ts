@@ -32,12 +32,18 @@ jest.mock('@trycompai/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));
 
-jest.mock('@trycompai/integration-platform', () => ({
-  getManifest: jest.fn().mockReturnValue({
-    auth: { type: 'oauth2', config: { tokenUrl: '', refreshUrl: '' } },
-  }),
-  TASK_TEMPLATE_INFO: {},
-}));
+jest.mock('@trycompai/integration-platform', () => {
+  const actual = jest.requireActual<typeof import('@trycompai/integration-platform')>(
+    '@trycompai/integration-platform',
+  );
+  return {
+    ...actual,
+    getManifest: jest.fn().mockReturnValue({
+      auth: { type: 'oauth2', config: { tokenUrl: '', refreshUrl: '' } },
+    }),
+    TASK_TEMPLATE_INFO: {},
+  };
+});
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
