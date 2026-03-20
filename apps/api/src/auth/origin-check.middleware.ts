@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { getTrustedOrigins } from './auth.server';
+import { isTrustedOrigin } from './auth.server';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -52,14 +52,21 @@ export function originCheckMiddleware(
     return next();
   }
 
-  // Validate Origin against trusted origins
-  const trustedOrigins = getTrustedOrigins();
-  if (trustedOrigins.includes(origin)) {
-    return next();
-  }
-
-  res.status(403).json({
-    statusCode: 403,
-    message: 'Forbidden',
-  });
+  // Validate Origin against trusted origins (includes dynamic subdomains + custom domains)
+  isTrustedOrigin(origin)
+    .then((trusted) => {
+      if (trusted) {
+        return next();
+      }
+      res.status(403).json({
+        statusCode: 403,
+        message: 'Forbidden',
+      });
+    })
+    .catch(() => {
+      res.status(403).json({
+        statusCode: 403,
+        message: 'Forbidden',
+      });
+    });
 }

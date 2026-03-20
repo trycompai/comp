@@ -1,5 +1,5 @@
 /**
- * Tests for the getTrustedOrigins logic.
+ * Tests for the getTrustedOrigins / isTrustedOrigin logic.
  *
  * Because auth.server.ts has side effects at module load time (better-auth
  * initialization, DB connections, validateSecurityConfig), we test the logic
@@ -25,6 +25,32 @@ function getTrustedOriginsLogic(authTrustedOrigins: string | undefined): string[
   ];
 }
 
+/**
+ * Mirror of isStaticTrustedOrigin from auth.server.ts for isolated testing.
+ * The full isTrustedOrigin is async (checks DB for custom domains) —
+ * that path is tested via integration tests.
+ */
+function isStaticTrustedOriginLogic(
+  origin: string,
+  trustedOrigins: string[],
+): boolean {
+  if (trustedOrigins.includes(origin)) {
+    return true;
+  }
+
+  try {
+    const url = new URL(origin);
+    return (
+      url.hostname.endsWith('.trycomp.ai') ||
+      url.hostname.endsWith('.staging.trycomp.ai') ||
+      url.hostname.endsWith('.trust.inc') ||
+      url.hostname === 'trust.inc'
+    );
+  } catch {
+    return false;
+  }
+}
+
 describe('getTrustedOrigins', () => {
   it('should return env-configured origins when AUTH_TRUSTED_ORIGINS is set', () => {
     const origins = getTrustedOriginsLogic('https://a.com, https://b.com');
@@ -45,9 +71,39 @@ describe('getTrustedOrigins', () => {
     const origins = getTrustedOriginsLogic('  https://a.com  ,  https://b.com  ');
     expect(origins).toEqual(['https://a.com', 'https://b.com']);
   });
+});
 
-  it('main.ts should use getTrustedOrigins instead of origin: true', () => {
-    // Validate the CORS config change was made correctly by checking file content
+describe('isStaticTrustedOrigin', () => {
+  const defaults = getTrustedOriginsLogic(undefined);
+
+  it('should allow static trusted origins', () => {
+    expect(isStaticTrustedOriginLogic('https://app.trycomp.ai', defaults)).toBe(true);
+  });
+
+  it('should allow trust portal subdomains of trycomp.ai', () => {
+    expect(isStaticTrustedOriginLogic('https://security.trycomp.ai', defaults)).toBe(true);
+    expect(isStaticTrustedOriginLogic('https://acme.trycomp.ai', defaults)).toBe(true);
+  });
+
+  it('should allow trust portal subdomains of staging.trycomp.ai', () => {
+    expect(isStaticTrustedOriginLogic('https://security.staging.trycomp.ai', defaults)).toBe(true);
+  });
+
+  it('should allow trust.inc and its subdomains', () => {
+    expect(isStaticTrustedOriginLogic('https://trust.inc', defaults)).toBe(true);
+    expect(isStaticTrustedOriginLogic('https://acme.trust.inc', defaults)).toBe(true);
+  });
+
+  it('should reject unknown origins', () => {
+    expect(isStaticTrustedOriginLogic('https://evil.com', defaults)).toBe(false);
+    expect(isStaticTrustedOriginLogic('https://trycomp.ai.evil.com', defaults)).toBe(false);
+  });
+
+  it('should handle invalid origins gracefully', () => {
+    expect(isStaticTrustedOriginLogic('not-a-url', defaults)).toBe(false);
+  });
+
+  it('main.ts should use isTrustedOrigin for CORS', () => {
     const fs = require('fs');
     const path = require('path');
     const mainTs = fs.readFileSync(
@@ -55,7 +111,7 @@ describe('getTrustedOrigins', () => {
       'utf-8',
     ) as string;
     expect(mainTs).not.toContain('origin: true');
-    expect(mainTs).toContain('origin: getTrustedOrigins()');
-    expect(mainTs).toContain("import { getTrustedOrigins } from './auth/auth.server'");
+    expect(mainTs).toContain('isTrustedOrigin');
+    expect(mainTs).toContain("import { isTrustedOrigin } from './auth/auth.server'");
   });
 });
