@@ -6,26 +6,19 @@ import { headers } from 'next/headers';
 import '../styles/globals.css';
 import { Header } from './components/HeaderFrameworks';
 import { auth } from './lib/auth';
+import { isInternalUser } from './lib/utils';
 
 export const metadata: Metadata = {
   title: 'Comp AI - Framework Editor',
   description: 'Edit your framework',
 };
 
-const ALLOWED_DOMAIN = 'trycomp.ai';
-
-function isInternalUser(email: string): boolean {
-  const parts = email.split('@');
-  return parts.length === 2 && parts[1] === ALLOWED_DOMAIN;
-}
-
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  const hasSession =
-    !!session?.session?.id && !!session?.user?.email && isInternalUser(session.user.email);
+  const hasSession = !!session?.user && isInternalUser(session.user.email);
 
   return (
     <html lang="en" className="h-full">

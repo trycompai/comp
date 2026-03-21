@@ -1,7 +1,8 @@
 import PageLayout from '@/app/components/PageLayout';
 import { serverApi } from '@/app/lib/api-server';
+import { isAuthorized } from '@/app/lib/utils';
 import { Badge } from '@trycompai/ui/badge';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { FrameworkTabs } from './FrameworkTabs';
 
 interface FrameworkSummary {
@@ -19,6 +20,9 @@ export default async function FrameworkLayout({
   children: React.ReactNode;
   params: Promise<{ frameworkId: string }>;
 }) {
+  const isAllowed = await isAuthorized();
+  if (!isAllowed) redirect('/auth');
+
   const { frameworkId } = await params;
 
   let framework: FrameworkSummary;

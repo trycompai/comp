@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import { db, Prisma } from '@trycompai/db';
 import type { EvidenceFormType } from '@trycompai/db';
 import { CreateControlTemplateDto } from './dto/create-control-template.dto';
 import { UpdateControlTemplateDto } from './dto/update-control-template.dto';
@@ -78,7 +78,19 @@ export class ControlTemplateService {
 
   async delete(id: string) {
     await this.findById(id);
-    await db.frameworkEditorControlTemplate.delete({ where: { id } });
+    try {
+      await db.frameworkEditorControlTemplate.delete({ where: { id } });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          'Cannot delete control template: it is referenced by existing controls',
+        );
+      }
+      throw error;
+    }
     this.logger.log(`Deleted control template ${id}`);
     return { message: 'Control template deleted successfully' };
   }

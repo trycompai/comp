@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import { db, Prisma } from '@trycompai/db';
 import { CreateFrameworkDto } from './dto/create-framework.dto';
 import { UpdateFrameworkDto } from './dto/update-framework.dto';
 
@@ -71,7 +71,12 @@ export class FrameworkEditorFrameworkService {
 
     const updated = await db.frameworkEditorFramework.update({
       where: { id },
-      data: dto,
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.version !== undefined && { version: dto.version }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.visible !== undefined && { visible: dto.visible }),
+      },
     });
 
     this.logger.log(`Updated framework: ${updated.name} (${id})`);
@@ -81,12 +86,24 @@ export class FrameworkEditorFrameworkService {
   async delete(id: string) {
     await this.findById(id);
 
-    await db.$transaction([
-      db.frameworkEditorRequirement.deleteMany({
-        where: { frameworkId: id },
-      }),
-      db.frameworkEditorFramework.delete({ where: { id } }),
-    ]);
+    try {
+      await db.$transaction([
+        db.frameworkEditorRequirement.deleteMany({
+          where: { frameworkId: id },
+        }),
+        db.frameworkEditorFramework.delete({ where: { id } }),
+      ]);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          'Cannot delete framework: it is referenced by existing framework instances',
+        );
+      }
+      throw error;
+    }
 
     this.logger.log(`Deleted framework ${id}`);
     return { message: 'Framework deleted successfully' };

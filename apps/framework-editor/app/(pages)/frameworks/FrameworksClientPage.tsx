@@ -31,7 +31,6 @@ export function FrameworksClientPage({ initialFrameworks }: FrameworksClientPage
       <DataTable
         data={initialFrameworks}
         columns={columns}
-        searchQueryParamName="frameworks-search"
         searchPlaceholder="Search frameworks..."
         onCreateClick={() => setIsCreateDialogOpen(true)}
         createButtonLabel="Create New Framework"

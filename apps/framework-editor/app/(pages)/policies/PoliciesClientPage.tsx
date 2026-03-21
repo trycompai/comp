@@ -34,7 +34,6 @@ export function PoliciesClientPage({ initialPolicies, emptyMessage }: PoliciesCl
       <DataTable
         data={initialPolicies}
         columns={columns}
-        searchQueryParamName="policies-search"
         createButtonLabel="Create Policy"
         onCreateClick={() => setIsCreatePolicyDialogOpen(true)}
         onRowClick={handleRowClick}

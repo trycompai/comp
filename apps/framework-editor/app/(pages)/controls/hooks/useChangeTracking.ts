@@ -27,6 +27,7 @@ export const useChangeTracking = (
   const [createdIds, setCreatedIds] = useState<Set<string>>(() => new Set());
   const [updatedIds, setUpdatedIds] = useState<Set<string>>(() => new Set());
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
+  const [isCommitting, setIsCommitting] = useState(false);
 
   useEffect(() => {
     setData(initialData);
@@ -38,6 +39,7 @@ export const useChangeTracking = (
 
   const updateCell = useCallback(
     (rowId: string, columnId: string, value: string | string[]) => {
+      if (isCommitting) return;
       setData((prev) =>
         prev.map((row) => {
           if (row.id !== rowId) return row;
@@ -56,7 +58,7 @@ export const useChangeTracking = (
         return next;
       });
     },
-    [createdIds],
+    [createdIds, isCommitting],
   );
 
   const updateRelational = useCallback(
@@ -80,17 +82,22 @@ export const useChangeTracking = (
     [],
   );
 
-  const addRow = useCallback((newRow: ControlsPageGridData) => {
-    setData((prev) => [...prev, newRow]);
-    setCreatedIds((prev) => {
-      const next = new Set(prev);
-      next.add(newRow.id);
-      return next;
-    });
-  }, []);
+  const addRow = useCallback(
+    (newRow: ControlsPageGridData) => {
+      if (isCommitting) return;
+      setData((prev) => [...prev, newRow]);
+      setCreatedIds((prev) => {
+        const next = new Set(prev);
+        next.add(newRow.id);
+        return next;
+      });
+    },
+    [isCommitting],
+  );
 
   const deleteRow = useCallback(
     (rowId: string) => {
+      if (isCommitting) return;
       if (createdIds.has(rowId)) {
         setCreatedIds((prev) => {
           const next = new Set(prev);
@@ -111,7 +118,7 @@ export const useChangeTracking = (
         });
       }
     },
-    [createdIds],
+    [createdIds, isCommitting],
   );
 
   const getRowClassName = useCallback(
@@ -125,118 +132,126 @@ export const useChangeTracking = (
   );
 
   const handleCommit = useCallback(async () => {
-    const results = { successes: [] as string[], errors: [] as string[] };
-    const currentData = data;
+    if (isCommitting) return;
+    setIsCommitting(true);
 
-    const successfullyCreatedIds = new Set<string>();
-    const successfullyUpdatedIds = new Set<string>();
-    const successfullyDeletedIds = new Set<string>();
+    try {
+      const results = { successes: [] as string[], errors: [] as string[] };
+      const currentData = data;
 
-    for (const tempId of createdIds) {
-      const row = currentData.find((r) => r.id === tempId);
-      if (!row?.name) continue;
+      const successfullyCreatedIds = new Set<string>();
+      const successfullyUpdatedIds = new Set<string>();
+      const successfullyDeletedIds = new Set<string>();
 
-      try {
-        const newControl = await mutations.createControl({
-          name: row.name,
-          description: row.description,
-          documentTypes: row.documentTypes,
-        });
-        results.successes.push(`Created: ${row.name}`);
-        successfullyCreatedIds.add(tempId);
+      for (const tempId of createdIds) {
+        const row = currentData.find((r) => r.id === tempId);
+        if (!row?.name) continue;
 
-        setData((prev) =>
-          prev.map((r) =>
-            r.id === tempId
-              ? {
-                  ...r,
-                  id: newControl.id,
-                  policyTemplates: [],
-                  requirements: [],
-                  taskTemplates: [],
-                }
-              : r,
-          ),
-        );
-      } catch (error) {
-        results.errors.push(
-          `Failed to create ${row.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        );
+        try {
+          const newControl = await mutations.createControl({
+            name: row.name,
+            description: row.description,
+            documentTypes: row.documentTypes,
+          });
+          results.successes.push(`Created: ${row.name}`);
+          successfullyCreatedIds.add(tempId);
+
+          setData((prev) =>
+            prev.map((r) =>
+              r.id === tempId
+                ? {
+                    ...r,
+                    id: newControl.id,
+                    policyTemplates: [],
+                    requirements: [],
+                    taskTemplates: [],
+                  }
+                : r,
+            ),
+          );
+        } catch (error) {
+          results.errors.push(
+            `Failed to create ${row.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
       }
-    }
 
-    for (const id of updatedIds) {
-      if (createdIds.has(id) || deletedIds.has(id)) continue;
+      for (const id of updatedIds) {
+        if (createdIds.has(id) || deletedIds.has(id)) continue;
 
-      const row = currentData.find((r) => r.id === id);
-      if (!row?.name) continue;
+        const row = currentData.find((r) => r.id === id);
+        if (!row?.name) continue;
 
-      try {
-        await mutations.updateControl(id, {
-          name: row.name,
-          description: row.description || '',
-          documentTypes: row.documentTypes,
-        });
-        results.successes.push(`Updated: ${row.name}`);
-        successfullyUpdatedIds.add(id);
-      } catch (error) {
-        results.errors.push(
-          `Failed to update ${row.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        );
+        try {
+          await mutations.updateControl(id, {
+            name: row.name,
+            description: row.description || '',
+            documentTypes: row.documentTypes,
+          });
+          results.successes.push(`Updated: ${row.name}`);
+          successfullyUpdatedIds.add(id);
+        } catch (error) {
+          results.errors.push(
+            `Failed to update ${row.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
       }
-    }
 
-    for (const id of deletedIds) {
-      try {
-        await mutations.deleteControl(id);
-        results.successes.push(`Deleted: ${id}`);
-        successfullyDeletedIds.add(id);
-      } catch (error) {
-        results.errors.push(
-          `Failed to delete ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        );
+      for (const id of deletedIds) {
+        try {
+          await mutations.deleteControl(id);
+          results.successes.push(`Deleted: ${id}`);
+          successfullyDeletedIds.add(id);
+        } catch (error) {
+          results.errors.push(
+            `Failed to delete ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
       }
-    }
 
-    setData((prev) => {
-      const finalData = prev.filter((row) => !successfullyDeletedIds.has(row.id));
-      setPrevData(finalData);
-      return finalData;
-    });
-
-    setCreatedIds((prev) => {
-      const remaining = new Set(prev);
-      for (const id of successfullyCreatedIds) remaining.delete(id);
-      return remaining;
-    });
-    setUpdatedIds((prev) => {
-      const remaining = new Set(prev);
-      for (const id of successfullyUpdatedIds) remaining.delete(id);
-      return remaining;
-    });
-    setDeletedIds((prev) => {
-      const remaining = new Set(prev);
-      for (const id of successfullyDeletedIds) remaining.delete(id);
-      return remaining;
-    });
-
-    if (results.errors.length > 0) {
-      toast.error('Some operations failed', {
-        description: results.errors.join('\n'),
+      setData((prev) => {
+        const finalData = prev.filter((row) => !successfullyDeletedIds.has(row.id));
+        setPrevData(finalData);
+        return finalData;
       });
-    } else if (results.successes.length > 0) {
-      toast.success('Changes saved', {
-        description: `${results.successes.length} operation(s) completed`,
+
+      setCreatedIds((prev) => {
+        const remaining = new Set(prev);
+        for (const id of successfullyCreatedIds) remaining.delete(id);
+        return remaining;
       });
+      setUpdatedIds((prev) => {
+        const remaining = new Set(prev);
+        for (const id of successfullyUpdatedIds) remaining.delete(id);
+        return remaining;
+      });
+      setDeletedIds((prev) => {
+        const remaining = new Set(prev);
+        for (const id of successfullyDeletedIds) remaining.delete(id);
+        return remaining;
+      });
+
+      if (results.errors.length > 0) {
+        toast.error('Some operations failed', {
+          description: results.errors.join('\n'),
+        });
+      } else if (results.successes.length > 0) {
+        toast.success('Changes saved', {
+          description: `${results.successes.length} operation(s) completed`,
+        });
+      }
+    } finally {
+      setIsCommitting(false);
     }
-  }, [data, createdIds, updatedIds, deletedIds, mutations]);
+  }, [data, createdIds, updatedIds, deletedIds, mutations, isCommitting]);
 
   const handleCancel = useCallback(() => {
+    if (isCommitting) return;
     setData(prevData);
     setCreatedIds(new Set());
     setUpdatedIds(new Set());
     setDeletedIds(new Set());
-  }, [prevData]);
+  }, [prevData, isCommitting]);
 
   const isDirty = useMemo(() => {
     return createdIds.size > 0 || updatedIds.size > 0 || deletedIds.size > 0;
@@ -258,6 +273,7 @@ export const useChangeTracking = (
     handleCommit,
     handleCancel,
     isDirty,
+    isCommitting,
     createdIds,
     changesSummary,
   };

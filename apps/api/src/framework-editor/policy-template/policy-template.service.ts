@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db, type Prisma } from '@trycompai/db';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import { db, Prisma } from '@trycompai/db';
 import { CreatePolicyTemplateDto } from './dto/create-policy-template.dto';
 import { UpdatePolicyTemplateDto } from './dto/update-policy-template.dto';
 
@@ -41,7 +41,12 @@ export class PolicyTemplateService {
     await this.findById(id);
     const updated = await db.frameworkEditorPolicyTemplate.update({
       where: { id },
-      data: dto,
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.frequency !== undefined && { frequency: dto.frequency }),
+        ...(dto.department !== undefined && { department: dto.department }),
+      },
     });
     this.logger.log(`Updated policy template: ${updated.name} (${id})`);
     return updated;
@@ -59,7 +64,19 @@ export class PolicyTemplateService {
 
   async delete(id: string) {
     await this.findById(id);
-    await db.frameworkEditorPolicyTemplate.delete({ where: { id } });
+    try {
+      await db.frameworkEditorPolicyTemplate.delete({ where: { id } });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          'Cannot delete policy template: it is referenced by existing policies',
+        );
+      }
+      throw error;
+    }
     this.logger.log(`Deleted policy template ${id}`);
     return { message: 'Policy template deleted successfully' };
   }

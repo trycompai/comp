@@ -1,4 +1,5 @@
 import { auth } from '@/app/lib/auth';
+import { isInternalUser } from '@/app/lib/utils';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -9,13 +10,6 @@ import { Unauthorized } from './Unauthorized';
 export const metadata: Metadata = {
   title: 'Login | Comp AI',
 };
-
-const ALLOWED_DOMAIN = 'trycomp.ai';
-
-function isInternalUser(email: string): boolean {
-  const parts = email.split('@');
-  return parts.length === 2 && parts[1] === ALLOWED_DOMAIN;
-}
 
 export default async function Page() {
   const session = await auth.api.getSession({

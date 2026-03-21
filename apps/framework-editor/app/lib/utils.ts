@@ -11,7 +11,7 @@ export function formatEnumValue(value: string | null | undefined): string {
 
 const ALLOWED_DOMAIN = 'trycomp.ai';
 
-function isInternalUser(email: string): boolean {
+export function isInternalUser(email: string): boolean {
   const parts = email.split('@');
   return parts.length === 2 && parts[1] === ALLOWED_DOMAIN;
 }

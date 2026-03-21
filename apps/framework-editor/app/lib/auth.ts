@@ -41,14 +41,10 @@ export interface Session {
 function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, string> {
   const obj: Record<string, string> = {};
   headers.forEach((value, key) => {
-    const k = key.toLowerCase();
-    if (k === 'cookie' || k === 'origin' || k.startsWith('x-')) {
+    if (key.toLowerCase() === 'cookie') {
       obj[key] = value;
     }
   });
-  if (!obj.origin && !obj.Origin) {
-    obj.origin = API_URL;
-  }
   return obj;
 }
 

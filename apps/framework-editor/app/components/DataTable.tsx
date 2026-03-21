@@ -18,7 +18,6 @@ import { useMemo, useState, type ElementType } from 'react';
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  searchQueryParamName?: string;
   onCreateClick?: () => void;
   createButtonLabel?: string;
   CreateButtonIcon?: ElementType;
@@ -30,7 +29,6 @@ interface DataTableProps<TData, TValue> {
 export function DataTable<TData, TValue>({
   columns,
   data,
-  searchQueryParamName = 'q',
   onCreateClick,
   createButtonLabel = 'Create New',
   CreateButtonIcon = PlusCircle,

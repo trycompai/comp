@@ -24266,6 +24266,15 @@
               "qms"
             ],
             "example": "it"
+          },
+          "automationStatus": {
+            "type": "string",
+            "description": "Automation status of the task",
+            "enum": [
+              "AUTOMATED",
+              "MANUAL"
+            ],
+            "example": "AUTOMATED"
           }
         }
       },
