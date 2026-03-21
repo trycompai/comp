@@ -2,6 +2,7 @@
 
 import { apiClient } from '@/app/lib/api-client';
 import { DataTable } from '@/app/components/DataTable';
+import type { FrameworkEditorPolicyTemplate } from '@/db';
 import { Button } from '@trycompai/ui';
 import { Link } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -13,18 +14,8 @@ import {
 import { columns } from './components/columns';
 import { CreatePolicyDialog } from './components/CreatePolicyDialog';
 
-interface PolicyItem {
-  id: string;
-  name: string;
-  description: string;
-  frequency: string;
-  department: string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-}
-
 interface PoliciesClientPageProps {
-  initialPolicies: PolicyItem[];
+  initialPolicies: FrameworkEditorPolicyTemplate[];
   emptyMessage?: string;
   frameworkId?: string;
 }
@@ -44,7 +35,7 @@ export function PoliciesClientPage({ initialPolicies, emptyMessage, frameworkId 
     [],
   );
 
-  const handleRowClick = (policy: PolicyItem) => {
+  const handleRowClick = (policy: FrameworkEditorPolicyTemplate) => {
     router.push(`/policies/${policy.id}`);
   };
 

@@ -1,5 +1,6 @@
 'use client';
 
+import type { FrameworkEditorPolicyTemplate } from '@/db';
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui';
 import { PencilIcon, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -7,16 +8,8 @@ import { useState } from 'react';
 import { DeletePolicyDialog } from './components/DeletePolicyDialog';
 import { EditPolicyDialog } from './components/EditPolicyDialog';
 
-interface PolicyItem {
-  id: string;
-  name: string;
-  description: string;
-  frequency: string;
-  department: string;
-}
-
 interface PolicyDetailsClientPageProps {
-  policy: PolicyItem;
+  policy: FrameworkEditorPolicyTemplate;
 }
 
 export function PolicyDetailsClientPage({ policy }: PolicyDetailsClientPageProps) {
