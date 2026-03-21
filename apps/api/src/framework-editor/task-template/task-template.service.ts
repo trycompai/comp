@@ -47,7 +47,17 @@ export class TaskTemplateService {
             }
           : undefined,
         include: {
-          controlTemplates: { select: { id: true, name: true } },
+          controlTemplates: {
+            select: {
+              id: true,
+              name: true,
+              requirements: {
+                select: {
+                  framework: { select: { id: true, name: true } },
+                },
+              },
+            },
+          },
         },
       });
 

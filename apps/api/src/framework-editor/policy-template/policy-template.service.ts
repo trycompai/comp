@@ -19,6 +19,19 @@ export class PolicyTemplateService {
             },
           }
         : undefined,
+      include: {
+        controlTemplates: {
+          select: {
+            id: true,
+            name: true,
+            requirements: {
+              select: {
+                framework: { select: { id: true, name: true } },
+              },
+            },
+          },
+        },
+      },
     });
   }
 

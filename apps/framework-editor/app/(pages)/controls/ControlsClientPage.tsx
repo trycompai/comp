@@ -10,8 +10,12 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { Button } from '@trycompai/ui';
-import { ArrowDown, ArrowUp, ArrowUpDown, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Link, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import {
+  AddExistingItemDialog,
+  type ExistingItemRaw,
+} from '../../components/AddExistingItemDialog';
 import {
   DateCell,
   EditableCell,
@@ -327,6 +331,18 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
     getRowId: (row) => row.id,
   });
 
+  const [isAddExistingOpen, setIsAddExistingOpen] = useState(false);
+
+  const existingControlIds = useMemo(
+    () => new Set(initialControls.map((c) => c.id)),
+    [initialControls],
+  );
+
+  const fetchAllControlsForDialog = useCallback(
+    () => apiClient<ExistingItemRaw[]>('/control-template'),
+    [],
+  );
+
   const handleAddRow = useCallback(() => {
     addRow({
       id: simpleUUID(),
@@ -361,11 +377,35 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
             </>
           )}
         </div>
-        <Button onClick={handleAddRow} size="sm" className="rounded-xs">
-          <Plus className="mr-1 h-4 w-4" />
-          Add Control
-        </Button>
+        <div className="flex items-center gap-2">
+          {frameworkId && (
+            <Button
+              variant="outline"
+              onClick={() => setIsAddExistingOpen(true)}
+              size="sm"
+              className="rounded-xs"
+            >
+              <Link className="mr-1 h-4 w-4" />
+              Add Existing Control
+            </Button>
+          )}
+          <Button onClick={handleAddRow} size="sm" className="rounded-xs">
+            <Plus className="mr-1 h-4 w-4" />
+            Add Control
+          </Button>
+        </div>
       </div>
+
+      {frameworkId && (
+        <AddExistingItemDialog
+          isOpen={isAddExistingOpen}
+          onOpenChange={setIsAddExistingOpen}
+          frameworkId={frameworkId}
+          itemType="control"
+          existingItemIds={existingControlIds}
+          fetchAllItems={fetchAllControlsForDialog}
+        />
+      )}
 
       <div className="scrollbar-primary border-border min-h-0 flex-1 overflow-auto rounded-xs border">
         <table className="w-full border-collapse">

@@ -54,13 +54,17 @@ export function DocumentsClientPage({ controls }: DocumentsClientPageProps) {
   }, [controlsState]);
 
   const handleControlLinked = (documentType: string, control: { id: string; name: string }) => {
-    setControlsState((prev) =>
-      prev.map((c) =>
-        c.id === control.id
-          ? { ...c, documentTypes: [...(c.documentTypes as string[]), documentType] }
-          : c,
-      ),
-    );
+    setControlsState((prev) => {
+      const exists = prev.some((c) => c.id === control.id);
+      if (exists) {
+        return prev.map((c) =>
+          c.id === control.id
+            ? { ...c, documentTypes: [...(c.documentTypes as string[]), documentType] }
+            : c,
+        );
+      }
+      return [...prev, { id: control.id, name: control.name, documentTypes: [documentType] }];
+    });
   };
 
   const handleControlUnlinked = (documentType: string, controlId: string) => {

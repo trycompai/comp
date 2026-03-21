@@ -167,4 +167,80 @@ export class FrameworkEditorFrameworkService {
       orderBy: { name: 'asc' },
     });
   }
+
+  async linkControl(frameworkId: string, controlId: string) {
+    await this.findById(frameworkId);
+
+    const requirementIds = await db.frameworkEditorRequirement
+      .findMany({ where: { frameworkId }, select: { id: true } })
+      .then((reqs) => reqs.map((r) => ({ id: r.id })));
+
+    if (requirementIds.length === 0) {
+      throw new ConflictException(
+        'Framework has no requirements to link the control to',
+      );
+    }
+
+    await db.frameworkEditorControlTemplate.update({
+      where: { id: controlId },
+      data: { requirements: { connect: requirementIds } },
+    });
+
+    this.logger.log(
+      `Linked control ${controlId} to framework ${frameworkId}`,
+    );
+    return { message: 'Control linked to framework' };
+  }
+
+  async linkTask(frameworkId: string, taskId: string) {
+    await this.findById(frameworkId);
+
+    const controlIds = await db.frameworkEditorControlTemplate
+      .findMany({
+        where: { requirements: { some: { frameworkId } } },
+        select: { id: true },
+      })
+      .then((cts) => cts.map((ct) => ({ id: ct.id })));
+
+    if (controlIds.length === 0) {
+      throw new ConflictException(
+        'Framework has no controls to link the task to',
+      );
+    }
+
+    await db.frameworkEditorTaskTemplate.update({
+      where: { id: taskId },
+      data: { controlTemplates: { connect: controlIds } },
+    });
+
+    this.logger.log(`Linked task ${taskId} to framework ${frameworkId}`);
+    return { message: 'Task linked to framework' };
+  }
+
+  async linkPolicy(frameworkId: string, policyId: string) {
+    await this.findById(frameworkId);
+
+    const controlIds = await db.frameworkEditorControlTemplate
+      .findMany({
+        where: { requirements: { some: { frameworkId } } },
+        select: { id: true },
+      })
+      .then((cts) => cts.map((ct) => ({ id: ct.id })));
+
+    if (controlIds.length === 0) {
+      throw new ConflictException(
+        'Framework has no controls to link the policy to',
+      );
+    }
+
+    await db.frameworkEditorPolicyTemplate.update({
+      where: { id: policyId },
+      data: { controlTemplates: { connect: controlIds } },
+    });
+
+    this.logger.log(
+      `Linked policy ${policyId} to framework ${frameworkId}`,
+    );
+    return { message: 'Policy linked to framework' };
+  }
 }

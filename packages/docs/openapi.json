@@ -12299,6 +12299,27 @@
       }
     },
     "/v1/framework-editor/control-template/{id}": {
+      "get": {
+        "operationId": "ControlTemplateController_findOne_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Control Templates"
+        ]
+      },
       "patch": {
         "operationId": "ControlTemplateController_update_v1",
         "parameters": [
@@ -12744,6 +12765,99 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}/link-control/{controlId}": {
+      "post": {
+        "operationId": "FrameworkEditorFrameworkController_linkControl_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "controlId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}/link-task/{taskId}": {
+      "post": {
+        "operationId": "FrameworkEditorFrameworkController_linkTask_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}/link-policy/{policyId}": {
+      "post": {
+        "operationId": "FrameworkEditorFrameworkController_linkPolicy_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "policyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
             "description": ""
           }
         },

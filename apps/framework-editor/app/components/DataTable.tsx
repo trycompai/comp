@@ -13,7 +13,7 @@ import { Button } from '@trycompai/ui/button';
 import { Input } from '@trycompai/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
 import { PlusCircle, Search, TableIcon } from 'lucide-react';
-import { useMemo, useState, type ElementType } from 'react';
+import { useMemo, useState, type ElementType, type ReactNode } from 'react';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -24,6 +24,7 @@ interface DataTableProps<TData, TValue> {
   onRowClick?: (rowData: TData) => void;
   searchPlaceholder?: string;
   emptyMessage?: string;
+  additionalActions?: ReactNode;
 }
 
 export function DataTable<TData, TValue>({
@@ -35,6 +36,7 @@ export function DataTable<TData, TValue>({
   onRowClick,
   searchPlaceholder = 'Search table...',
   emptyMessage,
+  additionalActions,
 }: DataTableProps<TData, TValue>) {
   const [globalFilter, setGlobalFilter] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -111,12 +113,15 @@ export function DataTable<TData, TValue>({
           className="w-full"
           leftIcon={<Search className="text-muted-foreground h-4 w-4" />}
         />
-        {onCreateClick && (
-          <Button variant="outline" className="ml-auto" onClick={onCreateClick}>
-            <CreateButtonIcon className="mr-2 h-4 w-4" />
-            {createButtonLabel}
-          </Button>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {additionalActions}
+          {onCreateClick && (
+            <Button variant="outline" onClick={onCreateClick}>
+              <CreateButtonIcon className="mr-2 h-4 w-4" />
+              {createButtonLabel}
+            </Button>
+          )}
+        </div>
       </div>
       {rows.length > 0 ? (
         <Table>

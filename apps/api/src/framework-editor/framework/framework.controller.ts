@@ -76,4 +76,28 @@ export class FrameworkEditorFrameworkController {
   async getDocuments(@Param('id') id: string) {
     return this.frameworkService.getDocuments(id);
   }
+
+  @Post(':id/link-control/:controlId')
+  async linkControl(
+    @Param('id') id: string,
+    @Param('controlId') controlId: string,
+  ) {
+    return this.frameworkService.linkControl(id, controlId);
+  }
+
+  @Post(':id/link-task/:taskId')
+  async linkTask(
+    @Param('id') id: string,
+    @Param('taskId') taskId: string,
+  ) {
+    return this.frameworkService.linkTask(id, taskId);
+  }
+
+  @Post(':id/link-policy/:policyId')
+  async linkPolicy(
+    @Param('id') id: string,
+    @Param('policyId') policyId: string,
+  ) {
+    return this.frameworkService.linkPolicy(id, policyId);
+  }
 }

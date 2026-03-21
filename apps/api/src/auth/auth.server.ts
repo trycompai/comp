@@ -56,6 +56,7 @@ export function getTrustedOrigins(): string[] {
     'https://portal.staging.trycomp.ai',
     'https://api.staging.trycomp.ai',
     'https://dev.trycomp.ai',
+    'https://framework-editor.trycomp.ai',
   ];
 }
 

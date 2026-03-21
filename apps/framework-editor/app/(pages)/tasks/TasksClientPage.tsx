@@ -16,8 +16,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@trycompai/ui';
-import { ArrowDown, ArrowUp, ArrowUpDown, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Link, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import {
+  AddExistingItemDialog,
+  type ExistingItemRaw,
+} from '../../components/AddExistingItemDialog';
 import {
   DateCell,
   EditableCell,
@@ -290,6 +294,18 @@ export function TasksClientPage({ initialTasks, emptyMessage, frameworkId }: Tas
     getRowId: (row) => row.id,
   });
 
+  const [isAddExistingOpen, setIsAddExistingOpen] = useState(false);
+
+  const existingTaskIds = useMemo(
+    () => new Set(initialTasks.map((t) => t.id)),
+    [initialTasks],
+  );
+
+  const fetchAllTasks = useCallback(
+    () => apiClient<ExistingItemRaw[]>('/task-template'),
+    [],
+  );
+
   const handleAddRow = useCallback(() => {
     addRow({
       id: simpleUUID(),
@@ -321,11 +337,35 @@ export function TasksClientPage({ initialTasks, emptyMessage, frameworkId }: Tas
             </>
           )}
         </div>
-        <Button onClick={handleAddRow} size="sm" className="rounded-xs">
-          <Plus className="mr-1 h-4 w-4" />
-          Add Task
-        </Button>
+        <div className="flex items-center gap-2">
+          {frameworkId && (
+            <Button
+              variant="outline"
+              onClick={() => setIsAddExistingOpen(true)}
+              size="sm"
+              className="rounded-xs"
+            >
+              <Link className="mr-1 h-4 w-4" />
+              Add Existing Task
+            </Button>
+          )}
+          <Button onClick={handleAddRow} size="sm" className="rounded-xs">
+            <Plus className="mr-1 h-4 w-4" />
+            Add Task
+          </Button>
+        </div>
       </div>
+
+      {frameworkId && (
+        <AddExistingItemDialog
+          isOpen={isAddExistingOpen}
+          onOpenChange={setIsAddExistingOpen}
+          frameworkId={frameworkId}
+          itemType="task"
+          existingItemIds={existingTaskIds}
+          fetchAllItems={fetchAllTasks}
+        />
+      )}
 
       <div className="scrollbar-primary border-border min-h-0 flex-1 overflow-auto rounded-xs border">
         <table className="w-full border-collapse">

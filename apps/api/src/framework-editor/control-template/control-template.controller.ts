@@ -34,6 +34,11 @@ export class ControlTemplateController {
     return this.service.findAll(limit, offset, frameworkId);
   }
 
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.service.findById(id);
+  }
+
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async create(
