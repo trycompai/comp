@@ -11,10 +11,8 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
-import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
-import { PermissionGuard } from '../../auth/permission.guard';
-import { RequirePermission } from '../../auth/require-permission.decorator';
+import { ApiTags } from '@nestjs/swagger';
+import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
 import { CreatePolicyTemplateDto } from './dto/create-policy-template.dto';
 import { UpdatePolicyContentDto } from './dto/update-policy-content.dto';
 import { UpdatePolicyTemplateDto } from './dto/update-policy-template.dto';
@@ -22,13 +20,11 @@ import { PolicyTemplateService } from './policy-template.service';
 
 @ApiTags('Framework Editor Policy Templates')
 @Controller({ path: 'framework-editor/policy-template', version: '1' })
-@UseGuards(HybridAuthGuard, PermissionGuard)
-@ApiSecurity('apikey')
+@UseGuards(PlatformAdminGuard)
 export class PolicyTemplateController {
   constructor(private readonly service: PolicyTemplateService) {}
 
   @Get()
-  @RequirePermission('framework', 'read')
   async findAll(
     @Query('take') take?: string,
     @Query('skip') skip?: string,
@@ -39,20 +35,17 @@ export class PolicyTemplateController {
   }
 
   @Get(':id')
-  @RequirePermission('framework', 'read')
   async findById(@Param('id') id: string) {
     return this.service.findById(id);
   }
 
   @Post()
-  @RequirePermission('framework', 'create')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async create(@Body() dto: CreatePolicyTemplateDto) {
     return this.service.create(dto);
   }
 
   @Patch(':id')
-  @RequirePermission('framework', 'update')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async update(
     @Param('id') id: string,
@@ -62,7 +55,6 @@ export class PolicyTemplateController {
   }
 
   @Patch(':id/content')
-  @RequirePermission('framework', 'update')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async updateContent(
     @Param('id') id: string,
@@ -72,7 +64,6 @@ export class PolicyTemplateController {
   }
 
   @Delete(':id')
-  @RequirePermission('framework', 'delete')
   async delete(@Param('id') id: string) {
     return this.service.delete(id);
   }

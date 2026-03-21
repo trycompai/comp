@@ -23,5 +23,5 @@ export async function isAuthorized(): Promise<boolean> {
 
   if (!session?.user) return false;
 
-  return isInternalUser(session.user.email);
+  return session.user.role === 'admin' && isInternalUser(session.user.email);
 }

@@ -11,23 +11,19 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
-import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
-import { PermissionGuard } from '../../auth/permission.guard';
-import { RequirePermission } from '../../auth/require-permission.decorator';
+import { ApiTags } from '@nestjs/swagger';
+import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
 import { CreateRequirementDto } from './dto/create-requirement.dto';
 import { UpdateRequirementDto } from './dto/update-requirement.dto';
 import { RequirementService } from './requirement.service';
 
 @ApiTags('Framework Editor Requirements')
 @Controller({ path: 'framework-editor/requirement', version: '1' })
-@UseGuards(HybridAuthGuard, PermissionGuard)
-@ApiSecurity('apikey')
+@UseGuards(PlatformAdminGuard)
 export class RequirementController {
   constructor(private readonly service: RequirementService) {}
 
   @Get()
-  @RequirePermission('framework', 'read')
   async findAll(
     @Query('take') take?: string,
     @Query('skip') skip?: string,
@@ -38,14 +34,12 @@ export class RequirementController {
   }
 
   @Post()
-  @RequirePermission('framework', 'create')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async create(@Body() dto: CreateRequirementDto) {
     return this.service.create(dto);
   }
 
   @Patch(':id')
-  @RequirePermission('framework', 'update')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async update(
     @Param('id') id: string,
@@ -55,7 +49,6 @@ export class RequirementController {
   }
 
   @Delete(':id')
-  @RequirePermission('framework', 'delete')
   async delete(@Param('id') id: string) {
     return this.service.delete(id);
   }

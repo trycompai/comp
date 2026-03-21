@@ -12254,11 +12254,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12281,11 +12276,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12319,11 +12309,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12345,11 +12330,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12381,11 +12361,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12415,11 +12390,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12451,11 +12421,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12485,11 +12450,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12521,11 +12481,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12555,11 +12510,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12591,11 +12541,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12618,11 +12563,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12646,11 +12586,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12682,11 +12617,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12708,11 +12638,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12736,11 +12661,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12764,11 +12684,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12792,11 +12707,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12820,11 +12730,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12856,11 +12761,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -12883,11 +12783,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -12911,11 +12806,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -12947,11 +12837,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -12973,11 +12858,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13011,11 +12891,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13047,11 +12922,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13074,11 +12944,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13112,11 +12977,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13138,11 +12998,6 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13209,11 +13064,6 @@
             }
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "summary": "Get all framework editor task templates",
         "tags": [
           "Framework Editor Task Templates"
@@ -13300,11 +13150,6 @@
             }
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "summary": "Get framework editor task template by ID",
         "tags": [
           "Framework Editor Task Templates"
@@ -13413,11 +13258,6 @@
             }
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "summary": "Update framework editor task template",
         "tags": [
           "Framework Editor Task Templates"
@@ -13500,11 +13340,6 @@
             }
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "summary": "Delete framework editor task template",
         "tags": [
           "Framework Editor Task Templates"

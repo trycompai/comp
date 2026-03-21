@@ -18,7 +18,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     headers: await headers(),
   });
 
-  const hasSession = !!session?.user && isInternalUser(session.user.email);
+  const hasSession =
+    !!session?.user &&
+    session.user.role === 'admin' &&
+    isInternalUser(session.user.email);
 
   return (
     <html lang="en" className="h-full">
