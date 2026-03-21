@@ -1,0 +1,133 @@
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { db } from '@trycompai/db';
+import type { EvidenceFormType } from '@trycompai/db';
+import { CreateControlTemplateDto } from './dto/create-control-template.dto';
+import { UpdateControlTemplateDto } from './dto/update-control-template.dto';
+
+@Injectable()
+export class ControlTemplateService {
+  private readonly logger = new Logger(ControlTemplateService.name);
+
+  async findAll(take = 500, skip = 0) {
+    return db.frameworkEditorControlTemplate.findMany({
+      take,
+      skip,
+      orderBy: { createdAt: 'asc' },
+      include: {
+        policyTemplates: { select: { id: true, name: true } },
+        requirements: {
+          select: {
+            id: true,
+            name: true,
+            framework: { select: { name: true } },
+          },
+        },
+        taskTemplates: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  async findById(id: string) {
+    const ct = await db.frameworkEditorControlTemplate.findUnique({
+      where: { id },
+      include: {
+        policyTemplates: { select: { id: true, name: true } },
+        requirements: {
+          select: {
+            id: true,
+            name: true,
+            framework: { select: { name: true } },
+          },
+        },
+        taskTemplates: { select: { id: true, name: true } },
+      },
+    });
+    if (!ct) throw new NotFoundException(`Control template ${id} not found`);
+    return ct;
+  }
+
+  async create(dto: CreateControlTemplateDto) {
+    const ct = await db.frameworkEditorControlTemplate.create({
+      data: {
+        name: dto.name,
+        description: dto.description ?? '',
+        ...(dto.documentTypes && {
+          documentTypes: dto.documentTypes as EvidenceFormType[],
+        }),
+      },
+    });
+    this.logger.log(`Created control template: ${ct.name} (${ct.id})`);
+    return ct;
+  }
+
+  async update(id: string, dto: UpdateControlTemplateDto) {
+    await this.findById(id);
+    const updated = await db.frameworkEditorControlTemplate.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.documentTypes !== undefined && {
+          documentTypes: dto.documentTypes as EvidenceFormType[],
+        }),
+      },
+    });
+    this.logger.log(`Updated control template: ${updated.name} (${id})`);
+    return updated;
+  }
+
+  async delete(id: string) {
+    await this.findById(id);
+    await db.frameworkEditorControlTemplate.delete({ where: { id } });
+    this.logger.log(`Deleted control template ${id}`);
+    return { message: 'Control template deleted successfully' };
+  }
+
+  async linkRequirement(controlId: string, requirementId: string) {
+    await db.frameworkEditorControlTemplate.update({
+      where: { id: controlId },
+      data: { requirements: { connect: { id: requirementId } } },
+    });
+    return { message: 'Requirement linked' };
+  }
+
+  async unlinkRequirement(controlId: string, requirementId: string) {
+    await db.frameworkEditorControlTemplate.update({
+      where: { id: controlId },
+      data: { requirements: { disconnect: { id: requirementId } } },
+    });
+    return { message: 'Requirement unlinked' };
+  }
+
+  async linkPolicyTemplate(controlId: string, policyTemplateId: string) {
+    await db.frameworkEditorControlTemplate.update({
+      where: { id: controlId },
+      data: { policyTemplates: { connect: { id: policyTemplateId } } },
+    });
+    return { message: 'Policy template linked' };
+  }
+
+  async unlinkPolicyTemplate(controlId: string, policyTemplateId: string) {
+    await db.frameworkEditorControlTemplate.update({
+      where: { id: controlId },
+      data: { policyTemplates: { disconnect: { id: policyTemplateId } } },
+    });
+    return { message: 'Policy template unlinked' };
+  }
+
+  async linkTaskTemplate(controlId: string, taskTemplateId: string) {
+    await db.frameworkEditorControlTemplate.update({
+      where: { id: controlId },
+      data: { taskTemplates: { connect: { id: taskTemplateId } } },
+    });
+    return { message: 'Task template linked' };
+  }
+
+  async unlinkTaskTemplate(controlId: string, taskTemplateId: string) {
+    await db.frameworkEditorControlTemplate.update({
+      where: { id: controlId },
+      data: { taskTemplates: { disconnect: { id: taskTemplateId } } },
+    });
+    return { message: 'Task template unlinked' };
+  }
+}

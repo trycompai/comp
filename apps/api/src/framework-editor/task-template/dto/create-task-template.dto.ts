@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum, MaxLength } from 'class-validator';
 import { Frequency, Departments } from '@trycompai/db';
 
 export class CreateTaskTemplateDto {
@@ -9,6 +9,7 @@ export class CreateTaskTemplateDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   name: string;
 
   @ApiProperty({
@@ -17,6 +18,7 @@ export class CreateTaskTemplateDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(5000)
   description: string;
 
   @ApiProperty({

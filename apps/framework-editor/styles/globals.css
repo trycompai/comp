@@ -1,0 +1,58 @@
+@import '@trycompai/ui/globals.css';
+@config '../tailwind.config.ts';
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar styling */
+.scrollbar-primary {
+  scrollbar-width: auto;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) hsl(var(--muted));
+}
+
+.scrollbar-primary::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.scrollbar-primary::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 5px;
+}
+
+.scrollbar-primary::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 5px;
+}
+
+.scrollbar-primary::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Styles for DataSheetGrid row changes */
+.row-deleted .dsg-cell {
+  background: hsl(var(--destructive) / 0.06) !important;
+}
+.row-deleted .dsg-cell:focus-within {
+  box-shadow: inset 0 0 0 2px hsl(var(--destructive) / 0.4) !important;
+}
+
+.row-created .dsg-cell {
+  background: hsl(142 76% 36% / 0.06) !important;
+}
+.row-created .dsg-cell:focus-within {
+  box-shadow: inset 0 0 0 2px hsl(142 76% 36% / 0.4) !important;
+}
+
+.row-updated .dsg-cell {
+  background: hsl(38 92% 50% / 0.06) !important;
+}
+.row-updated .dsg-cell:focus-within {
+  box-shadow: inset 0 0 0 2px hsl(38 92% 50% / 0.4) !important;
+}

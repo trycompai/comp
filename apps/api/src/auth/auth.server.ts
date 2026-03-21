@@ -16,6 +16,7 @@ import {
 import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
+import type { AccessControl } from 'better-auth/plugins/access';
 
 const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
 
@@ -47,6 +48,7 @@ export function getTrustedOrigins(): string[] {
     'http://localhost:3000',
     'http://localhost:3002',
     'http://localhost:3333',
+    'http://localhost:3004',
     'https://app.trycomp.ai',
     'https://portal.trycomp.ai',
     'https://api.trycomp.ai',
@@ -414,7 +416,7 @@ export const auth = betterAuth({
           }),
         });
       },
-      ac,
+      ac: ac as AccessControl,
       roles: allRoles,
       // Enable dynamic access control for custom roles
       // This allows organizations to create custom roles at runtime
