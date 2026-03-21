@@ -16,6 +16,7 @@ model Control {
   policies           Policy[]
   controlTemplateId  String?
   controlTemplate    FrameworkEditorControlTemplate? @relation(fields: [controlTemplateId], references: [id])
+  controlDocumentTypes ControlDocumentType[]
 
   @@index([organizationId])
 }
