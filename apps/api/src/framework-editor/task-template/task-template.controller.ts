@@ -1,10 +1,12 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -17,6 +19,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
+import { CreateTaskTemplateDto } from './dto/create-task-template.dto';
 import { UpdateTaskTemplateDto } from './dto/update-task-template.dto';
 import { TaskTemplateService } from './task-template.service';
 import { ValidateIdPipe } from './pipes/validate-id.pipe';
@@ -34,13 +37,32 @@ import { DELETE_TASK_TEMPLATE_RESPONSES } from './schemas/delete-task-template.r
 export class TaskTemplateController {
   constructor(private readonly taskTemplateService: TaskTemplateService) {}
 
+  @Post()
+  @ApiOperation(TASK_TEMPLATE_OPERATIONS.createTaskTemplate)
+  @ApiBody(TASK_TEMPLATE_BODIES.createTaskTemplate)
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
+  async createTaskTemplate(
+    @Body() dto: CreateTaskTemplateDto,
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return this.taskTemplateService.create(dto, frameworkId);
+  }
+
   @Get()
   @ApiOperation(TASK_TEMPLATE_OPERATIONS.getAllTaskTemplates)
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[200])
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[401])
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[500])
-  async getAllTaskTemplates() {
-    return await this.taskTemplateService.findAll();
+  async getAllTaskTemplates(
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return await this.taskTemplateService.findAll(frameworkId);
   }
 
   @Get(':id')

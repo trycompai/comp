@@ -3,6 +3,16 @@ import { isAuthorized } from '@/app/lib/utils';
 import { redirect } from 'next/navigation';
 import { PoliciesClientPage } from '../../../policies/PoliciesClientPage';
 
+interface PolicyTemplateItem {
+  id: string;
+  name: string;
+  description: string;
+  frequency: string;
+  department: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
 export default async function Page({
   params,
 }: {
@@ -13,14 +23,8 @@ export default async function Page({
 
   const { frameworkId } = await params;
 
-  const policies = await serverApi<Array<Record<string, unknown>>>(
-    `/framework/${frameworkId}/policies`,
-  );
+  const policies =
+    await serverApi<PolicyTemplateItem[]>(`/policy-template?frameworkId=${frameworkId}`);
 
-  return (
-    <PoliciesClientPage
-      initialPolicies={policies}
-      emptyMessage="No policies linked to this framework yet. Link policy templates to controls first."
-    />
-  );
+  return <PoliciesClientPage initialPolicies={policies} frameworkId={frameworkId} />;
 }

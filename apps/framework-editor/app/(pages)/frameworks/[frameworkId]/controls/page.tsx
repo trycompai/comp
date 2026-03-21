@@ -2,6 +2,7 @@ import { serverApi } from '@/app/lib/api-server';
 import { isAuthorized } from '@/app/lib/utils';
 import { redirect } from 'next/navigation';
 import { ControlsClientPage } from '../../../controls/ControlsClientPage';
+import type { FrameworkEditorControlTemplateWithRelatedData } from '../../../controls/types';
 
 export default async function Page({
   params,
@@ -13,14 +14,10 @@ export default async function Page({
 
   const { frameworkId } = await params;
 
-  const controls = await serverApi<Array<Record<string, unknown>>>(
-    `/framework/${frameworkId}/controls`,
-  );
+  const controls =
+    await serverApi<FrameworkEditorControlTemplateWithRelatedData[]>(
+      `/control-template?frameworkId=${frameworkId}`,
+    );
 
-  return (
-    <ControlsClientPage
-      initialControls={controls}
-      emptyMessage="No controls linked to this framework yet. Add controls to requirements first."
-    />
-  );
+  return <ControlsClientPage initialControls={controls} frameworkId={frameworkId} />;
 }

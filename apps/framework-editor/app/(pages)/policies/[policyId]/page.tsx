@@ -1,7 +1,7 @@
 import PageLayout from '@/app/components/PageLayout';
 import { serverApi } from '@/app/lib/api-server';
 import { isAuthorized } from '@/app/lib/utils';
-import '@trycompai/ui/editor.css';
+import '@/styles/editor.css';
 import { notFound, redirect } from 'next/navigation';
 import { PolicyDetailsClientPage } from './PolicyDetailsClientPage';
 import { PolicyEditorClient } from './PolicyEditorClient';
@@ -37,7 +37,7 @@ export default async function PolicyDetailPage({
   return (
     <PageLayout
       breadcrumbs={[
-        { label: 'Policies', href: '/policies' },
+        { label: 'Frameworks', href: '/frameworks' },
         { label: policy.name, href: `/policies/${policy.id}` },
       ]}
     >

@@ -25,9 +25,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   return (
     <html lang="en" className="h-full">
-      <body className="min-h-full">
+      <body className="flex h-full flex-col">
         {hasSession && <Header />}
-        <div className="flex h-full w-screen flex-col gap-2 p-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
           {children}
           <Toaster />
         </div>

@@ -45,7 +45,7 @@ export default function PageLayout({ children, breadcrumbs, isLoading = false }:
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       {breadcrumbs && (
         <div className="pt-2">
           {breadcrumbs ? (

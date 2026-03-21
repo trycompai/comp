@@ -7,11 +7,18 @@ import { UpdatePolicyTemplateDto } from './dto/update-policy-template.dto';
 export class PolicyTemplateService {
   private readonly logger = new Logger(PolicyTemplateService.name);
 
-  async findAll(take = 500, skip = 0) {
+  async findAll(take = 500, skip = 0, frameworkId?: string) {
     return db.frameworkEditorPolicyTemplate.findMany({
       take,
       skip,
       orderBy: { name: 'asc' },
+      where: frameworkId
+        ? {
+            controlTemplates: {
+              some: { requirements: { some: { frameworkId } } },
+            },
+          }
+        : undefined,
     });
   }
 
@@ -23,7 +30,16 @@ export class PolicyTemplateService {
     return pt;
   }
 
-  async create(dto: CreatePolicyTemplateDto) {
+  async create(dto: CreatePolicyTemplateDto, frameworkId?: string) {
+    const controlIds = frameworkId
+      ? await db.frameworkEditorControlTemplate
+          .findMany({
+            where: { requirements: { some: { frameworkId } } },
+            select: { id: true },
+          })
+          .then((cts) => cts.map((ct) => ({ id: ct.id })))
+      : [];
+
     const pt = await db.frameworkEditorPolicyTemplate.create({
       data: {
         name: dto.name,
@@ -31,6 +47,9 @@ export class PolicyTemplateService {
         frequency: dto.frequency,
         department: dto.department,
         content: {},
+        ...(controlIds.length > 0 && {
+          controlTemplates: { connect: controlIds },
+        }),
       },
     });
     this.logger.log(`Created policy template: ${pt.name} (${pt.id})`);

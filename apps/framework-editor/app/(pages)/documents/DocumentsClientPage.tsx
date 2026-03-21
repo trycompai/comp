@@ -96,12 +96,14 @@ export function DocumentsClientPage({ controls }: DocumentsClientPageProps) {
         size: 300,
         enableSorting: false,
         cell: ({ row }) => (
-          <DocumentControlsCell
-            documentType={row.original.value}
-            controls={row.original.controls}
-            onControlLinked={handleControlLinked}
-            onControlUnlinked={handleControlUnlinked}
-          />
+          <div className="relative">
+            <DocumentControlsCell
+              documentType={row.original.value}
+              controls={row.original.controls}
+              onControlLinked={handleControlLinked}
+              onControlUnlinked={handleControlUnlinked}
+            />
+          </div>
         ),
       }),
       columnHelper.accessor('controlCount', {
@@ -139,8 +141,8 @@ export function DocumentsClientPage({ controls }: DocumentsClientPageProps) {
   });
 
   return (
-    <>
-      <div className="scrollbar-primary border-border mt-2 max-h-[calc(100vh-300px)] overflow-scroll rounded-xs border">
+    <div className="mt-2 flex min-h-0 flex-1 flex-col">
+      <div className="scrollbar-primary border-border min-h-0 flex-1 overflow-auto rounded-xs border">
         <table className="w-full border-collapse">
           <thead className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -193,6 +195,6 @@ export function DocumentsClientPage({ controls }: DocumentsClientPageProps) {
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 }

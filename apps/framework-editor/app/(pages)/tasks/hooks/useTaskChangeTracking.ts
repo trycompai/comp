@@ -19,7 +19,7 @@ export interface TasksPageGridData {
 
 export const simpleUUID = () => crypto.randomUUID();
 
-export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
+export const useTaskChangeTracking = (initialData: TasksPageGridData[], frameworkId?: string) => {
   const [data, setData] = useState<TasksPageGridData[]>(() => initialData);
   const [prevData, setPrevData] = useState<TasksPageGridData[]>(() => initialData);
 
@@ -155,7 +155,8 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
       }
 
       try {
-        const newTask = await apiClient<{ id: string }>('/task-template', {
+        const queryParam = frameworkId ? `?frameworkId=${frameworkId}` : '';
+        const newTask = await apiClient<{ id: string }>(`/task-template${queryParam}`, {
           method: 'POST',
           body: JSON.stringify({
             name: row.name,
@@ -283,7 +284,7 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
         description: `${results.successes.length} operation(s) completed`,
       });
     }
-  }, [data, createdIds, updatedIds, deletedIds]);
+  }, [data, createdIds, updatedIds, deletedIds, frameworkId]);
 
   const handleCancel = useCallback(() => {
     setData(prevData);

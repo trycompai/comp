@@ -35,9 +35,10 @@ import { CreatePolicySchema, type CreatePolicySchemaType } from '../schemas';
 interface CreatePolicyDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  frameworkId?: string;
 }
 
-export function CreatePolicyDialog({ isOpen, onOpenChange }: CreatePolicyDialogProps) {
+export function CreatePolicyDialog({ isOpen, onOpenChange, frameworkId }: CreatePolicyDialogProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -55,7 +56,8 @@ export function CreatePolicyDialog({ isOpen, onOpenChange }: CreatePolicyDialogP
   const onSubmit = (values: CreatePolicySchemaType) => {
     startTransition(async () => {
       try {
-        const result = await apiClient<{ id: string }>('/policy-template', {
+        const queryParam = frameworkId ? `?frameworkId=${frameworkId}` : '';
+        const result = await apiClient<{ id: string }>(`/policy-template${queryParam}`, {
           method: 'POST',
           body: JSON.stringify({
             name: values.name,

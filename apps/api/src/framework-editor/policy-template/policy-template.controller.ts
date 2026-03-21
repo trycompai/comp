@@ -28,10 +28,11 @@ export class PolicyTemplateController {
   async findAll(
     @Query('take') take?: string,
     @Query('skip') skip?: string,
+    @Query('frameworkId') frameworkId?: string,
   ) {
     const limit = Math.min(Number(take) || 500, 500);
     const offset = Number(skip) || 0;
-    return this.service.findAll(limit, offset);
+    return this.service.findAll(limit, offset, frameworkId);
   }
 
   @Get(':id')
@@ -41,8 +42,11 @@ export class PolicyTemplateController {
 
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-  async create(@Body() dto: CreatePolicyTemplateDto) {
-    return this.service.create(dto);
+  async create(
+    @Body() dto: CreatePolicyTemplateDto,
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return this.service.create(dto, frameworkId);
   }
 
   @Patch(':id')

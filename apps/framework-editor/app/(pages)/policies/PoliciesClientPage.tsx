@@ -19,9 +19,10 @@ interface PolicyItem {
 interface PoliciesClientPageProps {
   initialPolicies: PolicyItem[];
   emptyMessage?: string;
+  frameworkId?: string;
 }
 
-export function PoliciesClientPage({ initialPolicies, emptyMessage }: PoliciesClientPageProps) {
+export function PoliciesClientPage({ initialPolicies, emptyMessage, frameworkId }: PoliciesClientPageProps) {
   const [isCreatePolicyDialogOpen, setIsCreatePolicyDialogOpen] = useState(false);
   const router = useRouter();
 
@@ -42,6 +43,7 @@ export function PoliciesClientPage({ initialPolicies, emptyMessage }: PoliciesCl
       <CreatePolicyDialog
         isOpen={isCreatePolicyDialogOpen}
         onOpenChange={setIsCreatePolicyDialogOpen}
+        frameworkId={frameworkId}
       />
     </>
   );

@@ -12247,6 +12247,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "frameworkId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -12260,7 +12268,16 @@
       },
       "post": {
         "operationId": "ControlTemplateController_create_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "frameworkId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -12754,6 +12771,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "frameworkId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -12767,7 +12792,16 @@
       },
       "post": {
         "operationId": "PolicyTemplateController_create_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "frameworkId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -13004,10 +13038,53 @@
       }
     },
     "/v1/framework-editor/task-template": {
+      "post": {
+        "description": "Create a new framework editor task template",
+        "operationId": "TaskTemplateController_createTaskTemplate_v1",
+        "parameters": [
+          {
+            "name": "frameworkId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Create a new framework editor task template",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a framework editor task template",
+        "tags": [
+          "Framework Editor Task Templates"
+        ]
+      },
       "get": {
         "description": "Retrieve all framework editor task templates",
         "operationId": "TaskTemplateController_getAllTaskTemplates_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "frameworkId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successfully retrieved all framework editor task templates",
@@ -24064,6 +24141,48 @@
             "type": "string"
           }
         }
+      },
+      "CreateTaskTemplateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Task template name",
+            "example": "Monthly Security Review"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the task template",
+            "example": "Review and update security policies on a monthly basis"
+          },
+          "frequency": {
+            "type": "string",
+            "description": "Frequency of the task",
+            "enum": [
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "example": "monthly"
+          },
+          "department": {
+            "type": "string",
+            "description": "Department responsible for the task",
+            "enum": [
+              "none",
+              "admin",
+              "gov",
+              "hr",
+              "it",
+              "itsm",
+              "qms"
+            ],
+            "example": "it"
+          }
+        },
+        "required": [
+          "name"
+        ]
       },
       "UpdateTaskTemplateDto": {
         "type": "object",

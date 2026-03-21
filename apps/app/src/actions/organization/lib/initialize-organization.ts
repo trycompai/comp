@@ -1,5 +1,25 @@
 import { db, Prisma } from '@db';
 
+/**
+ * Policy.content is Json[] (the inner nodes of a TipTap document),
+ * but FrameworkEditorPolicyTemplate.content is Json (the full TipTap doc).
+ * This extracts the inner content array from either format.
+ */
+function extractTipTapContentArray(content: unknown): Prisma.InputJsonValue[] {
+  if (Array.isArray(content)) return content as Prisma.InputJsonValue[];
+  if (
+    content &&
+    typeof content === 'object' &&
+    'type' in content &&
+    (content as Record<string, unknown>).type === 'doc' &&
+    'content' in content &&
+    Array.isArray((content as Record<string, unknown>).content)
+  ) {
+    return (content as Record<string, unknown>).content as Prisma.InputJsonValue[];
+  }
+  return [];
+}
+
 // Define a type for FrameworkEditorFramework with requirements included
 // This assumes FrameworkEditorFramework and FrameworkEditorRequirement are valid Prisma types.
 // Adjust if your Prisma client exposes these differently (e.g., via Prisma.FrameworkEditorFrameworkGetPayload).
@@ -197,15 +217,19 @@ export const _upsertOrgFrameworkStructureCore = async ({
 
   if (policyTemplatesForCreation.length > 0) {
     await tx.policy.createMany({
-      data: policyTemplatesForCreation.map((policyTemplate) => ({
-        name: policyTemplate.name,
-        description: policyTemplate.description,
-        department: policyTemplate.department,
-        frequency: policyTemplate.frequency,
-        content: policyTemplate.content as Prisma.PolicyCreateInput['content'],
-        organizationId: organizationId,
-        policyTemplateId: policyTemplate.id,
-      })),
+      data: policyTemplatesForCreation.map((policyTemplate) => {
+        const templateContent = policyTemplate.content;
+        const contentArray = extractTipTapContentArray(templateContent);
+        return {
+          name: policyTemplate.name,
+          description: policyTemplate.description,
+          department: policyTemplate.department,
+          frequency: policyTemplate.frequency,
+          content: { set: contentArray },
+          organizationId: organizationId,
+          policyTemplateId: policyTemplate.id,
+        };
+      }),
     });
 
     // Fetch newly created policies to create versions for them
@@ -225,7 +249,7 @@ export const _upsertOrgFrameworkStructureCore = async ({
         data: newlyCreatedPolicies.map((policy) => ({
           policyId: policy.id,
           version: 1,
-          content: policy.content as Prisma.InputJsonValue[],
+          content: { set: policy.content as Prisma.InputJsonValue[] },
           changelog: 'Initial version from template',
         })),
       });

@@ -50,7 +50,7 @@ export default async function FrameworkLayout({
         <p className="text-muted-foreground mb-4 text-sm">{framework.description}</p>
       )}
       <FrameworkTabs />
-      <div className="mt-4">{children}</div>
+      <div className="mt-4 flex min-h-0 flex-1 flex-col">{children}</div>
     </PageLayout>
   );
 }

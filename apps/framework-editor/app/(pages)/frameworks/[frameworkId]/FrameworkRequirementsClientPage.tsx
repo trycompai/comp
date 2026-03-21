@@ -222,7 +222,7 @@ export function FrameworkRequirementsClientPage({
   };
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {isDirty && (
@@ -263,7 +263,7 @@ export function FrameworkRequirementsClientPage({
         </div>
       </div>
 
-      <div className="scrollbar-primary border-border max-h-[calc(100vh-350px)] overflow-scroll rounded-xs border">
+      <div className="scrollbar-primary border-border min-h-0 flex-1 overflow-auto rounded-xs border">
         <table className="w-full border-collapse">
           <thead className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -343,6 +343,6 @@ export function FrameworkRequirementsClientPage({
           frameworkName={frameworkDetails.name}
         />
       )}
-    </>
+    </div>
   );
 }

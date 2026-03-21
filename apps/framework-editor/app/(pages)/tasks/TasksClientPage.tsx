@@ -55,11 +55,12 @@ const departmentOptions: SelectOption[] = Object.values(Departments).map((dept) 
 interface TasksClientPageProps {
   initialTasks: FrameworkEditorTaskTemplateWithRelatedControls[];
   emptyMessage?: string;
+  frameworkId?: string;
 }
 
 const columnHelper = createColumnHelper<TasksPageGridData>();
 
-export function TasksClientPage({ initialTasks, emptyMessage }: TasksClientPageProps) {
+export function TasksClientPage({ initialTasks, emptyMessage, frameworkId }: TasksClientPageProps) {
   const initialGridData: TasksPageGridData[] = useMemo(
     () =>
       initialTasks.map((task) => ({
@@ -89,7 +90,7 @@ export function TasksClientPage({ initialTasks, emptyMessage }: TasksClientPageP
     isDirty,
     createdIds,
     changesSummary,
-  } = useTaskChangeTracking(initialGridData);
+  } = useTaskChangeTracking(initialGridData, frameworkId);
 
   const fetchAllControls = useCallback(
     () => apiClient<Array<{ id: string; name: string }>>('/control-template'),
@@ -305,7 +306,7 @@ export function TasksClientPage({ initialTasks, emptyMessage }: TasksClientPageP
   }, [addRow]);
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="mb-4 mt-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {isDirty && (
@@ -326,7 +327,7 @@ export function TasksClientPage({ initialTasks, emptyMessage }: TasksClientPageP
         </Button>
       </div>
 
-      <div className="scrollbar-primary border-border max-h-[calc(100vh-300px)] overflow-scroll rounded-xs border">
+      <div className="scrollbar-primary border-border min-h-0 flex-1 overflow-auto rounded-xs border">
         <table className="w-full border-collapse">
           <thead className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -395,6 +396,6 @@ export function TasksClientPage({ initialTasks, emptyMessage }: TasksClientPageP
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 }

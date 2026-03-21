@@ -75,35 +75,40 @@ async function unlinkControlRelation(
 interface ControlsClientPageProps {
   initialControls: FrameworkEditorControlTemplateWithRelatedData[];
   emptyMessage?: string;
+  frameworkId?: string;
 }
 
 const columnHelper = createColumnHelper<ControlsPageGridData>();
 
-const mutations: ControlMutations = {
-  createControl: (data: {
-    name: string | null;
-    description: string | null;
-    documentTypes: string[];
-  }) =>
-    apiClient<{ id: string }>('/control-template', {
-      method: 'POST',
-      body: JSON.stringify(data),
+export function ControlsClientPage({ initialControls, emptyMessage, frameworkId }: ControlsClientPageProps) {
+  const mutations: ControlMutations = useMemo(
+    () => ({
+      createControl: (data: {
+        name: string | null;
+        description: string | null;
+        documentTypes: string[];
+      }) => {
+        const queryParam = frameworkId ? `?frameworkId=${frameworkId}` : '';
+        return apiClient<{ id: string }>(`/control-template${queryParam}`, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      updateControl: (
+        id: string,
+        data: { name: string; description: string; documentTypes: string[] },
+      ) =>
+        apiClient(`/control-template/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        }),
+      deleteControl: (id: string) =>
+        apiClient(`/control-template/${id}`, {
+          method: 'DELETE',
+        }),
     }),
-  updateControl: (
-    id: string,
-    data: { name: string; description: string; documentTypes: string[] },
-  ) =>
-    apiClient(`/control-template/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    }),
-  deleteControl: (id: string) =>
-    apiClient(`/control-template/${id}`, {
-      method: 'DELETE',
-    }),
-};
-
-export function ControlsClientPage({ initialControls, emptyMessage }: ControlsClientPageProps) {
+    [frameworkId],
+  );
   const initialGridData: ControlsPageGridData[] = useMemo(
     () =>
       initialControls.map((control) => ({
@@ -341,7 +346,7 @@ export function ControlsClientPage({ initialControls, emptyMessage }: ControlsCl
   }, [addRow]);
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {isDirty && (
@@ -362,7 +367,7 @@ export function ControlsClientPage({ initialControls, emptyMessage }: ControlsCl
         </Button>
       </div>
 
-      <div className="scrollbar-primary border-border max-h-[calc(100vh-300px)] overflow-scroll rounded-xs border">
+      <div className="scrollbar-primary border-border min-h-0 flex-1 overflow-auto rounded-xs border">
         <table className="w-full border-collapse">
           <thead className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -431,6 +436,6 @@ export function ControlsClientPage({ initialControls, emptyMessage }: ControlsCl
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 }
