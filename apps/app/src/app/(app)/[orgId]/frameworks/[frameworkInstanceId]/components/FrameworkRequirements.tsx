@@ -198,7 +198,7 @@ export function FrameworkRequirements({
         onOpenChange={setCreateOpen}
         frameworkInstanceId={frameworkInstanceId}
         onCreated={() => mutate()}
-        controls={frameworkInstanceWithControls.controls.map((c) => ({ id: c.id, name: c.name }))}
+        controls={[...frameworkInstanceWithControls.controls].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ id: c.id, name: c.name }))}
       />
     </div>
   );
