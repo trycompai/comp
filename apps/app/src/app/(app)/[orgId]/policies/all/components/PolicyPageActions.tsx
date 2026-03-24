@@ -36,6 +36,7 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
       const link = document.createElement('a');
       link.href = res.data.downloadUrl;
       link.download = `${res.data.name ?? 'all-policies'}.pdf`;
+      link.target = '_blank';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
