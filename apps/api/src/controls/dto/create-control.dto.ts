@@ -9,9 +9,18 @@ import {
 import { Type } from 'class-transformer';
 
 class RequirementMappingDto {
-  @ApiProperty({ description: 'Requirement ID' })
+  @ApiProperty({ description: 'Template requirement ID', required: false })
+  @IsOptional()
   @IsString()
-  requirementId: string;
+  requirementId?: string;
+
+  @ApiProperty({
+    description: 'Instance requirement ID',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  frameworkInstanceRequirementId?: string;
 
   @ApiProperty({ description: 'Framework instance ID' })
   @IsString()

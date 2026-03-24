@@ -1,19 +1,26 @@
 'use client';
 
 import type { Control, FrameworkEditorRequirement, RequirementMap, Task } from '@db';
+import { useParams, useRouter } from 'next/navigation';
 import { RequirementControlsTable } from './table/RequirementControlsTable';
+import { CreateControlForRequirementSheet } from './CreateControlForRequirementSheet';
 
 interface RequirementControlsProps {
-  requirement: FrameworkEditorRequirement;
+  requirement: FrameworkEditorRequirement & { frameworkInstanceId?: string };
   tasks: (Task & { controls: Control[] })[];
   relatedControls: (RequirementMap & { control: Control })[];
+  isInstanceRequirement?: boolean;
 }
 
 export function RequirementControls({
   requirement,
   tasks,
   relatedControls,
+  isInstanceRequirement = false,
 }: RequirementControlsProps) {
+  const router = useRouter();
+  const { frameworkInstanceId } = useParams<{ frameworkInstanceId: string }>();
+
   return (
     <div className="space-y-6">
       {/* Requirement Header */}
@@ -33,6 +40,12 @@ export function RequirementControls({
               {relatedControls.length}
             </span>
           </div>
+          <CreateControlForRequirementSheet
+            requirementId={requirement.id}
+            frameworkInstanceId={frameworkInstanceId}
+            isInstanceRequirement={isInstanceRequirement}
+            onCreated={() => router.refresh()}
+          />
         </div>
 
         <RequirementControlsTable

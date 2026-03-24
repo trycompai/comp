@@ -2,6 +2,7 @@
 
 import { apiClient } from '@/lib/api-client';
 import { useMediaQuery } from '@trycompai/ui/hooks';
+import MultipleSelector, { type Option } from '@trycompai/ui/multiple-selector';
 import { Button } from '@trycompai/ui/button';
 import {
   Drawer,
@@ -24,15 +25,17 @@ import {
 } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useCallback, useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import useSWR from 'swr';
 import { z } from 'zod';
 
 const createRequirementSchema = z.object({
   name: z.string().min(1, { message: 'Name is required' }),
   identifier: z.string().optional(),
   description: z.string().min(1, { message: 'Description is required' }),
+  controlIds: z.array(z.string()).optional(),
 });
 
 interface CreateRequirementSheetProps {
@@ -51,10 +54,34 @@ export function CreateRequirementSheet({
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch controls when sheet is open
+  const { data: controlsData } = useSWR(
+    open ? '/v1/controls?perPage=500' : null,
+    async (url: string) => {
+      const res = await apiClient.get<{ data: { id: string; name: string }[] }>(url);
+      return res.data?.data ?? [];
+    },
+  );
+
+  const controlOptions = useMemo(
+    () => (controlsData ?? []).map((c) => ({ value: c.id, label: c.name })),
+    [controlsData],
+  );
+
+  const controlFilterFunction = useCallback(
+    (value: string, search: string) => {
+      const option = controlOptions.find((opt) => opt.value === value);
+      if (!option) return 0;
+      return option.label.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+    },
+    [controlOptions],
+  );
+
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<z.infer<typeof createRequirementSchema>>({
     resolver: zodResolver(createRequirementSchema),
@@ -62,6 +89,7 @@ export function CreateRequirementSheet({
       name: '',
       identifier: '',
       description: '',
+      controlIds: [],
     },
   });
 
@@ -118,6 +146,39 @@ export function CreateRequirementSheet({
           />
           <FieldError errors={[errors.description]} />
         </Field>
+
+        <Controller
+          name="controlIds"
+          control={control}
+          render={({ field }) => {
+            const selectedOptions: Option[] = (field.value || [])
+              .map((id) => {
+                const ctrl = (controlsData ?? []).find((c) => c.id === id);
+                return ctrl ? { value: ctrl.id, label: ctrl.name } : null;
+              })
+              .filter(Boolean) as Option[];
+
+            return (
+              <Field>
+                <FieldLabel>Controls (Optional)</FieldLabel>
+                <MultipleSelector
+                  value={selectedOptions}
+                  onChange={(options) => field.onChange(options.map((o) => o.value))}
+                  defaultOptions={controlOptions}
+                  placeholder="Search and select controls..."
+                  emptyIndicator={
+                    <p className="text-center text-sm leading-10 text-muted-foreground">
+                      No controls found.
+                    </p>
+                  }
+                  commandProps={{
+                    filter: controlFilterFunction,
+                  }}
+                />
+              </Field>
+            );
+          }}
+        />
       </FieldGroup>
 
       <SheetFooter>

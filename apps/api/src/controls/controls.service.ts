@@ -184,8 +184,14 @@ export class ControlsService {
           db.requirementMap.create({
             data: {
               controlId: control.id,
-              requirementId: mapping.requirementId,
               frameworkInstanceId: mapping.frameworkInstanceId,
+              ...(mapping.requirementId && {
+                requirementId: mapping.requirementId,
+              }),
+              ...(mapping.frameworkInstanceRequirementId && {
+                frameworkInstanceRequirementId:
+                  mapping.frameworkInstanceRequirementId,
+              }),
             },
           }),
         ),

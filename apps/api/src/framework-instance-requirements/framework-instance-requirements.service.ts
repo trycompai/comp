@@ -94,6 +94,20 @@ export class FrameworkInstanceRequirementsService {
       },
     });
 
+    if (dto.controlIds && dto.controlIds.length > 0) {
+      await Promise.all(
+        dto.controlIds.map((controlId) =>
+          db.requirementMap.create({
+            data: {
+              controlId,
+              frameworkInstanceRequirementId: requirement.id,
+              frameworkInstanceId: dto.frameworkInstanceId,
+            },
+          }),
+        ),
+      );
+    }
+
     this.logger.log(
       `Created framework instance requirement: ${requirement.name} (${requirement.id})`,
     );

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsArray,
   IsString,
   IsNotEmpty,
   IsOptional,
@@ -30,4 +31,13 @@ export class CreateFrameworkInstanceRequirementDto {
   @IsNotEmpty()
   @MaxLength(5000)
   description: string;
+
+  @ApiPropertyOptional({
+    description: 'Control IDs to link to this requirement',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  controlIds?: string[];
 }

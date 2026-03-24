@@ -63,6 +63,7 @@ export default async function RequirementPage({ params }: PageProps) {
           requirement={requirement}
           tasks={reqData.tasks ?? []}
           relatedControls={reqData.relatedControls ?? []}
+          isInstanceRequirement={requirementKey.startsWith('fir_')}
         />
       </div>
     </PageWithBreadcrumb>
