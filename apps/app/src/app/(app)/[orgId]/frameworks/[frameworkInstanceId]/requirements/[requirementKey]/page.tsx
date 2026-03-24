@@ -15,11 +15,15 @@ export default async function RequirementPage({ params }: PageProps) {
   const { orgId: organizationId, frameworkInstanceId, requirementKey } =
     await params;
 
-  const [frameworkRes, requirementRes] = await Promise.all([
+  const [frameworkRes, requirementRes, optionsRes] = await Promise.all([
     serverApi.get<any>(`/v1/frameworks/${frameworkInstanceId}`),
     serverApi.get<any>(
       `/v1/frameworks/${frameworkInstanceId}/requirements/${requirementKey}`,
     ),
+    serverApi.get<{
+      policies: { id: string; name: string }[];
+      tasks: { id: string; title: string }[];
+    }>('/v1/controls/options'),
   ]);
 
   if (!frameworkRes.data || !requirementRes.data) {
@@ -28,6 +32,7 @@ export default async function RequirementPage({ params }: PageProps) {
 
   const framework = frameworkRes.data;
   const reqData = requirementRes.data;
+  const options = optionsRes.data ?? { policies: [], tasks: [] };
   const frameworkName = framework.framework?.name ?? 'Framework';
   const requirement = reqData.requirement;
 
@@ -64,6 +69,8 @@ export default async function RequirementPage({ params }: PageProps) {
           tasks={reqData.tasks ?? []}
           relatedControls={reqData.relatedControls ?? []}
           isInstanceRequirement={requirementKey.startsWith('fir_')}
+          availableTasks={options.tasks}
+          availablePolicies={options.policies}
         />
       </div>
     </PageWithBreadcrumb>

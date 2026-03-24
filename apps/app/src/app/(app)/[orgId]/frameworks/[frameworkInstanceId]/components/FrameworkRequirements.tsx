@@ -2,6 +2,7 @@
 
 import type { FrameworkEditorRequirement } from '@db';
 import {
+  Button,
   Heading,
   InputGroup,
   InputGroupAddon,
@@ -14,9 +15,7 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Search } from '@trycompai/design-system/icons';
-import { Button } from '@trycompai/ui/button';
-import { PlusIcon, Trash2 } from 'lucide-react';
+import { Add, Search, TrashCan } from '@trycompai/design-system/icons';
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -114,8 +113,7 @@ export function FrameworkRequirements({
       <div className="flex items-center justify-between">
         <Heading level="2">Requirements ({filteredItems.length})</Heading>
         {hasPermission('framework', 'create') && (
-          <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
-            <PlusIcon className="h-4 w-4 mr-2" />
+          <Button iconLeft={<Add size={16} />} onClick={() => setCreateOpen(true)}>
             Add Requirement
           </Button>
         )}
@@ -179,11 +177,10 @@ export function FrameworkRequirements({
                   {item.isCustom && (
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive"
+                      size="icon-sm"
                       onClick={(e) => handleDelete(e, item.id)}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <TrashCan size={16} />
                     </Button>
                   )}
                 </TableCell>

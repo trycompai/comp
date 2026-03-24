@@ -10,6 +10,8 @@ interface RequirementControlsProps {
   tasks: (Task & { controls: Control[] })[];
   relatedControls: (RequirementMap & { control: Control })[];
   isInstanceRequirement?: boolean;
+  availableTasks?: { id: string; title: string }[];
+  availablePolicies?: { id: string; name: string }[];
 }
 
 export function RequirementControls({
@@ -17,6 +19,8 @@ export function RequirementControls({
   tasks,
   relatedControls,
   isInstanceRequirement = false,
+  availableTasks = [],
+  availablePolicies = [],
 }: RequirementControlsProps) {
   const router = useRouter();
   const { frameworkInstanceId } = useParams<{ frameworkInstanceId: string }>();
@@ -45,6 +49,8 @@ export function RequirementControls({
             frameworkInstanceId={frameworkInstanceId}
             isInstanceRequirement={isInstanceRequirement}
             onCreated={() => router.refresh()}
+            availableTasks={availableTasks}
+            availablePolicies={availablePolicies}
           />
         </div>
 

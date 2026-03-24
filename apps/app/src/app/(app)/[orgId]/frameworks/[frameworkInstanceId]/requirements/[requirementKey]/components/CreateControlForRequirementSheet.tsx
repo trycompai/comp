@@ -5,6 +5,13 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useMediaQuery } from '@trycompai/ui/hooks';
 import {
   Button,
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxItem,
+  ComboboxList,
   Drawer,
   DrawerContent,
   DrawerHeader,
@@ -22,17 +29,20 @@ import {
   SheetHeader,
   SheetTitle,
   Textarea,
+  useComboboxAnchor,
 } from '@trycompai/design-system';
 import { Add, ArrowRight } from '@trycompai/design-system/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
 const createControlSchema = z.object({
   name: z.string().min(1, { message: 'Name is required' }),
   description: z.string().min(1, { message: 'Description is required' }),
+  taskIds: z.array(z.string()).optional(),
+  policyIds: z.array(z.string()).optional(),
 });
 
 interface CreateControlForRequirementSheetProps {
@@ -40,6 +50,8 @@ interface CreateControlForRequirementSheetProps {
   frameworkInstanceId: string;
   isInstanceRequirement: boolean;
   onCreated: () => void;
+  availableTasks: { id: string; title: string }[];
+  availablePolicies: { id: string; name: string }[];
 }
 
 export function CreateControlForRequirementSheet({
@@ -47,6 +59,8 @@ export function CreateControlForRequirementSheet({
   frameworkInstanceId,
   isInstanceRequirement,
   onCreated,
+  availableTasks,
+  availablePolicies,
 }: CreateControlForRequirementSheetProps) {
   const { hasPermission } = usePermissions();
   const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -57,12 +71,15 @@ export function CreateControlForRequirementSheet({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<z.infer<typeof createControlSchema>>({
     resolver: zodResolver(createControlSchema),
     defaultValues: {
       name: '',
       description: '',
+      taskIds: [],
+      policyIds: [],
     },
   });
 
@@ -76,7 +93,10 @@ export function CreateControlForRequirementSheet({
         : { requirementId, frameworkInstanceId };
 
       await apiClient.post('/v1/controls', {
-        ...data,
+        name: data.name,
+        description: data.description,
+        taskIds: data.taskIds,
+        policyIds: data.policyIds,
         requirementMappings: [mapping],
       });
       toast.success('Control created');
@@ -120,6 +140,38 @@ export function CreateControlForRequirementSheet({
           />
           <FieldError errors={[errors.description]} />
         </Field>
+
+        <Controller
+          name="taskIds"
+          control={control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel>Tasks (Optional)</FieldLabel>
+              <ItemCombobox
+                items={availableTasks.map((t) => ({ id: t.id, name: t.title }))}
+                value={field.value ?? []}
+                onChange={field.onChange}
+                placeholder="Search tasks..."
+              />
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="policyIds"
+          control={control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel>Policies (Optional)</FieldLabel>
+              <ItemCombobox
+                items={availablePolicies}
+                value={field.value ?? []}
+                onChange={field.onChange}
+                placeholder="Search policies..."
+              />
+            </Field>
+          )}
+        />
       </FieldGroup>
 
       <SheetFooter>
@@ -161,5 +213,52 @@ export function CreateControlForRequirementSheet({
         </DrawerContent>
       </Drawer>
     </>
+  );
+}
+
+function ItemCombobox({
+  items,
+  value,
+  onChange,
+  placeholder,
+}: {
+  items: { id: string; name: string }[];
+  value: string[];
+  onChange: (ids: string[]) => void;
+  placeholder: string;
+}) {
+  const anchorRef = useComboboxAnchor();
+
+  const selectedItems = useMemo(
+    () => items.filter((item) => value.includes(item.id)),
+    [items, value],
+  );
+
+  return (
+    <Combobox
+      multiple
+      value={selectedItems}
+      onValueChange={(newSelected) => {
+        onChange((newSelected as { id: string; name: string }[]).map((item) => item.id));
+      }}
+    >
+      <ComboboxChips ref={anchorRef}>
+        {selectedItems.map((item) => (
+          <ComboboxChip key={item.id} value={item}>
+            {item.name}
+          </ComboboxChip>
+        ))}
+        <ComboboxChipsInput placeholder={placeholder} />
+      </ComboboxChips>
+      <ComboboxContent anchor={anchorRef}>
+        <ComboboxList>
+          {items.map((item) => (
+            <ComboboxItem key={item.id} value={item}>
+              {item.name}
+            </ComboboxItem>
+          ))}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   );
 }
