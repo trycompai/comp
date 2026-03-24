@@ -4,7 +4,6 @@ import PageWithBreadcrumb from '../../../../../components/pages/PageWithBreadcru
 import type { FrameworkInstanceDetail } from '../types';
 import { FrameworkOverview } from './components/FrameworkOverview';
 import { FrameworkRequirements } from './components/FrameworkRequirements';
-import { FrameworkRequirementsList } from './components/FrameworkRequirementsList';
 
 interface PageProps {
   params: Promise<{
@@ -55,13 +54,8 @@ export default async function FrameworkPage({ params }: PageProps) {
         <FrameworkRequirements
           requirementDefinitions={framework.requirementDefinitions || []}
           frameworkInstanceWithControls={frameworkInstanceWithControls}
-        />
-        <FrameworkRequirementsList
-          frameworkInstanceId={frameworkInstanceId}
-          templateRequirements={framework.requirementDefinitions ?? []}
           instanceRequirements={framework.frameworkInstanceRequirements ?? []}
-          requirementMaps={framework.requirementMaps ?? []}
-          organizationId={organizationId}
+          frameworkInstanceId={frameworkInstanceId}
         />
       </div>
     </PageWithBreadcrumb>
