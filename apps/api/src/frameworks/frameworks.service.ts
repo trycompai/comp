@@ -120,26 +120,47 @@ export class FrameworksService {
     const { requirementsMapped: _, ...rest } = fi;
 
     // Fetch additional data
-    const [requirementDefinitions, tasks, requirementMaps] =
-      await Promise.all([
-        db.frameworkEditorRequirement.findMany({
-          where: { frameworkId: fi.frameworkId },
-          orderBy: { name: 'asc' },
-        }),
-        db.task.findMany({
-          where: { organizationId, controls: { some: { organizationId } } },
-          include: { controls: true },
-        }),
-        db.requirementMap.findMany({
-          where: { frameworkInstanceId },
-          include: { control: true },
-        }),
-      ]);
+    const [
+      requirementDefinitions,
+      frameworkInstanceRequirements,
+      tasks,
+      requirementMaps,
+    ] = await Promise.all([
+      db.frameworkEditorRequirement.findMany({
+        where: { frameworkId: fi.frameworkId },
+        orderBy: { name: 'asc' },
+      }),
+      db.frameworkInstanceRequirement.findMany({
+        where: { frameworkInstanceId },
+        include: {
+          requirementMaps: {
+            include: {
+              control: {
+                include: {
+                  tasks: true,
+                  policies: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
+      db.task.findMany({
+        where: { organizationId, controls: { some: { organizationId } } },
+        include: { controls: true },
+      }),
+      db.requirementMap.findMany({
+        where: { frameworkInstanceId },
+        include: { control: true },
+      }),
+    ]);
 
     return {
       ...rest,
       controls: Array.from(controlsMap.values()),
       requirementDefinitions,
+      frameworkInstanceRequirements,
       tasks,
       requirementMaps,
     };
