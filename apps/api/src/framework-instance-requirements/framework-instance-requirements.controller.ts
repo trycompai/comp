@@ -8,8 +8,6 @@ import {
   Post,
   Query,
   UseGuards,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -63,7 +61,6 @@ export class FrameworkInstanceRequirementsController {
 
   @Post()
   @RequirePermission('framework', 'create')
-  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   @ApiOperation({ summary: 'Create a framework instance requirement' })
   async create(
     @OrganizationId() organizationId: string,
@@ -74,7 +71,6 @@ export class FrameworkInstanceRequirementsController {
 
   @Patch(':id')
   @RequirePermission('framework', 'update')
-  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   @ApiOperation({ summary: 'Update a framework instance requirement' })
   async update(
     @OrganizationId() organizationId: string,
