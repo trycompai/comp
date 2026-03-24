@@ -9,7 +9,6 @@ import {
   ComboboxChips,
   ComboboxChipsInput,
   ComboboxContent,
-  ComboboxEmpty,
   ComboboxItem,
   ComboboxList,
   Drawer,
@@ -237,7 +236,6 @@ function ControlsCombobox({
               {ctrl.name}
             </ComboboxItem>
           ))}
-          <ComboboxEmpty>No controls found.</ComboboxEmpty>
         </ComboboxList>
       </ComboboxContent>
     </Combobox>
