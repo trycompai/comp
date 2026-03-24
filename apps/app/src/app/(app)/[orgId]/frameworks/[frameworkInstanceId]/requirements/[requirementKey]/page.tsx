@@ -54,6 +54,10 @@ export default async function RequirementPage({ params }: PageProps) {
           href: `/${organizationId}/frameworks/${frameworkInstanceId}`,
         },
         {
+          label: 'Requirements',
+          href: `/${organizationId}/frameworks/${frameworkInstanceId}`,
+        },
+        {
           label:
             requirement.name.length > maxLabelLength
               ? `${requirement.name.slice(0, maxLabelLength)}...`
