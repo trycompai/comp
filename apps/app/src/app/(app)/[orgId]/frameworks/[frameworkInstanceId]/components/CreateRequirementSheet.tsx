@@ -1,26 +1,33 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@trycompai/ui/form';
+import { apiClient } from '@/lib/api-client';
 import { useMediaQuery } from '@trycompai/ui/hooks';
-import { Input } from '@trycompai/ui/input';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@trycompai/ui/sheet';
-import { Textarea } from '@trycompai/ui/textarea';
+import { Button } from '@trycompai/ui/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  HStack,
+  Input,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  Textarea,
+} from '@trycompai/design-system';
+import { ArrowRight } from '@trycompai/design-system/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRightIcon, X } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { apiClient } from '@/lib/api-client';
 
 const createRequirementSchema = z.object({
   name: z.string().min(1, { message: 'Name is required' }),
@@ -44,7 +51,12 @@ export function CreateRequirementSheet({
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof createRequirementSchema>>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<z.infer<typeof createRequirementSchema>>({
     resolver: zodResolver(createRequirementSchema),
     defaultValues: {
       name: '',
@@ -53,117 +65,80 @@ export function CreateRequirementSheet({
     },
   });
 
-  const onSubmit = useCallback(
-    async (data: z.infer<typeof createRequirementSchema>) => {
-      setIsSubmitting(true);
-      try {
-        await apiClient.post('/v1/framework-instance-requirements', {
-          ...data,
-          frameworkInstanceId,
-        });
-        toast.success('Requirement created');
-        onOpenChange(false);
-        form.reset();
-        onCreated();
-      } catch {
-        toast.error('Failed to create requirement');
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [frameworkInstanceId, form, onOpenChange, onCreated],
-  );
+  const onSubmit = async (data: z.infer<typeof createRequirementSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await apiClient.post('/v1/framework-instance-requirements', {
+        ...data,
+        frameworkInstanceId,
+      });
+      toast.success('Requirement created');
+      onOpenChange(false);
+      reset();
+      onCreated();
+    } catch {
+      toast.error('Failed to create requirement');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const requirementForm = (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full max-w-none">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem className="w-full">
-              <FormLabel>Requirement Name</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  placeholder="e.g., Access Control Policy"
-                  autoCorrect="off"
-                  className="w-full"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col">
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="name">Requirement Name</FieldLabel>
+          <Input
+            id="name"
+            {...register('name')}
+            autoFocus
+            placeholder="A short, descriptive name for the requirement."
+            autoCorrect="off"
+          />
+          <FieldError errors={[errors.name]} />
+        </Field>
 
-        <FormField
-          control={form.control}
-          name="identifier"
-          render={({ field }) => (
-            <FormItem className="w-full">
-              <FormLabel>Identifier (Optional)</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  placeholder="e.g., CUSTOM-1"
-                  autoCorrect="off"
-                  className="w-full"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <Field>
+          <FieldLabel htmlFor="identifier">Identifier (Optional)</FieldLabel>
+          <Input
+            id="identifier"
+            {...register('identifier')}
+            placeholder="e.g., CUSTOM-1"
+            autoCorrect="off"
+          />
+          <FieldError errors={[errors.identifier]} />
+        </Field>
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem className="w-full">
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  {...field}
-                  className="min-h-[80px] w-full resize-none"
-                  placeholder="Describe what this requirement covers"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </form>
-    </Form>
+        <Field>
+          <FieldLabel htmlFor="description">Description</FieldLabel>
+          <Textarea
+            id="description"
+            {...register('description')}
+            placeholder="A detailed description of what this requirement covers."
+          />
+          <FieldError errors={[errors.description]} />
+        </Field>
+      </FieldGroup>
+
+      <SheetFooter>
+        <HStack justify="end">
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating...' : 'Create'}
+            {!isSubmitting && <ArrowRight size={16} className="ml-2" />}
+          </Button>
+        </HStack>
+      </SheetFooter>
+    </form>
   );
 
   if (isDesktop) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent stack className="flex flex-col h-full">
-          <SheetHeader className="mb-6 flex flex-row items-center justify-between shrink-0">
-            <SheetTitle>Add Custom Requirement</SheetTitle>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="m-0 size-auto p-0 hover:bg-transparent"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Add Requirement</SheetTitle>
           </SheetHeader>
-
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="px-2 pb-6">{requirementForm}</div>
-          </div>
-
-          <div className="border-t bg-background p-4 flex justify-end shrink-0">
-            <Button type="submit" disabled={isSubmitting} onClick={form.handleSubmit(onSubmit)}>
-              <div className="flex items-center justify-center">
-                Create Requirement
-                <ArrowRightIcon className="ml-2 h-4 w-4" />
-              </div>
-            </Button>
-          </div>
+          <SheetBody>{requirementForm}</SheetBody>
         </SheetContent>
       </Sheet>
     );
@@ -171,20 +146,11 @@ export function CreateRequirementSheet({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerTitle hidden>Add Custom Requirement</DrawerTitle>
-      <DrawerContent className="flex flex-col h-full max-h-[80vh]">
-        <div className="flex-1 overflow-y-auto p-6 pb-0">
-          <div className="w-full pb-6">{requirementForm}</div>
-        </div>
-
-        <div className="border-t bg-background p-4 flex justify-end shrink-0">
-          <Button type="submit" disabled={isSubmitting} onClick={form.handleSubmit(onSubmit)}>
-            <div className="flex items-center justify-center">
-              Create Requirement
-              <ArrowRightIcon className="ml-2 h-4 w-4" />
-            </div>
-          </Button>
-        </div>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Add Requirement</DrawerTitle>
+        </DrawerHeader>
+        <div className="p-4">{requirementForm}</div>
       </DrawerContent>
     </Drawer>
   );
