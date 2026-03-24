@@ -35,7 +35,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import useSWR from 'swr';
 import { z } from 'zod';
 
 const createRequirementSchema = z.object({
@@ -50,6 +49,7 @@ interface CreateRequirementSheetProps {
   onOpenChange: (open: boolean) => void;
   frameworkInstanceId: string;
   onCreated: () => void;
+  controls: { id: string; name: string }[];
 }
 
 export function CreateRequirementSheet({
@@ -57,19 +57,10 @@ export function CreateRequirementSheet({
   onOpenChange,
   frameworkInstanceId,
   onCreated,
+  controls,
 }: CreateRequirementSheetProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { data: controlsData, isLoading: controlsLoading } = useSWR(
-    open ? '/v1/controls?perPage=500' : null,
-    async (url: string) => {
-      const res = await apiClient.get<{ data: { id: string; name: string }[] }>(url);
-      return res.data?.data ?? [];
-    },
-  );
-
-  const controls = controlsData ?? [];
 
   const {
     register,
@@ -147,15 +138,11 @@ export function CreateRequirementSheet({
           render={({ field }) => (
             <Field>
               <FieldLabel>Controls (Optional)</FieldLabel>
-              {controlsLoading ? (
-                <p className="text-sm text-muted-foreground">Loading controls...</p>
-              ) : (
-                <ControlsCombobox
-                  controls={controls}
-                  value={field.value ?? []}
-                  onChange={field.onChange}
-                />
-              )}
+              <ControlsCombobox
+                controls={controls}
+                value={field.value ?? []}
+                onChange={field.onChange}
+              />
             </Field>
           )}
         />

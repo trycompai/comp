@@ -198,6 +198,7 @@ export function FrameworkRequirements({
         onOpenChange={setCreateOpen}
         frameworkInstanceId={frameworkInstanceId}
         onCreated={() => mutate()}
+        controls={frameworkInstanceWithControls.controls.map((c) => ({ id: c.id, name: c.name }))}
       />
     </div>
   );
