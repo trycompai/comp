@@ -2,9 +2,16 @@
 
 import { apiClient } from '@/lib/api-client';
 import { useMediaQuery } from '@trycompai/ui/hooks';
-import MultipleSelector, { type Option } from '@trycompai/ui/multiple-selector';
 import { Button } from '@trycompai/ui/button';
 import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
   Drawer,
   DrawerContent,
   DrawerHeader,
@@ -22,10 +29,11 @@ import {
   SheetHeader,
   SheetTitle,
   Textarea,
+  useComboboxAnchor,
 } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import useSWR from 'swr';
@@ -54,7 +62,6 @@ export function CreateRequirementSheet({
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch controls when sheet is open
   const { data: controlsData, isLoading: controlsLoading } = useSWR(
     open ? '/v1/controls?perPage=500' : null,
     async (url: string) => {
@@ -64,19 +71,6 @@ export function CreateRequirementSheet({
   );
 
   const controls = controlsData ?? [];
-  const controlOptions = useMemo(
-    () => controls.map((c) => ({ value: c.id, label: c.name })),
-    [controls],
-  );
-
-  const controlFilterFunction = useCallback(
-    (value: string, search: string) => {
-      const option = controlOptions.find((opt) => opt.value === value);
-      if (!option) return 0;
-      return option.label.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
-    },
-    [controlOptions],
-  );
 
   const {
     register,
@@ -151,39 +145,20 @@ export function CreateRequirementSheet({
         <Controller
           name="controlIds"
           control={control}
-          render={({ field }) => {
-            const selectedOptions: Option[] = (field.value || [])
-              .map((id) => {
-                const ctrl = controls.find((c) => c.id === id);
-                return ctrl ? { value: ctrl.id, label: ctrl.name } : null;
-              })
-              .filter(Boolean) as Option[];
-
-            return (
-              <Field>
-                <FieldLabel>Controls (Optional)</FieldLabel>
-                {controlsLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading controls...</p>
-                ) : (
-                  <MultipleSelector
-                    key={controls.length}
-                    value={selectedOptions}
-                    onChange={(options) => field.onChange(options.map((o) => o.value))}
-                    defaultOptions={controlOptions}
-                    placeholder="Search and select controls..."
-                    emptyIndicator={
-                      <p className="text-center text-sm leading-10 text-muted-foreground">
-                        No controls found.
-                      </p>
-                    }
-                    commandProps={{
-                      filter: controlFilterFunction,
-                    }}
-                  />
-                )}
-              </Field>
-            );
-          }}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel>Controls (Optional)</FieldLabel>
+              {controlsLoading ? (
+                <p className="text-sm text-muted-foreground">Loading controls...</p>
+              ) : (
+                <ControlsCombobox
+                  controls={controls}
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                />
+              )}
+            </Field>
+          )}
         />
       </FieldGroup>
 
@@ -220,5 +195,51 @@ export function CreateRequirementSheet({
         <div className="p-4">{requirementForm}</div>
       </DrawerContent>
     </Drawer>
+  );
+}
+
+function ControlsCombobox({
+  controls,
+  value,
+  onChange,
+}: {
+  controls: { id: string; name: string }[];
+  value: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const anchorRef = useComboboxAnchor();
+
+  const selectedControls = useMemo(
+    () => controls.filter((c) => value.includes(c.id)),
+    [controls, value],
+  );
+
+  return (
+    <Combobox
+      multiple
+      value={selectedControls}
+      onValueChange={(newSelected) => {
+        onChange((newSelected as { id: string; name: string }[]).map((c) => c.id));
+      }}
+    >
+      <ComboboxChips ref={anchorRef}>
+        {selectedControls.map((ctrl) => (
+          <ComboboxChip key={ctrl.id} value={ctrl}>
+            {ctrl.name}
+          </ComboboxChip>
+        ))}
+        <ComboboxChipsInput placeholder="Search controls..." />
+      </ComboboxChips>
+      <ComboboxContent anchor={anchorRef}>
+        <ComboboxList>
+          {controls.map((ctrl) => (
+            <ComboboxItem key={ctrl.id} value={ctrl}>
+              {ctrl.name}
+            </ComboboxItem>
+          ))}
+          <ComboboxEmpty>No controls found.</ComboboxEmpty>
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   );
 }
