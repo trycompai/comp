@@ -176,6 +176,7 @@ export function CreateRequirementSheet({
                         No controls found.
                       </p>
                     }
+                    className="**:[[cmdk-list]]:max-h-[200px] **:[[cmdk-list]]:overflow-y-auto"
                     commandProps={{
                       filter: controlFilterFunction,
                     }}
