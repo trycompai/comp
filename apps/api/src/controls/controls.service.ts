@@ -117,40 +117,70 @@ export class ControlsService {
   }
 
   async getOptions(organizationId: string) {
-    const [policies, tasks, frameworkInstances] = await Promise.all([
-      db.policy.findMany({
-        where: { organizationId },
-        select: { id: true, name: true },
-        orderBy: { name: 'asc' },
-      }),
-      db.task.findMany({
-        where: { organizationId },
-        select: { id: true, title: true },
-        orderBy: { title: 'asc' },
-      }),
-      db.frameworkInstance.findMany({
-        where: { organizationId },
-        include: {
-          framework: {
-            include: {
-              requirements: {
-                select: { id: true, name: true, identifier: true },
+    const [policies, tasks, frameworkInstances, instanceRequirements] =
+      await Promise.all([
+        db.policy.findMany({
+          where: { organizationId },
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        }),
+        db.task.findMany({
+          where: { organizationId },
+          select: { id: true, title: true },
+          orderBy: { title: 'asc' },
+        }),
+        db.frameworkInstance.findMany({
+          where: { organizationId },
+          include: {
+            framework: {
+              include: {
+                requirements: {
+                  select: { id: true, name: true, identifier: true },
+                },
               },
             },
           },
-        },
-      }),
-    ]);
+        }),
+        db.frameworkInstanceRequirement.findMany({
+          where: {
+            frameworkInstance: { organizationId },
+          },
+          select: {
+            id: true,
+            name: true,
+            identifier: true,
+            frameworkInstanceId: true,
+            frameworkInstance: {
+              select: {
+                framework: { select: { name: true } },
+              },
+            },
+          },
+          orderBy: { name: 'asc' },
+        }),
+      ]);
 
-    const requirements = frameworkInstances.flatMap((fi) =>
+    const templateRequirements = frameworkInstances.flatMap((fi) =>
       fi.framework.requirements.map((req) => ({
         id: req.id,
         name: req.name,
         identifier: req.identifier,
         frameworkInstanceId: fi.id,
         frameworkName: fi.framework.name,
+        isInstanceRequirement: false,
       })),
     );
+
+    const customRequirements = instanceRequirements.map((req) => ({
+      id: req.id,
+      name: req.name,
+      identifier: req.identifier,
+      frameworkInstanceId: req.frameworkInstanceId,
+      frameworkName: req.frameworkInstance.framework.name,
+      isInstanceRequirement: true,
+    }));
+
+    const requirements = [...templateRequirements, ...customRequirements];
 
     return { policies, tasks, requirements };
   }

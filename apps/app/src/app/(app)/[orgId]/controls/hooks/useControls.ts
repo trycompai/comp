@@ -15,7 +15,8 @@ interface CreateControlPayload {
   policyIds?: string[];
   taskIds?: string[];
   requirementMappings?: {
-    requirementId: string;
+    requirementId?: string;
+    frameworkInstanceRequirementId?: string;
     frameworkInstanceId: string;
   }[];
 }

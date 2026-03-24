@@ -29,7 +29,8 @@ const createControlSchema = z.object({
   requirementMappings: z
     .array(
       z.object({
-        requirementId: z.string(),
+        requirementId: z.string().optional(),
+        frameworkInstanceRequirementId: z.string().optional(),
         frameworkInstanceId: z.string(),
       }),
     )
@@ -49,6 +50,7 @@ export function CreateControlSheet({
     identifier: string;
     frameworkInstanceId: string;
     frameworkName: string;
+    isInstanceRequirement?: boolean;
   }[];
 }) {
   const { createControl } = useControls();
@@ -116,6 +118,7 @@ export function CreateControlSheet({
         value: req.id,
         label: `${req.frameworkName}: ${req.identifier} - ${req.name}`,
         frameworkInstanceId: req.frameworkInstanceId,
+        isInstanceRequirement: req.isInstanceRequirement ?? false,
       })),
     [requirements],
   );
@@ -158,9 +161,14 @@ export function CreateControlSheet({
   );
 
   const handleRequirementsChange = useCallback(
-    (options: (Option & { frameworkInstanceId?: string })[], onChange: (value: any) => void) => {
+    (
+      options: (Option & { frameworkInstanceId?: string; isInstanceRequirement?: boolean })[],
+      onChange: (value: any) => void,
+    ) => {
       const mappings = options.map((option) => ({
-        requirementId: option.value,
+        ...(option.isInstanceRequirement
+          ? { frameworkInstanceRequirementId: option.value }
+          : { requirementId: option.value }),
         frameworkInstanceId: option.frameworkInstanceId || '',
       }));
       onChange(mappings);
@@ -290,20 +298,27 @@ export function CreateControlSheet({
           control={form.control}
           name="requirementMappings"
           render={({ field }) => {
-            const selectedOptions: (Option & { frameworkInstanceId?: string })[] = (
-              field.value || []
-            )
+            const selectedOptions: (Option & {
+              frameworkInstanceId?: string;
+              isInstanceRequirement?: boolean;
+            })[] = (field.value || [])
               .map((mapping) => {
-                const req = requirements.find((r) => r.id === mapping.requirementId);
+                const reqId =
+                  mapping.requirementId ?? mapping.frameworkInstanceRequirementId;
+                const req = requirements.find((r) => r.id === reqId);
                 return req
                   ? {
                       value: req.id,
                       label: `${req.frameworkName}: ${req.identifier} - ${req.name}`,
                       frameworkInstanceId: req.frameworkInstanceId,
+                      isInstanceRequirement: req.isInstanceRequirement ?? false,
                     }
                   : null;
               })
-              .filter(Boolean) as (Option & { frameworkInstanceId?: string })[];
+              .filter(Boolean) as (Option & {
+              frameworkInstanceId?: string;
+              isInstanceRequirement?: boolean;
+            })[];
 
             return (
               <FormItem className="w-full">
@@ -314,12 +329,18 @@ export function CreateControlSheet({
                       value={selectedOptions}
                       onChange={(options) =>
                         handleRequirementsChange(
-                          options as (Option & { frameworkInstanceId?: string })[],
+                          options as (Option & {
+                            frameworkInstanceId?: string;
+                            isInstanceRequirement?: boolean;
+                          })[],
                           field.onChange,
                         )
                       }
                       defaultOptions={
-                        requirementOptions as (Option & { frameworkInstanceId?: string })[]
+                        requirementOptions as (Option & {
+                          frameworkInstanceId?: string;
+                          isInstanceRequirement?: boolean;
+                        })[]
                       }
                       placeholder="Search and select requirements..."
                       emptyIndicator={
