@@ -1,8 +1,10 @@
 import { serverApi } from '@/lib/api-server';
 import { redirect } from 'next/navigation';
 import PageWithBreadcrumb from '../../../../../components/pages/PageWithBreadcrumb';
+import type { FrameworkInstanceDetail } from '../types';
 import { FrameworkOverview } from './components/FrameworkOverview';
 import { FrameworkRequirements } from './components/FrameworkRequirements';
+import { FrameworkRequirementsList } from './components/FrameworkRequirementsList';
 
 interface PageProps {
   params: Promise<{
@@ -11,10 +13,19 @@ interface PageProps {
   }>;
 }
 
+export async function generateMetadata({ params }: PageProps) {
+  const { frameworkInstanceId } = await params;
+  const res = await serverApi.get<FrameworkInstanceDetail>(
+    `/v1/frameworks/${frameworkInstanceId}`,
+  );
+  const name = res.data?.framework?.name ?? 'Framework';
+  return { title: `${name} Requirements` };
+}
+
 export default async function FrameworkPage({ params }: PageProps) {
   const { orgId: organizationId, frameworkInstanceId } = await params;
 
-  const frameworkRes = await serverApi.get<any>(
+  const frameworkRes = await serverApi.get<FrameworkInstanceDetail>(
     `/v1/frameworks/${frameworkInstanceId}`,
   );
 
@@ -44,6 +55,13 @@ export default async function FrameworkPage({ params }: PageProps) {
         <FrameworkRequirements
           requirementDefinitions={framework.requirementDefinitions || []}
           frameworkInstanceWithControls={frameworkInstanceWithControls}
+        />
+        <FrameworkRequirementsList
+          frameworkInstanceId={frameworkInstanceId}
+          templateRequirements={framework.requirementDefinitions ?? []}
+          instanceRequirements={framework.frameworkInstanceRequirements ?? []}
+          requirementMaps={framework.requirementMaps ?? []}
+          organizationId={organizationId}
         />
       </div>
     </PageWithBreadcrumb>
