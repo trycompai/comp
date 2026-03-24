@@ -47,6 +47,7 @@ export default async function RequirementPage({ params }: PageProps) {
 
   return (
     <PageWithBreadcrumb
+      maxItems={4}
       breadcrumbs={[
         { label: 'Frameworks', href: `/${organizationId}/frameworks` },
         {
