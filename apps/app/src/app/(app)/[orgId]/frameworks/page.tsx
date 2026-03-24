@@ -33,11 +33,14 @@ interface ScoresResponse {
 export default async function DashboardPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId: organizationId } = await params;
 
-  const [scoresRes, frameworksRes, availableRes] = await Promise.all([
+  const [scoresRes, frameworksRes, availableRes, orgRes] = await Promise.all([
     serverApi.get<ScoresResponse>('/v1/frameworks/scores'),
     serverApi.get<{ data: FrameworkWithScore[] }>('/v1/frameworks?includeControls=true&includeScores=true'),
     serverApi.get<{ data: FrameworkEditorFramework[] }>('/v1/frameworks/available'),
+    serverApi.get<{ advancedModeEnabled: boolean }>('/v1/organization'),
   ]);
+
+  const advancedModeEnabled = orgRes.data?.advancedModeEnabled ?? false;
 
   const scores = scoresRes.data;
   const frameworksData = frameworksRes.data?.data ?? [];
@@ -56,6 +59,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
         frameworksWithCompliance={frameworksWithCompliance}
         allFrameworks={allFrameworks}
         organizationId={organizationId}
+        advancedModeEnabled={advancedModeEnabled}
         publishedPoliciesScore={{
           totalPolicies: scores?.policies?.total ?? 0,
           publishedPolicies: scores?.policies?.published ?? 0,

@@ -49,6 +49,7 @@ export interface OverviewProps {
   frameworksWithCompliance: FrameworkInstanceWithComplianceScore[];
   allFrameworks: FrameworkEditorFramework[];
   organizationId: string;
+  advancedModeEnabled: boolean;
   publishedPoliciesScore: PublishedPoliciesScore;
   doneTasksScore: DoneTasksScore;
   documentsScore: DocumentsScore;
@@ -63,6 +64,7 @@ export const Overview = ({
   frameworksWithCompliance,
   allFrameworks,
   organizationId,
+  advancedModeEnabled,
   publishedPoliciesScore,
   doneTasksScore,
   documentsScore,
@@ -102,6 +104,7 @@ export const Overview = ({
         overallComplianceScore={overallComplianceScore}
         allFrameworks={allFrameworks}
         organizationId={organizationId}
+        advancedModeEnabled={advancedModeEnabled}
       />
       <ToDoOverview
         totalPolicies={publishedPoliciesScore.totalPolicies}

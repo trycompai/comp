@@ -7,6 +7,7 @@ import { ScrollArea } from '@trycompai/ui/scroll-area';
 import type { FrameworkEditorFramework } from '@db';
 import { PlusIcon } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState } from 'react';
 import { usePermissions } from '@/hooks/use-permissions';
 import type { FrameworkInstanceWithControls } from '../types';
@@ -19,6 +20,7 @@ export interface FrameworksOverviewProps {
   frameworksWithCompliance?: FrameworkInstanceWithComplianceScore[];
   organizationId?: string;
   overallComplianceScore: number;
+  advancedModeEnabled: boolean;
 }
 
 export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
@@ -63,6 +65,7 @@ export function FrameworksOverview({
   overallComplianceScore,
   allFrameworks,
   organizationId,
+  advancedModeEnabled,
 }: FrameworksOverviewProps) {
   const [isAddFrameworkModalOpen, setIsAddFrameworkModalOpen] = useState(false);
   const { hasPermission } = usePermissions();
@@ -101,52 +104,65 @@ export function FrameworksOverview({
                 const complianceScore = complianceMap.get(framework.id) ?? 0;
                 const badgeSrc = mapFrameworkToBadge(framework);
 
-                return (
-                  <div key={framework.id}>
-                    <div className="flex items-start justify-between py-4 px-1">
-                      <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <div className="shrink-0 mt-1">
-                          {badgeSrc ? (
-                            <Image
-                              src={badgeSrc}
-                              alt={framework.framework.name}
-                              width={32}
-                              height={32}
-                              className="rounded-full w-8 h-8"
-                              unoptimized
-                            />
-                          ) : (
-                            <div className="rounded-full w-8 h-8 bg-muted flex items-center justify-center">
-                              <span className="text-xs text-muted-foreground">
-                                {framework.framework.name.charAt(0)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-sm font-medium text-foreground flex flex-col">
-                            {framework.framework.name}
-                            <span className="text-xs text-muted-foreground font-normal">
-                              {framework.framework.description?.trim()}
-                            </span>
+                const rowContent = (
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="shrink-0 mt-1">
+                      {badgeSrc ? (
+                        <Image
+                          src={badgeSrc}
+                          alt={framework.framework.name}
+                          width={32}
+                          height={32}
+                          className="rounded-full w-8 h-8"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="rounded-full w-8 h-8 bg-muted flex items-center justify-center">
+                          <span className="text-xs text-muted-foreground">
+                            {framework.framework.name.charAt(0)}
                           </span>
-
-                          <div className="flex flex-col mt-1.5">
-                            <div className="w-full bg-muted/50 rounded-full h-1">
-                              <div
-                                className="bg-primary h-full rounded-full transition-all duration-300"
-                                style={{
-                                  width: `${complianceScore}%`,
-                                }}
-                              />
-                            </div>
-                            <span className="text-xs text-muted-foreground tabular-nums text-right mt-1">
-                              {Math.round(complianceScore)}% compliant
-                            </span>
-                          </div>
                         </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="text-sm font-medium text-foreground flex flex-col">
+                        {framework.framework.name}
+                        <span className="text-xs text-muted-foreground font-normal">
+                          {framework.framework.description?.trim()}
+                        </span>
+                      </span>
+
+                      <div className="flex flex-col mt-1.5">
+                        <div className="w-full bg-muted/50 rounded-full h-1">
+                          <div
+                            className="bg-primary h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${complianceScore}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums text-right mt-1">
+                          {Math.round(complianceScore)}% compliant
+                        </span>
                       </div>
                     </div>
+                  </div>
+                );
+
+                return (
+                  <div key={framework.id}>
+                    {advancedModeEnabled && organizationId ? (
+                      <Link
+                        href={`/${organizationId}/frameworks/${framework.id}`}
+                        className="flex items-start justify-between py-4 px-2 -mx-1 hover:bg-muted/50 rounded-md transition-colors"
+                      >
+                        {rowContent}
+                      </Link>
+                    ) : (
+                      <div className="flex items-start justify-between py-4 px-1">
+                        {rowContent}
+                      </div>
+                    )}
                     {index < frameworksWithControls.length - 1 && (
                       <div className="border-t border-muted/30" />
                     )}
