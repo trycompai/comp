@@ -49,6 +49,7 @@ import { SecretsModule } from './secrets/secrets.module';
 import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
 import { StripeModule } from './stripe/stripe.module';
 import { AdminOrganizationsModule } from './admin-organizations/admin-organizations.module';
+import { FrameworkInstanceRequirementsModule } from './framework-instance-requirements/framework-instance-requirements.module';
 
 @Module({
   imports: [
@@ -110,6 +111,7 @@ import { AdminOrganizationsModule } from './admin-organizations/admin-organizati
     SecurityPenetrationTestsModule,
     StripeModule,
     AdminOrganizationsModule,
+    FrameworkInstanceRequirementsModule,
   ],
   controllers: [AppController],
   providers: [
