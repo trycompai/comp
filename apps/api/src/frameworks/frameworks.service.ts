@@ -227,36 +227,55 @@ export class FrameworksService {
       throw new NotFoundException('Framework instance not found');
     }
 
-    const [allReqDefs, relatedControls, tasks] = await Promise.all([
-      db.frameworkEditorRequirement.findMany({
-        where: { frameworkId: fi.frameworkId },
-      }),
-      db.requirementMap.findMany({
-        where: { frameworkInstanceId, requirementId: requirementKey },
-        include: {
-          control: {
-            include: {
-              policies: {
-                select: { id: true, name: true, status: true },
+    const [allReqDefs, allInstanceReqs, relatedControls, tasks] =
+      await Promise.all([
+        db.frameworkEditorRequirement.findMany({
+          where: { frameworkId: fi.frameworkId },
+        }),
+        db.frameworkInstanceRequirement.findMany({
+          where: { frameworkInstanceId },
+        }),
+        db.requirementMap.findMany({
+          where: {
+            frameworkInstanceId,
+            OR: [
+              { requirementId: requirementKey },
+              { frameworkInstanceRequirementId: requirementKey },
+            ],
+          },
+          include: {
+            control: {
+              include: {
+                policies: {
+                  select: { id: true, name: true, status: true },
+                },
               },
             },
           },
-        },
-      }),
-      db.task.findMany({
-        where: { organizationId },
-        include: { controls: true },
-      }),
-    ]);
+        }),
+        db.task.findMany({
+          where: { organizationId },
+          include: { controls: true },
+        }),
+      ]);
 
-    const requirement = allReqDefs.find((r) => r.id === requirementKey);
+    // Look up in both template and instance requirements
+    const requirement =
+      allReqDefs.find((r) => r.id === requirementKey) ??
+      allInstanceReqs.find((r) => r.id === requirementKey);
+
     if (!requirement) {
       throw new NotFoundException('Requirement not found');
     }
 
-    const siblingRequirements = allReqDefs
-      .filter((r) => r.id !== requirementKey)
-      .map((r) => ({ id: r.id, name: r.name }));
+    // Siblings include both template and instance requirements
+    const allRequirements = [
+      ...allReqDefs.map((r) => ({ id: r.id, name: r.name })),
+      ...allInstanceReqs.map((r) => ({ id: r.id, name: r.name })),
+    ];
+    const siblingRequirements = allRequirements.filter(
+      (r) => r.id !== requirementKey,
+    );
 
     return {
       requirement,

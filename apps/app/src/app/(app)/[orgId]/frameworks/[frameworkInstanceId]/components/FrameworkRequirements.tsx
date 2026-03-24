@@ -95,9 +95,7 @@ export function FrameworkRequirements({
   }, [items, searchTerm]);
 
   const handleRowClick = (item: RequirementItem) => {
-    if (!item.isCustom) {
-      router.push(`/${orgId}/frameworks/${frameworkInstanceId}/requirements/${item.id}`);
-    }
+    router.push(`/${orgId}/frameworks/${frameworkInstanceId}/requirements/${item.id}`);
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
