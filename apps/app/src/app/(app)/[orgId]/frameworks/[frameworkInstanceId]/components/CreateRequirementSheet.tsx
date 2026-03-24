@@ -55,7 +55,7 @@ export function CreateRequirementSheet({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch controls when sheet is open
-  const { data: controlsData } = useSWR(
+  const { data: controlsData, isLoading: controlsLoading } = useSWR(
     open ? '/v1/controls?perPage=500' : null,
     async (url: string) => {
       const res = await apiClient.get<{ data: { id: string; name: string }[] }>(url);
@@ -63,9 +63,10 @@ export function CreateRequirementSheet({
     },
   );
 
+  const controls = controlsData ?? [];
   const controlOptions = useMemo(
-    () => (controlsData ?? []).map((c) => ({ value: c.id, label: c.name })),
-    [controlsData],
+    () => controls.map((c) => ({ value: c.id, label: c.name })),
+    [controls],
   );
 
   const controlFilterFunction = useCallback(
@@ -153,7 +154,7 @@ export function CreateRequirementSheet({
           render={({ field }) => {
             const selectedOptions: Option[] = (field.value || [])
               .map((id) => {
-                const ctrl = (controlsData ?? []).find((c) => c.id === id);
+                const ctrl = controls.find((c) => c.id === id);
                 return ctrl ? { value: ctrl.id, label: ctrl.name } : null;
               })
               .filter(Boolean) as Option[];
@@ -161,20 +162,25 @@ export function CreateRequirementSheet({
             return (
               <Field>
                 <FieldLabel>Controls (Optional)</FieldLabel>
-                <MultipleSelector
-                  value={selectedOptions}
-                  onChange={(options) => field.onChange(options.map((o) => o.value))}
-                  defaultOptions={controlOptions}
-                  placeholder="Search and select controls..."
-                  emptyIndicator={
-                    <p className="text-center text-sm leading-10 text-muted-foreground">
-                      No controls found.
-                    </p>
-                  }
-                  commandProps={{
-                    filter: controlFilterFunction,
-                  }}
-                />
+                {controlsLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading controls...</p>
+                ) : (
+                  <MultipleSelector
+                    key={controls.length}
+                    value={selectedOptions}
+                    onChange={(options) => field.onChange(options.map((o) => o.value))}
+                    defaultOptions={controlOptions}
+                    placeholder="Search and select controls..."
+                    emptyIndicator={
+                      <p className="text-center text-sm leading-10 text-muted-foreground">
+                        No controls found.
+                      </p>
+                    }
+                    commandProps={{
+                      filter: controlFilterFunction,
+                    }}
+                  />
+                )}
               </Field>
             );
           }}
