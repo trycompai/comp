@@ -4,6 +4,7 @@ import type {
   FrameworkEditorFramework,
   FrameworkEditorRequirement,
   FrameworkInstance,
+  FrameworkInstanceRequirement,
   RequirementMap,
 } from '@db';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@trycompai/design-system';
@@ -25,34 +26,57 @@ interface RequirementsTableProps {
     frameworkInstance: FrameworkInstance & {
       framework: FrameworkEditorFramework;
     };
-    requirement: FrameworkEditorRequirement;
+    requirement: FrameworkEditorRequirement | null;
+    frameworkInstanceRequirement?: FrameworkInstanceRequirement | null;
   })[];
   orgId: string;
+}
+
+function getRequirementData(req: RequirementsTableProps['requirements'][number]) {
+  if (req.requirement) {
+    return {
+      id: req.requirement.id,
+      name: req.requirement.name,
+      description: req.requirement.description,
+      identifier: req.requirement.identifier,
+    };
+  }
+  if (req.frameworkInstanceRequirement) {
+    return {
+      id: req.frameworkInstanceRequirement.id,
+      name: req.frameworkInstanceRequirement.name,
+      description: req.frameworkInstanceRequirement.description,
+      identifier: req.frameworkInstanceRequirement.identifier,
+    };
+  }
+  return null;
 }
 
 export function RequirementsTable({ requirements, orgId }: RequirementsTableProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filter requirements data based on search term
   const filteredRequirements = useMemo(() => {
     if (!searchTerm.trim()) return requirements;
 
     const searchLower = searchTerm.toLowerCase();
     return requirements.filter((req) => {
-      // Search in ID, name, and description from the nested requirement object
+      const data = getRequirementData(req);
+      if (!data) return false;
       return (
-        (req.requirement.id?.toLowerCase() || '').includes(searchLower) ||
-        (req.requirement.name?.toLowerCase() || '').includes(searchLower) ||
-        (req.requirement.description?.toLowerCase() || '').includes(searchLower) ||
-        (req.requirement.identifier?.toLowerCase() || '').includes(searchLower) // Also search identifier
+        (data.id?.toLowerCase() || '').includes(searchLower) ||
+        (data.name?.toLowerCase() || '').includes(searchLower) ||
+        (data.description?.toLowerCase() || '').includes(searchLower) ||
+        (data.identifier?.toLowerCase() || '').includes(searchLower)
       );
     });
   }, [requirements, searchTerm]);
 
-  const handleRowClick = (requirement: RequirementMap) => {
+  const handleRowClick = (req: RequirementsTableProps['requirements'][number]) => {
+    const data = getRequirementData(req);
+    if (!data) return;
     router.push(
-      `/${orgId}/frameworks/${requirement.frameworkInstanceId}/requirements/${requirement.requirementId}`,
+      `/${orgId}/frameworks/${req.frameworkInstanceId}/requirements/${data.id}`,
     );
   };
 
@@ -88,31 +112,35 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
               </TableCell>
             </TableRow>
           ) : (
-            filteredRequirements.map((requirement) => (
-              <TableRow
-                key={requirement.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => handleRowClick(requirement)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    handleRowClick(requirement);
-                  }
-                }}
-              >
-                <TableCell>
-                  <span className="line-clamp-2 h-10 max-w-[600px] truncate text-wrap">
-                    {requirement.requirement.name}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className="line-clamp-2 h-10 max-w-[600px] truncate text-wrap">
-                    {requirement.requirement.description}
-                  </span>
-                </TableCell>
-              </TableRow>
-            ))
+            filteredRequirements.map((requirement) => {
+              const data = getRequirementData(requirement);
+              if (!data) return null;
+              return (
+                <TableRow
+                  key={requirement.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleRowClick(requirement)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleRowClick(requirement);
+                    }
+                  }}
+                >
+                  <TableCell>
+                    <span className="line-clamp-2 h-10 max-w-[600px] truncate text-wrap">
+                      {data.name}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="line-clamp-2 h-10 max-w-[600px] truncate text-wrap">
+                      {data.description}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>

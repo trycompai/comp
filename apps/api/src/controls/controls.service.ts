@@ -20,6 +20,9 @@ const controlInclude = {
       requirement: {
         select: { name: true, identifier: true },
       },
+      frameworkInstanceRequirement: {
+        select: { name: true, identifier: true },
+      },
     },
   },
 } satisfies Prisma.ControlInclude;
@@ -76,6 +79,7 @@ export class ControlsService {
               include: { framework: true },
             },
             requirement: true,
+            frameworkInstanceRequirement: true,
           },
         },
       },
