@@ -1,0 +1,17 @@
+model FrameworkInstanceRequirement {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('fir'::text)"))
+
+  frameworkInstanceId String
+  frameworkInstance   FrameworkInstance @relation(fields: [frameworkInstanceId], references: [id], onDelete: Cascade)
+
+  name        String
+  identifier  String @default("")
+  description String
+
+  requirementMaps RequirementMap[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([frameworkInstanceId])
+}

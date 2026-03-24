@@ -7,8 +7,9 @@ model FrameworkInstance {
   framework   FrameworkEditorFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
 
   // Relationships
-  organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  requirementsMapped RequirementMap[]
+  organization                  Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requirementsMapped            RequirementMap[]
+  frameworkInstanceRequirements FrameworkInstanceRequirement[]
 
   @@unique([organizationId, frameworkId])
 }

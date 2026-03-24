@@ -1,8 +1,11 @@
 model RequirementMap {
   id String @id @default(dbgenerated("generate_prefixed_cuid('req'::text)"))
 
-  requirementId String
-  requirement   FrameworkEditorRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  requirementId String?
+  requirement   FrameworkEditorRequirement? @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  frameworkInstanceRequirementId String?
+  frameworkInstanceRequirement   FrameworkInstanceRequirement? @relation(fields: [frameworkInstanceRequirementId], references: [id], onDelete: Cascade)
 
   controlId String
   control   Control @relation(fields: [controlId], references: [id], onDelete: Cascade)
@@ -11,5 +14,7 @@ model RequirementMap {
   frameworkInstance   FrameworkInstance @relation(fields: [frameworkInstanceId], references: [id], onDelete: Cascade)
 
   @@unique([controlId, frameworkInstanceId, requirementId])
+  @@unique([controlId, frameworkInstanceId, frameworkInstanceRequirementId])
   @@index([requirementId, frameworkInstanceId])
+  @@index([frameworkInstanceRequirementId, frameworkInstanceId])
 }
