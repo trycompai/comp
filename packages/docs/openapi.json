@@ -14327,17 +14327,17 @@
         },
         "responses": {
           "200": {
-            "description": "Upload file, parse questions (no answers), save to DB, return questionnaireId",
+            "description": "Upload file and trigger async parsing. Returns runId for realtime tracking.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "questionnaireId": {
+                    "runId": {
                       "type": "string"
                     },
-                    "totalQuestions": {
-                      "type": "number"
+                    "publicAccessToken": {
+                      "type": "string"
                     }
                   }
                 }
@@ -21041,6 +21041,156 @@
           "Admin - Evidence"
         ]
       }
+    },
+    "/v1/framework-instance-requirements": {
+      "get": {
+        "operationId": "FrameworkInstanceRequirementsController_findAll_v1",
+        "parameters": [
+          {
+            "name": "frameworkInstanceId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List custom requirements for a framework instance",
+        "tags": [
+          "Framework Instance Requirements"
+        ]
+      },
+      "post": {
+        "operationId": "FrameworkInstanceRequirementsController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFrameworkInstanceRequirementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a framework instance requirement",
+        "tags": [
+          "Framework Instance Requirements"
+        ]
+      }
+    },
+    "/v1/framework-instance-requirements/{id}": {
+      "get": {
+        "operationId": "FrameworkInstanceRequirementsController_findOne_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a single framework instance requirement",
+        "tags": [
+          "Framework Instance Requirements"
+        ]
+      },
+      "patch": {
+        "operationId": "FrameworkInstanceRequirementsController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFrameworkInstanceRequirementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a framework instance requirement",
+        "tags": [
+          "Framework Instance Requirements"
+        ]
+      },
+      "delete": {
+        "operationId": "FrameworkInstanceRequirementsController_delete_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a framework instance requirement",
+        "tags": [
+          "Framework Instance Requirements"
+        ]
+      }
     }
   },
   "info": {
@@ -25412,7 +25562,11 @@
         "properties": {
           "requirementId": {
             "type": "string",
-            "description": "Requirement ID"
+            "description": "Template requirement ID"
+          },
+          "frameworkInstanceRequirementId": {
+            "type": "string",
+            "description": "Instance requirement ID"
           },
           "frameworkInstanceId": {
             "type": "string",
@@ -25420,7 +25574,6 @@
           }
         },
         "required": [
-          "requirementId",
           "frameworkInstanceId"
         ]
       },
@@ -25747,6 +25900,53 @@
           "name",
           "description"
         ]
+      },
+      "CreateFrameworkInstanceRequirementDto": {
+        "type": "object",
+        "properties": {
+          "frameworkInstanceId": {
+            "type": "string",
+            "example": "frm_abc123"
+          },
+          "name": {
+            "type": "string",
+            "example": "Custom Access Control"
+          },
+          "identifier": {
+            "type": "string",
+            "example": "CUSTOM-1"
+          },
+          "description": {
+            "type": "string",
+            "example": "Custom requirement for access control policies"
+          },
+          "controlIds": {
+            "description": "Control IDs to link to this requirement",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "frameworkInstanceId",
+          "name",
+          "description"
+        ]
+      },
+      "UpdateFrameworkInstanceRequirementDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
       }
     }
   }
