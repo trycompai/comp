@@ -1435,8 +1435,12 @@ export class PoliciesService {
       organizationId,
     );
 
+    const fileName = `${organizationName} - All Policies.pdf`;
     const downloadUrl =
-      await this.attachmentsService.getPresignedDownloadUrl(key);
+      await this.attachmentsService.getPresignedDownloadUrlWithFilename(
+        key,
+        fileName,
+      );
 
     this.logger.log(
       `Generated PDF bundle for organization ${organizationId} with ${policies.length} policies`,

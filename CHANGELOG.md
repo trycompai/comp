@@ -1,3 +1,18 @@
+## [3.11.2](https://github.com/trycompai/comp/compare/v3.11.1...v3.11.2) (2026-03-25)
+
+
+### Bug Fixes
+
+* **frameworks:** respect securityTrainingStepEnabled in overview people score ([160f8d2](https://github.com/trycompai/comp/commit/160f8d2a0bdc4a2bb8547a9884c10f84a152dab5))
+
+## [3.11.1](https://github.com/trycompai/comp/compare/v3.11.0...v3.11.1) (2026-03-24)
+
+
+### Bug Fixes
+
+* **policies:** use backend endpoint for bulk policy PDF download ([0bdc261](https://github.com/trycompai/comp/commit/0bdc261d2c99dc353623e09b1783979c2ca58500))
+* **policies:** use content-disposition attachment for bulk PDF download ([9d77b89](https://github.com/trycompai/comp/commit/9d77b89c54a460dfe1ee82da5044a9c7ce0b2d69))
+
 # [3.11.0](https://github.com/trycompai/comp/compare/v3.10.4...v3.11.0) (2026-03-24)
 
 

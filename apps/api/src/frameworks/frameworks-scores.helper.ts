@@ -12,7 +12,7 @@ const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 const TRAINING_VIDEO_IDS = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
 
 export async function getOverviewScores(organizationId: string) {
-  const [allPolicies, allTasks, employees, onboarding] = await Promise.all([
+  const [allPolicies, allTasks, employees, onboarding, org] = await Promise.all([
     db.policy.findMany({ where: { organizationId } }),
     db.task.findMany({ where: { organizationId } }),
     db.member.findMany({
@@ -23,7 +23,13 @@ export async function getOverviewScores(organizationId: string) {
       where: { organizationId },
       select: { triggerJobId: true },
     }),
+    db.organization.findUnique({
+      where: { id: organizationId },
+      select: { securityTrainingStepEnabled: true },
+    }),
   ]);
+
+  const securityTrainingStepEnabled = org?.securityTrainingStepEnabled === true;
 
   // Policy breakdown
   const publishedPolicies = allPolicies.filter((p) => p.status === 'published');
@@ -54,25 +60,30 @@ export async function getOverviewScores(organizationId: string) {
         p.isRequiredToSign && p.status === 'published' && !p.isArchived,
     );
 
-    const trainingCompletions =
-      await db.employeeTrainingVideoCompletion.findMany({
-        where: { memberId: { in: activeEmployees.map((e) => e.id) } },
-      });
+    const trainingCompletions = securityTrainingStepEnabled
+      ? await db.employeeTrainingVideoCompletion.findMany({
+          where: { memberId: { in: activeEmployees.map((e) => e.id) } },
+        })
+      : [];
 
     for (const emp of activeEmployees) {
       const hasAcceptedAllPolicies =
         requiredPolicies.length === 0 ||
         requiredPolicies.every((p) => p.signedBy.includes(emp.id));
 
-      const empCompletions = trainingCompletions.filter(
-        (c) => c.memberId === emp.id,
-      );
-      const completedVideoIds = empCompletions
-        .filter((c) => c.completedAt !== null)
-        .map((c) => c.videoId);
-      const hasCompletedAllTraining = TRAINING_VIDEO_IDS.every((vid) =>
-        completedVideoIds.includes(vid),
-      );
+      const hasCompletedAllTraining = securityTrainingStepEnabled
+        ? (() => {
+            const empCompletions = trainingCompletions.filter(
+              (c) => c.memberId === emp.id,
+            );
+            const completedVideoIds = empCompletions
+              .filter((c) => c.completedAt !== null)
+              .map((c) => c.videoId);
+            return TRAINING_VIDEO_IDS.every((vid) =>
+              completedVideoIds.includes(vid),
+            );
+          })()
+        : true;
 
       if (hasAcceptedAllPolicies && hasCompletedAllTraining) {
         completedMembers++;

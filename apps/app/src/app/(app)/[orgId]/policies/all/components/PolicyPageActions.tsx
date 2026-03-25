@@ -3,17 +3,12 @@
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { api } from '@/lib/api-client';
 import { Add, Download } from '@carbon/icons-react';
-import type { AuditLog, Member, Organization, Policy, User } from '@db';
+import type { Policy } from '@db';
 import { Button, HStack } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { usePermissions } from '@/hooks/use-permissions';
-
-type AuditLogWithRelations = AuditLog & {
-  user: User | null;
-  member: Member | null;
-  organization: Organization;
-};
 
 interface PolicyPageActionsProps {
   policies: Policy[];
@@ -29,21 +24,23 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
   const handleDownloadAll = async () => {
     setIsDownloadingAll(true);
     try {
-      const logsEntries = await Promise.all(
-        policies.map(async (policy) => {
-          const res = await api.get<{ data: AuditLogWithRelations[] }>(
-            `/v1/audit-logs?entityType=policy&entityId=${policy.id}`,
-          );
-          const allLogs = Array.isArray(res.data?.data) ? res.data.data : [];
-          const approvalLogs = allLogs.filter((log) =>
-            log.description?.toLowerCase().includes('published'),
-          );
-          return [policy.id, approvalLogs] as const;
-        }),
+      const res = await api.get<{ downloadUrl: string; name: string; policyCount: number }>(
+        '/v1/policies/download-all',
       );
-      const policyLogs = Object.fromEntries(logsEntries);
-      const { downloadAllPolicies } = await import('@/lib/pdf-generator');
-      await downloadAllPolicies(policies, policyLogs);
+
+      if (res.error || !res.data?.downloadUrl) {
+        toast.error('Failed to generate PDF. Please try again.');
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = res.data.downloadUrl;
+      link.download = `${res.data.name ?? 'all-policies'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch {
+      toast.error('Failed to download policies.');
     } finally {
       setIsDownloadingAll(false);
     }
