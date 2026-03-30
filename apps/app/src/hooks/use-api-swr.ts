@@ -2,6 +2,7 @@
 
 import { apiClient, ApiResponse } from '@/lib/api-client';
 import { useActiveOrganization } from '@/utils/auth-client';
+import { useParams } from 'next/navigation';
 import { useMemo } from 'react';
 import useSWR, { SWRConfiguration, SWRResponse } from 'swr';
 
@@ -19,9 +20,11 @@ export function useApiSWR<T = unknown>(
   options: UseApiSWROptions<T> = {},
 ): SWRResponse<ApiResponse<T>, Error> {
   const activeOrg = useActiveOrganization();
+  const params = useParams<{ orgId?: string }>();
   const { enabled = true, ...swrOptions } = options;
 
-  const organizationId = activeOrg.data?.id;
+  // Fall back to URL params org ID when better-auth client hasn't resolved yet
+  const organizationId = activeOrg.data?.id ?? params?.orgId;
 
   // Create stable key for SWR — include org ID for cache scoping
   const swrKey = useMemo(() => {
