@@ -9,15 +9,6 @@ import { FleetService } from '../lib/fleet.service';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
 
-// Mock better-auth
-jest.mock('../auth/auth.server', () => ({
-  auth: {
-    api: {
-      revokeUserSessions: jest.fn().mockResolvedValue({ success: true }),
-    },
-  },
-}));
-
 // Mock the database
 jest.mock('@trycompai/db', () => ({
   db: {
@@ -330,6 +321,7 @@ describe('PeopleService', () => {
       (db.risk.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
       (db.vendor.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
       (db.member.update as jest.Mock).mockResolvedValue({});
+      (db.session.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
       (db.organization.findUnique as jest.Mock).mockResolvedValue({
         name: 'Test Org',
       });
@@ -345,9 +337,8 @@ describe('PeopleService', () => {
         where: { id: 'mem_1', organizationId: 'org_123' },
         data: { deactivated: true, isActive: false },
       });
-      const { auth } = require('../auth/auth.server');
-      expect(auth.api.revokeUserSessions).toHaveBeenCalledWith({
-        body: { userId: 'usr_1' },
+      expect(db.session.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'usr_1' },
       });
     });
 

@@ -8,7 +8,6 @@ import {
 import { db } from '@trycompai/db';
 import { FleetService } from '../lib/fleet.service';
 import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
-import { auth } from '../auth/auth.server';
 import type { PeopleResponseDto } from './dto/people-responses.dto';
 import type { CreatePeopleDto } from './dto/create-people.dto';
 import type { UpdatePeopleDto } from './dto/update-people.dto';
@@ -351,7 +350,10 @@ export class PeopleService {
       data: { deactivated: true, isActive: false },
     });
 
-    await auth.api.revokeUserSessions({ body: { userId: member.userId } });
+    // Direct DB session deletion is correct here — the API server IS the auth server,
+    // and better-auth's own revokeUserSessions internally calls the same deleteSessions operation.
+    // The admin endpoint wrapper requires an authenticated admin session context we don't have.
+    await db.session.deleteMany({ where: { userId: member.userId } });
 
     if (member.fleetDmLabelId) {
       try {
