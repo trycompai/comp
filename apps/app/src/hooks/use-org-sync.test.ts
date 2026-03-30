@@ -83,29 +83,28 @@ describe('useOrgSync', () => {
     consoleSpy.mockRestore();
   });
 
-  it('should not call setActive twice while a sync is in progress', () => {
-    let resolveSetActive: () => void;
-    mockSetActive.mockReturnValue(
-      new Promise<void>((resolve) => {
-        resolveSetActive = resolve;
-      }),
-    );
+  it('should re-sync when orgId changes after a failed attempt', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockSetActive.mockRejectedValueOnce(new Error('network error'));
+    mockSetActive.mockResolvedValueOnce({});
     mockUseActiveOrganization.mockReturnValue({
       data: { id: 'org_old' },
     });
 
-    const { rerender } = renderHook(() => useOrgSync({ orgId: 'org_new' }));
+    const { rerender } = renderHook(
+      ({ orgId }: { orgId: string }) => useOrgSync({ orgId }),
+      { initialProps: { orgId: 'org_B' } },
+    );
 
-    // First call should trigger setActive
+    // First call fails
+    await act(() => Promise.resolve());
     expect(mockSetActive).toHaveBeenCalledTimes(1);
 
-    // Re-render while the first call is still in-flight
-    rerender();
+    // Org changes — effect should re-run and retry
+    rerender({ orgId: 'org_C' });
+    expect(mockSetActive).toHaveBeenCalledTimes(2);
+    expect(mockSetActive).toHaveBeenLastCalledWith({ organizationId: 'org_C' });
 
-    // Should not have called setActive again
-    expect(mockSetActive).toHaveBeenCalledTimes(1);
-
-    // Resolve the in-flight call
-    resolveSetActive!();
+    consoleSpy.mockRestore();
   });
 });

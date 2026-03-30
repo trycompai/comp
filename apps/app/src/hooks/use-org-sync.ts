@@ -1,7 +1,7 @@
 'use client';
 
 import { authClient, useActiveOrganization } from '@/utils/auth-client';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 /**
  * Syncs the client-side Better Auth active organization with the URL orgId.
@@ -17,7 +17,6 @@ import { useEffect, useRef } from 'react';
  */
 export function useOrgSync({ orgId }: { orgId: string }) {
   const { data: activeOrg } = useActiveOrganization();
-  const syncingRef = useRef(false);
 
   useEffect(() => {
     if (!orgId || !activeOrg) {
@@ -28,19 +27,10 @@ export function useOrgSync({ orgId }: { orgId: string }) {
       return;
     }
 
-    if (syncingRef.current) {
-      return;
-    }
-
-    syncingRef.current = true;
-
     authClient.organization
       .setActive({ organizationId: orgId })
       .catch((error: unknown) => {
         console.error('[useOrgSync] Failed to sync active organization:', error);
-      })
-      .finally(() => {
-        syncingRef.current = false;
       });
   }, [orgId, activeOrg]);
 }
