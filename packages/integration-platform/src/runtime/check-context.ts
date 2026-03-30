@@ -253,18 +253,18 @@ export function createCheckContext(options: CheckContextOptions): {
     opts?: { baseUrl?: string; headers?: Record<string, string> },
   ): Promise<T> {
     const url = buildUrl(path, opts?.baseUrl);
-    const merged = buildHeaders(opts?.headers);
-    // Only set Content-Type to JSON if not already specified (allows form-encoded)
-    if (!merged['Content-Type'] && !merged['content-type']) {
-      merged['Content-Type'] = 'application/json';
-    }
-    return executeRequest<T>(() =>
-      fetch(url.toString(), {
+    return executeRequest<T>(() => {
+      // Build headers inside lambda so token refresh is picked up on 401 retry
+      const merged = buildHeaders(opts?.headers);
+      if (!merged['Content-Type'] && !merged['content-type']) {
+        merged['Content-Type'] = 'application/json';
+      }
+      return fetch(url.toString(), {
         method: 'POST',
         headers: merged,
         body: body != null ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
-      }),
-    );
+      });
+    });
   }
 
   async function httpPut<T>(
@@ -273,17 +273,17 @@ export function createCheckContext(options: CheckContextOptions): {
     opts?: { baseUrl?: string; headers?: Record<string, string> },
   ): Promise<T> {
     const url = buildUrl(path, opts?.baseUrl);
-    const merged = buildHeaders(opts?.headers);
-    if (!merged['Content-Type'] && !merged['content-type']) {
-      merged['Content-Type'] = 'application/json';
-    }
-    return executeRequest<T>(() =>
-      fetch(url.toString(), {
+    return executeRequest<T>(() => {
+      const merged = buildHeaders(opts?.headers);
+      if (!merged['Content-Type'] && !merged['content-type']) {
+        merged['Content-Type'] = 'application/json';
+      }
+      return fetch(url.toString(), {
         method: 'PUT',
         headers: merged,
         body: body != null ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
-      }),
-    );
+      });
+    });
   }
 
   async function httpPatch<T>(
@@ -292,17 +292,17 @@ export function createCheckContext(options: CheckContextOptions): {
     opts?: { baseUrl?: string; headers?: Record<string, string> },
   ): Promise<T> {
     const url = buildUrl(path, opts?.baseUrl);
-    const merged = buildHeaders(opts?.headers);
-    if (!merged['Content-Type'] && !merged['content-type']) {
-      merged['Content-Type'] = 'application/json';
-    }
-    return executeRequest<T>(() =>
-      fetch(url.toString(), {
+    return executeRequest<T>(() => {
+      const merged = buildHeaders(opts?.headers);
+      if (!merged['Content-Type'] && !merged['content-type']) {
+        merged['Content-Type'] = 'application/json';
+      }
+      return fetch(url.toString(), {
         method: 'PATCH',
         headers: merged,
         body: body != null ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
-      }),
-    );
+      });
+    });
   }
 
   async function httpDelete<T>(
