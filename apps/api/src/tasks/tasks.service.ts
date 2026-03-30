@@ -141,7 +141,7 @@ export class TasksService {
         : undefined,
     });
 
-    return { data: templates, count: templates.length };
+    return templates;
   }
 
   /**
