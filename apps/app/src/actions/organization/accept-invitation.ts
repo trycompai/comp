@@ -74,6 +74,18 @@ export const completeInvitation = authActionClientWithoutOrg
         });
 
         if (existingMembership) {
+          // Reactivate member before setting active org, since better-auth
+          // validates membership status when setting the active organization.
+          if (existingMembership.deactivated) {
+            await db.member.update({
+              where: { id: existingMembership.id },
+              data: {
+                deactivated: false,
+                role: invitation.role,
+              },
+            });
+          }
+
           if (ctx.session.activeOrganizationId !== invitation.organizationId) {
             await auth.api.setActiveOrganization({
               headers: await headers(),
@@ -87,16 +99,6 @@ export const completeInvitation = authActionClientWithoutOrg
               status: 'accepted',
             },
           });
-
-          if (existingMembership.deactivated) {
-            await db.member.update({
-              where: { id: existingMembership.id },
-              data: {
-                deactivated: false,
-                role: invitation.role,
-              },
-            });
-          }
 
           revalidatePath(`/${invitation.organization.id}`);
           revalidateTag(`user_${user.id}`, 'max');
