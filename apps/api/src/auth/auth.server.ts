@@ -94,18 +94,21 @@ const corsRedisClient = new Redis({
 });
 
 async function getCustomDomains(): Promise<Set<string>> {
+  // Try Redis cache first (non-fatal if Redis is unavailable)
   try {
-    // Try Redis cache first
     const cached = await corsRedisClient.get<string[]>(CORS_DOMAINS_CACHE_KEY);
     if (cached) {
       return new Set(cached);
     }
+  } catch (error) {
+    console.error('[CORS] Redis cache read failed, falling back to DB:', error);
+  }
 
-    // Cache miss — query DB and store in Redis
+  // Cache miss or Redis unavailable — query DB
+  try {
     const trusts = await db.trust.findMany({
       where: {
         domain: { not: null },
-        domainVerified: true,
         status: 'published',
       },
       select: { domain: true },
@@ -115,13 +118,18 @@ async function getCustomDomains(): Promise<Set<string>> {
       .map((t) => t.domain)
       .filter((d): d is string => d !== null);
 
-    await corsRedisClient.set(CORS_DOMAINS_CACHE_KEY, domains, {
-      ex: CORS_DOMAINS_CACHE_TTL_SECONDS,
-    });
+    // Best-effort cache update (don't lose DB results if Redis SET fails)
+    try {
+      await corsRedisClient.set(CORS_DOMAINS_CACHE_KEY, domains, {
+        ex: CORS_DOMAINS_CACHE_TTL_SECONDS,
+      });
+    } catch {
+      // Redis unavailable — continue without caching
+    }
 
     return new Set(domains);
   } catch (error) {
-    console.error('[CORS] Failed to fetch custom domains:', error);
+    console.error('[CORS] Failed to fetch custom domains from DB:', error);
     return new Set();
   }
 }
@@ -130,7 +138,7 @@ async function getCustomDomains(): Promise<Set<string>> {
  * Check if an origin is trusted. Checks (in order):
  * 1. Static trusted origins list
  * 2. *.trycomp.ai / *.trust.inc subdomains
- * 3. Verified custom domains from the DB (cached in Redis, TTL 5 min)
+ * 3. Published custom domains from the DB (cached in Redis, TTL 5 min)
  */
 export async function isTrustedOrigin(origin: string): Promise<boolean> {
   if (isStaticTrustedOrigin(origin)) {

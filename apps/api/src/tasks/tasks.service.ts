@@ -129,6 +129,21 @@ export class TasksService {
     }
   }
 
+  async getTaskTemplates(frameworkId?: string) {
+    const templates = await db.frameworkEditorTaskTemplate.findMany({
+      orderBy: { name: 'asc' },
+      where: frameworkId
+        ? {
+            controlTemplates: {
+              some: { requirements: { some: { frameworkId } } },
+            },
+          }
+        : undefined,
+    });
+
+    return templates;
+  }
+
   /**
    * Get a single task by ID
    */

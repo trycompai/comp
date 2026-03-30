@@ -44,12 +44,19 @@ export const generateVendorMitigation = task({
 
     await createVendorRiskComment(vendor, policies, organizationId, authorId);
 
-    // Mark vendor as assessed and assign to owner/admin
+    // Mark vendor as assessed and assign to author (unless they're a platform admin,
+    // since platform admins are hidden from the assignee UI and would block future updates)
+    const author = await db.member.findFirst({
+      where: { id: authorId, organizationId },
+      include: { user: { select: { role: true } } },
+    });
+    const assigneeId = author?.user.role === 'admin' ? null : authorId;
+
     await db.vendor.update({
       where: { id: vendor.id, organizationId },
       data: {
         status: VendorStatus.assessed,
-        assigneeId: authorId,
+        assigneeId,
       },
     });
 

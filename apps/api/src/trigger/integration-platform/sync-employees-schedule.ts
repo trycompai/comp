@@ -201,7 +201,8 @@ async function syncProvider(params: SyncProviderParams): Promise<SyncResult> {
       return syncRamp({ connectionId, organizationId });
 
     default:
-      throw new Error(`No sync handler for provider: ${providerSlug}`);
+      // Try generic dynamic sync endpoint for non-built-in providers
+      return syncDynamicProvider({ providerSlug, connectionId, organizationId });
   }
 }
 
@@ -340,6 +341,47 @@ async function syncRamp({
   if (!response.ok) {
     const errorBody = await response.text();
     throw new Error(`Ramp sync failed: ${response.status} - ${errorBody}`);
+  }
+
+  const data = await response.json();
+  return {
+    success: data.success,
+    imported: data.imported || 0,
+    reactivated: data.reactivated || 0,
+    deactivated: data.deactivated || 0,
+    skipped: data.skipped || 0,
+    errors: data.errors || 0,
+  };
+}
+
+async function syncDynamicProvider({
+  providerSlug,
+  connectionId,
+  organizationId,
+}: {
+  providerSlug: string;
+  connectionId: string;
+  organizationId: string;
+}): Promise<SyncResult> {
+  const url = new URL(
+    `${API_BASE_URL}/v1/integrations/sync/dynamic/${providerSlug}/employees`,
+  );
+  url.searchParams.set('connectionId', connectionId);
+
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+      'x-organization-id': organizationId,
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(
+      `Dynamic sync failed for ${providerSlug}: ${response.status} - ${errorBody}`,
+    );
   }
 
   const data = await response.json();

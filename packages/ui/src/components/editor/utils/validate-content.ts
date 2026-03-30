@@ -39,6 +39,23 @@ export function validateAndFixTipTapContent(content: any): JSONContent {
 }
 
 /**
+ * Tries to parse a stringified JSON node into a proper object.
+ * Returns the parsed object or null if parsing fails.
+ */
+function tryParseStringNode(node: unknown): Record<string, unknown> | null {
+  if (typeof node !== 'string') return null;
+  try {
+    const parsed = JSON.parse(node);
+    if (parsed && typeof parsed === 'object' && typeof parsed.type === 'string') {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Not valid JSON
+  }
+  return null;
+}
+
+/**
  * Fixes an array of content nodes
  */
 function fixContentArray(contentArray: any[]): JSONContent[] {
@@ -46,16 +63,55 @@ function fixContentArray(contentArray: any[]): JSONContent[] {
     return [createEmptyParagraph()];
   }
 
-  const fixedContent = contentArray
+  // First pass: parse any stringified JSON nodes
+  const parsed = contentArray.map((node) => tryParseStringNode(node) ?? node);
+
+  // Second pass: fix each node
+  const fixedNodes = parsed
     .map(fixNode)
     .filter((node): node is JSONContent => node !== null) as JSONContent[];
 
+  // Third pass: merge orphaned listItems into bulletLists
+  const merged = mergeOrphanedListItems(fixedNodes);
+
   // Ensure we have at least one paragraph
-  if (fixedContent.length === 0) {
+  if (merged.length === 0) {
     return [createEmptyParagraph()];
   }
 
-  return fixedContent;
+  return merged;
+}
+
+/**
+ * Merges consecutive orphaned listItem nodes into a bulletList.
+ */
+function mergeOrphanedListItems(nodes: JSONContent[]): JSONContent[] {
+  const result: JSONContent[] = [];
+  let i = 0;
+
+  while (i < nodes.length) {
+    const node = nodes[i]!;
+    if (node.type === 'listItem') {
+      // Collect consecutive listItems
+      const items: JSONContent[] = [];
+      while (i < nodes.length && nodes[i]!.type === 'listItem') {
+        items.push(nodes[i]!);
+        i++;
+      }
+      // Check if the previous node is a bulletList or orderedList — append to it
+      const prev = result[result.length - 1];
+      if (prev && (prev.type === 'bulletList' || prev.type === 'orderedList') && prev.content) {
+        prev.content.push(...items);
+      } else {
+        result.push({ type: 'bulletList', content: items });
+      }
+    } else {
+      result.push(node);
+      i++;
+    }
+  }
+
+  return result;
 }
 
 function ensureNonEmptyText(value: unknown): string {
@@ -174,7 +230,23 @@ function fixList(node: any): JSONContent {
     };
   }
 
-  const fixedContent = content.map(fixNode).filter(Boolean) as JSONContent[];
+  // Parse stringified children and fix each node, wrapping non-listItem
+  // children (e.g. bare paragraphs) in a listItem so the list is valid.
+  const fixedContent: JSONContent[] = [];
+  for (const child of content) {
+    const resolved = tryParseStringNode(child) ?? child;
+    const fixed = fixNode(resolved);
+    if (!fixed) continue;
+    if (fixed.type === 'listItem') {
+      fixedContent.push(fixed);
+    } else {
+      // Wrap non-listItem nodes (paragraph, etc.) in a listItem
+      fixedContent.push({
+        type: 'listItem',
+        content: [fixed],
+      });
+    }
+  }
 
   if (fixedContent.length === 0) {
     fixedContent.push(createEmptyListItem());
@@ -318,6 +390,12 @@ function fixTableCell(node: any): JSONContent {
 }
 
 /**
+ * Marks to strip during validation (they cause rendering issues or are
+ * artefacts of AI generation / paste-from-rich-text).
+ */
+const STRIPPED_MARK_TYPES = new Set(['textStyle']);
+
+/**
  * Fixes marks array
  */
 function fixMarks(marks: any[]): any[] {
@@ -326,7 +404,10 @@ function fixMarks(marks: any[]): any[] {
   }
 
   return marks
-    .filter((mark) => mark && typeof mark === 'object' && mark.type)
+    .filter(
+      (mark) =>
+        mark && typeof mark === 'object' && mark.type && !STRIPPED_MARK_TYPES.has(mark.type),
+    )
     .map((mark) => ({
       type: mark.type,
       ...(mark.attrs && typeof mark.attrs === 'object' && { attrs: mark.attrs }),

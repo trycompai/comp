@@ -600,9 +600,13 @@ export class VendorsService {
   ) {
     try {
       // First check if the vendor exists in the organization
-      await this.findById(id, organizationId);
+      const existing = await this.findById(id, organizationId);
 
-      if (updateVendorDto.assigneeId) {
+      // Only validate assignee when it's actually changing
+      if (
+        updateVendorDto.assigneeId &&
+        updateVendorDto.assigneeId !== existing.assigneeId
+      ) {
         await this.validateAssigneeNotPlatformAdmin(updateVendorDto.assigneeId, organizationId);
       }
 

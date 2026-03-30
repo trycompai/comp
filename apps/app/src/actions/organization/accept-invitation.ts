@@ -1,8 +1,10 @@
 'use server';
 
 import { createTrainingVideoEntries } from '@/lib/db/employee';
+import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 import { authActionClientWithoutOrg } from '../safe-action';
 import type { ActionResponse } from '../types';
@@ -72,22 +74,8 @@ export const completeInvitation = authActionClientWithoutOrg
         });
 
         if (existingMembership) {
-          if (ctx.session.activeOrganizationId !== invitation.organizationId) {
-            await db.session.update({
-              where: { id: ctx.session.id },
-              data: {
-                activeOrganizationId: invitation.organizationId,
-              },
-            });
-          }
-
-          await db.invitation.update({
-            where: { id: invitation.id },
-            data: {
-              status: 'accepted',
-            },
-          });
-
+          // Reactivate member before setting active org, since better-auth
+          // validates membership status when setting the active organization.
           if (existingMembership.deactivated) {
             await db.member.update({
               where: { id: existingMembership.id },
@@ -97,6 +85,20 @@ export const completeInvitation = authActionClientWithoutOrg
               },
             });
           }
+
+          if (ctx.session.activeOrganizationId !== invitation.organizationId) {
+            await auth.api.setActiveOrganization({
+              headers: await headers(),
+              body: { organizationId: invitation.organizationId },
+            });
+          }
+
+          await db.invitation.update({
+            where: { id: invitation.id },
+            data: {
+              status: 'accepted',
+            },
+          });
 
           revalidatePath(`/${invitation.organization.id}`);
           revalidateTag(`user_${user.id}`, 'max');
@@ -135,13 +137,9 @@ export const completeInvitation = authActionClientWithoutOrg
           },
         });
 
-        await db.session.update({
-          where: {
-            id: ctx.session.id,
-          },
-          data: {
-            activeOrganizationId: invitation.organizationId,
-          },
+        await auth.api.setActiveOrganization({
+          headers: await headers(),
+          body: { organizationId: invitation.organizationId },
         });
 
         revalidatePath(`/${invitation.organization.id}`);

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '@db';
-import type { DynamicIntegration, DynamicCheck, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { DynamicIntegration, DynamicCheck } from '@prisma/client';
 
 export type DynamicIntegrationWithChecks = DynamicIntegration & {
   checks: DynamicCheck[];
@@ -54,6 +55,7 @@ export class DynamicIntegrationRepository {
     authConfig: Prisma.InputJsonValue;
     capabilities?: Prisma.InputJsonValue;
     supportsMultipleConnections?: boolean;
+    syncDefinition?: Prisma.InputJsonValue;
   }): Promise<DynamicIntegration> {
     return db.dynamicIntegration.create({
       data: {
@@ -68,6 +70,7 @@ export class DynamicIntegrationRepository {
         authConfig: data.authConfig,
         capabilities: data.capabilities ?? ['checks'],
         supportsMultipleConnections: data.supportsMultipleConnections ?? false,
+        syncDefinition: data.syncDefinition ?? undefined,
       },
     });
   }
@@ -98,6 +101,7 @@ export class DynamicIntegrationRepository {
     authConfig: Prisma.InputJsonValue;
     capabilities?: Prisma.InputJsonValue;
     supportsMultipleConnections?: boolean;
+    syncDefinition?: Prisma.InputJsonValue | null;
   }): Promise<DynamicIntegration> {
     return db.dynamicIntegration.upsert({
       where: { slug: data.slug },
@@ -113,6 +117,7 @@ export class DynamicIntegrationRepository {
         authConfig: data.authConfig,
         capabilities: data.capabilities ?? ['checks'],
         supportsMultipleConnections: data.supportsMultipleConnections ?? false,
+        syncDefinition: data.syncDefinition ?? undefined,
       },
       update: {
         name: data.name,
@@ -125,6 +130,9 @@ export class DynamicIntegrationRepository {
         authConfig: data.authConfig,
         capabilities: data.capabilities ?? ['checks'],
         supportsMultipleConnections: data.supportsMultipleConnections ?? false,
+        syncDefinition: data.syncDefinition === null
+          ? Prisma.DbNull
+          : (data.syncDefinition ?? undefined),
       },
     });
   }

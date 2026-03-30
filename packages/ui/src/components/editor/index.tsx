@@ -89,6 +89,14 @@ export const Editor = ({
     },
   });
 
+  // Sync editable state with readOnly prop — TipTap v3's useEditor preserves
+  // the current editable state on option updates, so we must set it explicitly.
+  useEffect(() => {
+    if (editor && !editor.isDestroyed) {
+      editor.setEditable(!readOnly);
+    }
+  }, [editor, readOnly]);
+
   useEffect(() => {
     setInitialLoadComplete(true);
   }, []);
