@@ -1,3 +1,18 @@
+# [3.13.0](https://github.com/trycompai/comp/compare/v3.12.2...v3.13.0) (2026-03-30)
+
+
+### Bug Fixes
+
+* fix error with policy rendering ([e9cd567](https://github.com/trycompai/comp/commit/e9cd5673a2605ab09182a76d1d4217d8b6b4a4dd))
+* **integration-platform:** move buildHeaders inside request lambda for token refresh ([4349f50](https://github.com/trycompai/comp/commit/4349f5069d6bb55a44eba5791336abcc26ccf002))
+* **policy-editor:** enhance permission handling during loading state ([089ceb7](https://github.com/trycompai/comp/commit/089ceb715f59f9c04e3e206d8e587b6b408f1918))
+* **policy-editor:** simplify permission handling in PolicyEditorWrapper ([#2400](https://github.com/trycompai/comp/issues/2400)) ([e4fb01a](https://github.com/trycompai/comp/commit/e4fb01a1be682e8f47ca9fafcf8c42594455af5c))
+
+
+### Features
+
+* **integration-platform:** add bodyEncoding option to fetch step ([22759b8](https://github.com/trycompai/comp/commit/22759b8d3243d915eb9629e0747a749eca4eebf7))
+
 ## [3.12.2](https://github.com/trycompai/comp/compare/v3.12.1...v3.12.2) (2026-03-30)
 
 
