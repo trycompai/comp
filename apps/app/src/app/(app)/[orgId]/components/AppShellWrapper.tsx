@@ -6,6 +6,7 @@ import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-d
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
+import { useOrgSync } from '@/hooks/use-org-sync';
 import { canAccessCompliance, canAccessRoute, hasAnyPermission, type UserPermissions } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
 import { Badge, Globe, Locked, Logout, ManageProtection, Settings } from '@carbon/icons-react';
@@ -103,6 +104,9 @@ function AppShellWrapperContent({
   user,
   isAdmin,
 }: AppShellWrapperContentProps) {
+  // Sync client-side auth state when navigating to a different org via app link
+  useOrgSync({ orgId: organization.id });
+
   const { theme, resolvedTheme, setTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
