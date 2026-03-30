@@ -11,6 +11,7 @@ export interface PeopleResponseDto {
   createdAt: string; // ISO string from API
   department: string;
   isActive: boolean;
+  deactivated: boolean;
   fleetDmLabelId: number | null;
   user: {
     id: string;

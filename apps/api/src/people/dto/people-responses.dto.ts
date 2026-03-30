@@ -112,6 +112,12 @@ export class PeopleResponseDto {
   isActive: boolean;
 
   @ApiProperty({
+    description: 'Whether member is deactivated',
+    example: false,
+  })
+  deactivated: boolean;
+
+  @ApiProperty({
     description: 'FleetDM label ID for member devices',
     example: 123,
     nullable: true,
