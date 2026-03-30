@@ -1,8 +1,10 @@
 'use server';
 
 import { createTrainingVideoEntries } from '@/lib/db/employee';
+import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 import { authActionClientWithoutOrg } from '../safe-action';
 import type { ActionResponse } from '../types';
@@ -73,11 +75,9 @@ export const completeInvitation = authActionClientWithoutOrg
 
         if (existingMembership) {
           if (ctx.session.activeOrganizationId !== invitation.organizationId) {
-            await db.session.update({
-              where: { id: ctx.session.id },
-              data: {
-                activeOrganizationId: invitation.organizationId,
-              },
+            await auth.api.setActiveOrganization({
+              headers: await headers(),
+              body: { organizationId: invitation.organizationId },
             });
           }
 
@@ -135,13 +135,9 @@ export const completeInvitation = authActionClientWithoutOrg
           },
         });
 
-        await db.session.update({
-          where: {
-            id: ctx.session.id,
-          },
-          data: {
-            activeOrganizationId: invitation.organizationId,
-          },
+        await auth.api.setActiveOrganization({
+          headers: await headers(),
+          body: { organizationId: invitation.organizationId },
         });
 
         revalidatePath(`/${invitation.organization.id}`);
