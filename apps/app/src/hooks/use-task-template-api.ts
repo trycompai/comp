@@ -12,6 +12,11 @@ export interface TaskTemplate {
   updatedAt: string;
 }
 
-export function useTaskTemplates(options: UseApiSWROptions<TaskTemplate[]> = {}) {
-  return useApiSWR<TaskTemplate[]>('/v1/tasks/templates', options);
+export interface TaskTemplateListResponse {
+  data: TaskTemplate[];
+  count: number;
+}
+
+export function useTaskTemplates(options: UseApiSWROptions<TaskTemplateListResponse> = {}) {
+  return useApiSWR<TaskTemplateListResponse>('/v1/tasks/templates', options);
 }
