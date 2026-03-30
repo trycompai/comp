@@ -194,6 +194,7 @@ Important:
   }
 
   @Put('history')
+  @SkipAuditLog()
   @ApiOperation({
     summary: 'Save assistant chat history',
     description:
@@ -214,6 +215,7 @@ Important:
   }
 
   @Delete('history')
+  @SkipAuditLog()
   @ApiOperation({
     summary: 'Clear assistant chat history',
     description: 'Deletes the current user-scoped assistant chat history.',
