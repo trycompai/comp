@@ -66,6 +66,7 @@ export class DynamicIntegrationsController {
       defaultHeaders: def.defaultHeaders as unknown as Prisma.InputJsonValue,
       authConfig: def.authConfig as unknown as Prisma.InputJsonValue,
       capabilities: def.capabilities as unknown as Prisma.InputJsonValue,
+      syncDefinition: def.syncDefinition as unknown as Prisma.InputJsonValue,
       supportsMultipleConnections: def.supportsMultipleConnections,
     });
 
@@ -149,6 +150,7 @@ export class DynamicIntegrationsController {
       defaultHeaders: def.defaultHeaders as unknown as Prisma.InputJsonValue,
       authConfig: def.authConfig as unknown as Prisma.InputJsonValue,
       capabilities: def.capabilities as unknown as Prisma.InputJsonValue,
+      syncDefinition: def.syncDefinition as unknown as Prisma.InputJsonValue,
       supportsMultipleConnections: def.supportsMultipleConnections,
     });
 

@@ -53,6 +53,7 @@ export class DynamicIntegrationRepository {
     defaultHeaders?: Prisma.InputJsonValue;
     authConfig: Prisma.InputJsonValue;
     capabilities?: Prisma.InputJsonValue;
+    syncDefinition?: Prisma.InputJsonValue;
     supportsMultipleConnections?: boolean;
   }): Promise<DynamicIntegration> {
     return db.dynamicIntegration.create({
@@ -67,6 +68,7 @@ export class DynamicIntegrationRepository {
         defaultHeaders: data.defaultHeaders ?? undefined,
         authConfig: data.authConfig,
         capabilities: data.capabilities ?? ['checks'],
+        syncDefinition: data.syncDefinition ?? undefined,
         supportsMultipleConnections: data.supportsMultipleConnections ?? false,
       },
     });
@@ -97,6 +99,7 @@ export class DynamicIntegrationRepository {
     defaultHeaders?: Prisma.InputJsonValue;
     authConfig: Prisma.InputJsonValue;
     capabilities?: Prisma.InputJsonValue;
+    syncDefinition?: Prisma.InputJsonValue;
     supportsMultipleConnections?: boolean;
   }): Promise<DynamicIntegration> {
     return db.dynamicIntegration.upsert({
@@ -112,6 +115,7 @@ export class DynamicIntegrationRepository {
         defaultHeaders: data.defaultHeaders ?? undefined,
         authConfig: data.authConfig,
         capabilities: data.capabilities ?? ['checks'],
+        syncDefinition: data.syncDefinition ?? undefined,
         supportsMultipleConnections: data.supportsMultipleConnections ?? false,
       },
       update: {
@@ -124,6 +128,7 @@ export class DynamicIntegrationRepository {
         defaultHeaders: data.defaultHeaders ?? undefined,
         authConfig: data.authConfig,
         capabilities: data.capabilities ?? ['checks'],
+        syncDefinition: data.syncDefinition ?? undefined,
         supportsMultipleConnections: data.supportsMultipleConnections ?? false,
       },
     });
