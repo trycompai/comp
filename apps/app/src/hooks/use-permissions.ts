@@ -19,7 +19,7 @@ interface CustomRolePermissionsResponse {
 }
 
 export function usePermissions() {
-  const { data: activeMember, isPending } = useActiveMember();
+  const { data: activeMember } = useActiveMember();
   const roleString = activeMember?.role ?? null;
 
   // Resolve built-in roles synchronously
@@ -78,7 +78,6 @@ export function usePermissions() {
   return {
     permissions,
     obligations,
-    isPending,
     hasPermission: (resource: string, action: string) =>
       hasPermission(permissions, resource, action),
   };

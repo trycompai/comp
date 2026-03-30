@@ -1111,7 +1111,7 @@ function PolicyEditorWrapper({
   additionalExtensions?: import('@tiptap/core').Extension[];
   suggestionsActive?: boolean;
 }) {
-  const { hasPermission, isPending: isPermissionsPending } = usePermissions();
+  const { hasPermission } = usePermissions();
   const canUpdatePolicy = hasPermission('policy', 'update');
 
   const formattedContent = Array.isArray(policyContent)
@@ -1132,8 +1132,7 @@ function PolicyEditorWrapper({
 
   // Determine if editor should be read-only
   // isVersionReadOnly already covers the pending version case (isViewingPendingVersion)
-  // While permissions are loading, don't lock the editor — wait for the real state
-  const isReadOnly = isVersionReadOnly || (!isPermissionsPending && !canUpdatePolicy);
+  const isReadOnly = isVersionReadOnly || !canUpdatePolicy;
 
   // Get status message and styling for all states
   const getStatusInfo = (): {
