@@ -173,17 +173,36 @@ async function executeFetch(
     let data: unknown;
     const method = step.method || 'GET';
 
+    // Resolve body with interpolation
+    const resolveBody = (): unknown => {
+      if (!step.body) return undefined;
+      const interpolated = JSON.parse(interpolate(JSON.stringify(step.body), scope));
+
+      // Form-encode if bodyEncoding is 'form'
+      if (step.bodyEncoding === 'form' && interpolated && typeof interpolated === 'object') {
+        const formParams = new URLSearchParams();
+        for (const [key, value] of Object.entries(interpolated)) {
+          formParams.append(key, String(value ?? ''));
+        }
+        return formParams.toString();
+      }
+
+      return interpolated;
+    };
+
+    // Set Content-Type header for form encoding
+    const bodyHeaders = step.bodyEncoding === 'form'
+      ? { 'Content-Type': 'application/x-www-form-urlencoded', ...headers }
+      : headers;
+
     if (method === 'GET') {
       data = await ctx.fetch(path, { params, headers });
     } else if (method === 'POST') {
-      const body = step.body ? JSON.parse(interpolate(JSON.stringify(step.body), scope)) : undefined;
-      data = await ctx.post(path, body, { headers });
+      data = await ctx.post(path, resolveBody(), { headers: bodyHeaders });
     } else if (method === 'PUT') {
-      const body = step.body ? JSON.parse(interpolate(JSON.stringify(step.body), scope)) : undefined;
-      data = await ctx.put(path, body, { headers });
+      data = await ctx.put(path, resolveBody(), { headers: bodyHeaders });
     } else if (method === 'PATCH') {
-      const body = step.body ? JSON.parse(interpolate(JSON.stringify(step.body), scope)) : undefined;
-      data = await ctx.patch(path, body, { headers });
+      data = await ctx.patch(path, resolveBody(), { headers: bodyHeaders });
     } else if (method === 'DELETE') {
       data = await ctx.delete(path, { headers });
     }

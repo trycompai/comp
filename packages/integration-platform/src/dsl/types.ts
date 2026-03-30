@@ -120,6 +120,7 @@ export const FetchStepSchema = z.object({
   method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']).optional(),
   params: z.record(z.string(), z.string()).optional(),
   body: z.unknown().optional(),
+  bodyEncoding: z.enum(['json', 'form']).optional(),
   headers: z.record(z.string(), z.string()).optional(),
   dataPath: z.string().optional(),
   onError: z.enum(['fail', 'skip', 'empty']).optional(),
