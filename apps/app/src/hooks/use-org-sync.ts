@@ -17,13 +17,14 @@ import { useEffect } from 'react';
  */
 export function useOrgSync({ orgId }: { orgId: string }) {
   const { data: activeOrg } = useActiveOrganization();
+  const activeOrgId = activeOrg?.id;
 
   useEffect(() => {
-    if (!orgId || !activeOrg) {
+    if (!orgId || !activeOrgId) {
       return;
     }
 
-    if (activeOrg.id === orgId) {
+    if (activeOrgId === orgId) {
       return;
     }
 
@@ -32,5 +33,5 @@ export function useOrgSync({ orgId }: { orgId: string }) {
       .catch((error: unknown) => {
         console.error('[useOrgSync] Failed to sync active organization:', error);
       });
-  }, [orgId, activeOrg]);
+  }, [orgId, activeOrgId]);
 }
