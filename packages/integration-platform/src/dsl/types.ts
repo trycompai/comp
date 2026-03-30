@@ -208,6 +208,13 @@ export const EmitStepSchema = z.object({
 
 export type EmitStep = z.infer<typeof EmitStepSchema>;
 
+export const CodeStepSchema = z.object({
+  type: z.literal('code'),
+  code: z.string().min(1),
+});
+
+export type CodeStep = z.infer<typeof CodeStepSchema>;
+
 // ============================================================================
 // Union of All Steps
 // ============================================================================
@@ -220,6 +227,7 @@ export const DSLStepSchema: z.ZodType<DSLStep> = z.lazy(() =>
     AggregateStepSchema,
     BranchStepSchema,
     EmitStepSchema,
+    CodeStepSchema,
   ]),
 );
 
@@ -229,7 +237,24 @@ export type DSLStep =
   | ForEachStep
   | AggregateStep
   | BranchStep
-  | EmitStep;
+  | EmitStep
+  | CodeStep;
+
+// ============================================================================
+// Shared Variable Schema (used by checks, sync, and integration definitions)
+// ============================================================================
+
+export const VariableSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  type: z.enum(['text', 'number', 'boolean', 'select', 'multi-select']),
+  required: z.boolean().optional(),
+  default: z.unknown().optional(),
+  helpText: z.string().optional(),
+  options: z
+    .array(z.object({ value: z.string(), label: z.string() }))
+    .optional(),
+});
 
 // ============================================================================
 // Check Definition (the top-level DSL object)
@@ -237,24 +262,36 @@ export type DSLStep =
 
 export const CheckDefinitionSchema = z.object({
   steps: z.array(DSLStepSchema),
-  variables: z
-    .array(
-      z.object({
-        id: z.string(),
-        label: z.string(),
-        type: z.enum(['text', 'number', 'boolean', 'select', 'multi-select']),
-        required: z.boolean().optional(),
-        default: z.unknown().optional(),
-        helpText: z.string().optional(),
-        options: z
-          .array(z.object({ value: z.string(), label: z.string() }))
-          .optional(),
-      }),
-    )
-    .optional(),
+  variables: z.array(VariableSchema).optional(),
 });
 
 export type CheckDefinition = z.infer<typeof CheckDefinitionSchema>;
+
+// ============================================================================
+// Sync Definition (for dynamic employee sync)
+// ============================================================================
+
+export const SyncEmployeeSchema = z.object({
+  email: z.string(),
+  name: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  externalId: z.string().optional(),
+  status: z.enum(['active', 'inactive', 'suspended']),
+  role: z.string().optional(),
+  department: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type SyncEmployee = z.infer<typeof SyncEmployeeSchema>;
+
+export const SyncDefinitionSchema = z.object({
+  steps: z.array(DSLStepSchema),
+  employeesPath: z.string().default('employees'),
+  variables: z.array(VariableSchema).optional(),
+});
+
+export type SyncDefinition = z.infer<typeof SyncDefinitionSchema>;
 
 // ============================================================================
 // Dynamic Integration Definition (full manifest + checks as JSON)
@@ -285,6 +322,7 @@ export const DynamicIntegrationDefinitionSchema = z.object({
   }),
   capabilities: z.array(z.enum(['checks', 'webhook', 'sync'])).default(['checks']),
   supportsMultipleConnections: z.boolean().optional(),
+  syncDefinition: SyncDefinitionSchema.optional(),
   checks: z.array(
     z.object({
       checkSlug: z.string().regex(/^[a-z0-9_]+$/, 'Check slug must be lowercase alphanumeric with underscores'),
@@ -293,20 +331,7 @@ export const DynamicIntegrationDefinitionSchema = z.object({
       taskMapping: z.string().optional(),
       defaultSeverity: z.enum(['info', 'low', 'medium', 'high', 'critical']).optional(),
       definition: CheckDefinitionSchema,
-      variables: z
-        .array(
-          z.object({
-            id: z.string(),
-            label: z.string(),
-            type: z.enum(['text', 'number', 'boolean', 'select', 'multi-select']),
-            required: z.boolean().optional(),
-            default: z.unknown().optional(),
-            helpText: z.string().optional(),
-            options: z
-              .array(z.object({ value: z.string(), label: z.string() }))
-              .optional(),
-          }),
-        )
+      variables: z.array(VariableSchema)
         .optional(),
       isEnabled: z.boolean().optional(),
       sortOrder: z.number().optional(),

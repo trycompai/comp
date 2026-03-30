@@ -1,3 +1,19 @@
+# [3.12.0](https://github.com/trycompai/comp/compare/v3.11.5...v3.12.0) (2026-03-30)
+
+
+### Bug Fixes
+
+* **integration-platform:** clear stale syncDefinition on upsert, deduplicate VariableSchema ([ebfa25a](https://github.com/trycompai/comp/commit/ebfa25a08be22b5a71576b78ec4a787d62e583b6))
+* **integration-platform:** persist syncDefinition to database ([6f08b6b](https://github.com/trycompai/comp/commit/6f08b6b5242e0eadbd5e6422f2dc3cf48d2a6c3a))
+* **integration-platform:** remove redundant per-check re-validation in validate endpoint ([b116616](https://github.com/trycompai/comp/commit/b116616e8f8e72aefd6b7ddcd940e1dba7aca0b4))
+* **integration-platform:** validate syncDefinition before storing, fix success flag ([4b007ff](https://github.com/trycompai/comp/commit/4b007ff4dfb5a578720daab1d6e492479b828646))
+* use value import for Prisma (DbNull requires runtime access) ([73d0fa6](https://github.com/trycompai/comp/commit/73d0fa6fd72f0a486d48a6af7ca598a016f6ccff))
+
+
+### Features
+
+* **integration-platform:** add code step and dynamic employee sync ([3ddfaef](https://github.com/trycompai/comp/commit/3ddfaef188eb84de70fb1e193432f2aa9ba45366))
+
 ## [3.11.5](https://github.com/trycompai/comp/compare/v3.11.4...v3.11.5) (2026-03-25)
 
 

@@ -2,13 +2,17 @@ import type { CheckContext, IntegrationCheck, FindingSeverity } from '../types';
 import type {
   DSLStep,
   CheckDefinition,
+  SyncDefinition,
+  SyncEmployee,
   FetchStep,
   FetchPagesStep,
   ForEachStep,
   AggregateStep,
   BranchStep,
   EmitStep,
+  CodeStep,
 } from './types';
+import { SyncEmployeeSchema } from './types';
 import { evaluateCondition, evaluateOperator, resolvePath } from './expression-evaluator';
 import { interpolate, interpolateTemplate } from './template-engine';
 
@@ -52,6 +56,64 @@ export function interpretDeclarativeCheck(opts: {
 }
 
 /**
+ * Converts a declarative SyncDefinition (JSON DSL) into a function
+ * that produces a validated list of SyncEmployee objects.
+ *
+ * The sync definition runs the same DSL steps as checks, but instead of
+ * emitting pass/fail results, it produces a standardized employee list
+ * at `scope[employeesPath]` that the generic sync service can process.
+ */
+export function interpretDeclarativeSync(opts: {
+  definition: SyncDefinition;
+  defaultSeverity?: FindingSeverity;
+}): {
+  run: (ctx: CheckContext) => Promise<SyncEmployee[]>;
+} {
+  return {
+    run: async (ctx: CheckContext) => {
+      const scope: Record<string, unknown> = {
+        variables: ctx.variables,
+        credentials: ctx.credentials,
+        accessToken: ctx.accessToken,
+        connectionId: ctx.connectionId,
+        organizationId: ctx.organizationId,
+        metadata: ctx.metadata,
+      };
+
+      ctx.log('Running declarative sync');
+
+      for (const step of opts.definition.steps) {
+        await executeStep(step, scope, ctx, opts.defaultSeverity || 'medium');
+      }
+
+      const employeesPath = opts.definition.employeesPath || 'employees';
+      const raw = resolvePath(scope, employeesPath);
+
+      if (!Array.isArray(raw)) {
+        throw new Error(
+          `Sync definition did not produce an array at scope.${employeesPath}`,
+        );
+      }
+
+      const employees: SyncEmployee[] = [];
+      for (let i = 0; i < raw.length; i++) {
+        const parsed = SyncEmployeeSchema.safeParse(raw[i]);
+        if (!parsed.success) {
+          ctx.warn(
+            `Employee at index ${i} failed validation: ${parsed.error.issues.map((iss) => iss.message).join(', ')}`,
+          );
+          continue;
+        }
+        employees.push(parsed.data);
+      }
+
+      ctx.log(`Sync produced ${employees.length} validated employees`);
+      return employees;
+    },
+  };
+}
+
+/**
  * Execute a single DSL step.
  */
 async function executeStep(
@@ -78,6 +140,9 @@ async function executeStep(
       break;
     case 'emit':
       executeEmit(step, scope, ctx, defaultSeverity);
+      break;
+    case 'code':
+      await executeCode(step, scope, ctx, defaultSeverity);
       break;
   }
 }
@@ -243,6 +308,10 @@ async function executeForEach(
 
   ctx.log(`Iterating over ${collection.length} items in ${step.collection}`);
 
+  let passCount = 0;
+  let failCount = 0;
+  let filteredCount = 0;
+
   for (const item of collection) {
     // Create child scope with current item
     const childScope: Record<string, unknown> = {
@@ -253,6 +322,7 @@ async function executeForEach(
     // Apply filter — skip items that don't match
     if (step.filter) {
       if (!evaluateCondition(step.filter, childScope)) {
+        filteredCount++;
         continue;
       }
     }
@@ -272,6 +342,7 @@ async function executeForEach(
     const resourceId = String(resolvePath(childScope, step.resourceIdPath) ?? 'unknown');
 
     if (allPass) {
+      passCount++;
       const result = interpolateTemplate(step.onPass, childScope);
       ctx.pass({
         title: result.title,
@@ -281,6 +352,7 @@ async function executeForEach(
         evidence: result.evidence || { item, checkedAt: new Date().toISOString() },
       });
     } else {
+      failCount++;
       const result = interpolateTemplate(step.onFail, childScope);
       ctx.fail({
         title: result.title,
@@ -293,6 +365,10 @@ async function executeForEach(
       });
     }
   }
+
+  ctx.log(
+    `forEach complete on ${step.collection}: ${passCount} passed, ${failCount} failed${filteredCount > 0 ? `, ${filteredCount} filtered out` : ''}`,
+  );
 }
 
 /**
@@ -435,6 +511,7 @@ function executeEmit(
   ctx: CheckContext,
   defaultSeverity: FindingSeverity,
 ): void {
+  ctx.log(`Emitting ${step.result} result: ${step.template.title}`);
   const template = interpolateTemplate(step.template, scope);
 
   if (step.result === 'pass') {
@@ -455,5 +532,44 @@ function executeEmit(
       remediation: template.remediation || '',
       evidence: template.evidence,
     });
+  }
+}
+
+/**
+ * Execute a code step — run arbitrary JavaScript with access to ctx and scope.
+ */
+async function executeCode(
+  step: CodeStep,
+  scope: Record<string, unknown>,
+  ctx: CheckContext,
+  _defaultSeverity: FindingSeverity,
+): Promise<void> {
+  const codePreview = step.code.length > 100
+    ? step.code.slice(0, 100) + '...'
+    : step.code;
+  ctx.log(`Executing code step: ${codePreview.replace(/\n/g, ' ').trim()}`);
+
+  const scopeKeysBefore = Object.keys(scope);
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+    const fn = new AsyncFunction('ctx', 'scope', step.code);
+    await fn(ctx, scope);
+
+    // Log scope changes for debugging
+    const scopeKeysAfter = Object.keys(scope);
+    const newKeys = scopeKeysAfter.filter((k) => !scopeKeysBefore.includes(k));
+    if (newKeys.length > 0) {
+      ctx.log(`Code step added scope keys: ${newKeys.join(', ')}`);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : undefined;
+    ctx.error(`Code step failed: ${message}`, {
+      code: step.code,
+      ...(stack ? { stack } : {}),
+    });
+    throw error;
   }
 }
