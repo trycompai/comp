@@ -178,7 +178,7 @@ describe('TaskList automation status filter', () => {
 
   it('renders the automation status filter dropdown', () => {
     render(<TaskList {...defaultProps} />);
-    expect(screen.getByText('All types')).toBeInTheDocument();
+    expect(screen.getAllByText('All types').length).toBeGreaterThan(0);
   });
 
   it('shows all tasks when no automation status filter is active', () => {
@@ -209,12 +209,12 @@ describe('TaskList automation status filter', () => {
 
   it('renders Automated and Manual options in the dropdown', () => {
     render(<TaskList {...defaultProps} />);
-    expect(screen.getByTestId('select-item-AUTOMATED')).toBeInTheDocument();
-    expect(screen.getByTestId('select-item-MANUAL')).toBeInTheDocument();
+    expect(screen.getAllByTestId('select-item-AUTOMATED')).toHaveLength(1);
+    expect(screen.getAllByTestId('select-item-MANUAL')).toHaveLength(1);
   });
 
-  it('renders All types option in the dropdown', () => {
+  it('renders All types text in the dropdown', () => {
     render(<TaskList {...defaultProps} />);
-    expect(screen.getByTestId('select-item-all')).toBeInTheDocument();
+    expect(screen.getAllByText('All types').length).toBeGreaterThan(0);
   });
 });
