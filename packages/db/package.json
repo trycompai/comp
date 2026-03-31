@@ -43,7 +43,7 @@
         "directory": "packages/db"
     },
     "scripts": {
-        "build": "rm -rf dist && rm -rf ./src/generated && node scripts/combine-schemas.js && prisma generate --schema=dist/schema.prisma && tsc",
+        "build": "rm -rf dist && node scripts/combine-schemas.js && tsc",
         "check-types": "tsc --noEmit",
         "db:generate": "node scripts/combine-schemas.js && prisma generate --schema=dist/schema.prisma",
         "db:migrate": "prisma migrate dev",
