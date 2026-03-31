@@ -3,10 +3,10 @@
     "description": "Database package with Prisma client and schema for Comp AI",
     "version": "1.3.22",
     "dependencies": {
-        "@prisma/client": "7.6.0",
         "@prisma/adapter-pg": "7.6.0",
+        "@prisma/client": "7.6.0",
         "dotenv": "^16.4.5",
-        "zod": "^4.1.12"
+        "zod": "^4.3.6"
     },
     "devDependencies": {
         "@types/node": "^24.2.0",
@@ -16,9 +16,9 @@
     },
     "exports": {
         ".": {
-            "import": "./dist/index.js",
+            "import": "./src/index.ts",
             "types": "./src/index.ts",
-            "default": "./dist/index.js"
+            "default": "./src/index.ts"
         },
         "./postinstall": {
             "import": "./dist/postinstall.js",
@@ -30,7 +30,9 @@
         "comp-prisma-postinstall": "./dist/postinstall.js"
     },
     "files": [
-        "dist", "README.md", "INTEGRATION_GUIDE.md"
+        "dist",
+        "README.md",
+        "INTEGRATION_GUIDE.md"
     ],
     "publishConfig": {
         "access": "public"
