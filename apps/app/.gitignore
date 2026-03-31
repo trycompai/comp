@@ -52,5 +52,6 @@ next-env.d.ts
 
 # Generated Prisma Client
 prisma/generated
+src/generated/
 # Copied schema from @trycompai/db package - always generate fresh
 prisma/schema.prisma
