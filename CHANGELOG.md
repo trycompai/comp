@@ -1,3 +1,10 @@
+## [3.13.1](https://github.com/trycompai/comp/compare/v3.13.0...v3.13.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* **policies:** include all non-archived policies in download-all bundle ([908879f](https://github.com/trycompai/comp/commit/908879f0832a578ece056205a03c390f584acb1d))
+
 # [3.13.0](https://github.com/trycompai/comp/compare/v3.12.2...v3.13.0) (2026-03-30)
 
 
