@@ -124,7 +124,7 @@ export class PrismaExtension implements BuildExtension {
 
     // Patch the schema to use prisma-client-js (populates @prisma/client at runtime)
     commands.push(
-      `sed -i 's/provider.*=.*"prisma-client"/provider = "prisma-client-js"/' ./prisma/schema.prisma && sed -i '/output/d' ./prisma/schema.prisma`,
+      `sed -i 's/provider.*=.*"prisma-client"/provider = "prisma-client-js"/' ./prisma/schema.prisma && sed -i '/output.*=.*"/d' ./prisma/schema.prisma`,
     );
 
     // Add prisma generate command to generate the client from the patched schema
