@@ -59,9 +59,9 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
 `;
 fs.writeFileSync(path.join(OUTPUT_DIR, 'client.ts'), clientFileContent);
 
-// Create an index file that re-exports the db client
-const indexFileContent = `export { db } from './client';
-export * from '../src/generated/prisma/browser';
+// Create an index file — browser-safe types only for monorepo consumption.
+// The db instance is server-only and must be imported from './client' directly.
+const indexFileContent = `export * from '../src/generated/prisma/browser';
 `;
 fs.writeFileSync(path.join(OUTPUT_DIR, 'index.ts'), indexFileContent);
 
