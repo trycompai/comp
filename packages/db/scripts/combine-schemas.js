@@ -49,16 +49,19 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 fs.writeFileSync(OUTPUT_SCHEMA, combinedSchema);
 
 // Copy the client, index, and types files
-const clientFileContent = `import { PrismaClient } from '@prisma/client';
+const clientFileContent = `import { PrismaClient } from './generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
-export const db = globalForPrisma.prisma || new PrismaClient();
+const adapter = new PrismaPg(process.env.DATABASE_URL!);
+export const db = globalForPrisma.prisma || new PrismaClient({ adapter });
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
 `;
 fs.writeFileSync(path.join(OUTPUT_DIR, 'client.ts'), clientFileContent);
 
 // Create an index file that re-exports the db client
-const indexFileContent = `export { db } from './client'
-export * from '@prisma/client';
+const indexFileContent = `export { db } from './client';
+export * from './generated/prisma/client';
 `;
 fs.writeFileSync(path.join(OUTPUT_DIR, 'index.ts'), indexFileContent);
 
