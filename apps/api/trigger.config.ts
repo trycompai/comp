@@ -13,8 +13,8 @@ export default defineConfig({
   build: {
     extensions: [
       prismaExtension({
-        version: '6.13.0',
-        dbPackageVersion: '^1.3.15', // Version of @trycompai/db package with compiled JS
+        version: '7.6.0',
+        dbPackageVersion: '^2.0.0',
       }),
       integrationPlatformExtension(),
       emailExtension(),

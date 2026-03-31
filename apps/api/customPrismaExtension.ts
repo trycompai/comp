@@ -33,8 +33,7 @@ export class PrismaExtension implements BuildExtension {
   constructor(private options: PrismaExtensionOptions) {
     this.moduleExternals = [
       '@prisma/client',
-      '@prisma/engines',
-      '@trycompai/db', // Add the published package to externals
+      '@trycompai/db',
     ];
   }
 
@@ -123,7 +122,12 @@ export class PrismaExtension implements BuildExtension {
     await mkdir(schemaDestinationDir, { recursive: true });
     await cp(schemaPath, schemaDestinationPath);
 
-    // Add prisma generate command to generate the client from the copied schema
+    // Patch the schema to use prisma-client-js (populates @prisma/client at runtime)
+    commands.push(
+      `sed -i 's/prisma-client/prisma-client-js/' ./prisma/schema.prisma && sed -i '/output/d' ./prisma/schema.prisma`,
+    );
+
+    // Add prisma generate command to generate the client from the patched schema
     commands.push(
       `${binaryForRuntime(manifest.runtime)} node_modules/prisma/build/index.js generate --schema=./prisma/schema.prisma`,
     );
@@ -191,6 +195,14 @@ export class PrismaExtension implements BuildExtension {
 
     await mkdir(schemaDir, { recursive: true });
     await cp(schemaSourcePath, schemaDestinationPath);
+
+    // Patch schema to use prisma-client-js (default output → @prisma/client)
+    const { readFileSync, writeFileSync } = await import('node:fs');
+    let schemaContent = readFileSync(schemaDestinationPath, 'utf8');
+    schemaContent = schemaContent
+      .replace(/prisma-client/g, 'prisma-client-js')
+      .replace(/\s*output\s*=\s*"[^"]*"\n?/g, '\n');
+    writeFileSync(schemaDestinationPath, schemaContent);
 
     const clientEntryPoint = resolve(context.workingDir, 'node_modules/.prisma/client/default.js');
 
