@@ -11,7 +11,7 @@ vi.mock('@/utils/auth', () => ({
 }));
 
 // Mock db
-vi.mock('@db', () => ({
+vi.mock('@db/server', () => ({
   db: {
     member: { findFirst: vi.fn() },
     invitation: { findFirst: vi.fn(), delete: vi.fn() },

@@ -15,12 +15,6 @@ jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
 
-jest.mock('@db', () => ({
-  ...jest.requireActual('@prisma/client'),
-  db: {},
-  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
-}));
-
 jest.mock('@trycompai/auth', () => ({
   statement: {
     app: ['read'],

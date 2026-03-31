@@ -21,23 +21,11 @@ jest.mock('../auth/auth.server', () => ({
   },
 }));
 
-jest.mock('@db', () => ({
-  ...jest.requireActual('@prisma/client'),
-  db: {},
-  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
-}));
-
 jest.mock('@trycompai/auth', () => ({
   statement: {
     risk: ['create', 'read', 'update', 'delete'],
   },
   BUILT_IN_ROLE_PERMISSIONS: {},
-}));
-
-jest.mock('@db', () => ({
-  ...jest.requireActual('@prisma/client'),
-  db: {},
-  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
 }));
 
 jest.mock('../utils/assignment-filter', () => ({
