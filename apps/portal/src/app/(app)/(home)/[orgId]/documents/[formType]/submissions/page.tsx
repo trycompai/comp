@@ -22,10 +22,9 @@ type SubmissionRow = {
   } | null;
 };
 
-function getApiHeaders(cookieHeader: string, orgId: string): Record<string, string> {
+function getApiHeaders(cookieHeader: string): Record<string, string> {
   return {
     'Content-Type': 'application/json',
-    'X-Organization-Id': orgId,
     Cookie: cookieHeader,
   };
 }
@@ -76,7 +75,7 @@ export default async function PortalSubmissionsPage({
 
   const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
   const cookie = reqHeaders.get('cookie') ?? '';
-  const apiHeaders = getApiHeaders(cookie, orgId);
+  const apiHeaders = getApiHeaders(cookie);
 
   let submissions: SubmissionRow[] = [];
 
