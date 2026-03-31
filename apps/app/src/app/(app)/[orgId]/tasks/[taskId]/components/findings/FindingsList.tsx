@@ -197,7 +197,6 @@ export function FindingsList({
               <FindingItem
                 key={finding.id}
                 finding={finding}
-                isPlatformAdmin={isPlatformAdmin}
                 isExpanded={expandedId === finding.id}
                 isTarget={targetFindingId === finding.id}
                 canChangeStatus={canChangeStatus}

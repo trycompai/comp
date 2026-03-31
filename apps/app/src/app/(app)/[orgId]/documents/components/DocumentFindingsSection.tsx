@@ -228,7 +228,6 @@ export function DocumentFindingsSection({
               <FindingItem
                 key={finding.id}
                 finding={finding}
-                isPlatformAdmin={isPlatformAdmin}
                 isExpanded={expandedId === finding.id}
                 canChangeStatus={canChangeStatus}
                 canSetRestrictedStatus={canSetRestrictedStatus}

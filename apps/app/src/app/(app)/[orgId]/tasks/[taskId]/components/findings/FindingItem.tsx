@@ -39,7 +39,6 @@ interface FindingItemProps {
   canSetRestrictedStatus: boolean;
   canSetReadyForReview: boolean;
   canDelete?: boolean;
-  isPlatformAdmin: boolean;
   isTarget?: boolean; // Whether this finding is the navigation target
   onToggleExpand: () => void;
   onStatusChange: (status: FindingStatus, revisionNote?: string) => Promise<void> | void;
@@ -57,7 +56,6 @@ export function FindingItem({
   canSetRestrictedStatus,
   canSetReadyForReview,
   canDelete = canSetRestrictedStatus,
-  isPlatformAdmin,
   isTarget = false,
   onToggleExpand,
   onStatusChange,
@@ -173,7 +171,7 @@ export function FindingItem({
         hint: !canSetRestrictedStatus ? 'Auditor only' : undefined,
       },
     ];
-  }, [isPlatformAdmin, canSetRestrictedStatus, canSetReadyForReview]);
+  }, [canSetRestrictedStatus, canSetReadyForReview]);
 
   return (
     <div
