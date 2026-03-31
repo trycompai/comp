@@ -49,6 +49,7 @@ export function getTrustedOrigins(): string[] {
     'http://localhost:3002',
     'http://localhost:3333',
     'http://localhost:3004',
+    'http://localhost:3008',
     'https://app.trycomp.ai',
     'https://portal.trycomp.ai',
     'https://api.trycomp.ai',
