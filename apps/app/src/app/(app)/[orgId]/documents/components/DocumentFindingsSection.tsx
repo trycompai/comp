@@ -228,11 +228,11 @@ export function DocumentFindingsSection({
               <FindingItem
                 key={finding.id}
                 finding={finding}
-                isAuditor={canSetRestrictedStatus}
                 isPlatformAdmin={isPlatformAdmin}
                 isExpanded={expandedId === finding.id}
                 canChangeStatus={canChangeStatus}
                 canSetRestrictedStatus={canSetRestrictedStatus}
+                canSetReadyForReview={isPlatformAdmin || !canSetRestrictedStatus}
                 onToggleExpand={() => setExpandedId(expandedId === finding.id ? null : finding.id)}
                 onStatusChange={(status, revisionNote) =>
                   handleStatusChange(finding.id, status, revisionNote)

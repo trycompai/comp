@@ -37,8 +37,8 @@ interface FindingItemProps {
   isExpanded: boolean;
   canChangeStatus: boolean;
   canSetRestrictedStatus: boolean;
+  canSetReadyForReview: boolean;
   canDelete?: boolean;
-  isAuditor: boolean;
   isPlatformAdmin: boolean;
   isTarget?: boolean; // Whether this finding is the navigation target
   onToggleExpand: () => void;
@@ -55,8 +55,8 @@ export function FindingItem({
   isExpanded,
   canChangeStatus,
   canSetRestrictedStatus,
+  canSetReadyForReview,
   canDelete = canSetRestrictedStatus,
-  isAuditor,
   isPlatformAdmin,
   isTarget = false,
   onToggleExpand,
@@ -152,8 +152,6 @@ export function FindingItem({
   // - Auditors can set: open, needs_revision, closed
   // - Non-auditor admins/owners can set: open, ready_for_review
   const statusOptions = useMemo(() => {
-    const canSetReadyForReview = isPlatformAdmin || !isAuditor;
-
     return [
       { value: FindingStatus.open, label: 'Open', disabled: false },
       {
@@ -175,7 +173,7 @@ export function FindingItem({
         hint: !canSetRestrictedStatus ? 'Auditor only' : undefined,
       },
     ];
-  }, [isPlatformAdmin, isAuditor, canSetRestrictedStatus]);
+  }, [isPlatformAdmin, canSetRestrictedStatus, canSetReadyForReview]);
 
   return (
     <div
