@@ -68,3 +68,4 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 prisma/schema.prisma
 trigger.config.js
 test/**/*.js
+prisma/generated/

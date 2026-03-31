@@ -9,8 +9,9 @@ let schema = fs.readFileSync(schemaPath, 'utf8');
 schema = schema.replace(
   /generator client \{[^}]*\}/s,
   `generator client {
-  provider = "prisma-client-js"
-  output   = "./generated"
+  provider        = "prisma-client-js"
+  output          = "./generated"
+  previewFeatures = ["postgresqlExtensions"]
 }`
 );
 
