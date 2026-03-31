@@ -1,4 +1,4 @@
-import { Prisma } from '@trycompai/db';
+import { Prisma } from '@db';
 
 type FrameworkEditorFrameworkWithRequirements =
   Prisma.FrameworkEditorFrameworkGetPayload<{

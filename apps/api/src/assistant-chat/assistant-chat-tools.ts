@@ -1,4 +1,4 @@
-import { db, Departments, RiskCategory, RiskStatus } from '@trycompai/db';
+import { db, Departments, RiskCategory, RiskStatus } from '@db';
 import { z } from 'zod';
 
 type Permissions = Record<string, string[]>;

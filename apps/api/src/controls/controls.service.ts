@@ -2,7 +2,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { db, Prisma } from '@trycompai/db';
+import { db, Prisma } from '@db';
 import { CreateControlDto } from './dto/create-control.dto';
 
 const controlInclude = {

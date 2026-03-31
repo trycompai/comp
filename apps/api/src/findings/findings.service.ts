@@ -10,7 +10,7 @@ import {
   EvidenceFormType as DbEvidenceFormType,
   FindingStatus,
   FindingType,
-} from '@trycompai/db';
+} from '@db';
 import {
   toDbEvidenceFormType,
   toExternalEvidenceFormType,

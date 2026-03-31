@@ -18,7 +18,7 @@ jest.mock('./frameworks-scores.helper', () => ({
   computeFrameworkComplianceScore: jest.fn(),
 }));
 
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import {
   getOverviewScores,
   getCurrentMember,

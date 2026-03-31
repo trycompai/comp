@@ -67,7 +67,7 @@ jest.mock('@trycompai/email', () => ({
 jest.mock('./utils/member-validator');
 jest.mock('./utils/member-queries');
 
-import { db } from '@trycompai/db';
+import { db } from '@db';
 
 describe('PeopleService', () => {
   let service: PeopleService;

@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { createHash } from 'node:crypto';
 import type { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';

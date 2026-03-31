@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { FindingStatus } from '@trycompai/db';
+import { FindingStatus } from '@db';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { FindingsService } from '../findings/findings.service';
 import { CreateFindingDto } from '../findings/dto/create-finding.dto';

@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import {
   getOverviewScores,
   getCurrentMember,

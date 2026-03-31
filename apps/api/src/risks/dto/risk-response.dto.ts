@@ -6,7 +6,7 @@ import {
   Likelihood,
   Impact,
   RiskTreatmentType,
-} from '@trycompai/db';
+} from '@db';
 
 export class RiskResponseDto {
   @ApiProperty({

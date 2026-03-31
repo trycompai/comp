@@ -90,7 +90,7 @@ jest.mock('@trycompai/db', () => ({
   },
 }));
 
-import { db } from '@trycompai/db';
+import { db } from '@db';
 
 describe('RolesService', () => {
   let service: RolesService;

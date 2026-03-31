@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import type { SyncEmployee } from '@trycompai/integration-platform';
 
 // ============================================================================

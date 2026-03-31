@@ -33,7 +33,7 @@ jest.mock('../email/templates/invite-member', () => ({
   InviteEmail: jest.fn().mockReturnValue(null),
 }));
 
-import { db } from '@trycompai/db';
+import { db } from '@db';
 
 const mockDb = db as jest.Mocked<typeof db>;
 

@@ -36,7 +36,7 @@ jest.mock('./device-agent-kv', () => ({
   },
 }));
 
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { auth } from '../auth/auth.server';
 import { deviceAgentRedisClient } from './device-agent-kv';
 

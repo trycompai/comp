@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db, TaskItemPriority, TaskItemStatus } from '@trycompai/db';
+import { db, TaskItemPriority, TaskItemStatus } from '@db';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { tasks } from '@trigger.dev/sdk';

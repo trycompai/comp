@@ -4,7 +4,7 @@ import {
   toDbEvidenceFormType,
   toExternalEvidenceFormType,
 } from '@trycompai/company';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { filterComplianceMembers } from '../utils/compliance-filters';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;

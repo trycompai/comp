@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { ApiKeyService } from './api-key.service';
 import { auth } from './auth.server';
 import { IS_PUBLIC_KEY } from './public.decorator';

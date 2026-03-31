@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { auth } from './auth.server';
 
 interface PlatformAdminRequest {
