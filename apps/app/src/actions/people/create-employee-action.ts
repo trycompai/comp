@@ -1,7 +1,7 @@
 'use server';
 
 import { completeEmployeeCreation } from '@/lib/db/employee';
-import { Prisma } from '@db';
+import { Prisma } from '@db/server';
 import { authActionClient } from '../safe-action';
 import { createEmployeeSchema } from '../schema';
 import type { ActionResponse } from '../types';
