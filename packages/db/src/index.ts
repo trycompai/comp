@@ -1,1 +1,1 @@
-export * from './generated/prisma/browser.ts';
+export * from './generated/prisma/browser';

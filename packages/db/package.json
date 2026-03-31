@@ -16,9 +16,9 @@
     },
     "exports": {
         ".": {
-            "import": "./src/index.ts",
             "types": "./src/index.ts",
-            "default": "./src/index.ts"
+            "import": "./dist/index.js",
+            "default": "./dist/index.js"
         },
         "./postinstall": {
             "import": "./dist/postinstall.js",
@@ -43,9 +43,9 @@
         "directory": "packages/db"
     },
     "scripts": {
-        "build": "rm -rf dist && rm -rf ./src/generated && node scripts/combine-schemas.js && prisma generate && node scripts/fix-generated-extensions.js && tsc",
+        "build": "rm -rf dist && rm -rf ./src/generated && node scripts/combine-schemas.js && prisma generate && tsc",
         "check-types": "tsc --noEmit",
-        "db:generate": "node scripts/combine-schemas.js && prisma generate && node scripts/fix-generated-extensions.js",
+        "db:generate": "node scripts/combine-schemas.js && prisma generate",
         "db:migrate": "prisma migrate dev",
         "db:migrate:reset": "prisma migrate reset",
         "db:push": "prisma db push",
