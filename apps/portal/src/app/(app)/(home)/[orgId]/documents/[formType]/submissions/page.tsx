@@ -22,23 +22,12 @@ type SubmissionRow = {
   } | null;
 };
 
-async function getJwtToken(cookieHeader: string): Promise<string | null> {
-  if (!cookieHeader) return null;
-
-  try {
-    const authUrl = env.APP_AUTH_URL || 'http://localhost:3000';
-    const tokenResponse = await fetch(`${authUrl}/api/auth/token`, {
-      method: 'GET',
-      headers: { Cookie: cookieHeader },
-    });
-
-    if (!tokenResponse.ok) return null;
-
-    const tokenData = await tokenResponse.json();
-    return tokenData?.token ?? null;
-  } catch {
-    return null;
-  }
+function getApiHeaders(cookieHeader: string, orgId: string): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    'X-Organization-Id': orgId,
+    Cookie: cookieHeader,
+  };
 }
 
 export default async function PortalSubmissionsPage({
@@ -87,21 +76,16 @@ export default async function PortalSubmissionsPage({
 
   const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
   const cookie = reqHeaders.get('cookie') ?? '';
-  const jwtToken = await getJwtToken(cookie);
+  const apiHeaders = getApiHeaders(cookie, orgId);
 
   let submissions: SubmissionRow[] = [];
 
-  if (jwtToken) {
-    try {
-      const res = await fetch(
-        `${apiUrl}/v1/evidence-forms/my-submissions?formType=${formTypeValue}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Organization-Id': orgId,
-            Authorization: `Bearer ${jwtToken}`,
-          },
+  try {
+    const res = await fetch(
+      `${apiUrl}/v1/evidence-forms/my-submissions?formType=${formTypeValue}`,
+      {
+        method: 'GET',
+        headers: apiHeaders,
           cache: 'no-store',
         },
       );
@@ -112,7 +96,6 @@ export default async function PortalSubmissionsPage({
     } catch {
       // Silently fail - show empty list
     }
-  }
 
   // Serialize only what the client component needs
   const serializedSubmissions = submissions.map((s) => ({
