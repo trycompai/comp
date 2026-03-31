@@ -11,7 +11,7 @@ jest.mock(
   { virtual: true },
 );
 
-jest.mock('@trycompai/db', () => {
+jest.mock('@db', () => {
   const evidenceFormTypeEnum = {
     board_meeting: 'board_meeting',
     it_leadership_meeting: 'it_leadership_meeting',

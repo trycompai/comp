@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { FrameworksService } from './frameworks.service';
 
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     frameworkInstance: {
       findMany: jest.fn(),

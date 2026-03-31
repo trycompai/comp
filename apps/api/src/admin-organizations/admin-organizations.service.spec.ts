@@ -1,7 +1,7 @@
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { AdminOrganizationsService } from './admin-organizations.service';
 
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     organization: {
       findMany: jest.fn(),

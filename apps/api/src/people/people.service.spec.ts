@@ -10,7 +10,7 @@ import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
 
 // Mock the database
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     member: {
       findFirst: jest.fn(),

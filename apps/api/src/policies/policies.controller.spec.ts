@@ -21,7 +21,7 @@ jest.mock('@trycompai/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));
 
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     policy: {
       findFirst: jest.fn(),

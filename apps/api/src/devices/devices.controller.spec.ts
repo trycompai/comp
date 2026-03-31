@@ -5,8 +5,20 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 
+jest.mock('@db', () => ({
+  ...jest.requireActual('@prisma/client'),
+  db: {},
+  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
+}));
+
 jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
+}));
+
+jest.mock('@db', () => ({
+  ...jest.requireActual('@prisma/client'),
+  db: {},
+  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
 }));
 
 jest.mock('@trycompai/auth', () => ({
@@ -34,7 +46,9 @@ describe('DevicesController', () => {
     userEmail: 'user@example.com',
     organizationId: 'org_1',
     memberId: 'mem_1',
-    permissions: [],
+    isApiKey: false,
+    isPlatformAdmin: false,
+    userRoles: null,
   };
 
   beforeEach(async () => {
@@ -92,8 +106,10 @@ describe('DevicesController', () => {
       const authContextNoUser: AuthContextType = {
         authType: 'api-key' as const,
         organizationId: 'org_1',
-        permissions: [],
-      } as AuthContextType;
+        isApiKey: true,
+        isPlatformAdmin: false,
+        userRoles: null,
+      };
 
       const result = await controller.getAllDevices('org_1', authContextNoUser);
 
@@ -154,8 +170,10 @@ describe('DevicesController', () => {
       const authContextNoUser: AuthContextType = {
         authType: 'api-key' as const,
         organizationId: 'org_1',
-        permissions: [],
-      } as AuthContextType;
+        isApiKey: true,
+        isPlatformAdmin: false,
+        userRoles: null,
+      };
 
       const result = await controller.getDevicesByMember(
         'mem_1',

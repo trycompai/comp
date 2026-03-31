@@ -74,7 +74,7 @@ jest.mock('@trycompai/auth', () => {
 });
 
 // Mock the database
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     organizationRole: {
       findFirst: jest.fn(),

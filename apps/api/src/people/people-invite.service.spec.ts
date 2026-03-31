@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PeopleInviteService } from './people-invite.service';
 
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     organization: {
       findUnique: jest.fn(),
