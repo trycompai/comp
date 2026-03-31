@@ -1,0 +1,2607 @@
+generator client {
+  provider        = "prisma-client-js"
+  engineType      = "binary"
+  previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["rhel-openssl-3.0.x", "native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgcrypto]
+}
+
+
+// ===== attachments.prisma =====
+model Attachment {
+  id         String               @id @default(dbgenerated("generate_prefixed_cuid('att'::text)"))
+  name       String
+  url        String
+  type       AttachmentType
+  entityId   String
+  entityType AttachmentEntityType
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  comment        Comment?     @relation(fields: [commentId], references: [id])
+  commentId      String?
+
+  @@index([entityId, entityType])
+}
+
+enum AttachmentEntityType {
+  task
+  vendor
+  risk
+  comment
+  trust_nda
+  task_item
+}
+
+enum AttachmentType {
+  image
+  video
+  audio
+  document
+  other
+}
+
+
+// ===== auth.prisma =====
+model User {
+  id                             String    @id @default(dbgenerated("generate_prefixed_cuid('usr'::text)"))
+  name                           String
+  email                          String
+  emailVerified                  Boolean
+  image                          String?
+  createdAt                      DateTime  @default(now())
+  updatedAt                      DateTime  @updatedAt
+  lastLogin                      DateTime?
+  emailNotificationsUnsubscribed Boolean   @default(false)
+  emailPreferences               Json?     @default("{\"policyNotifications\":true,\"taskReminders\":true,\"weeklyTaskDigest\":true,\"unassignedItemsNotifications\":true}")
+  role                           String?   @default("user")
+  banned                         Boolean?
+  banReason                      String?
+  banExpires                     DateTime?
+  isPlatformAdmin                Boolean   @default(false)
+
+  accounts            Account[]
+  auditLog            AuditLog[]
+  integrationResults  IntegrationResult[]
+  invitations         Invitation[]
+  members             Member[]
+  sessions            Session[]
+  fleetPolicyResults  FleetPolicyResult[]
+  evidenceSubmissions EvidenceSubmission[] @relation("EvidenceSubmitter")
+  evidenceReviews     EvidenceSubmission[] @relation("EvidenceReviewer")
+  adminFindings       Finding[]            @relation("AdminFindingCreator")
+
+  @@unique([email])
+}
+
+model EmployeeTrainingVideoCompletion {
+  id          String    @id @default(dbgenerated("generate_prefixed_cuid('evc'::text)"))
+  completedAt DateTime?
+  videoId     String
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, videoId])
+  @@index([memberId])
+}
+
+model Session {
+  id                   String   @id @default(dbgenerated("generate_prefixed_cuid('ses'::text)"))
+  expiresAt            DateTime
+  token                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  activeOrganizationId String?
+  impersonatedBy       String?
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+}
+
+model Account {
+  id                    String    @id @default(dbgenerated("generate_prefixed_cuid('acc'::text)"))
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+}
+
+model Verification {
+  id         String   @id @default(dbgenerated("generate_prefixed_cuid('ver'::text)"))
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// JWT Plugin - Required by Better Auth JWT plugin
+// https://www.better-auth.com/docs/plugins/jwt
+model Jwks {
+  id         String    @id @default(dbgenerated("generate_prefixed_cuid('jwk'::text)"))
+  publicKey  String
+  privateKey String
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
+
+  @@map("jwks")
+}
+
+model Member {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('mem'::text)"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String // Purposefully a string, since BetterAuth doesn't support enums this way
+  createdAt      DateTime     @default(now())
+
+  department                      Departments                       @default(none)
+  jobTitle                        String?
+  isActive                        Boolean                           @default(true)
+  deactivated                     Boolean                           @default(false)
+  externalUserId                  String?
+  externalUserSource              String?
+  employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
+  fleetDmLabelId                  Int?
+
+  assignedPolicies        Policy[]             @relation("PolicyAssignee") // Policies where this member is an assignee
+  approvedPolicies        Policy[]             @relation("PolicyApprover") // Policies where this member is an approver
+  approvedSOADocuments    SOADocument[]        @relation("SOADocumentApprover") // SOA documents where this member is an approver
+  risks                   Risk[]
+  tasks                   Task[]
+  vendors                 Vendor[]
+  comments                Comment[]
+  auditLogs               AuditLog[]
+  reviewedAccessRequests  TrustAccessRequest[] @relation("TrustAccessRequestReviewer")
+  issuedGrants            TrustAccessGrant[]   @relation("IssuedGrants")
+  revokedGrants           TrustAccessGrant[]   @relation("RevokedGrants")
+  createdTaskItems        TaskItem[]           @relation("TaskItemCreator")
+  updatedTaskItems        TaskItem[]           @relation("TaskItemUpdater")
+  assignedTaskItems       TaskItem[]           @relation("TaskItemAssignee")
+  createdFindings         Finding[]            @relation("FindingCreatedBy")
+  publishedPolicyVersions PolicyVersion[]      @relation("PolicyVersionPublisher")
+  approvedTasks           Task[]               @relation("TaskApprover")
+  devices                 Device[]
+}
+
+model Invitation {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('inv'::text)"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String // Purposefully a string, since BetterAuth doesn't support enums this way
+  status         String
+  expiresAt      DateTime
+  inviterId      String
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+}
+
+// This is only for the app to consume, shouldn't be enforced by DB
+// Otherwise it won't work with Better Auth, as per https://www.better-auth.com/docs/plugins/organization#access-control
+enum Role {
+  owner
+  admin
+  auditor
+  employee
+  contractor
+}
+
+// Custom roles for dynamic access control
+// This table stores organization-specific custom roles created via better-auth
+// See: https://www.better-auth.com/docs/plugins/organization#dynamic-access-control
+model OrganizationRole {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('rol'::text)"))
+  name           String
+  permissions    String       @db.Text // Stored as serialized JSON string for better-auth compatibility
+  obligations    String       @default("{}") @db.Text // JSON: { compliance?: boolean }
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, name])
+  @@map("organization_role")
+}
+
+enum PolicyStatus {
+  draft
+  published
+  needs_review
+}
+
+
+// ===== automation-run.prisma =====
+model EvidenceAutomationRun {
+  id        String   @id @default(dbgenerated("generate_prefixed_cuid('ear'::text)"))
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  evidenceAutomationId String
+  evidenceAutomation   EvidenceAutomation @relation(fields: [evidenceAutomationId], references: [id], onDelete: Cascade)
+
+  // Run details
+  status      EvidenceAutomationRunStatus @default(pending)
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  // Results
+  success Boolean?
+  error   String?
+  logs    Json?
+  output  Json?
+
+  // Evaluation
+  evaluationStatus EvidenceAutomationEvaluationStatus?
+  evaluationReason String?
+
+  // Metadata
+  triggeredBy EvidenceAutomationTrigger @default(scheduled)
+  runDuration Int? // in milliseconds
+  version     Int? // Version number that was executed (null = draft)
+  task        Task?                     @relation(fields: [taskId], references: [id])
+  taskId      String?
+
+  @@index([evidenceAutomationId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([version])
+}
+
+enum EvidenceAutomationRunStatus {
+  pending
+  running
+  completed
+  failed
+  cancelled
+}
+
+enum EvidenceAutomationTrigger {
+  manual
+  scheduled
+  api
+}
+
+enum EvidenceAutomationEvaluationStatus {
+  pass
+  fail
+}
+
+
+// ===== automation-version.prisma =====
+model EvidenceAutomationVersion {
+  id        String   @id @default(dbgenerated("generate_prefixed_cuid('eav'::text)"))
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  evidenceAutomationId String
+  evidenceAutomation   EvidenceAutomation @relation(fields: [evidenceAutomationId], references: [id], onDelete: Cascade)
+
+  // Version details
+  version     Int // Sequential version number (1, 2, 3...)
+  scriptKey   String // S3 key for this version's script
+  publishedBy String? // User ID who published
+  changelog   String? // Optional description of changes
+
+  @@unique([evidenceAutomationId, version])
+  @@index([evidenceAutomationId])
+  @@index([createdAt])
+}
+
+
+// ===== automation.prisma =====
+model EvidenceAutomation {
+  id          String   @id @default(dbgenerated("generate_prefixed_cuid('aut'::text)"))
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  isEnabled   Boolean  @default(false)
+
+  chatHistory        String?
+  evaluationCriteria String?
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  // Relations
+  runs     EvidenceAutomationRun[]
+  versions EvidenceAutomationVersion[]
+
+  @@index([taskId])
+}
+
+
+// ===== browserbase-context.prisma =====
+/// Stores Browserbase context IDs for browser-based automation
+/// One context per organization - shared like a normal browser
+model BrowserbaseContext {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('bbc'::text)"))
+
+    /// Organization that owns this browser context
+    organizationId String       @unique
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+    /// Browserbase context ID from their API
+    contextId String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([organizationId])
+}
+
+/// Browser automation configuration linked to a task
+model BrowserAutomation {
+    id          String  @id @default(dbgenerated("generate_prefixed_cuid('bau'::text)"))
+    name        String
+    description String?
+
+    /// Task this automation belongs to
+    taskId String
+    task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+    /// Starting URL for the automation
+    targetUrl String
+
+    /// Natural language instruction for the AI agent
+    instruction String
+
+    /// Whether automation is enabled for scheduled runs
+    isEnabled Boolean @default(false)
+
+    /// Cron expression for scheduled runs (null = manual only)
+    schedule String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    runs BrowserAutomationRun[]
+
+    @@index([taskId])
+}
+
+/// Records of browser automation executions
+model BrowserAutomationRun {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('bar'::text)"))
+
+    /// Parent automation
+    automationId String
+    automation   BrowserAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+    /// Execution status
+    status BrowserAutomationRunStatus @default(pending)
+
+    /// Timestamps
+    startedAt   DateTime?
+    completedAt DateTime?
+
+    /// Duration in milliseconds
+    durationMs Int?
+
+    /// Screenshot URL in S3 (if successful)
+    screenshotUrl String?
+
+    /// Evaluation result - whether the automation fulfilled the task requirements
+    evaluationStatus BrowserAutomationEvaluationStatus?
+
+    /// AI explanation of why it passed or failed
+    evaluationReason String?
+
+    /// Error message (if failed)
+    error String?
+
+    createdAt DateTime @default(now())
+
+    @@index([automationId])
+    @@index([status])
+    @@index([createdAt])
+}
+
+enum BrowserAutomationEvaluationStatus {
+    pass
+    fail
+}
+
+enum BrowserAutomationRunStatus {
+    pending
+    running
+    completed
+    failed
+}
+
+
+// ===== comment.prisma =====
+model Comment {
+  id         String            @id @default(dbgenerated("generate_prefixed_cuid('cmt'::text)"))
+  content    String
+  entityId   String
+  entityType CommentEntityType
+
+  // Dates
+  createdAt DateTime @default(now())
+
+  // Relationships
+  authorId       String
+  author         Member       @relation(fields: [authorId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Relation to Attachments
+  attachments Attachment[]
+
+  @@index([entityId])
+}
+
+enum CommentEntityType {
+  task
+  vendor
+  risk
+  policy
+}
+
+
+// ===== context.prisma =====
+model Context {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('ctx'::text)"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  question String
+  answer   String
+
+  tags String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([question])
+  @@index([answer])
+  @@index([tags])
+}
+
+
+// ===== control-document-type.prisma =====
+model ControlDocumentType {
+  id        String           @id @default(dbgenerated("generate_prefixed_cuid('cdt'::text)"))
+  controlId String
+  control   Control          @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  formType  EvidenceFormType
+
+  @@unique([controlId, formType])
+  @@index([controlId])
+}
+
+
+// ===== control.prisma =====
+model Control {
+  // Metadata
+  id          String @id @default(dbgenerated("generate_prefixed_cuid('ctl'::text)"))
+  name        String
+  description String
+
+  // Review dates
+  lastReviewDate DateTime?
+  nextReviewDate DateTime?
+
+  // Relationships
+  organization       Organization                    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId     String
+  requirementsMapped RequirementMap[]
+  tasks              Task[]
+  policies           Policy[]
+  controlTemplateId  String?
+  controlTemplate    FrameworkEditorControlTemplate? @relation(fields: [controlTemplateId], references: [id])
+  controlDocumentTypes ControlDocumentType[]
+
+  @@index([organizationId])
+}
+
+
+// ===== device.prisma =====
+model Device {
+  id            String         @id @default(dbgenerated("generate_prefixed_cuid('dev'::text)"))
+  name          String
+  hostname      String
+  platform      DevicePlatform
+  osVersion     String
+  serialNumber  String?
+  hardwareModel String?
+
+  memberId       String
+  member         Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  isCompliant           Boolean  @default(false)
+  diskEncryptionEnabled Boolean  @default(false)
+  antivirusEnabled      Boolean  @default(false)
+  passwordPolicySet     Boolean  @default(false)
+  screenLockEnabled     Boolean  @default(false)
+  checkDetails          Json?
+
+  lastCheckIn  DateTime?
+  agentVersion String?
+  installedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([serialNumber, organizationId])
+  @@index([memberId])
+  @@index([organizationId])
+  @@index([isCompliant])
+}
+
+enum DevicePlatform {
+  macos
+  windows
+  linux
+}
+
+
+// ===== dynamic-integration.prisma =====
+// ===== Dynamic Integration Platform =====
+// Stores integration manifests and declarative check definitions in the database
+// Enables adding new integrations without code changes or deployments
+
+/// Stores a full integration manifest as JSON — replaces hand-written TypeScript manifests
+model DynamicIntegration {
+    id          String  @id @default(dbgenerated("generate_prefixed_cuid('din'::text)"))
+    /// Unique slug (e.g., "azure-devops", "office-365")
+    slug        String  @unique
+    /// Display name
+    name        String
+    /// Short description for catalog
+    description String
+    /// Category for grouping
+    category    String
+    /// Logo URL
+    logoUrl     String
+    /// URL to documentation
+    docsUrl     String?
+
+    /// API base URL for ctx.fetch
+    baseUrl     String?
+    /// Default headers (JSON object)
+    defaultHeaders Json?
+
+    /// Auth strategy config (JSON — matches AuthStrategy type: oauth2/api_key/basic/jwt/custom)
+    authConfig  Json
+
+    /// Capabilities JSON array (default ["checks"])
+    capabilities Json @default("[\"checks\"]")
+
+    /// Whether multiple connections per org are allowed
+    supportsMultipleConnections Boolean @default(false)
+
+    /// Whether this dynamic integration is active
+    isActive    Boolean @default(true)
+
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    checks      DynamicCheck[]
+
+    @@index([slug])
+    @@index([category])
+    @@index([isActive])
+}
+
+/// Stores a declarative check definition — DSL JSON replaces hand-written run() functions
+model DynamicCheck {
+    id              String  @id @default(dbgenerated("generate_prefixed_cuid('dck'::text)"))
+
+    /// Parent integration
+    integrationId   String
+    integration     DynamicIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+    /// Unique slug within integration (e.g., "mfa_enabled")
+    checkSlug       String
+
+    /// Human-readable name
+    name            String
+    /// Description of what this check does
+    description     String
+
+    /// Task template ID for auto-completion (references TASK_TEMPLATES)
+    taskMapping     String?
+
+    /// Default severity for findings
+    defaultSeverity String  @default("medium")
+
+    /// Declarative DSL definition (JSON — the step-by-step instructions)
+    definition      Json
+
+    /// Check-level variables (JSON array of CheckVariable)
+    variables       Json    @default("[]")
+
+    /// Whether this check is enabled
+    isEnabled       Boolean @default(true)
+
+    /// Display order
+    sortOrder       Int     @default(0)
+
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+
+    @@unique([integrationId, checkSlug])
+    @@index([integrationId])
+    @@index([isEnabled])
+}
+
+
+// ===== evidence-submission.prisma =====
+model EvidenceSubmission {
+  id             String           @id @default(dbgenerated("generate_prefixed_cuid('evs'::text)"))
+  organizationId String
+  formType       EvidenceFormType
+  submittedById  String?
+  submittedAt    DateTime         @default(now())
+  data           Json
+  status         String           @default("pending")
+  reviewedById   String?
+  reviewedAt     DateTime?
+  reviewReason   String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  submittedBy  User?        @relation("EvidenceSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
+  reviewedBy   User?        @relation("EvidenceReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  findings     Finding[]
+
+  @@index([organizationId, formType, submittedAt])
+  @@index([organizationId, formType])
+  @@index([submittedById, status])
+}
+
+
+// ===== finding.prisma =====
+enum FindingType {
+  soc2
+  iso27001
+}
+
+enum FindingStatus {
+  open
+  ready_for_review
+  needs_revision
+  closed
+}
+
+model FindingTemplate {
+  id        String   @id @default(dbgenerated("generate_prefixed_cuid('fnd_t'::text)"))
+  category  String // e.g., "evidence_issue", "further_evidence", "task_specific", "na_incorrect"
+  title     String // Short title
+  content   String // Full message template
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  findings Finding[]
+}
+
+model Finding {
+  id           String        @id @default(dbgenerated("generate_prefixed_cuid('fnd'::text)"))
+  type         FindingType   @default(soc2)
+  status       FindingStatus @default(open)
+  content      String // Custom message or copied from template
+  revisionNote String? // Auditor's note when requesting revision
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  taskId               String?
+  task                 Task?               @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  evidenceSubmissionId String?
+  evidenceSubmission   EvidenceSubmission? @relation(fields: [evidenceSubmissionId], references: [id], onDelete: Cascade)
+  evidenceFormType     EvidenceFormType?
+  templateId           String?
+  template             FindingTemplate?    @relation(fields: [templateId], references: [id])
+  createdById          String?
+  createdBy            Member?             @relation("FindingCreatedBy", fields: [createdById], references: [id])
+  createdByAdminId     String?
+  createdByAdmin       User?               @relation("AdminFindingCreator", fields: [createdByAdminId], references: [id])
+  organizationId       String
+  organization         Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([evidenceSubmissionId])
+  @@index([evidenceFormType])
+  @@index([organizationId, status])
+}
+
+
+// ===== fleet-policy-result.prisma =====
+model FleetPolicyResult {
+  id                  String   @id @default(dbgenerated("generate_prefixed_cuid('fpr'::text)"))
+  userId              String
+  organizationId      String
+  fleetPolicyId       Int
+  fleetPolicyName     String
+  fleetPolicyResponse String
+  attachments         String[] @default([])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+}
+
+
+// ===== framework-editor.prisma =====
+// --- Data for Framework Editor ---
+model FrameworkEditorVideo {
+  id          String @id @default(dbgenerated("generate_prefixed_cuid('frk_vi'::text)"))
+  title       String
+  description String
+  youtubeId   String
+  url         String
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model FrameworkEditorFramework {
+  id          String  @id @default(dbgenerated("generate_prefixed_cuid('frk'::text)"))
+  name        String // e.g., "soc2", "iso27001"
+  version     String
+  description String
+  visible     Boolean @default(false)
+
+  requirements       FrameworkEditorRequirement[]
+  frameworkInstances FrameworkInstance[]
+  soaConfigurations  SOAFrameworkConfiguration[] // Multiple SOA config versions per framework
+  soaDocuments       SOADocument[] // SOA documents from organizations
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model FrameworkEditorRequirement {
+  id          String                   @id @default(dbgenerated("generate_prefixed_cuid('frk_rq'::text)"))
+  frameworkId String
+  framework   FrameworkEditorFramework @relation(fields: [frameworkId], references: [id])
+
+  name        String // Original requirement ID within that framework, e.g., "Privacy"
+  identifier  String @default("") // Unique identifier for the requirement, e.g., "cc1-1"
+  description String
+
+  controlTemplates FrameworkEditorControlTemplate[]
+  requirementMaps  RequirementMap[]
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model FrameworkEditorPolicyTemplate {
+  id          String      @id @default(dbgenerated("generate_prefixed_cuid('frk_pt'::text)"))
+  name        String
+  description String
+  frequency   Frequency // Using the enum from shared.prisma
+  department  Departments // Using the enum from shared.prisma
+  content     Json
+
+  controlTemplates FrameworkEditorControlTemplate[]
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Instances
+  policies Policy[]
+}
+
+model FrameworkEditorTaskTemplate {
+  id               String               @id @default(dbgenerated("generate_prefixed_cuid('frk_tt'::text)"))
+  name             String
+  description      String
+  frequency        Frequency            // Using the enum from shared.prisma
+  department       Departments          // Using the enum from shared.prisma
+  automationStatus TaskAutomationStatus @default(AUTOMATED)
+
+  controlTemplates FrameworkEditorControlTemplate[]
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Instances
+  tasks Task[]
+}
+
+model FrameworkEditorControlTemplate {
+  id          String @id @default(dbgenerated("generate_prefixed_cuid('frk_ct'::text)"))
+  name        String
+  description String
+
+  policyTemplates FrameworkEditorPolicyTemplate[]
+  requirements    FrameworkEditorRequirement[]
+  taskTemplates   FrameworkEditorTaskTemplate[]
+  documentTypes   EvidenceFormType[]
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Instances
+  controls Control[]
+}
+
+
+// ===== framework.prisma =====
+model FrameworkInstance {
+  // Metadata
+  id             String @id @default(dbgenerated("generate_prefixed_cuid('frm'::text)"))
+  organizationId String
+
+  frameworkId String
+  framework   FrameworkEditorFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requirementsMapped RequirementMap[]
+
+  @@unique([organizationId, frameworkId])
+}
+
+
+// ===== integration-platform.prisma =====
+// ===== Integration Platform =====
+// New integration platform models for scalable, config-driven integrations
+
+/// Stores metadata about available integration providers (synced from code manifests)
+model IntegrationProvider {
+    id           String  @id @default(dbgenerated("generate_prefixed_cuid('prv'::text)"))
+    /// Unique slug matching manifest ID (e.g., "github", "slack")
+    slug         String  @unique
+    /// Display name
+    name         String
+    /// Category for grouping
+    category     String
+    /// Hash of manifest for detecting changes
+    manifestHash String?
+    /// Capabilities JSON array
+    capabilities Json    @default("[]")
+    /// Whether provider is active
+    isActive     Boolean @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    connections IntegrationConnection[]
+
+    @@index([slug])
+    @@index([category])
+}
+
+/// Represents an organization's connection to an integration provider
+model IntegrationConnection {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('icn'::text)"))
+
+    /// Reference to the provider
+    providerId String
+    provider   IntegrationProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+    /// Organization that owns this connection
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+    /// Connection status
+    status IntegrationConnectionStatus @default(pending)
+
+    /// Auth strategy used (oauth2, api_key, basic, jwt, custom)
+    authStrategy String
+
+    /// Reference to active credential version
+    activeCredentialVersionId String?
+
+    /// Last successful sync timestamp
+    lastSyncAt DateTime?
+
+    /// Next scheduled sync timestamp
+    nextSyncAt DateTime?
+
+    /// Custom sync cadence (cron expression), null = use default
+    syncCadence String?
+
+    /// Additional metadata (e.g., connected account info)
+    metadata Json?
+
+    /// User-configured variables for checks (collected after OAuth)
+    variables Json?
+
+    /// Error message if status is error
+    errorMessage String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    credentialVersions IntegrationCredentialVersion[]
+    runs               IntegrationRun[]
+    findings           IntegrationPlatformFinding[]
+    checkRuns          IntegrationCheckRun[]
+    syncLogs           IntegrationSyncLog[]
+
+    @@index([organizationId])
+    @@index([providerId])
+    @@index([providerId, organizationId])
+    @@index([status])
+}
+
+enum IntegrationConnectionStatus {
+    pending // Awaiting credential setup
+    active // Connected and operational
+    error // Connection has errors
+    paused // Manually paused by user
+    disconnected // User disconnected
+}
+
+/// Stores encrypted credentials with versioning for audit trail
+model IntegrationCredentialVersion {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('icv'::text)"))
+
+    /// Parent connection
+    connectionId String
+    connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+    /// Encrypted credential payload (JSON with encrypted fields)
+    encryptedPayload Json
+
+    /// Version number (auto-increment per connection)
+    version Int
+
+    /// Token expiration (for OAuth tokens)
+    expiresAt DateTime?
+
+    /// When this version was rotated/replaced
+    rotatedAt DateTime?
+
+    createdAt DateTime @default(now())
+
+    @@unique([connectionId, version])
+    @@index([connectionId])
+}
+
+/// Records each sync/job execution for audit and debugging
+model IntegrationRun {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('irn'::text)"))
+
+    /// Parent connection
+    connectionId String
+    connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+    /// Type of job
+    jobType IntegrationRunJobType
+
+    /// Execution status
+    status IntegrationRunStatus @default(pending)
+
+    /// Timestamps
+    startedAt   DateTime?
+    completedAt DateTime?
+
+    /// Duration in milliseconds
+    durationMs Int?
+
+    /// Number of findings from this run
+    findingsCount Int @default(0)
+
+    /// Error details if failed
+    error Json?
+
+    /// Additional metadata (trigger source, cursor, etc.)
+    metadata Json?
+
+    createdAt DateTime @default(now())
+
+    findings IntegrationPlatformFinding[]
+
+    @@index([connectionId])
+    @@index([status])
+    @@index([createdAt])
+}
+
+enum IntegrationRunJobType {
+    full_sync
+    delta_sync
+    webhook
+    manual
+    test_connection
+}
+
+enum IntegrationRunStatus {
+    pending
+    running
+    success
+    failed
+    cancelled
+}
+
+/// Stores findings/results from integration syncs
+model IntegrationPlatformFinding {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('ipf'::text)"))
+
+    /// Parent run (optional - webhooks may not have runs)
+    runId String?
+    run   IntegrationRun? @relation(fields: [runId], references: [id], onDelete: SetNull)
+
+    /// Parent connection
+    connectionId String
+    connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+    /// Resource classification
+    resourceType String
+    resourceId   String
+
+    /// Finding details
+    title       String
+    description String?
+
+    /// Severity level
+    severity IntegrationFindingSeverity @default(info)
+
+    /// Finding status
+    status IntegrationFindingStatus @default(open)
+
+    /// Remediation guidance
+    remediation String?
+
+    /// Raw payload from provider
+    rawPayload Json?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([connectionId])
+    @@index([runId])
+    @@index([resourceType, resourceId])
+    @@index([severity])
+    @@index([status])
+}
+
+enum IntegrationFindingSeverity {
+    info
+    low
+    medium
+    high
+    critical
+}
+
+enum IntegrationFindingStatus {
+    open
+    resolved
+    ignored
+}
+
+/// Stores OAuth state for CSRF protection during OAuth flow
+model IntegrationOAuthState {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('ios'::text)"))
+
+    /// Random state parameter
+    state String @unique
+
+    /// Provider slug
+    providerSlug String
+
+    /// Organization initiating the OAuth
+    organizationId String
+
+    /// User initiating the OAuth
+    userId String
+
+    /// PKCE code verifier (if using PKCE)
+    codeVerifier String?
+
+    /// Redirect URL after OAuth completes
+    redirectUrl String?
+
+    /// Expiration timestamp
+    expiresAt DateTime
+
+    createdAt DateTime @default(now())
+
+    @@index([state])
+    @@index([expiresAt])
+}
+
+/// Stores organization-level OAuth app credentials
+/// Allows orgs (especially self-hosters) to use their own OAuth apps
+model IntegrationOAuthApp {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('ioa'::text)"))
+
+    /// Provider slug (e.g., "github", "slack")
+    providerSlug String
+
+    /// Organization that owns this OAuth app config
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+    /// Encrypted client ID
+    encryptedClientId Json
+
+    /// Encrypted client secret
+    encryptedClientSecret Json
+
+    /// Optional: custom scopes (overrides manifest defaults)
+    customScopes String[]
+
+    /// Provider-specific settings (e.g., Rippling app name for authorize URL)
+    /// Stored as JSON: { "appName": "compai533c" }
+    customSettings Json?
+
+    /// Whether this config is active
+    isActive Boolean @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([providerSlug, organizationId])
+    @@index([organizationId])
+    @@index([providerSlug])
+}
+
+/// Records check runs linked to tasks for compliance verification
+model IntegrationCheckRun {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('icr'::text)"))
+
+    /// Parent connection
+    connectionId String
+    connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+    /// Task being verified (optional - checks can run without a task)
+    taskId String?
+    task   Task?   @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+    /// Check ID from the manifest
+    checkId String
+
+    /// Check name (denormalized for display)
+    checkName String
+
+    /// Execution status
+    status IntegrationRunStatus @default(pending)
+
+    /// Timestamps
+    startedAt   DateTime?
+    completedAt DateTime?
+
+    /// Duration in milliseconds
+    durationMs Int?
+
+    /// Summary counts
+    totalChecked Int @default(0)
+    passedCount  Int @default(0)
+    failedCount  Int @default(0)
+
+    /// Error message if failed
+    errorMessage String?
+
+    /// Full execution logs (JSON array)
+    logs Json?
+
+    createdAt DateTime @default(now())
+
+    /// Results from this check run
+    results IntegrationCheckResult[]
+
+    @@index([connectionId])
+    @@index([taskId])
+    @@index([checkId])
+    @@index([status])
+    @@index([createdAt])
+}
+
+/// Stores individual results (pass/fail) from check runs
+model IntegrationCheckResult {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('icx'::text)"))
+
+    /// Parent check run
+    checkRunId String
+    checkRun   IntegrationCheckRun @relation(fields: [checkRunId], references: [id], onDelete: Cascade)
+
+    /// Whether this result is a pass or fail
+    passed Boolean
+
+    /// Resource classification
+    resourceType String
+    resourceId   String
+
+    /// Result details
+    title       String
+    description String?
+
+    /// Severity (for failures)
+    severity IntegrationFindingSeverity?
+
+    /// Remediation guidance (for failures)
+    remediation String?
+
+    /// Evidence/proof (JSON - API response data)
+    evidence Json?
+
+    /// When this evidence was collected
+    collectedAt DateTime @default(now())
+
+    @@index([checkRunId])
+    @@index([passed])
+    @@index([resourceType, resourceId])
+}
+
+/// Stores platform-wide OAuth app credentials
+/// Used by platform operators to provide default OAuth apps for all users
+model IntegrationPlatformCredential {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('ipc'::text)"))
+
+    /// Provider slug (e.g., "github", "slack") - unique per platform
+    providerSlug String @unique
+
+    /// Encrypted client ID
+    encryptedClientId Json
+
+    /// Encrypted client secret
+    encryptedClientSecret Json
+
+    /// Masked display hint for client ID (computed at write time)
+    clientIdHint String?
+
+    /// Masked display hint for client secret (computed at write time)
+    clientSecretHint String?
+
+    /// Optional: custom scopes (overrides manifest defaults)
+    customScopes String[]
+
+    /// Provider-specific settings (e.g., Rippling app name for authorize URL)
+    /// Stored as JSON: { "appName": "compai533c" }
+    customSettings Json?
+
+    /// Whether this credential is active
+    isActive Boolean @default(true)
+
+    /// Who created this credential
+    createdById String?
+
+    /// Who last updated this credential
+    updatedById String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([providerSlug])
+}
+
+
+// ===== integration-sync-log.prisma =====
+// ===== Integration Sync Log =====
+// Generic audit trail for integration sync operations (employee sync, role discovery, etc.)
+
+model IntegrationSyncLog {
+  id             String                   @id @default(dbgenerated("generate_prefixed_cuid('isl'::text)"))
+  connectionId   String
+  connection     IntegrationConnection    @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  /// Provider slug (e.g., "ramp", "google-workspace", "rippling", "jumpcloud")
+  provider    String
+  /// Event type (e.g., "employee_sync", "role_discovery", "role_mapping_save")
+  eventType   String
+  /// Execution status
+  status      IntegrationSyncLogStatus @default(pending)
+  /// When the operation started executing
+  startedAt   DateTime?
+  /// When the operation completed (success or failure)
+  completedAt DateTime?
+  /// Duration in milliseconds
+  durationMs  Int?
+  /// Flexible result payload (e.g., { imported, deactivated, reactivated, skipped, errors })
+  result      Json?
+  /// Error message if failed
+  error       String?
+  /// How the sync was triggered: "manual", "scheduled", "api"
+  triggeredBy String?
+  /// User who triggered the sync (null for automated/cron)
+  userId      String?
+
+  createdAt DateTime @default(now())
+
+  @@index([connectionId])
+  @@index([organizationId])
+  @@index([provider])
+  @@index([createdAt])
+}
+
+enum IntegrationSyncLogStatus {
+  pending
+  running
+  success
+  failed
+}
+
+
+// ===== integration.prisma =====
+model Integration {
+  id             String              @id @default(dbgenerated("generate_prefixed_cuid('int'::text)"))
+  name           String
+  integrationId  String
+  settings       Json
+  userSettings   Json
+  organizationId String
+  lastRunAt      DateTime?
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  results        IntegrationResult[]
+
+  @@index([organizationId])
+}
+
+model IntegrationResult {
+  id             String    @id @default(dbgenerated("generate_prefixed_cuid('itr'::text)"))
+  title          String?
+  description    String?
+  remediation    String?
+  status         String?
+  severity       String?
+  resultDetails  Json?
+  completedAt    DateTime? @default(now())
+  integrationId  String
+  organizationId String
+  assignedUserId String?
+
+  assignedUser User?       @relation(fields: [assignedUserId], references: [id], onDelete: Cascade)
+  integration  Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([integrationId])
+}
+
+
+// ===== knowledge-base-document.prisma =====
+model KnowledgeBaseDocument {
+  id               String                                @id @default(dbgenerated("generate_prefixed_cuid('kbd'::text)"))
+  name             String // Original filename
+  description      String? // Optional user description/notes
+  s3Key            String // S3 storage key (e.g., "org123/knowledge-base-documents/timestamp-file.pdf")
+  fileType         String // MIME type (e.g., "application/pdf")
+  fileSize         Int // File size in bytes
+  processingStatus KnowledgeBaseDocumentProcessingStatus @default(pending) // Track indexing status
+  processedAt      DateTime? // When indexing completed
+  triggerRunId     String? // Trigger.dev run ID for tracking processing progress
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([organizationId, processingStatus])
+  @@index([s3Key])
+  @@index([triggerRunId])
+}
+
+enum KnowledgeBaseDocumentProcessingStatus {
+  pending // Uploaded but not yet processed/indexed
+  processing // Currently being processed/indexed
+  completed // Successfully indexed in vector database
+  failed // Processing failed
+}
+
+
+// ===== notification-policy.prisma =====
+model RoleNotificationSetting {
+  id                   String       @id @default(dbgenerated("generate_prefixed_cuid('rns'::text)"))
+  organizationId       String
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role                 String // "owner", "admin", "auditor", "employee", "contractor", or custom role name
+
+  policyNotifications  Boolean @default(true)
+  taskReminders        Boolean @default(true)
+  taskAssignments      Boolean @default(true)
+  taskMentions         Boolean @default(true)
+  weeklyTaskDigest     Boolean @default(true)
+  findingNotifications Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, role])
+  @@map("role_notification_setting")
+}
+
+
+// ===== onboarding.prisma =====
+model Onboarding {
+  organizationId        String       @id
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  policies              Boolean      @default(false)
+  employees             Boolean      @default(false)
+  vendors               Boolean      @default(false)
+  integrations          Boolean      @default(false)
+  risk                  Boolean      @default(false)
+  team                  Boolean      @default(false)
+  tasks                 Boolean      @default(false)
+  callBooked            Boolean      @default(false)
+  companyBookingDetails Json?
+  companyDetails        Json?
+  triggerJobId          String?
+  triggerJobCompleted   Boolean      @default(false)
+
+  @@index([organizationId])
+}
+
+
+// ===== org-chart.prisma =====
+model OrganizationChart {
+  id               String       @id @default(dbgenerated("generate_prefixed_cuid('och'::text)"))
+  organizationId   String       @unique
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name             String       @default("Organization Chart")
+  type             String       @default("interactive") // "interactive" or "uploaded"
+  nodes            Json         @default("[]")
+  edges            Json         @default("[]")
+  uploadedImageUrl String? // S3 key when type="uploaded"
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+
+// ===== organization-billing.prisma =====
+model OrganizationBilling {
+  id               String   @id @default(dbgenerated("generate_prefixed_cuid('obil'::text)"))
+  organizationId   String   @unique @map("organization_id")
+  stripeCustomerId String   @map("stripe_customer_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  pentestSubscription PentestSubscription?
+
+  @@map("organization_billing")
+}
+
+
+// ===== organization.prisma =====
+model Organization {
+  id                  String      @id @default(dbgenerated("generate_prefixed_cuid('org'::text)"))
+  name                String
+  slug                String      @unique @default(dbgenerated("generate_prefixed_cuid('slug'::text)"))
+  logo                String?
+  createdAt           DateTime    @default(now())
+  metadata            String?
+  onboarding          Onboarding?
+  website             String?
+  onboardingCompleted Boolean     @default(false)
+  hasAccess           Boolean     @default(false)
+  advancedModeEnabled             Boolean     @default(false)
+  evidenceApprovalEnabled         Boolean     @default(false)
+  deviceAgentStepEnabled          Boolean     @default(true)
+  securityTrainingStepEnabled     Boolean     @default(true)
+  whistleblowerReportEnabled      Boolean     @default(true)
+  accessRequestFormEnabled        Boolean     @default(true)
+
+  // FleetDM
+  fleetDmLabelId        Int?
+  isFleetSetupCompleted Boolean @default(false)
+
+  // Employee sync provider (e.g., 'google-workspace', 'rippling')
+  // When set, the scheduled sync will only use this provider
+  employeeSyncProvider String?
+
+  apiKeys                            ApiKey[]
+  auditLog                           AuditLog[]
+  controls                           Control[]
+  frameworkInstances                 FrameworkInstance[]
+  integrations                       Integration[]
+  invitations                        Invitation[]
+  members                            Member[]
+  policy                             Policy[]
+  risk                               Risk[]
+  vendors                            Vendor[]
+  tasks                              Task[]
+  taskItems                          TaskItem[]
+  comments                           Comment[]
+  attachments                        Attachment[]
+  evidenceSubmissions                EvidenceSubmission[]
+  trust                              Trust[]
+  context                            Context[]
+  secrets                            Secret[]
+  securityPenetrationTestRuns        SecurityPenetrationTestRun[]
+  trustAccessRequests                TrustAccessRequest[]
+  trustNdaAgreements                 TrustNDAAgreement[]
+  trustDocuments                     TrustDocument[]
+  trustResources                     TrustResource[]                     @relation("OrganizationTrustResources")
+  trustCustomLinks                   TrustCustomLink[]
+  knowledgeBaseDocuments             KnowledgeBaseDocument[]
+  questionnaires                     Questionnaire[]
+  securityQuestionnaireManualAnswers SecurityQuestionnaireManualAnswer[]
+  soaDocuments                       SOADocument[]
+  primaryColor                       String?
+  trustPortalFaqs                    Json? // Array of { question: string, answer: string, order: number }
+
+  // Integration Platform
+  integrationConnections IntegrationConnection[]
+  integrationOAuthApps   IntegrationOAuthApp[]
+  integrationSyncLogs    IntegrationSyncLog[]
+
+  // Pentest Subscription
+  pentestSubscription PentestSubscription?
+  billing             OrganizationBilling?
+
+  // Browser Automation
+  browserbaseContext BrowserbaseContext?
+  fleetPolicyResults FleetPolicyResult[]
+
+  // Findings
+  findings Finding[]
+
+  // Device Agent
+  devices Device[]
+
+  // Org Chart
+  organizationChart OrganizationChart?
+
+  // RBAC
+  organizationRoles          OrganizationRole[]
+  roleNotificationSettings   RoleNotificationSetting[]
+
+  @@index([slug])
+}
+
+
+// ===== pentest-subscription.prisma =====
+model PentestSubscription {
+  id                    String   @id @default(dbgenerated("generate_prefixed_cuid('psub'::text)"))
+  organizationId        String   @unique @map("organization_id")
+  organizationBillingId String   @unique @map("organization_billing_id")
+  stripeSubscriptionId  String   @map("stripe_subscription_id")
+  stripePriceId         String   @map("stripe_price_id")
+  stripeOveragePriceId  String?  @map("stripe_overage_price_id")
+  status                String   @default("active") // active | cancelled | past_due
+  includedRunsPerPeriod Int      @default(3) @map("included_runs_per_period")
+  currentPeriodStart    DateTime @map("current_period_start")
+  currentPeriodEnd      DateTime @map("current_period_end")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationBilling OrganizationBilling @relation(fields: [organizationBillingId], references: [id])
+
+  @@index([organizationId])
+  @@map("pentest_subscriptions")
+}
+
+
+// ===== policy.prisma =====
+enum PolicyDisplayFormat {
+  EDITOR
+  PDF
+}
+
+enum PolicyVisibility {
+  ALL        // Visible to everyone in organization
+  DEPARTMENT // Only visible to specified departments
+}
+
+model Policy {
+  id               String              @id @default(dbgenerated("generate_prefixed_cuid('pol'::text)"))
+  name             String
+  description      String?
+  status           PolicyStatus        @default(draft)
+  content          Json[]
+  draftContent     Json[]              @default([])
+  frequency        Frequency?
+  department       Departments?
+  isRequiredToSign Boolean             @default(true)
+  signedBy         String[]            @default([])
+  reviewDate       DateTime?
+  isArchived       Boolean             @default(false)
+  displayFormat    PolicyDisplayFormat @default(EDITOR)
+  pdfUrl           String?
+
+  // Visibility settings (for department-specific policies)
+  visibility           PolicyVisibility @default(ALL)
+  visibleToDepartments Departments[]    @default([])
+
+  // Dates
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastArchivedAt  DateTime?
+  lastPublishedAt DateTime?
+
+  // Relationships
+  organizationId   String
+  organization     Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assigneeId       String?
+  assignee         Member?                        @relation("PolicyAssignee", fields: [assigneeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  approverId       String?
+  approver         Member?                        @relation("PolicyApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  policyTemplateId String?
+  policyTemplate   FrameworkEditorPolicyTemplate? @relation(fields: [policyTemplateId], references: [id])
+  controls         Control[]
+  currentVersionId String?                        @unique
+  currentVersion   PolicyVersion?                 @relation("PolicyCurrentVersion", fields: [currentVersionId], references: [id])
+  pendingVersionId String?
+  versions         PolicyVersion[]                @relation("PolicyVersions")
+
+  @@index([organizationId])
+}
+
+model PolicyVersion {
+  id        String   @id @default(dbgenerated("generate_prefixed_cuid('pv'::text)"))
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  policyId String
+  policy   Policy @relation("PolicyVersions", fields: [policyId], references: [id], onDelete: Cascade)
+  currentForPolicy Policy? @relation("PolicyCurrentVersion")
+
+  // Version details
+  version       Int
+  content       Json[]
+  pdfUrl        String?
+  publishedById String?
+  publishedBy   Member? @relation("PolicyVersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+  changelog     String?
+
+  @@unique([policyId, version])
+  @@index([policyId])
+  @@index([createdAt])
+}
+
+
+// ===== questionnaire.prisma =====
+model Questionnaire {
+  id                String              @id @default(dbgenerated("generate_prefixed_cuid('qst'::text)"))
+  filename          String // Original filename
+  s3Key             String // S3 storage key for the uploaded file
+  fileType          String // MIME type (e.g., "application/pdf")
+  fileSize          Int // File size in bytes
+  status            QuestionnaireStatus @default(parsing) // Parsing status
+  parsedAt          DateTime? // When parsing completed
+  totalQuestions    Int                 @default(0) // Total number of questions parsed
+  answeredQuestions Int                 @default(0) // Number of questions with answers
+  source            String              @default("internal") // Source of the questionnaire: 'internal' (from app) or 'external' (from trust portal)
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  organizationId String
+  organization   Organization                        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  questions      QuestionnaireQuestionAnswer[]
+  manualAnswers  SecurityQuestionnaireManualAnswer[] // Manual answers saved from this questionnaire
+
+  @@index([organizationId])
+  @@index([organizationId, createdAt])
+  @@index([status])
+  @@index([source])
+}
+
+model QuestionnaireQuestionAnswer {
+  id            String                    @id @default(dbgenerated("generate_prefixed_cuid('qqa'::text)"))
+  question      String // The question text
+  answer        String? // The answer (nullable if not provided in file or not generated yet)
+  status        QuestionnaireAnswerStatus @default(untouched) // Answer status
+  questionIndex Int // Order/index of the question in the questionnaire
+  sources       Json? // Sources used for generated answers (array of source objects)
+  generatedAt   DateTime? // When answer was generated (if status is generated)
+  updatedBy     String? // User ID who last updated the answer (if manual)
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  questionnaireId String
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+
+  @@index([questionnaireId])
+  @@index([questionnaireId, questionIndex])
+  @@index([status])
+}
+
+enum QuestionnaireStatus {
+  parsing // Currently being parsed
+  completed // Successfully parsed
+  failed // Parsing failed
+}
+
+enum QuestionnaireAnswerStatus {
+  untouched // No answer yet (empty or not generated)
+  generated // AI generated answer
+  manual // Manually written/edited by user
+}
+
+
+// ===== requirement.prisma =====
+model RequirementMap {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('req'::text)"))
+
+  requirementId String
+  requirement   FrameworkEditorRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  controlId String
+  control   Control @relation(fields: [controlId], references: [id], onDelete: Cascade)
+
+  frameworkInstanceId String
+  frameworkInstance   FrameworkInstance @relation(fields: [frameworkInstanceId], references: [id], onDelete: Cascade)
+
+  @@unique([controlId, frameworkInstanceId, requirementId])
+  @@index([requirementId, frameworkInstanceId])
+}
+
+
+// ===== risk.prisma =====
+model Risk {
+  // Metadata
+  id                           String            @id @default(dbgenerated("generate_prefixed_cuid('rsk'::text)"))
+  title                        String
+  description                  String
+  category                     RiskCategory
+  department                   Departments?
+  status                       RiskStatus        @default(open)
+  likelihood                   Likelihood        @default(very_unlikely)
+  impact                       Impact            @default(insignificant)
+  residualLikelihood           Likelihood        @default(very_unlikely)
+  residualImpact               Impact            @default(insignificant)
+  treatmentStrategyDescription String?
+  treatmentStrategy            RiskTreatmentType @default(accept)
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assigneeId     String?
+  assignee       Member?      @relation(fields: [assigneeId], references: [id])
+  tasks          Task[]
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([status])
+}
+
+enum RiskTreatmentType {
+  accept
+  avoid
+  mitigate
+  transfer
+}
+
+enum RiskCategory {
+  customer
+  fraud
+  governance
+  operations
+  other
+  people
+  regulatory
+  reporting
+  resilience
+  technology
+  vendor_management
+}
+
+enum RiskStatus {
+  open
+  pending
+  closed
+  archived
+}
+
+
+// ===== secret.prisma =====
+model Secret {
+  id             String    @id @default(dbgenerated("generate_prefixed_cuid('sec'::text)"))
+  organizationId String    @map("organization_id")
+  name           String
+  value          String    @db.Text // Encrypted value
+  description    String?   @db.Text
+  category       String? // e.g., "api", "webhook", "database", etc.
+  lastUsedAt     DateTime? @map("last_used_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, name])
+  @@map("secrets")
+}
+
+
+// ===== security-penetration-test-run.prisma =====
+model SecurityPenetrationTestRun {
+  id           String   @id @default(dbgenerated("generate_prefixed_cuid('ptr'::text)"))
+  organizationId String @map("organization_id")
+  providerRunId String  @map("provider_run_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([providerRunId])
+  @@index([organizationId])
+  @@map("security_penetration_test_runs")
+}
+
+
+// ===== security-questionnaire-manual-answer.prisma =====
+model SecurityQuestionnaireManualAnswer {
+  id       String   @id @default(dbgenerated("generate_prefixed_cuid('sqma'::text)"))
+  question String // The question text
+  answer   String // The answer text (required for saved answers)
+  tags     String[] @default([]) // Optional tags for categorization
+
+  // Optional reference to original questionnaire (for tracking)
+  sourceQuestionnaireId String?
+  sourceQuestionnaire   Questionnaire? @relation(fields: [sourceQuestionnaireId], references: [id], onDelete: SetNull)
+
+  // User who created/updated this answer
+  createdBy String? // User ID
+  updatedBy String? // User ID
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, question]) // Prevent duplicate questions per organization
+  @@index([organizationId])
+  @@index([organizationId, question])
+  @@index([tags])
+  @@index([createdAt])
+}
+
+
+// ===== shared.prisma =====
+model ApiKey {
+  id         String    @id @default(dbgenerated("generate_prefixed_cuid('apk'::text)"))
+  name       String
+  key        String    @unique
+  keyPrefix  String?
+  salt       String?
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  isActive   Boolean   @default(true)
+  scopes     String[]  @default([])
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  @@index([organizationId])
+  @@index([key])
+  @@index([keyPrefix])
+}
+
+model AuditLog {
+  id             String              @id @default(dbgenerated("generate_prefixed_cuid('aud'::text)"))
+  timestamp      DateTime            @default(now())
+  organizationId String
+  userId         String
+  memberId       String?
+  data           Json
+  description    String?
+  entityId       String?
+  entityType     AuditLogEntityType?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  member       Member?      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([memberId])
+  @@index([entityType])
+}
+
+enum AuditLogEntityType {
+  organization
+  framework
+  requirement
+  control
+  policy
+  task
+  people
+  risk
+  vendor
+  tests
+  integration
+  trust
+  finding
+}
+
+enum EvidenceFormType {
+  board_meeting                   @map("board-meeting")
+  it_leadership_meeting           @map("it-leadership-meeting")
+  risk_committee_meeting          @map("risk-committee-meeting")
+  meeting
+  access_request                  @map("access-request")
+  whistleblower_report            @map("whistleblower-report")
+  penetration_test                @map("penetration-test")
+  rbac_matrix                     @map("rbac-matrix")
+  infrastructure_inventory        @map("infrastructure-inventory")
+  employee_performance_evaluation @map("employee-performance-evaluation")
+  network_diagram                 @map("network-diagram")
+  tabletop_exercise               @map("tabletop-exercise")
+}
+
+model GlobalVendors {
+  website                     String   @id @unique
+  company_name                String?
+  legal_name                  String?
+  company_description         String?
+  company_hq_address          String?
+  privacy_policy_url          String?
+  terms_of_service_url        String?
+  service_level_agreement_url String?
+  security_page_url           String?
+  trust_page_url              String?
+  security_certifications     String[]
+  subprocessors               String[]
+  type_of_company             String?
+
+  // Vendor Risk Assessment (shared across all organizations)
+  riskAssessmentData      Json?
+  riskAssessmentVersion   String?
+  riskAssessmentUpdatedAt DateTime?
+
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([website])
+}
+
+enum Departments {
+  none
+  admin
+  gov
+  hr
+  it
+  itsm
+  qms
+}
+
+enum Frequency {
+  monthly
+  quarterly
+  yearly
+}
+
+enum Likelihood {
+  very_unlikely
+  unlikely
+  possible
+  likely
+  very_likely
+}
+
+enum Impact {
+  insignificant
+  minor
+  moderate
+  major
+  severe
+}
+
+
+// ===== soa.prisma =====
+// Statement of Applicability (SOA) Auto-complete Configuration and Answers
+
+model SOAFrameworkConfiguration {
+  id          String                   @id @default(dbgenerated("generate_prefixed_cuid('soa_cfg'::text)"))
+  frameworkId String
+  framework   FrameworkEditorFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  // Configuration versioning - allows multiple configurations per framework
+  version  Int     @default(1) // Version number for this configuration (increments when config changes)
+  isLatest Boolean @default(true) // Whether this is the latest configuration version
+
+  // Column definitions for SOA structure (template used when creating new documents)
+  columns Json // Array of { name: string, type: string } objects
+  // Example: [{ name: "Control ID", type: "string" }, { name: "Control Name", type: "string" }, { name: "Applicable", type: "boolean" }, { name: "Justification", type: "text" }]
+
+  // Predefined questions for this framework
+  // Documents reference a specific configuration version via SOADocument.configurationId
+  // Old documents keep their old config version, new documents use new config version
+  questions Json // Array of question objects with unique IDs
+  // Example: [{ id: "A.5.1.1", text: "Is this control applicable?", columnMapping: "Applicable", controlId: "A.5.1.1" }, ...]
+  // IMPORTANT: question.id must be unique and stable - this is what SOAAnswer.questionId references
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  documents SOADocument[]
+
+  @@unique([frameworkId, version]) // Prevent duplicate configuration versions
+  @@index([frameworkId])
+  @@index([frameworkId, version])
+  @@index([frameworkId, isLatest])
+}
+
+model SOADocument {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('soa_doc'::text)"))
+
+  // Framework and organization context
+  frameworkId    String
+  framework      FrameworkEditorFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Configuration reference - references a specific SOAFrameworkConfiguration version
+  // Each document version can use a different configuration version
+  // Old documents keep their old config, new documents use new config
+  configurationId String
+  configuration   SOAFrameworkConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+
+  // Document versioning
+  version  Int     @default(1) // Version number for this document (increments yearly)
+  isLatest Boolean @default(true) // Whether this is the latest version
+
+  // Document status
+  status SOADocumentStatus @default(draft) // draft, in_progress, completed
+
+  // Document metadata
+  totalQuestions    Int @default(0) // Total number of questions in this document
+  answeredQuestions Int @default(0) // Number of questions with answers
+
+  // Approval tracking
+  preparedBy String  @default("Comp AI") // Always "Comp AI"
+  approverId String? // Member ID who will approve this document (set when submitted for approval)
+  approver   Member? @relation("SOADocumentApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  approvedAt DateTime? // When document was approved
+
+  // Dates
+  completedAt DateTime? // When document was completed
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relationships
+  answers SOAAnswer[]
+
+  @@unique([frameworkId, organizationId, version]) // Prevent duplicate versions
+  @@index([frameworkId, organizationId])
+  @@index([frameworkId, organizationId, version])
+  @@index([frameworkId, organizationId, isLatest])
+  @@index([configurationId])
+  @@index([status])
+}
+
+model SOAAnswer {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('soa_ans'::text)"))
+
+  // Document context (replaces direct framework/organization link)
+  documentId String
+  document   SOADocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Question reference - references question.id from SOADocument.configuration.questions
+  // References the specific configuration version that the document uses
+  // If config changes, old documents still reference their old config version
+  questionId String // Must match a question.id from SOADocument.configuration.questions
+
+  // Answer data - simple text answer
+  answer String? // Text answer (nullable if not generated yet)
+
+  // Answer metadata
+  status      SOAAnswerStatus @default(untouched) // untouched, generated, manual
+  sources     Json? // Sources used for generated answers (similar to questionnaire)
+  generatedAt DateTime? // When answer was generated
+
+  // Answer versioning (within the document)
+  answerVersion  Int     @default(1) // Version number for this specific answer
+  isLatestAnswer Boolean @default(true) // Whether this is the latest version of this answer
+
+  // User tracking
+  createdBy String? // User ID who created this answer
+  updatedBy String? // User ID who last updated this answer
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([documentId, questionId, answerVersion]) // Prevent duplicate answer versions
+  @@index([documentId])
+  @@index([documentId, questionId])
+  @@index([documentId, questionId, isLatestAnswer])
+  @@index([status])
+}
+
+enum SOADocumentStatus {
+  draft // Document is being created/edited
+  in_progress // Document is being generated
+  needs_review // Document is submitted for approval
+  completed // Document is complete and approved
+}
+
+enum SOAAnswerStatus {
+  untouched // No answer yet (not generated)
+  generated // AI generated answer
+  manual // Manually written/edited by user
+}
+
+
+// ===== task-item.prisma =====
+model TaskItem {
+  id          String            @id @default(dbgenerated("generate_prefixed_cuid('tski'::text)"))
+  title       String
+  description String?
+  status      TaskItemStatus    @default(todo)
+  priority    TaskItemPriority  @default(medium)
+  
+  // Polymorphic relation (like Comment and Attachment)
+  entityId   String
+  entityType TaskItemEntityType
+  
+  // Assignment (nullable)
+  assigneeId  String?
+  assignee   Member?           @relation("TaskItemAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  
+  // Creator & Updater
+  createdById String
+  createdBy   Member           @relation("TaskItemCreator", fields: [createdById], references: [id])
+  updatedById String?
+  updatedBy   Member?          @relation("TaskItemUpdater", fields: [updatedById], references: [id])
+  
+  // Relationships
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([entityId, entityType])
+  @@index([organizationId])
+  @@index([assigneeId])
+  @@index([status])
+  @@index([priority])
+}
+
+enum TaskItemStatus {
+  todo
+  in_progress
+  in_review
+  done
+  canceled
+}
+
+enum TaskItemPriority {
+  urgent
+  high
+  medium
+  low
+}
+
+enum TaskItemEntityType {
+  vendor
+  risk
+}
+
+
+// ===== task.prisma =====
+model Task {
+  // Metadata
+  id          String         @id @default(dbgenerated("generate_prefixed_cuid('tsk'::text)"))
+  title       String
+  description String
+  status           TaskStatus           @default(todo)
+  automationStatus TaskAutomationStatus @default(AUTOMATED)
+  frequency        TaskFrequency?
+  department  Departments?   @default(none)
+  order       Int            @default(0)
+
+  // Dates
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastCompletedAt DateTime?
+  reviewDate      DateTime?
+
+  // Relationships
+  assigneeId          String?
+  assignee            Member?                      @relation(fields: [assigneeId], references: [id])
+  organizationId      String
+  organization        Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  taskTemplateId      String?
+  taskTemplate        FrameworkEditorTaskTemplate? @relation(fields: [taskTemplateId], references: [id])
+  controls            Control[]
+  vendors             Vendor[]
+  risks               Risk[]
+  evidenceAutomations EvidenceAutomation[]
+  browserAutomations  BrowserAutomation[]
+
+  evidenceAutomationRuns EvidenceAutomationRun[]
+  integrationCheckRuns  IntegrationCheckRun[]
+  findings              Finding[]
+
+  // Evidence approval
+  approverId     String?
+  approver       Member?     @relation("TaskApprover", fields: [approverId], references: [id])
+  approvedAt     DateTime?
+  previousStatus TaskStatus?
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  in_review
+  done
+  not_relevant
+  failed
+}
+
+enum TaskFrequency {
+  daily
+  weekly
+  monthly
+  quarterly
+  yearly
+}
+
+enum TaskAutomationStatus {
+  AUTOMATED
+  MANUAL
+}
+
+
+// ===== trust.prisma =====
+model Trust {
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  friendlyUrl        String?      @unique
+  domain             String?
+  domainVerified     Boolean      @default(false)
+  isVercelDomain     Boolean      @default(false)
+  vercelVerification String?
+  status             TrustStatus  @default(published)
+  contactEmail       String?
+
+  /// Domains that bypass NDA signing when requesting trust portal access
+  allowedDomains String[] @default([])
+
+  email         String?
+  privacyPolicy String?
+  soc2          Boolean @default(false)
+  soc2type1     Boolean @default(false)
+  soc2type2     Boolean @default(false)
+  iso27001      Boolean @default(false)
+  iso42001      Boolean @default(false)
+  nen7510       Boolean @default(false)
+  gdpr          Boolean @default(false)
+  hipaa         Boolean @default(false)
+  pci_dss       Boolean @default(false)
+  iso9001       Boolean @default(false)
+
+  soc2_status      FrameworkStatus @default(started)
+  soc2type1_status FrameworkStatus @default(started)
+  soc2type2_status FrameworkStatus @default(started)
+  iso27001_status  FrameworkStatus @default(started)
+  iso42001_status  FrameworkStatus @default(started)
+  nen7510_status   FrameworkStatus @default(started)
+  gdpr_status      FrameworkStatus @default(started)
+  hipaa_status     FrameworkStatus @default(started)
+  pci_dss_status   FrameworkStatus @default(started)
+  iso9001_status   FrameworkStatus @default(started)
+
+  // Overview section for public trust portal
+  overviewTitle   String?
+  overviewContent String? // Markdown content with links
+  showOverview    Boolean @default(false)
+
+  // Favicon for trust portal (stored in S3)
+  favicon String?
+
+  @@id([status, organizationId])
+  @@unique([organizationId])
+  @@index([organizationId])
+  @@index([friendlyUrl])
+}
+
+enum TrustStatus {
+  draft
+  published
+}
+
+enum FrameworkStatus {
+  started
+  in_progress
+  compliant
+}
+
+enum TrustFramework {
+  iso_27001
+  iso_42001
+  gdpr
+  hipaa
+  soc2_type1
+  soc2_type2
+  pci_dss
+  nen_7510
+  iso_9001
+}
+
+model TrustResource {
+  id             String         @id @default(dbgenerated("generate_prefixed_cuid('tcr'::text)"))
+  organizationId String
+  organization   Organization   @relation("OrganizationTrustResources", fields: [organizationId], references: [id], onDelete: Cascade)
+  framework      TrustFramework
+  s3Key          String
+  fileName       String
+  fileSize       Int
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([organizationId, framework])
+  @@index([organizationId])
+}
+
+model TrustAccessRequest {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('tar'::text)"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name                  String
+  email                 String
+  company               String?
+  jobTitle              String?
+  purpose               String?
+  requestedDurationDays Int?
+
+  status           TrustAccessRequestStatus @default(under_review)
+  reviewerMemberId String?
+  reviewer         Member?                  @relation("TrustAccessRequestReviewer", fields: [reviewerMemberId], references: [id], onDelete: SetNull)
+  reviewedAt       DateTime?
+  decisionReason   String?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  grant         TrustAccessGrant?   @relation("RequestGrant")
+  ndaAgreements TrustNDAAgreement[] @relation("RequestNDA")
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([status])
+  @@index([organizationId, status])
+}
+
+model TrustAccessGrant {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('tag'::text)"))
+
+  accessRequestId String             @unique
+  accessRequest   TrustAccessRequest @relation("RequestGrant", fields: [accessRequestId], references: [id], onDelete: Cascade)
+
+  subjectEmail String
+
+  status    TrustAccessGrantStatus @default(active)
+  expiresAt DateTime
+
+  accessToken          String?   @unique
+  accessTokenExpiresAt DateTime?
+
+  issuedByMemberId String?
+  issuedBy         Member? @relation("IssuedGrants", fields: [issuedByMemberId], references: [id], onDelete: SetNull)
+
+  revokedAt         DateTime?
+  revokedByMemberId String?
+  revokedBy         Member?   @relation("RevokedGrants", fields: [revokedByMemberId], references: [id], onDelete: SetNull)
+  revokeReason      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ndaAgreement TrustNDAAgreement? @relation("GrantNDA")
+
+  @@index([accessRequestId])
+  @@index([subjectEmail])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([status, expiresAt])
+  @@index([accessToken])
+}
+
+enum TrustAccessRequestStatus {
+  under_review
+  approved
+  denied
+  canceled
+}
+
+enum TrustAccessGrantStatus {
+  active
+  expired
+  revoked
+}
+
+model TrustNDAAgreement {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('tna'::text)"))
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  accessRequestId String
+  accessRequest   TrustAccessRequest @relation("RequestNDA", fields: [accessRequestId], references: [id], onDelete: Cascade)
+
+  grantId String?           @unique
+  grant   TrustAccessGrant? @relation("GrantNDA", fields: [grantId], references: [id], onDelete: SetNull)
+
+  signerName  String?
+  signerEmail String?
+
+  status TrustNDAStatus @default(pending)
+
+  signToken          String   @unique
+  signTokenExpiresAt DateTime
+
+  pdfTemplateKey String?
+  pdfSignedKey   String?
+
+  signedAt DateTime?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([accessRequestId])
+  @@index([signToken])
+  @@index([status])
+}
+
+enum TrustNDAStatus {
+  pending
+  signed
+  void
+}
+
+model TrustDocument {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('tdoc'::text)"))
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  s3Key       String
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, isActive])
+}
+
+model TrustCustomLink {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('tcl'::text)"))
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  url         String
+  order       Int     @default(0)
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, isActive, order])
+}
+
+
+// ===== vendor.prisma =====
+model Vendor {
+  id                  String         @id @default(dbgenerated("generate_prefixed_cuid('vnd'::text)"))
+  name                String
+  description         String
+  category            VendorCategory @default(other)
+  status              VendorStatus   @default(not_assessed)
+  inherentProbability Likelihood     @default(very_unlikely)
+  inherentImpact      Impact         @default(insignificant)
+  residualProbability Likelihood     @default(very_unlikely)
+  residualImpact      Impact         @default(insignificant)
+  website             String?
+  isSubProcessor      Boolean        @default(false)
+
+  // Trust Portal display settings
+  logoUrl           String?
+  showOnTrustPortal Boolean @default(false)
+  trustPortalOrder  Int?
+  complianceBadges  Json? // Array of { type: 'soc2' | 'iso27001' | etc, verified: boolean }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assigneeId     String?
+  assignee       Member?         @relation(fields: [assigneeId], references: [id], onDelete: Cascade)
+  contacts       VendorContact[]
+  tasks          Task[]
+
+  @@index([organizationId])
+  @@index([assigneeId])
+  @@index([category])
+}
+
+model VendorContact {
+  id        String   @id @default(dbgenerated("generate_prefixed_cuid('vct'::text)"))
+  vendorId  String
+  name      String
+  email     String
+  phone     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+}
+
+enum VendorCategory {
+  cloud
+  infrastructure
+  software_as_a_service
+  finance
+  marketing
+  sales
+  hr
+  other
+}
+
+enum VendorStatus {
+  not_assessed
+  in_progress
+  assessed
+}

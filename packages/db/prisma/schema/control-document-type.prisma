@@ -1,0 +1,9 @@
+model ControlDocumentType {
+  id        String           @id @default(dbgenerated("generate_prefixed_cuid('cdt'::text)"))
+  controlId String
+  control   Control          @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  formType  EvidenceFormType
+
+  @@unique([controlId, formType])
+  @@index([controlId])
+}

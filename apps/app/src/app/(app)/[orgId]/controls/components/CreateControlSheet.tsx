@@ -234,7 +234,7 @@ export function CreateControlSheet({
                           No policies found.
                         </p>
                       }
-                      className="[&_[cmdk-list]]:!z-[9999] [&_[cmdk-list]]:!fixed"
+                      className="**:[[cmdk-list]]:z-9999! **:[[cmdk-list]]:fixed!"
                       commandProps={{
                         filter: policyFilterFunction,
                       }}
@@ -273,7 +273,7 @@ export function CreateControlSheet({
                           No tasks found.
                         </p>
                       }
-                      className="[&_[cmdk-list]]:!z-[9999] [&_[cmdk-list]]:!fixed"
+                      className="**:[[cmdk-list]]:z-9999! **:[[cmdk-list]]:fixed!"
                       commandProps={{
                         filter: taskFilterFunction,
                       }}
@@ -327,7 +327,7 @@ export function CreateControlSheet({
                           No requirements found.
                         </p>
                       }
-                      className="[&_[cmdk-list]]:!z-[9999] [&_[cmdk-list]]:!fixed"
+                      className="**:[[cmdk-list]]:z-9999! **:[[cmdk-list]]:fixed!"
                       commandProps={{
                         filter: requirementFilterFunction,
                       }}
@@ -348,7 +348,7 @@ export function CreateControlSheet({
       <>
         <Sheet open={isOpen} onOpenChange={handleOpenChange}>
           <SheetContent stack className="flex flex-col h-full">
-            <SheetHeader className="mb-6 flex flex-row items-center justify-between flex-shrink-0">
+            <SheetHeader className="mb-6 flex flex-row items-center justify-between shrink-0">
               <SheetTitle>Create New Control</SheetTitle>
               <Button
                 size="icon"
@@ -366,7 +366,7 @@ export function CreateControlSheet({
             </div>
 
             {/* Fixed Footer with Submit Button */}
-            <div className="border-t bg-background p-4 flex justify-end flex-shrink-0">
+            <div className="border-t bg-background p-4 flex justify-end shrink-0">
               <Button
                 type="submit"
                 disabled={isSubmitting}
@@ -393,7 +393,7 @@ export function CreateControlSheet({
         </div>
 
         {/* Fixed Footer with Submit Button */}
-        <div className="border-t bg-background p-4 flex justify-end flex-shrink-0">
+        <div className="border-t bg-background p-4 flex justify-end shrink-0">
           <Button
             type="submit"
             disabled={isSubmitting}

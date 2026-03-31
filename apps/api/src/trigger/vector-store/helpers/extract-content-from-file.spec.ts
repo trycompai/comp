@@ -1,7 +1,8 @@
 import { extractContentFromFile } from './extract-content-from-file';
 import ExcelJS from 'exceljs';
+import { generateText } from 'ai';
 
-// Mock external dependencies that aren't relevant to Excel tests
+// Mock external dependencies
 jest.mock('@/vector-store/logger', () => ({
   logger: {
     info: jest.fn(),
@@ -10,8 +11,12 @@ jest.mock('@/vector-store/logger', () => ({
   },
 }));
 
+jest.mock('@ai-sdk/anthropic', () => ({
+  anthropic: jest.fn(() => 'claude-mock-model'),
+}));
+
 jest.mock('@ai-sdk/openai', () => ({
-  openai: jest.fn(),
+  openai: jest.fn(() => 'openai-mock-model'),
 }));
 
 jest.mock('ai', () => ({
@@ -24,6 +29,10 @@ jest.mock('mammoth', () => ({
     convertToHtml: jest.fn(),
   },
 }));
+
+const mockGenerateText = generateText as jest.MockedFunction<
+  typeof generateText
+>;
 
 async function createTestExcelBuffer(
   sheets: { name: string; rows: (string | number)[][] }[],
@@ -158,5 +167,92 @@ describe('extractContentFromFile - non-Excel types', () => {
     await expect(
       extractContentFromFile(base64, 'application/msword'),
     ).rejects.toThrow('Legacy Word documents');
+  });
+});
+
+describe('extractContentFromFile - PDF extraction', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should use Claude for PDF files', async () => {
+    const pdfContent = 'Extracted SOC 2 report content';
+    mockGenerateText.mockResolvedValue({
+      text: pdfContent,
+    } as Awaited<ReturnType<typeof generateText>>);
+
+    const base64 = Buffer.from('fake-pdf-data').toString('base64');
+    const result = await extractContentFromFile(base64, 'application/pdf');
+
+    expect(result).toBe(pdfContent);
+    expect(mockGenerateText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: 'claude-mock-model',
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            role: 'user',
+            content: expect.arrayContaining([
+              expect.objectContaining({ type: 'text' }),
+              expect.objectContaining({
+                type: 'file',
+                mediaType: 'application/pdf',
+              }),
+            ]),
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it('should throw on PDF extraction failure', async () => {
+    mockGenerateText.mockRejectedValue(new Error('API rate limit'));
+
+    const base64 = Buffer.from('fake-pdf-data').toString('base64');
+
+    await expect(
+      extractContentFromFile(base64, 'application/pdf'),
+    ).rejects.toThrow('Failed to extract PDF content: API rate limit');
+  });
+});
+
+describe('extractContentFromFile - image extraction', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should use OpenAI vision for images', async () => {
+    const imageContent = 'Text from image';
+    mockGenerateText.mockResolvedValue({
+      text: imageContent,
+    } as Awaited<ReturnType<typeof generateText>>);
+
+    const base64 = Buffer.from('fake-image-data').toString('base64');
+    const result = await extractContentFromFile(base64, 'image/png');
+
+    expect(result).toBe(imageContent);
+    expect(mockGenerateText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: 'openai-mock-model',
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            role: 'user',
+            content: expect.arrayContaining([
+              expect.objectContaining({ type: 'text' }),
+              expect.objectContaining({ type: 'image' }),
+            ]),
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it('should throw on image extraction failure', async () => {
+    mockGenerateText.mockRejectedValue(new Error('Vision API error'));
+
+    const base64 = Buffer.from('fake-image-data').toString('base64');
+
+    await expect(
+      extractContentFromFile(base64, 'image/png'),
+    ).rejects.toThrow('Failed to extract image content: Vision API error');
   });
 });

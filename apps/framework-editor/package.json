@@ -1,0 +1,52 @@
+{
+    "name": "@trycompai/framework-editor",
+    "dependencies": {
+        "@hookform/resolvers": "^5.2.2",
+        "@noble/ciphers": "^1.1.0",
+        "@noble/hashes": "^1.6.1",
+        "@prisma/client": "6.18.0",
+        "@tailwindcss/postcss": "^4.1.17",
+        "@tanstack/react-table": "^8.21.3",
+        "@tanstack/react-virtual": "^3.13.8",
+        "@tiptap/react": "^3.13.0",
+        "@trycompai/company": "workspace:*",
+        "@trycompai/db": "workspace:*",
+        "@trycompai/ui": "workspace:*",
+        "better-auth": "^1.4.22",
+        "framer-motion": "^12.23.9",
+        "lucide-react": "^0.518.0",
+        "next": "^16.2.0",
+        "nuqs": "^2.4.3",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "react-hook-form": "^7.58.1",
+        "react-markdown": "^10.1.0",
+        "react-select": "^5.10.1",
+        "react-wrap-balancer": "^1.1.1",
+        "remark-gfm": "^4.0.1",
+        "sonner": "^2.0.7",
+        "tippy.js": "^6.3.7",
+        "zod": "^3.24.2"
+    },
+    "devDependencies": {
+        "@types/node": "^22.15.0",
+        "@types/react": "^19.1.6",
+        "@types/react-dom": "^19.1.1",
+        "autoprefixer": "^10.4.21",
+        "postcss": "^8.5.4",
+        "prisma": "6.18.0",
+        "tailwindcss": "^4.1.8",
+        "typescript": "^5.8.3"
+    },
+    "private": true,
+    "scripts": {
+        "build": "next build",
+        "db:generate": "node ../../packages/db/scripts/combine-schemas.js && cp ../../packages/db/dist/schema.prisma prisma/schema.prisma && prisma generate",
+        "dev": "next dev --port 3004",
+        "lint": "echo 'no lint configured'",
+        "prebuild": "bun run db:generate",
+        "start": "next start",
+        "typecheck": "tsc --noEmit"
+    },
+    "type": "module"
+}

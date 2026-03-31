@@ -4,6 +4,7 @@ import { createGroq } from '@ai-sdk/groq';
 import { generateText, generateObject, jsonSchema } from 'ai';
 import ExcelJS from 'exceljs';
 import AdmZip from 'adm-zip';
+import mammoth from 'mammoth';
 import { PARSING_MODEL, VISION_EXTRACTION_PROMPT } from './constants';
 
 /**
@@ -82,20 +83,31 @@ export async function extractContentFromFile(
     return fileBuffer.toString('utf-8');
   }
 
-  // Handle Word documents - not directly supported
-  if (isWordDocument(fileType)) {
+  // Handle Word documents (.docx) — extract text with mammoth
+  if (isDocxFile(fileType)) {
+    const result = await mammoth.extractRawText({ buffer: fileBuffer });
+    return result.value;
+  }
+
+  // Legacy .doc files are not supported
+  if (fileType === 'application/msword') {
     throw new Error(
-      'Word documents (.docx) are best converted to PDF or image format for parsing. Alternatively, use a URL to view the document.',
+      'Legacy Word documents (.doc) are not supported. Please convert to .docx or PDF format.',
     );
   }
 
-  // For images and PDFs, use OpenAI vision API
-  if (isImageOrPdf(fileType)) {
+  // Handle PDFs using Claude's native multi-page PDF support
+  if (isPdfFile(fileType)) {
+    return extractFromPdf(fileData, logger);
+  }
+
+  // Handle images using OpenAI vision API
+  if (isImageFile(fileType)) {
     return extractFromVision(fileData, fileType, logger);
   }
 
   throw new Error(
-    `Unsupported file type: ${fileType}. Supported formats: PDF, images (PNG, JPG, etc.), Excel (.xlsx, .xls), CSV, text files (.txt).`,
+    `Unsupported file type: ${fileType}. Supported formats: PDF, Word (.docx), images (PNG, JPG, etc.), Excel (.xlsx, .xls), CSV, text files (.txt).`,
   );
 }
 
@@ -132,8 +144,24 @@ export async function extractQuestionsWithAI(
       return await parseQuestionsWithGroq(content, logger);
     }
 
-    // For PDF/images - use vision
-    if (isImageOrPdf(fileType)) {
+    // For Word documents (.docx) - extract text then AI parsing
+    if (isDocxFile(fileType)) {
+      const fileBuffer = Buffer.from(fileData, 'base64');
+      const result = await mammoth.extractRawText({ buffer: fileBuffer });
+      logger.info('Extracted DOCX content', {
+        contentLength: result.value.length,
+        extractionMs: Date.now() - startTime,
+      });
+      return await parseQuestionsWithGroq(result.value, logger);
+    }
+
+    // For PDFs - use Claude's native PDF support
+    if (isPdfFile(fileType)) {
+      return await parseQuestionsFromPdf(fileData, logger);
+    }
+
+    // For images - use OpenAI vision
+    if (isImageFile(fileType)) {
       return await parseQuestionsWithVision(fileData, fileType, logger);
     }
 
@@ -382,7 +410,7 @@ async function parseQuestionsWithClaude(
     });
 
     const { object } = await generateObject({
-      model: anthropic('claude-3-5-sonnet-latest'),
+      model: anthropic('claude-sonnet-4-6'),
       schema: questionExtractionSchema,
       prompt: QUESTION_PROMPT + content.substring(0, 80000),
     });
@@ -394,7 +422,7 @@ async function parseQuestionsWithClaude(
     logger.info('Claude parsing complete', {
       questionCount: result.questions?.length || 0,
       durationMs: Date.now() - startTime,
-      model: 'claude-3-5-sonnet',
+      model: 'claude-sonnet-4-6',
     });
 
     return (result.questions || [])
@@ -529,16 +557,19 @@ function isTextFile(fileType: string): boolean {
   return fileType === 'text/plain' || fileType.startsWith('text/');
 }
 
-function isWordDocument(fileType: string): boolean {
+function isDocxFile(fileType: string): boolean {
   return (
-    fileType === 'application/msword' ||
     fileType ===
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   );
 }
 
-function isImageOrPdf(fileType: string): boolean {
-  return fileType.startsWith('image/') || fileType === 'application/pdf';
+function isPdfFile(fileType: string): boolean {
+  return fileType === 'application/pdf';
+}
+
+function isImageFile(fileType: string): boolean {
+  return fileType.startsWith('image/');
 }
 
 /**
@@ -891,6 +922,117 @@ function extractFromCsv(fileBuffer: Buffer): string {
     .split('\n')
     .filter((line) => line.trim() !== '')
     .join('\n');
+}
+
+/**
+ * Extract raw text content from a PDF using Claude's native multi-page support
+ */
+async function extractFromPdf(
+  fileData: string,
+  logger: ContentExtractionLogger,
+): Promise<string> {
+  const fileSizeMB = (
+    Buffer.from(fileData, 'base64').length /
+    (1024 * 1024)
+  ).toFixed(2);
+
+  logger.info('Extracting content from PDF using Claude', {
+    fileSizeMB,
+  });
+
+  const startTime = Date.now();
+
+  try {
+    const { text } = await generateText({
+      model: anthropic('claude-sonnet-4-6'),
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: VISION_EXTRACTION_PROMPT },
+            {
+              type: 'file',
+              data: fileData,
+              mediaType: 'application/pdf',
+            },
+          ],
+        },
+      ],
+    });
+
+    const extractionTime = ((Date.now() - startTime) / 1000).toFixed(2);
+    logger.info('Content extracted from PDF', {
+      extractedLength: text.length,
+      extractionTimeSeconds: extractionTime,
+    });
+
+    return text;
+  } catch (error) {
+    const extractionTime = ((Date.now() - startTime) / 1000).toFixed(2);
+    logger.error('Failed to extract content from PDF', {
+      fileSizeMB,
+      extractionTimeSeconds: extractionTime,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw new Error(
+      `Failed to extract PDF content: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
+  }
+}
+
+/**
+ * Extract questions directly from a PDF using Claude's native multi-page support
+ */
+async function parseQuestionsFromPdf(
+  fileData: string,
+  logger: ContentExtractionLogger,
+): Promise<{ question: string; answer: string | null }[]> {
+  const startTime = Date.now();
+
+  const { object } = await generateObject({
+    model: anthropic('claude-sonnet-4-6'),
+    schema: questionExtractionSchema,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: `Extract all questions/fields and their answers from this questionnaire or form document.
+
+Include:
+- Traditional questions ending with "?"
+- Form fields like "1.1 Vendor Name", "Contact Email" that request input
+- Numbered items (1.1, 1.2, 2.1) followed by field labels
+- Items marked with "*" or selection notes like "(Single selection allowed)"
+
+Match each to its response if provided. Set answer to null if empty.`,
+          },
+          {
+            type: 'file',
+            data: fileData,
+            mediaType: 'application/pdf',
+          },
+        ],
+      },
+    ],
+  });
+
+  const result = object as {
+    questions: { question: string; answer: string | null }[];
+  };
+
+  logger.info('PDF question parsing complete', {
+    questionCount: result.questions?.length || 0,
+    durationMs: Date.now() - startTime,
+  });
+
+  return (result.questions || [])
+    .map((q) => ({
+      question: q.question?.trim() || '',
+      answer: q.answer?.trim() || null,
+    }))
+    .filter((q) => q.question);
 }
 
 async function extractFromVision(

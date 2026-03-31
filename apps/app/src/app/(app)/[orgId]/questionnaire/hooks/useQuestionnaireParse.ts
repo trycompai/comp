@@ -1,6 +1,8 @@
 'use client';
 
 import { api } from '@/lib/api-client';
+import { isFailureRunStatus } from '@/app/(app)/[orgId]/cloud-tests/status';
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -36,6 +38,8 @@ export function useQuestionnaireParse({
   const router = useRouter();
   const [uploadStatus, setUploadStatus] = useState<ParseStatus>('idle');
   const [parseStatus, setParseStatus] = useState<ParseStatus>('idle');
+  const [runId, setRunId] = useState<string | null>(null);
+  const [runToken, setRunToken] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Get trigger token for auto-answer (can trigger and read)
@@ -61,6 +65,57 @@ export function useQuestionnaireParse({
     }
   }, [autoAnswerToken, setAutoAnswerToken]);
 
+  // Track the parse task via realtime
+  const { run: parseRun } = useRealtimeRun(runId ?? '', {
+    accessToken: runToken ?? undefined,
+    enabled: Boolean(runId && runToken),
+  });
+
+  // Handle task completion
+  useEffect(() => {
+    if (!parseRun?.status) return;
+
+    if (parseRun.status === 'COMPLETED') {
+      const output = parseRun.output as {
+        success: boolean;
+        questionnaireId: string;
+        questionsAndAnswers: { question: string; answer: string | null }[];
+      } | undefined;
+
+      if (output?.success && output.questionnaireId) {
+        setQuestionnaireId(output.questionnaireId);
+        toast.success(
+          `Successfully parsed ${output.questionsAndAnswers?.length ?? 0} questions`,
+        );
+        router.push(`/${orgId}/questionnaire/${output.questionnaireId}`);
+      } else {
+        setIsParseProcessStarted(false);
+        toast.error('Failed to parse questionnaire');
+      }
+
+      setRunId(null);
+      setRunToken(null);
+      setUploadStatus('idle');
+      setParseStatus('idle');
+    }
+
+    if (isFailureRunStatus(parseRun.status)) {
+      setIsParseProcessStarted(false);
+      setRunId(null);
+      setRunToken(null);
+      setUploadStatus('idle');
+      setParseStatus('idle');
+      toast.error('Questionnaire parsing failed. Please try again.');
+    }
+  }, [
+    parseRun?.status,
+    parseRun?.output,
+    orgId,
+    router,
+    setIsParseProcessStarted,
+    setQuestionnaireId,
+  ]);
+
   const executeUploadAndParse = useCallback(
     async (input: {
       fileName: string;
@@ -78,40 +133,45 @@ export function useQuestionnaireParse({
       setParseStatus('executing');
 
       try {
-        const response = await api.post<{ questionnaireId: string; totalQuestions: number }>(
-          '/v1/questionnaire/upload-and-parse',
-          {
-            organizationId: input.organizationId,
-            fileName: input.fileName,
-            fileType: input.fileType,
-            fileData: input.fileData,
-            source: 'internal',
-          },
-        );
+        const response = await api.post<{
+          runId: string;
+          publicAccessToken: string;
+        }>('/v1/questionnaire/upload-and-parse', {
+          organizationId: input.organizationId,
+          fileName: input.fileName,
+          fileType: input.fileType,
+          fileData: input.fileData,
+          source: 'internal',
+        });
 
         if (response.error || !response.data) {
           setIsParseProcessStarted(false);
-          toast.error(response.error || 'Failed to parse questionnaire');
+          setUploadStatus('idle');
+          setParseStatus('idle');
+          toast.error(response.error || 'Failed to start questionnaire parsing');
           return;
         }
 
-        const { questionnaireId, totalQuestions } = response.data;
-        setQuestionnaireId(questionnaireId);
-        toast.success(`Successfully parsed ${totalQuestions} questions`);
-        router.push(`/${orgId}/questionnaire/${questionnaireId}`);
+        // Upload done, now tracking async parsing
+        setUploadStatus('idle');
+        setRunId(response.data.runId);
+        setRunToken(response.data.publicAccessToken);
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
           return; // Request was cancelled
         }
         setIsParseProcessStarted(false);
-        console.error('Parse error:', error);
-        toast.error(error instanceof Error ? error.message : 'Failed to parse questionnaire');
-      } finally {
         setUploadStatus('idle');
         setParseStatus('idle');
+        console.error('Parse error:', error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : 'Failed to parse questionnaire',
+        );
       }
     },
-    [orgId, router, setIsParseProcessStarted, setQuestionnaireId],
+    [setIsParseProcessStarted],
   );
 
   // Cleanup on unmount

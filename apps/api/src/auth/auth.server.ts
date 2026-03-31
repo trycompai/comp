@@ -15,6 +15,8 @@ import {
 } from 'better-auth/plugins';
 import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
+import { Redis } from '@upstash/redis';
+import type { AccessControl } from 'better-auth/plugins/access';
 
 const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
 
@@ -46,6 +48,7 @@ export function getTrustedOrigins(): string[] {
     'http://localhost:3000',
     'http://localhost:3002',
     'http://localhost:3333',
+    'http://localhost:3004',
     'https://app.trycomp.ai',
     'https://portal.trycomp.ai',
     'https://api.trycomp.ai',
@@ -53,7 +56,103 @@ export function getTrustedOrigins(): string[] {
     'https://portal.staging.trycomp.ai',
     'https://api.staging.trycomp.ai',
     'https://dev.trycomp.ai',
+    'https://framework-editor.trycomp.ai',
   ];
+}
+
+/**
+ * Check if an origin matches a known trusted pattern (static list + subdomains).
+ * This is a fast synchronous check that doesn't hit the DB.
+ */
+export function isStaticTrustedOrigin(origin: string): boolean {
+  const trustedOrigins = getTrustedOrigins();
+  if (trustedOrigins.includes(origin)) {
+    return true;
+  }
+
+  try {
+    const url = new URL(origin);
+    return (
+      url.hostname.endsWith('.trycomp.ai') ||
+      url.hostname.endsWith('.staging.trycomp.ai') ||
+      url.hostname.endsWith('.trust.inc') ||
+      url.hostname === 'trust.inc'
+    );
+  } catch {
+    return false;
+  }
+}
+
+// ── Custom domain lookup via Redis cache ─────────────────────────────────────
+
+const CORS_DOMAINS_CACHE_KEY = 'cors:custom-domains';
+const CORS_DOMAINS_CACHE_TTL_SECONDS = 5 * 60; // 5 minutes
+
+const corsRedisClient = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
+
+async function getCustomDomains(): Promise<Set<string>> {
+  // Try Redis cache first (non-fatal if Redis is unavailable)
+  try {
+    const cached = await corsRedisClient.get<string[]>(CORS_DOMAINS_CACHE_KEY);
+    if (cached) {
+      return new Set(cached);
+    }
+  } catch (error) {
+    console.error('[CORS] Redis cache read failed, falling back to DB:', error);
+  }
+
+  // Cache miss or Redis unavailable — query DB
+  try {
+    const trusts = await db.trust.findMany({
+      where: {
+        domain: { not: null },
+        status: 'published',
+      },
+      select: { domain: true },
+    });
+
+    const domains = trusts
+      .map((t) => t.domain)
+      .filter((d): d is string => d !== null);
+
+    // Best-effort cache update (don't lose DB results if Redis SET fails)
+    try {
+      await corsRedisClient.set(CORS_DOMAINS_CACHE_KEY, domains, {
+        ex: CORS_DOMAINS_CACHE_TTL_SECONDS,
+      });
+    } catch {
+      // Redis unavailable — continue without caching
+    }
+
+    return new Set(domains);
+  } catch (error) {
+    console.error('[CORS] Failed to fetch custom domains from DB:', error);
+    return new Set();
+  }
+}
+
+/**
+ * Check if an origin is trusted. Checks (in order):
+ * 1. Static trusted origins list
+ * 2. *.trycomp.ai / *.trust.inc subdomains
+ * 3. Published custom domains from the DB (cached in Redis, TTL 5 min)
+ */
+export async function isTrustedOrigin(origin: string): Promise<boolean> {
+  if (isStaticTrustedOrigin(origin)) {
+    return true;
+  }
+
+  // Check verified custom domains from DB via Redis cache
+  try {
+    const url = new URL(origin);
+    const customDomains = await getCustomDomains();
+    return customDomains.has(url.hostname);
+  } catch {
+    return false;
+  }
 }
 
 // Build social providers config
@@ -150,6 +249,14 @@ export const auth = betterAuth({
     database: {
       generateId: false,
     },
+    // Prevent cookie collisions between environments.
+    // Production keeps the default 'better-auth' prefix (unchanged).
+    ...(cookieDomain === '.staging.trycomp.ai' && {
+      cookiePrefix: 'staging',
+    }),
+    ...(!cookieDomain && {
+      cookiePrefix: 'local',
+    }),
     ...(cookieDomain && {
       crossSubDomainCookies: {
         enabled: true,
@@ -318,7 +425,7 @@ export const auth = betterAuth({
           }),
         });
       },
-      ac,
+      ac: ac as AccessControl,
       roles: allRoles,
       // Enable dynamic access control for custom roles
       // This allows organizations to create custom roles at runtime

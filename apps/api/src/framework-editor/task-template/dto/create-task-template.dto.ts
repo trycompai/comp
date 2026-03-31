@@ -1,5 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsEnum } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEnum,
+  IsOptional,
+  MaxLength,
+} from 'class-validator';
 import { Frequency, Departments } from '@trycompai/db';
 
 export class CreateTaskTemplateDto {
@@ -9,29 +15,33 @@ export class CreateTaskTemplateDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   name: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Detailed description of the task template',
     example: 'Review and update security policies on a monthly basis',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  description: string;
+  @MaxLength(5000)
+  description?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Frequency of the task',
     enum: Frequency,
     example: Frequency.monthly,
   })
+  @IsOptional()
   @IsEnum(Frequency)
-  frequency: Frequency;
+  frequency?: Frequency;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Department responsible for the task',
     enum: Departments,
     example: Departments.it,
   })
+  @IsOptional()
   @IsEnum(Departments)
-  department: Departments;
+  department?: Departments;
 }

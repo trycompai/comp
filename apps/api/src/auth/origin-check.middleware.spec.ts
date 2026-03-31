@@ -1,13 +1,27 @@
 import { originCheckMiddleware } from './origin-check.middleware';
 
-// Mock getTrustedOrigins
+// Mock isTrustedOrigin (async version)
 jest.mock('./auth.server', () => ({
-  getTrustedOrigins: () => [
-    'http://localhost:3000',
-    'http://localhost:3002',
-    'https://app.trycomp.ai',
-    'https://portal.trycomp.ai',
-  ],
+  isTrustedOrigin: async (origin: string) => {
+    const staticOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3002',
+      'https://app.trycomp.ai',
+      'https://portal.trycomp.ai',
+    ];
+    if (staticOrigins.includes(origin)) return true;
+    try {
+      const url = new URL(origin);
+      return (
+        url.hostname.endsWith('.trycomp.ai') ||
+        url.hostname.endsWith('.staging.trycomp.ai') ||
+        url.hostname.endsWith('.trust.inc') ||
+        url.hostname === 'trust.inc'
+      );
+    } catch {
+      return false;
+    }
+  },
 }));
 
 function createMockReq(
@@ -21,6 +35,9 @@ function createMockReq(
     headers: origin ? { origin } : {},
   };
 }
+
+/** Flush the microtask queue so async middleware completes. */
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
 function createMockRes(): Record<string, unknown> & { statusCode?: number; body?: unknown } {
   const res: Record<string, unknown> & { statusCode?: number; body?: unknown } = {};
@@ -66,44 +83,48 @@ describe('originCheckMiddleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
-  it('should allow POST from trusted origin', () => {
+  it('should allow POST from trusted origin', async () => {
     const req = createMockReq('POST', '/v1/organization/api-keys', 'http://localhost:3000');
     const res = createMockRes();
     const next = jest.fn();
 
     originCheckMiddleware(req as any, res as any, next);
+    await flushPromises();
 
     expect(next).toHaveBeenCalled();
   });
 
-  it('should block POST from untrusted origin', () => {
+  it('should block POST from untrusted origin', async () => {
     const req = createMockReq('POST', '/v1/organization/transfer-ownership', 'http://evil.com');
     const res = createMockRes();
     const next = jest.fn();
 
     originCheckMiddleware(req as any, res as any, next);
+    await flushPromises();
 
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
   });
 
-  it('should block DELETE from untrusted origin', () => {
+  it('should block DELETE from untrusted origin', async () => {
     const req = createMockReq('DELETE', '/v1/organization', 'http://evil.com');
     const res = createMockRes();
     const next = jest.fn();
 
     originCheckMiddleware(req as any, res as any, next);
+    await flushPromises();
 
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
   });
 
-  it('should block PATCH from untrusted origin', () => {
+  it('should block PATCH from untrusted origin', async () => {
     const req = createMockReq('PATCH', '/v1/members/123/role', 'http://evil.com');
     const res = createMockRes();
     const next = jest.fn();
 
     originCheckMiddleware(req as any, res as any, next);
+    await flushPromises();
 
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
@@ -139,12 +160,13 @@ describe('originCheckMiddleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
-  it('should allow production origins', () => {
+  it('should allow production origins', async () => {
     const req = createMockReq('POST', '/v1/organization/api-keys', 'https://app.trycomp.ai');
     const res = createMockRes();
     const next = jest.fn();
 
     originCheckMiddleware(req as any, res as any, next);
+    await flushPromises();
 
     expect(next).toHaveBeenCalled();
   });

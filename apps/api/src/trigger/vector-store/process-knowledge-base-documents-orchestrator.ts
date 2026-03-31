@@ -12,6 +12,7 @@ export const processKnowledgeBaseDocumentsOrchestratorTask = task({
   retry: {
     maxAttempts: 3,
   },
+  maxDuration: 60 * 60, // 1 hour (in seconds) for large document batches
   run: async (payload: { documentIds: string[]; organizationId: string }) => {
     logger.info('Starting Knowledge Base documents processing orchestrator', {
       organizationId: payload.organizationId,

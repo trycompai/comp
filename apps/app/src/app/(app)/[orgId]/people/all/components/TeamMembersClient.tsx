@@ -121,13 +121,14 @@ export function TeamMembersClient({
     handleRoleMappingClose,
     handleRoleMappingSaved,
     openRoleMappingEditor,
+    availableProviders,
   } = useEmployeeSync({ organizationId, initialData: employeeSyncData });
 
   const lastSyncAt = employeeSyncData.lastSyncAt;
   const nextSyncAt = employeeSyncData.nextSyncAt;
 
   const handleEmployeeSync = async (
-    provider: 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp',
+    provider: string,
   ) => {
     const result = await syncEmployees(provider);
     if (result?.success) {
@@ -474,6 +475,29 @@ export function TeamMembersClient({
                     </div>
                   </SelectItem>
                 )}
+                {/* Dynamic sync providers (from dynamic integrations) */}
+                {availableProviders
+                  .filter((p) => p.connected && !['google-workspace', 'rippling', 'jumpcloud', 'ramp'].includes(p.slug))
+                  .map((provider) => (
+                    <SelectItem key={provider.slug} value={provider.slug}>
+                      <div className="flex items-center gap-2">
+                        {provider.logoUrl && (
+                          <Image
+                            src={provider.logoUrl}
+                            alt={provider.name}
+                            width={16}
+                            height={16}
+                            className="rounded-sm"
+                            unoptimized
+                          />
+                        )}
+                        {provider.name}
+                        {selectedProvider === provider.slug && (
+                          <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
               </SelectContent>
               </Select>
             </div>

@@ -263,12 +263,12 @@ export class QuestionnaireController {
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description:
-      'Upload file, parse questions (no answers), save to DB, return questionnaireId',
+      'Upload file and trigger async parsing. Returns runId for realtime tracking.',
     schema: {
       type: 'object',
       properties: {
-        questionnaireId: { type: 'string' },
-        totalQuestions: { type: 'number' },
+        runId: { type: 'string' },
+        publicAccessToken: { type: 'string' },
       },
     },
   })

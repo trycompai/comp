@@ -12228,11 +12228,977 @@
         ]
       }
     },
+    "/v1/framework-editor/control-template": {
+      "get": {
+        "operationId": "ControlTemplateController_findAll_v1",
+        "parameters": [
+          {
+            "name": "take",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skip",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "frameworkId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Control Templates"
+        ]
+      },
+      "post": {
+        "operationId": "ControlTemplateController_create_v1",
+        "parameters": [
+          {
+            "name": "frameworkId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateControlTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Control Templates"
+        ]
+      }
+    },
+    "/v1/framework-editor/control-template/{id}": {
+      "get": {
+        "operationId": "ControlTemplateController_findOne_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Control Templates"
+        ]
+      },
+      "patch": {
+        "operationId": "ControlTemplateController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateControlTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Control Templates"
+        ]
+      },
+      "delete": {
+        "operationId": "ControlTemplateController_delete_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Control Templates"
+        ]
+      }
+    },
+    "/v1/framework-editor/control-template/{id}/requirements/{reqId}": {
+      "post": {
+        "operationId": "ControlTemplateController_linkRequirement_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reqId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Control Templates"
+        ]
+      },
+      "delete": {
+        "operationId": "ControlTemplateController_unlinkRequirement_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reqId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Control Templates"
+        ]
+      }
+    },
+    "/v1/framework-editor/control-template/{id}/policy-templates/{ptId}": {
+      "post": {
+        "operationId": "ControlTemplateController_linkPolicyTemplate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ptId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Control Templates"
+        ]
+      },
+      "delete": {
+        "operationId": "ControlTemplateController_unlinkPolicyTemplate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ptId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Control Templates"
+        ]
+      }
+    },
+    "/v1/framework-editor/control-template/{id}/task-templates/{ttId}": {
+      "post": {
+        "operationId": "ControlTemplateController_linkTaskTemplate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ttId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Control Templates"
+        ]
+      },
+      "delete": {
+        "operationId": "ControlTemplateController_unlinkTaskTemplate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ttId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Control Templates"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework": {
+      "get": {
+        "operationId": "FrameworkEditorFrameworkController_findAll_v1",
+        "parameters": [
+          {
+            "name": "take",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skip",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      },
+      "post": {
+        "operationId": "FrameworkEditorFrameworkController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}": {
+      "get": {
+        "operationId": "FrameworkEditorFrameworkController_findById_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      },
+      "patch": {
+        "operationId": "FrameworkEditorFrameworkController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      },
+      "delete": {
+        "operationId": "FrameworkEditorFrameworkController_delete_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}/controls": {
+      "get": {
+        "operationId": "FrameworkEditorFrameworkController_getControls_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}/policies": {
+      "get": {
+        "operationId": "FrameworkEditorFrameworkController_getPolicies_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}/tasks": {
+      "get": {
+        "operationId": "FrameworkEditorFrameworkController_getTasks_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}/documents": {
+      "get": {
+        "operationId": "FrameworkEditorFrameworkController_getDocuments_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}/link-control/{controlId}": {
+      "post": {
+        "operationId": "FrameworkEditorFrameworkController_linkControl_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "controlId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}/link-task/{taskId}": {
+      "post": {
+        "operationId": "FrameworkEditorFrameworkController_linkTask_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}/link-policy/{policyId}": {
+      "post": {
+        "operationId": "FrameworkEditorFrameworkController_linkPolicy_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "policyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/policy-template": {
+      "get": {
+        "operationId": "PolicyTemplateController_findAll_v1",
+        "parameters": [
+          {
+            "name": "take",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skip",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "frameworkId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Policy Templates"
+        ]
+      },
+      "post": {
+        "operationId": "PolicyTemplateController_create_v1",
+        "parameters": [
+          {
+            "name": "frameworkId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePolicyTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Policy Templates"
+        ]
+      }
+    },
+    "/v1/framework-editor/policy-template/{id}": {
+      "get": {
+        "operationId": "PolicyTemplateController_findById_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Policy Templates"
+        ]
+      },
+      "patch": {
+        "operationId": "PolicyTemplateController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePolicyTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Policy Templates"
+        ]
+      },
+      "delete": {
+        "operationId": "PolicyTemplateController_delete_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Policy Templates"
+        ]
+      }
+    },
+    "/v1/framework-editor/policy-template/{id}/content": {
+      "patch": {
+        "operationId": "PolicyTemplateController_updateContent_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePolicyContentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Policy Templates"
+        ]
+      }
+    },
+    "/v1/framework-editor/requirement": {
+      "get": {
+        "operationId": "RequirementController_findAll_v1",
+        "parameters": [
+          {
+            "name": "take",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skip",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Requirements"
+        ]
+      },
+      "post": {
+        "operationId": "RequirementController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRequirementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Requirements"
+        ]
+      }
+    },
+    "/v1/framework-editor/requirement/{id}": {
+      "patch": {
+        "operationId": "RequirementController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRequirementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Requirements"
+        ]
+      },
+      "delete": {
+        "operationId": "RequirementController_delete_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Requirements"
+        ]
+      }
+    },
     "/v1/framework-editor/task-template": {
+      "post": {
+        "description": "Create a new framework editor task template",
+        "operationId": "TaskTemplateController_createTaskTemplate_v1",
+        "parameters": [
+          {
+            "name": "frameworkId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Create a new framework editor task template",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a framework editor task template",
+        "tags": [
+          "Framework Editor Task Templates"
+        ]
+      },
       "get": {
         "description": "Retrieve all framework editor task templates",
         "operationId": "TaskTemplateController_getAllTaskTemplates_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "frameworkId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successfully retrieved all framework editor task templates",
@@ -12289,11 +13255,6 @@
             }
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "summary": "Get all framework editor task templates",
         "tags": [
           "Framework Editor Task Templates"
@@ -12380,11 +13341,6 @@
             }
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "summary": "Get framework editor task template by ID",
         "tags": [
           "Framework Editor Task Templates"
@@ -12493,11 +13449,6 @@
             }
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "summary": "Update framework editor task template",
         "tags": [
           "Framework Editor Task Templates"
@@ -12580,11 +13531,6 @@
             }
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
         "summary": "Delete framework editor task template",
         "tags": [
           "Framework Editor Task Templates"
@@ -23085,6 +24031,273 @@
           "email"
         ]
       },
+      "CreateControlTemplateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Access Control Policy"
+          },
+          "description": {
+            "type": "string",
+            "example": "Ensures access controls are properly managed"
+          },
+          "documentTypes": {
+            "example": [
+              "penetration-test",
+              "rbac-matrix"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "description"
+        ]
+      },
+      "UpdateControlTemplateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Access Control Policy"
+          },
+          "description": {
+            "type": "string",
+            "example": "Ensures access controls are properly managed"
+          },
+          "documentTypes": {
+            "example": [
+              "penetration-test",
+              "rbac-matrix"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateFrameworkDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "SOC 2"
+          },
+          "version": {
+            "type": "string",
+            "example": "2024"
+          },
+          "description": {
+            "type": "string",
+            "example": "SOC 2 Type II compliance framework"
+          },
+          "visible": {
+            "type": "boolean",
+            "example": false
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "description"
+        ]
+      },
+      "UpdateFrameworkDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "SOC 2"
+          },
+          "version": {
+            "type": "string",
+            "example": "2024"
+          },
+          "description": {
+            "type": "string",
+            "example": "SOC 2 Type II compliance framework"
+          },
+          "visible": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "CreatePolicyTemplateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Information Security Policy"
+          },
+          "description": {
+            "type": "string",
+            "example": "Establishes information security practices"
+          },
+          "frequency": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "example": "annually"
+          },
+          "department": {
+            "type": "string",
+            "enum": [
+              "none",
+              "admin",
+              "gov",
+              "hr",
+              "it",
+              "itsm",
+              "qms"
+            ],
+            "example": "it"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "frequency",
+          "department"
+        ]
+      },
+      "UpdatePolicyTemplateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Information Security Policy"
+          },
+          "description": {
+            "type": "string",
+            "example": "Establishes information security practices"
+          },
+          "frequency": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "example": "annually"
+          },
+          "department": {
+            "type": "string",
+            "enum": [
+              "none",
+              "admin",
+              "gov",
+              "hr",
+              "it",
+              "itsm",
+              "qms"
+            ],
+            "example": "it"
+          }
+        }
+      },
+      "UpdatePolicyContentDto": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "object",
+            "description": "TipTap JSON content for the policy document"
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
+      "CreateRequirementDto": {
+        "type": "object",
+        "properties": {
+          "frameworkId": {
+            "type": "string",
+            "example": "frk_abc123"
+          },
+          "name": {
+            "type": "string",
+            "example": "CC1.1"
+          },
+          "identifier": {
+            "type": "string",
+            "example": "cc1-1"
+          },
+          "description": {
+            "type": "string",
+            "example": "Control environment requirements"
+          }
+        },
+        "required": [
+          "frameworkId",
+          "name",
+          "description"
+        ]
+      },
+      "UpdateRequirementDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateTaskTemplateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Task template name",
+            "example": "Monthly Security Review"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the task template",
+            "example": "Review and update security policies on a monthly basis"
+          },
+          "frequency": {
+            "type": "string",
+            "description": "Frequency of the task",
+            "enum": [
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "example": "monthly"
+          },
+          "department": {
+            "type": "string",
+            "description": "Department responsible for the task",
+            "enum": [
+              "none",
+              "admin",
+              "gov",
+              "hr",
+              "it",
+              "itsm",
+              "qms"
+            ],
+            "example": "it"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
       "UpdateTaskTemplateDto": {
         "type": "object",
         "properties": {
@@ -23121,6 +24334,15 @@
               "qms"
             ],
             "example": "it"
+          },
+          "automationStatus": {
+            "type": "string",
+            "description": "Automation status of the task",
+            "enum": [
+              "AUTOMATED",
+              "MANUAL"
+            ],
+            "example": "AUTOMATED"
           }
         }
       },

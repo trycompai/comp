@@ -21,6 +21,10 @@ import { EvidenceExportModule } from './tasks/evidence-export/evidence-export.mo
 import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
 import { TrustPortalModule } from './trust-portal/trust-portal.module';
+import { ControlTemplateModule } from './framework-editor/control-template/control-template.module';
+import { FrameworkEditorFrameworkModule } from './framework-editor/framework/framework.module';
+import { PolicyTemplateModule } from './framework-editor/policy-template/policy-template.module';
+import { RequirementModule } from './framework-editor/requirement/requirement.module';
 import { TaskTemplateModule } from './framework-editor/task-template/task-template.module';
 import { FindingTemplateModule } from './finding-template/finding-template.module';
 import { FindingsModule } from './findings/findings.module';
@@ -78,6 +82,10 @@ import { AdminOrganizationsModule } from './admin-organizations/admin-organizati
     CommentsModule,
     HealthModule,
     TrustPortalModule,
+    ControlTemplateModule,
+    FrameworkEditorFrameworkModule,
+    PolicyTemplateModule,
+    RequirementModule,
     TaskTemplateModule,
     FindingTemplateModule,
     FindingsModule,

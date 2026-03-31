@@ -1,4 +1,5 @@
 import { logger } from '@/vector-store/logger';
+import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import ExcelJS from 'exceljs';
@@ -200,20 +201,14 @@ export async function extractContentFromFile(
     );
   }
 
-  // For images and PDFs, use OpenAI vision API
-  const isImage = fileType.startsWith('image/');
+  // Handle PDFs using Claude's native multi-page PDF support
   const isPdf = fileType === 'application/pdf';
 
-  if (isImage || isPdf) {
-    const base64Data = fileData;
-    const mimeType = fileType;
-    const fileSizeMB = (
-      Buffer.from(fileData, 'base64').length /
-      (1024 * 1024)
-    ).toFixed(2);
+  if (isPdf) {
+    const fileSizeMB = (fileBuffer.length / (1024 * 1024)).toFixed(2);
 
-    logger.info('Extracting content from PDF/image using vision API', {
-      fileType: mimeType,
+    logger.info('Extracting content from PDF using Claude', {
+      fileType,
       fileSizeMB,
     });
 
@@ -221,18 +216,19 @@ export async function extractContentFromFile(
 
     try {
       const { text } = await generateText({
-        model: openai('gpt-4o-mini'), // Using gpt-4o-mini for better text extraction
+        model: anthropic('claude-sonnet-4-6'),
         messages: [
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: `Extract all text content from this document. Preserve the structure, formatting, and order of the content. Include all paragraphs, headings, lists, tables, and any other text elements. Return the extracted text in a clear, readable format.`,
+                text: 'Extract all text content from this document. Preserve the structure, formatting, and order of the content. Include all paragraphs, headings, lists, tables, and any other text elements. Return the extracted text in a clear, readable format.',
               },
               {
-                type: 'image',
-                image: `data:${mimeType};base64,${base64Data}`,
+                type: 'file',
+                data: fileData,
+                mediaType: 'application/pdf',
               },
             ],
           },
@@ -240,8 +236,8 @@ export async function extractContentFromFile(
       });
 
       const extractionTime = ((Date.now() - startTime) / 1000).toFixed(2);
-      logger.info('Content extracted from PDF/image', {
-        fileType: mimeType,
+      logger.info('Content extracted from PDF', {
+        fileType,
         extractedLength: text.length,
         extractionTimeSeconds: extractionTime,
       });
@@ -249,14 +245,69 @@ export async function extractContentFromFile(
       return text;
     } catch (error) {
       const extractionTime = ((Date.now() - startTime) / 1000).toFixed(2);
-      logger.error('Failed to extract content from PDF/image', {
-        fileType: mimeType,
+      logger.error('Failed to extract content from PDF', {
+        fileType,
         fileSizeMB,
         extractionTimeSeconds: extractionTime,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw new Error(
-        `Failed to extract content: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to extract PDF content: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+  }
+
+  // Handle images using OpenAI vision API
+  const isImage = fileType.startsWith('image/');
+
+  if (isImage) {
+    const fileSizeMB = (fileBuffer.length / (1024 * 1024)).toFixed(2);
+
+    logger.info('Extracting content from image using vision API', {
+      fileType,
+      fileSizeMB,
+    });
+
+    const startTime = Date.now();
+
+    try {
+      const { text } = await generateText({
+        model: openai('gpt-4o-mini'),
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Extract all text content from this image. Preserve the structure, formatting, and order of the content. Include all paragraphs, headings, lists, tables, and any other text elements. Return the extracted text in a clear, readable format.',
+              },
+              {
+                type: 'image',
+                image: `data:${fileType};base64,${fileData}`,
+              },
+            ],
+          },
+        ],
+      });
+
+      const extractionTime = ((Date.now() - startTime) / 1000).toFixed(2);
+      logger.info('Content extracted from image', {
+        fileType,
+        extractedLength: text.length,
+        extractionTimeSeconds: extractionTime,
+      });
+
+      return text;
+    } catch (error) {
+      const extractionTime = ((Date.now() - startTime) / 1000).toFixed(2);
+      logger.error('Failed to extract content from image', {
+        fileType,
+        fileSizeMB,
+        extractionTimeSeconds: extractionTime,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw new Error(
+        `Failed to extract image content: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }

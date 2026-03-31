@@ -20,11 +20,6 @@ vi.mock('@/components/sheets/create-policy-sheet', () => ({
   CreatePolicySheet: () => <div data-testid="create-policy-sheet" />,
 }));
 
-// Mock pdf-generator
-vi.mock('@/lib/pdf-generator', () => ({
-  downloadAllPolicies: vi.fn(),
-}));
-
 // Mock api client
 vi.mock('@/lib/api-client', () => ({
   api: { get: vi.fn() },

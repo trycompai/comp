@@ -1,15 +1,64 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db, Frequency, Departments } from '@trycompai/db';
+import { CreateTaskTemplateDto } from './dto/create-task-template.dto';
 import { UpdateTaskTemplateDto } from './dto/update-task-template.dto';
 
 @Injectable()
 export class TaskTemplateService {
   private readonly logger = new Logger(TaskTemplateService.name);
 
-  async findAll() {
+  async create(dto: CreateTaskTemplateDto, frameworkId?: string) {
+    const controlIds = frameworkId
+      ? await db.frameworkEditorControlTemplate
+          .findMany({
+            where: { requirements: { some: { frameworkId } } },
+            select: { id: true },
+          })
+          .then((cts) => cts.map((ct) => ({ id: ct.id })))
+      : [];
+
+    const taskTemplate = await db.frameworkEditorTaskTemplate.create({
+      data: {
+        name: dto.name,
+        description: dto.description ?? '',
+        frequency: dto.frequency ?? Frequency.monthly,
+        department: dto.department ?? Departments.none,
+        ...(controlIds.length > 0 && {
+          controlTemplates: { connect: controlIds },
+        }),
+      },
+    });
+
+    this.logger.log(
+      `Created framework editor task template: ${taskTemplate.name} (${taskTemplate.id})`,
+    );
+    return taskTemplate;
+  }
+
+  async findAll(frameworkId?: string) {
     try {
       const taskTemplates = await db.frameworkEditorTaskTemplate.findMany({
         orderBy: { name: 'asc' },
+        where: frameworkId
+          ? {
+              controlTemplates: {
+                some: { requirements: { some: { frameworkId } } },
+              },
+            }
+          : undefined,
+        include: {
+          controlTemplates: {
+            select: {
+              id: true,
+              name: true,
+              requirements: {
+                select: {
+                  framework: { select: { id: true, name: true } },
+                },
+              },
+            },
+          },
+        },
       });
 
       this.logger.log(

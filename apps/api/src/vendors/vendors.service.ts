@@ -280,7 +280,9 @@ export class VendorsService {
 
     const normalizedWebsite = normalizeWebsite(vendorWebsite);
     if (!normalizedWebsite) {
-      throw new Error('Vendor website is missing or invalid');
+      throw new BadRequestException(
+        'Vendor website is missing or invalid. Please add a website URL with http:// or https:// protocol before triggering an assessment.',
+      );
     }
 
     const handle = await tasks.trigger('vendor-risk-assessment-task', {
@@ -598,9 +600,13 @@ export class VendorsService {
   ) {
     try {
       // First check if the vendor exists in the organization
-      await this.findById(id, organizationId);
+      const existing = await this.findById(id, organizationId);
 
-      if (updateVendorDto.assigneeId) {
+      // Only validate assignee when it's actually changing
+      if (
+        updateVendorDto.assigneeId &&
+        updateVendorDto.assigneeId !== existing.assigneeId
+      ) {
         await this.validateAssigneeNotPlatformAdmin(updateVendorDto.assigneeId, organizationId);
       }
 

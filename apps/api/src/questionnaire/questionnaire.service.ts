@@ -2,6 +2,8 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { AnswerQuestionResult } from '@/trigger/questionnaire/answer-question';
 import { answerQuestion } from '@/trigger/questionnaire/answer-question';
 import { generateAnswerWithRAGBatch } from '@/trigger/questionnaire/answer-question-helpers';
+import { tasks } from '@trigger.dev/sdk';
+import type { parseQuestionnaireTask } from '@/trigger/questionnaire/parse-questionnaire';
 import { ParseQuestionnaireDto } from './dto/parse-questionnaire.dto';
 import {
   ExportQuestionnaireDto,
@@ -211,7 +213,8 @@ export class QuestionnaireService {
 
   async uploadAndParse(
     dto: UploadAndParseDto,
-  ): Promise<{ questionnaireId: string; totalQuestions: number }> {
+  ): Promise<{ runId: string; publicAccessToken: string }> {
+    // Upload file to S3 first
     const uploadInfo = await uploadQuestionnaireFile({
       organizationId: dto.organizationId,
       fileName: dto.fileName,
@@ -220,38 +223,32 @@ export class QuestionnaireService {
       source: dto.source || 'internal',
     });
 
-    // Use AI-powered extraction (faster, handles all file formats)
-    const questionsAndAnswers = await extractQuestionsWithAI(
-      dto.fileData,
-      dto.fileType,
-      this.contentLogger,
-    );
-
-    const questionnaireId = await persistQuestionnaireResult(
-      {
-        organizationId: dto.organizationId,
-        fileName: dto.fileName,
-        fileType: dto.fileType,
-        fileSize:
-          uploadInfo?.fileSize ?? Buffer.from(dto.fileData, 'base64').length,
-        s3Key: uploadInfo?.s3Key ?? null,
-        questionsAndAnswers: questionsAndAnswers.map((qa) => ({
-          question: qa.question,
-          answer: null,
-          sources: undefined,
-        })),
-        source: dto.source || 'internal',
-      },
-      this.storageLogger,
-    );
-
-    if (!questionnaireId) {
-      throw new Error('Failed to save questionnaire');
+    if (!uploadInfo) {
+      throw new Error('Failed to upload questionnaire file to S3');
     }
 
+    // Trigger async processing via Trigger.dev
+    const handle = await tasks.trigger<typeof parseQuestionnaireTask>(
+      'parse-questionnaire',
+      {
+        inputType: 's3' as const,
+        organizationId: dto.organizationId,
+        s3Key: uploadInfo.s3Key,
+        fileName: dto.fileName,
+        fileType: dto.fileType,
+        fileSize: uploadInfo.fileSize,
+      },
+    );
+
+    this.logger.log('Triggered async questionnaire parsing', {
+      runId: handle.id,
+      s3Key: uploadInfo.s3Key,
+      fileName: dto.fileName,
+    });
+
     return {
-      questionnaireId,
-      totalQuestions: questionsAndAnswers.length,
+      runId: handle.id,
+      publicAccessToken: handle.publicAccessToken,
     };
   }
 
