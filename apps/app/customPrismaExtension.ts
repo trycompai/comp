@@ -123,7 +123,7 @@ export class PrismaExtension implements BuildExtension {
     // Patch the schema to use prisma-client-js (CJS-compatible, populates @prisma/client)
     // The published schema uses prisma-client provider which generates .ts files — not suitable for Node.js runtime
     commands.push(
-      `sed -i 's/prisma-client/prisma-client-js/' ./prisma/schema.prisma && sed -i '/output/d' ./prisma/schema.prisma`,
+      `sed -i 's/provider.*=.*"prisma-client"/provider = "prisma-client-js"/' ./prisma/schema.prisma && sed -i '/output/d' ./prisma/schema.prisma`,
     );
 
     // Add prisma generate command to generate the client from the patched schema
@@ -199,7 +199,7 @@ export class PrismaExtension implements BuildExtension {
     const { readFileSync, writeFileSync } = await import('node:fs');
     let schemaContent = readFileSync(schemaDestinationPath, 'utf8');
     schemaContent = schemaContent
-      .replace(/prisma-client/g, 'prisma-client-js')
+      .replace(/provider\s*=\s*"prisma-client"/g, 'provider = "prisma-client-js"')
       .replace(/\s*output\s*=\s*"[^"]*"\n?/g, '\n');
     writeFileSync(schemaDestinationPath, schemaContent);
 
