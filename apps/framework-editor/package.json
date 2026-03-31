@@ -4,7 +4,7 @@
         "@hookform/resolvers": "^5.2.2",
         "@noble/ciphers": "^1.1.0",
         "@noble/hashes": "^1.6.1",
-        "@prisma/client": "6.18.0",
+        "@prisma/client": "7.6.0",
         "@tailwindcss/postcss": "^4.1.17",
         "@tanstack/react-table": "^8.21.3",
         "@tanstack/react-virtual": "^3.13.8",
@@ -34,7 +34,7 @@
         "@types/react-dom": "^19.1.1",
         "autoprefixer": "^10.4.21",
         "postcss": "^8.5.4",
-        "prisma": "6.18.0",
+        "prisma": "7.6.0",
         "tailwindcss": "^4.1.8",
         "typescript": "^5.8.3"
     },
