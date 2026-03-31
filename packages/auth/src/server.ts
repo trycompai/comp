@@ -1,11 +1,20 @@
-import type { PrismaClient } from '@prisma/client';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { bearer, emailOTP, jwt, magicLink, multiSession, organization } from 'better-auth/plugins';
 import { ac, allRoles } from './permissions';
 
-export interface CreateAuthServerOptions {
-  db: PrismaClient;
+interface PrismaLike {
+  $connect(): Promise<void>;
+  $disconnect(): Promise<void>;
+  organization: {
+    findFirst(args: unknown): Promise<{ id: string; name: string } | null>;
+    [key: string]: unknown;
+  };
+  [model: string]: unknown;
+}
+
+export interface CreateAuthServerOptions<TDb extends PrismaLike = PrismaLike> {
+  db: TDb;
   secret: string;
   baseURL: string;
   trustedOrigins: string[];
