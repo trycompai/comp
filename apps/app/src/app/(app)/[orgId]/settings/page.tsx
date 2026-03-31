@@ -5,7 +5,7 @@ import { UpdateOrganizationLogo } from '@/components/forms/organization/update-o
 import { UpdateOrganizationName } from '@/components/forms/organization/update-organization-name';
 import { UpdateOrganizationWebsite } from '@/components/forms/organization/update-organization-website';
 import { serverApi } from '@/lib/api-server';
-import { db } from '@db';
+import { db } from '@db/server';
 import type { Metadata } from 'next';
 
 export default async function OrganizationSettings({

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { db } from '@db';
+import { db } from '@db/server';
 import { StatusChart } from './status-chart';
 interface Props {
   organizationId: string;

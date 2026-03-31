@@ -21,7 +21,7 @@ vi.mock('@db', () => ({
 // Import after mocks are declared
 import { DELETE } from './route';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 
 const mockGetSession = vi.mocked(auth.api.getSession);
 const mockMemberFindFirst = vi.mocked((db as any).member.findFirst);

@@ -1,2 +1,1 @@
-export * from '../src/generated/prisma/client';
-export { db } from './client';
+export * from '../src/generated/prisma/browser';

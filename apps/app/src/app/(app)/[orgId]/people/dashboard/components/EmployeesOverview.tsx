@@ -2,7 +2,7 @@ import { filterComplianceMembers } from '@/lib/compliance';
 import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
 import { auth } from '@/utils/auth';
 import type { Member, Organization, Policy, User } from '@db';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { EmployeeCompletionChart } from './EmployeeCompletionChart';
 
