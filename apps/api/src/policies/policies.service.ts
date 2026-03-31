@@ -1187,16 +1187,16 @@ export class PoliciesService {
       throw new NotFoundException('Organization not found');
     }
 
-    // Get all published policies with currentVersion
+    // Get all non-archived policies, prioritizing published > needs_review > draft
     const policies = await db.policy.findMany({
       where: {
         organizationId,
-        status: 'published',
         isArchived: false,
       },
       select: {
         id: true,
         name: true,
+        status: true,
         content: true,
         pdfUrl: true,
         currentVersion: {
@@ -1210,8 +1210,18 @@ export class PoliciesService {
     });
 
     if (policies.length === 0) {
-      throw new NotFoundException('No published policies available');
+      throw new NotFoundException('No policies available');
     }
+
+    // Sort by status priority: published first, then needs_review, then draft
+    const statusPriority: Record<string, number> = {
+      published: 0,
+      needs_review: 1,
+      draft: 2,
+    };
+    policies.sort(
+      (a, b) => (statusPriority[a.status] ?? 3) - (statusPriority[b.status] ?? 3),
+    );
 
     const mergedPdf = await PDFDocument.create();
     const organizationName = organization.name || 'Organization';
@@ -1231,6 +1241,7 @@ export class PoliciesService {
     };
 
     // Helper to get effective content and pdfUrl (version first, fallback to policy)
+    // Matches single policy download logic
     const getEffectiveData = (policy: (typeof policies)[0]) => {
       const content = policy.currentVersion?.content ?? policy.content;
       const pdfUrl = policy.currentVersion?.pdfUrl ?? policy.pdfUrl;

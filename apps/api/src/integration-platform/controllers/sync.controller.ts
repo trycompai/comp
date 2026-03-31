@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Param,
   Query,
   Body,
   HttpException,
@@ -19,22 +20,30 @@ import {
 } from '../../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../../auth/types';
 import { db } from '@db';
+import type { Prisma } from '@prisma/client';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import {
   getManifest,
+  registry,
   matchesSyncFilterTerms,
   parseSyncFilterTerms,
+  interpretDeclarativeSync,
   type OAuthConfig,
   type RampUser,
   type RampUserStatus,
   type RampUsersResponse,
   type RoleMappingEntry,
+  type SyncDefinition,
 } from '@trycompai/integration-platform';
 import { RampRoleMappingService } from '../services/ramp-role-mapping.service';
 import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
 import { RampApiService } from '../services/ramp-api.service';
+import { GenericEmployeeSyncService } from '../services/generic-employee-sync.service';
+import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
+import { CheckRunRepository } from '../repositories/check-run.repository';
+import { createCheckContext } from '@trycompai/integration-platform';
 import { filterUsersByOrgUnits } from './sync-ou-filter';
 
 interface GoogleWorkspaceUser {
@@ -74,6 +83,9 @@ export class SyncController {
     private readonly rampRoleMappingService: RampRoleMappingService,
     private readonly syncLoggerService: IntegrationSyncLoggerService,
     private readonly rampApiService: RampApiService,
+    private readonly genericSyncService: GenericEmployeeSyncService,
+    private readonly dynamicIntegrationRepo: DynamicIntegrationRepository,
+    private readonly checkRunRepo: CheckRunRepository,
   ) {}
 
   /**
@@ -2067,12 +2079,10 @@ export class SyncController {
 
     // Validate provider if set
     if (provider) {
-      const validProviders = [
-        'google-workspace',
-        'rippling',
-        'jumpcloud',
-        'ramp',
-      ];
+      const allManifests = registry.getActiveManifests();
+      const validProviders = allManifests
+        .filter((m) => m.capabilities?.includes('sync'))
+        .map((m) => m.id);
       if (!validProviders.includes(provider)) {
         throw new HttpException(
           `Invalid provider. Must be one of: ${validProviders.join(', ')}`,
@@ -2107,5 +2117,281 @@ export class SyncController {
       success: true,
       provider,
     };
+  }
+
+  // ============================================================================
+  // Dynamic sync endpoints (for dynamic integrations with syncDefinition)
+  // ============================================================================
+
+  /**
+   * Get all providers that support employee sync (both code-based and dynamic).
+   * Used by the frontend to render the provider selector dynamically.
+   */
+  @Get('available-providers')
+  @RequirePermission('integration', 'read')
+  async getAvailableSyncProviders(
+    @OrganizationId() organizationId: string,
+  ) {
+    const allManifests = registry.getActiveManifests();
+    const syncProviders = allManifests.filter((m) =>
+      m.capabilities?.includes('sync'),
+    );
+
+    const results = await Promise.all(
+      syncProviders.map(async (m) => {
+        const connection = await db.integrationConnection.findFirst({
+          where: {
+            organizationId,
+            status: 'active',
+            provider: { slug: m.id },
+          },
+          select: {
+            id: true,
+            status: true,
+            lastSyncAt: true,
+            nextSyncAt: true,
+          },
+        });
+        return {
+          slug: m.id,
+          name: m.name,
+          logoUrl: m.logoUrl,
+          connected: !!connection,
+          connectionId: connection?.id ?? null,
+          lastSyncAt: connection?.lastSyncAt?.toISOString() ?? null,
+          nextSyncAt: connection?.nextSyncAt?.toISOString() ?? null,
+        };
+      }),
+    );
+
+    return { providers: results };
+  }
+
+  /**
+   * Generic sync endpoint for dynamic integrations.
+   * Runs the syncDefinition (DSL/code steps) and processes the resulting employees.
+   *
+   * NOTE: This route uses :providerSlug param. NestJS matches routes in order,
+   * so the hardcoded routes above (google-workspace/employees, etc.) take priority.
+   * This only matches for slugs that don't match the 4 built-in providers.
+   */
+  @Post('dynamic/:providerSlug/employees')
+  @RequirePermission('integration', 'update')
+  async syncDynamicProviderEmployees(
+    @OrganizationId() organizationId: string,
+    @Param('providerSlug') providerSlug: string,
+    @Query('connectionId') connectionId: string,
+  ) {
+    if (!connectionId) {
+      throw new HttpException(
+        'connectionId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    this.logger.log(
+      `[DynamicSync] Starting sync for provider="${providerSlug}" connection="${connectionId}" org="${organizationId}"`,
+    );
+
+    // 1. Validate connection
+    const connection = await this.connectionRepository.findById(connectionId);
+    if (!connection || connection.organizationId !== organizationId) {
+      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    // 2. Get manifest from registry — must have 'sync' capability
+    const manifest = getManifest(providerSlug);
+    if (!manifest) {
+      throw new HttpException(
+        `Integration "${providerSlug}" not found`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    if (!manifest.capabilities?.includes('sync')) {
+      throw new HttpException(
+        `Integration "${providerSlug}" does not support sync`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // 3. Get dynamic integration — must have syncDefinition
+    const dynamicIntegration =
+      await this.dynamicIntegrationRepo.findBySlug(providerSlug);
+    if (!dynamicIntegration?.syncDefinition) {
+      throw new HttpException(
+        `Integration "${providerSlug}" has no sync definition`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // 4. Get & refresh credentials
+    let credentials =
+      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+    if (!credentials) {
+      throw new HttpException(
+        'No valid credentials found. Please reconnect the integration.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    // Try to refresh OAuth token if applicable
+    if (manifest.auth.type === 'oauth2' && credentials.refresh_token) {
+      const oauthConfig = manifest.auth.config as OAuthConfig;
+      try {
+        const oauthCredentials =
+          await this.oauthCredentialsService.getCredentials(
+            providerSlug,
+            organizationId,
+          );
+        if (oauthCredentials) {
+          const newToken =
+            await this.credentialVaultService.refreshOAuthTokens(
+              connectionId,
+              {
+                tokenUrl: oauthConfig.tokenUrl,
+                refreshUrl: oauthConfig.refreshUrl,
+                clientId: oauthCredentials.clientId,
+                clientSecret: oauthCredentials.clientSecret,
+                clientAuthMethod: oauthConfig.clientAuthMethod,
+              },
+            );
+          if (newToken) {
+            credentials =
+              await this.credentialVaultService.getDecryptedCredentials(
+                connectionId,
+              );
+          }
+        }
+      } catch (refreshError) {
+        this.logger.warn(
+          `Token refresh failed for ${providerSlug}, trying with existing token: ${refreshError}`,
+        );
+      }
+    }
+
+    const accessToken = credentials?.access_token;
+    this.logger.log(
+      `[DynamicSync] Credentials ready for "${providerSlug}" (auth=${manifest.auth.type}, hasToken=${!!accessToken})`,
+    );
+
+    // 5. Create a sync run record (same table as check runs — agent reads both the same way)
+    const syncRun = await this.checkRunRepo.create({
+      connectionId,
+      checkId: `sync:${providerSlug}`,
+      checkName: `Employee Sync: ${manifest.name}`,
+    });
+
+    // 6. Create CheckContext with logging that captures to the run
+    const { ctx, getResults } = createCheckContext({
+      manifest,
+      accessToken: typeof accessToken === 'string' ? accessToken : undefined,
+      credentials: (credentials ?? {}) as Record<string, string>,
+      variables:
+        ((connection.variables as Record<string, unknown>) ?? {}) as Record<string, string | boolean | number | string[]>,
+      connectionId,
+      organizationId,
+      metadata:
+        (connection.metadata as Record<string, unknown>) ?? {},
+      logger: {
+        info: (msg, data) => this.logger.log(msg, data),
+        warn: (msg, data) => this.logger.warn(msg, data),
+        error: (msg, data) => this.logger.error(msg, data),
+      },
+    });
+
+    try {
+      // 7. Run sync definition → get SyncEmployee[]
+      const syncDefinition =
+        dynamicIntegration.syncDefinition as unknown as SyncDefinition;
+      const syncRunner = interpretDeclarativeSync({
+        definition: syncDefinition,
+      });
+
+      const employees = await syncRunner.run(ctx);
+
+      this.logger.log(
+        `[DynamicSync] Sync definition produced ${employees.length} employees for "${providerSlug}"`,
+      );
+
+      // 8. Process employees via generic service
+      const result = await this.genericSyncService.processEmployees({
+        organizationId,
+        employees,
+        options: {
+          providerName: manifest.name,
+        },
+      });
+
+      // 9. Persist execution logs + results to the run record
+      const executionLogs = getResults().logs.map((log) => ({
+        level: log.level,
+        message: log.message,
+        ...(log.data ? { data: log.data } : {}),
+        timestamp: log.timestamp.toISOString(),
+      }));
+
+      const startTime = syncRun.startedAt?.getTime() || Date.now();
+      await this.checkRunRepo.complete(syncRun.id, {
+        status: result.errors > 0 ? 'failed' : 'success',
+        durationMs: Date.now() - startTime,
+        totalChecked: result.totalFound,
+        passedCount: result.imported + result.reactivated,
+        failedCount: result.errors,
+        logs: executionLogs.length > 0
+          ? (executionLogs as unknown as Prisma.InputJsonValue)
+          : undefined,
+      });
+
+      this.logger.log(
+        `[DynamicSync] Sync complete for "${providerSlug}": imported=${result.imported} skipped=${result.skipped} deactivated=${result.deactivated} reactivated=${result.reactivated} errors=${result.errors}`,
+      );
+
+      return {
+        ...result,
+        syncRunId: syncRun.id,
+      };
+    } catch (error) {
+      // Persist error + whatever logs were captured before the failure
+      const executionLogs = getResults().logs.map((log) => ({
+        level: log.level,
+        message: log.message,
+        ...(log.data ? { data: log.data } : {}),
+        timestamp: log.timestamp.toISOString(),
+      }));
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      const startTime = syncRun.startedAt?.getTime() || Date.now();
+      await this.checkRunRepo.complete(syncRun.id, {
+        status: 'failed',
+        durationMs: Date.now() - startTime,
+        totalChecked: 0,
+        passedCount: 0,
+        failedCount: 0,
+        errorMessage,
+        logs: [
+          ...executionLogs,
+          {
+            level: 'error',
+            message: `Sync execution failed: ${errorMessage}`,
+            ...(errorStack ? { data: { stack: errorStack } } : {}),
+            timestamp: new Date().toISOString(),
+          },
+        ] as unknown as Prisma.InputJsonValue,
+      });
+
+      this.logger.error(
+        `[DynamicSync] Sync failed for "${providerSlug}": ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        {
+          message: `Sync execution failed: ${errorMessage}`,
+          syncRunId: syncRun.id,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

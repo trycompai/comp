@@ -5,9 +5,10 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 
-import type { EmployeeSyncConnectionsData } from '../data/queries';
+import type { EmployeeSyncConnectionsData, SyncProviderInfo } from '../data/queries';
 
-type SyncProvider = 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp';
+type BuiltInSyncProvider = 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp';
+type SyncProvider = string;
 
 interface SyncResult {
   success: boolean;
@@ -68,7 +69,16 @@ interface UseEmployeeSyncReturn {
   handleRoleMappingClose: () => void;
   handleRoleMappingSaved: () => void;
   openRoleMappingEditor: () => Promise<void>;
+  /** All available sync providers (built-in + dynamic) */
+  availableProviders: SyncProviderInfo[];
 }
+
+const BUILT_IN_PROVIDERS = new Set<string>([
+  'google-workspace',
+  'rippling',
+  'jumpcloud',
+  'ramp',
+]);
 
 const PROVIDER_CONFIG = {
   'google-workspace': {
@@ -125,7 +135,10 @@ export const useEmployeeSync = ({
       mutate({ ...data!, selectedProvider: provider }, false);
 
       if (provider) {
-        toast.success(`${PROVIDER_CONFIG[provider].name} set as your employee sync provider`);
+        const name = provider in PROVIDER_CONFIG
+          ? PROVIDER_CONFIG[provider as BuiltInSyncProvider].name
+          : (availableProviders.find((p) => p.slug === provider)?.name ?? provider);
+        toast.success(`${name} set as your employee sync provider`);
       }
     } catch (error) {
       toast.error('Failed to set sync provider');
@@ -133,23 +146,36 @@ export const useEmployeeSync = ({
     }
   };
 
+  const availableProviders = data?.availableProviders ?? [];
+
+  const getConnectionIdForProvider = (provider: SyncProvider): string | null => {
+    if (provider === 'google-workspace') return googleWorkspaceConnectionId;
+    if (provider === 'rippling') return ripplingConnectionId;
+    if (provider === 'jumpcloud') return jumpcloudConnectionId;
+    if (provider === 'ramp') return rampConnectionId;
+    // Dynamic provider — look up from availableProviders
+    const dynProvider = availableProviders.find((p) => p.slug === provider);
+    return dynProvider?.connectionId ?? null;
+  };
+
+  const getSyncUrl = (provider: SyncProvider, connectionId: string): string => {
+    if (BUILT_IN_PROVIDERS.has(provider)) {
+      return `/v1/integrations/sync/${provider}/employees?organizationId=${organizationId}&connectionId=${connectionId}`;
+    }
+    return `/v1/integrations/sync/dynamic/${provider}/employees?organizationId=${organizationId}&connectionId=${connectionId}`;
+  };
+
   const syncEmployees = async (provider: SyncProvider): Promise<SyncResult | null> => {
-    const connectionId =
-      provider === 'google-workspace'
-        ? googleWorkspaceConnectionId
-        : provider === 'rippling'
-          ? ripplingConnectionId
-          : provider === 'jumpcloud'
-            ? jumpcloudConnectionId
-            : rampConnectionId;
+    const connectionId = getConnectionIdForProvider(provider);
 
     if (!connectionId) {
-      toast.error(`${PROVIDER_CONFIG[provider].name} is not connected`);
+      const providerName = getProviderName(provider);
+      toast.error(`${providerName} is not connected`);
       return null;
     }
 
     setIsSyncing(true);
-    const config = PROVIDER_CONFIG[provider];
+    const providerName = getProviderName(provider);
 
     try {
       // Set as sync provider if not already
@@ -158,7 +184,7 @@ export const useEmployeeSync = ({
       }
 
       const response = await apiClient.post<SyncResult>(
-        `/v1/integrations/sync/${provider}/employees?organizationId=${organizationId}&connectionId=${connectionId}`,
+        getSyncUrl(provider, connectionId),
       );
 
       // Handle role mapping requirement (Ramp only)
@@ -205,7 +231,7 @@ export const useEmployeeSync = ({
         }
         if (deactivated > 0) {
           toast.info(
-            `Deactivated ${deactivated} employee${deactivated > 1 ? 's' : ''} (no longer in ${config.name})`,
+            `Deactivated ${deactivated} employee${deactivated > 1 ? 's' : ''} (no longer in ${providerName})`,
           );
         }
         if (imported === 0 && updated === 0 && reactivated === 0 && deactivated === 0 && skipped > 0) {
@@ -224,15 +250,27 @@ export const useEmployeeSync = ({
 
       return null;
     } catch (error) {
-      toast.error(`Failed to sync employees from ${config.name}`);
+      toast.error(`Failed to sync employees from ${providerName}`);
       return null;
     } finally {
       setIsSyncing(false);
     }
   };
 
-  const getProviderName = (provider: SyncProvider) => PROVIDER_CONFIG[provider].shortName;
-  const getProviderLogo = (provider: SyncProvider) => PROVIDER_CONFIG[provider].logo;
+  const getProviderName = (provider: SyncProvider): string => {
+    if (provider in PROVIDER_CONFIG) {
+      return PROVIDER_CONFIG[provider as BuiltInSyncProvider].shortName;
+    }
+    const dynProvider = availableProviders.find((p) => p.slug === provider);
+    return dynProvider?.name ?? provider;
+  };
+  const getProviderLogo = (provider: SyncProvider): string => {
+    if (provider in PROVIDER_CONFIG) {
+      return PROVIDER_CONFIG[provider as BuiltInSyncProvider].logo;
+    }
+    const dynProvider = availableProviders.find((p) => p.slug === provider);
+    return dynProvider?.logoUrl ?? '';
+  };
 
   const openRoleMappingEditor = async () => {
     if (!rampConnectionId) {
@@ -285,6 +323,16 @@ export const useEmployeeSync = ({
     }
   };
 
+  const hasAnyBuiltInConnection = !!(
+    googleWorkspaceConnectionId ||
+    ripplingConnectionId ||
+    jumpcloudConnectionId ||
+    rampConnectionId
+  );
+  const hasDynamicConnection = availableProviders.some(
+    (p) => p.connected && !BUILT_IN_PROVIDERS.has(p.slug),
+  );
+
   return {
     googleWorkspaceConnectionId,
     ripplingConnectionId,
@@ -294,12 +342,7 @@ export const useEmployeeSync = ({
     isSyncing,
     syncEmployees,
     setSyncProvider,
-    hasAnyConnection: !!(
-      googleWorkspaceConnectionId ||
-      ripplingConnectionId ||
-      jumpcloudConnectionId ||
-      rampConnectionId
-    ),
+    hasAnyConnection: hasAnyBuiltInConnection || hasDynamicConnection,
     getProviderName,
     getProviderLogo,
     showRoleMappingSheet,
@@ -307,5 +350,6 @@ export const useEmployeeSync = ({
     handleRoleMappingClose,
     handleRoleMappingSaved,
     openRoleMappingEditor,
+    availableProviders,
   };
 };

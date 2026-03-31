@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import type { Prisma } from '@prisma/client';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -271,7 +272,18 @@ export class ChecksController {
         await this.checkRunRepository.addResults(resultsToStore);
       }
 
-      // Update the check run status
+      // Collect execution logs from all check results
+      const allLogs = result.results.flatMap((checkResult) =>
+        checkResult.result.logs.map((log) => ({
+          check: checkResult.checkName,
+          level: log.level,
+          message: log.message,
+          ...(log.data ? { data: log.data } : {}),
+          timestamp: log.timestamp.toISOString(),
+        })),
+      );
+
+      // Update the check run status with logs
       const startTime = checkRun.startedAt?.getTime() || Date.now();
       await this.checkRunRepository.complete(checkRun.id, {
         status: result.totalFindings > 0 ? 'failed' : 'success',
@@ -279,6 +291,9 @@ export class ChecksController {
         totalChecked: result.results.length,
         passedCount: result.totalPassing,
         failedCount: result.totalFindings,
+        logs: allLogs.length > 0
+          ? (allLogs as unknown as Prisma.InputJsonValue)
+          : undefined,
       });
 
       return {
@@ -288,20 +303,29 @@ export class ChecksController {
         ...result,
       };
     } catch (error) {
-      // Mark the check run as failed
+      // Mark the check run as failed with error details
       const startTime = checkRun.startedAt?.getTime() || Date.now();
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
       await this.checkRunRepository.complete(checkRun.id, {
         status: 'failed',
         durationMs: Date.now() - startTime,
         totalChecked: 0,
         passedCount: 0,
         failedCount: 0,
-        errorMessage: error instanceof Error ? error.message : String(error),
+        errorMessage,
+        logs: [{
+          check: body.checkId || 'all',
+          level: 'error',
+          message: errorMessage,
+          ...(errorStack ? { data: { stack: errorStack } } : {}),
+          timestamp: new Date().toISOString(),
+        }] as unknown as Prisma.InputJsonValue,
       });
 
       this.logger.error(`Check execution failed: ${error}`);
       throw new HttpException(
-        `Check execution failed: ${error instanceof Error ? error.message : String(error)}`,
+        `Check execution failed: ${errorMessage}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

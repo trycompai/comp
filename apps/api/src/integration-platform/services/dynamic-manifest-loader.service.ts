@@ -82,6 +82,11 @@ export class DynamicManifestLoaderService implements OnModuleInit {
       this.convertCheck(check, integration.slug),
     );
 
+    // Collect manifest-level variables from syncDefinition (if present)
+    // These appear in the customer configuration UI (ManageIntegrationDialog)
+    const syncDef = integration.syncDefinition as Record<string, unknown> | null;
+    const syncVariables = syncDef?.variables as CheckVariable[] | undefined;
+
     return {
       id: integration.slug,
       name: integration.name,
@@ -94,6 +99,7 @@ export class DynamicManifestLoaderService implements OnModuleInit {
       defaultHeaders: (integration.defaultHeaders as Record<string, string>) ?? undefined,
       capabilities: (integration.capabilities as unknown as IntegrationCapability[]) ?? ['checks'],
       supportsMultipleConnections: integration.supportsMultipleConnections,
+      variables: syncVariables && syncVariables.length > 0 ? syncVariables : undefined,
       checks,
       isActive: integration.isActive,
     };

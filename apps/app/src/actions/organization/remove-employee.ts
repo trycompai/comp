@@ -1,5 +1,6 @@
 'use server';
 
+import { serverApi } from '@/lib/api-server';
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
@@ -14,7 +15,7 @@ export const removeEmployeeRoleOrMember = authActionClient
   .metadata({
     name: 'remove-employee-role-or-member',
     track: {
-      event: 'remove_employee', // Changed event name
+      event: 'remove_employee',
       channel: 'organization',
     },
   })
@@ -37,22 +38,7 @@ export const removeEmployeeRoleOrMember = authActionClient
       const { memberId } = parsedInput;
 
       try {
-        // 1. Permission Check: Ensure current user is admin or owner
-        const currentUserMember = await db.member.findFirst({
-          where: {
-            organizationId: organizationId,
-            userId: currentUserId,
-          },
-        });
-
-        if (!currentUserMember || !['admin', 'owner'].includes(currentUserMember.role)) {
-          return {
-            success: false,
-            error: 'Permission denied: Only admins or owners can remove employees.',
-          };
-        }
-
-        // 2. Fetch Target Member
+        // Fetch target member to determine action
         const targetMember = await db.member.findFirst({
           where: {
             id: memberId,
@@ -67,8 +53,7 @@ export const removeEmployeeRoleOrMember = authActionClient
           };
         }
 
-        // 3. Check if target has 'employee' or 'contractor' role
-        const roles = targetMember.role.split(',').filter(Boolean); // Handle empty strings/commas
+        const roles = targetMember.role.split(',').filter(Boolean);
         if (!roles.includes('employee') && !roles.includes('contractor')) {
           return {
             success: false,
@@ -76,47 +61,37 @@ export const removeEmployeeRoleOrMember = authActionClient
           };
         }
 
-        // 4. Logic: Remove role or delete member
         if (roles.length === 1 && (roles[0] === 'employee' || roles[0] === 'contractor')) {
-          // Only has employee or contractor role - delete member fully
+          // Only has employee/contractor role — deactivate via API
+          // The API handles session cleanup, assignment clearing, and notifications
+          const result = await serverApi.delete(`/v1/people/${memberId}`);
 
-          // Cannot remove owner (shouldn't happen if only role is employee, but safety check)
-          if (targetMember.role === 'owner') {
+          if (result.error) {
             return {
               success: false,
-              error: 'Cannot remove the organization owner.',
-            };
-          }
-          // Cannot remove self
-          if (targetMember.userId === currentUserId) {
-            return {
-              success: false,
-              error: 'You cannot remove yourself.',
+              error: result.error,
             };
           }
 
-          await db.$transaction([
-            db.member.delete({ where: { id: memberId } }),
-            db.session.deleteMany({
-              where: { userId: targetMember.userId },
-            }),
-          ]);
-
-          // Revalidate
           revalidatePath(`/${organizationId}/people/all`);
           revalidateTag(`user_${currentUserId}`, 'max');
 
           return { success: true, data: { removed: true } };
         } else {
-          // Has other roles - just remove 'employee' role
+          // Has other roles — just remove the employee role via API
           const updatedRoles = roles.filter((role) => role !== 'employee').join(',');
 
-          await db.member.update({
-            where: { id: memberId },
-            data: { role: updatedRoles },
+          const result = await serverApi.patch(`/v1/people/${memberId}`, {
+            role: updatedRoles,
           });
 
-          // Revalidate
+          if (result.error) {
+            return {
+              success: false,
+              error: result.error,
+            };
+          }
+
           revalidatePath(`/${organizationId}/people/all`);
           revalidateTag(`user_${currentUserId}`, 'max');
 

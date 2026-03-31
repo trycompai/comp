@@ -46,6 +46,7 @@ async function sendTaskStatusChangeEmails(params: {
         where: {
           organizationId,
           deactivated: false,
+          user: { role: { not: 'admin' } },
         },
         select: {
           role: true,
@@ -113,6 +114,7 @@ async function sendTaskStatusChangeEmails(params: {
           db,
           recipient.email,
           'taskAssignments',
+          organizationId,
         );
 
         if (isUnsubscribed) {

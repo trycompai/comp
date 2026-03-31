@@ -1,3 +1,77 @@
+## [3.13.1](https://github.com/trycompai/comp/compare/v3.13.0...v3.13.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* **policies:** include all non-archived policies in download-all bundle ([908879f](https://github.com/trycompai/comp/commit/908879f0832a578ece056205a03c390f584acb1d))
+
+# [3.13.0](https://github.com/trycompai/comp/compare/v3.12.2...v3.13.0) (2026-03-30)
+
+
+### Bug Fixes
+
+* fix error with policy rendering ([e9cd567](https://github.com/trycompai/comp/commit/e9cd5673a2605ab09182a76d1d4217d8b6b4a4dd))
+* **integration-platform:** move buildHeaders inside request lambda for token refresh ([4349f50](https://github.com/trycompai/comp/commit/4349f5069d6bb55a44eba5791336abcc26ccf002))
+* **policy-editor:** enhance permission handling during loading state ([089ceb7](https://github.com/trycompai/comp/commit/089ceb715f59f9c04e3e206d8e587b6b408f1918))
+* **policy-editor:** simplify permission handling in PolicyEditorWrapper ([#2400](https://github.com/trycompai/comp/issues/2400)) ([e4fb01a](https://github.com/trycompai/comp/commit/e4fb01a1be682e8f47ca9fafcf8c42594455af5c))
+
+
+### Features
+
+* **integration-platform:** add bodyEncoding option to fetch step ([22759b8](https://github.com/trycompai/comp/commit/22759b8d3243d915eb9629e0747a749eca4eebf7))
+
+## [3.12.2](https://github.com/trycompai/comp/compare/v3.12.1...v3.12.2) (2026-03-30)
+
+
+### Bug Fixes
+
+* **auth:** use better-auth APIs instead of direct DB session operations ([17378d9](https://github.com/trycompai/comp/commit/17378d95e7e9c5b71e011dac4d681e2442196cf2))
+* skip audit log for chat history and expose task templates to ui ([9baf09c](https://github.com/trycompai/comp/commit/9baf09c1e648960f7c38495a751aab07436ae4d7))
+
+## [3.12.1](https://github.com/trycompai/comp/compare/v3.12.0...v3.12.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* upload attachments stuck loading ([7dc6bf9](https://github.com/trycompai/comp/commit/7dc6bf9a9da1cc231e59001a4569dff81f1f7b10))
+
+# [3.12.0](https://github.com/trycompai/comp/compare/v3.11.5...v3.12.0) (2026-03-30)
+
+
+### Bug Fixes
+
+* **integration-platform:** clear stale syncDefinition on upsert, deduplicate VariableSchema ([ebfa25a](https://github.com/trycompai/comp/commit/ebfa25a08be22b5a71576b78ec4a787d62e583b6))
+* **integration-platform:** persist syncDefinition to database ([6f08b6b](https://github.com/trycompai/comp/commit/6f08b6b5242e0eadbd5e6422f2dc3cf48d2a6c3a))
+* **integration-platform:** remove redundant per-check re-validation in validate endpoint ([b116616](https://github.com/trycompai/comp/commit/b116616e8f8e72aefd6b7ddcd940e1dba7aca0b4))
+* **integration-platform:** validate syncDefinition before storing, fix success flag ([4b007ff](https://github.com/trycompai/comp/commit/4b007ff4dfb5a578720daab1d6e492479b828646))
+* use value import for Prisma (DbNull requires runtime access) ([73d0fa6](https://github.com/trycompai/comp/commit/73d0fa6fd72f0a486d48a6af7ca598a016f6ccff))
+
+
+### Features
+
+* **integration-platform:** add code step and dynamic employee sync ([3ddfaef](https://github.com/trycompai/comp/commit/3ddfaef188eb84de70fb1e193432f2aa9ba45366))
+
+## [3.11.5](https://github.com/trycompai/comp/compare/v3.11.4...v3.11.5) (2026-03-25)
+
+
+### Bug Fixes
+
+* **vendors:** skip assignee validation when assignee hasn't changed ([9e508c2](https://github.com/trycompai/comp/commit/9e508c2c4b2a7728c4f8d4778323f31729a82a15))
+
+## [3.11.4](https://github.com/trycompai/comp/compare/v3.11.3...v3.11.4) (2026-03-25)
+
+
+### Bug Fixes
+
+* **vendors:** fix PATCH 400 error for vendors with empty descriptions ([cdc71c7](https://github.com/trycompai/comp/commit/cdc71c7f69b59090a8407f3bd10c1adb98defce5))
+
+## [3.11.3](https://github.com/trycompai/comp/compare/v3.11.2...v3.11.3) (2026-03-25)
+
+
+### Bug Fixes
+
+* **trust-portal:** fix CORS for custom domain trust portals ([#2371](https://github.com/trycompai/comp/issues/2371)) ([0d54899](https://github.com/trycompai/comp/commit/0d5489959d3675d3de7f1bc36c34b3c52c876f10))
+
 ## [3.11.2](https://github.com/trycompai/comp/compare/v3.11.1...v3.11.2) (2026-03-25)
 
 
