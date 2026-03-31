@@ -12,6 +12,7 @@ const config: NextConfig = {
   // Ensure Turbopack can import .md files as raw strings during dev
   turbopack: {
     root: workspaceRoot,
+    resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.json'],
     rules: {
       '*.md': {
         loaders: ['raw-loader'],
