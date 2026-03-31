@@ -12,7 +12,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@db';
 import { db } from '@db';
 import { InternalTokenGuard } from '../../auth/internal-token.guard';
 import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';

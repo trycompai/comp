@@ -1,6 +1,6 @@
 // Types for API authentication - supports API keys and session-based auth
 
-import { Departments } from '@prisma/client';
+import { Departments } from '@db';
 
 export interface AuthenticatedRequest extends Request {
   organizationId: string;

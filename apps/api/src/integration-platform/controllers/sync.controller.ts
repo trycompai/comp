@@ -20,7 +20,7 @@ import {
 } from '../../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../../auth/types';
 import { db } from '@db';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@db';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';

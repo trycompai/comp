@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiSecurity } from '@nestjs/swagger';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@db';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
