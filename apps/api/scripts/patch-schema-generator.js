@@ -10,10 +10,9 @@ schema = schema.replace(
   /generator client \{[^}]*\}/s,
   `generator client {
   provider        = "prisma-client-js"
-  output          = "./generated"
   previewFeatures = ["postgresqlExtensions"]
 }`
 );
 
 fs.writeFileSync(schemaPath, schema);
-console.log('[patch-schema] Set generator to prisma-client-js with output=./generated');
+console.log('[patch-schema] Set generator to prisma-client-js (default output)');
