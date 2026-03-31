@@ -4,6 +4,7 @@
         "@hookform/resolvers": "^5.2.2",
         "@noble/ciphers": "^1.1.0",
         "@noble/hashes": "^1.6.1",
+        "@prisma/adapter-pg": "7.6.0",
         "@prisma/client": "7.6.0",
         "@tailwindcss/postcss": "^4.1.17",
         "@tanstack/react-table": "^8.21.3",
