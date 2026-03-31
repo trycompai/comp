@@ -25,10 +25,12 @@ const STATUS_ORDER: Record<FindingStatus, number> = {
 
 interface DocumentFindingsSectionProps {
   formType: EvidenceFormType;
+  isPlatformAdmin?: boolean;
 }
 
 export function DocumentFindingsSection({
   formType,
+  isPlatformAdmin = false,
 }: DocumentFindingsSectionProps) {
   const { hasPermission } = usePermissions();
   const { data: activeMember } = useActiveMember();
@@ -227,7 +229,7 @@ export function DocumentFindingsSection({
                 key={finding.id}
                 finding={finding}
                 isAuditor={canSetRestrictedStatus}
-                isPlatformAdmin={false}
+                isPlatformAdmin={isPlatformAdmin}
                 isExpanded={expandedId === finding.id}
                 canChangeStatus={canChangeStatus}
                 canSetRestrictedStatus={canSetRestrictedStatus}
