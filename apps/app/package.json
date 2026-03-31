@@ -187,7 +187,7 @@
         "analyze-locale-usage": "bunx tsx src/locales/analyze-locale-usage.ts",
         "build": "next build",
         "build:docker": "prisma generate && next build",
-        "db:generate": "bun run db:getschema && prisma generate",
+        "db:generate": "bun run db:getschema && prisma generate && node ../../packages/db/scripts/fix-generated-extensions.js src/generated/prisma",
         "db:getschema": "node ../../packages/db/scripts/combine-schemas.js && cp ../../packages/db/dist/schema.prisma prisma/schema.prisma",
         "db:migrate": "cd ../../packages/db && bunx prisma migrate dev && cd ../../apps/app",
         "deploy:trigger-prod": "npx trigger.dev@4.4.3 deploy",

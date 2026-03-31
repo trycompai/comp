@@ -43,9 +43,9 @@
         "directory": "packages/db"
     },
     "scripts": {
-        "build": "rm -rf dist && rm -rf ./src/generated && node scripts/combine-schemas.js && prisma generate && tsc",
+        "build": "rm -rf dist && rm -rf ./src/generated && node scripts/combine-schemas.js && prisma generate && node scripts/fix-generated-extensions.js && tsc",
         "check-types": "tsc --noEmit",
-        "db:generate": "node scripts/combine-schemas.js && prisma generate",
+        "db:generate": "node scripts/combine-schemas.js && prisma generate && node scripts/fix-generated-extensions.js",
         "db:migrate": "prisma migrate dev",
         "db:migrate:reset": "prisma migrate reset",
         "db:push": "prisma db push",
