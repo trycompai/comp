@@ -10,7 +10,6 @@ import { VariablesController } from './controllers/variables.controller';
 import { TaskIntegrationsController } from './controllers/task-integrations.controller';
 import { WebhookController } from './controllers/webhook.controller';
 import { SyncController } from './controllers/sync.controller';
-import { RampRoleMappingController } from './controllers/ramp-role-mapping.controller';
 import { CredentialVaultService } from './services/credential-vault.service';
 import { ConnectionService } from './services/connection.service';
 import { OAuthCredentialsService } from './services/oauth-credentials.service';
@@ -27,9 +26,7 @@ import { PlatformCredentialRepository } from './repositories/platform-credential
 import { CheckRunRepository } from './repositories/check-run.repository';
 import { DynamicIntegrationRepository } from './repositories/dynamic-integration.repository';
 import { DynamicCheckRepository } from './repositories/dynamic-check.repository';
-import { RampRoleMappingService } from './services/ramp-role-mapping.service';
 import { IntegrationSyncLoggerService } from './services/integration-sync-logger.service';
-import { RampApiService } from './services/ramp-api.service';
 import { GenericEmployeeSyncService } from './services/generic-employee-sync.service';
 
 @Module({
@@ -45,7 +42,6 @@ import { GenericEmployeeSyncService } from './services/generic-employee-sync.ser
     TaskIntegrationsController,
     WebhookController,
     SyncController,
-    RampRoleMappingController,
   ],
   providers: [
     // Services
@@ -56,9 +52,7 @@ import { GenericEmployeeSyncService } from './services/generic-employee-sync.ser
     OAuthTokenRevocationService,
     ConnectionAuthTeardownService,
     DynamicManifestLoaderService,
-    RampRoleMappingService,
     IntegrationSyncLoggerService,
-    RampApiService,
     GenericEmployeeSyncService,
     // Repositories
     ProviderRepository,

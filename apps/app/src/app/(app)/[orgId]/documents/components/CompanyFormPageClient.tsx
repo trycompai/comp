@@ -145,7 +145,7 @@ async function evidenceFormFetcher([endpoint, orgId]: readonly [
 export function CompanyFormPageClient({
   organizationId,
   formType,
-  isPlatformAdmin,
+  isPlatformAdmin = false,
 }: {
   organizationId: string;
   formType: EvidenceFormType;
@@ -579,7 +579,7 @@ export function CompanyFormPageClient({
           </TabsContent>
 
           <TabsContent value="findings">
-            <DocumentFindingsSection formType={formType} />
+            <DocumentFindingsSection formType={formType} isPlatformAdmin={isPlatformAdmin} />
           </TabsContent>
         </Stack>
       </Tabs>

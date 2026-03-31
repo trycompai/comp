@@ -14,7 +14,6 @@ export interface EmployeeSyncConnectionsData {
   googleWorkspaceConnectionId: string | null;
   ripplingConnectionId: string | null;
   jumpcloudConnectionId: string | null;
-  rampConnectionId: string | null;
   selectedProvider: string | null | undefined;
   lastSyncAt: Date | null;
   nextSyncAt: Date | null;
@@ -32,7 +31,7 @@ interface ConnectionStatus {
 export async function getEmployeeSyncConnections(
   organizationId: string,
 ): Promise<EmployeeSyncConnectionsData> {
-  const [gwResponse, ripplingResponse, jumpcloudResponse, rampResponse, providerResponse, availableResponse] =
+  const [gwResponse, ripplingResponse, jumpcloudResponse, providerResponse, availableResponse] =
     await Promise.all([
       serverApi.post<ConnectionStatus>(
         `/v1/integrations/sync/google-workspace/status?organizationId=${organizationId}`,
@@ -42,9 +41,6 @@ export async function getEmployeeSyncConnections(
       ),
       serverApi.post<ConnectionStatus>(
         `/v1/integrations/sync/jumpcloud/status?organizationId=${organizationId}`,
-      ),
-      serverApi.post<ConnectionStatus>(
-        `/v1/integrations/sync/ramp/status?organizationId=${organizationId}`,
       ),
       serverApi.get<{ provider: string | null }>(
         `/v1/integrations/sync/employee-sync-provider?organizationId=${organizationId}`,
@@ -67,8 +63,6 @@ export async function getEmployeeSyncConnections(
     selectedSyncTimes = ripplingResponse.data ?? null;
   } else if (selectedProviderSlug === 'jumpcloud') {
     selectedSyncTimes = jumpcloudResponse.data ?? null;
-  } else if (selectedProviderSlug === 'ramp') {
-    selectedSyncTimes = rampResponse.data ?? null;
   } else if (selectedProviderSlug) {
     // Dynamic provider — get sync times from available-providers data
     const dynProvider = availableProviders.find((p) => p.slug === selectedProviderSlug);
@@ -89,10 +83,6 @@ export async function getEmployeeSyncConnections(
     jumpcloudConnectionId:
       jumpcloudResponse.data?.connected && jumpcloudResponse.data.connectionId
         ? jumpcloudResponse.data.connectionId
-        : null,
-    rampConnectionId:
-      rampResponse.data?.connected && rampResponse.data.connectionId
-        ? rampResponse.data.connectionId
         : null,
     selectedProvider: selectedProviderSlug,
     lastSyncAt: selectedSyncTimes?.lastSyncAt ? new Date(selectedSyncTimes.lastSyncAt) : null,

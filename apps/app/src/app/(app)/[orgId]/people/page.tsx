@@ -10,7 +10,6 @@ import { redirect } from 'next/navigation';
 import { TeamMembers } from './all/components/TeamMembers';
 import { getEmployeeSyncConnections } from './all/data/queries';
 import { PeoplePageTabs } from './components/PeoplePageTabs';
-import { RoleMappingTab } from './role-mapping/components/RoleMappingTab';
 import { EmployeesOverview } from './dashboard/components/EmployeesOverview';
 import { DeviceComplianceChart } from './devices/components/DeviceComplianceChart';
 import { DeviceAgentDevicesList } from './devices/components/DeviceAgentDevicesList';
@@ -186,15 +185,8 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           members={membersWithUsers}
         />
       }
-      showRoleMapping={!!syncConnections?.rampConnectionId}
-      roleMappingContent={
-        syncConnections?.rampConnectionId ? (
-          <RoleMappingTab
-            organizationId={orgId}
-            rampConnectionId={syncConnections.rampConnectionId}
-          />
-        ) : null
-      }
+      showRoleMapping={false}
+      roleMappingContent={null}
       showEmployeeTasks={showEmployeeTasks}
       canInviteUsers={canInviteUsers}
       canManageMembers={canManageMembers}

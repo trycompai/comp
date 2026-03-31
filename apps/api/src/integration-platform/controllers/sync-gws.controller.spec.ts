@@ -5,9 +5,7 @@ import { PermissionGuard } from '../../auth/permission.guard';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
-import { RampRoleMappingService } from '../services/ramp-role-mapping.service';
 import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
-import { RampApiService } from '../services/ramp-api.service';
 import { db } from '@db';
 
 jest.mock('@db', () => ({
@@ -97,12 +95,10 @@ describe('SyncController - Google Workspace employees', () => {
         { provide: ConnectionRepository, useValue: mockConnectionRepo },
         { provide: CredentialVaultService, useValue: mockCredentialVault },
         { provide: OAuthCredentialsService, useValue: mockOAuthCredentials },
-        { provide: RampRoleMappingService, useValue: {} },
         {
           provide: IntegrationSyncLoggerService,
           useValue: { logSync: jest.fn() },
         },
-        { provide: RampApiService, useValue: {} },
       ],
     })
       .overrideGuard(HybridAuthGuard)
