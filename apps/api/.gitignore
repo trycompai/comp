@@ -47,8 +47,9 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
-# Local scripts
+# Local scripts (tracked scripts are explicitly excluded below)
 scripts/
+!scripts/patch-schema-generator.js
 
 # temp directory
 .temp
