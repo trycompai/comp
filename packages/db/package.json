@@ -1,7 +1,7 @@
 {
     "name": "@trycompai/db",
     "description": "Database package with Prisma client and schema for Comp AI",
-    "version": "1.3.22",
+    "version": "2.0.0",
     "dependencies": {
         "@prisma/adapter-pg": "7.6.0",
         "@prisma/client": "7.6.0",
@@ -45,7 +45,7 @@
     "scripts": {
         "build": "rm -rf dist && node scripts/combine-schemas.js && node scripts/generate-prisma-client-js.js && tsc",
         "check-types": "tsc --noEmit",
-        "db:generate": "node scripts/combine-schemas.js && prisma generate --schema=dist/schema.prisma",
+        "db:generate": "node scripts/combine-schemas.js && node scripts/generate-prisma-client-js.js",
         "db:migrate": "prisma migrate dev",
         "db:migrate:reset": "prisma migrate reset",
         "db:push": "prisma db push",
