@@ -1,6 +1,6 @@
 import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
-import { db } from '@db';
+import { db } from '@db/server';
 import { Breadcrumb, PageLayout } from '@trycompai/design-system';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { headers as getHeaders } from 'next/headers';

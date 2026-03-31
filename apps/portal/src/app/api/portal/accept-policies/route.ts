@@ -1,5 +1,5 @@
 import { auth } from '@/app/lib/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
