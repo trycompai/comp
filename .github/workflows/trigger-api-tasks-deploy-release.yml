@@ -48,6 +48,7 @@ jobs:
         run: |
           mkdir -p prisma
           cp ../../packages/db/dist/schema.prisma prisma/schema.prisma
+          node scripts/patch-schema-generator.js
           bunx prisma generate
 
       - name: 🚀 Deploy Trigger.dev
