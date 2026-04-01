@@ -93,6 +93,7 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
                 key={requirement.id}
                 role="button"
                 tabIndex={0}
+                style={{ cursor: 'pointer' }}
                 onClick={() => handleRowClick(requirement)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {

@@ -1,4 +1,4 @@
-import {
+import type {
   Control,
   FrameworkEditorFramework,
   FrameworkInstance,
@@ -15,5 +15,13 @@ export type FrameworkInstanceWithControls = FrameworkInstance & {
       status: PolicyStatus;
     }>;
     requirementsMapped: RequirementMap[];
+    controlDocumentTypes?: Array<{
+      formType: string;
+    }>;
   })[];
 };
+
+export interface FrameworkInstanceWithComplianceScore {
+  frameworkInstance: FrameworkInstanceWithControls;
+  complianceScore: number;
+}

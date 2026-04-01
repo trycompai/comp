@@ -9,25 +9,28 @@ export function validateAndFixTipTapContent(content: any): JSONContent {
     return createEmptyDocument();
   }
 
+  // Unwrap corrupted { set: [...] } wrapper (from Prisma createMany bug)
+  const unwrapped = unwrapSetWrapper(content);
+
   // If it's already a proper doc, validate its content
-  if (content.type === 'doc' && content.content) {
+  if (unwrapped.type === 'doc' && unwrapped.content) {
     return {
       type: 'doc',
-      content: fixContentArray(content.content),
+      content: fixContentArray(unwrapped.content),
     };
   }
 
   // If it's an array, wrap it in a doc
-  if (Array.isArray(content)) {
+  if (Array.isArray(unwrapped)) {
     return {
       type: 'doc',
-      content: fixContentArray(content),
+      content: fixContentArray(unwrapped),
     };
   }
 
   // If it's a single node, wrap it in a doc
-  if (content.type && content.type !== 'doc') {
-    const fixedNode = fixNode(content);
+  if (unwrapped.type && unwrapped.type !== 'doc') {
+    const fixedNode = fixNode(unwrapped);
     return {
       type: 'doc',
       content: fixedNode ? [fixedNode] : [createEmptyParagraph()],
@@ -36,6 +39,35 @@ export function validateAndFixTipTapContent(content: any): JSONContent {
 
   // Fallback to empty document
   return createEmptyDocument();
+}
+
+/**
+ * Unwraps a `{ set: [...] }` wrapper that Prisma's createMany incorrectly
+ * stored for Json[] fields. If the value is an array containing a single
+ * `{ set: [...] }` element, returns the inner array. Also handles the case
+ * where the top-level value itself is `{ set: [...] }`.
+ */
+function unwrapSetWrapper(value: any): any {
+  if (!value || typeof value !== 'object') return value;
+
+  // Direct { set: [...] } object
+  if (!Array.isArray(value) && Array.isArray(value.set)) {
+    return value.set;
+  }
+
+  // Array containing a single { set: [...] } element
+  if (
+    Array.isArray(value) &&
+    value.length === 1 &&
+    value[0] &&
+    typeof value[0] === 'object' &&
+    !Array.isArray(value[0]) &&
+    Array.isArray(value[0].set)
+  ) {
+    return value[0].set;
+  }
+
+  return value;
 }
 
 /**
@@ -66,12 +98,20 @@ function fixContentArray(contentArray: any[]): JSONContent[] {
   // First pass: parse any stringified JSON nodes
   const parsed = contentArray.map((node) => tryParseStringNode(node) ?? node);
 
-  // Second pass: fix each node
-  const fixedNodes = parsed
+  // Second pass: flatten any nested doc nodes (content stored as [{type:"doc",content:[...]}])
+  const flattened = parsed.flatMap((node) => {
+    if (node && typeof node === 'object' && node.type === 'doc' && Array.isArray(node.content)) {
+      return node.content;
+    }
+    return [node];
+  });
+
+  // Third pass: fix each node
+  const fixedNodes = flattened
     .map(fixNode)
     .filter((node): node is JSONContent => node !== null) as JSONContent[];
 
-  // Third pass: merge orphaned listItems into bulletLists
+  // Fourth pass: merge orphaned listItems into bulletLists
   const merged = mergeOrphanedListItems(fixedNodes);
 
   // Ensure we have at least one paragraph

@@ -10,9 +10,10 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { Button } from '@trycompai/ui';
-import { ArrowDown, ArrowUp, ArrowUpDown, PencilIcon, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, PencilIcon, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { DateCell, EditableCell, RelationalCell } from '../../../components/table';
 import { EditFrameworkDialog } from './components/EditFrameworkDialog';
 import { DeleteFrameworkDialog } from './components/DeleteFrameworkDialog';
@@ -216,6 +217,37 @@ export function FrameworkRequirementsClientPage({
     });
   }, [addRow]);
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const data = await apiClient<Record<string, unknown>>(
+        `/framework/${frameworkDetails.id}/export`,
+      );
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const safeName = frameworkDetails.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-');
+      link.download = `${safeName}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success('Framework exported successfully');
+    } catch (error) {
+      console.error('[ExportFramework] Error:', error);
+      const message =
+        error instanceof Error ? error.message : 'Failed to export framework';
+      toast.error(message);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [frameworkDetails.id, frameworkDetails.name]);
+
   const handleFrameworkUpdated = () => {
     setIsEditDialogOpen(false);
     router.refresh();
@@ -238,6 +270,16 @@ export function FrameworkRequirementsClientPage({
           )}
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={isExporting}
+            className="gap-1 rounded-xs"
+          >
+            <Download className="h-4 w-4" />
+            {isExporting ? 'Exporting...' : 'Export'}
+          </Button>
           <Button
             variant="outline"
             size="sm"

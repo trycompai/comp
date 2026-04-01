@@ -11,13 +11,6 @@ import { PortalFormClient } from './PortalFormClient';
 
 const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024;
 
-function getApiHeaders(cookieHeader: string): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    Cookie: cookieHeader,
-  };
-}
-
 export default async function PortalCompanyFormPage({
   params,
   searchParams,
@@ -69,8 +62,14 @@ export default async function PortalCompanyFormPage({
 
     const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
     const cookie = reqHeaders.get('cookie') ?? '';
+    if (!cookie) {
+      redirect(`${basePath}?error=${encodeURIComponent('Failed to authenticate with API')}`);
+    }
 
-    const apiHeaders = getApiHeaders(cookie);
+    const apiHeaders = {
+      'Content-Type': 'application/json',
+      Cookie: cookie,
+    };
 
     try {
       // Build the submission payload

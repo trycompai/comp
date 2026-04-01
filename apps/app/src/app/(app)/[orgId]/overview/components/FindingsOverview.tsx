@@ -9,25 +9,6 @@ import { ArrowRight, CheckCircle2, FileWarning } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo } from 'react';
 
-const STATUS_COLORS: Record<FindingStatus, string> = {
-  open: 'bg-red-100 text-red-700 border-red-200',
-  ready_for_review: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  needs_revision: 'bg-orange-100 text-orange-700 border-orange-200',
-  closed: 'bg-primary/10 text-primary border-primary/20',
-};
-
-const STATUS_LABELS: Record<FindingStatus, string> = {
-  open: 'Open',
-  ready_for_review: 'Auditor Review',
-  needs_revision: 'Revision',
-  closed: 'Closed',
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  soc2: 'SOC 2',
-  iso27001: 'ISO 27001',
-};
-
 interface FindingWithTask extends Finding {
   task: {
     id: string;
@@ -80,7 +61,7 @@ function FindingsList({
                           ? `/${organizationId}/documents/${finding.evidenceFormType}?tab=findings`
                           : finding.evidenceSubmission
                             ? `/${organizationId}/documents/${finding.evidenceSubmission.formType}?tab=findings`
-                            : `/${organizationId}/frameworks`
+                            : `/${organizationId}/overview`
                     }
                   >
                     <ArrowRight className="h-3 w-3" />
@@ -103,7 +84,6 @@ export function FindingsOverview({
   findings: FindingWithTask[];
   organizationId: string;
 }) {
-  // Split findings into open and closed, sorted by most recently updated
   const openFindings = useMemo(() => {
     return [...findings]
       .filter((f) => f.status !== FindingStatus.closed)

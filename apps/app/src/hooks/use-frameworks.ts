@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import type { FrameworkInstanceWithControls } from '../types';
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import useSWR from 'swr';
 
 interface FrameworksApiResponse {
@@ -54,19 +54,15 @@ export function useFrameworks(options?: UseFrameworksOptions) {
 
   const deleteFramework = async (id: string) => {
     const previous = frameworks;
-
-    // Optimistic removal
     await mutate(
       frameworks.filter((f) => f.id !== id),
       false,
     );
-
     try {
       const response = await apiClient.delete(`/v1/frameworks/${id}`);
       if (response.error) throw new Error(response.error);
       await mutate();
     } catch (err) {
-      // Rollback on error
       await mutate(previous, false);
       throw err;
     }

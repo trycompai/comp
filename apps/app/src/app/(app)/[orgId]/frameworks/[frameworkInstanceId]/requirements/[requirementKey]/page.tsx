@@ -1,5 +1,6 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { serverApi } from '@/lib/api-server';
+import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { RequirementControls } from './components/RequirementControls';
 
@@ -31,40 +32,30 @@ export default async function RequirementPage({ params }: PageProps) {
   const frameworkName = framework.framework?.name ?? 'Framework';
   const requirement = reqData.requirement;
 
-  const siblingRequirementsDropdown = (reqData.siblingRequirements ?? []).map(
-    (def: { id: string; name: string }) => ({
-      label: def.name,
-      href: `/${organizationId}/frameworks/${frameworkInstanceId}/requirements/${def.id}`,
-    }),
-  );
-
-  const maxLabelLength = 40;
-
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        { label: 'Frameworks', href: `/${organizationId}/frameworks` },
-        {
-          label: frameworkName,
-          href: `/${organizationId}/frameworks/${frameworkInstanceId}`,
-        },
-        {
-          label:
-            requirement.name.length > maxLabelLength
-              ? `${requirement.name.slice(0, maxLabelLength)}...`
-              : requirement.name,
-          dropdown: siblingRequirementsDropdown,
-          current: true,
-        },
-      ]}
-    >
-      <div className="flex flex-col gap-6">
-        <RequirementControls
-          requirement={requirement}
-          tasks={reqData.tasks ?? []}
-          relatedControls={reqData.relatedControls ?? []}
-        />
-      </div>
-    </PageWithBreadcrumb>
+    <PageLayout>
+      <Breadcrumb
+        items={[
+          {
+            label: 'Frameworks',
+            href: `/${organizationId}/frameworks`,
+            props: { render: <Link href={`/${organizationId}/frameworks`} /> },
+          },
+          {
+            label: frameworkName,
+            href: `/${organizationId}/frameworks/${frameworkInstanceId}`,
+            props: { render: <Link href={`/${organizationId}/frameworks/${frameworkInstanceId}`} /> },
+          },
+          { label: requirement.name, isCurrent: true },
+        ]}
+      />
+      <PageHeader title={requirement.name} />
+      <RequirementControls
+        tasks={reqData.tasks ?? []}
+        relatedControls={reqData.relatedControls ?? []}
+        evidenceSubmissions={reqData.evidenceSubmissions ?? []}
+        frameworkInstanceId={frameworkInstanceId}
+      />
+    </PageLayout>
   );
 }

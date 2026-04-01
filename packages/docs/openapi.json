@@ -12712,6 +12712,53 @@
         ]
       }
     },
+    "/v1/framework-editor/framework/import": {
+      "post": {
+        "operationId": "FrameworkEditorFrameworkController_importFramework_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}/export": {
+      "get": {
+        "operationId": "FrameworkEditorFrameworkController_exportFramework_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
     "/v1/framework-editor/framework/{id}/controls": {
       "get": {
         "operationId": "FrameworkEditorFrameworkController_getControls_v1",
@@ -16571,34 +16618,6 @@
         ]
       }
     },
-    "/v1/integrations/sync/ramp/employees": {
-      "post": {
-        "operationId": "SyncController_syncRampEmployees_v1",
-        "parameters": [
-          {
-            "name": "connectionId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "tags": [
-          "Integrations"
-        ]
-      }
-    },
     "/v1/integrations/sync/jumpcloud/employees": {
       "post": {
         "operationId": "SyncController_syncJumpCloudEmployees_v1",
@@ -16630,25 +16649,6 @@
     "/v1/integrations/sync/jumpcloud/status": {
       "post": {
         "operationId": "SyncController_getJumpCloudStatus_v1",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "tags": [
-          "Integrations"
-        ]
-      }
-    },
-    "/v1/integrations/sync/ramp/status": {
-      "post": {
-        "operationId": "SyncController_getRampStatus_v1",
         "parameters": [],
         "responses": {
           "201": {
@@ -16743,87 +16743,6 @@
         ],
         "responses": {
           "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "tags": [
-          "Integrations"
-        ]
-      }
-    },
-    "/v1/integrations/sync/ramp/discover-roles": {
-      "post": {
-        "operationId": "RampRoleMappingController_discoverRoles_v1",
-        "parameters": [
-          {
-            "name": "connectionId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "refresh",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "tags": [
-          "Integrations"
-        ]
-      }
-    },
-    "/v1/integrations/sync/ramp/role-mapping": {
-      "post": {
-        "operationId": "RampRoleMappingController_saveRoleMapping_v1",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "tags": [
-          "Integrations"
-        ]
-      },
-      "get": {
-        "operationId": "RampRoleMappingController_getRoleMapping_v1",
-        "parameters": [
-          {
-            "name": "connectionId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
             "description": ""
           }
         },
@@ -24234,6 +24153,71 @@
           "name",
           "version",
           "description"
+        ]
+      },
+      "ImportFrameworkMetaDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "visible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "description"
+        ]
+      },
+      "ImportFrameworkDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "example": "1"
+          },
+          "exportedAt": {
+            "type": "string"
+          },
+          "framework": {
+            "$ref": "#/components/schemas/ImportFrameworkMetaDto"
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "controlTemplates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "policyTemplates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "taskTemplates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "version",
+          "framework"
         ]
       },
       "UpdateFrameworkDto": {

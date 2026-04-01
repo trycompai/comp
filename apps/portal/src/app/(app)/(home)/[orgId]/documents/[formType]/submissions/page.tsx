@@ -22,13 +22,6 @@ type SubmissionRow = {
   } | null;
 };
 
-function getApiHeaders(cookieHeader: string): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    Cookie: cookieHeader,
-  };
-}
-
 export default async function PortalSubmissionsPage({
   params,
   searchParams,
@@ -75,16 +68,21 @@ export default async function PortalSubmissionsPage({
 
   const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
   const cookie = reqHeaders.get('cookie') ?? '';
-  const apiHeaders = getApiHeaders(cookie);
+
+  const apiHeaders = {
+    'Content-Type': 'application/json',
+    Cookie: cookie,
+  };
 
   let submissions: SubmissionRow[] = [];
 
-  try {
-    const res = await fetch(
-      `${apiUrl}/v1/evidence-forms/my-submissions?formType=${formTypeValue}`,
-      {
-        method: 'GET',
-        headers: apiHeaders,
+  if (cookie) {
+    try {
+      const res = await fetch(
+        `${apiUrl}/v1/evidence-forms/my-submissions?formType=${formTypeValue}`,
+        {
+          method: 'GET',
+          headers: apiHeaders,
           cache: 'no-store',
         },
       );
@@ -95,6 +93,7 @@ export default async function PortalSubmissionsPage({
     } catch {
       // Silently fail - show empty list
     }
+  }
 
   // Serialize only what the client component needs
   const serializedSubmissions = submissions.map((s) => ({

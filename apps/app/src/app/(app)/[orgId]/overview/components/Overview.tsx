@@ -1,7 +1,7 @@
 'use client';
 
 import { Finding, FrameworkEditorFramework, Policy, Task } from '@db';
-import { FrameworkInstanceWithControls } from '../types';
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import { ComplianceOverview } from './ComplianceOverview';
 import { FindingsOverview } from './FindingsOverview';
 import { FrameworksOverview } from './FrameworksOverview';
