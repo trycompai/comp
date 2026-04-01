@@ -55,23 +55,41 @@ export default async function FrameworkControlPage({ params }: PageProps) {
     byType: {},
   };
 
+  const matchedRequirement = control.requirementsMapped?.find(
+    (rm) => rm.frameworkInstanceId === frameworkInstanceId,
+  );
+  const requirementName = matchedRequirement?.requirement?.name;
+  const requirementId = matchedRequirement?.requirement?.id;
+  const requirementHref = requirementId
+    ? `/${orgId}/frameworks/${frameworkInstanceId}/requirements/${requirementId}`
+    : undefined;
+
+  const breadcrumbItems = [
+    {
+      label: 'Frameworks',
+      href: `/${orgId}/frameworks`,
+      props: { render: <Link href={`/${orgId}/frameworks`} /> },
+    },
+    {
+      label: frameworkName,
+      href: `/${orgId}/frameworks/${frameworkInstanceId}`,
+      props: { render: <Link href={`/${orgId}/frameworks/${frameworkInstanceId}`} /> },
+    },
+    ...(requirementName && requirementHref
+      ? [
+          {
+            label: requirementName,
+            href: requirementHref,
+            props: { render: <Link href={requirementHref} /> },
+          },
+        ]
+      : []),
+    { label: control.name, isCurrent: true },
+  ];
+
   return (
     <PageLayout>
-      <Breadcrumb
-        items={[
-          {
-            label: 'Frameworks',
-            href: `/${orgId}/frameworks`,
-            props: { render: <Link href={`/${orgId}/frameworks`} /> },
-          },
-          {
-            label: frameworkName,
-            href: `/${orgId}/frameworks/${frameworkInstanceId}`,
-            props: { render: <Link href={`/${orgId}/frameworks/${frameworkInstanceId}`} /> },
-          },
-          { label: control.name, isCurrent: true },
-        ]}
-      />
+      <Breadcrumb items={breadcrumbItems} />
       <PageHeader title={control.name} />
       <SingleControl
         control={control}
