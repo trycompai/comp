@@ -179,7 +179,7 @@ if (
   socialProviders.microsoft = {
     clientId: process.env.AUTH_MICROSOFT_CLIENT_ID,
     clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
-    tenantId: 'common',
+    tenantId: process.env.AUTH_MICROSOFT_TENANT_ID || 'common',
     prompt: 'select_account',
   };
 }
