@@ -46,8 +46,12 @@ export function getControlStatus(
     hasDocumentRequirements = true;
     const now = Date.now();
 
+    const sorted = [...evidenceSubmissions].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
     for (const dt of documentTypes) {
-      const latestSubmission = evidenceSubmissions.find((es) => es.formType === dt.formType);
+      const latestSubmission = sorted.find((es) => es.formType === dt.formType);
       if (!latestSubmission) {
         allDocumentsFresh = false;
         continue;

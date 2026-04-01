@@ -220,13 +220,11 @@ export function FrameworkRequirementsClientPage({
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = useCallback(async () => {
-    console.log('[ExportFramework] Starting export…');
     setIsExporting(true);
     try {
       const data = await apiClient<Record<string, unknown>>(
         `/framework/${frameworkDetails.id}/export`,
       );
-      console.log('[ExportFramework] Success, downloading file');
       const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: 'application/json',
       });

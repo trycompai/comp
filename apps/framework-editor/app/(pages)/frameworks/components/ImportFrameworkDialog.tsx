@@ -119,18 +119,15 @@ export function ImportFrameworkDialog({
 
   const handleImport = useCallback(async () => {
     if (!fileData) {
-      console.warn('[ImportFramework] No file data, aborting');
       return;
     }
 
-    console.log('[ImportFramework] Starting import…');
     setIsImporting(true);
     try {
       const result = await apiClient('/framework/import', {
         method: 'POST',
         body: JSON.stringify(fileData),
       });
-      console.log('[ImportFramework] Success:', result);
       toast.success('Framework imported successfully!');
       onOpenChange(false);
       handleReset();
