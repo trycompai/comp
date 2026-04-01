@@ -152,8 +152,7 @@ export async function upsertOrgFrameworkStructure({
         description: pt.description,
         department: pt.department,
         frequency: pt.frequency,
-        content:
-          pt.content as Prisma.PolicyCreateInput['content'],
+        content: { set: Array.isArray(pt.content) ? pt.content : [pt.content] } as Prisma.PolicyCreateManyInput['content'],
         organizationId,
         policyTemplateId: pt.id,
       })),
