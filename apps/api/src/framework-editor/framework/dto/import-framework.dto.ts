@@ -19,7 +19,7 @@ import {
   Frequency,
   Departments,
   TaskAutomationStatus,
-} from '@trycompai/db';
+} from '@db';
 import { MaxJsonSize } from '../../validators/max-json-size.validator';
 
 class ImportFrameworkMetaDto {

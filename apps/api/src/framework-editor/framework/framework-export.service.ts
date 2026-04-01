@@ -4,7 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { db, Prisma, EvidenceFormType } from '@trycompai/db';
+import { db, Prisma, EvidenceFormType } from '@db';
 import type { ImportFrameworkDto } from './dto/import-framework.dto';
 
 export interface ExportedFramework {
