@@ -90,7 +90,7 @@ export function FrameworkRequirements({
         compliancePercent,
       };
     });
-  }, [requirementDefinitions, frameworkInstanceWithControls.controls, tasks]);
+  }, [requirementDefinitions, frameworkInstanceWithControls.controls, tasks, evidenceSubmissions]);
 
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return items;

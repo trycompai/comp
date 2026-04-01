@@ -76,7 +76,7 @@ export function FrameworkDeleteDialog({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </Button>
               <Button
