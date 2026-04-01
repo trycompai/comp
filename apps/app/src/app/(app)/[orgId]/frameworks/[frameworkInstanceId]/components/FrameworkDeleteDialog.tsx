@@ -55,9 +55,9 @@ export function FrameworkDeleteDialog({
     setIsSubmitting(true);
     try {
       await deleteFramework(frameworkInstance.id);
-      toast.info('Framework deleted! Redirecting to frameworks list...');
+      toast.info('Framework deleted! Redirecting to overview...');
       onClose();
-      router.push(`/${frameworkInstance.organizationId}/frameworks`);
+      router.push(`/${frameworkInstance.organizationId}/overview`);
     } catch {
       toast.error('Failed to delete framework.');
       setIsSubmitting(false);

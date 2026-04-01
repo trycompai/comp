@@ -6,5 +6,5 @@ interface ControlsPageProps {
 
 export default async function ControlsPage({ params }: ControlsPageProps) {
   const { orgId } = await params;
-  redirect(`/${orgId}/frameworks`);
+  redirect(`/${orgId}/overview`);
 }

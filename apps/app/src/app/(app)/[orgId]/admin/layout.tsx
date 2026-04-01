@@ -15,7 +15,7 @@ export default async function AdminLayout({
   });
 
   if (!session?.user?.id || session.user.role !== 'admin') {
-    redirect(`/${orgId}/frameworks`);
+    redirect(`/${orgId}/overview`);
   }
 
   return <>{children}</>;
