@@ -15,9 +15,8 @@ vi.mock('@/hooks/use-permissions', () => ({
   }),
 }));
 
-// Mock useFrameworks hook
 const mockAddFrameworks = vi.fn();
-vi.mock('../hooks/useFrameworks', () => ({
+vi.mock('@/hooks/use-frameworks', () => ({
   useFrameworks: () => ({
     addFrameworks: mockAddFrameworks,
     frameworks: [],
@@ -28,12 +27,10 @@ vi.mock('../hooks/useFrameworks', () => ({
   }),
 }));
 
-// Mock sonner
 vi.mock('sonner', () => ({
   toast: { info: vi.fn(), error: vi.fn(), success: vi.fn() },
 }));
 
-// Mock @trycompai/ui components
 vi.mock('@trycompai/ui/button', () => ({
   Button: ({ children, disabled, ...props }: any) => (
     <button disabled={disabled} {...props}>
@@ -52,7 +49,6 @@ vi.mock('@trycompai/ui/dialog', () => ({
   DialogTitle: ({ children }: any) => <h2>{children}</h2>,
 }));
 
-// Mock FrameworkCard
 vi.mock('@/components/framework-card', () => ({
   FrameworkCard: ({ framework, isSelected, onSelectionChange }: any) => (
     <div data-testid={`framework-card-${framework.id}`}>
@@ -69,7 +65,6 @@ vi.mock('@/components/framework-card', () => ({
   ),
 }));
 
-// Mock lucide-react
 vi.mock('lucide-react', () => ({
   Loader2: () => <span data-testid="loader-icon" />,
 }));
@@ -110,7 +105,6 @@ describe('AddFrameworkModal', () => {
 
       render(<AddFrameworkModal {...defaultProps} />);
 
-      // Select a framework first (button is also disabled when nothing is selected)
       const checkbox = screen.getByTestId('framework-checkbox-fw-1');
       fireEvent.click(checkbox);
 
@@ -123,7 +117,6 @@ describe('AddFrameworkModal', () => {
 
       render(<AddFrameworkModal {...defaultProps} />);
 
-      // Select a framework so the only reason for disabled is permission
       const checkbox = screen.getByTestId('framework-checkbox-fw-1');
       fireEvent.click(checkbox);
 

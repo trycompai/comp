@@ -7,7 +7,7 @@ import type { Control, Policy, Task } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getControlStatus } from '../../../../../lib/utils';
+import { getControlStatus } from '@/lib/control-compliance';
 
 export type OrganizationControlType = Control & {
   policies: Policy[];

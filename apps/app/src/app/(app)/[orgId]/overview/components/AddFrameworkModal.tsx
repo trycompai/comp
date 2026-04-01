@@ -13,7 +13,7 @@ import type { FrameworkEditorFramework } from '@db';
 import { useSession } from '@/utils/auth-client';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useFrameworks } from '../hooks/useFrameworks';
+import { useFrameworks } from '@/hooks/use-frameworks';
 
 type Props = {
   onOpenChange: (isOpen: boolean) => void;

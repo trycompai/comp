@@ -1,5 +1,9 @@
 import type { FrameworkInstance, IntegrationResult, Policy, Task } from '@db';
-import { FrameworkInstanceWithControls } from '../types';
+
+export type {
+  FrameworkInstanceWithControls,
+  FrameworkInstanceWithComplianceScore,
+} from '@/lib/types/framework';
 
 export interface ComplianceScoresProps {
   policiesCompliance: number;
@@ -19,9 +23,4 @@ export interface ComplianceScoresProps {
 export interface FrameworkWithCompliance {
   framework: FrameworkInstance;
   compliance: number;
-}
-
-export interface FrameworkInstanceWithComplianceScore {
-  frameworkInstance: FrameworkInstanceWithControls;
-  complianceScore: number;
 }

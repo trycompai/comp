@@ -5,11 +5,13 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@trycompai
 import { Dialog } from '@trycompai/ui/dialog';
 import { ScrollArea } from '@trycompai/ui/scroll-area';
 import type { FrameworkEditorFramework } from '@db';
-import { PlusIcon } from 'lucide-react';
+import { Add } from '@trycompai/design-system/icons';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { usePermissions } from '@/hooks/use-permissions';
-import type { FrameworkInstanceWithControls } from '../types';
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import { AddFrameworkModal } from './AddFrameworkModal';
 import type { FrameworkInstanceWithComplianceScore } from './types';
 
@@ -66,13 +68,12 @@ export function FrameworksOverview({
 }: FrameworksOverviewProps) {
   const [isAddFrameworkModalOpen, setIsAddFrameworkModalOpen] = useState(false);
   const { hasPermission } = usePermissions();
+  const { orgId } = useParams<{ orgId: string }>();
 
-  // Create a map of framework IDs to compliance scores for easy lookup
   const complianceMap = new Map(
     frameworksWithCompliance?.map((f) => [f.frameworkInstance.id, f.complianceScore]) ?? [],
   );
 
-  // Get available frameworks that can be added (not already in the organization)
   const availableFrameworksToAdd = allFrameworks.filter(
     (framework) => !frameworksWithControls.some((fc) => fc.framework.id === framework.id),
   );
@@ -103,50 +104,55 @@ export function FrameworksOverview({
 
                 return (
                   <div key={framework.id}>
-                    <div className="flex items-start justify-between py-4 px-1">
-                      <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <div className="shrink-0 mt-1">
-                          {badgeSrc ? (
-                            <Image
-                              src={badgeSrc}
-                              alt={framework.framework.name}
-                              width={32}
-                              height={32}
-                              className="rounded-full w-8 h-8"
-                              unoptimized
-                            />
-                          ) : (
-                            <div className="rounded-full w-8 h-8 bg-muted flex items-center justify-center">
-                              <span className="text-xs text-muted-foreground">
-                                {framework.framework.name.charAt(0)}
+                    <Link
+                      href={`/${orgId}/frameworks/${framework.id}`}
+                      className="block hover:bg-muted/50 rounded-md transition-colors"
+                    >
+                      <div className="flex items-start justify-between py-4 px-1">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="shrink-0 mt-1">
+                            {badgeSrc ? (
+                              <Image
+                                src={badgeSrc}
+                                alt={framework.framework.name}
+                                width={32}
+                                height={32}
+                                className="rounded-full w-8 h-8"
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="rounded-full w-8 h-8 bg-muted flex items-center justify-center">
+                                <span className="text-xs text-muted-foreground">
+                                  {framework.framework.name.charAt(0)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-sm font-medium text-foreground flex flex-col">
+                              {framework.framework.name}
+                              <span className="text-xs text-muted-foreground font-normal">
+                                {framework.framework.description?.trim()}
+                              </span>
+                            </span>
+
+                            <div className="flex flex-col mt-1.5">
+                              <div className="w-full bg-muted/50 rounded-full h-1">
+                                <div
+                                  className="bg-primary h-full rounded-full transition-all duration-300"
+                                  style={{
+                                    width: `${complianceScore}%`,
+                                  }}
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground tabular-nums text-right mt-1">
+                                {Math.round(complianceScore)}% compliant
                               </span>
                             </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-sm font-medium text-foreground flex flex-col">
-                            {framework.framework.name}
-                            <span className="text-xs text-muted-foreground font-normal">
-                              {framework.framework.description?.trim()}
-                            </span>
-                          </span>
-
-                          <div className="flex flex-col mt-1.5">
-                            <div className="w-full bg-muted/50 rounded-full h-1">
-                              <div
-                                className="bg-primary h-full rounded-full transition-all duration-300"
-                                style={{
-                                  width: `${complianceScore}%`,
-                                }}
-                              />
-                            </div>
-                            <span className="text-xs text-muted-foreground tabular-nums text-right mt-1">
-                              {Math.round(complianceScore)}% compliant
-                            </span>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                     {index < frameworksWithControls.length - 1 && (
                       <div className="border-t border-muted/30" />
                     )}
@@ -162,7 +168,7 @@ export function FrameworksOverview({
         <CardFooter className="mt-auto">
           <div className="flex justify-center w-full">
             <Button variant="outline" onClick={() => setIsAddFrameworkModalOpen(true)}>
-              <PlusIcon className="h-4 w-4 mr-2" />
+              <Add size={16} className="mr-2" />
               Add Framework
             </Button>
           </div>

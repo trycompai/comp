@@ -49,7 +49,6 @@ export function ToDoOverview({
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check if onboarding is still in progress
   const { run: onboardingRun } = useRealtimeRun(onboardingTriggerJobId || '', {
     enabled: !!onboardingTriggerJobId,
   });

@@ -1,6 +1,7 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@trycompai/design-system';
+import { TrashCan } from '@trycompai/design-system/icons';
 import {
   Dialog,
   DialogContent,
@@ -12,14 +13,13 @@ import {
 import { Form } from '@trycompai/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { FrameworkInstanceWithControls } from '../../types';
-import { useFrameworks } from '../../hooks/useFrameworks';
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
+import { useFrameworks } from '@/hooks/use-frameworks';
 
 const formSchema = z.object({
   comment: z.string().optional(),
@@ -76,21 +76,17 @@ export function FrameworkDeleteDialog({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+              <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" variant="destructive" disabled={isSubmitting || !canDeleteFramework} className="gap-2">
-                {isSubmitting ? (
-                  <span className="flex items-center gap-2">
-                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    Deleting...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Trash2 className="h-3 w-3" />
-                    Delete
-                  </span>
-                )}
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={isSubmitting || !canDeleteFramework}
+                loading={isSubmitting}
+                iconLeft={!isSubmitting ? <TrashCan size={14} /> : undefined}
+              >
+                {isSubmitting ? 'Deleting...' : 'Delete'}
               </Button>
             </DialogFooter>
           </form>

@@ -15,22 +15,18 @@ vi.mock('@/hooks/use-permissions', () => ({
   }),
 }));
 
-// Mock @trigger.dev/react-hooks
 vi.mock('@trigger.dev/react-hooks', () => ({
   useRealtimeRun: () => ({ run: null }),
 }));
 
-// Mock sonner
 vi.mock('sonner', () => ({
   toast: { info: vi.fn(), error: vi.fn(), success: vi.fn() },
 }));
 
-// Mock next/link
 vi.mock('next/link', () => ({
   default: ({ children, href }: any) => <a href={href}>{children}</a>,
 }));
 
-// Mock @trycompai/ui components
 vi.mock('@trycompai/ui/button', () => ({
   Button: ({ children, disabled, asChild, ...props }: any) => (
     <button disabled={disabled} {...props}>
@@ -65,13 +61,11 @@ vi.mock('@trycompai/ui/tabs', () => ({
   ),
 }));
 
-// Mock ConfirmActionDialog
 vi.mock('./ConfirmActionDialog', () => ({
   ConfirmActionDialog: ({ isOpen, title }: any) =>
     isOpen ? <div data-testid="confirm-dialog">{title}</div> : null,
 }));
 
-// Mock lucide-react
 vi.mock('lucide-react', () => ({
   ArrowRight: () => <span data-testid="arrow-icon" />,
   CheckCircle2: () => <span data-testid="check-icon" />,

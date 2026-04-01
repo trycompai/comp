@@ -2,7 +2,7 @@
 
 import type { Control, PolicyStatus, RequirementMap } from '@db';
 import { db } from '@db';
-import type { FrameworkInstanceWithControls } from '../types';
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 
 export async function getAllFrameworkInstancesWithControls({
   organizationId,

@@ -1,6 +1,7 @@
 import { Toaster } from '@trycompai/ui/toaster';
 import type { Metadata } from 'next';
 import { type ReactNode } from 'react';
+import { Toaster as SonnerToaster } from 'sonner';
 
 import { headers } from 'next/headers';
 import '../styles/globals.css';
@@ -30,6 +31,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
           {children}
           <Toaster />
+          <SonnerToaster richColors position="top-right" />
         </div>
       </body>
     </html>
