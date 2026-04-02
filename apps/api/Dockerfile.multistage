@@ -83,8 +83,11 @@ RUN groupadd --system nestjs && useradd --system --gid nestjs --create-home nest
 WORKDIR /app
 RUN chown nestjs:nestjs /app
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/*
+# Install runtime dependencies + AWS RDS CA certificate bundle
+RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/* \
+  && wget -q -O /usr/local/share/aws-rds-ca-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+
+ENV NODE_EXTRA_CA_CERTS=/usr/local/share/aws-rds-ca-bundle.pem
 
 # Copy built NestJS app
 COPY --from=builder --chown=nestjs:nestjs /app/apps/api/dist ./dist
