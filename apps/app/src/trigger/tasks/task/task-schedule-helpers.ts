@@ -7,7 +7,7 @@ import type {
   EvidenceAutomationEvaluationStatus,
   IntegrationRunStatus,
   TaskStatus,
-} from '@trycompai/db';
+} from '@db';
 
 export type TargetStatus = Extract<TaskStatus, 'done' | 'todo' | 'failed'>;
 

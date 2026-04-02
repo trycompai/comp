@@ -23,7 +23,7 @@ import {
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
-import { TaskItemEntityType } from '@trycompai/db';
+import { TaskItemEntityType } from '@db';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { TaskManagementService } from './task-management.service';

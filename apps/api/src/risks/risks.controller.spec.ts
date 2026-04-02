@@ -7,6 +7,12 @@ import { RisksController } from './risks.controller';
 import { RisksService } from './risks.service';
 
 // Mock auth.server to avoid importing better-auth ESM in Jest
+jest.mock('@db', () => ({
+  ...jest.requireActual('@prisma/client'),
+  db: {},
+  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
+}));
+
 jest.mock('../auth/auth.server', () => ({
   auth: {
     api: {
@@ -31,6 +37,7 @@ import {
   buildRiskAssignmentFilter,
   hasRiskAccess,
 } from '../utils/assignment-filter';
+import { RiskCategory } from '@db';
 
 const mockBuildRiskAssignmentFilter =
   buildRiskAssignmentFilter as jest.MockedFunction<
@@ -59,7 +66,7 @@ describe('RisksController', () => {
 
   const authContextNoUser: AuthContext = {
     organizationId: orgId,
-    authType: 'apikey',
+    authType: 'api-key',
     isApiKey: true,
     isPlatformAdmin: false,
     userRoles: ['admin'],
@@ -119,7 +126,7 @@ describe('RisksController', () => {
     };
 
     it('should call findAllByOrganization with correct parameters', async () => {
-      risksService.findAllByOrganization.mockResolvedValue(paginatedResult);
+      risksService.findAllByOrganization.mockResolvedValue(paginatedResult as unknown as Awaited<ReturnType<typeof risksService.findAllByOrganization>>);
       const query = { page: 1, perPage: 10 };
 
       await controller.getAllRisks(query, orgId, authContext);
@@ -137,7 +144,7 @@ describe('RisksController', () => {
     });
 
     it('should return paginated data with auth info', async () => {
-      risksService.findAllByOrganization.mockResolvedValue(paginatedResult);
+      risksService.findAllByOrganization.mockResolvedValue(paginatedResult as unknown as Awaited<ReturnType<typeof risksService.findAllByOrganization>>);
 
       const result = await controller.getAllRisks({}, orgId, authContext);
 
@@ -155,18 +162,18 @@ describe('RisksController', () => {
     });
 
     it('should omit authenticatedUser when userId is not present', async () => {
-      risksService.findAllByOrganization.mockResolvedValue(paginatedResult);
+      risksService.findAllByOrganization.mockResolvedValue(paginatedResult as unknown as Awaited<ReturnType<typeof risksService.findAllByOrganization>>);
 
       const result = await controller.getAllRisks({}, orgId, authContextNoUser);
 
-      expect(result.authType).toBe('apikey');
+      expect(result.authType).toBe('api-key');
       expect(result).not.toHaveProperty('authenticatedUser');
     });
 
     it('should pass assignment filter from buildRiskAssignmentFilter', async () => {
       const assignmentFilter = { assigneeId: 'mem_123' };
       mockBuildRiskAssignmentFilter.mockReturnValue(assignmentFilter);
-      risksService.findAllByOrganization.mockResolvedValue(paginatedResult);
+      risksService.findAllByOrganization.mockResolvedValue(paginatedResult as unknown as Awaited<ReturnType<typeof risksService.findAllByOrganization>>);
 
       await controller.getAllRisks({}, orgId, authContext);
 
@@ -233,7 +240,7 @@ describe('RisksController', () => {
     ];
 
     it('should call getStatsByDepartment with organizationId', async () => {
-      risksService.getStatsByDepartment.mockResolvedValue(deptStats);
+      risksService.getStatsByDepartment.mockResolvedValue(deptStats as unknown as Awaited<ReturnType<typeof risksService.getStatsByDepartment>>);
 
       await controller.getStatsByDepartment(orgId, authContext);
 
@@ -241,7 +248,7 @@ describe('RisksController', () => {
     });
 
     it('should return data with auth info', async () => {
-      risksService.getStatsByDepartment.mockResolvedValue(deptStats);
+      risksService.getStatsByDepartment.mockResolvedValue(deptStats as unknown as Awaited<ReturnType<typeof risksService.getStatsByDepartment>>);
 
       const result = await controller.getStatsByDepartment(orgId, authContext);
 
@@ -258,7 +265,7 @@ describe('RisksController', () => {
 
   describe('getRiskById', () => {
     it('should call findById with correct parameters', async () => {
-      risksService.findById.mockResolvedValue(mockRisk);
+      risksService.findById.mockResolvedValue(mockRisk as unknown as Awaited<ReturnType<typeof risksService.findById>>);
 
       await controller.getRiskById('risk_1', orgId, authContext);
 
@@ -266,7 +273,7 @@ describe('RisksController', () => {
     });
 
     it('should return risk with auth info', async () => {
-      risksService.findById.mockResolvedValue(mockRisk);
+      risksService.findById.mockResolvedValue(mockRisk as unknown as Awaited<ReturnType<typeof risksService.findById>>);
 
       const result = await controller.getRiskById('risk_1', orgId, authContext);
 
@@ -281,7 +288,7 @@ describe('RisksController', () => {
     });
 
     it('should check hasRiskAccess and throw ForbiddenException if denied', async () => {
-      risksService.findById.mockResolvedValue(mockRisk);
+      risksService.findById.mockResolvedValue(mockRisk as unknown as Awaited<ReturnType<typeof risksService.findById>>);
       mockHasRiskAccess.mockReturnValue(false);
 
       await expect(
@@ -297,7 +304,7 @@ describe('RisksController', () => {
     });
 
     it('should pass isApiKey option to hasRiskAccess', async () => {
-      risksService.findById.mockResolvedValue(mockRisk);
+      risksService.findById.mockResolvedValue(mockRisk as unknown as Awaited<ReturnType<typeof risksService.findById>>);
 
       await controller.getRiskById('risk_1', orgId, authContextNoUser);
 
@@ -314,10 +321,11 @@ describe('RisksController', () => {
     const createDto = {
       title: 'New Risk',
       description: 'Description',
+      category: RiskCategory.operational,
     };
 
     it('should call create with organizationId and dto', async () => {
-      risksService.create.mockResolvedValue(mockRisk);
+      risksService.create.mockResolvedValue(mockRisk as unknown as Awaited<ReturnType<typeof risksService.create>>);
 
       await controller.createRisk(createDto, orgId, authContext);
 
@@ -325,7 +333,7 @@ describe('RisksController', () => {
     });
 
     it('should return created risk with auth info', async () => {
-      risksService.create.mockResolvedValue(mockRisk);
+      risksService.create.mockResolvedValue(mockRisk as unknown as Awaited<ReturnType<typeof risksService.create>>);
 
       const result = await controller.createRisk(createDto, orgId, authContext);
 
@@ -340,7 +348,7 @@ describe('RisksController', () => {
     });
 
     it('should omit authenticatedUser for API key auth', async () => {
-      risksService.create.mockResolvedValue(mockRisk);
+      risksService.create.mockResolvedValue(mockRisk as unknown as Awaited<ReturnType<typeof risksService.create>>);
 
       const result = await controller.createRisk(
         createDto,
@@ -349,7 +357,7 @@ describe('RisksController', () => {
       );
 
       expect(result).not.toHaveProperty('authenticatedUser');
-      expect(result.authType).toBe('apikey');
+      expect(result.authType).toBe('api-key');
     });
   });
 
@@ -358,7 +366,7 @@ describe('RisksController', () => {
     const updatedRisk = { ...mockRisk, title: 'Updated Risk' };
 
     it('should call updateById with correct parameters', async () => {
-      risksService.updateById.mockResolvedValue(updatedRisk);
+      risksService.updateById.mockResolvedValue(updatedRisk as unknown as Awaited<ReturnType<typeof risksService.updateById>>);
 
       await controller.updateRisk('risk_1', updateDto, orgId, authContext);
 
@@ -370,7 +378,7 @@ describe('RisksController', () => {
     });
 
     it('should return updated risk with auth info', async () => {
-      risksService.updateById.mockResolvedValue(updatedRisk);
+      risksService.updateById.mockResolvedValue(updatedRisk as unknown as Awaited<ReturnType<typeof risksService.updateById>>);
 
       const result = await controller.updateRisk(
         'risk_1',

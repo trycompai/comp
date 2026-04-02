@@ -125,6 +125,21 @@ export class GCPSecurityService {
         );
       }
 
+      if (errorText.includes('Security Command Center Legacy')) {
+        throw new Error(
+          'Security Command Center Legacy has been disabled by Google. ' +
+            'Please activate the Standard or Premium tier in your GCP console: ' +
+            'Security > Security Command Center > Settings.',
+        );
+      }
+
+      if (errorText.includes('Security Command Center API has not been used')) {
+        throw new Error(
+          'The Security Command Center API is not enabled for this project. ' +
+            'Enable it in the GCP console: APIs & Services > Enable APIs > Security Command Center API.',
+        );
+      }
+
       throw new Error(`GCP API error (${response.status}): ${errorText}`);
     }
 

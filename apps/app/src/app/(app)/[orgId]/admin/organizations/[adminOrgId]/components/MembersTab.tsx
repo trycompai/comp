@@ -139,7 +139,7 @@ export function MembersTab({
     try {
       await authClient.admin.impersonateUser({ userId });
       await authClient.organization.setActive({ organizationId: orgId });
-      router.push(`/${orgId}/frameworks`);
+      router.push(`/${orgId}/overview`);
     } catch (err) {
       console.error('Impersonation failed:', err);
       setImpersonatingUserId(null);

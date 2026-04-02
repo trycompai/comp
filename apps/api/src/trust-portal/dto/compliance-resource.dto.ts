@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
-import { TrustFramework } from '@prisma/client';
+import { TrustFramework } from '@db';
 
 export class ComplianceResourceBaseDto {
   @ApiProperty({

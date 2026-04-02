@@ -17,14 +17,19 @@ export const targetOrgUnitsVariable: CheckVariable = {
         '/admin/directory/v1/customer/my_customer/orgunits?type=all',
       );
 
+      const rootOption = { value: '/', label: '/ (Root)' };
+
       if (!response.organizationUnits) {
-        return [{ value: '/', label: '/ (Root)' }];
+        return [rootOption];
       }
 
-      return response.organizationUnits.map((ou) => ({
-        value: ou.orgUnitPath,
-        label: `${ou.orgUnitPath} (${ou.name})`,
-      }));
+      return [
+        rootOption,
+        ...response.organizationUnits.map((ou) => ({
+          value: ou.orgUnitPath,
+          label: `${ou.orgUnitPath} (${ou.name})`,
+        })),
+      ];
     } catch {
       return [{ value: '/', label: '/ (Root)' }];
     }

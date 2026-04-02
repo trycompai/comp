@@ -1,7 +1,6 @@
 import { openai } from '@ai-sdk/openai';
 import {
   CommentEntityType,
-  db,
   Departments,
   FrameworkEditorFramework,
   Impact,
@@ -13,6 +12,7 @@ import {
   VendorCategory,
   VendorStatus,
 } from '@db';
+import { db } from '@db/server';
 import { logger, metadata, tasks } from '@trigger.dev/sdk';
 import { generateObject, generateText, jsonSchema } from 'ai';
 import axios from 'axios';

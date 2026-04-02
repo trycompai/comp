@@ -1117,12 +1117,7 @@ function PolicyEditorWrapper({
   const formattedContent = Array.isArray(policyContent)
     ? policyContent
     : [policyContent as JSONContent];
-  const sanitizedContent = formattedContent.map((node) => {
-    if (node.marks) node.marks = node.marks.filter((mark) => mark.type !== 'textStyle');
-    if (node.content) node.content = node.content.map((child) => child);
-    return node;
-  });
-  const validatedDoc = validateAndFixTipTapContent(sanitizedContent);
+  const validatedDoc = validateAndFixTipTapContent(formattedContent);
   const normalizedContent = (validatedDoc.content || []) as Array<JSONContent>;
 
   async function savePolicy(content: Array<JSONContent>): Promise<void> {

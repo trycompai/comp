@@ -197,12 +197,11 @@ export function FindingsList({
               <FindingItem
                 key={finding.id}
                 finding={finding}
-                isAuditor={isAuditor}
-                isPlatformAdmin={isPlatformAdmin}
                 isExpanded={expandedId === finding.id}
                 isTarget={targetFindingId === finding.id}
                 canChangeStatus={canChangeStatus}
                 canSetRestrictedStatus={canSetRestrictedStatus}
+                canSetReadyForReview={isPlatformAdmin || !isAuditor}
                 canDelete={canDeleteFinding}
                 onToggleExpand={() => setExpandedId(expandedId === finding.id ? null : finding.id)}
                 onStatusChange={(status, revisionNote) =>

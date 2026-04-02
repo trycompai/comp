@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { encrypt, decrypt, type EncryptedData } from './encryption.util';
 
 @Injectable()

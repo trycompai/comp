@@ -1,4 +1,4 @@
-import { db, Prisma } from '@db';
+import { db, Prisma } from '@db/server';
 
 /**
  * Policy.content is Json[] (the inner nodes of a TipTap document),

@@ -5,7 +5,7 @@ import {
   Logger,
   NestInterceptor,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { Observable, tap } from 'rxjs';
 import { MUTATION_METHODS } from '../../audit/audit-log.constants';
 

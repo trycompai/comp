@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@db';
 
 /**
  * Roles that require assignment-based filtering for resources

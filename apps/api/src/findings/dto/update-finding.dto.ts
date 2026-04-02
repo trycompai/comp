@@ -6,7 +6,7 @@ import {
   IsNotEmpty,
   MaxLength,
 } from 'class-validator';
-import { FindingStatus, FindingType } from '@trycompai/db';
+import { FindingStatus, FindingType } from '@db';
 
 export class UpdateFindingDto {
   @ApiProperty({

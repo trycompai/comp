@@ -1,4 +1,4 @@
-import { Departments, PolicyVisibility } from '@prisma/client';
+import { Departments, PolicyVisibility } from '@db';
 import {
   isPrivilegedRole,
   buildPolicyVisibilityFilter,

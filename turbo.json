@@ -67,8 +67,9 @@
     "ui": "tui",
     "tasks": {
         "db:generate": {
+            "dependsOn": ["^db:generate"],
             "cache": false,
-            "outputs": ["prisma/schema.prisma", "node_modules/.prisma/**"]
+            "outputs": ["prisma/schema.prisma", "node_modules/.prisma/**", "src/generated/**"]
         },
         "build": {
             "dependsOn": [

@@ -99,6 +99,15 @@ async function fetch(credentials: GCPCredentials): Promise<GCPFinding[]> {
 
       if (!res.ok) {
         const errorText = await res.text();
+
+        if (errorText.includes('Security Command Center Legacy')) {
+          throw new Error(
+            'Security Command Center Legacy has been disabled by Google. ' +
+              'Please activate the Standard or Premium tier in your GCP console: ' +
+              'Security > Security Command Center > Settings.',
+          );
+        }
+
         throw new Error(`Failed to fetch findings: ${errorText}`);
       }
 

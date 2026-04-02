@@ -30,6 +30,9 @@
       "@db": [
         "./prisma"
       ],
+      "@db/server": [
+        "./prisma/server"
+      ],
       "@/trigger": [
         "./src/trigger"
       ],

@@ -8,7 +8,7 @@ import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { db, Role } from '@db';
+import { db, Role } from '@db/server';
 import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -68,16 +68,13 @@ export default async function Layout({
   }
 
   // Sync activeOrganizationId if it doesn't match the URL's orgId.
-  // Direct DB update instead of HTTP call to avoid race conditions:
-  // Next.js renders layouts and pages in parallel, so child pages may call
-  // serverApi before an HTTP-based sync completes. A direct DB write is faster
-  // and membership has already been validated above.
+  // Uses better-auth's API so both server and client-side session state stay in sync.
   const currentActiveOrgId = session.session.activeOrganizationId;
   if (!currentActiveOrgId || currentActiveOrgId !== requestedOrgId) {
     try {
-      await db.session.update({
-        where: { id: session.session.id },
-        data: { activeOrganizationId: requestedOrgId },
+      await auth.api.setActiveOrganization({
+        headers: requestHeaders,
+        body: { organizationId: requestedOrgId },
       });
     } catch (error) {
       console.error('[Layout] Failed to sync activeOrganizationId:', error);

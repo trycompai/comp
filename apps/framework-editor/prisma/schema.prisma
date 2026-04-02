@@ -599,6 +599,10 @@ model DynamicIntegration {
     /// Whether multiple connections per org are allowed
     supportsMultipleConnections Boolean @default(false)
 
+    /// Declarative sync definition (JSON — DSL steps that produce employee list)
+    /// When present and capabilities includes 'sync', enables employee sync
+    syncDefinition  Json?
+
     /// Whether this dynamic integration is active
     isActive    Boolean @default(true)
 
@@ -1314,7 +1318,7 @@ model IntegrationSyncLog {
   organizationId String
   organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  /// Provider slug (e.g., "ramp", "google-workspace", "rippling", "jumpcloud")
+  /// Provider slug (e.g., "google-workspace", "rippling", "jumpcloud")
   provider    String
   /// Event type (e.g., "employee_sync", "role_discovery", "role_mapping_save")
   eventType   String

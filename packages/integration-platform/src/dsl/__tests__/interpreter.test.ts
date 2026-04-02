@@ -603,4 +603,483 @@ describe('interpretDeclarativeCheck', () => {
       expect(ctx._fails[0]!.remediation).toContain('Microsoft 365 admin center');
     });
   });
+
+  describe('code step', () => {
+    it('sets scope values used by subsequent DSL steps', async () => {
+      const definition: CheckDefinition = {
+        steps: [
+          {
+            type: 'fetch',
+            path: '/api/users',
+            as: 'rawUsers',
+          },
+          {
+            type: 'code',
+            code: 'scope.users = scope.rawUsers.filter(u => u.active);',
+          },
+          {
+            type: 'forEach',
+            collection: 'users',
+            itemAs: 'user',
+            resourceType: 'user',
+            resourceIdPath: 'user.email',
+            conditions: [
+              { field: 'user.mfa', operator: 'eq', value: true },
+            ],
+            onPass: {
+              title: 'MFA OK for {{user.email}}',
+              resourceType: 'user',
+              resourceId: '{{user.email}}',
+            },
+            onFail: {
+              title: 'MFA missing for {{user.email}}',
+              resourceType: 'user',
+              resourceId: '{{user.email}}',
+              severity: 'high',
+              remediation: 'Enable MFA',
+            },
+          },
+        ],
+      };
+
+      const check = interpretDeclarativeCheck({
+        id: 'code_filter',
+        name: 'Code Filter Test',
+        description: 'Tests code step filtering',
+        definition,
+      });
+
+      const ctx = createMockContext();
+      ctx._fetchResponses.set('/api/users', [
+        { email: 'alice@test.com', active: true, mfa: true },
+        { email: 'bob@test.com', active: false, mfa: false },
+        { email: 'carol@test.com', active: true, mfa: false },
+      ]);
+
+      await check.run(ctx);
+
+      // Bob is filtered out by the code step (active: false)
+      expect(ctx._passes).toHaveLength(1);
+      expect(ctx._passes[0]!.title).toBe('MFA OK for alice@test.com');
+
+      expect(ctx._fails).toHaveLength(1);
+      expect(ctx._fails[0]!.title).toBe('MFA missing for carol@test.com');
+    });
+
+    it('calls ctx.pass() and ctx.fail() directly', async () => {
+      const definition: CheckDefinition = {
+        steps: [
+          {
+            type: 'code',
+            code: `
+              ctx.pass({
+                title: 'Direct pass',
+                description: 'From code',
+                resourceType: 'test',
+                resourceId: 'test-1',
+                evidence: { source: 'code' },
+              });
+              ctx.fail({
+                title: 'Direct fail',
+                description: 'From code',
+                resourceType: 'test',
+                resourceId: 'test-2',
+                severity: 'critical',
+                remediation: 'Fix it',
+              });
+            `,
+          },
+        ],
+      };
+
+      const check = interpretDeclarativeCheck({
+        id: 'code_direct',
+        name: 'Code Direct Test',
+        description: 'Tests code step direct results',
+        definition,
+      });
+
+      const ctx = createMockContext();
+      await check.run(ctx);
+
+      expect(ctx._passes).toHaveLength(1);
+      expect(ctx._passes[0]!.title).toBe('Direct pass');
+
+      expect(ctx._fails).toHaveLength(1);
+      expect(ctx._fails[0]!.title).toBe('Direct fail');
+      expect(ctx._fails[0]!.severity).toBe('critical');
+    });
+
+    it('uses async/await with ctx.fetch()', async () => {
+      const definition: CheckDefinition = {
+        steps: [
+          {
+            type: 'code',
+            code: `
+              const data = await ctx.fetch('/api/settings');
+              scope.ssoEnabled = data.sso_enabled;
+            `,
+          },
+          {
+            type: 'branch',
+            condition: { field: 'ssoEnabled', operator: 'eq', value: true },
+            then: [
+              {
+                type: 'emit',
+                result: 'pass',
+                template: {
+                  title: 'SSO is enabled',
+                  resourceType: 'settings',
+                  resourceId: 'sso',
+                },
+              },
+            ],
+            else: [
+              {
+                type: 'emit',
+                result: 'fail',
+                template: {
+                  title: 'SSO is not enabled',
+                  resourceType: 'settings',
+                  resourceId: 'sso',
+                  severity: 'high',
+                  remediation: 'Enable SSO',
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      const check = interpretDeclarativeCheck({
+        id: 'code_async',
+        name: 'Code Async Test',
+        description: 'Tests code step async fetch',
+        definition,
+      });
+
+      const ctx = createMockContext();
+      ctx._fetchResponses.set('/api/settings', { sso_enabled: true });
+      await check.run(ctx);
+
+      expect(ctx._passes).toHaveLength(1);
+      expect(ctx._passes[0]!.title).toBe('SSO is enabled');
+      expect(ctx._fails).toHaveLength(0);
+    });
+
+    it('supports Promise.all for parallel fetches', async () => {
+      const definition: CheckDefinition = {
+        steps: [
+          {
+            type: 'code',
+            code: `
+              const [users, roles] = await Promise.all([
+                ctx.fetch('/api/users'),
+                ctx.fetch('/api/roles'),
+              ]);
+              scope.userCount = users.length;
+              scope.roleCount = roles.length;
+            `,
+          },
+          {
+            type: 'emit',
+            result: 'pass',
+            template: {
+              title: 'Fetched {{userCount}} users and {{roleCount}} roles',
+              resourceType: 'system',
+              resourceId: 'parallel-fetch',
+            },
+          },
+        ],
+      };
+
+      const check = interpretDeclarativeCheck({
+        id: 'code_parallel',
+        name: 'Code Parallel Test',
+        description: 'Tests Promise.all',
+        definition,
+      });
+
+      const ctx = createMockContext();
+      ctx._fetchResponses.set('/api/users', [{ id: 1 }, { id: 2 }, { id: 3 }]);
+      ctx._fetchResponses.set('/api/roles', [{ id: 'admin' }, { id: 'user' }]);
+      await check.run(ctx);
+
+      expect(ctx._passes).toHaveLength(1);
+      expect(ctx._passes[0]!.title).toBe('Fetched 3 users and 2 roles');
+    });
+
+    it('reads scope from prior fetch step', async () => {
+      const definition: CheckDefinition = {
+        steps: [
+          {
+            type: 'fetch',
+            path: '/api/config',
+            as: 'config',
+          },
+          {
+            type: 'code',
+            code: `
+              const cfg = scope.config;
+              scope.isCompliant = cfg.encryption && cfg.audit_logging;
+            `,
+          },
+          {
+            type: 'branch',
+            condition: { field: 'isCompliant', operator: 'truthy' },
+            then: [
+              {
+                type: 'emit',
+                result: 'pass',
+                template: {
+                  title: 'System is compliant',
+                  resourceType: 'config',
+                  resourceId: 'compliance',
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      const check = interpretDeclarativeCheck({
+        id: 'code_scope_read',
+        name: 'Code Scope Read',
+        description: 'Tests reading prior scope',
+        definition,
+      });
+
+      const ctx = createMockContext();
+      ctx._fetchResponses.set('/api/config', { encryption: true, audit_logging: true });
+      await check.run(ctx);
+
+      expect(ctx._passes).toHaveLength(1);
+      expect(ctx._passes[0]!.title).toBe('System is compliant');
+    });
+
+    it('works nested inside forEach', async () => {
+      const definition: CheckDefinition = {
+        steps: [
+          {
+            type: 'fetch',
+            path: '/api/repos',
+            as: 'repos',
+          },
+          {
+            type: 'forEach',
+            collection: 'repos',
+            itemAs: 'repo',
+            resourceType: 'repository',
+            resourceIdPath: 'repo.name',
+            steps: [
+              {
+                type: 'code',
+                code: `
+                  const details = await ctx.fetch('/api/repos/' + scope.repo.name + '/settings');
+                  scope.repo.branchProtection = details.branch_protection;
+                `,
+              },
+            ],
+            conditions: [
+              { field: 'repo.branchProtection', operator: 'eq', value: true },
+            ],
+            onPass: {
+              title: '{{repo.name}} has branch protection',
+              resourceType: 'repository',
+              resourceId: '{{repo.name}}',
+            },
+            onFail: {
+              title: '{{repo.name}} missing branch protection',
+              resourceType: 'repository',
+              resourceId: '{{repo.name}}',
+              severity: 'high',
+              remediation: 'Enable branch protection',
+            },
+          },
+        ],
+      };
+
+      const check = interpretDeclarativeCheck({
+        id: 'code_in_foreach',
+        name: 'Code in ForEach',
+        description: 'Tests nested code step',
+        definition,
+      });
+
+      const ctx = createMockContext();
+      ctx._fetchResponses.set('/api/repos', [
+        { name: 'frontend' },
+        { name: 'backend' },
+      ]);
+      ctx._fetchResponses.set('/api/repos/frontend/settings', { branch_protection: true });
+      ctx._fetchResponses.set('/api/repos/backend/settings', { branch_protection: false });
+
+      await check.run(ctx);
+
+      expect(ctx._passes).toHaveLength(1);
+      expect(ctx._passes[0]!.title).toBe('frontend has branch protection');
+
+      expect(ctx._fails).toHaveLength(1);
+      expect(ctx._fails[0]!.title).toBe('backend missing branch protection');
+    });
+
+    it('works nested inside branch', async () => {
+      const definition: CheckDefinition = {
+        steps: [
+          {
+            type: 'fetch',
+            path: '/api/org',
+            as: 'org',
+          },
+          {
+            type: 'branch',
+            condition: { field: 'org.plan', operator: 'eq', value: 'enterprise' },
+            then: [
+              {
+                type: 'code',
+                code: `
+                  ctx.pass({
+                    title: 'Enterprise plan detected',
+                    description: 'Advanced checks available',
+                    resourceType: 'org',
+                    resourceId: scope.org.id,
+                    evidence: { plan: scope.org.plan },
+                  });
+                `,
+              },
+            ],
+            else: [
+              {
+                type: 'emit',
+                result: 'fail',
+                template: {
+                  title: 'Not enterprise plan',
+                  resourceType: 'org',
+                  resourceId: '{{org.id}}',
+                  severity: 'info',
+                  remediation: 'Upgrade to enterprise',
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      const check = interpretDeclarativeCheck({
+        id: 'code_in_branch',
+        name: 'Code in Branch',
+        description: 'Tests code in branch',
+        definition,
+      });
+
+      const ctx = createMockContext();
+      ctx._fetchResponses.set('/api/org', { id: 'org-1', plan: 'enterprise' });
+      await check.run(ctx);
+
+      expect(ctx._passes).toHaveLength(1);
+      expect(ctx._passes[0]!.title).toBe('Enterprise plan detected');
+      expect(ctx._fails).toHaveLength(0);
+    });
+
+    it('propagates errors from code step', async () => {
+      const definition: CheckDefinition = {
+        steps: [
+          {
+            type: 'code',
+            code: 'throw new Error("Something went wrong");',
+          },
+        ],
+      };
+
+      const check = interpretDeclarativeCheck({
+        id: 'code_error',
+        name: 'Code Error Test',
+        description: 'Tests error propagation',
+        definition,
+      });
+
+      const ctx = createMockContext();
+      await expect(check.run(ctx)).rejects.toThrow('Something went wrong');
+    });
+
+    it('handles complex data transformation (Map, filter, reduce)', async () => {
+      const definition: CheckDefinition = {
+        steps: [
+          {
+            type: 'fetch',
+            path: '/api/users',
+            as: 'rawUsers',
+          },
+          {
+            type: 'fetch',
+            path: '/api/roles',
+            as: 'rawRoles',
+          },
+          {
+            type: 'code',
+            code: `
+              // Build lookup map (like Google Workspace employee-access check)
+              const roleMap = new Map();
+              for (const role of scope.rawRoles) {
+                roleMap.set(role.id, role.name);
+              }
+
+              // Enrich users with role names
+              scope.users = scope.rawUsers.map(u => ({
+                ...u,
+                roleName: roleMap.get(u.roleId) || 'Unknown',
+              }));
+            `,
+          },
+          {
+            type: 'forEach',
+            collection: 'users',
+            itemAs: 'user',
+            resourceType: 'user',
+            resourceIdPath: 'user.email',
+            conditions: [
+              { field: 'user.roleName', operator: 'neq', value: 'Unknown' },
+            ],
+            onPass: {
+              title: '{{user.email}} has role {{user.roleName}}',
+              resourceType: 'user',
+              resourceId: '{{user.email}}',
+            },
+            onFail: {
+              title: '{{user.email}} has unknown role',
+              resourceType: 'user',
+              resourceId: '{{user.email}}',
+              severity: 'medium',
+              remediation: 'Assign a valid role',
+            },
+          },
+        ],
+      };
+
+      const check = interpretDeclarativeCheck({
+        id: 'code_transform',
+        name: 'Code Transform Test',
+        description: 'Tests Map + data enrichment',
+        definition,
+      });
+
+      const ctx = createMockContext();
+      ctx._fetchResponses.set('/api/users', [
+        { email: 'alice@test.com', roleId: 'r1' },
+        { email: 'bob@test.com', roleId: 'r999' },
+      ]);
+      ctx._fetchResponses.set('/api/roles', [
+        { id: 'r1', name: 'Admin' },
+        { id: 'r2', name: 'User' },
+      ]);
+
+      await check.run(ctx);
+
+      expect(ctx._passes).toHaveLength(1);
+      expect(ctx._passes[0]!.title).toBe('alice@test.com has role Admin');
+
+      expect(ctx._fails).toHaveLength(1);
+      expect(ctx._fails[0]!.title).toBe('bob@test.com has unknown role');
+    });
+  });
 });

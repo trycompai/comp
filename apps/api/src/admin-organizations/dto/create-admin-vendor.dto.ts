@@ -7,7 +7,7 @@ import {
   IsUrl,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { VendorCategory, VendorStatus } from '@trycompai/db';
+import { VendorCategory, VendorStatus } from '@db';
 
 export class CreateAdminVendorDto {
   @ApiProperty({

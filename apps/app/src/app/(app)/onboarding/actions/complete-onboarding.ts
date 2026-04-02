@@ -5,7 +5,7 @@ import { steps } from '@/app/(app)/setup/lib/constants';
 import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/trigger/tasks/onboarding/onboard-organization';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';

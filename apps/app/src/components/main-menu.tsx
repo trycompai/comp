@@ -74,9 +74,17 @@ export function MainMenu({
 
   const items: MenuItem[] = [
     {
+      id: 'overview',
+      path: '/:organizationId/overview',
+      name: 'Overview',
+      disabled: false,
+      icon: Gauge,
+      protected: false,
+    },
+    {
       id: 'frameworks',
       path: '/:organizationId/frameworks',
-      name: 'Overview',
+      name: 'Frameworks',
       disabled: false,
       icon: Gauge,
       protected: false,

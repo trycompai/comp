@@ -39,7 +39,6 @@ import { apiClient } from '@/lib/api-client';
 import { buildDisplayItems, filterDisplayItems } from './filter-members';
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
-import { RampRoleMappingSheet } from './RampRoleMappingSheet';
 import type { MemberWithUser, TeamMembersData } from './TeamMembers';
 
 import type { EmployeeSyncConnectionsData } from '../data/queries';
@@ -97,25 +96,20 @@ export function TeamMembersClient({
     googleWorkspaceConnectionId,
     ripplingConnectionId,
     jumpcloudConnectionId,
-    rampConnectionId,
     selectedProvider,
     isSyncing,
     syncEmployees,
     hasAnyConnection,
     getProviderName,
     getProviderLogo,
-    showRoleMappingSheet,
-    roleMappingData,
-    handleRoleMappingClose,
-    handleRoleMappingSaved,
-    openRoleMappingEditor,
+    availableProviders,
   } = useEmployeeSync({ organizationId, initialData: employeeSyncData });
 
   const lastSyncAt = employeeSyncData.lastSyncAt;
   const nextSyncAt = employeeSyncData.nextSyncAt;
 
   const handleEmployeeSync = async (
-    provider: 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp',
+    provider: string,
   ) => {
     const result = await syncEmployees(provider);
     if (result?.success) {
@@ -288,7 +282,7 @@ export function TeamMembersClient({
                 onValueChange={(value) => {
                   if (value) {
                     handleEmployeeSync(
-                      value as 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp',
+                      value as 'google-workspace' | 'rippling' | 'jumpcloud',
                     );
                   }
                 }}
@@ -302,14 +296,16 @@ export function TeamMembersClient({
                     </>
                   ) : selectedProvider ? (
                     <div className="flex items-center gap-2">
-                      <Image
-                        src={getProviderLogo(selectedProvider)}
-                        alt={getProviderName(selectedProvider)}
-                        width={16}
-                        height={16}
-                        className="rounded-sm"
-                        unoptimized
-                      />
+                      {getProviderLogo(selectedProvider) && (
+                        <Image
+                          src={getProviderLogo(selectedProvider)}
+                          alt={getProviderName(selectedProvider)}
+                          width={16}
+                          height={16}
+                          className="rounded-sm"
+                          unoptimized
+                        />
+                      )}
                       <span className="truncate">{getProviderName(selectedProvider)}</span>
                     </div>
                   ) : (
@@ -391,24 +387,29 @@ export function TeamMembersClient({
                     </div>
                   </SelectItem>
                 )}
-                {rampConnectionId && (
-                  <SelectItem value="ramp">
-                    <div className="flex items-center gap-2">
-                      <Image
-                        src={getProviderLogo('ramp')}
-                        alt="Ramp"
-                        width={16}
-                        height={16}
-                        className="rounded-sm"
-                        unoptimized
-                      />
-                      Ramp
-                      {selectedProvider === 'ramp' && (
-                        <span className="ml-auto text-xs text-muted-foreground">Active</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                )}
+                {/* Dynamic sync providers (from dynamic integrations) */}
+                {availableProviders
+                  .filter((p) => p.connected && !['google-workspace', 'rippling', 'jumpcloud'].includes(p.slug))
+                  .map((provider) => (
+                    <SelectItem key={provider.slug} value={provider.slug}>
+                      <div className="flex items-center gap-2">
+                        {provider.logoUrl && (
+                          <Image
+                            src={provider.logoUrl}
+                            alt={provider.name}
+                            width={16}
+                            height={16}
+                            className="rounded-sm"
+                            unoptimized
+                          />
+                        )}
+                        {provider.name}
+                        {selectedProvider === provider.slug && (
+                          <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
               </SelectContent>
               </Select>
             </div>
@@ -484,17 +485,6 @@ export function TeamMembersClient({
             )}
           </TableBody>
         </Table>
-      )}
-      {roleMappingData && (
-        <RampRoleMappingSheet
-          open={showRoleMappingSheet}
-          onOpenChange={(open) => {
-            if (!open) handleRoleMappingClose();
-          }}
-          organizationId={organizationId}
-          data={roleMappingData}
-          onSaved={handleRoleMappingSaved}
-        />
       )}
     </Stack>
   );

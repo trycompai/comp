@@ -1,5 +1,5 @@
-// DSL Engine — Declarative check definitions
-export { interpretDeclarativeCheck } from './interpreter';
+// DSL Engine — Declarative check and sync definitions
+export { interpretDeclarativeCheck, interpretDeclarativeSync } from './interpreter';
 export { evaluateCondition, evaluateOperator, resolvePath } from './expression-evaluator';
 export { interpolate, interpolateTemplate } from './template-engine';
 export { validateIntegrationDefinition, type ValidationResult } from './validate';
@@ -13,7 +13,10 @@ export type {
   AggregateStep,
   BranchStep,
   EmitStep,
+  CodeStep,
   CheckDefinition,
+  SyncEmployee,
+  SyncDefinition,
   Condition,
   FieldCondition,
   LogicalCondition,
@@ -27,8 +30,11 @@ export type {
 export {
   DSLStepSchema,
   CheckDefinitionSchema,
+  SyncEmployeeSchema,
+  SyncDefinitionSchema,
   DynamicIntegrationDefinitionSchema,
   ConditionSchema,
   ResultTemplateSchema,
   PaginationConfigSchema,
+  CodeStepSchema,
 } from './types';

@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
-import { db, Prisma } from '@trycompai/db';
+import { db, Prisma } from '@db';
 import { auth } from '../auth/auth.server';
 import { deviceAgentRedisClient } from './device-agent-kv';
 import {

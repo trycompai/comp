@@ -80,6 +80,7 @@ export function TasksTable({ tasks, orgId }: TasksTableProps) {
                 key={task.id}
                 role="button"
                 tabIndex={0}
+                style={{ cursor: 'pointer' }}
                 onClick={() => handleRowClick(task.id)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {

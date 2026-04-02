@@ -29,7 +29,7 @@ import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { getStringValue, toStringCredentials } from '../utils/credential-utils';
 import { db } from '@db';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@db';
 
 interface TaskIntegrationCheck {
   integrationId: string;
