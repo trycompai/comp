@@ -16,14 +16,11 @@ const tempSchema = path.join(__dirname, '../dist/.schema-clientjs.prisma');
 
 let schema = fs.readFileSync(schemaPath, 'utf8');
 
-// Replace generator block with prisma-client-js (no custom output)
-schema = schema.replace(
-  /generator client \{[^}]*\}/s,
-  `generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]
-}`
-);
+// Surgically patch: swap provider and remove output line.
+// Preserves all other generator settings (previewFeatures, etc.).
+schema = schema
+  .replace(/provider\s*=\s*"prisma-client"/g, 'provider = "prisma-client-js"')
+  .replace(/\s*output\s*=\s*"[^"]*"\n?/g, '\n');
 
 fs.writeFileSync(tempSchema, schema);
 
