@@ -32,6 +32,10 @@ model DynamicIntegration {
     /// Whether multiple connections per org are allowed
     supportsMultipleConnections Boolean @default(false)
 
+    /// Declarative sync definition (JSON — DSL steps that produce employee list)
+    /// When present and capabilities includes 'sync', enables employee sync
+    syncDefinition  Json?
+
     /// Whether this dynamic integration is active
     isActive    Boolean @default(true)
 

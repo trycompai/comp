@@ -1,6 +1,6 @@
 import { openai } from '@ai-sdk/openai';
-import { db } from '@trycompai/db';
-import type { FrameworkEditorFramework, FrameworkEditorPolicyTemplate, Policy, Prisma } from '@trycompai/db';
+import { db } from '@db';
+import type { FrameworkEditorFramework, FrameworkEditorPolicyTemplate, Policy, Prisma } from '@db';
 import { logger } from '@trigger.dev/sdk';
 import { generateObject, NoObjectGeneratedError } from 'ai';
 import { z } from 'zod';

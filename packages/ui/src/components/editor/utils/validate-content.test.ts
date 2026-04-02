@@ -182,6 +182,161 @@ describe('validateAndFixTipTapContent', () => {
     });
   });
 
+  describe('stringified JSON nodes', () => {
+    it('should parse stringified JSON nodes in an array', () => {
+      const content = [
+        JSON.stringify({ type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Purpose' }] }),
+        JSON.stringify({ type: 'paragraph', attrs: { textAlign: null }, content: [{ type: 'text', text: 'Some policy text.' }] }),
+      ];
+
+      const fixed = validateAndFixTipTapContent(content);
+      expect(fixed.type).toBe('doc');
+      const nodes = fixed.content as any[];
+      expect(nodes).toHaveLength(2);
+      expect(nodes[0].type).toBe('heading');
+      expect(nodes[0].content[0].text).toBe('Purpose');
+      expect(nodes[1].type).toBe('paragraph');
+      expect(nodes[1].content[0].text).toBe('Some policy text.');
+    });
+
+    it('should handle mixed stringified and object nodes', () => {
+      const content = [
+        JSON.stringify({ type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Title' }] }),
+        { type: 'paragraph', content: [{ type: 'text', text: 'Body text' }] },
+      ];
+
+      const fixed = validateAndFixTipTapContent(content);
+      const nodes = fixed.content as any[];
+      expect(nodes).toHaveLength(2);
+      expect(nodes[0].type).toBe('heading');
+      expect(nodes[1].type).toBe('paragraph');
+    });
+
+    it('should skip invalid stringified JSON', () => {
+      const content = [
+        'not valid json',
+        JSON.stringify({ type: 'paragraph', content: [{ type: 'text', text: 'Valid' }] }),
+      ];
+
+      const fixed = validateAndFixTipTapContent(content);
+      const nodes = fixed.content as any[];
+      expect(nodes).toHaveLength(1);
+      expect(nodes[0].type).toBe('paragraph');
+    });
+  });
+
+  describe('orphaned listItem handling', () => {
+    it('should wrap orphaned listItems in a bulletList', () => {
+      const content = [
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Title' }] },
+        { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Item 1' }] }] },
+        { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Item 2' }] }] },
+      ];
+
+      const fixed = validateAndFixTipTapContent(content);
+      const nodes = fixed.content as any[];
+      expect(nodes).toHaveLength(2);
+      expect(nodes[0].type).toBe('heading');
+      expect(nodes[1].type).toBe('bulletList');
+      expect(nodes[1].content).toHaveLength(2);
+      expect(nodes[1].content[0].type).toBe('listItem');
+      expect(nodes[1].content[1].type).toBe('listItem');
+    });
+
+    it('should append orphaned listItems to a preceding list', () => {
+      const content = [
+        { type: 'bulletList', content: [
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'First' }] }] },
+        ]},
+        { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Second' }] }] },
+        { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Third' }] }] },
+      ];
+
+      const fixed = validateAndFixTipTapContent(content);
+      const nodes = fixed.content as any[];
+      expect(nodes).toHaveLength(1);
+      expect(nodes[0].type).toBe('bulletList');
+      expect(nodes[0].content).toHaveLength(3);
+    });
+  });
+
+  describe('list with non-listItem children', () => {
+    it('should wrap bare paragraphs inside a bulletList in listItems', () => {
+      const content = [
+        { type: 'bulletList', content: [
+          { type: 'paragraph', attrs: { textAlign: null }, content: [{ type: 'text', text: 'Bare paragraph' }] },
+        ]},
+      ];
+
+      const fixed = validateAndFixTipTapContent(content);
+      const nodes = fixed.content as any[];
+      expect(nodes[0].type).toBe('bulletList');
+      expect(nodes[0].content[0].type).toBe('listItem');
+      expect(nodes[0].content[0].content[0].type).toBe('paragraph');
+      expect(nodes[0].content[0].content[0].content[0].text).toBe('Bare paragraph');
+    });
+  });
+
+  describe('textStyle mark removal', () => {
+    it('should strip textStyle marks from content', () => {
+      const content = {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [
+              {
+                type: 'text',
+                text: 'Styled text',
+                marks: [
+                  { type: 'textStyle', attrs: { color: 'red' } },
+                  { type: 'bold' },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      const fixed = validateAndFixTipTapContent(content);
+      const textNode = (fixed.content as any[])[0].content[0];
+      expect(textNode.marks).toHaveLength(1);
+      expect(textNode.marks[0].type).toBe('bold');
+    });
+  });
+
+  describe('real-world AI-generated malformed content', () => {
+    it('should fix the exact content from ENG-197', () => {
+      // This is the actual content from the bug report — each node is a
+      // JSON string, the bulletList contains a bare paragraph, and
+      // listItems are orphaned at the top level.
+      const content = [
+        JSON.stringify({ type: 'heading', attrs: { level: 2, textAlign: null }, content: [{ text: 'Purpose', type: 'text' }] }),
+        JSON.stringify({ type: 'paragraph', attrs: { textAlign: null }, content: [{ text: 'Ensure all governance...', type: 'text' }] }),
+        JSON.stringify({ type: 'heading', attrs: { level: 2, textAlign: null }, content: [{ text: 'Version Control & Distribution', type: 'text' }] }),
+        JSON.stringify({ type: 'bulletList', content: [{ type: 'paragraph', attrs: { textAlign: null }, content: [{ text: 'Keep policies under version control.', type: 'text' }] }] }),
+        JSON.stringify({ type: 'listItem', content: [{ type: 'paragraph', attrs: { textAlign: null }, content: [{ text: 'Include a version number.', type: 'text' }] }] }),
+        JSON.stringify({ type: 'listItem', content: [{ type: 'paragraph', attrs: { textAlign: null }, content: [{ text: 'Notify personnel.', type: 'text' }] }] }),
+      ];
+
+      const fixed = validateAndFixTipTapContent(content);
+      expect(fixed.type).toBe('doc');
+      const nodes = fixed.content as any[];
+
+      // heading, paragraph, heading, bulletList (merged)
+      expect(nodes).toHaveLength(4);
+      expect(nodes[0].type).toBe('heading');
+      expect(nodes[1].type).toBe('paragraph');
+      expect(nodes[2].type).toBe('heading');
+      expect(nodes[3].type).toBe('bulletList');
+
+      // The bulletList should contain 3 listItems:
+      // 1 from the bare paragraph wrapped in listItem + 2 orphaned listItems
+      expect(nodes[3].content).toHaveLength(3);
+      expect(nodes[3].content.every((n: any) => n.type === 'listItem')).toBe(true);
+    });
+  });
+
   describe('empty text node handling', () => {
     const strip = (s: string) => s.replace(/[\u00A0\u200B\u202F]/g, '').trim();
 

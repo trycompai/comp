@@ -1,6 +1,6 @@
 import { auth } from "@/app/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@db";
+import { db } from "@db/server";
 import { validateMemberAndOrg } from "../download-agent/utils";
 import { getFleetInstance } from "@/utils/fleet";
 import { FleetPolicy, Host } from "@/app/(app)/(home)/[orgId]/types";

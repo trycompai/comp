@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { FleetService } from '../lib/fleet.service';
 
 const MDM_POLICY_ID = -9999;

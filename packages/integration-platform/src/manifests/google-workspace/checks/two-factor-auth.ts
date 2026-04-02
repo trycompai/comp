@@ -51,6 +51,18 @@ export const twoFactorAuthCheck: IntegrationCheck = {
 
     ctx.log(`Fetched ${allUsers.length} total users`);
 
+    if (userFilterConfig.targetOrgUnits?.length) {
+      const ouCounts = new Map<string, number>();
+      for (const user of allUsers) {
+        const ou = user.orgUnitPath ?? '/';
+        ouCounts.set(ou, (ouCounts.get(ou) ?? 0) + 1);
+      }
+      ctx.log(
+        `Filtering to OUs: ${userFilterConfig.targetOrgUnits.join(', ')}. ` +
+          `User OUs: ${[...ouCounts.entries()].map(([ou, count]) => `${ou} (${count})`).join(', ')}`,
+      );
+    }
+
     // Org units + sync email filter — same rules as employee sync (sync.controller.ts)
     const usersToCheck = filterGoogleWorkspaceUsersForChecks(allUsers, userFilterConfig);
 

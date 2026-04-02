@@ -1,13 +1,12 @@
 'use client';
 
 import { authClient, useSession } from '@/utils/auth-client';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export function ImpersonationBanner() {
   const { data: session } = useSession();
   const router = useRouter();
-  const pathname = usePathname();
   const [stopping, setStopping] = useState(false);
 
   const rawImpersonatedBy = (
@@ -18,16 +17,22 @@ export function ImpersonationBanner() {
 
   if (!impersonatedBy) return null;
 
-  const orgId = pathname?.split('/')[1] ?? '';
-
   const handleStop = async () => {
     setStopping(true);
     try {
       await authClient.admin.stopImpersonating();
+      const { data: restored } = await authClient.getSession();
       (authClient.$store as { notify: (signal: string) => void }).notify(
         '$sessionSignal',
       );
-      router.push(`/${orgId}/admin/organizations`);
+      const adminOrgId = (
+        restored?.session as Record<string, unknown> | undefined
+      )?.activeOrganizationId;
+      if (typeof adminOrgId === 'string' && adminOrgId) {
+        router.push(`/${adminOrgId}/admin/organizations`);
+      } else {
+        router.push('/');
+      }
       router.refresh();
     } catch {
       setStopping(false);

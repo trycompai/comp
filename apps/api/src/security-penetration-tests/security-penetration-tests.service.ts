@@ -6,7 +6,7 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { createHash, timingSafeEqual } from 'node:crypto';
 
 import { CredentialVaultService } from '../integration-platform/services/credential-vault.service';

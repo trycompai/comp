@@ -1,11 +1,16 @@
-import type { PrismaClient } from '@prisma/client';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { bearer, emailOTP, jwt, magicLink, multiSession, organization } from 'better-auth/plugins';
 import { ac, allRoles } from './permissions';
 
-export interface CreateAuthServerOptions {
-  db: PrismaClient;
+interface PrismaLike {
+  $connect(): Promise<void>;
+  $disconnect(): Promise<void>;
+  [model: string]: unknown;
+}
+
+export interface CreateAuthServerOptions<TDb extends PrismaLike = PrismaLike> {
+  db: TDb;
   secret: string;
   baseURL: string;
   trustedOrigins: string[];
@@ -110,39 +115,45 @@ export function createAuthServer(options: CreateAuthServerOptions) {
             console.log('[Better Auth] Session creation hook called for user:', session.userId);
             try {
               // Find the user's first organization to set as active
-              const userOrganization = await db.organization.findFirst({
-                where: {
-                  members: {
-                    some: {
-                      userId: session.userId,
+              const dbWithOrganization = db as Record<string, unknown>;
+              const organizationModel = dbWithOrganization.organization as Record<string, unknown>;
+
+              if (typeof organizationModel.findFirst === 'function') {
+                const userOrganization = await organizationModel.findFirst({
+                  where: {
+                    members: {
+                      some: {
+                        userId: session.userId,
+                      },
                     },
                   },
-                },
-                orderBy: {
-                  createdAt: 'desc',
-                },
-                select: {
-                  id: true,
-                  name: true,
-                },
-              });
-
-              if (userOrganization) {
-                console.log(
-                  `[Better Auth] Setting activeOrganizationId to ${userOrganization.id} (${userOrganization.name}) for user ${session.userId}`,
-                );
-                return {
-                  data: {
-                    ...session,
-                    activeOrganizationId: userOrganization.id,
+                  orderBy: {
+                    createdAt: 'desc',
                   },
-                };
-              } else {
-                console.log(`[Better Auth] No organization found for user ${session.userId}`);
-                return {
-                  data: session,
-                };
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                });
+
+                if (userOrganization && typeof userOrganization === 'object' && 'id' in userOrganization && 'name' in userOrganization) {
+                  const typedOrg = userOrganization as { id: string; name: string };
+                  console.log(
+                    `[Better Auth] Setting activeOrganizationId to ${typedOrg.id} (${typedOrg.name}) for user ${session.userId}`,
+                  );
+                  return {
+                    data: {
+                      ...session,
+                      activeOrganizationId: typedOrg.id,
+                    },
+                  };
+                }
               }
+
+              console.log(`[Better Auth] No organization found for user ${session.userId}`);
+              return {
+                data: session,
+              };
             } catch (error) {
               console.error('[Better Auth] Session creation hook error:', error);
               return {

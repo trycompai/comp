@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { logger, metadata, queue, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
 import { generateAuditorContentTask } from '../auditor/generate-auditor-content';

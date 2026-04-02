@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '@db';
-import type { DynamicCheck, Prisma } from '@prisma/client';
+import type { DynamicCheck, Prisma } from '@db';
 
 @Injectable()
 export class DynamicCheckRepository {

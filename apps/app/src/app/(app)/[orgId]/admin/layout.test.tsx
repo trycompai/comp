@@ -37,7 +37,7 @@ describe('[orgId]/admin/layout - auth gate', () => {
       }),
     ).rejects.toThrow('NEXT_REDIRECT');
 
-    expect(mockRedirect).toHaveBeenCalledWith('/org_1/frameworks');
+    expect(mockRedirect).toHaveBeenCalledWith('/org_1/overview');
   });
 
   it('redirects to frameworks when user role is not admin', async () => {
@@ -53,7 +53,7 @@ describe('[orgId]/admin/layout - auth gate', () => {
       }),
     ).rejects.toThrow('NEXT_REDIRECT');
 
-    expect(mockRedirect).toHaveBeenCalledWith('/org_1/frameworks');
+    expect(mockRedirect).toHaveBeenCalledWith('/org_1/overview');
   });
 
   it('redirects to frameworks when user role is null', async () => {
@@ -69,7 +69,7 @@ describe('[orgId]/admin/layout - auth gate', () => {
       }),
     ).rejects.toThrow('NEXT_REDIRECT');
 
-    expect(mockRedirect).toHaveBeenCalledWith('/org_1/frameworks');
+    expect(mockRedirect).toHaveBeenCalledWith('/org_1/overview');
   });
 
   it('renders children when user is a platform admin', async () => {

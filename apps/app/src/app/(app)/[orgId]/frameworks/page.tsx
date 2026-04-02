@@ -1,8 +1,9 @@
 import { serverApi } from '@/lib/api-server';
-import type { FrameworkEditorFramework, Policy, Task } from '@db';
+import type { FrameworkEditorFramework } from '@db';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
-import { Overview, type FindingWithTarget } from './components/Overview';
-import type { FrameworkInstanceWithControls } from './types';
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
+import { FrameworksTable } from './components/FrameworksTable';
+import { FrameworksPageActions } from './components/FrameworksPageActions';
 
 export async function generateMetadata() {
   return { title: 'Frameworks' };
@@ -10,76 +11,41 @@ export async function generateMetadata() {
 
 type FrameworkWithScore = FrameworkInstanceWithControls & { complianceScore: number };
 
-interface ScoresResponse {
-  policies: {
-    total: number;
-    published: number;
-    draftPolicies: Policy[];
-    policiesInReview: Policy[];
-    unpublishedPolicies: Policy[];
-  };
-  tasks: {
-    total: number;
-    done: number;
-    incompleteTasks: Task[];
-  };
-  people: { total: number; completed: number };
-  documents: { totalDocuments: number; completedDocuments: number; outstandingDocuments: number };
-  findings: FindingWithTarget[];
-  onboardingTriggerJobId: string | null;
-  currentMember: { id: string; role: string } | null;
-}
-
-export default async function DashboardPage({ params }: { params: Promise<{ orgId: string }> }) {
+export default async function FrameworksPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId: organizationId } = await params;
 
-  const [scoresRes, frameworksRes, availableRes] = await Promise.all([
-    serverApi.get<ScoresResponse>('/v1/frameworks/scores'),
+  const [frameworksRes, availableRes] = await Promise.all([
     serverApi.get<{ data: FrameworkWithScore[] }>('/v1/frameworks?includeControls=true&includeScores=true'),
     serverApi.get<{ data: FrameworkEditorFramework[] }>('/v1/frameworks/available'),
   ]);
 
-  const scores = scoresRes.data;
   const frameworksData = frameworksRes.data?.data ?? [];
   const allFrameworks = availableRes.data?.data ?? [];
 
   const frameworksWithControls = frameworksData.map(({ complianceScore: _, ...fw }) => fw);
-  const frameworksWithCompliance = frameworksData.map((fw) => ({
-    frameworkInstance: { ...fw, complianceScore: undefined },
-    complianceScore: fw.complianceScore ?? 0,
-  }));
+  const complianceMap = new Map(
+    frameworksData.map((fw) => [fw.id, fw.complianceScore ?? 0]),
+  );
+
+  const availableToAdd = allFrameworks.filter(
+    (framework) => !frameworksWithControls.some((fc) => fc.framework.id === framework.id),
+  );
 
   return (
-    <PageLayout header={<PageHeader title="Overview" />}>
-      <Overview
-        frameworksWithControls={frameworksWithControls}
-        frameworksWithCompliance={frameworksWithCompliance}
-        allFrameworks={allFrameworks}
+    <PageLayout
+      header={
+        <PageHeader
+          title="Frameworks"
+          actions={
+            <FrameworksPageActions availableFrameworks={availableToAdd} />
+          }
+        />
+      }
+    >
+      <FrameworksTable
+        frameworks={frameworksWithControls}
+        complianceMap={Object.fromEntries(complianceMap)}
         organizationId={organizationId}
-        publishedPoliciesScore={{
-          totalPolicies: scores?.policies?.total ?? 0,
-          publishedPolicies: scores?.policies?.published ?? 0,
-          draftPolicies: scores?.policies?.draftPolicies ?? [],
-          policiesInReview: scores?.policies?.policiesInReview ?? [],
-          unpublishedPolicies: scores?.policies?.unpublishedPolicies ?? [],
-        }}
-        doneTasksScore={{
-          totalTasks: scores?.tasks?.total ?? 0,
-          doneTasks: scores?.tasks?.done ?? 0,
-          incompleteTasks: scores?.tasks?.incompleteTasks ?? [],
-        }}
-        documentsScore={{
-          totalDocuments: scores?.documents?.totalDocuments ?? 0,
-          completedDocuments: scores?.documents?.completedDocuments ?? 0,
-          outstandingDocuments: scores?.documents?.outstandingDocuments ?? 0,
-        }}
-        peopleScore={{
-          totalMembers: scores?.people?.total ?? 0,
-          completedMembers: scores?.people?.completed ?? 0,
-        }}
-        currentMember={scores?.currentMember ?? null}
-        onboardingTriggerJobId={scores?.onboardingTriggerJobId ?? null}
-        findings={scores?.findings ?? []}
       />
     </PageLayout>
   );

@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { AllPolicyNotificationEmail } from '@trycompai/email';
 import { isUserUnsubscribed } from '@trycompai/email/lib/check-unsubscribe';
 import { logger, queue, task } from '@trigger.dev/sdk';

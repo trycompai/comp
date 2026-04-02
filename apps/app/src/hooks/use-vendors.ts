@@ -9,8 +9,8 @@ import type {
   VendorStatus,
   Likelihood,
   Impact,
+  Prisma,
 } from '@db';
-import type { JsonValue } from '@prisma/client/runtime/library';
 
 // Default polling interval for real-time updates (5 seconds)
 const DEFAULT_POLLING_INTERVAL = 5000;
@@ -54,7 +54,7 @@ export interface VendorsResponse {
  */
 export interface VendorResponse extends Vendor {
   // GlobalVendors risk assessment data merged by API
-  riskAssessmentData?: JsonValue | null;
+  riskAssessmentData?: Prisma.JsonValue | null;
   riskAssessmentVersion?: string | null;
   riskAssessmentUpdatedAt?: string | null;
 }

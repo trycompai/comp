@@ -2,7 +2,7 @@ import { ForbiddenException, NotFoundException, UnauthorizedException } from '@n
 import { DeviceAgentAuthService } from './device-agent-auth.service';
 
 // Mock dependencies
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     member: {
       findMany: jest.fn(),
@@ -36,7 +36,7 @@ jest.mock('./device-agent-kv', () => ({
   },
 }));
 
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { auth } from '../auth/auth.server';
 import { deviceAgentRedisClient } from './device-agent-kv';
 
@@ -54,7 +54,7 @@ describe('DeviceAgentAuthService', () => {
 
   describe('generateAuthCode', () => {
     it('should generate an auth code and store it in KV', async () => {
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue({
+      (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue({
         user: { id: 'user-1' },
         session: { token: 'raw-session-token' },
       });
@@ -77,7 +77,7 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should throw UnauthorizedException if no session', async () => {
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue(null);
+      (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue(null);
 
       const headers = new Headers();
       await expect(

@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { ArrowLeft, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';

@@ -1,4 +1,4 @@
-import { Departments, Prisma, PolicyVisibility } from '@prisma/client';
+import { Departments, Prisma, PolicyVisibility } from '@db';
 
 /**
  * Roles that have full access without department visibility filtering

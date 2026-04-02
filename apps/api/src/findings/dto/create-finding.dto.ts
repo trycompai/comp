@@ -7,7 +7,7 @@ import {
   IsOptional,
   MaxLength,
 } from 'class-validator';
-import { FindingType } from '@trycompai/db';
+import { FindingType } from '@db';
 import {
   evidenceFormTypeSchema,
   type EvidenceFormType,

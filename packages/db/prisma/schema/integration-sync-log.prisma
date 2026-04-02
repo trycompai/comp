@@ -8,7 +8,7 @@ model IntegrationSyncLog {
   organizationId String
   organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  /// Provider slug (e.g., "ramp", "google-workspace", "rippling", "jumpcloud")
+  /// Provider slug (e.g., "google-workspace", "rippling", "jumpcloud")
   provider    String
   /// Event type (e.g., "employee_sync", "role_discovery", "role_mapping_save")
   eventType   String

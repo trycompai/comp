@@ -16,7 +16,7 @@ jest.mock('@trycompai/auth', () => ({
 }));
 
 const mockFindMany = jest.fn();
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     auditLog: {
       findMany: (...args: unknown[]) => mockFindMany(...args),
@@ -36,7 +36,9 @@ describe('AuditLogController', () => {
     userEmail: 'user@example.com',
     organizationId: 'org_1',
     memberId: 'mem_1',
-    permissions: [],
+    isApiKey: false,
+    isPlatformAdmin: false,
+    userRoles: null,
   };
 
   beforeEach(async () => {
@@ -237,8 +239,10 @@ describe('AuditLogController', () => {
       const authContextNoUser: AuthContextType = {
         authType: 'api-key' as const,
         organizationId: 'org_1',
-        permissions: [],
-      } as AuthContextType;
+        isApiKey: true,
+        isPlatformAdmin: false,
+        userRoles: null,
+      };
 
       const result = await controller.getAuditLogs(
         'org_1',

@@ -93,12 +93,15 @@ export function DataTable<TData, TValue>({
             {emptyMessage ?? 'Get started by creating your first entry.'}
           </p>
         </div>
-        {onCreateClick && (
-          <Button onClick={onCreateClick} variant="outline">
-            <CreateButtonIcon className="mr-2 h-4 w-4" />
-            {createButtonLabel}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {additionalActions}
+          {onCreateClick && (
+            <Button onClick={onCreateClick} variant="outline">
+              <CreateButtonIcon className="mr-2 h-4 w-4" />
+              {createButtonLabel}
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
