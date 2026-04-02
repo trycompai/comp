@@ -24,8 +24,21 @@ schema = schema
 
 fs.writeFileSync(tempSchema, schema);
 
+// Resolve the installed prisma binary instead of using bunx (which downloads
+// to a temp dir and can't resolve prisma/config from prisma.config.ts).
+function findPrismaBin() {
+  const candidates = [
+    path.join(__dirname, '../node_modules/.bin/prisma'),
+    path.join(__dirname, '../../../node_modules/.bin/prisma'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return 'prisma'; // fallback to PATH
+}
+
 try {
-  execFileSync('bunx', ['prisma', 'generate', `--schema=${tempSchema}`], { stdio: 'inherit' });
+  execFileSync(findPrismaBin(), ['generate', `--schema=${tempSchema}`], { stdio: 'inherit' });
 } finally {
   fs.unlinkSync(tempSchema);
 }
