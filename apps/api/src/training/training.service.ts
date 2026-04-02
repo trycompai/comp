@@ -44,6 +44,18 @@ export class TrainingService {
       throw new BadRequestException(`Invalid video ID: ${videoId}`);
     }
 
+    if (videoId === HIPAA_TRAINING_ID) {
+      const hipaaInstance = await db.frameworkInstance.findFirst({
+        where: { organizationId, framework: { name: 'HIPAA' } },
+        select: { id: true },
+      });
+      if (!hipaaInstance) {
+        throw new BadRequestException(
+          'HIPAA training is not available for this organization',
+        );
+      }
+    }
+
     const member = await db.member.findFirst({
       where: { id: memberId, organizationId, deactivated: false },
     });
