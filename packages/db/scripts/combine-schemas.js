@@ -17,7 +17,7 @@ let combinedSchema = fs.readFileSync(BASE_SCHEMA, 'utf8');
 // Read all .prisma files from the schema directory
 const schemaFiles = fs
   .readdirSync(SCHEMA_DIR)
-  .filter((file) => file.endsWith('.prisma'))
+  .filter((file) => file.endsWith('.prisma') && file !== 'schema.prisma')
   .sort(); // Sort for consistent output
 
 console.log(`📁 Found ${schemaFiles.length} schema files to combine`);
