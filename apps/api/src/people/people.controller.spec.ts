@@ -103,6 +103,17 @@ describe('PeopleController', () => {
       );
     });
 
+    it('should pass includeDeactivated=true to the service', async () => {
+      mockPeopleService.findAllByOrganization.mockResolvedValue([]);
+
+      await controller.getAllPeople('org_123', mockAuthContext, 'true');
+
+      expect(peopleService.findAllByOrganization).toHaveBeenCalledWith(
+        'org_123',
+        true,
+      );
+    });
+
     it('should not include authenticatedUser when userId is missing', async () => {
       const apiKeyContext: AuthContext = {
         ...mockAuthContext,

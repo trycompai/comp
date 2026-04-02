@@ -1,6 +1,5 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -34,9 +33,10 @@ import {
   TableRow,
   Button,
 } from '@trycompai/design-system';
-import { Search } from '@trycompai/design-system/icons';
+import { InProgress, Search } from '@trycompai/design-system/icons';
 
 import { apiClient } from '@/lib/api-client';
+import { buildDisplayItems, filterDisplayItems } from './filter-members';
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TeamMembersData } from './TeamMembers';
@@ -54,18 +54,6 @@ interface TeamMembersClientProps {
   employeeSyncData: EmployeeSyncConnectionsData;
   taskCompletionMap: Record<string, { completed: number; total: number }>;
   memberIdsWithDeviceAgent: string[];
-}
-
-// Define a simplified type for merged list items
-interface DisplayItem extends Partial<MemberWithUser>, Partial<Invitation> {
-  type: 'member' | 'invitation';
-  displayName: string;
-  displayEmail: string;
-  displayRole: string | string[]; // Simplified role display, could be comma-separated
-  displayStatus: 'active' | 'pending' | 'deactivated';
-  displayId: string; // Use member.id or invitation.id
-  processedRoles: string[];
-  isDeactivated?: boolean;
 }
 
 export function TeamMembersClient({
@@ -129,65 +117,12 @@ export function TeamMembersClient({
     }
   };
 
-  // Combine and type members and invitations for filtering/display
-  const allItems: DisplayItem[] = [
-    ...data.members.map((member) => {
-      // Process the role to handle comma-separated values
-      const roles = parseRolesString(member.role);
-
-      const isInactive = member.deactivated || !member.isActive;
-
-      return {
-        ...member,
-        type: 'member' as const,
-        displayName: member.user.name || member.user.email || '',
-        displayEmail: member.user.email || '',
-        displayRole: member.role, // Keep original for filtering
-        displayStatus: isInactive ? ('deactivated' as const) : ('active' as const),
-        displayId: member.id,
-        // Add processed roles for rendering
-        processedRoles: roles,
-        isDeactivated: isInactive,
-      };
-    }),
-    ...data.pendingInvitations.map((invitation) => {
-      // Process the role to handle comma-separated values
-      const roles = parseRolesString(invitation.role);
-
-      return {
-        ...invitation,
-        type: 'invitation' as const,
-        displayName: invitation.email.split('@')[0], // Or just email
-        displayEmail: invitation.email,
-        displayRole: invitation.role, // Keep original for filtering
-        displayStatus: 'pending' as const,
-        displayId: invitation.id,
-        // Add processed roles for rendering
-        processedRoles: roles,
-      };
-    }),
-  ];
-
-  const filteredItems = allItems.filter((item) => {
-    const matchesSearch =
-      item.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.displayEmail.toLowerCase().includes(searchQuery.toLowerCase());
-
-    // Check if the role filter matches any of the member's roles
-    const matchesRole = !roleFilter || item.processedRoles.includes(roleFilter);
-
-    // Status filter: by default (no filter), hide deactivated members
-    // 'active' explicitly shows non-deactivated members + pending invitations
-    // 'deactivated' shows only deactivated members
-    // 'all' shows everything
-    const matchesStatus =
-      (statusFilter === 'all') ||
-      (statusFilter === 'deactivated' && item.displayStatus === 'deactivated') ||
-      (statusFilter === 'pending' && item.displayStatus === 'pending') ||
-      (!statusFilter && item.displayStatus !== 'deactivated') ||
-      (statusFilter === 'active' && item.displayStatus === 'active');
-
-    return matchesSearch && matchesRole && matchesStatus;
+  const allItems = buildDisplayItems(data);
+  const filteredItems = filterDisplayItems({
+    items: allItems,
+    searchQuery,
+    roleFilter,
+    statusFilter,
   });
 
   const activeMembers = filteredItems.filter((item) => item.type === 'member');
@@ -356,7 +291,7 @@ export function TeamMembersClient({
                 <SelectTrigger>
                   {isSyncing ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <InProgress size={16} className="mr-2 animate-spin" />
                       Syncing...
                     </>
                   ) : selectedProvider ? (
