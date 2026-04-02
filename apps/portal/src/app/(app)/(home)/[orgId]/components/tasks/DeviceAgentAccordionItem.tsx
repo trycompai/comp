@@ -23,7 +23,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
   Spinner,
 } from '@trycompai/design-system';
 import { CheckmarkFilled, CircleDash, Download, Renew } from '@trycompai/design-system/icons';
@@ -286,7 +285,7 @@ export function DeviceAgentAccordionItem({
                           onValueChange={(value) => { if (value) setDetectedOS(value as SupportedOS); }}
                         >
                           <SelectTrigger>
-                            <SelectValue />
+                            <span>{detectedOS === 'macos-intel' ? 'Intel' : 'Apple Silicon'}</span>
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="macos">Apple Silicon</SelectItem>
