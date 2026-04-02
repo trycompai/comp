@@ -66,9 +66,12 @@ export async function getOverviewScores(organizationId: string) {
         p.isRequiredToSign && p.status === 'published' && !p.isArchived,
     );
 
-    const trainingCompletions = securityTrainingStepEnabled
+    const memberIds = activeEmployees.map((e) => e.id);
+    const needsCompletions = securityTrainingStepEnabled || hasHipaaFramework;
+
+    const trainingCompletions = needsCompletions
       ? await db.employeeTrainingVideoCompletion.findMany({
-          where: { memberId: { in: activeEmployees.map((e) => e.id) } },
+          where: { memberId: { in: memberIds } },
         })
       : [];
 
@@ -77,11 +80,8 @@ export async function getOverviewScores(organizationId: string) {
         requiredPolicies.length === 0 ||
         requiredPolicies.every((p) => p.signedBy.includes(emp.id));
 
-      const empCompletions = trainingCompletions.filter(
-        (c) => c.memberId === emp.id,
-      );
-      const completedVideoIds = empCompletions
-        .filter((c) => c.completedAt !== null)
+      const completedVideoIds = trainingCompletions
+        .filter((c) => c.memberId === emp.id && c.completedAt !== null)
         .map((c) => c.videoId);
 
       const hasCompletedAllTraining = securityTrainingStepEnabled
