@@ -1,7 +1,7 @@
 # =============================================================================
 # STAGE 1: Dependencies - Install only what the API needs
 # =============================================================================
-FROM oven/bun:1.3.11 AS deps
+FROM oven/bun:1.2.8 AS deps
 
 WORKDIR /app
 
@@ -35,7 +35,7 @@ RUN bun install --ignore-scripts
 # =============================================================================
 # STAGE 2: Builder - Build workspace packages and NestJS app
 # =============================================================================
-FROM oven/bun:1.3.11 AS builder
+FROM oven/bun:1.2.8 AS builder
 
 WORKDIR /app
 
@@ -46,7 +46,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/package.json ./package.json
 COPY --from=deps /app/bun.lock ./bun.lock
 
-# Copy workspace packages source
+# Copy workspace packages source (node_modules excluded by .dockerignore,
+# but COPY replaces directories so workspace node_modules from deps get wiped)
 COPY packages/auth ./packages/auth
 COPY packages/db ./packages/db
 COPY packages/utils ./packages/utils
@@ -58,7 +59,7 @@ COPY packages/company ./packages/company
 # Copy API source
 COPY apps/api ./apps/api
 
-# Build db first — generates Prisma client needed by other packages
+# Build db — generates Prisma client + compiles dist/ for @trycompai/db consumers
 RUN cd packages/db && bun run build
 
 # Build remaining workspace packages
@@ -67,11 +68,9 @@ RUN cd packages/auth && bun run build \
   && cd ../email && bun run build \
   && cd ../company && bun run build
 
-# Generate Prisma schema for API and build NestJS app
-RUN cd packages/db && node scripts/combine-schemas.js \
-  && cp /app/packages/db/dist/schema.prisma /app/apps/api/prisma/schema.prisma \
-  && node /app/apps/api/scripts/patch-schema-generator.js \
-  && cd /app/apps/api && /app/node_modules/.bin/prisma generate && bunx nest build
+# Copy model files to api schema dir and generate Prisma client, then build NestJS app
+RUN find /app/packages/db/prisma/schema -name '*.prisma' ! -name 'schema.prisma' -exec cp {} /app/apps/api/prisma/schema/ \; \
+  && cd /app/apps/api && /app/node_modules/.bin/prisma generate --schema=prisma/schema && bunx nest build
 
 # =============================================================================
 # STAGE 3: Production Runtime

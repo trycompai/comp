@@ -1,44 +1,49 @@
 #!/usr/bin/env node
 /**
  * Generates a prisma-client-js client to populate @prisma/client at node_modules.
- * This is fast (no .ts files to compile) and provides runtime enums + types
- * for packages that import from @trycompai/db.
- *
- * The combined schema uses prisma-client provider. This script patches a temp copy
- * to use prisma-client-js (no custom output) and generates to node_modules/@prisma/client.
+ * Creates a temp schema dir, copies model files, generates with prisma-client-js.
  */
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const schemaPath = path.join(__dirname, '../dist/schema.prisma');
-const tempSchema = path.join(__dirname, '../dist/.schema-clientjs.prisma');
+const root = path.join(__dirname, '..');
+const schemaDir = path.join(root, 'prisma/schema');
+const configPath = path.join(root, 'prisma.config.ts');
+const configBackup = configPath + '.bak';
+const tempDir = fs.mkdtempSync(path.join(root, '.prisma-clientjs-'));
 
-let schema = fs.readFileSync(schemaPath, 'utf8');
-
-// Surgically patch: swap provider and remove output line.
-// Preserves all other generator settings (previewFeatures, etc.).
-schema = schema
-  .replace(/provider\s*=\s*"prisma-client"/g, 'provider = "prisma-client-js"')
-  .replace(/\s*output\s*=\s*"[^"]*"\n?/g, '\n');
-
-fs.writeFileSync(tempSchema, schema);
-
-// Resolve the installed prisma binary instead of using bunx (which downloads
-// to a temp dir and can't resolve prisma/config from prisma.config.ts).
-function findPrismaBin() {
-  const candidates = [
-    path.join(__dirname, '../node_modules/.bin/prisma'),
-    path.join(__dirname, '../../../node_modules/.bin/prisma'),
-  ];
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) return candidate;
-  }
-  return 'prisma'; // fallback to PATH
-}
+// Hide prisma.config.ts so prisma doesn't try to load it
+const hasConfig = fs.existsSync(configPath);
+if (hasConfig) fs.renameSync(configPath, configBackup);
 
 try {
-  execFileSync(findPrismaBin(), ['generate', `--schema=${tempSchema}`], { stdio: 'inherit' });
+  // Copy model files
+  for (const file of fs.readdirSync(schemaDir).filter(f => f.endsWith('.prisma') && f !== 'schema.prisma')) {
+    fs.copyFileSync(path.join(schemaDir, file), path.join(tempDir, file));
+  }
+
+  // Write prisma-client-js generator schema
+  fs.writeFileSync(path.join(tempDir, 'schema.prisma'), `generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [pgcrypto]
+}
+`);
+
+  // Resolve prisma CLI via Node/Bun module resolution (handles hoisting)
+  const prismaPackage = require.resolve('prisma/package.json');
+  const prismaCli = path.join(path.dirname(prismaPackage), 'build', 'index.js');
+
+  execFileSync(process.execPath, [prismaCli, 'generate', `--schema=${tempDir}`], {
+    stdio: 'inherit',
+    cwd: root,
+  });
 } finally {
-  fs.unlinkSync(tempSchema);
+  fs.rmSync(tempDir, { recursive: true, force: true });
+  if (hasConfig && fs.existsSync(configBackup)) fs.renameSync(configBackup, configPath);
 }

@@ -43,9 +43,9 @@
         "directory": "packages/db"
     },
     "scripts": {
-        "build": "rm -rf dist && node scripts/combine-schemas.js && node scripts/generate-prisma-client-js.js && tsc",
+        "build": "rm -rf dist && node scripts/generate-prisma-client-js.js && tsc",
         "check-types": "tsc --noEmit",
-        "db:generate": "node scripts/combine-schemas.js && node scripts/generate-prisma-client-js.js",
+        "db:generate": "node scripts/generate-prisma-client-js.js",
         "db:migrate": "prisma migrate dev",
         "db:migrate:reset": "prisma migrate reset",
         "db:push": "prisma db push",
