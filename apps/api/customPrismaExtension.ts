@@ -307,6 +307,10 @@ export class PrismaExtension implements BuildExtension {
     candidates.add(resolve(context.workingDir, '../../packages/db/dist/schema.prisma'));
     candidates.add(resolve(context.workingDir, '../packages/db/dist/schema.prisma'));
 
+    // Also check source schema directory (monorepo workspace, dist may not exist)
+    candidates.add(resolve(context.workingDir, '../../packages/db/prisma/schema/schema.prisma'));
+    candidates.add(resolve(context.workingDir, '../packages/db/prisma/schema/schema.prisma'));
+
     return Array.from(candidates);
   }
 }
