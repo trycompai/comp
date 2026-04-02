@@ -47,9 +47,8 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
-# Local scripts (tracked scripts are explicitly excluded below)
+# Local scripts
 scripts/
-!scripts/patch-schema-generator.js
 
 # temp directory
 .temp
@@ -65,6 +64,8 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 
-prisma/schema.prisma
+# Model files are copied here by db:getschema — only schema.prisma is committed
+prisma/schema/*.prisma
+!prisma/schema/schema.prisma
 trigger.config.js
 test/**/*.js
