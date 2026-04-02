@@ -105,16 +105,23 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
                     );
                   })}
                 </div>
-                <Button
-                  onClick={handleAcceptAllPolicies}
-                  disabled={hasAcceptedPolicies || isAcceptingAll}
-                >
-                  {isAcceptingAll
-                    ? 'Accepting...'
-                    : hasAcceptedPolicies
-                      ? 'All Policies Accepted'
-                      : 'Accept All'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleAcceptAllPolicies}
+                    disabled={hasAcceptedPolicies || isAcceptingAll}
+                  >
+                    {isAcceptingAll
+                      ? 'Accepting...'
+                      : hasAcceptedPolicies
+                        ? 'All Policies Accepted'
+                        : 'Accept All'}
+                  </Button>
+                  {hasAcceptedPolicies && (
+                    <Link href={`/${member.organizationId}/policies`}>
+                      <Button variant="outline">View Signed Policies</Button>
+                    </Link>
+                  )}
+                </div>
               </>
             ) : (
               <p className="text-muted-foreground text-sm">No policies ready to be signed.</p>
