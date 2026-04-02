@@ -122,9 +122,9 @@
     "private": true,
     "scripts": {
         "build": "nest build",
-        "build:docker": "bunx prisma generate && nest build",
-        "db:generate": "bun run db:getschema && bunx prisma generate",
-        "db:getschema": "node ../../packages/db/scripts/combine-schemas.js && cp ../../packages/db/dist/schema.prisma prisma/schema.prisma && node scripts/patch-schema-generator.js",
+        "build:docker": "bunx prisma generate --schema=prisma/schema && nest build",
+        "db:generate": "bun run db:getschema && bunx prisma generate --schema=prisma/schema",
+        "db:getschema": "find ../../packages/db/prisma/schema -name '*.prisma' ! -name 'schema.prisma' -exec cp {} prisma/schema/ \\;",
         "db:migrate": "cd ../../packages/db && bunx prisma migrate dev && cd ../../apps/api",
         "deploy:trigger-prod": "npx trigger.dev@4.4.3 deploy",
         "dev": "bunx concurrently --kill-others --names \"nest,trigger\" --prefix-colors \"green,blue\" \"nest start --watch\" \"trigger dev\"",
