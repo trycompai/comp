@@ -1,7 +1,7 @@
 # =============================================================================
 # STAGE 1: Dependencies - Install only what the API needs
 # =============================================================================
-FROM oven/bun:1.2.8 AS deps
+FROM oven/bun:1.3.11 AS deps
 
 WORKDIR /app
 
@@ -35,7 +35,7 @@ RUN bun install --ignore-scripts
 # =============================================================================
 # STAGE 2: Builder - Build workspace packages and NestJS app
 # =============================================================================
-FROM oven/bun:1.2.8 AS builder
+FROM oven/bun:1.3.11 AS builder
 
 WORKDIR /app
 
@@ -76,7 +76,7 @@ RUN cd packages/db && node scripts/combine-schemas.js \
 # =============================================================================
 # STAGE 3: Production Runtime
 # =============================================================================
-FROM node:20-slim AS production
+FROM node:22-slim AS production
 
 # Create non-root user before copying files so COPY --chown can use it
 RUN groupadd --system nestjs && useradd --system --gid nestjs --create-home nestjs
