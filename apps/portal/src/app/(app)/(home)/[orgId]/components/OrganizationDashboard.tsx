@@ -1,8 +1,13 @@
 import type { Device, Member, Organization, User } from '@db';
 import { db } from '@db/server';
+import { evidenceFormDefinitionList } from '@trycompai/company';
 import { NoAccessMessage } from '../../components/NoAccessMessage';
 import type { FleetPolicy, Host } from '../types';
 import { EmployeeTasksList } from './EmployeeTasksList';
+
+const portalForms = evidenceFormDefinitionList
+  .filter((f) => f.portalAccessible)
+  .map(({ type, title, description }) => ({ type, title, description }));
 
 // Define the type for the member prop passed from Overview
 interface MemberWithUserOrg extends Member {
@@ -15,7 +20,7 @@ interface OrganizationDashboardProps {
   member: MemberWithUserOrg;
   fleetPolicies: FleetPolicy[];
   host: Host | null;
-  agentDevice: Device | null;
+  agentDevices: Device[];
 }
 
 export async function OrganizationDashboard({
@@ -23,7 +28,7 @@ export async function OrganizationDashboard({
   member,
   fleetPolicies,
   host,
-  agentDevice,
+  agentDevices,
 }: OrganizationDashboardProps) {
   // Fetch policies specific to the selected organization
   const policies = await db.policy.findMany({
@@ -70,11 +75,12 @@ export async function OrganizationDashboard({
       member={member}
       fleetPolicies={fleetPolicies}
       host={host}
-      agentDevice={agentDevice}
+      agentDevices={agentDevices}
       deviceAgentStepEnabled={org.deviceAgentStepEnabled}
       securityTrainingStepEnabled={org.securityTrainingStepEnabled}
       whistleblowerReportEnabled={org.whistleblowerReportEnabled}
       accessRequestFormEnabled={org.accessRequestFormEnabled}
+      portalForms={portalForms}
     />
   );
 }

@@ -35,7 +35,7 @@ import { FleetPolicyItem } from './FleetPolicyItem';
 interface DeviceAgentAccordionItemProps {
   member: Member;
   host: Host | null;
-  agentDevice: Device | null;
+  agentDevices: Device[];
   isLoading: boolean;
   fleetPolicies?: FleetPolicy[];
   fetchFleetPolicies: () => void;
@@ -44,7 +44,7 @@ interface DeviceAgentAccordionItemProps {
 export function DeviceAgentAccordionItem({
   member,
   host,
-  agentDevice,
+  agentDevices,
   isLoading,
   fleetPolicies = [],
   fetchFleetPolicies,
@@ -58,16 +58,14 @@ export function DeviceAgentAccordionItem({
   );
 
   const hasFleetDevice = host !== null;
-  const hasAgentDevice = agentDevice !== null;
-  const hasInstalledAgent = hasFleetDevice || hasAgentDevice;
+  const hasAnyAgentDevice = agentDevices.length > 0;
   const failedPoliciesCount = useMemo(
     () => fleetPolicies.filter((policy) => policy.response !== 'pass').length,
     [fleetPolicies],
   );
 
-  // Device agent takes priority over Fleet
-  const isCompleted = hasAgentDevice
-    ? agentDevice.isCompliant
+  const isCompleted = hasAnyAgentDevice
+    ? agentDevices.some((d) => d.isCompliant)
     : hasFleetDevice
       ? failedPoliciesCount === 0
       : false;
@@ -176,7 +174,7 @@ export function DeviceAgentAccordionItem({
               <span className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}>
                 Device Agent
               </span>
-              {!hasAgentDevice && hasFleetDevice && failedPoliciesCount > 0 && (
+              {!hasAnyAgentDevice && hasFleetDevice && failedPoliciesCount > 0 && (
                 <span className="text-amber-600 dark:text-amber-400 text-xs ml-auto">
                   {failedPoliciesCount} policies failing
                 </span>
@@ -191,86 +189,46 @@ export function DeviceAgentAccordionItem({
               device protected against security threats.
             </p>
 
-            {!hasInstalledAgent ? (
-              <div className="space-y-4">
-                <ol className="list-decimal space-y-4 pl-5 text-sm">
-                  <li>
-                    <strong>Download the Device Agent installer.</strong>
-                    <p className="mt-1">
-                      Click the download button below to get the Device Agent installer.
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      {isMacOS && !hasInstalledAgent && (
-                        <div className="w-[136px]">
-                          <Select
-                            value={detectedOS || 'macos'}
-                            onValueChange={(value) => { if (value) setDetectedOS(value as SupportedOS); }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="macos">Apple Silicon</SelectItem>
-                              <SelectItem value="macos-intel">Intel</SelectItem>
-                            </SelectContent>
-                          </Select>
+            {agentDevices.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Your Devices
+                </p>
+                {agentDevices.map((device) => (
+                  <Card key={device.id}>
+                    <CardHeader>
+                      <CardTitle>
+                        <span className="text-lg">{device.name}</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          {device.isCompliant ? (
+                            <div className="text-primary"><CheckmarkFilled size={16} /></div>
+                          ) : (
+                            <div className="text-amber-600 dark:text-amber-400"><CircleDash size={16} /></div>
+                          )}
+                          <span className="text-sm">
+                            {device.isCompliant
+                              ? 'All security checks passing'
+                              : 'Some security checks need attention'}
+                          </span>
                         </div>
-                      )}
-                      <Button onClick={handleDownload} disabled={isDownloading || hasInstalledAgent}>
-                        {getButtonContent()}
-                      </Button>
-                    </div>
-                  </li>
-                  <li>
-                    <strong>Install the Comp AI Device Agent</strong>
-                    <p className="mt-1">
-                      {isMacOS
-                        ? 'Double-click the downloaded DMG file and follow the installation instructions.'
-                        : detectedOS === 'linux'
-                          ? 'Install the downloaded DEB package using your package manager or by double-clicking it.'
-                          : 'Double-click the downloaded EXE file and follow the installation instructions.'}
-                    </p>
-                  </li>
-                  <li>
-                    <strong>Login with your work email</strong>
-                    <p className="mt-1">
-                      After installation, login with your work email, select your organization and
-                      then click &quot;Link Device&quot;.
-                    </p>
-                  </li>
-                </ol>
+                        <p className="text-muted-foreground text-xs">
+                          {device.platform} &middot; {device.osVersion}
+                          {device.lastCheckIn && (
+                            <> &middot; Last check-in: {new Date(device.lastCheckIn).toLocaleDateString()}</>
+                          )}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            ) : hasAgentDevice ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    <span className="text-lg">{agentDevice.name}</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      {agentDevice.isCompliant ? (
-                        <div className="text-primary"><CheckmarkFilled size={16} /></div>
-                      ) : (
-                        <div className="text-amber-600 dark:text-amber-400"><CircleDash size={16} /></div>
-                      )}
-                      <span className="text-sm">
-                        {agentDevice.isCompliant
-                          ? 'All security checks passing'
-                          : 'Some security checks need attention'}
-                      </span>
-                    </div>
-                    <p className="text-muted-foreground text-xs">
-                      {agentDevice.platform} &middot; {agentDevice.osVersion}
-                      {agentDevice.lastCheckIn && (
-                        <> &middot; Last check-in: {new Date(agentDevice.lastCheckIn).toLocaleDateString()}</>
-                      )}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : hasFleetDevice ? (
+            )}
+
+            {!hasAnyAgentDevice && hasFleetDevice && (
               <Card>
                 <CardHeader>
                   <div className="flex items-center gap-2">
@@ -308,7 +266,59 @@ export function DeviceAgentAccordionItem({
                   </div>
                 </CardContent>
               </Card>
-            ) : null}
+            )}
+
+            <div className="space-y-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {hasAnyAgentDevice ? 'Add Another Device' : 'Install on a Device'}
+              </p>
+              <ol className="list-decimal space-y-4 pl-5 text-sm">
+                <li>
+                  <strong>Download the Device Agent installer.</strong>
+                  <p className="mt-1">
+                    Click the download button below to get the Device Agent installer.
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    {isMacOS && (
+                      <div className="w-[136px]">
+                        <Select
+                          value={detectedOS || 'macos'}
+                          onValueChange={(value) => { if (value) setDetectedOS(value as SupportedOS); }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="macos">Apple Silicon</SelectItem>
+                            <SelectItem value="macos-intel">Intel</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <Button onClick={handleDownload} disabled={isDownloading}>
+                      {getButtonContent()}
+                    </Button>
+                  </div>
+                </li>
+                <li>
+                  <strong>Install the Comp AI Device Agent</strong>
+                  <p className="mt-1">
+                    {isMacOS
+                      ? 'Double-click the downloaded DMG file and follow the installation instructions.'
+                      : detectedOS === 'linux'
+                        ? 'Install the downloaded DEB package using your package manager or by double-clicking it.'
+                        : 'Double-click the downloaded EXE file and follow the installation instructions.'}
+                  </p>
+                </li>
+                <li>
+                  <strong>Login with your work email</strong>
+                  <p className="mt-1">
+                    After installation, login with your work email, select your organization and
+                    then click &quot;Link Device&quot;.
+                  </p>
+                </li>
+              </ol>
+            </div>
 
             <div className="mt-4 space-y-2">
               <Accordion>

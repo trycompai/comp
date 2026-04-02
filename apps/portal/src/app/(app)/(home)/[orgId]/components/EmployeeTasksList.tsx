@@ -2,7 +2,6 @@
 
 import { trainingVideos } from '@/lib/data/training-videos';
 import { useTrainingCompletions } from '@/hooks/use-training-completions';
-import { evidenceFormDefinitionList } from '@trycompai/company';
 import type { Device, EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
 import { Accordion, Button, Card, CardContent } from '@trycompai/design-system';
 import { CheckmarkFilled } from '@trycompai/design-system/icons';
@@ -13,7 +12,11 @@ import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
 import { PoliciesAccordionItem } from './tasks/PoliciesAccordionItem';
 
-const portalForms = evidenceFormDefinitionList.filter((f) => f.portalAccessible);
+interface PortalForm {
+  type: string;
+  title: string;
+  description: string;
+}
 
 type PolicyWithVersion = Policy & {
   currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
@@ -26,11 +29,12 @@ interface EmployeeTasksListProps {
   member: Member;
   fleetPolicies: FleetPolicy[];
   host: Host | null;
-  agentDevice: Device | null;
+  agentDevices: Device[];
   deviceAgentStepEnabled: boolean;
   securityTrainingStepEnabled: boolean;
   whistleblowerReportEnabled: boolean;
   accessRequestFormEnabled: boolean;
+  portalForms: PortalForm[];
 }
 
 export const EmployeeTasksList = ({
@@ -40,11 +44,12 @@ export const EmployeeTasksList = ({
   member,
   fleetPolicies,
   host,
-  agentDevice,
+  agentDevices,
   deviceAgentStepEnabled,
   securityTrainingStepEnabled,
   whistleblowerReportEnabled,
   accessRequestFormEnabled,
+  portalForms,
 }: EmployeeTasksListProps) => {
   const { completions: trainingCompletions } = useTrainingCompletions({
     fallbackData: trainingVideoCompletions,
@@ -80,7 +85,7 @@ export const EmployeeTasksList = ({
       return res.json();
     },
     {
-      fallbackData: agentDevice ? { devices: [agentDevice] } : { devices: [] },
+      fallbackData: { devices: agentDevices },
       refreshInterval: 30_000,
       revalidateOnFocus: true,
       revalidateOnMount: true,
@@ -91,25 +96,24 @@ export const EmployeeTasksList = ({
     return null;
   }
 
-  // Pick the most recently checked-in device (matching page.tsx ordering: lastCheckIn desc, nulls last)
-  const currentAgentDevice =
-    agentDeviceResponse?.devices
-      ?.sort((a, b) => {
-        if (!a.lastCheckIn && !b.lastCheckIn) return 0;
-        if (!a.lastCheckIn) return 1;
-        if (!b.lastCheckIn) return -1;
-        return new Date(b.lastCheckIn).getTime() - new Date(a.lastCheckIn).getTime();
-      })[0] ?? null;
+  const sortedAgentDevices = [...(agentDeviceResponse?.devices ?? [])].sort(
+    (a, b) => {
+      if (!a.lastCheckIn && !b.lastCheckIn) return 0;
+      if (!a.lastCheckIn) return 1;
+      if (!b.lastCheckIn) return -1;
+      return new Date(b.lastCheckIn).getTime() - new Date(a.lastCheckIn).getTime();
+    },
+  );
 
   // Check completion status
   const hasAcceptedPolicies =
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
 
   // Device agent takes priority over Fleet for completion
-  const hasAgentDevice = currentAgentDevice !== null;
+  const hasAnyAgentDevice = sortedAgentDevices.length > 0;
   const hasFleetDevice = response.device !== null;
-  const hasCompletedDeviceSetup = hasAgentDevice
-    ? currentAgentDevice.isCompliant
+  const hasCompletedDeviceSetup = hasAnyAgentDevice
+    ? sortedAgentDevices.some((d) => d.isCompliant)
     : hasFleetDevice &&
       (response.fleetPolicies.length === 0 ||
         response.fleetPolicies.every((policy) => policy.response === 'pass'));
@@ -147,7 +151,7 @@ export const EmployeeTasksList = ({
               <DeviceAgentAccordionItem
                 member={member}
                 host={response.device}
-                agentDevice={currentAgentDevice}
+                agentDevices={sortedAgentDevices}
                 fleetPolicies={response.fleetPolicies}
                 isLoading={isValidating}
                 fetchFleetPolicies={fetchFleetPolicies}
