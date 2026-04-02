@@ -84,8 +84,9 @@ WORKDIR /app
 RUN chown nestjs:nestjs /app
 
 # Install runtime dependencies + AWS RDS CA certificate bundle
-RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/* \
-  && wget -q -O /usr/local/share/aws-rds-ca-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates \
+  && wget -q -O /usr/local/share/aws-rds-ca-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_EXTRA_CA_CERTS=/usr/local/share/aws-rds-ca-bundle.pem
 
