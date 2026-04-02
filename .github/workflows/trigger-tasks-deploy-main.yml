@@ -36,9 +36,9 @@ jobs:
       - name: Copy schema to app and generate client
         working-directory: ./apps/app
         run: |
-          mkdir -p prisma
-          cp ../../packages/db/dist/schema.prisma prisma/schema.prisma
-          bunx prisma generate
+          mkdir -p prisma/schema
+          find ../../packages/db/prisma/schema -name '*.prisma' ! -name 'schema.prisma' -exec cp {} prisma/schema/ \;
+          bunx prisma generate --schema=prisma/schema
       - name: 🚀 Deploy Trigger.dev
         working-directory: ./apps/app
         timeout-minutes: 20
