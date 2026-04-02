@@ -79,6 +79,8 @@ export function TaskList({
   const [statusFilter, setStatusFilter] = useQueryState('status');
   const [assigneeFilter, setAssigneeFilter] = useQueryState('assignee');
   const [frameworkFilter, setFrameworkFilter] = useQueryState('framework');
+  const [automationStatusFilter, setAutomationStatusFilter] =
+    useQueryState('automationStatus');
   const [currentTab, setCurrentTab] = useState<'categories' | 'list'>(activeTab);
 
   // Sync activeTab prop with state when it changes
@@ -154,7 +156,16 @@ export function TaskList({
         return task.controls.some((c) => fwControlIds.has(c.id));
       })();
 
-    return matchesSearch && matchesStatus && matchesAssignee && matchesFramework;
+    const matchesAutomationStatus =
+      !automationStatusFilter || task.automationStatus === automationStatusFilter;
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesAssignee &&
+      matchesFramework &&
+      matchesAutomationStatus
+    );
   });
 
   // Calculate overall stats from all tasks (not filtered)
@@ -719,9 +730,37 @@ export function TaskList({
                     ))}
                   </SelectContent>
                 </Select>
+
+                <Select
+                  value={automationStatusFilter || 'all'}
+                  onValueChange={(value) =>
+                    setAutomationStatusFilter(value === 'all' ? null : value)
+                  }
+                >
+                  <SelectTrigger size="sm">
+                    <SelectValue placeholder="All types">
+                      {!automationStatusFilter
+                        ? 'All types'
+                        : automationStatusFilter === 'AUTOMATED'
+                          ? 'Automated'
+                          : 'Manual'}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      <span className="text-xs">All types</span>
+                    </SelectItem>
+                    <SelectItem value="AUTOMATED">
+                      <span className="text-xs">Automated</span>
+                    </SelectItem>
+                    <SelectItem value="MANUAL">
+                      <span className="text-xs">Manual</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               {/* Result Count */}
-              {(searchQuery || statusFilter || assigneeFilter || frameworkFilter) && (
+              {(searchQuery || statusFilter || assigneeFilter || frameworkFilter || automationStatusFilter) && (
                 <div className="text-muted-foreground text-xs tabular-nums whitespace-nowrap lg:ml-auto">
                   {filteredTasks.length} {filteredTasks.length === 1 ? 'result' : 'results'}
                 </div>

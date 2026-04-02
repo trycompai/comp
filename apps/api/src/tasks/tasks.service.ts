@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { filterDescriptionByFrameworks } from './description-framework-filter';
 import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
@@ -63,6 +64,21 @@ export class TasksService {
   }
 
   /**
+   * Fetch the active framework names for an organisation.
+   */
+  private async getActiveFrameworkNames(
+    organizationId: string,
+  ): Promise<string[]> {
+    const instances = await db.frameworkInstance.findMany({
+      where: { organizationId },
+      include: {
+        framework: { select: { name: true } },
+      },
+    });
+    return instances.map((fi) => fi.framework.name);
+  }
+
+  /**
    * Get all tasks for an organization
    * @param organizationId - The organization ID
    * @param assignmentFilter - Optional filter for assignment-based access (for employee/contractor roles)
@@ -73,49 +89,61 @@ export class TasksService {
     options?: { includeRelations?: boolean },
   ) {
     try {
-      const tasks = await db.task.findMany({
-        where: {
-          organizationId,
-          ...assignmentFilter,
-        },
-        ...(options?.includeRelations && {
-          include: {
-            controls: {
-              select: { id: true, name: true },
-            },
-            evidenceAutomations: {
-              select: {
-                id: true,
-                isEnabled: true,
-                name: true,
-                runs: {
-                  orderBy: { createdAt: 'desc' as const },
-                  take: 3,
-                  select: {
-                    status: true,
-                    success: true,
-                    evaluationStatus: true,
-                    createdAt: true,
-                    triggeredBy: true,
-                    runDuration: true,
+      const [tasks, activeFrameworkNames] = await Promise.all([
+        db.task.findMany({
+          where: {
+            organizationId,
+            ...assignmentFilter,
+          },
+          ...(options?.includeRelations && {
+            include: {
+              controls: {
+                select: { id: true, name: true },
+              },
+              evidenceAutomations: {
+                select: {
+                  id: true,
+                  isEnabled: true,
+                  name: true,
+                  runs: {
+                    orderBy: { createdAt: 'desc' as const },
+                    take: 3,
+                    select: {
+                      status: true,
+                      success: true,
+                      evaluationStatus: true,
+                      createdAt: true,
+                      triggeredBy: true,
+                      runDuration: true,
+                    },
                   },
                 },
               },
             },
-          },
+          }),
+          orderBy: [{ status: 'asc' }, { order: 'asc' }, { createdAt: 'asc' }],
         }),
-        orderBy: [{ status: 'asc' }, { order: 'asc' }, { createdAt: 'asc' }],
-      });
+        this.getActiveFrameworkNames(organizationId),
+      ]);
+
+      const filterDescription = (desc: string) =>
+        filterDescriptionByFrameworks(desc, activeFrameworkNames);
 
       if (options?.includeRelations) {
-        return { data: tasks, count: tasks.length };
+        return {
+          data: tasks.map((t) => ({
+            ...t,
+            description: filterDescription(t.description),
+          })),
+          count: tasks.length,
+        };
       }
 
       return {
         data: tasks.map((task) => ({
           id: task.id,
           title: task.title,
-          description: task.description,
+          description: filterDescription(task.description),
           status: task.status,
           createdAt: task.createdAt,
           updatedAt: task.updatedAt,
@@ -152,23 +180,32 @@ export class TasksService {
     taskId: string,
   ) {
     try {
-      const task = await db.task.findFirst({
-        where: {
-          id: taskId,
-          organizationId,
-        },
-        include: {
-          assignee: true,
-          controls: true,
-          approver: { include: { user: true } },
-        },
-      });
+      const [task, activeFrameworkNames] = await Promise.all([
+        db.task.findFirst({
+          where: {
+            id: taskId,
+            organizationId,
+          },
+          include: {
+            assignee: true,
+            controls: true,
+            approver: { include: { user: true } },
+          },
+        }),
+        this.getActiveFrameworkNames(organizationId),
+      ]);
 
       if (!task) {
         throw new BadRequestException('Task not found or access denied');
       }
 
-      return task;
+      return {
+        ...task,
+        description: filterDescriptionByFrameworks(
+          task.description,
+          activeFrameworkNames,
+        ),
+      };
     } catch (error) {
       console.error('Error fetching task:', error);
       if (error instanceof BadRequestException) {

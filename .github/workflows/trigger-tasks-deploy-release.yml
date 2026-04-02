@@ -39,10 +39,11 @@ jobs:
         working-directory: ./packages/integration-platform
         run: bun run build
 
-      - name: Copy schema to app and generate client
-        working-directory: ./apps/app
+      - name: Generate Prisma clients
         run: |
-          mkdir -p prisma/schema
+          cd packages/db && node scripts/generate-prisma-client-js.js
+          cd ../..
+          cd apps/app && mkdir -p prisma/schema
           find ../../packages/db/prisma/schema -name '*.prisma' ! -name 'schema.prisma' -exec cp {} prisma/schema/ \;
           bunx prisma generate --schema=prisma/schema
 

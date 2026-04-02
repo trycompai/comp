@@ -19,6 +19,7 @@ export class MemberQueries {
     department: true,
     jobTitle: true,
     isActive: true,
+    deactivated: true,
     fleetDmLabelId: true,
     user: {
       select: {

@@ -283,31 +283,52 @@ export class PrismaExtension implements BuildExtension {
   }
 
   private buildSchemaCandidates(context: ExtendedBuildContext): string[] {
-    const candidates = new Set<string>();
-
-    const addNodeModuleCandidates = (start: string | undefined) => {
-      if (!start) {
-        return;
-      }
-
-      let current = start;
-      while (true) {
-        candidates.add(resolve(current, 'node_modules/@trycompai/db/dist/schema.prisma'));
-        const parent = dirname(current);
-        if (parent === current) {
-          break;
-        }
-        current = parent;
+    const candidates: string[] = [];
+    const seen = new Set<string>();
+    const add = (p: string) => {
+      const resolved = resolve(p);
+      if (!seen.has(resolved)) {
+        seen.add(resolved);
+        candidates.push(resolved);
       }
     };
 
+    // Strategy 1: Resolve @trycompai/db via Node module resolution (follows workspace symlinks)
+    try {
+      const dbPkgJson = require.resolve('@trycompai/db/package.json', {
+        paths: [context.workingDir],
+      });
+      const dbRoot = dirname(dbPkgJson);
+      add(join(dbRoot, 'dist', 'schema.prisma'));
+      add(join(dbRoot, 'prisma', 'schema', 'schema.prisma'));
+    } catch {
+      // Package not resolvable yet (pre-install), fall through to other strategies
+    }
+
+    // Strategy 2: Walk up node_modules hierarchy from workingDir and workspaceDir
+    const addNodeModuleCandidates = (start: string | undefined) => {
+      if (!start) return;
+      let current = start;
+      while (true) {
+        const dbDir = resolve(current, 'node_modules', '@trycompai', 'db');
+        add(join(dbDir, 'dist', 'schema.prisma'));
+        add(join(dbDir, 'prisma', 'schema', 'schema.prisma'));
+        const parent = dirname(current);
+        if (parent === current) break;
+        current = parent;
+      }
+    };
     addNodeModuleCandidates(context.workingDir);
     addNodeModuleCandidates(context.workspaceDir);
 
-    candidates.add(resolve(context.workingDir, '../../packages/db/dist/schema.prisma'));
-    candidates.add(resolve(context.workingDir, '../packages/db/dist/schema.prisma'));
+    // Strategy 3: Relative monorepo paths (apps/api → packages/db, apps/app → packages/db)
+    for (const rel of ['../../packages/db', '../packages/db']) {
+      const dbDir = resolve(context.workingDir, rel);
+      add(join(dbDir, 'dist', 'schema.prisma'));
+      add(join(dbDir, 'prisma', 'schema', 'schema.prisma'));
+    }
 
-    return Array.from(candidates);
+    return candidates;
   }
 }
 
