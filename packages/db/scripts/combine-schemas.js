@@ -68,7 +68,9 @@ function getSslConfig(url: string) {
 
 function createPrismaClient(): PrismaClient {
   const url = process.env.DATABASE_URL!;
-  const adapter = new PrismaPg({ connectionString: url, ssl: getSslConfig(url) });
+  const ssl = getSslConfig(url);
+  const cleanUrl = url.replace(/[?&]sslmode=\\w[\\w-]*/g, '').replace(/\\?&/, '?').replace(/\\?$/, '');
+  const adapter = new PrismaPg({ connectionString: cleanUrl, ssl });
   return new PrismaClient({ adapter });
 }
 
