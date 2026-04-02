@@ -5,6 +5,7 @@ import { defineConfig } from '@trigger.dev/sdk';
 import { prismaExtension } from './customPrismaExtension';
 
 export default defineConfig({
+  runtime: 'node-22',
   project: 'proj_lhxjliiqgcdyqbgtucda',
   logLevel: 'log',
   instrumentations: [new PrismaInstrumentation()],

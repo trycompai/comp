@@ -6,6 +6,7 @@ import { emailExtension } from './emailExtension';
 import { integrationPlatformExtension } from './integrationPlatformExtension';
 
 export default defineConfig({
+  runtime: 'node-22',
   project: 'proj_zhioyrusqertqgafqgpj', // API project
   logLevel: 'log',
   instrumentations: [new PrismaInstrumentation()],
