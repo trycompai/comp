@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import type { PoolConfig } from 'pg';
+
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
@@ -26,7 +26,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
  * root CA store, so rejectUnauthorized: false is required. The connection
  * is still TLS-encrypted — only identity verification is skipped.
  */
-function getSslConfig(url: string): PoolConfig['ssl'] {
+function getSslConfig(url: string): boolean | { rejectUnauthorized: boolean } | undefined {
   const match = url.match(/sslmode=(\w[\w-]*)/);
   if (!match) return undefined;
 
