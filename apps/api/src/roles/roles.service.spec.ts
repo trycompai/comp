@@ -74,7 +74,7 @@ jest.mock('@trycompai/auth', () => {
 });
 
 // Mock the database
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     organizationRole: {
       findFirst: jest.fn(),
@@ -90,7 +90,7 @@ jest.mock('@trycompai/db', () => ({
   },
 }));
 
-import { db } from '@trycompai/db';
+import { db } from '@db';
 
 describe('RolesService', () => {
   let service: RolesService;

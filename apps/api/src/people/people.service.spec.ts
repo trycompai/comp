@@ -10,7 +10,7 @@ import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
 
 // Mock the database
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     member: {
       findFirst: jest.fn(),
@@ -67,7 +67,7 @@ jest.mock('@trycompai/email', () => ({
 jest.mock('./utils/member-validator');
 jest.mock('./utils/member-queries');
 
-import { db } from '@trycompai/db';
+import { db } from '@db';
 
 describe('PeopleService', () => {
   let service: PeopleService;

@@ -1,5 +1,5 @@
 import { getUnsubscribeUrl } from '@/lib/unsubscribe';
-import { db } from '@db';
+import { db } from '@db/server';
 import { redirect } from 'next/navigation';
 
 interface PageProps {

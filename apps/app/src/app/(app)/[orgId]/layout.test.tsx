@@ -31,6 +31,7 @@ vi.mock('@/lib/api-server', () => ({
 }));
 vi.mock('@/lib/permissions', () => ({
   canAccessApp: vi.fn().mockReturnValue(true),
+  parseRolesString: vi.fn().mockReturnValue(['owner']),
 }));
 vi.mock('@/lib/permissions.server', () => ({
   resolveUserPermissions: vi.fn().mockResolvedValue([]),
@@ -44,7 +45,7 @@ vi.mock('next/dynamic', () => ({
 vi.mock('@aws-sdk/client-s3', () => ({ GetObjectCommand: vi.fn() }));
 vi.mock('@aws-sdk/s3-request-presigner', () => ({ getSignedUrl: vi.fn() }));
 
-import { createMockSession, setupAuthMocks } from '@/test-utils/mocks/auth';
+import { createMockSession, mockAuthApi, setupAuthMocks } from '@/test-utils/mocks/auth';
 import { mockDb } from '@/test-utils/mocks/db';
 
 const { default: Layout } = await import('./layout');
@@ -70,10 +71,10 @@ describe('Layout activeOrganizationId sync', () => {
       deactivated: false,
     });
     mockDb.onboarding.findFirst.mockResolvedValue(null);
-    mockDb.session.update.mockResolvedValue({});
+    mockAuthApi.setActiveOrganization.mockResolvedValue({});
   });
 
-  it('should update session directly in DB when session org differs from URL org', async () => {
+  it('should call setActiveOrganization via auth API when session org differs from URL org', async () => {
     setupAuthMocks({
       session: createMockSession({ id: sessionId, activeOrganizationId: 'org_other' }),
     });
@@ -83,13 +84,13 @@ describe('Layout activeOrganizationId sync', () => {
       params: Promise.resolve({ orgId: requestedOrgId }),
     });
 
-    expect(mockDb.session.update).toHaveBeenCalledWith({
-      where: { id: sessionId },
-      data: { activeOrganizationId: requestedOrgId },
+    expect(mockAuthApi.setActiveOrganization).toHaveBeenCalledWith({
+      headers: expect.anything(),
+      body: { organizationId: requestedOrgId },
     });
   });
 
-  it('should update session when activeOrganizationId is null', async () => {
+  it('should call setActiveOrganization when activeOrganizationId is null', async () => {
     setupAuthMocks({
       session: createMockSession({ id: sessionId, activeOrganizationId: null }),
     });
@@ -99,15 +100,28 @@ describe('Layout activeOrganizationId sync', () => {
       params: Promise.resolve({ orgId: requestedOrgId }),
     });
 
-    expect(mockDb.session.update).toHaveBeenCalledWith({
-      where: { id: sessionId },
-      data: { activeOrganizationId: requestedOrgId },
+    expect(mockAuthApi.setActiveOrganization).toHaveBeenCalledWith({
+      headers: expect.anything(),
+      body: { organizationId: requestedOrgId },
     });
   });
 
-  it('should NOT update session when session org matches URL org', async () => {
+  it('should NOT call setActiveOrganization when session org matches URL org', async () => {
     setupAuthMocks({
       session: createMockSession({ id: sessionId, activeOrganizationId: requestedOrgId }),
+    });
+
+    await Layout({
+      children: null,
+      params: Promise.resolve({ orgId: requestedOrgId }),
+    });
+
+    expect(mockAuthApi.setActiveOrganization).not.toHaveBeenCalled();
+  });
+
+  it('should not do a direct DB session update', async () => {
+    setupAuthMocks({
+      session: createMockSession({ id: sessionId, activeOrganizationId: 'org_other' }),
     });
 
     await Layout({
@@ -118,11 +132,11 @@ describe('Layout activeOrganizationId sync', () => {
     expect(mockDb.session.update).not.toHaveBeenCalled();
   });
 
-  it('should continue rendering even if session update fails', async () => {
+  it('should continue rendering even if setActiveOrganization fails', async () => {
     setupAuthMocks({
       session: createMockSession({ id: sessionId, activeOrganizationId: 'org_other' }),
     });
-    mockDb.session.update.mockRejectedValue(new Error('db update failed'));
+    mockAuthApi.setActiveOrganization.mockRejectedValue(new Error('API call failed'));
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 

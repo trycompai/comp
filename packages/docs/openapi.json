@@ -8343,6 +8343,37 @@
         ]
       }
     },
+    "/v1/tasks/templates": {
+      "get": {
+        "description": "Retrieve all available task templates, optionally filtered by framework.",
+        "operationId": "TasksController_getTaskTemplates_v1",
+        "parameters": [
+          {
+            "name": "frameworkId",
+            "required": false,
+            "in": "query",
+            "description": "Filter templates by framework ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task templates",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
     "/v1/tasks/bulk": {
       "patch": {
         "description": "Bulk update the status of multiple tasks",
@@ -12681,6 +12712,53 @@
         ]
       }
     },
+    "/v1/framework-editor/framework/import": {
+      "post": {
+        "operationId": "FrameworkEditorFrameworkController_importFramework_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
+    "/v1/framework-editor/framework/{id}/export": {
+      "get": {
+        "operationId": "FrameworkEditorFrameworkController_exportFramework_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Framework Editor Frameworks"
+        ]
+      }
+    },
     "/v1/framework-editor/framework/{id}/controls": {
       "get": {
         "operationId": "FrameworkEditorFrameworkController_getControls_v1",
@@ -14327,17 +14405,17 @@
         },
         "responses": {
           "200": {
-            "description": "Upload file, parse questions (no answers), save to DB, return questionnaireId",
+            "description": "Upload file and trigger async parsing. Returns runId for realtime tracking.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "questionnaireId": {
+                    "runId": {
                       "type": "string"
                     },
-                    "totalQuestions": {
-                      "type": "number"
+                    "publicAccessToken": {
+                      "type": "string"
                     }
                   }
                 }
@@ -15997,6 +16075,66 @@
         ]
       }
     },
+    "/v1/internal/dynamic-integrations/validate": {
+      "post": {
+        "operationId": "DynamicIntegrationsController_validate_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/internal/dynamic-integrations/{id}/check-runs": {
+      "get": {
+        "operationId": "DynamicIntegrationsController_getCheckRuns_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
+    "/v1/internal/dynamic-integrations/check-runs/{runId}": {
+      "get": {
+        "operationId": "DynamicIntegrationsController_getCheckRunById_v1",
+        "parameters": [
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DynamicIntegrations"
+        ]
+      }
+    },
     "/v1/integrations/checks/providers/{providerSlug}": {
       "get": {
         "operationId": "ChecksController_listProviderChecks_v1",
@@ -16480,34 +16618,6 @@
         ]
       }
     },
-    "/v1/integrations/sync/ramp/employees": {
-      "post": {
-        "operationId": "SyncController_syncRampEmployees_v1",
-        "parameters": [
-          {
-            "name": "connectionId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "tags": [
-          "Integrations"
-        ]
-      }
-    },
     "/v1/integrations/sync/jumpcloud/employees": {
       "post": {
         "operationId": "SyncController_syncJumpCloudEmployees_v1",
@@ -16539,25 +16649,6 @@
     "/v1/integrations/sync/jumpcloud/status": {
       "post": {
         "operationId": "SyncController_getJumpCloudStatus_v1",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "tags": [
-          "Integrations"
-        ]
-      }
-    },
-    "/v1/integrations/sync/ramp/status": {
-      "post": {
-        "operationId": "SyncController_getRampStatus_v1",
         "parameters": [],
         "responses": {
           "201": {
@@ -16610,29 +16701,12 @@
         ]
       }
     },
-    "/v1/integrations/sync/ramp/discover-roles": {
-      "post": {
-        "operationId": "RampRoleMappingController_discoverRoles_v1",
-        "parameters": [
-          {
-            "name": "connectionId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "refresh",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+    "/v1/integrations/sync/available-providers": {
+      "get": {
+        "operationId": "SyncController_getAvailableSyncProviders_v1",
+        "parameters": [],
         "responses": {
-          "201": {
+          "200": {
             "description": ""
           }
         },
@@ -16646,27 +16720,18 @@
         ]
       }
     },
-    "/v1/integrations/sync/ramp/role-mapping": {
+    "/v1/integrations/sync/dynamic/{providerSlug}/employees": {
       "post": {
-        "operationId": "RampRoleMappingController_saveRoleMapping_v1",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "tags": [
-          "Integrations"
-        ]
-      },
-      "get": {
-        "operationId": "RampRoleMappingController_getRoleMapping_v1",
+        "operationId": "SyncController_syncDynamicProviderEmployees_v1",
         "parameters": [
+          {
+            "name": "providerSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "connectionId",
             "required": true,
@@ -16677,7 +16742,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": ""
           }
         },
@@ -21840,13 +21905,11 @@
         "properties": {
           "name": {
             "type": "string",
-            "description": "Vendor name",
-            "example": "CloudTech Solutions Inc."
+            "description": "Vendor name"
           },
           "description": {
             "type": "string",
-            "description": "Detailed description of the vendor and services provided",
-            "example": "Cloud infrastructure provider offering AWS-like services including compute, storage, and networking solutions for enterprise customers."
+            "description": "Vendor description"
           },
           "category": {
             "type": "string",
@@ -21860,87 +21923,72 @@
               "sales",
               "hr",
               "other"
-            ],
-            "default": "other",
-            "example": "cloud"
+            ]
           },
           "status": {
             "type": "string",
-            "description": "Assessment status of the vendor",
+            "description": "Assessment status",
             "enum": [
               "not_assessed",
               "in_progress",
               "assessed"
-            ],
-            "default": "not_assessed",
-            "example": "not_assessed"
+            ]
           },
           "inherentProbability": {
             "type": "string",
-            "description": "Inherent probability of risk before controls",
+            "description": "Inherent probability",
             "enum": [
               "very_unlikely",
               "unlikely",
               "possible",
               "likely",
               "very_likely"
-            ],
-            "default": "very_unlikely",
-            "example": "possible"
+            ]
           },
           "inherentImpact": {
             "type": "string",
-            "description": "Inherent impact of risk before controls",
+            "description": "Inherent impact",
             "enum": [
               "insignificant",
               "minor",
               "moderate",
               "major",
               "severe"
-            ],
-            "default": "insignificant",
-            "example": "moderate"
+            ]
           },
           "residualProbability": {
             "type": "string",
-            "description": "Residual probability after controls are applied",
+            "description": "Residual probability",
             "enum": [
               "very_unlikely",
               "unlikely",
               "possible",
               "likely",
               "very_likely"
-            ],
-            "default": "very_unlikely",
-            "example": "unlikely"
+            ]
           },
           "residualImpact": {
             "type": "string",
-            "description": "Residual impact after controls are applied",
+            "description": "Residual impact",
             "enum": [
               "insignificant",
               "minor",
               "moderate",
               "major",
               "severe"
-            ],
-            "default": "insignificant",
-            "example": "minor"
+            ]
           },
           "website": {
             "type": "string",
-            "description": "Vendor website URL",
-            "example": "https://www.cloudtechsolutions.com"
+            "description": "Vendor website URL"
           },
           "isSubProcessor": {
             "type": "boolean",
-            "description": "Whether the vendor is a sub-processor",
-            "default": false
+            "description": "Whether the vendor is a sub-processor"
           },
           "assigneeId": {
             "type": "string",
-            "description": "ID of the user assigned to manage this vendor",
-            "example": "mem_abc123def456"
+            "description": "Assignee member ID"
           }
         }
       },
@@ -24105,6 +24153,71 @@
           "name",
           "version",
           "description"
+        ]
+      },
+      "ImportFrameworkMetaDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "visible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "description"
+        ]
+      },
+      "ImportFrameworkDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "example": "1"
+          },
+          "exportedAt": {
+            "type": "string"
+          },
+          "framework": {
+            "$ref": "#/components/schemas/ImportFrameworkMetaDto"
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "controlTemplates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "policyTemplates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "taskTemplates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "version",
+          "framework"
         ]
       },
       "UpdateFrameworkDto": {

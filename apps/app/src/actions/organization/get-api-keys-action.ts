@@ -2,7 +2,7 @@
 
 import type { ActionResponse } from '@/actions/types';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 
 export const getApiKeysAction = async (): Promise<

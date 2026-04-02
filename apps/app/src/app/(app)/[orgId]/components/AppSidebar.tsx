@@ -32,9 +32,15 @@ export function AppSidebar({
 
   const navItems: NavItem[] = [
     {
+      id: 'overview',
+      path: `/${organization.id}/overview`,
+      name: 'Overview',
+      hidden: !canAccessRoute(permissions, 'overview'),
+    },
+    {
       id: 'frameworks',
       path: `/${organization.id}/frameworks`,
-      name: 'Overview',
+      name: 'Frameworks',
       hidden: !canAccessRoute(permissions, 'frameworks'),
     },
     {
@@ -42,12 +48,6 @@ export function AppSidebar({
       path: `/${organization.id}/auditor`,
       name: 'Auditor View',
       hidden: !hasAuditorRole || !canAccessRoute(permissions, 'auditor'),
-    },
-    {
-      id: 'controls',
-      path: `/${organization.id}/controls`,
-      name: 'Controls',
-      hidden: !organization.advancedModeEnabled || !canAccessRoute(permissions, 'controls'),
     },
     {
       id: 'policies',

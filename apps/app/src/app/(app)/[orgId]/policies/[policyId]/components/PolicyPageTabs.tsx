@@ -25,6 +25,33 @@ type PolicyVersionWithPublisher = PolicyVersion & {
   publishedBy: (Member & { user: User }) | null;
 };
 
+/**
+ * Normalizes policy content from the database into a clean JSONContent[].
+ * Handles two known storage patterns:
+ *  - { set: [...] } wrapper from a previous createMany bug
+ *  - [{type:"doc", content:[...]}] where a full doc was stored as an array element
+ */
+function sanitizePolicyContent(raw: unknown): JSONContent[] {
+  if (!raw) return [];
+
+  let arr: unknown[] = Array.isArray(raw) ? raw : [raw];
+
+  if (arr.length === 1 && arr[0] && typeof arr[0] === 'object' && !Array.isArray(arr[0])) {
+    const first = arr[0] as Record<string, unknown>;
+
+    // Unwrap { set: [...] } wrapper
+    if (Array.isArray(first.set)) {
+      arr = first.set;
+    }
+    // Unwrap [{type:"doc", content:[...]}] — extract the doc's children
+    else if (first.type === 'doc' && Array.isArray(first.content)) {
+      arr = first.content;
+    }
+  }
+
+  return arr as JSONContent[];
+}
+
 interface PolicyPageTabsProps {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
   assignees: (Member & { user: User })[];
@@ -181,19 +208,10 @@ export function PolicyPageTabs({
               policyContent={
                 // Priority: 1) Published version content, 2) legacy policy.content, 3) empty array
                 (() => {
-                  // Ensure versions is an array before using find
                   const versionsArray = Array.isArray(versions) ? versions : [];
-                  // Find the published version content
                   const currentVersion = versionsArray.find((v) => v.id === policy?.currentVersionId);
-                  if (currentVersion?.content) {
-                    const versionContent = currentVersion.content as JSONContent[];
-                    return Array.isArray(versionContent) ? versionContent : [versionContent];
-                  }
-                  // Fallback to legacy policy.content for backward compatibility
-                  if (policy?.content) {
-                    return policy.content as JSONContent[];
-                  }
-                  return [];
+                  const raw = currentVersion?.content ?? policy?.content ?? [];
+                  return sanitizePolicyContent(raw);
                 })()
               }
               displayFormat={policy?.displayFormat}

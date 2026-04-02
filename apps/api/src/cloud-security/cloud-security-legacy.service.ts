@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { db } from '@db';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@db';
 import {
   createCipheriv,
   randomBytes,

@@ -7,6 +7,12 @@ import { CommentsController } from './comments.controller';
 import { CommentsService } from './comments.service';
 
 // Mock auth.server to avoid importing better-auth ESM in Jest
+jest.mock('@db', () => ({
+  ...jest.requireActual('@prisma/client'),
+  db: {},
+  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
+}));
+
 jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
@@ -41,7 +47,7 @@ describe('CommentsController', () => {
 
   const apiKeyAuthContext: AuthContext = {
     organizationId: 'org_123',
-    authType: 'apiKey',
+    authType: 'api-key',
     isApiKey: true,
     isPlatformAdmin: false,
     userId: undefined,

@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Param,
   Query,
   Body,
   HttpException,
@@ -19,22 +20,24 @@ import {
 } from '../../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../../auth/types';
 import { db } from '@db';
+import type { Prisma } from '@db';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import {
   getManifest,
+  registry,
   matchesSyncFilterTerms,
   parseSyncFilterTerms,
+  interpretDeclarativeSync,
   type OAuthConfig,
-  type RampUser,
-  type RampUserStatus,
-  type RampUsersResponse,
-  type RoleMappingEntry,
+  type SyncDefinition,
 } from '@trycompai/integration-platform';
-import { RampRoleMappingService } from '../services/ramp-role-mapping.service';
 import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
-import { RampApiService } from '../services/ramp-api.service';
+import { GenericEmployeeSyncService } from '../services/generic-employee-sync.service';
+import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
+import { CheckRunRepository } from '../repositories/check-run.repository';
+import { createCheckContext } from '@trycompai/integration-platform';
 import { filterUsersByOrgUnits } from './sync-ou-filter';
 
 interface GoogleWorkspaceUser {
@@ -71,9 +74,10 @@ export class SyncController {
     private readonly connectionRepository: ConnectionRepository,
     private readonly credentialVaultService: CredentialVaultService,
     private readonly oauthCredentialsService: OAuthCredentialsService,
-    private readonly rampRoleMappingService: RampRoleMappingService,
     private readonly syncLoggerService: IntegrationSyncLoggerService,
-    private readonly rampApiService: RampApiService,
+    private readonly genericSyncService: GenericEmployeeSyncService,
+    private readonly dynamicIntegrationRepo: DynamicIntegrationRepository,
+    private readonly checkRunRepo: CheckRunRepository,
   ) {}
 
   /**
@@ -337,7 +341,7 @@ export class SyncController {
           | 'reactivated'
           | 'error';
         reason?: string;
-        rampStatus?: RampUserStatus | 'USER_MISSING';
+        providerStatus?: string;
       }>,
     };
 
@@ -790,7 +794,7 @@ export class SyncController {
           | 'reactivated'
           | 'error';
         reason?: string;
-        rampStatus?: RampUserStatus | 'USER_MISSING';
+        providerStatus?: string;
       }>,
     };
 
@@ -942,524 +946,6 @@ export class SyncController {
       lastSyncAt: connection.lastSyncAt?.toISOString() ?? null,
       nextSyncAt: connection.nextSyncAt?.toISOString() ?? null,
     };
-  }
-
-  /**
-   * Sync employees from Ramp
-   */
-  @Post('ramp/employees')
-  @RequirePermission('integration', 'update')
-  async syncRampEmployees(
-    @OrganizationId() organizationId: string,
-    @Query('connectionId') connectionId: string,
-    @AuthContext() authContext: AuthContextType,
-  ) {
-    if (!connectionId) {
-      throw new HttpException(
-        'connectionId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const connection = await this.connectionRepository.findById(connectionId);
-    if (!connection) {
-      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
-    }
-
-    if (connection.organizationId !== organizationId) {
-      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
-    }
-
-    const provider = await db.integrationProvider.findUnique({
-      where: { id: connection.providerId },
-    });
-
-    if (!provider || provider.slug !== 'ramp') {
-      throw new HttpException(
-        'This endpoint only supports Ramp connections',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const triggeredBy =
-      authContext.authType === 'service'
-        ? 'scheduled'
-        : authContext.authType === 'api-key'
-          ? 'api'
-          : 'manual';
-
-    const logId = await this.syncLoggerService.startLog({
-      connectionId,
-      organizationId,
-      provider: 'ramp',
-      eventType: 'employee_sync',
-      triggeredBy,
-      userId: authContext.userId ?? undefined,
-    });
-
-    try {
-      return await this.syncRampEmployeesInner(
-        organizationId,
-        connectionId,
-        authContext,
-        connection,
-        logId,
-      );
-    } catch (error) {
-      await this.syncLoggerService.failLog(
-        logId,
-        error instanceof Error ? error.message : String(error),
-      );
-      throw error;
-    }
-  }
-
-  private async syncRampEmployeesInner(
-    organizationId: string,
-    connectionId: string,
-    authContext: AuthContextType,
-    connection: { variables: unknown },
-    logId: string,
-  ) {
-    const accessToken = await this.rampApiService.getAccessToken(connectionId, organizationId);
-
-    const baseUsers = await this.rampApiService.fetchUsers(accessToken);
-    const suspendedUsers = await this.rampApiService.fetchUsers(accessToken, 'USER_SUSPENDED');
-    const users = [...baseUsers, ...suspendedUsers];
-
-    // Filter out non-syncable statuses (pending invites, onboarding, expired)
-    const syncableStatuses = new Set<RampUserStatus>([
-      'USER_ACTIVE',
-      'USER_INACTIVE',
-      'USER_SUSPENDED',
-    ]);
-    const skippedStatuses = users.filter(
-      (u) => u.status && !syncableStatuses.has(u.status),
-    );
-    if (skippedStatuses.length > 0) {
-      this.logger.log(
-        `Skipping ${skippedStatuses.length} Ramp users with non-syncable statuses (INVITE_PENDING, INVITE_EXPIRED, USER_ONBOARDING)`,
-      );
-    }
-
-    const activeUsers = users.filter((u) => u.status === 'USER_ACTIVE');
-    const inactiveUsers = users.filter((u) => u.status === 'USER_INACTIVE');
-
-    const activeEmails = new Set(
-      activeUsers
-        .map((u) => u.email?.toLowerCase())
-        .filter((email): email is string => Boolean(email)),
-    );
-    const inactiveEmails = new Set(
-      inactiveUsers
-        .map((u) => u.email?.toLowerCase())
-        .filter((email): email is string => Boolean(email)),
-    );
-    const suspendedEmails = new Set(
-      suspendedUsers
-        .map((u) => u.email?.toLowerCase())
-        .filter((email): email is string => Boolean(email)),
-    );
-
-    this.logger.log(
-      `Found ${activeUsers.length} active, ${inactiveUsers.length} inactive, and ${suspendedUsers.length} suspended Ramp users`,
-    );
-
-    // Load role mapping from connection variables
-    const connectionVars = (connection.variables ?? {}) as Record<
-      string,
-      unknown
-    >;
-    let roleMapping = Array.isArray(connectionVars.role_mapping)
-      ? (connectionVars.role_mapping as RoleMappingEntry[])
-      : null;
-
-    if (!roleMapping) {
-      const isAutomatedSync = authContext.authType === 'service';
-
-      if (!isAutomatedSync) {
-        // Manual sync — prompt user to configure mapping via UI
-        await this.syncLoggerService.completeLog(logId, {
-          requiresRoleMapping: true,
-          message: 'Role mapping is not configured',
-        });
-        return {
-          success: false,
-          requiresRoleMapping: true,
-          message:
-            'Role mapping is not configured. Please configure role mapping before syncing.',
-        };
-      }
-
-      // Automated sync (cron) — auto-generate default mapping
-      const allRampRolesForDefault = [
-        ...new Set(
-          activeUsers
-            .map((u) => u.role)
-            .filter((r): r is string => Boolean(r)),
-        ),
-      ];
-
-      if (allRampRolesForDefault.length === 0) {
-        this.logger.warn(
-          'No Ramp roles found to auto-generate mapping',
-        );
-        const emptyResult = {
-          totalFound: 0,
-          imported: 0,
-          skipped: 0,
-          deactivated: 0,
-          reactivated: 0,
-          errors: 0,
-          details: [],
-        };
-        await this.syncLoggerService.completeLog(logId, emptyResult);
-        return { success: true, ...emptyResult };
-      }
-
-      const defaultEntries =
-        this.rampRoleMappingService.getDefaultMapping(
-          allRampRolesForDefault,
-        );
-
-      await this.rampRoleMappingService.ensureCustomRolesExist(
-        organizationId,
-        defaultEntries,
-      );
-      await this.rampRoleMappingService.saveMapping(
-        connectionId,
-        defaultEntries,
-      );
-
-      roleMapping = defaultEntries;
-
-      this.logger.log(
-        `Auto-generated default role mapping for Ramp sync (${defaultEntries.length} roles)`,
-      );
-    }
-
-    // Discover all Ramp roles in this batch and auto-create mappings for unknown ones
-    const allRampRoles = new Set(
-      activeUsers
-        .map((u) => u.role)
-        .filter((r): r is string => Boolean(r)),
-    );
-    const mappedRoles = new Set(roleMapping.map((m) => m.rampRole));
-    const newRoles = [...allRampRoles].filter((r) => !mappedRoles.has(r));
-
-    if (newRoles.length > 0) {
-      this.logger.log(
-        `Found ${newRoles.length} new Ramp roles not in mapping: ${newRoles.join(', ')}`,
-      );
-
-      const newEntries =
-        this.rampRoleMappingService.getDefaultMapping(newRoles);
-
-      // Create custom roles in DB for new entries
-      await this.rampRoleMappingService.ensureCustomRolesExist(
-        organizationId,
-        newEntries,
-      );
-
-      // Add to mapping and save
-      const updatedMapping = [...roleMapping, ...newEntries];
-      await this.rampRoleMappingService.saveMapping(
-        connectionId,
-        updatedMapping,
-      );
-
-      // Use the updated mapping
-      roleMapping.push(...newEntries);
-    }
-
-    const roleMappingLookup = new Map(
-      roleMapping.map((m) => [m.rampRole, m.compRole]),
-    );
-
-    const results = {
-      imported: 0,
-      updated: 0,
-      skipped: 0,
-      deactivated: 0,
-      reactivated: 0,
-      errors: 0,
-      details: [] as Array<{
-        email: string;
-        status:
-          | 'imported'
-          | 'updated'
-          | 'skipped'
-          | 'deactivated'
-          | 'reactivated'
-          | 'error';
-        reason?: string;
-        rampStatus?: RampUserStatus | 'USER_MISSING';
-      }>,
-    };
-
-    for (const rampUser of activeUsers) {
-      const normalizedEmail = rampUser.email?.toLowerCase();
-      if (!normalizedEmail) {
-        continue;
-      }
-
-      try {
-        // Try external ID match first (handles email changes)
-        let existingMember = rampUser.id
-          ? await db.member.findFirst({
-              where: {
-                organizationId,
-                externalUserId: rampUser.id,
-                externalUserSource: 'ramp',
-              },
-            })
-          : null;
-
-        // Fall back to email match
-        if (!existingMember) {
-          const existingUser = await db.user.findUnique({
-            where: { email: normalizedEmail },
-          });
-          if (existingUser) {
-            existingMember = await db.member.findFirst({
-              where: { organizationId, userId: existingUser.id },
-            });
-          }
-        }
-
-        if (existingMember) {
-          const mappedRole =
-            roleMappingLookup.get(rampUser.role ?? '') ?? 'employee';
-
-          // Build update data: backfill external ID + update role if changed
-          const updateData: Record<string, unknown> = {};
-
-          if (
-            rampUser.id &&
-            (!existingMember.externalUserId ||
-              existingMember.externalUserSource !== 'ramp')
-          ) {
-            updateData.externalUserId = rampUser.id;
-            updateData.externalUserSource = 'ramp';
-          }
-
-          // Update role if it changed (but don't downgrade privileged roles)
-          const currentRoles = existingMember.role
-            .split(',')
-            .map((r) => r.trim().toLowerCase());
-          const isPrivileged =
-            currentRoles.includes('owner') ||
-            currentRoles.includes('admin') ||
-            currentRoles.includes('auditor');
-
-          if (!isPrivileged && existingMember.role !== mappedRole) {
-            updateData.role = mappedRole;
-          }
-
-          if (existingMember.deactivated) {
-            updateData.deactivated = false;
-            updateData.isActive = true;
-
-            await db.member.update({
-              where: { id: existingMember.id },
-              data: updateData,
-            });
-            results.reactivated++;
-            results.details.push({
-              email: normalizedEmail,
-              status: 'reactivated',
-              reason: 'User is active again in Ramp',
-            });
-          } else if (Object.keys(updateData).length > 0) {
-            await db.member.update({
-              where: { id: existingMember.id },
-              data: updateData,
-            });
-            if (updateData.role) {
-              results.updated++;
-              results.details.push({
-                email: normalizedEmail,
-                status: 'updated',
-                reason: `Role updated to ${mappedRole}`,
-              });
-            } else {
-              results.skipped++;
-              results.details.push({
-                email: normalizedEmail,
-                status: 'skipped',
-                reason: 'Already a member (external ID backfilled)',
-              });
-            }
-          } else {
-            results.skipped++;
-            results.details.push({
-              email: normalizedEmail,
-              status: 'skipped',
-              reason: 'Already a member',
-            });
-          }
-          continue;
-        }
-
-        // Create new user if needed
-        let existingUser = await db.user.findUnique({
-          where: { email: normalizedEmail },
-        });
-
-        if (!existingUser) {
-          const displayName =
-            `${rampUser.first_name ?? ''} ${rampUser.last_name ?? ''}`.trim() ||
-            normalizedEmail.split('@')[0];
-
-          existingUser = await db.user.create({
-            data: {
-              email: normalizedEmail,
-              name: displayName,
-              emailVerified: true,
-            },
-          });
-        }
-
-        const mappedRole =
-          roleMappingLookup.get(rampUser.role ?? '') ?? 'employee';
-
-        await db.member.create({
-          data: {
-            organizationId,
-            userId: existingUser.id,
-            role: mappedRole,
-            isActive: true,
-            externalUserId: rampUser.id || null,
-            externalUserSource: rampUser.id ? 'ramp' : null,
-          },
-        });
-
-        results.imported++;
-        results.details.push({
-          email: normalizedEmail,
-          status: 'imported',
-        });
-      } catch (error) {
-        this.logger.error(`Error importing Ramp user: ${error}`);
-        results.errors++;
-        results.details.push({
-          email: normalizedEmail,
-          status: 'error',
-          reason: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    }
-
-    const allOrgMembers = await db.member.findMany({
-      where: {
-        organizationId,
-        deactivated: false,
-      },
-      include: {
-        user: true,
-      },
-    });
-
-    const rampDomains = new Set(
-      users
-        .map((u) => u.email?.split('@')[1]?.toLowerCase())
-        .filter((domain): domain is string => Boolean(domain)),
-    );
-
-    for (const member of allOrgMembers) {
-      const memberEmail = member.user.email.toLowerCase();
-      const memberDomain = memberEmail.split('@')[1];
-
-      if (!memberDomain || !rampDomains.has(memberDomain)) {
-        continue;
-      }
-
-      // Safety guard: never auto-deactivate privileged members via sync
-      const memberRoles = member.role
-        .split(',')
-        .map((r) => r.trim().toLowerCase());
-      if (
-        memberRoles.includes('owner') ||
-        memberRoles.includes('admin') ||
-        memberRoles.includes('auditor')
-      ) {
-        continue;
-      }
-
-      const isSuspended = suspendedEmails.has(memberEmail);
-      const isInactive = inactiveEmails.has(memberEmail);
-      const isRemoved =
-        !activeEmails.has(memberEmail) && !isSuspended && !isInactive;
-      const rampStatus: RampUserStatus | 'USER_MISSING' = isSuspended
-        ? 'USER_SUSPENDED'
-        : isInactive
-          ? 'USER_INACTIVE'
-          : isRemoved
-            ? 'USER_MISSING'
-            : 'USER_ACTIVE';
-
-      if (isSuspended || isInactive || isRemoved) {
-        try {
-          await db.member.update({
-            where: { id: member.id },
-            data: { deactivated: true, isActive: false },
-          });
-          results.deactivated++;
-          results.details.push({
-            email: member.user.email,
-            status: 'deactivated',
-            reason: isSuspended
-              ? 'User is suspended in Ramp'
-              : isInactive
-                ? 'User is inactive in Ramp'
-                : 'User was removed from Ramp',
-            rampStatus,
-          });
-          this.logger.log(
-            `Ramp deactivated member ${member.user.email} (${rampStatus})`,
-          );
-        } catch (error) {
-          this.logger.error(`Error deactivating member: ${error}`);
-          results.errors++;
-          results.details.push({
-            email: memberEmail,
-            status: 'error',
-            reason: `Failed to deactivate: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          });
-        }
-      }
-    }
-
-    this.logger.log(
-      `Ramp sync complete: ${results.imported} imported, ${results.updated} updated, ${results.reactivated} reactivated, ${results.deactivated} deactivated, ${results.skipped} skipped, ${results.errors} errors`,
-    );
-
-    // Update lastSyncAt on the connection
-    await db.integrationConnection.update({
-      where: { id: connectionId },
-      data: { lastSyncAt: new Date() },
-    });
-
-    const syncResult = {
-      success: true,
-      totalFound: activeUsers.length,
-      totalInactive: inactiveUsers.length,
-      totalSuspended: suspendedUsers.length,
-      ...results,
-    };
-
-    await this.syncLoggerService.completeLog(logId, {
-      imported: results.imported,
-      updated: results.updated,
-      deactivated: results.deactivated,
-      reactivated: results.reactivated,
-      skipped: results.skipped,
-      errors: results.errors,
-      totalFound: activeUsers.length,
-      details: results.details,
-    });
-
-    return syncResult;
   }
 
   /**
@@ -2002,35 +1488,6 @@ export class SyncController {
   }
 
   /**
-   * Check if Ramp is connected for an organization
-   */
-  @Post('ramp/status')
-  @RequirePermission('integration', 'read')
-  async getRampStatus(@OrganizationId() organizationId: string) {
-
-    const connection = await this.connectionRepository.findBySlugAndOrg(
-      'ramp',
-      organizationId,
-    );
-
-    if (!connection || connection.status !== 'active') {
-      return {
-        connected: false,
-        connectionId: null,
-        lastSyncAt: null,
-        nextSyncAt: null,
-      };
-    }
-
-    return {
-      connected: true,
-      connectionId: connection.id,
-      lastSyncAt: connection.lastSyncAt?.toISOString() ?? null,
-      nextSyncAt: connection.nextSyncAt?.toISOString() ?? null,
-    };
-  }
-
-  /**
    * Get the current employee sync provider for an organization
    */
   @Get('employee-sync-provider')
@@ -2046,6 +1503,15 @@ export class SyncController {
 
     if (!org) {
       throw new HttpException('Organization not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Clear stale provider for integrations that have been removed
+    if (org.employeeSyncProvider === 'ramp') {
+      await db.organization.update({
+        where: { id: organizationId },
+        data: { employeeSyncProvider: null },
+      });
+      return { provider: null };
     }
 
     return {
@@ -2067,12 +1533,10 @@ export class SyncController {
 
     // Validate provider if set
     if (provider) {
-      const validProviders = [
-        'google-workspace',
-        'rippling',
-        'jumpcloud',
-        'ramp',
-      ];
+      const allManifests = registry.getActiveManifests();
+      const validProviders = allManifests
+        .filter((m) => m.capabilities?.includes('sync'))
+        .map((m) => m.id);
       if (!validProviders.includes(provider)) {
         throw new HttpException(
           `Invalid provider. Must be one of: ${validProviders.join(', ')}`,
@@ -2107,5 +1571,281 @@ export class SyncController {
       success: true,
       provider,
     };
+  }
+
+  // ============================================================================
+  // Dynamic sync endpoints (for dynamic integrations with syncDefinition)
+  // ============================================================================
+
+  /**
+   * Get all providers that support employee sync (both code-based and dynamic).
+   * Used by the frontend to render the provider selector dynamically.
+   */
+  @Get('available-providers')
+  @RequirePermission('integration', 'read')
+  async getAvailableSyncProviders(
+    @OrganizationId() organizationId: string,
+  ) {
+    const allManifests = registry.getActiveManifests();
+    const syncProviders = allManifests.filter((m) =>
+      m.capabilities?.includes('sync'),
+    );
+
+    const results = await Promise.all(
+      syncProviders.map(async (m) => {
+        const connection = await db.integrationConnection.findFirst({
+          where: {
+            organizationId,
+            status: 'active',
+            provider: { slug: m.id },
+          },
+          select: {
+            id: true,
+            status: true,
+            lastSyncAt: true,
+            nextSyncAt: true,
+          },
+        });
+        return {
+          slug: m.id,
+          name: m.name,
+          logoUrl: m.logoUrl,
+          connected: !!connection,
+          connectionId: connection?.id ?? null,
+          lastSyncAt: connection?.lastSyncAt?.toISOString() ?? null,
+          nextSyncAt: connection?.nextSyncAt?.toISOString() ?? null,
+        };
+      }),
+    );
+
+    return { providers: results };
+  }
+
+  /**
+   * Generic sync endpoint for dynamic integrations.
+   * Runs the syncDefinition (DSL/code steps) and processes the resulting employees.
+   *
+   * NOTE: This route uses :providerSlug param. NestJS matches routes in order,
+   * so the hardcoded routes above (google-workspace/employees, etc.) take priority.
+   * This only matches for slugs that don't match the 4 built-in providers.
+   */
+  @Post('dynamic/:providerSlug/employees')
+  @RequirePermission('integration', 'update')
+  async syncDynamicProviderEmployees(
+    @OrganizationId() organizationId: string,
+    @Param('providerSlug') providerSlug: string,
+    @Query('connectionId') connectionId: string,
+  ) {
+    if (!connectionId) {
+      throw new HttpException(
+        'connectionId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    this.logger.log(
+      `[DynamicSync] Starting sync for provider="${providerSlug}" connection="${connectionId}" org="${organizationId}"`,
+    );
+
+    // 1. Validate connection
+    const connection = await this.connectionRepository.findById(connectionId);
+    if (!connection || connection.organizationId !== organizationId) {
+      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    // 2. Get manifest from registry — must have 'sync' capability
+    const manifest = getManifest(providerSlug);
+    if (!manifest) {
+      throw new HttpException(
+        `Integration "${providerSlug}" not found`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    if (!manifest.capabilities?.includes('sync')) {
+      throw new HttpException(
+        `Integration "${providerSlug}" does not support sync`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // 3. Get dynamic integration — must have syncDefinition
+    const dynamicIntegration =
+      await this.dynamicIntegrationRepo.findBySlug(providerSlug);
+    if (!dynamicIntegration?.syncDefinition) {
+      throw new HttpException(
+        `Integration "${providerSlug}" has no sync definition`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // 4. Get & refresh credentials
+    let credentials =
+      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+    if (!credentials) {
+      throw new HttpException(
+        'No valid credentials found. Please reconnect the integration.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    // Try to refresh OAuth token if applicable
+    if (manifest.auth.type === 'oauth2' && credentials.refresh_token) {
+      const oauthConfig = manifest.auth.config as OAuthConfig;
+      try {
+        const oauthCredentials =
+          await this.oauthCredentialsService.getCredentials(
+            providerSlug,
+            organizationId,
+          );
+        if (oauthCredentials) {
+          const newToken =
+            await this.credentialVaultService.refreshOAuthTokens(
+              connectionId,
+              {
+                tokenUrl: oauthConfig.tokenUrl,
+                refreshUrl: oauthConfig.refreshUrl,
+                clientId: oauthCredentials.clientId,
+                clientSecret: oauthCredentials.clientSecret,
+                clientAuthMethod: oauthConfig.clientAuthMethod,
+              },
+            );
+          if (newToken) {
+            credentials =
+              await this.credentialVaultService.getDecryptedCredentials(
+                connectionId,
+              );
+          }
+        }
+      } catch (refreshError) {
+        this.logger.warn(
+          `Token refresh failed for ${providerSlug}, trying with existing token: ${refreshError}`,
+        );
+      }
+    }
+
+    const accessToken = credentials?.access_token;
+    this.logger.log(
+      `[DynamicSync] Credentials ready for "${providerSlug}" (auth=${manifest.auth.type}, hasToken=${!!accessToken})`,
+    );
+
+    // 5. Create a sync run record (same table as check runs — agent reads both the same way)
+    const syncRun = await this.checkRunRepo.create({
+      connectionId,
+      checkId: `sync:${providerSlug}`,
+      checkName: `Employee Sync: ${manifest.name}`,
+    });
+
+    // 6. Create CheckContext with logging that captures to the run
+    const { ctx, getResults } = createCheckContext({
+      manifest,
+      accessToken: typeof accessToken === 'string' ? accessToken : undefined,
+      credentials: (credentials ?? {}) as Record<string, string>,
+      variables:
+        ((connection.variables as Record<string, unknown>) ?? {}) as Record<string, string | boolean | number | string[]>,
+      connectionId,
+      organizationId,
+      metadata:
+        (connection.metadata as Record<string, unknown>) ?? {},
+      logger: {
+        info: (msg, data) => this.logger.log(msg, data),
+        warn: (msg, data) => this.logger.warn(msg, data),
+        error: (msg, data) => this.logger.error(msg, data),
+      },
+    });
+
+    try {
+      // 7. Run sync definition → get SyncEmployee[]
+      const syncDefinition =
+        dynamicIntegration.syncDefinition as unknown as SyncDefinition;
+      const syncRunner = interpretDeclarativeSync({
+        definition: syncDefinition,
+      });
+
+      const employees = await syncRunner.run(ctx);
+
+      this.logger.log(
+        `[DynamicSync] Sync definition produced ${employees.length} employees for "${providerSlug}"`,
+      );
+
+      // 8. Process employees via generic service
+      const result = await this.genericSyncService.processEmployees({
+        organizationId,
+        employees,
+        options: {
+          providerName: manifest.name,
+        },
+      });
+
+      // 9. Persist execution logs + results to the run record
+      const executionLogs = getResults().logs.map((log) => ({
+        level: log.level,
+        message: log.message,
+        ...(log.data ? { data: log.data } : {}),
+        timestamp: log.timestamp.toISOString(),
+      }));
+
+      const startTime = syncRun.startedAt?.getTime() || Date.now();
+      await this.checkRunRepo.complete(syncRun.id, {
+        status: result.errors > 0 ? 'failed' : 'success',
+        durationMs: Date.now() - startTime,
+        totalChecked: result.totalFound,
+        passedCount: result.imported + result.reactivated,
+        failedCount: result.errors,
+        logs: executionLogs.length > 0
+          ? (executionLogs as unknown as Prisma.InputJsonValue)
+          : undefined,
+      });
+
+      this.logger.log(
+        `[DynamicSync] Sync complete for "${providerSlug}": imported=${result.imported} skipped=${result.skipped} deactivated=${result.deactivated} reactivated=${result.reactivated} errors=${result.errors}`,
+      );
+
+      return {
+        ...result,
+        syncRunId: syncRun.id,
+      };
+    } catch (error) {
+      // Persist error + whatever logs were captured before the failure
+      const executionLogs = getResults().logs.map((log) => ({
+        level: log.level,
+        message: log.message,
+        ...(log.data ? { data: log.data } : {}),
+        timestamp: log.timestamp.toISOString(),
+      }));
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      const startTime = syncRun.startedAt?.getTime() || Date.now();
+      await this.checkRunRepo.complete(syncRun.id, {
+        status: 'failed',
+        durationMs: Date.now() - startTime,
+        totalChecked: 0,
+        passedCount: 0,
+        failedCount: 0,
+        errorMessage,
+        logs: [
+          ...executionLogs,
+          {
+            level: 'error',
+            message: `Sync execution failed: ${errorMessage}`,
+            ...(errorStack ? { data: { stack: errorStack } } : {}),
+            timestamp: new Date().toISOString(),
+          },
+        ] as unknown as Prisma.InputJsonValue,
+      });
+
+      this.logger.error(
+        `[DynamicSync] Sync failed for "${providerSlug}": ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        {
+          message: `Sync execution failed: ${errorMessage}`,
+          syncRunId: syncRun.id,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

@@ -63,6 +63,7 @@ export const evidenceFormDefinitions: Record<EvidenceFormType, EvidenceFormDefin
     category: 'Security',
     submissionDateMode: 'custom',
     portalAccessible: true,
+    optional: true,
     fields: [
       {
         key: 'userName',

@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -47,6 +47,14 @@ import { SearchInput } from './SearchInput';
 import { TaskCard, TaskCardSkeleton } from './TaskCard';
 
 const LOGO_TOKEN = 'pk_AZatYxV5QDSfWpRDaBxzRQ';
+
+// Providers that support employee sync via People > All
+const EMPLOYEE_SYNC_PROVIDERS = new Set([
+  'google-workspace',
+  'rippling',
+  'jumpcloud',
+  'ramp',
+]);
 
 // Check if a provider needs variable configuration based on manifest's required variables
 const providerNeedsConfiguration = (
@@ -78,6 +86,7 @@ interface PlatformIntegrationsProps {
 
 export function PlatformIntegrations({ className, taskTemplates }: PlatformIntegrationsProps) {
   const { orgId } = useParams<{ orgId: string }>();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { providers, isLoading: loadingProviders } = useIntegrationProviders(true);
   const {
@@ -138,6 +147,18 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
   };
 
   const handleConnectDialogSuccess = () => {
+    // Prompt user to import employees for providers that support sync
+    if (connectingProviderInfo && EMPLOYEE_SYNC_PROVIDERS.has(connectingProviderInfo.id)) {
+      toast.info(`Import your ${connectingProviderInfo.name} users`, {
+        description:
+          'Go to People to import and sync your team members.',
+        duration: 15000,
+        action: {
+          label: 'Go to People',
+          onClick: () => router.push(`/${orgId}/people/all`),
+        },
+      });
+    }
     refreshConnections();
     setConnectDialogOpen(false);
     setConnectingProviderInfo(null);
@@ -263,6 +284,19 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
 
     if (connection && provider) {
       toast.success(`${provider.name} connected successfully!`);
+
+      // Prompt user to import employees for providers that support sync
+      if (EMPLOYEE_SYNC_PROVIDERS.has(providerSlug)) {
+        toast.info(`Import your ${provider.name} users`, {
+          description:
+            'Go to People to import and sync your team members.',
+          duration: 15000,
+          action: {
+            label: 'Go to People',
+            onClick: () => router.push(`/${orgId}/people/all`),
+          },
+        });
+      }
 
       // Set state first
       setSelectedConnection(connection);

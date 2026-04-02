@@ -30,7 +30,7 @@ import {
 import type { Response } from 'express';
 import { openai } from '@ai-sdk/openai';
 import { streamText, convertToModelMessages, type UIMessage } from 'ai';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { auth as triggerAuth, tasks } from '@trigger.dev/sdk';
 import type { updatePolicy } from '../trigger/policies/update-policy';
 import { AuditRead } from '../audit/skip-audit-log.decorator';

@@ -1,6 +1,7 @@
 import { serverApi } from '@/lib/api-server';
+import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import PageWithBreadcrumb from '../../../../../components/pages/PageWithBreadcrumb';
 import { FrameworkOverview } from './components/FrameworkOverview';
 import { FrameworkRequirements } from './components/FrameworkRequirements';
 
@@ -30,22 +31,28 @@ export default async function FrameworkPage({ params }: PageProps) {
   const frameworkName = framework.framework?.name ?? 'Framework';
 
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        { label: 'Frameworks', href: `/${organizationId}/frameworks` },
-        { label: frameworkName, current: true },
-      ]}
-    >
-      <div className="flex flex-col gap-6">
-        <FrameworkOverview
-          frameworkInstanceWithControls={frameworkInstanceWithControls}
-          tasks={framework.tasks || []}
-        />
-        <FrameworkRequirements
-          requirementDefinitions={framework.requirementDefinitions || []}
-          frameworkInstanceWithControls={frameworkInstanceWithControls}
-        />
-      </div>
-    </PageWithBreadcrumb>
+    <PageLayout>
+      <Breadcrumb
+        items={[
+          {
+            label: 'Frameworks',
+            href: `/${organizationId}/frameworks`,
+            props: { render: <Link href={`/${organizationId}/frameworks`} /> },
+          },
+          { label: frameworkName, isCurrent: true },
+        ]}
+      />
+      <FrameworkOverview
+        frameworkInstanceWithControls={frameworkInstanceWithControls}
+        tasks={framework.tasks || []}
+        evidenceSubmissions={framework.evidenceSubmissions || []}
+      />
+      <FrameworkRequirements
+        requirementDefinitions={framework.requirementDefinitions || []}
+        frameworkInstanceWithControls={frameworkInstanceWithControls}
+        tasks={framework.tasks || []}
+        evidenceSubmissions={framework.evidenceSubmissions || []}
+      />
+    </PageLayout>
   );
 }

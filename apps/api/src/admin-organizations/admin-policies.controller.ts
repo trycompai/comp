@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import {
   PolicyStatus,
   Frequency,

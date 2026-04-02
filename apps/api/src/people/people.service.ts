@@ -5,7 +5,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { FleetService } from '../lib/fleet.service';
 import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
 import type { PeopleResponseDto } from './dto/people-responses.dto';
@@ -350,6 +350,9 @@ export class PeopleService {
       data: { deactivated: true, isActive: false },
     });
 
+    // Direct DB session deletion is correct here — the API server IS the auth server,
+    // and better-auth's own revokeUserSessions internally calls the same deleteSessions operation.
+    // The admin endpoint wrapper requires an authenticated admin session context we don't have.
     await db.session.deleteMany({ where: { userId: member.userId } });
 
     if (member.fleetDmLabelId) {

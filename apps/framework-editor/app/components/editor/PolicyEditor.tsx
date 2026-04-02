@@ -3,6 +3,7 @@
 import type { JSONContent } from '@tiptap/react';
 import { useMemo } from 'react';
 import AdvancedEditor from './AdvancedEditor'; // Use local AdvancedEditor
+import { validateAndFixTipTapContent } from '@trycompai/ui';
 
 interface PolicyEditorProps {
   // Accept raw JSONContent or array from DB
@@ -12,27 +13,12 @@ interface PolicyEditorProps {
 }
 
 export function PolicyEditor({ initialDbContent, readOnly = false, onSave }: PolicyEditorProps) {
-  // AdvancedEditor expects a single Tiptap document (JSONContent)
-  // Convert the DB format (potentially null, array, or object) to the expected format.
-  const initialEditorContent = useMemo(() => {
-    if (!initialDbContent) {
-      return { type: 'doc', content: [] }; // Default empty doc
-    }
-    if (Array.isArray(initialDbContent)) {
-      // If DB stores array, wrap it in a doc node
-      return { type: 'doc', content: initialDbContent };
-    }
-    if (typeof initialDbContent === 'object' && initialDbContent !== null) {
-      // If DB stores a valid JSON object, use it directly
-      // Add basic validation if needed
-      if (initialDbContent.type === 'doc') {
-        return initialDbContent as JSONContent;
-      }
-    }
-    // Fallback for unexpected formats
-    console.warn('Unexpected initialDbContent format, using default empty doc.', initialDbContent);
-    return { type: 'doc', content: [] };
-  }, [initialDbContent]);
+  // Use the shared validation function for consistent content handling
+  // across all editors (handles stringified JSON, invalid lists, etc.)
+  const initialEditorContent = useMemo(
+    () => validateAndFixTipTapContent(initialDbContent),
+    [initialDbContent],
+  );
 
   // No internal state needed for content, pass directly to AdvancedEditor
 

@@ -14,7 +14,9 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
 import { CreateFrameworkDto } from './dto/create-framework.dto';
+import { ImportFrameworkDto } from './dto/import-framework.dto';
 import { UpdateFrameworkDto } from './dto/update-framework.dto';
+import { FrameworkExportService } from './framework-export.service';
 import { FrameworkEditorFrameworkService } from './framework.service';
 
 @ApiTags('Framework Editor Frameworks')
@@ -23,6 +25,7 @@ import { FrameworkEditorFrameworkService } from './framework.service';
 export class FrameworkEditorFrameworkController {
   constructor(
     private readonly frameworkService: FrameworkEditorFrameworkService,
+    private readonly exportService: FrameworkExportService,
   ) {}
 
   @Get()
@@ -44,6 +47,17 @@ export class FrameworkEditorFrameworkController {
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async create(@Body() dto: CreateFrameworkDto) {
     return this.frameworkService.create(dto);
+  }
+
+  @Post('import')
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+  async importFramework(@Body() dto: ImportFrameworkDto) {
+    return this.exportService.import(dto);
+  }
+
+  @Get(':id/export')
+  async exportFramework(@Param('id') id: string) {
+    return this.exportService.export(id);
   }
 
   @Patch(':id')

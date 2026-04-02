@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { BUILT_IN_ROLE_OBLIGATIONS } from '@trycompai/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import {
   type UserPermissions,
   canAccessApp,

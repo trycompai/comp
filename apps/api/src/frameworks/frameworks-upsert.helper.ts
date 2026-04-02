@@ -1,4 +1,32 @@
-import { Prisma } from '@trycompai/db';
+import { Prisma } from '@db';
+
+/**
+ * Unwraps a `{ set: [...] }` wrapper that was incorrectly stored by a
+ * previous createMany bug for Json[] fields. Returns the inner array if
+ * the pattern is detected, otherwise returns the original value.
+ * Filters null entries and returns InputJsonValue[] for createMany compatibility.
+ */
+function sanitizeJsonContent(
+  value: Prisma.JsonValue[],
+): Prisma.InputJsonValue[] {
+  let arr = value;
+
+  if (
+    arr.length === 1 &&
+    arr[0] &&
+    typeof arr[0] === 'object' &&
+    !Array.isArray(arr[0]) &&
+    'set' in arr[0] &&
+    Array.isArray(arr[0].set)
+  ) {
+    arr = arr[0].set as Prisma.JsonValue[];
+  }
+
+  // JsonValue and InputJsonValue are runtime-identical; only difference
+  // is the null union member which we filter out here.
+  const filtered: unknown[] = arr.filter((v) => v != null);
+  return filtered as Prisma.InputJsonValue[];
+}
 
 type FrameworkEditorFrameworkWithRequirements =
   Prisma.FrameworkEditorFrameworkGetPayload<{
@@ -152,8 +180,9 @@ export async function upsertOrgFrameworkStructure({
         description: pt.description,
         department: pt.department,
         frequency: pt.frequency,
-        content:
-          pt.content as Prisma.PolicyCreateInput['content'],
+        content: sanitizeJsonContent(
+          Array.isArray(pt.content) ? pt.content : [pt.content],
+        ),
         organizationId,
         policyTemplateId: pt.id,
       })),
@@ -172,7 +201,7 @@ export async function upsertOrgFrameworkStructure({
         data: newPolicies.map((p) => ({
           policyId: p.id,
           version: 1,
-          content: p.content as Prisma.InputJsonValue[],
+          content: sanitizeJsonContent(p.content),
           changelog: 'Initial version from template',
         })),
       });

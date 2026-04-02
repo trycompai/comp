@@ -29,10 +29,10 @@ export function AppShellRailNav({ organizationId }: AppShellRailNavProps) {
 
   const items = [
     {
-      href: `${orgBase}/frameworks`,
+      href: `${orgBase}/overview`,
       label: 'Overview',
       icon: <Gauge />,
-      isActive: isActivePrefix(`${orgBase}/frameworks`),
+      isActive: isActivePrefix(`${orgBase}/overview`),
     },
     {
       href: `${orgBase}/policies`,

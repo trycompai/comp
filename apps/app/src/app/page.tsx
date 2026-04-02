@@ -1,7 +1,7 @@
 import { serverApi } from '@/lib/api-server';
 import { getDefaultRoute, mergePermissions, resolveBuiltInPermissions } from '@/lib/permissions';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 

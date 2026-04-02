@@ -53,6 +53,7 @@ export function hasAnyPermission(
  */
 export const ROUTE_PERMISSIONS: Record<string, Array<{ resource: string; action: string }>> = {
   // Main compliance pages
+  overview: [{ resource: 'framework', action: 'read' }],
   frameworks: [{ resource: 'framework', action: 'read' }],
   auditor: [{ resource: 'audit', action: 'read' }],
   controls: [{ resource: 'control', action: 'read' }],
@@ -100,8 +101,8 @@ export function canAccessRoute(permissions: UserPermissions, routeSegment: strin
  * Order matches sidebar priority — the first accessible route becomes the default.
  */
 const MAIN_NAV_ROUTES: Array<{ segment: string; path: string }> = [
+  { segment: 'overview', path: '/overview' },
   { segment: 'frameworks', path: '/frameworks' },
-  { segment: 'controls', path: '/controls' },
   { segment: 'policies', path: '/policies' },
   { segment: 'tasks', path: '/tasks' },
   { segment: 'people', path: '/people/all' },
@@ -139,7 +140,7 @@ const APP_IMPLYING_RESOURCES = new Set([
 
 /** Compliance route segments — used to determine if the Compliance rail icon should show. */
 const COMPLIANCE_ROUTE_SEGMENTS = [
-  'frameworks', 'controls', 'policies', 'tasks', 'documents', 'people',
+  'overview', 'frameworks', 'controls', 'policies', 'tasks', 'documents', 'people',
   'risk', 'vendors', 'questionnaire', 'integrations', 'cloud-tests', 'auditor',
 ] as const;
 

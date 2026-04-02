@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { VendorCategory, VendorStatus } from '@trycompai/db';
+import { VendorCategory, VendorStatus } from '@db';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { VendorsService } from '../vendors/vendors.service';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';

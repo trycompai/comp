@@ -129,6 +129,20 @@ export class TasksController {
     });
   }
 
+  @Get('templates')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'read')
+  @ApiOperation({
+    summary: 'Get task templates',
+    description: 'Retrieve all available task templates, optionally filtered by framework.',
+  })
+  @ApiQuery({ name: 'frameworkId', required: false, description: 'Filter templates by framework ID' })
+  async getTaskTemplates(
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return await this.tasksService.getTaskTemplates(frameworkId);
+  }
+
   @Post()
   @UseGuards(PermissionGuard)
   @RequirePermission('task', 'create')

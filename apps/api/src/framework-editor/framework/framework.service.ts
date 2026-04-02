@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
-import { db, Prisma } from '@trycompai/db';
+import { db, Prisma } from '@db';
 import { CreateFrameworkDto } from './dto/create-framework.dto';
 import { UpdateFrameworkDto } from './dto/update-framework.dto';
 
