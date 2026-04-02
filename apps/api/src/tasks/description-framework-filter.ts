@@ -30,6 +30,7 @@ const FRAMEWORK_ALIASES: Record<string, string[]> = {
  */
 const FOR_FRAMEWORK_LINE_RE =
   /^[ \t]*For\s+([A-Za-z0-9][A-Za-z0-9 .\-/]*?)\s*:/im;
+const COMPOSITE_LABEL_SEPARATOR_RE = /\s*(?:,|\/|&|\band\b)\s*/i;
 
 /**
  * Normalise a framework name for comparison.
@@ -70,16 +71,58 @@ function buildActiveLabels(activeFrameworkNames: string[]): Set<string> {
  */
 function isLabelActive(label: string, activeLabels: Set<string>): boolean {
   const normLabel = normalise(label);
+  const aliasEntries = Object.entries(FRAMEWORK_ALIASES);
 
   // Direct match
   if (activeLabels.has(normLabel)) return true;
 
   // Check alias map: if the label is a known canonical key or alias,
   // see if any of its counterparts are in the active set.
-  for (const [canonical, aliases] of Object.entries(FRAMEWORK_ALIASES)) {
+  for (const [canonical, aliases] of aliasEntries) {
     const allNames = [canonical, ...aliases].map(normalise);
     if (allNames.includes(normLabel)) {
       return allNames.some((n) => activeLabels.has(n));
+    }
+  }
+
+  // Handle headers like "For ISO 27001 and HIPAA:"
+  const parts = normLabel
+    .split(COMPOSITE_LABEL_SEPARATOR_RE)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length > 1) {
+    let hasKnownPart = false;
+    let hasUnknownPart = false;
+    let anyKnownPartIsActive = false;
+
+    for (const part of parts) {
+      if (activeLabels.has(part)) {
+        hasKnownPart = true;
+        anyKnownPartIsActive = true;
+        continue;
+      }
+
+      const matchingAliasEntry = aliasEntries.find(([canonical, aliases]) => {
+        const allNames = [canonical, ...aliases].map(normalise);
+        return allNames.includes(part);
+      });
+
+      if (!matchingAliasEntry) {
+        hasUnknownPart = true;
+        continue;
+      }
+
+      hasKnownPart = true;
+      const [canonical, aliases] = matchingAliasEntry;
+      const allNames = [canonical, ...aliases].map(normalise);
+      if (allNames.some((name) => activeLabels.has(name))) {
+        anyKnownPartIsActive = true;
+      }
+    }
+
+    if (hasKnownPart && !hasUnknownPart) {
+      return anyKnownPartIsActive;
     }
   }
 
