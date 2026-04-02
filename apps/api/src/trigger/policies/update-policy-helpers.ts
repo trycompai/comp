@@ -251,7 +251,12 @@ export async function updatePolicyInDatabase(
     }
 
     await db.$transaction(async (tx) => {
+      // Clear version references first to avoid FK constraint issues during deletion
       if (policy.versions.length > 0) {
+        await tx.policy.update({
+          where: { id: policyId },
+          data: { currentVersionId: null, pendingVersionId: null },
+        });
         await tx.policyVersion.deleteMany({ where: { policyId } });
       }
 
