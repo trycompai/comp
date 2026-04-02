@@ -71,7 +71,7 @@ RUN cd packages/auth && bun run build \
 RUN cd packages/db && node scripts/combine-schemas.js \
   && cp /app/packages/db/dist/schema.prisma /app/apps/api/prisma/schema.prisma \
   && node /app/apps/api/scripts/patch-schema-generator.js \
-  && cd /app/apps/api && bunx prisma generate && bunx nest build
+  && cd /app/apps/api && bunx prisma@7.6.0 generate && bunx nest build
 
 # =============================================================================
 # STAGE 3: Production Runtime
