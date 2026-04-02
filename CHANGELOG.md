@@ -1,3 +1,38 @@
+# [3.14.0](https://github.com/trycompai/comp/compare/v3.13.1...v3.14.0) (2026-04-02)
+
+
+### Bug Fixes
+
+* add SSL support to PrismaPg adapter for RDS/staging (rejectUnauthorized: false) ([#2418](https://github.com/trycompai/comp/issues/2418)) ([451c6a1](https://github.com/trycompai/comp/commit/451c6a104c8832de0b55cced9da8f719426b26c4))
+* **api:** pin prisma@7.6.0 in Dockerfile generate step (prevents stale v6 binary resolution) ([#2423](https://github.com/trycompai/comp/issues/2423)) ([13a7b77](https://github.com/trycompai/comp/commit/13a7b77642497d177af18e748f5ab9b98b40d86a))
+* **api:** upgrade Dockerfile base images for Prisma v7 Node.js requirement (bun 1.3.11, node 22) ([#2425](https://github.com/trycompai/comp/issues/2425)) ([dc9351c](https://github.com/trycompai/comp/commit/dc9351ca705f85467c68be858b975f43fffc3f46))
+* **app:** comment button gets disabled with numbered formatting ([#2368](https://github.com/trycompai/comp/issues/2368)) ([0586dfe](https://github.com/trycompai/comp/commit/0586dfe8fd63530fac7650c0be1ae9a80c0b9148))
+* **auth:** make Microsoft OAuth tenantId configurable via env var ([#2412](https://github.com/trycompai/comp/issues/2412)) ([ffb260b](https://github.com/trycompai/comp/commit/ffb260b0220f30bb7f6edd513cb311ee383dcd64)), closes [#2411](https://github.com/trycompai/comp/issues/2411)
+* **company:** make Access Request form options in Documents ([#2369](https://github.com/trycompai/comp/issues/2369)) ([f461c4d](https://github.com/trycompai/comp/commit/f461c4ddf6672e3be17cbaef09a1a4077c1f99eb))
+* **db:** point prisma.config.ts to schema directory for multi-file schema support in migrations ([#2422](https://github.com/trycompai/comp/issues/2422)) ([8a05e29](https://github.com/trycompai/comp/commit/8a05e29d0186c46e30f1055bd6665629ce1f01e0))
+* **db:** remove dotenv/config import from prisma.config.ts (not available in Docker build context) ([#2426](https://github.com/trycompai/comp/issues/2426)) ([a98cf93](https://github.com/trycompai/comp/commit/a98cf939610f50c9d564f6d551aff7db3313fe63))
+* **db:** use process.env fallback for DATABASE_URL in prisma.config.ts ([#2416](https://github.com/trycompai/comp/issues/2416)) ([3e29382](https://github.com/trycompai/comp/commit/3e29382c157dc8e4e66a3443eb9084b2b4facdfb))
+* default to SSL for non-localhost connections, remove buggy cleanUrl stripping ([#2430](https://github.com/trycompai/comp/issues/2430)) ([98213f8](https://github.com/trycompai/comp/commit/98213f81f371945ff385bb25ad17d5aaaef82e04))
+* Enable 'Ready for Review' menu for client on Document Finding ([#2404](https://github.com/trycompai/comp/issues/2404)) ([12e5e3a](https://github.com/trycompai/comp/commit/12e5e3a9c4d1f9ec81659c49bf9714b7d63af8d4))
+* handle stale Ramp sync provider in legacy orgs ([3d6d1d4](https://github.com/trycompai/comp/commit/3d6d1d43fa3820989ee5967313f6ef2c6e25ce5f))
+* install ca-certificates before wget, clean apt after download ([#2433](https://github.com/trycompai/comp/issues/2433)) ([772ac48](https://github.com/trycompai/comp/commit/772ac4865a634d898c0fe908a54b9bbaeea5aa49))
+* install ca-certificates before wget, clean apt after download ([#2434](https://github.com/trycompai/comp/issues/2434)) ([b7b7944](https://github.com/trycompai/comp/commit/b7b79446654ef9a79930f33bc042fe015690726a))
+* **portal:** remove getJwtToken and use session-cookie auth directly ([67aacf5](https://github.com/trycompai/comp/commit/67aacf5b8c038d364eca92021f8dccbab2454d90))
+* scope stale provider cleanup to ramp only ([a3313cd](https://github.com/trycompai/comp/commit/a3313cd6af15193f209d5457f826c753348e3a90))
+* set trigger.dev runtime to node-22 (Prisma v7 requires node >=20.19 || >=22.12) ([#2419](https://github.com/trycompai/comp/issues/2419)) ([f688334](https://github.com/trycompai/comp/commit/f688334a37044d50a68d847760826e125274cc78))
+* strip sslmode from connection string before passing to pg (prevent double-parsing) ([#2420](https://github.com/trycompai/comp/issues/2420)) ([00e6f13](https://github.com/trycompai/comp/commit/00e6f13c6f22d9caee6f011783991cfe95f8f3a7))
+* strip sslmode from DATABASE_URL to avoid conflict with explicit ssl option ([#2435](https://github.com/trycompai/comp/issues/2435)) ([335dcd2](https://github.com/trycompai/comp/commit/335dcd280afac73bfc895ab8a74af110e85faff6))
+* use AWS RDS CA bundle for proper SSL verification, simplify client SSL config ([#2432](https://github.com/trycompai/comp/issues/2432)) ([863f14b](https://github.com/trycompai/comp/commit/863f14be9ba0c3c418196026662c9b6de530e60b))
+* use installed prisma binary instead of bunx (fixes prisma/config resolution in Docker) ([#2427](https://github.com/trycompai/comp/issues/2427)) ([fab6693](https://github.com/trycompai/comp/commit/fab6693b5e0d900472fa06a5f7c8978107ec7785))
+* use process.env fallback for DATABASE_URL in all prisma.config.ts files (build envs have no DB) ([#2417](https://github.com/trycompai/comp/issues/2417)) ([977a705](https://github.com/trycompai/comp/commit/977a705a52432b68114d1e082e239e877431c9d3))
+
+
+### Features
+
+* **app, api, framework-editor:** restructure compliance app and add framework editor CLI ([30516d4](https://github.com/trycompai/comp/commit/30516d43f9feccbe1111aeb4838d5e32a4db3ae0))
+* migrate prisma from v6 to v7 ([59e0db9](https://github.com/trycompai/comp/commit/59e0db91ae640ae21d340666fb6e23e169fb8f12))
+* remove Ramp integration entirely ([a04c486](https://github.com/trycompai/comp/commit/a04c48627d79631aa718947bfacb9fb724ebb502))
+
 ## [3.13.1](https://github.com/trycompai/comp/compare/v3.13.0...v3.13.1) (2026-03-30)
 
 
