@@ -16,7 +16,7 @@ jest.mock('../auth/auth.server', () => ({
   },
 }));
 
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     user: {
       findUnique: (...args: unknown[]) => mockFindUnique(...args),

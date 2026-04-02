@@ -1,0 +1,4 @@
+src/generated/
+# Model files are copied here by db:generate — only schema.prisma is committed
+prisma/schema/*.prisma
+!prisma/schema/schema.prisma

@@ -6,7 +6,7 @@ import {
 } from '@/lib/data/training-videos';
 import { getFleetInstance } from '@/lib/fleet';
 import type { EmployeeTrainingVideoCompletion, Member, User } from '@db';
-import { db } from '@db';
+import { db } from '@db/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';

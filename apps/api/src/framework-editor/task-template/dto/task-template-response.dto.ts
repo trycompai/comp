@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Frequency, Departments } from '@trycompai/db';
+import { Frequency, Departments } from '@db';
 
 export class TaskTemplateResponseDto {
   @ApiProperty({

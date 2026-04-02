@@ -69,6 +69,9 @@ async function main() {
       authConfig: toJson(def.authConfig),
       capabilities: toJson(def.capabilities),
       supportsMultipleConnections: def.supportsMultipleConnections ?? false,
+      syncDefinition: (rawJson as Record<string, unknown>).syncDefinition
+        ? toJson((rawJson as Record<string, unknown>).syncDefinition)
+        : undefined,
       isActive: true,
     },
     update: {
@@ -82,6 +85,9 @@ async function main() {
       authConfig: toJson(def.authConfig),
       capabilities: toJson(def.capabilities),
       supportsMultipleConnections: def.supportsMultipleConnections ?? false,
+      syncDefinition: (rawJson as Record<string, unknown>).syncDefinition
+        ? toJson((rawJson as Record<string, unknown>).syncDefinition)
+        : undefined,
     },
   });
 

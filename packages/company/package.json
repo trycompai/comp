@@ -2,7 +2,7 @@
   "name": "@trycompai/company",
   "version": "1.0.0",
   "dependencies": {
-    "@trycompai/db": "1.3.22",
+    "@trycompai/db": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

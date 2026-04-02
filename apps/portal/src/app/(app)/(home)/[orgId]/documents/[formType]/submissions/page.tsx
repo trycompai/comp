@@ -1,6 +1,6 @@
 import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
-import { db } from '@db';
+import { db } from '@db/server';
 import { Breadcrumb, PageLayout } from '@trycompai/design-system';
 import { headers as getHeaders } from 'next/headers';
 import Link from 'next/link';
@@ -21,25 +21,6 @@ type SubmissionRow = {
     email: string;
   } | null;
 };
-
-async function getJwtToken(cookieHeader: string): Promise<string | null> {
-  if (!cookieHeader) return null;
-
-  try {
-    const authUrl = env.APP_AUTH_URL || 'http://localhost:3000';
-    const tokenResponse = await fetch(`${authUrl}/api/auth/token`, {
-      method: 'GET',
-      headers: { Cookie: cookieHeader },
-    });
-
-    if (!tokenResponse.ok) return null;
-
-    const tokenData = await tokenResponse.json();
-    return tokenData?.token ?? null;
-  } catch {
-    return null;
-  }
-}
 
 export default async function PortalSubmissionsPage({
   params,
@@ -87,21 +68,21 @@ export default async function PortalSubmissionsPage({
 
   const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
   const cookie = reqHeaders.get('cookie') ?? '';
-  const jwtToken = await getJwtToken(cookie);
+
+  const apiHeaders = {
+    'Content-Type': 'application/json',
+    Cookie: cookie,
+  };
 
   let submissions: SubmissionRow[] = [];
 
-  if (jwtToken) {
+  if (cookie) {
     try {
       const res = await fetch(
         `${apiUrl}/v1/evidence-forms/my-submissions?formType=${formTypeValue}`,
         {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Organization-Id': orgId,
-            Authorization: `Bearer ${jwtToken}`,
-          },
+          headers: apiHeaders,
           cache: 'no-store',
         },
       );

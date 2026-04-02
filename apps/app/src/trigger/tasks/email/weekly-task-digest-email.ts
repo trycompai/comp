@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { logger, queue, task } from '@trigger.dev/sdk';
 import WeeklyTaskDigestEmail from '@trycompai/email/emails/reminders/weekly-task-digest';
 import { isUserUnsubscribed } from '@trycompai/email/lib/check-unsubscribe';

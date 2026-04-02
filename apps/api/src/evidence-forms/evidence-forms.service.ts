@@ -1,6 +1,6 @@
 import { AttachmentsService } from '@/attachments/attachments.service';
 import type { AuthContext } from '@/auth/types';
-import { db, EvidenceFormType as DbEvidenceFormType } from '@trycompai/db';
+import { db, EvidenceFormType as DbEvidenceFormType } from '@db';
 import {
   toDbEvidenceFormType,
   toExternalEvidenceFormType,

@@ -17,7 +17,7 @@ let combinedSchema = fs.readFileSync(BASE_SCHEMA, 'utf8');
 // Read all .prisma files from the schema directory
 const schemaFiles = fs
   .readdirSync(SCHEMA_DIR)
-  .filter((file) => file.endsWith('.prisma'))
+  .filter((file) => file.endsWith('.prisma') && file !== 'schema.prisma')
   .sort(); // Sort for consistent output
 
 console.log(`📁 Found ${schemaFiles.length} schema files to combine`);
@@ -49,16 +49,35 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 fs.writeFileSync(OUTPUT_SCHEMA, combinedSchema);
 
 // Copy the client, index, and types files
-const clientFileContent = `import { PrismaClient } from '@prisma/client';
+const clientFileContent = `import { PrismaClient } from '../src/generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
-export const db = globalForPrisma.prisma || new PrismaClient();
+
+function stripSslMode(connectionString: string): string {
+  const url = new URL(connectionString);
+  url.searchParams.delete('sslmode');
+  return url.toString();
+}
+
+function createPrismaClient(): PrismaClient {
+  const rawUrl = process.env.DATABASE_URL!;
+  const isLocalhost = /localhost|127\\.0\\.0\\.1|::1/.test(rawUrl);
+  const hasCABundle = !!process.env.NODE_EXTRA_CA_CERTS;
+  const ssl = isLocalhost ? undefined : hasCABundle ? true : { rejectUnauthorized: false };
+  const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
+  const adapter = new PrismaPg({ connectionString: url, ssl });
+  return new PrismaClient({ adapter });
+}
+
+export const db = globalForPrisma.prisma || createPrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
 `;
 fs.writeFileSync(path.join(OUTPUT_DIR, 'client.ts'), clientFileContent);
 
-// Create an index file that re-exports the db client
-const indexFileContent = `export { db } from './client'
-export * from '@prisma/client';
+// Create an index file — browser-safe types only for monorepo consumption.
+// The db instance is server-only and must be imported from './client' directly.
+const indexFileContent = `export * from '../src/generated/prisma/browser';
 `;
 fs.writeFileSync(path.join(OUTPUT_DIR, 'index.ts'), indexFileContent);
 

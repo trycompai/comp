@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import { cache } from 'react';
 import { countStrictlyCompletedTasks, isTaskStrictlyComplete } from './taskEvidenceDocumentsScore';
 

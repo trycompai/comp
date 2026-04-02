@@ -5,8 +5,8 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@trycompai/db';
 import { filterDescriptionByFrameworks } from './description-framework-filter';
+import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
 
@@ -155,6 +155,21 @@ export class TasksService {
       console.error('Error fetching tasks:', error);
       throw new InternalServerErrorException('Failed to fetch tasks');
     }
+  }
+
+  async getTaskTemplates(frameworkId?: string) {
+    const templates = await db.frameworkEditorTaskTemplate.findMany({
+      orderBy: { name: 'asc' },
+      where: frameworkId
+        ? {
+            controlTemplates: {
+              some: { requirements: { some: { frameworkId } } },
+            },
+          }
+        : undefined,
+    });
+
+    return templates;
   }
 
   /**

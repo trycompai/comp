@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'crypto';
-import { db } from '@db';
+import { db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
 
 /**

@@ -250,7 +250,7 @@ function AppShellWrapperContent({
           <AppShellRail>
             {canAccessCompliance(permissions) && (
               <ShellRailNavItem
-                href={`/${organization.id}/frameworks`}
+                href={`/${organization.id}/overview`}
                 isActive={!isSettingsActive && !isTrustActive && !isSecurityActive && !isAdminActive}
                 icon={<Badge className="size-5" />}
                 label="Compliance"

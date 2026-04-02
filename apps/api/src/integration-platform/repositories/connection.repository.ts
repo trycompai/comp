@@ -3,7 +3,7 @@ import { db } from '@db';
 import type {
   IntegrationConnection,
   IntegrationConnectionStatus,
-} from '@prisma/client';
+} from '@db';
 
 export interface CreateConnectionDto {
   providerId: string;

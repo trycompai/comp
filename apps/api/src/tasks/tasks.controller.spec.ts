@@ -1,12 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { TaskStatus } from '@trycompai/db';
+import { TaskStatus } from '@db';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import type { AuthContext } from '../auth/types';
 import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
 import { AttachmentsService } from '../attachments/attachments.service';
+
+jest.mock('@db', () => ({
+  ...jest.requireActual('@prisma/client'),
+  db: {},
+  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
+}));
 
 jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
@@ -247,7 +253,7 @@ describe('TasksController', () => {
         ...authContext,
         userId: undefined as unknown as string,
         isApiKey: true,
-        authType: 'apiKey',
+        authType: 'api-key',
       };
       mockTasksService.getApiKeyActorUserId.mockResolvedValue('usr_api');
       mockTasksService.updateTasksStatus.mockResolvedValue({
@@ -608,7 +614,7 @@ describe('TasksController', () => {
         ...authContext,
         userId: undefined as unknown as string,
         isApiKey: true,
-        authType: 'apiKey',
+        authType: 'api-key',
       };
       mockTasksService.getApiKeyActorUserId.mockResolvedValue('usr_api');
       mockTasksService.updateTask.mockResolvedValue({ id: 'tsk_1' });
@@ -817,7 +823,7 @@ describe('TasksController', () => {
       const apiKeyAuth: AuthContext = {
         ...authContext,
         isApiKey: true,
-        authType: 'apiKey',
+        authType: 'api-key',
       };
       mockTasksService.verifyTaskAccess.mockResolvedValue(undefined);
 
@@ -832,7 +838,7 @@ describe('TasksController', () => {
       const apiKeyAuth: AuthContext = {
         ...authContext,
         isApiKey: true,
-        authType: 'apiKey',
+        authType: 'api-key',
       };
       const uploadDto = {
         fileName: 'file.pdf',

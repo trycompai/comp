@@ -92,6 +92,7 @@ vi.mock('next/link', () => ({
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
   useParams: () => ({ orgId: 'org-1' }),
+  useRouter: () => ({ push: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
 }));
 
@@ -143,9 +144,10 @@ vi.mock('lucide-react', () => ({
 
 // Mock sonner
 vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
+import { toast } from 'sonner';
 import { PlatformIntegrations } from './PlatformIntegrations';
 
 const defaultProps = {
@@ -200,6 +202,131 @@ describe('PlatformIntegrations', () => {
       // The card itself and provider name should still be visible
       expect(screen.getByText('GitHub')).toBeInTheDocument();
       expect(screen.getByTestId('search-input')).toBeInTheDocument();
+    });
+  });
+
+  describe('Employee sync import prompt', () => {
+    it('shows import prompt toast after Google Workspace OAuth callback', async () => {
+      // Override mocks for this test to simulate OAuth callback
+      const { useIntegrationProviders, useIntegrationConnections } = vi.mocked(
+        await import('@/hooks/use-integration-platform'),
+      );
+
+      vi.mocked(useIntegrationProviders).mockReturnValue({
+        providers: [
+          {
+            id: 'google-workspace',
+            name: 'Google Workspace',
+            description: 'Google Workspace admin',
+            category: 'Identity & Access',
+            logoUrl: '/google.png',
+            authType: 'oauth2',
+            oauthConfigured: true,
+            isActive: true,
+            requiredVariables: [],
+            mappedTasks: [],
+            supportsMultipleConnections: false,
+          },
+        ] as any,
+        isLoading: false,
+        error: undefined,
+        refresh: vi.fn(),
+      });
+
+      vi.mocked(useIntegrationConnections).mockReturnValue({
+        connections: [
+          {
+            id: 'conn-1',
+            providerSlug: 'google-workspace',
+            status: 'active',
+            variables: null,
+          },
+        ] as any,
+        isLoading: false,
+        error: undefined,
+        refresh: vi.fn(),
+      });
+
+      // Mock useSearchParams to simulate OAuth callback
+      const { useSearchParams: mockUseSearchParams } = vi.mocked(
+        await import('next/navigation'),
+      );
+      vi.mocked(mockUseSearchParams).mockReturnValue(
+        new URLSearchParams('success=true&provider=google-workspace') as any,
+      );
+
+      setMockPermissions(ADMIN_PERMISSIONS);
+
+      render(<PlatformIntegrations {...defaultProps} />);
+
+      expect(toast.success).toHaveBeenCalledWith(
+        'Google Workspace connected successfully!',
+      );
+      expect(toast.info).toHaveBeenCalledWith(
+        'Import your Google Workspace users',
+        expect.objectContaining({
+          description: 'Go to People to import and sync your team members.',
+          action: expect.objectContaining({ label: 'Go to People' }),
+        }),
+      );
+    });
+
+    it('does not show import prompt for non-sync providers', async () => {
+      // Override mocks for this test to simulate OAuth callback for a non-sync provider
+      const { useIntegrationProviders, useIntegrationConnections } = vi.mocked(
+        await import('@/hooks/use-integration-platform'),
+      );
+
+      vi.mocked(useIntegrationProviders).mockReturnValue({
+        providers: [
+          {
+            id: 'github',
+            name: 'GitHub',
+            description: 'Code hosting',
+            category: 'Development',
+            logoUrl: '/github.png',
+            authType: 'oauth2',
+            oauthConfigured: true,
+            isActive: true,
+            requiredVariables: [],
+            mappedTasks: [],
+            supportsMultipleConnections: false,
+          },
+        ] as any,
+        isLoading: false,
+        error: undefined,
+        refresh: vi.fn(),
+      });
+
+      vi.mocked(useIntegrationConnections).mockReturnValue({
+        connections: [
+          {
+            id: 'conn-2',
+            providerSlug: 'github',
+            status: 'active',
+            variables: null,
+          },
+        ] as any,
+        isLoading: false,
+        error: undefined,
+        refresh: vi.fn(),
+      });
+
+      const { useSearchParams: mockUseSearchParams } = vi.mocked(
+        await import('next/navigation'),
+      );
+      vi.mocked(mockUseSearchParams).mockReturnValue(
+        new URLSearchParams('success=true&provider=github') as any,
+      );
+
+      setMockPermissions(ADMIN_PERMISSIONS);
+
+      render(<PlatformIntegrations {...defaultProps} />);
+
+      expect(toast.success).toHaveBeenCalledWith(
+        'GitHub connected successfully!',
+      );
+      expect(toast.info).not.toHaveBeenCalled();
     });
   });
 });

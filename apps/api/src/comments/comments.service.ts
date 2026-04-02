@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { AttachmentsService } from '../attachments/attachments.service';
 import {
   AttachmentResponseDto,

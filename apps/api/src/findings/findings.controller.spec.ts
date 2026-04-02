@@ -27,7 +27,7 @@ jest.mock(
   { virtual: true },
 );
 
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   FindingType: {
     soc2: 'soc2',
     iso27001: 'iso27001',

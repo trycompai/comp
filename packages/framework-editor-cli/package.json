@@ -1,0 +1,30 @@
+{
+  "name": "@trycompai/framework-editor-cli",
+  "description": "CLI for managing framework editor templates via the Comp AI API",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "comp-framework": "./dist/index.js"
+  },
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf .turbo node_modules dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "prettier --check ."
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "conf": "^13.1.0",
+    "open": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { createHash } from 'node:crypto';
 import type { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
@@ -9,7 +9,7 @@ const mockCredentialVaultService: jest.Mocked<Pick<CredentialVaultService, 'getD
   getDecryptedCredentials: jest.fn(),
 };
 
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     securityPenetrationTestRun: {
       upsert: jest.fn(),
@@ -737,7 +737,9 @@ describe('SecurityPenetrationTestsService', () => {
 
   it('throws when MACED API key is missing', async () => {
     process.env.MACED_API_KEY = '';
-    const serviceWithoutKey = new SecurityPenetrationTestsService();
+    const serviceWithoutKey = new SecurityPenetrationTestsService(
+      mockCredentialVaultService as unknown as CredentialVaultService,
+    );
 
     await expect(serviceWithoutKey.listReports('org_123')).rejects.toThrow(
       'Maced API key not configured on server',

@@ -72,14 +72,26 @@ export const getAppShellSearchGroups = ({
   const can = (route: string) => canAccessRoute(permissions, route);
 
   const baseItems = [
-    ...(can('frameworks')
+    ...(can('overview')
       ? [
           createNavItem({
             id: 'overview',
             label: 'Overview',
             icon: <Dashboard size={16} />,
+            path: `/${organizationId}/overview`,
+            keywords: ['dashboard', 'home', 'overview'],
+            router,
+          }),
+        ]
+      : []),
+    ...(can('frameworks')
+      ? [
+          createNavItem({
+            id: 'frameworks',
+            label: 'Frameworks',
+            icon: <Security size={16} />,
             path: `/${organizationId}/frameworks`,
-            keywords: ['dashboard', 'home', 'frameworks'],
+            keywords: ['frameworks', 'compliance', 'standards'],
             router,
           }),
         ]
@@ -92,18 +104,6 @@ export const getAppShellSearchGroups = ({
             icon: <TaskComplete size={16} />,
             path: `/${organizationId}/auditor`,
             keywords: ['audit', 'review'],
-            router,
-          }),
-        ]
-      : []),
-    ...(isAdvancedModeEnabled && can('controls')
-      ? [
-          createNavItem({
-            id: 'controls',
-            label: 'Controls',
-            icon: <Security size={16} />,
-            path: `/${organizationId}/controls`,
-            keywords: ['security', 'compliance'],
             router,
           }),
         ]

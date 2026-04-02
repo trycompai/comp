@@ -3,7 +3,7 @@ import {
   type RoleObligations,
   allRoles,
 } from '@trycompai/auth';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 
 /**
  * Check if any of the given role names have the compliance obligation,

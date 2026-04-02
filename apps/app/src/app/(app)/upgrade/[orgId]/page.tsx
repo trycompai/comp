@@ -1,7 +1,7 @@
 import { extractDomain, isDomainActiveStripeCustomer, isPublicEmailDomain } from '@/lib/stripe';
 import { auth } from '@/utils/auth';
 import { env } from '@/env.mjs';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { BookingStep } from './components/booking-step';

@@ -197,11 +197,9 @@ async function syncProvider(params: SyncProviderParams): Promise<SyncResult> {
     case 'jumpcloud':
       return syncJumpCloud({ connectionId, organizationId });
 
-    case 'ramp':
-      return syncRamp({ connectionId, organizationId });
-
     default:
-      throw new Error(`No sync handler for provider: ${providerSlug}`);
+      // Try generic dynamic sync endpoint for non-built-in providers
+      return syncDynamicProvider({ providerSlug, connectionId, organizationId });
   }
 }
 
@@ -318,14 +316,18 @@ async function syncJumpCloud({
   };
 }
 
-async function syncRamp({
+async function syncDynamicProvider({
+  providerSlug,
   connectionId,
   organizationId,
 }: {
+  providerSlug: string;
   connectionId: string;
   organizationId: string;
 }): Promise<SyncResult> {
-  const url = new URL(`${API_BASE_URL}/v1/integrations/sync/ramp/employees`);
+  const url = new URL(
+    `${API_BASE_URL}/v1/integrations/sync/dynamic/${providerSlug}/employees`,
+  );
   url.searchParams.set('connectionId', connectionId);
 
   const response = await fetch(url.toString(), {
@@ -339,7 +341,9 @@ async function syncRamp({
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`Ramp sync failed: ${response.status} - ${errorBody}`);
+    throw new Error(
+      `Dynamic sync failed for ${providerSlug}: ${response.status} - ${errorBody}`,
+    );
   }
 
   const data = await response.json();

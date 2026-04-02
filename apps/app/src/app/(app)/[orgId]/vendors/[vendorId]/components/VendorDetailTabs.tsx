@@ -16,7 +16,7 @@ import { VendorInherentRiskChart } from './VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './VendorResidualRiskChart';
 import type { Member, User, Vendor } from '@db';
 import { CommentEntityType } from '@db';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import {
   Breadcrumb,

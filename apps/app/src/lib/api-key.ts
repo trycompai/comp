@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { createHash, randomBytes } from 'node:crypto';
