@@ -15,7 +15,7 @@ jest.mock('../auth/auth.server', () => ({
   auth: { api: {} },
 }));
 
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     frameworkInstance: { findMany: jest.fn().mockResolvedValue([]) },
     context: { findMany: jest.fn().mockResolvedValue([]) },

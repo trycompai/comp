@@ -13,7 +13,7 @@ import {
   VendorStatus,
   Likelihood,
   Impact,
-} from '@trycompai/db';
+} from '@db';
 
 export class CreateVendorDto {
   @ApiProperty({

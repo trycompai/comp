@@ -16,7 +16,7 @@ jest.mock('../auth/auth.server', () => ({
   auth: { api: {} },
 }));
 
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {},
   FindingStatus: { open: 'open', ready_for_review: 'ready_for_review', needs_revision: 'needs_revision', closed: 'closed' },
   FindingType: { soc2: 'soc2', iso27001: 'iso27001' },

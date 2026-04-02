@@ -2,7 +2,7 @@ import { filterComplianceMembers } from '@/lib/compliance';
 import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
 import { serverApi } from '@/lib/server-api-client';
 import type { Invitation, Member, User } from '@db';
-import { db } from '@db';
+import { db } from '@db/server';
 import { getEmployeeSyncConnections } from '../data/queries';
 import { TeamMembersClient } from './TeamMembersClient';
 

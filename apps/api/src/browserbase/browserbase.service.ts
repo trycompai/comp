@@ -3,7 +3,7 @@ import Browserbase from '@browserbasehq/sdk';
 // Lazy-imported in createStagehand() to avoid Node v25 crash
 // (SlowBuffer.prototype was removed — @browserbasehq/stagehand bundles buffer-equal-constant-time which uses it)
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { z } from 'zod';
 import {
   GetObjectCommand,

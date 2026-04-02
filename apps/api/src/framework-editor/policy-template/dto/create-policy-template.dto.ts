@@ -5,7 +5,7 @@ import {
   IsEnum,
   MaxLength,
 } from 'class-validator';
-import { Frequency, Departments } from '@trycompai/db';
+import { Frequency, Departments } from '@db';
 
 export class CreatePolicyTemplateDto {
   @ApiProperty({ example: 'Information Security Policy' })

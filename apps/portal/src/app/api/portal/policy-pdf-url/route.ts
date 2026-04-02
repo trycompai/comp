@@ -2,7 +2,7 @@ import { auth } from '@/app/lib/auth';
 import { BUCKET_NAME, s3Client } from '@/utils/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { db } from '@db';
+import { db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';

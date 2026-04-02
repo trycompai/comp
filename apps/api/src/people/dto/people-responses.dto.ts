@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Departments } from '@trycompai/db';
+import { Departments } from '@db';
 
 export class UserResponseDto {
   @ApiProperty({

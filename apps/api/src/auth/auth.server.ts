@@ -2,7 +2,7 @@ import '../config/load-env';
 import { MagicLinkEmail, OTPVerificationEmail } from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import {
@@ -49,6 +49,7 @@ export function getTrustedOrigins(): string[] {
     'http://localhost:3002',
     'http://localhost:3333',
     'http://localhost:3004',
+    'http://localhost:3008',
     'https://app.trycomp.ai',
     'https://portal.trycomp.ai',
     'https://api.trycomp.ai',
@@ -179,7 +180,7 @@ if (
   socialProviders.microsoft = {
     clientId: process.env.AUTH_MICROSOFT_CLIENT_ID,
     clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
-    tenantId: 'common',
+    tenantId: process.env.AUTH_MICROSOFT_TENANT_ID || 'common',
     prompt: 'select_account',
   };
 }

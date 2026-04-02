@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db, Prisma } from '@trycompai/db';
+import { db, Prisma } from '@db';
 import { CreateRiskDto } from './dto/create-risk.dto';
 import { GetRisksQueryDto } from './dto/get-risks-query.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';

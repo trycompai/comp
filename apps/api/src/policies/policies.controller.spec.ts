@@ -21,7 +21,7 @@ jest.mock('@trycompai/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));
 
-jest.mock('@trycompai/db', () => ({
+jest.mock('@db', () => ({
   db: {
     policy: {
       findFirst: jest.fn(),
@@ -291,7 +291,7 @@ describe('PoliciesController', () => {
 
   describe('getPolicyControls', () => {
     it('should return mapped and all controls', async () => {
-      const { db } = require('@trycompai/db');
+      const { db } = require('@db');
       const mappedControls = [
         { id: 'ctrl_1', name: 'Control 1', description: 'desc' },
       ];
@@ -317,7 +317,7 @@ describe('PoliciesController', () => {
     });
 
     it('should return empty mappedControls when policy not found', async () => {
-      const { db } = require('@trycompai/db');
+      const { db } = require('@db');
       db.policy.findFirst.mockResolvedValue(null);
       db.control.findMany.mockResolvedValue([]);
 
@@ -333,7 +333,7 @@ describe('PoliciesController', () => {
 
   describe('addPolicyControls', () => {
     it('should connect controls to policy and return success', async () => {
-      const { db } = require('@trycompai/db');
+      const { db } = require('@db');
       db.policy.update.mockResolvedValue({});
 
       const result = await controller.addPolicyControls(
@@ -357,7 +357,7 @@ describe('PoliciesController', () => {
 
   describe('removePolicyControl', () => {
     it('should disconnect control from policy and return success', async () => {
-      const { db } = require('@trycompai/db');
+      const { db } = require('@db');
       db.policy.update.mockResolvedValue({});
 
       const result = await controller.removePolicyControl(

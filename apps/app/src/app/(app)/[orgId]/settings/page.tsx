@@ -1,11 +1,10 @@
 import { DeleteOrganization } from '@/components/forms/organization/delete-organization';
 import { TransferOwnership } from '@/components/forms/organization/transfer-ownership';
-import { UpdateOrganizationAdvancedMode } from '@/components/forms/organization/update-organization-advanced-mode';
 import { UpdateOrganizationLogo } from '@/components/forms/organization/update-organization-logo';
 import { UpdateOrganizationName } from '@/components/forms/organization/update-organization-name';
 import { UpdateOrganizationWebsite } from '@/components/forms/organization/update-organization-website';
 import { serverApi } from '@/lib/api-server';
-import { db } from '@db';
+import { db } from '@db/server';
 import type { Metadata } from 'next';
 
 export default async function OrganizationSettings({
@@ -20,7 +19,7 @@ export default async function OrganizationSettings({
   const [orgBasic, res] = await Promise.all([
     db.organization.findUnique({
       where: { id: orgId },
-      select: { id: true, name: true, website: true, advancedModeEnabled: true, logo: true },
+      select: { id: true, name: true, website: true, logo: true },
     }),
     serverApi.get<{
       id: string;
@@ -41,7 +40,6 @@ export default async function OrganizationSettings({
   const organization = res.data;
   const orgName = organization?.name ?? orgBasic?.name ?? '';
   const orgWebsite = organization?.website ?? orgBasic?.website ?? '';
-  const advancedMode = organization?.advancedModeEnabled ?? orgBasic?.advancedModeEnabled ?? false;
   const logoUrl = organization?.logoUrl ?? null;
 
   return (
@@ -49,7 +47,6 @@ export default async function OrganizationSettings({
       <UpdateOrganizationName organizationName={orgName} />
       <UpdateOrganizationWebsite organizationWebsite={orgWebsite} />
       <UpdateOrganizationLogo currentLogoUrl={logoUrl} />
-      <UpdateOrganizationAdvancedMode advancedModeEnabled={advancedMode} />
       <TransferOwnership
         members={organization?.eligibleMembers ?? []}
         isOwner={organization?.isOwner ?? false}

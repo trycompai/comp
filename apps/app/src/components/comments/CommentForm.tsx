@@ -136,22 +136,17 @@ export function CommentForm({ entityId, entityType, mentionResource, organizatio
 
   // Check if comment has content
   const hasContent = useCallback((content: JSONContent | null): boolean => {
-    if (!content || !content.content) return false;
+    if (!content) return false;
 
-    // Check if there's any text content
-    const hasText = content.content.some((node) => {
-      if (node.type === 'paragraph' && node.content) {
-        return node.content.some((child) => {
-          if (child.type === 'text' && child.text?.trim()) return true;
-          if (child.type === 'mention') return true; // Mentions count as content
-          return false;
-        });
-      }
+    const hasContentInNode = (node: JSONContent): boolean => {
       if (node.type === 'mention') return true;
-      return false;
-    });
+      if (node.type === 'text' && node.text?.trim()) return true;
 
-    return hasText;
+      if (!node.content || node.content.length === 0) return false;
+      return node.content.some(hasContentInNode);
+    };
+
+    return hasContentInNode(content);
   }, []);
 
   const handleCommentSubmit = async () => {

@@ -78,6 +78,7 @@ export function PoliciesTable({ policies, orgId }: PoliciesTableProps) {
                 key={policy.id}
                 role="button"
                 tabIndex={0}
+                style={{ cursor: 'pointer' }}
                 onClick={() => handleRowClick(policy.id)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {

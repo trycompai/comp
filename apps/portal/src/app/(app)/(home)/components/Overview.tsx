@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 // Import types directly from @prisma/client
 import type { Member, Organization, User } from '@db';
 import { headers } from 'next/headers';

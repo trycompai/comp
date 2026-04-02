@@ -14,7 +14,7 @@ jest.mock('../auth/auth.server', () => ({
   auth: { api: {} },
 }));
 
-jest.mock('@trycompai/db', () => ({ db: {} }));
+jest.mock('@db', () => ({ db: {} }));
 
 describe('AdminContextController', () => {
   let controller: AdminContextController;

@@ -4,7 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { statement } from '@trycompai/auth';
 import { createHash, randomBytes } from 'node:crypto';
 

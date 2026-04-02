@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db, type EvidenceFormType } from '@db';
 import {
   getOverviewScores,
   getCurrentMember,
@@ -94,6 +94,7 @@ export class FrameworksService {
                   select: { id: true, name: true, status: true },
                 },
                 requirementsMapped: true,
+                controlDocumentTypes: true,
               },
             },
           },
@@ -114,13 +115,21 @@ export class FrameworksService {
           ...controlData,
           policies: rm.control.policies || [],
           requirementsMapped: rm.control.requirementsMapped || [],
+          controlDocumentTypes: rm.control.controlDocumentTypes || [],
         });
       }
     }
     const { requirementsMapped: _, ...rest } = fi;
 
-    // Fetch additional data
-    const [requirementDefinitions, tasks, requirementMaps] =
+    // Collect all required evidence form types across all controls
+    const allFormTypes = new Set<EvidenceFormType>();
+    for (const control of controlsMap.values()) {
+      for (const dt of control.controlDocumentTypes) {
+        allFormTypes.add(dt.formType);
+      }
+    }
+
+    const [requirementDefinitions, tasks, requirementMaps, evidenceSubmissions] =
       await Promise.all([
         db.frameworkEditorRequirement.findMany({
           where: { frameworkId: fi.frameworkId },
@@ -134,6 +143,16 @@ export class FrameworksService {
           where: { frameworkInstanceId },
           include: { control: true },
         }),
+        allFormTypes.size > 0
+          ? db.evidenceSubmission.findMany({
+              where: {
+                organizationId,
+                formType: { in: Array.from(allFormTypes) },
+              },
+              select: { id: true, formType: true, createdAt: true },
+              orderBy: { createdAt: 'desc' },
+            })
+          : Promise.resolve([]),
       ]);
 
     return {
@@ -142,6 +161,7 @@ export class FrameworksService {
       requirementDefinitions,
       tasks,
       requirementMaps,
+      evidenceSubmissions,
     };
   }
 
@@ -218,6 +238,7 @@ export class FrameworksService {
               policies: {
                 select: { id: true, name: true, status: true },
               },
+              controlDocumentTypes: true,
             },
           },
         },
@@ -233,6 +254,25 @@ export class FrameworksService {
       throw new NotFoundException('Requirement not found');
     }
 
+    // Collect evidence form types for related controls
+    const formTypes = new Set<EvidenceFormType>();
+    for (const rc of relatedControls) {
+      for (const dt of rc.control.controlDocumentTypes || []) {
+        formTypes.add(dt.formType);
+      }
+    }
+
+    const evidenceSubmissions = formTypes.size > 0
+      ? await db.evidenceSubmission.findMany({
+          where: {
+            organizationId,
+            formType: { in: Array.from(formTypes) },
+          },
+          select: { id: true, formType: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        })
+      : [];
+
     const siblingRequirements = allReqDefs
       .filter((r) => r.id !== requirementKey)
       .map((r) => ({ id: r.id, name: r.name }));
@@ -241,6 +281,7 @@ export class FrameworksService {
       requirement,
       relatedControls,
       tasks,
+      evidenceSubmissions,
       siblingRequirements,
     };
   }

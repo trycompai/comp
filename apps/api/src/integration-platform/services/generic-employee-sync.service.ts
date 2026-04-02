@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import type { SyncEmployee } from '@trycompai/integration-platform';
 
 // ============================================================================
@@ -52,7 +52,7 @@ const DEFAULT_PROTECTED_ROLES = ['owner', 'admin', 'auditor'];
  * - Safety guards (never deactivate privileged roles)
  *
  * This extracts the common pattern from SyncController's 4 provider-specific
- * implementations (Google Workspace, Rippling, JumpCloud, Ramp).
+ * implementations (Google Workspace, Rippling, JumpCloud).
  *
  * The provider-specific logic (fetching users, normalizing fields) is handled
  * by the dynamic integration's syncDefinition (DSL/code steps).

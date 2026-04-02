@@ -1,4 +1,4 @@
-import { Prisma, TrustFramework } from '@prisma/client';
+import { Prisma, TrustFramework } from '@db';
 import {
   BadRequestException,
   Injectable,

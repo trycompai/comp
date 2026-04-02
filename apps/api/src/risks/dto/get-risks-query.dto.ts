@@ -12,7 +12,7 @@ import {
   RiskCategory,
   Departments,
   RiskStatus,
-} from '@trycompai/db';
+} from '@db';
 
 export enum RiskSortBy {
   CREATED_AT = 'createdAt',

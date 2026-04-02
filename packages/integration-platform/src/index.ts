@@ -130,17 +130,6 @@ export { manifest as githubManifest } from './manifests/github';
 // Directory sync email include/exclude terms (Google Workspace, JumpCloud, checks)
 export { matchesSyncFilterTerms, parseSyncFilterTerms } from './sync-filter/email-exclusion-terms';
 
-// Ramp types (used by sync controller)
-export type {
-  RampUser,
-  RampUserStatus,
-  RampUserRole,
-  RampKnownRole,
-  RampEmployee,
-  RampUsersResponse,
-  RoleMappingEntry,
-} from './manifests/ramp/types';
-
 // API Response types (for frontend and API type sharing)
 export type {
   CheckRunFindingResponse,

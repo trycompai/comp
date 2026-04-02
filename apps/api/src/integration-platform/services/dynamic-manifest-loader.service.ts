@@ -10,7 +10,7 @@ import {
   type CheckVariable,
 } from '@trycompai/integration-platform';
 import { DynamicIntegrationRepository, type DynamicIntegrationWithChecks } from '../repositories/dynamic-integration.repository';
-import type { DynamicCheck } from '@prisma/client';
+import type { DynamicCheck } from '@db';
 
 @Injectable()
 export class DynamicManifestLoaderService implements OnModuleInit {

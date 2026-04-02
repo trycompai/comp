@@ -22,7 +22,7 @@ import {
   ApiTags,
   ApiSecurity,
 } from '@nestjs/swagger';
-import { FindingStatus } from '@trycompai/db';
+import { FindingStatus } from '@db';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -32,7 +32,7 @@ import { FindingsService } from './findings.service';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { ValidateFindingIdPipe } from './pipes/validate-finding-id.pipe';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { evidenceFormTypeSchema } from '@/evidence-forms/evidence-forms.definitions';
 
 @ApiTags('Findings')

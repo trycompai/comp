@@ -40,7 +40,7 @@ export function generatePrismaClient(options: GenerateOptions = {}): { schema: s
   copyFileSync(resolution.path, schemaDestination);
   log(`Copied schema from ${resolution.path} to ${schemaDestination}`);
 
-  const clientEntryPoint = resolve(projectRoot, 'node_modules/.prisma/client/default.js');
+  const clientEntryPoint = resolve(projectRoot, 'src', 'generated', 'prisma', 'client.ts');
   if (!options.force && existsSync(clientEntryPoint)) {
     log('Prisma client already exists. Skipping generation.');
     return { schema: schemaDestination };

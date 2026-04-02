@@ -5,7 +5,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { FleetService } from '../lib/fleet.service';
 import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
 import type { PeopleResponseDto } from './dto/people-responses.dto';

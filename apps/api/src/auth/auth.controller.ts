@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiSecurity, ApiTags } from '@nestjs/swagger';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { OrganizationId } from './auth-context.decorator';
 import { PermissionGuard } from './permission.guard';
 import { RequirePermission } from './require-permission.decorator';

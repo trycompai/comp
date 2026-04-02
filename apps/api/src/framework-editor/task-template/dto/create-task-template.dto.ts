@@ -6,7 +6,7 @@ import {
   IsOptional,
   MaxLength,
 } from 'class-validator';
-import { Frequency, Departments } from '@trycompai/db';
+import { Frequency, Departments } from '@db';
 
 export class CreateTaskTemplateDto {
   @ApiProperty({

@@ -21,7 +21,7 @@ import {
   CommentEntityType,
   AttachmentEntityType,
   db,
-} from '@trycompai/db';
+} from '@db';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { TasksService } from '../tasks/tasks.service';
 import { CommentsService } from '../comments/comments.service';

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { RegisterDeviceDto } from './dto/register-device.dto';
 
 interface MemberRef {

@@ -1,4 +1,4 @@
-import { db } from "@db";
+import { db } from "@db/server";
 import { verifyUnsubscribeToken } from "@/lib/unsubscribe";
 import { NextResponse } from "next/server";
 import { z } from "zod";

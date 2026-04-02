@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '@db';
-import { Prisma } from '@prisma/client';
-import type { DynamicIntegration, DynamicCheck } from '@prisma/client';
+import { Prisma } from '@db';
+import type { DynamicIntegration, DynamicCheck } from '@db';
 
 export type DynamicIntegrationWithChecks = DynamicIntegration & {
   checks: DynamicCheck[];
