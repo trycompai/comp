@@ -21,8 +21,8 @@ export default async function SetupLayout({ children }: { children: React.ReactN
     const meRes = await serverApi.get<AuthMeResponse>('/v1/auth/me');
     const orgs = meRes.data?.organizations ?? [];
 
-    // Find the most recently relevant org (API returns them, pick first)
-    const userOrg = orgs[0];
+    const activeOrgId = session.session.activeOrganizationId;
+    const userOrg = orgs.find((o) => o.id === activeOrgId) ?? orgs[0];
     if (userOrg) {
       if (userOrg.onboardingCompleted === false) {
         return redirect(`/onboarding/${userOrg.id}`);

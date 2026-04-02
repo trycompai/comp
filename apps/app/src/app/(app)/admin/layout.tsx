@@ -21,10 +21,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   const meRes = await serverApi.get<AuthMeResponse>('/v1/auth/me');
-  const firstOrgId = meRes.data?.organizations?.[0]?.id;
+  const orgs = meRes.data?.organizations ?? [];
+  const activeOrgId = session.session.activeOrganizationId;
+  const targetOrg = orgs.find((o) => o.id === activeOrgId) ?? orgs[0];
 
-  if (firstOrgId) {
-    redirect(`/${firstOrgId}/admin`);
+  if (targetOrg) {
+    redirect(`/${targetOrg.id}/admin`);
   }
 
   redirect('/');
