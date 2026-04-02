@@ -106,13 +106,31 @@ export function filterDescriptionByFrameworks(
 
   // Split description into paragraphs (double-newline separated)
   const paragraphs = description.split(/\n\n+/);
+  let pendingHeaderIsActive: boolean | null = null;
 
   const filtered = paragraphs.filter((paragraph) => {
+    if (pendingHeaderIsActive !== null) {
+      const shouldKeep = pendingHeaderIsActive;
+      pendingHeaderIsActive = null;
+      return shouldKeep;
+    }
+
     const match = paragraph.match(FOR_FRAMEWORK_LINE_RE);
     if (!match) return true; // Not a framework-specific paragraph
 
     const label = match[1];
-    return isLabelActive(label, activeLabels);
+    const isActive = isLabelActive(label, activeLabels);
+
+    // Handle seed data format where header and section content are split:
+    // "For GDPR:\n\n<framework-specific paragraph>"
+    const paragraphWithoutPrefix = paragraph
+      .replace(FOR_FRAMEWORK_LINE_RE, '')
+      .trim();
+    if (!paragraphWithoutPrefix) {
+      pendingHeaderIsActive = isActive;
+    }
+
+    return isActive;
   });
 
   return filtered.join('\n\n').trim();

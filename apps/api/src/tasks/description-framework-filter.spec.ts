@@ -99,4 +99,48 @@ describe('filterDescriptionByFrameworks', () => {
     const result = filterDescriptionByFrameworks(desc, ['SOC 2 v.1']);
     expect(result).not.toContain('HIPAA');
   });
+
+  it('removes a framework section when header and content are split across paragraphs', () => {
+    const desc =
+      'General guidance.\n\nFor GDPR:\n\nMaintain a documented data breach response plan.';
+    const result = filterDescriptionByFrameworks(desc, ['SOC 2']);
+
+    expect(result).toBe('General guidance.');
+  });
+
+  it('removes leaked framework-specific content for Public Policies seed format', () => {
+    const desc =
+      'Add a comment with links to your privacy policy.\n\nFor GDPR:\n\nMaintain clear, transparent, and GDPR-compliant privacy notices.\n\nFor ISO 42001:\n\nEnsure policies identify stakeholder rights and obligations.';
+    const result = filterDescriptionByFrameworks(desc, ['SOC 2']);
+
+    expect(result).toBe('Add a comment with links to your privacy policy.');
+  });
+
+  it('removes leaked framework-specific content for Incident Response seed format', () => {
+    const desc =
+      'Keep a record of all security incidents and how they were resolved.\n\nFor GDPR:\n\nMaintain a documented data breach response plan.\n\nFor PCI:\n\nMaintain and annually test the incident response plan for cardholder data incidents.';
+    const result = filterDescriptionByFrameworks(desc, ['SOC 2']);
+
+    expect(result).toBe(
+      'Keep a record of all security incidents and how they were resolved.',
+    );
+  });
+
+  it('removes leaked framework-specific content for Board Meetings & Independence seed format', () => {
+    const desc =
+      'Submit board meeting evidence covering security topics.\n\nFor ISO 42001:\n\nEnsure board reviews discuss internal and external issues relevant to the AI MS.';
+    const result = filterDescriptionByFrameworks(desc, ['SOC 2']);
+
+    expect(result).toBe(
+      'Submit board meeting evidence covering security topics.',
+    );
+  });
+
+  it('removes leaked framework-specific content for Diagramming seed format', () => {
+    const desc =
+      'Architecture Diagram: Draw a single-page diagram.\n\nFor ISO 27001 and HIPAA:\n\nData Flow Diagram: Show exactly how user and sensitive data travels.\n\nFor ISO 42001:\n\nDocument how internal and external issues are reflected in diagrams.\n\nFor GDPR:\n\nMaintain an up-to-date data inventory and data flow map.\n\nFor PCI:\n\nMaintain current CDE network diagrams.';
+    const result = filterDescriptionByFrameworks(desc, ['SOC 2']);
+
+    expect(result).toBe('Architecture Diagram: Draw a single-page diagram.');
+  });
 });
