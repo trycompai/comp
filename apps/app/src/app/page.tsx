@@ -62,10 +62,15 @@ export default async function RootPage({
     return redirect(await buildUrlWithParams('/setup'));
   }
 
+  // Always use the org the user last switched to (stored in session)
+  const activeOrgId = session.session.activeOrganizationId;
+  const activeOrg = activeOrgId
+    ? memberships.find((m) => m.id === activeOrgId)
+    : undefined;
   const readyOrg = memberships.find(
     (m) => m.onboardingCompleted && m.hasAccess,
   );
-  const targetOrg = readyOrg || memberships[0];
+  const targetOrg = activeOrg || readyOrg || memberships[0];
 
   if (!targetOrg.onboardingCompleted) {
     return redirect(await buildUrlWithParams(`/onboarding/${targetOrg.id}`));
