@@ -21,6 +21,8 @@ interface EmployeeProps {
   organization: Organization;
   memberDevice: DeviceWithChecks | null;
   orgId: string;
+  hasHipaaFramework: boolean;
+  hipaaCompletedAt: Date | null;
 }
 
 export function Employee({
@@ -33,6 +35,8 @@ export function Employee({
   organization,
   memberDevice,
   orgId,
+  hasHipaaFramework,
+  hipaaCompletedAt,
 }: EmployeeProps) {
   return (
     <PageLayout
@@ -59,6 +63,8 @@ export function Employee({
           host={host}
           organization={organization}
           memberDevice={memberDevice}
+          hasHipaaFramework={hasHipaaFramework}
+          hipaaCompletedAt={hipaaCompletedAt}
         />
       </Stack>
     </PageLayout>

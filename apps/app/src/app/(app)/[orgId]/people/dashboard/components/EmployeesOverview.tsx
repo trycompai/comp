@@ -1,7 +1,8 @@
 import { filterComplianceMembers } from '@/lib/compliance';
 import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
+import { HIPAA_TRAINING_ID } from '@/lib/data/hipaa-training-content';
 import { auth } from '@/utils/auth';
-import type { Member, Organization, Policy, User } from '@db';
+import type { EmployeeTrainingVideoCompletion, Member, Organization, Policy, User } from '@db';
 import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { EmployeeCompletionChart } from './EmployeeCompletionChart';
@@ -37,11 +38,19 @@ export async function EmployeesOverview() {
   let policies: Policy[] = [];
   const processedTrainingVideos: ProcessedTrainingVideo[] = [];
   let organization: Organization | null = null;
+  let hasHipaaFramework = false;
+  let hipaaCompletions: EmployeeTrainingVideoCompletion[] = [];
 
   if (organizationId) {
-    organization = await db.organization.findUnique({
-      where: { id: organizationId },
-    });
+    const [org, hipaaInstance] = await Promise.all([
+      db.organization.findUnique({ where: { id: organizationId } }),
+      db.frameworkInstance.findFirst({
+        where: { organizationId, framework: { name: 'HIPAA' } },
+        select: { id: true },
+      }),
+    ]);
+    organization = org;
+    hasHipaaFramework = !!hipaaInstance;
 
     // Fetch employees
     const fetchedMembers = await db.member.findMany({
@@ -67,7 +76,6 @@ export async function EmployeesOverview() {
       },
     });
 
-    // Fetch and process training videos if employees exist and training step is enabled
     if (employees.length > 0 && organization?.securityTrainingStepEnabled !== false) {
       const employeeTrainingVideos = await db.employeeTrainingVideoCompletion.findMany({
         where: {
@@ -83,7 +91,6 @@ export async function EmployeesOverview() {
         );
 
         if (videoMetadata) {
-          // Push the object matching the updated ProcessedTrainingVideo interface
           processedTrainingVideos.push({
             id: dbVideo.id,
             memberId: dbVideo.memberId,
@@ -93,6 +100,15 @@ export async function EmployeesOverview() {
           });
         }
       }
+    }
+
+    if (employees.length > 0 && hasHipaaFramework) {
+      hipaaCompletions = await db.employeeTrainingVideoCompletion.findMany({
+        where: {
+          memberId: { in: employees.map((e) => e.id) },
+          videoId: HIPAA_TRAINING_ID,
+        },
+      });
     }
   }
 
@@ -104,6 +120,8 @@ export async function EmployeesOverview() {
         trainingVideos={processedTrainingVideos as any}
         showAll={true}
         securityTrainingStepEnabled={organization?.securityTrainingStepEnabled ?? true}
+        hasHipaaFramework={hasHipaaFramework}
+        hipaaCompletions={hipaaCompletions}
       />
     </div>
   );

@@ -19,7 +19,25 @@ import type { FleetPolicy, Host } from '../../devices/types';
 import type { DeviceWithChecks } from '../../devices/types';
 import { PolicyItem } from '../../devices/components/PolicyItem';
 import { downloadTrainingCertificate } from '../actions/download-training-certificate';
+import { downloadHipaaCertificate } from '../actions/download-hipaa-certificate';
 import { cn } from '@/lib/utils';
+
+function downloadBase64Pdf(base64: string, fileName: string) {
+  const byteCharacters = atob(base64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'application/pdf' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
 
 const CHECK_FIELDS = [
   { key: 'diskEncryptionEnabled' as const, dbKey: 'disk_encryption', label: 'Disk Encryption' },
@@ -42,6 +60,8 @@ export const EmployeeTasks = ({
   fleetPolicies,
   organization,
   memberDevice,
+  hasHipaaFramework,
+  hipaaCompletedAt,
 }: {
   employee: Member & {
     user: User;
@@ -54,6 +74,8 @@ export const EmployeeTasks = ({
   fleetPolicies: FleetPolicy[];
   organization: Organization;
   memberDevice: DeviceWithChecks | null;
+  hasHipaaFramework: boolean;
+  hipaaCompletedAt: Date | null;
 }) => {
   // Calculate training completion status
   const completedVideos = trainingVideos.filter((v) => v.completedAt !== null);
@@ -70,30 +92,13 @@ export const EmployeeTasks = ({
 
   const handleDownloadCertificate = async () => {
     if (!trainingCompletionDate) return;
-
     const result = await downloadTrainingCertificate({
       memberId: employee.id,
       organizationId: organization.id,
     });
-
     if (result?.data) {
-      // Convert base64 to blob and download
-      const byteCharacters = atob(result.data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `training-certificate-${employee.user.name?.replace(/\s+/g, '-').toLowerCase() || 'employee'}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      const safeName = employee.user.name?.replace(/\s+/g, '-').toLowerCase() || 'employee';
+      downloadBase64Pdf(result.data, `training-certificate-${safeName}.pdf`);
     }
   };
   return (
@@ -103,6 +108,9 @@ export const EmployeeTasks = ({
           <TabsList>
             <TabsTrigger value="policies">Policies</TabsTrigger>
             <TabsTrigger value="training">Training Videos</TabsTrigger>
+            {hasHipaaFramework && (
+              <TabsTrigger value="hipaa">HIPAA Training</TabsTrigger>
+            )}
             <TabsTrigger value="device">Device</TabsTrigger>
           </TabsList>
 
@@ -243,6 +251,67 @@ export const EmployeeTasks = ({
               </Stack>
             )}
           </TabsContent>
+
+          {hasHipaaFramework && (
+            <TabsContent value="hipaa">
+              <div
+                className={cn(
+                  'flex items-center justify-between rounded-lg border p-4',
+                  hipaaCompletedAt
+                    ? 'border-primary/20 bg-primary/5'
+                    : 'border-muted bg-muted/30',
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  {hipaaCompletedAt ? (
+                    <div
+                      className={cn(
+                        'flex h-10 w-10 items-center justify-center rounded-full bg-primary/10',
+                      )}
+                    >
+                      <Award className="h-5 w-5 text-primary" />
+                    </div>
+                  ) : (
+                    <AlertCircle className="h-5 w-5 shrink-0 text-destructive" />
+                  )}
+                  <div>
+                    <Text weight="medium">
+                      {hipaaCompletedAt
+                        ? 'HIPAA Security Awareness Training Acknowledged'
+                        : 'HIPAA Security Awareness Training Not Completed'}
+                    </Text>
+                    <Text size="sm" variant="muted">
+                      {hipaaCompletedAt
+                        ? `Acknowledged on ${new Date(hipaaCompletedAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}`
+                        : 'Employee has not yet acknowledged the HIPAA training in the portal.'}
+                    </Text>
+                  </div>
+                </div>
+                {hipaaCompletedAt && (
+                  <button
+                    onClick={async () => {
+                      const result = await downloadHipaaCertificate({
+                        memberId: employee.id,
+                        organizationId: organization.id,
+                      });
+                      if (result?.data) {
+                        const safeName = employee.user.name?.replace(/\s+/g, '-').toLowerCase() || 'employee';
+                        downloadBase64Pdf(result.data, `hipaa-training-certificate-${safeName}.pdf`);
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-lg border border-primary bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-all duration-200 hover:bg-primary/90 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-1 cursor-pointer"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Certificate
+                  </button>
+                )}
+              </div>
+            </TabsContent>
+          )}
 
           <TabsContent value="device">
             {!organization.deviceAgentStepEnabled ? (

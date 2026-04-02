@@ -9,10 +9,11 @@ import { filterComplianceMembers } from '../utils/compliance-filters';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
-const TRAINING_VIDEO_IDS = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
+const GENERAL_TRAINING_IDS = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
+const HIPAA_TRAINING_ID = 'hipaa-sat-1';
 
 export async function getOverviewScores(organizationId: string) {
-  const [allPolicies, allTasks, employees, onboarding, org] = await Promise.all([
+  const [allPolicies, allTasks, employees, onboarding, org, hipaaInstance] = await Promise.all([
     db.policy.findMany({ where: { organizationId } }),
     db.task.findMany({ where: { organizationId } }),
     db.member.findMany({
@@ -27,9 +28,14 @@ export async function getOverviewScores(organizationId: string) {
       where: { id: organizationId },
       select: { securityTrainingStepEnabled: true },
     }),
+    db.frameworkInstance.findFirst({
+      where: { organizationId, framework: { name: 'HIPAA' } },
+      select: { id: true },
+    }),
   ]);
 
   const securityTrainingStepEnabled = org?.securityTrainingStepEnabled === true;
+  const hasHipaaFramework = !!hipaaInstance;
 
   // Policy breakdown
   const publishedPolicies = allPolicies.filter((p) => p.status === 'published');
@@ -71,21 +77,22 @@ export async function getOverviewScores(organizationId: string) {
         requiredPolicies.length === 0 ||
         requiredPolicies.every((p) => p.signedBy.includes(emp.id));
 
+      const empCompletions = trainingCompletions.filter(
+        (c) => c.memberId === emp.id,
+      );
+      const completedVideoIds = empCompletions
+        .filter((c) => c.completedAt !== null)
+        .map((c) => c.videoId);
+
       const hasCompletedAllTraining = securityTrainingStepEnabled
-        ? (() => {
-            const empCompletions = trainingCompletions.filter(
-              (c) => c.memberId === emp.id,
-            );
-            const completedVideoIds = empCompletions
-              .filter((c) => c.completedAt !== null)
-              .map((c) => c.videoId);
-            return TRAINING_VIDEO_IDS.every((vid) =>
-              completedVideoIds.includes(vid),
-            );
-          })()
+        ? GENERAL_TRAINING_IDS.every((vid) => completedVideoIds.includes(vid))
         : true;
 
-      if (hasAcceptedAllPolicies && hasCompletedAllTraining) {
+      const hasCompletedHipaa = hasHipaaFramework
+        ? completedVideoIds.includes(HIPAA_TRAINING_ID)
+        : true;
+
+      if (hasAcceptedAllPolicies && hasCompletedAllTraining && hasCompletedHipaa) {
         completedMembers++;
       }
     }

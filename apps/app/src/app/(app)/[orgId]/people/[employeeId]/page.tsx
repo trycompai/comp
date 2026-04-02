@@ -4,6 +4,7 @@ import {
   type TrainingVideo,
   trainingVideos as trainingVideosData,
 } from '@/lib/data/training-videos';
+import { HIPAA_TRAINING_ID } from '@/lib/data/hipaa-training-content';
 import { getFleetInstance } from '@/lib/fleet';
 import type { EmployeeTrainingVideoCompletion, Member, User } from '@db';
 import { db } from '@db/server';
@@ -40,19 +41,27 @@ export default async function EmployeeDetailsPage({
     redirect('/');
   }
 
-  const policies = await getPoliciesTasks(employeeId);
-  const employeeTrainingVideos = await getTrainingVideos(employeeId);
-  const employee = await getEmployee(employeeId);
+  const [policies, employeeTrainingVideos, employee, hipaaCompletion] = await Promise.all([
+    getPoliciesTasks(employeeId),
+    getTrainingVideos(employeeId),
+    getEmployee(employeeId),
+    db.employeeTrainingVideoCompletion.findFirst({
+      where: { memberId: employeeId, videoId: HIPAA_TRAINING_ID },
+    }),
+  ]);
 
   // If employee doesn't exist, show 404 page
   if (!employee) {
     notFound();
   }
 
-  // Get organization for certificate generation
-  const organization = await db.organization.findUnique({
-    where: { id: orgId },
-  });
+  const [organization, hipaaFramework] = await Promise.all([
+    db.organization.findUnique({ where: { id: orgId } }),
+    db.frameworkInstance.findFirst({
+      where: { organizationId: orgId, framework: { name: 'HIPAA' } },
+      select: { id: true },
+    }),
+  ]);
 
   if (!organization) {
     notFound();
@@ -72,6 +81,8 @@ export default async function EmployeeDetailsPage({
       organization={organization}
       memberDevice={memberDevice}
       orgId={orgId}
+      hasHipaaFramework={!!hipaaFramework}
+      hipaaCompletedAt={hipaaCompletion?.completedAt ?? null}
     />
   );
 }

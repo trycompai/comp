@@ -18543,6 +18543,40 @@
         ]
       }
     },
+    "/v1/training/generate-hipaa-certificate": {
+      "post": {
+        "description": "Generates a PDF certificate for a member who has completed the HIPAA Security Awareness Training.",
+        "operationId": "TrainingController_generateHipaaCertificate_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTrainingCompletionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PDF certificate file"
+          },
+          "400": {
+            "description": "HIPAA training not complete or member not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Generate HIPAA training certificate PDF",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
     "/v1/org-chart": {
       "get": {
         "operationId": "OrgChartController_getOrgChart_v1",

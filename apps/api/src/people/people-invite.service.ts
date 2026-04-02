@@ -155,9 +155,8 @@ export class PeopleInviteService {
       isNewMember = true;
     }
 
-    // Create training video entries for new members
     if (member && isNewMember) {
-      await this.createTrainingVideoEntries(member.id);
+      await this.createTrainingVideoEntries(member.id, organizationId);
     }
 
     // Send invite email (non-fatal)
@@ -280,9 +279,21 @@ export class PeopleInviteService {
     });
   }
 
-  private async createTrainingVideoEntries(memberId: string): Promise<void> {
-    // Training videos are defined in the app; we create entries for known video IDs
+  private async createTrainingVideoEntries(
+    memberId: string,
+    organizationId?: string,
+  ): Promise<void> {
     const trainingVideoIds = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
+
+    if (organizationId) {
+      const hipaaInstance = await db.frameworkInstance.findFirst({
+        where: { organizationId, framework: { name: 'HIPAA' } },
+        select: { id: true },
+      });
+      if (hipaaInstance) {
+        trainingVideoIds.push('hipaa-sat-1');
+      }
+    }
 
     await db.employeeTrainingVideoCompletion.createMany({
       data: trainingVideoIds.map((videoId) => ({

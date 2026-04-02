@@ -147,4 +147,37 @@ export class TrainingController {
     );
     res.send(result.pdf);
   }
+
+  @Post('generate-hipaa-certificate')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('training', 'read')
+  @ApiOperation({
+    summary: 'Generate HIPAA training certificate PDF',
+    description:
+      'Generates a PDF certificate for a member who has completed the HIPAA Security Awareness Training.',
+  })
+  @ApiProduces('application/pdf')
+  @ApiResponse({ status: 200, description: 'PDF certificate file' })
+  @ApiResponse({ status: 400, description: 'HIPAA training not complete or member not found' })
+  async generateHipaaCertificate(
+    @OrganizationId() organizationId: string,
+    @Body() dto: SendTrainingCompletionDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const result = await this.trainingService.generateHipaaCertificate(
+      dto.memberId,
+      organizationId,
+    );
+
+    if ('error' in result) {
+      throw new BadRequestException(result.error);
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${result.fileName}"`,
+    );
+    res.send(result.pdf);
+  }
 }

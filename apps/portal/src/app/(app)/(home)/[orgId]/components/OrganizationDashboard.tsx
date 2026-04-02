@@ -56,12 +56,18 @@ export async function OrganizationDashboard({
     },
   });
 
-  // Get Org first to verify it exists
-  const org = await db.organization.findUnique({
-    where: {
-      id: organizationId,
-    },
-  });
+  const [org, hipaaFramework] = await Promise.all([
+    db.organization.findUnique({
+      where: { id: organizationId },
+    }),
+    db.frameworkInstance.findFirst({
+      where: {
+        organizationId,
+        framework: { name: 'HIPAA' },
+      },
+      select: { id: true },
+    }),
+  ]);
 
   if (!org) {
     return <NoAccessMessage />;
@@ -80,6 +86,7 @@ export async function OrganizationDashboard({
       securityTrainingStepEnabled={org.securityTrainingStepEnabled}
       whistleblowerReportEnabled={org.whistleblowerReportEnabled}
       accessRequestFormEnabled={org.accessRequestFormEnabled}
+      hasHipaaFramework={!!hipaaFramework}
       portalForms={portalForms}
     />
   );

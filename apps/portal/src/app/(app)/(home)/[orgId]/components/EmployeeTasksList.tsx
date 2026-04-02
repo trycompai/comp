@@ -3,13 +3,14 @@
 import { trainingVideos } from '@/lib/data/training-videos';
 import { useTrainingCompletions } from '@/hooks/use-training-completions';
 import type { Device, EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
-import { Accordion, Button, Card, CardContent } from '@trycompai/design-system';
-import { CheckmarkFilled } from '@trycompai/design-system/icons';
+import { Accordion, Button } from '@trycompai/design-system';
 import Link from 'next/link';
 import useSWR from 'swr';
 import type { FleetPolicy, Host } from '../types';
+import { HIPAA_TRAINING_ID } from '@/lib/data/hipaa-training-content';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
+import { HipaaTrainingAccordionItem } from './tasks/HipaaTrainingAccordionItem';
 import { PoliciesAccordionItem } from './tasks/PoliciesAccordionItem';
 
 interface PortalForm {
@@ -32,6 +33,7 @@ interface EmployeeTasksListProps {
   agentDevices: Device[];
   deviceAgentStepEnabled: boolean;
   securityTrainingStepEnabled: boolean;
+  hasHipaaFramework: boolean;
   whistleblowerReportEnabled: boolean;
   accessRequestFormEnabled: boolean;
   portalForms: PortalForm[];
@@ -47,6 +49,7 @@ export const EmployeeTasksList = ({
   agentDevices,
   deviceAgentStepEnabled,
   securityTrainingStepEnabled,
+  hasHipaaFramework,
   whistleblowerReportEnabled,
   accessRequestFormEnabled,
   portalForms,
@@ -132,10 +135,15 @@ export const EmployeeTasksList = ({
   const hasCompletedGeneralTraining =
     completedGeneralTrainingCount === generalTrainingVideoIds.length;
 
+  const hasCompletedHipaaTraining = trainingCompletions.some(
+    (c) => c.videoId === HIPAA_TRAINING_ID && c.completedAt !== null,
+  );
+
   const completedCount = [
     hasAcceptedPolicies,
     ...(deviceAgentStepEnabled ? [hasCompletedDeviceSetup] : []),
     ...(securityTrainingStepEnabled ? [hasCompletedGeneralTraining] : []),
+    ...(hasHipaaFramework ? [hasCompletedHipaaTraining] : []),
   ].filter(Boolean).length;
 
   const accordionItems = [
@@ -170,6 +178,14 @@ export const EmployeeTasksList = ({
           },
         ]
       : []),
+    ...(hasHipaaFramework
+      ? [
+          {
+            title: 'Complete HIPAA security awareness training',
+            content: <HipaaTrainingAccordionItem />,
+          },
+        ]
+      : []),
   ];
   const visiblePortalForms = portalForms.filter((form) => {
     if (form.type === 'whistleblower-report') return whistleblowerReportEnabled;
@@ -177,48 +193,27 @@ export const EmployeeTasksList = ({
     return true;
   });
 
-  const allCompleted = completedCount === accordionItems.length;
-
   return (
     <div className="space-y-4">
-      {allCompleted ? (
-        <Card>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="text-primary mb-4">
-                <CheckmarkFilled size={48} />
-              </div>
-              <h2 className="text-xl font-semibold mb-2">You're all set!</h2>
-              <p className="text-muted-foreground text-sm max-w-md">
-                You've completed all required tasks. No further action is needed at this time.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Progress indicator */}
-          <div>
-            <div className="text-muted-foreground text-sm">
-              {completedCount} of {accordionItems.length} tasks completed
-            </div>
-            <div className="w-full bg-muted rounded-full h-2.5">
-              <div
-                className="bg-primary h-full rounded-full"
-                style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
-              ></div>
-            </div>
-          </div>
+      <div>
+        <div className="text-muted-foreground text-sm">
+          {completedCount} of {accordionItems.length} tasks completed
+        </div>
+        <div className="w-full bg-muted rounded-full h-2.5">
+          <div
+            className="bg-primary h-full rounded-full"
+            style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
+          ></div>
+        </div>
+      </div>
 
-          <div className="space-y-3">
-            <Accordion>
-              {accordionItems.map((item, idx) => (
-                <div key={item.title ?? idx}>{item.content}</div>
-              ))}
-            </Accordion>
-          </div>
-        </>
-      )}
+      <div className="space-y-3">
+        <Accordion>
+          {accordionItems.map((item, idx) => (
+            <div key={item.title ?? idx}>{item.content}</div>
+          ))}
+        </Accordion>
+      </div>
 
       {/* Company forms */}
       {visiblePortalForms.length > 0 && (

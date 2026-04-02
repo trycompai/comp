@@ -22,6 +22,8 @@ interface EmployeeCompletionChartProps {
   })[];
   showAll?: boolean;
   securityTrainingStepEnabled?: boolean;
+  hasHipaaFramework?: boolean;
+  hipaaCompletions?: EmployeeTrainingVideoCompletion[];
 }
 
 // Define colors for the chart using semantic tokens
@@ -37,6 +39,7 @@ interface EmployeeTaskStats {
   totalTasks: number;
   policiesCompleted: number;
   trainingsCompleted: number;
+  hipaaCompleted: boolean;
   policiesTotal: number;
   trainingsTotal: number;
   policyPercentage: number;
@@ -50,6 +53,8 @@ export function EmployeeCompletionChart({
   trainingVideos,
   showAll = false,
   securityTrainingStepEnabled = true,
+  hasHipaaFramework = false,
+  hipaaCompletions = [],
 }: EmployeeCompletionChartProps) {
   const params = useParams();
   const orgId = params.orgId as string;
@@ -92,9 +97,16 @@ export function EmployeeCompletionChart({
           : 0;
       }
 
-      // Calculate total completion percentage
-      const totalItems = policies.length + trainingVideosTotal;
-      const totalCompletedItems = policiesCompletedCount + trainingsCompletedCount;
+      const hipaaComplete = hasHipaaFramework
+        ? hipaaCompletions.some(
+            (c) => c.memberId === employee.id && c.completedAt !== null,
+          )
+        : false;
+      const hipaaCount = hasHipaaFramework ? 1 : 0;
+
+      const totalItems = policies.length + trainingVideosTotal + hipaaCount;
+      const totalCompletedItems =
+        policiesCompletedCount + trainingsCompletedCount + (hipaaComplete ? 1 : 0);
 
       const overallPercentage = totalItems
         ? Math.round((totalCompletedItems / totalItems) * 100)
@@ -107,6 +119,7 @@ export function EmployeeCompletionChart({
         totalTasks: totalItems,
         policiesCompleted: policiesCompletedCount,
         trainingsCompleted: trainingsCompletedCount,
+        hipaaCompleted: hipaaComplete,
         policiesTotal: policies.length,
         trainingsTotal: trainingVideosTotal,
         policyPercentage: policyCompletionPercentage,
@@ -114,7 +127,7 @@ export function EmployeeCompletionChart({
         overallPercentage,
       };
     });
-  }, [employees, policies, trainingVideos, securityTrainingStepEnabled]);
+  }, [employees, policies, trainingVideos, securityTrainingStepEnabled, hasHipaaFramework, hipaaCompletions]);
 
   // Filter employees based on search term
   const filteredStats = React.useMemo(() => {
@@ -261,6 +274,12 @@ export function EmployeeCompletionChart({
                         <>
                           {' '}
                           • {stat.trainingsCompleted}/{stat.trainingsTotal} training
+                        </>
+                      )}
+                      {hasHipaaFramework && (
+                        <>
+                          {' '}
+                          • HIPAA {stat.hipaaCompleted ? 'done' : 'pending'}
                         </>
                       )}
                     </div>
