@@ -94,6 +94,7 @@ export function VendorDetailTabs({
   const [isMitigationLoading, setIsMitigationLoading] = useState(false);
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [activeTab, setActiveTab] = useState(defaultTab);
 
   const { data: taskItemsData, mutate: refreshTaskItems } = useTaskItems(
     vendorId, 'vendor', 1, 50, 'createdAt', 'desc', {},
@@ -269,6 +270,7 @@ export function VendorDetailTabs({
       if (result.runId && result.publicAccessToken) {
         handleAssessmentTriggered(result.runId, result.publicAccessToken);
         setIsRegenerating(true);
+        setActiveTab('risk-assessment');
       }
     } catch {
       toast.error('Failed to trigger risk assessment regeneration');
@@ -382,7 +384,7 @@ export function VendorDetailTabs({
       {isViewingTask ? (
         <TaskItems entityId={vendorId} entityType="vendor" />
       ) : (
-        <Tabs defaultValue={defaultTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <Stack gap="lg">
             <TabsList variant="underline">
               <TabsTrigger value="overview">Overview</TabsTrigger>

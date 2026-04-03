@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, Text } from '@trycompai/design-system';
+import { CardContent, Text } from '@trycompai/design-system';
 import { Checkmark, Search } from '@trycompai/design-system/icons';
 import { AnimatedSizeContainer } from '@trycompai/ui/animated-size-container';
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -33,13 +33,7 @@ const FILLER_MESSAGES = [
   'Analyzing third-party audit reports...',
 ];
 
-function FeedMessage({
-  message,
-  index,
-}: {
-  message: ResearchMessage;
-  index: number;
-}) {
+function FeedMessage({ message }: { message: ResearchMessage }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -53,29 +47,27 @@ function FeedMessage({
   return (
     <div
       className={`flex items-center gap-3 py-2 px-3 rounded-lg transition-all duration-500 ease-out ${
-        visible
-          ? 'opacity-100 translate-x-0'
-          : 'opacity-0 -translate-x-4'
-      } ${isFound ? 'bg-emerald-500/10' : ''} ${isError ? 'bg-red-500/10' : ''}`}
+        visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+      } ${isFound ? 'bg-success/10' : ''} ${isError ? 'bg-destructive/10' : ''}`}
     >
       <span className="shrink-0">
         {message.type === 'found' && (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
-            <Checkmark size={12} className="text-emerald-400" />
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success/20">
+            <Checkmark size={12} className="text-success" />
           </span>
         )}
         {message.type === 'searching' && (
           <span className="flex h-5 w-5 items-center justify-center">
-            <Search size={14} className="text-blue-400 animate-pulse" />
+            <Search size={14} className="text-primary animate-pulse" />
           </span>
         )}
         {message.type === 'analyzing' && (
           <span className="flex h-5 w-5 items-center justify-center">
-            <span className="w-3.5 h-3.5 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" />
+            <span className="w-3.5 h-3.5 rounded-full border-2 border-accent-foreground/50 border-t-transparent animate-spin" />
           </span>
         )}
         {message.type === 'error' && (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500/20 text-red-400 text-xs font-bold">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive/20 text-destructive text-xs font-bold">
             !
           </span>
         )}
@@ -83,9 +75,9 @@ function FeedMessage({
       <span
         className={`text-sm font-mono tracking-tight ${
           isFound
-            ? 'text-emerald-300 font-medium'
+            ? 'text-success font-medium'
             : isError
-              ? 'text-red-300'
+              ? 'text-destructive'
               : 'text-muted-foreground'
         }`}
       >
@@ -192,14 +184,14 @@ export function VendorResearchFeed({
 
   return (
     <div className="rounded-xl border border-border bg-gradient-to-b from-card to-card/80 shadow-lg overflow-hidden">
-      {/* Header with animated gradient bar */}
+      {/* Header with accent bar */}
       <div className="relative px-5 pt-5 pb-3">
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-violet-500 to-emerald-500 opacity-80" />
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/80" />
         <div className="flex items-center gap-3">
           {isActive && (
             <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
             </span>
           )}
           <Text size="sm" weight="semibold">
@@ -218,7 +210,6 @@ export function VendorResearchFeed({
               <FeedMessage
                 key={`${msg.timestamp}-${i}`}
                 message={msg}
-                index={i}
               />
             ))}
             {isActive && displayedMessages.length > 0 && (
