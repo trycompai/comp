@@ -803,6 +803,15 @@ export const vendorRiskAssessmentTask: Task<
     metadata.set('phase', 'researching');
     pushMessage(`Analyzing ${payload.vendorWebsite}...`, 'searching');
 
+    logger.info('🚀 Starting parallel research', {
+      vendor: payload.vendorName,
+      website: payload.vendorWebsite,
+      organizationId: payload.organizationId,
+    });
+
+    const coreStartedAt = Date.now();
+    const newsStartedAt = Date.now();
+
     // Run core research and news research in parallel
     const [coreResult, newsResult] = await Promise.allSettled([
       (async () => {
@@ -810,40 +819,87 @@ export const vendorRiskAssessmentTask: Task<
           'Checking trust portal and security pages...',
           'searching',
         );
+        logger.info('🔍 Core research started', {
+          vendor: payload.vendorName,
+          website: payload.vendorWebsite,
+        });
         const result = await firecrawlResearchCore({
           vendorName: payload.vendorName,
           vendorWebsite: payload.vendorWebsite!,
         });
-        if (result?.certifications?.length) {
-          for (const cert of result.certifications) {
-            if (cert.status === 'verified') {
-              pushMessage(`Found ${cert.type} certification`, 'found');
+        const durationMs = Date.now() - coreStartedAt;
+        if (result) {
+          const certCount = result.certifications?.length ?? 0;
+          const verifiedCount = result.certifications?.filter(c => c.status === 'verified').length ?? 0;
+          const linkCount = result.links?.length ?? 0;
+          logger.info('✅ Core research completed', {
+            vendor: payload.vendorName,
+            durationMs,
+            certifications: certCount,
+            verifiedCertifications: verifiedCount,
+            links: linkCount,
+            hasAssessment: Boolean(result.securityAssessment),
+            riskLevel: result.riskLevel ?? 'none',
+          });
+          if (result.certifications?.length) {
+            for (const cert of result.certifications) {
+              if (cert.status === 'verified') {
+                pushMessage(`Found ${cert.type} certification`, 'found');
+              }
             }
           }
-        }
-        if (result?.links?.length) {
-          pushMessage(
-            `Found ${result.links.length} security/legal links`,
-            'found',
-          );
-        }
-        if (result?.securityAssessment) {
-          pushMessage('Security assessment complete', 'found');
+          if (result.links?.length) {
+            pushMessage(
+              `Found ${result.links.length} security/legal links`,
+              'found',
+            );
+          }
+          if (result.securityAssessment) {
+            pushMessage('Security assessment complete', 'found');
+          }
+        } else {
+          logger.warn('⚠️ Core research returned null', {
+            vendor: payload.vendorName,
+            durationMs,
+          });
         }
         return result;
       })(),
       (async () => {
         pushMessage('Searching for recent news...', 'searching');
+        logger.info('📰 News research started', {
+          vendor: payload.vendorName,
+          website: payload.vendorWebsite,
+        });
         const result = await firecrawlResearchNews({
           vendorName: payload.vendorName,
           vendorWebsite: payload.vendorWebsite!,
         });
+        const durationMs = Date.now() - newsStartedAt;
         if (result?.length) {
+          logger.info('✅ News research completed', {
+            vendor: payload.vendorName,
+            durationMs,
+            newsItems: result.length,
+          });
           pushMessage(`Found ${result.length} recent news items`, 'found');
+        } else {
+          logger.info('📰 News research returned no items', {
+            vendor: payload.vendorName,
+            durationMs,
+          });
         }
         return result;
       })(),
     ]);
+
+    logger.info('🏁 Both research calls settled', {
+      vendor: payload.vendorName,
+      coreStatus: coreResult.status,
+      newsStatus: newsResult.status,
+      coreError: coreResult.status === 'rejected' ? String(coreResult.reason) : null,
+      newsError: newsResult.status === 'rejected' ? String(newsResult.reason) : null,
+    });
 
     // --- Process core results ---
     const coreData =
@@ -851,6 +907,11 @@ export const vendorRiskAssessmentTask: Task<
 
     if (coreData) {
       pushMessage('Writing core research to database...', 'analyzing');
+      logger.info('💾 Writing core data to GlobalVendors', {
+        vendor: payload.vendorName,
+        domain,
+        normalizedWebsite,
+      });
 
       const description = buildRiskAssessmentDescription({
         vendorName: payload.vendorName,
@@ -927,7 +988,16 @@ export const vendorRiskAssessmentTask: Task<
         },
       });
 
+      logger.info('💾 GlobalVendors upsert complete', {
+        vendor: payload.vendorName,
+        version: nextVersion,
+        updatedWebsites,
+      });
+
       // Extract risk level and badges
+      logger.info('🎯 Normalizing risk level', {
+        vendor: payload.vendorName,
+      });
       const rawRiskLevel = extractRiskLevel(data);
       const normalizedRiskLvl = await normalizeRiskLevel(rawRiskLevel);
       const inherentProbability = mapRiskLevelToLikelihood(normalizedRiskLvl);
@@ -936,6 +1006,15 @@ export const vendorRiskAssessmentTask: Task<
       const residualImpact = mapRiskLevelToImpact(normalizedRiskLvl);
       const complianceBadges = extractComplianceBadges(data);
       const logoUrl = generateLogoUrl(vendor.website);
+
+      logger.info('📊 Risk level and badges extracted', {
+        vendor: payload.vendorName,
+        rawRiskLevel,
+        normalizedRiskLevel: normalizedRiskLvl,
+        hasBadges: Boolean(complianceBadges),
+        badgeCount: Array.isArray(complianceBadges) ? complianceBadges.length : 0,
+        hasLogo: Boolean(logoUrl),
+      });
 
       // Update vendor with core data (keep status in_progress — news may still be loading)
       await db.vendor.update({
@@ -953,8 +1032,9 @@ export const vendorRiskAssessmentTask: Task<
       metadata.set('phase', 'core_complete');
       metadata.set('coreReady', true);
 
-      logger.info('Core research completed', {
+      logger.info('🎉 Core phase complete — vendor updated, metadata.coreReady=true', {
         vendor: payload.vendorName,
+        vendorId: vendor.id,
         version: nextVersion,
       });
 
@@ -1002,9 +1082,11 @@ export const vendorRiskAssessmentTask: Task<
         });
 
         metadata.set('newsReady', true);
-        logger.info('News research merged', {
+        logger.info('📰 News merged into GlobalVendors — metadata.newsReady=true', {
           vendor: payload.vendorName,
+          vendorId: vendor.id,
           newsCount: newsData.length,
+          websites: updatedWebsites.length > 0 ? updatedWebsites : [normalizedWebsite],
         });
       } else if (newsResult.status === 'rejected') {
         pushMessage('News research could not be completed', 'error');
@@ -1029,6 +1111,10 @@ export const vendorRiskAssessmentTask: Task<
     }
 
     // Mark vendor as assessed and flip verify task
+    logger.info('🏷️ Setting vendor status to assessed', {
+      vendor: payload.vendorName,
+      vendorId: vendor.id,
+    });
     await db.vendor.update({
       where: { id: vendor.id },
       data: { status: VendorStatus.assessed },
@@ -1050,9 +1136,13 @@ export const vendorRiskAssessmentTask: Task<
 
     metadata.set('phase', 'complete');
 
-    logger.info('✅ COMPLETED', {
+    logger.info('✅ COMPLETED — all phases done', {
       vendor: payload.vendorName,
+      vendorId: vendor.id,
       researched: Boolean(coreData),
+      hasNews: newsResult.status === 'fulfilled' && Boolean(newsResult.value),
+      coreStatus: coreResult.status,
+      newsStatus: newsResult.status,
     });
 
     return {
