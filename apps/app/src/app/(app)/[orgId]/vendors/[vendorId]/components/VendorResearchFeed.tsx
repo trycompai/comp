@@ -2,9 +2,7 @@
 
 import { CardContent, Text } from '@trycompai/design-system';
 import { Checkmark, Search } from '@trycompai/design-system/icons';
-import { AnimatedSizeContainer } from '@trycompai/ui/animated-size-container';
-import { prepare, layout } from '@chenglou/pretext';
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 export type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
 
@@ -171,71 +169,17 @@ function useDripFeed(
   return displayed;
 }
 
-// Row height constants (must match the rendered CSS)
-const MSG_FONT = '14px ui-monospace, SFMono-Regular, Menlo, monospace';
-const MSG_LINE_HEIGHT = 20;
-const MSG_ROW_PADDING_Y = 16; // py-2 = 8px top + 8px bottom
-const MSG_ICON_GAP_WIDTH = 32; // icon (20px) + gap (12px)
-const BOUNCING_DOTS_HEIGHT = 36; // dots row height
-
-/**
- * Uses Pretext to predict the total pixel height of the message list
- * without touching the DOM — enables jank-free height animation.
- */
-function usePredictedHeight(
-  messages: ResearchMessage[],
-  isActive: boolean,
-  containerWidth: number,
-): number {
-  return useMemo(() => {
-    if (containerWidth <= 0) return 0;
-    const textWidth = containerWidth - MSG_ICON_GAP_WIDTH - 24; // 24px horizontal padding
-    let total = 0;
-    for (const msg of messages) {
-      const prepared = prepare(msg.text, MSG_FONT);
-      const { height } = layout(prepared, textWidth, MSG_LINE_HEIGHT);
-      total += height + MSG_ROW_PADDING_Y;
-    }
-    if (isActive && messages.length > 0) {
-      total += BOUNCING_DOTS_HEIGHT;
-    }
-    return total;
-  }, [messages, isActive, containerWidth]);
-}
-
 export function VendorResearchFeed({
   messages,
   isActive,
   vendorName,
 }: VendorResearchFeedProps) {
   const feedEndRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
   const displayedMessages = useDripFeed(messages, isActive);
-
-  // Track container width for Pretext layout calculations
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setContainerWidth(entry.contentRect.width);
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  const predictedHeight = usePredictedHeight(
-    displayedMessages,
-    isActive,
-    containerWidth,
-  );
 
   useEffect(() => {
     feedEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [displayedMessages.length]);
-
-  // Cap at max-height equivalent (288px = max-h-72)
-  const clampedHeight = Math.min(predictedHeight, 288);
 
   return (
     <div className="rounded-xl border border-border bg-gradient-to-b from-card to-card/80 shadow-lg overflow-hidden">
@@ -257,12 +201,9 @@ export function VendorResearchFeed({
         </div>
       </div>
 
-      {/* Message feed — height driven by Pretext prediction for smooth animation */}
-      <div className="px-4 pb-4" ref={containerRef}>
-        <div
-          className="overflow-y-auto space-y-1 scrollbar-thin transition-[height] duration-500 ease-out"
-          style={{ height: clampedHeight > 0 ? `${clampedHeight}px` : 'auto' }}
-        >
+      {/* Message feed */}
+      <div className="px-4 pb-4">
+        <div className="max-h-72 overflow-y-auto space-y-1 scrollbar-thin">
           {displayedMessages.map((msg, i) => (
             <FeedMessage
               key={`${msg.timestamp}-${i}`}
