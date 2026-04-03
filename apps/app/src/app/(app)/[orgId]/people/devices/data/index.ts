@@ -24,7 +24,17 @@ export const getEmployeeDevicesFromDB: () => Promise<DeviceWithChecks[]> = async
   }
 
   const devices = await db.device.findMany({
-    where: { organizationId },
+    where: {
+      organizationId,
+      // Exclude devices for users whose User.role is platform admin (not org Member.role).
+      NOT: {
+        member: {
+          user: {
+            role: 'admin',
+          },
+        },
+      },
+    },
     include: {
       member: {
         include: {
