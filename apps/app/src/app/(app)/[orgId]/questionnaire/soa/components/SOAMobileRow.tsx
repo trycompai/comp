@@ -1,6 +1,7 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
+import type { SOAFieldSavePayload, SOATableAnswerData } from './EditableSOAFields';
 import { EditableSOAFields } from './EditableSOAFields';
 
 type SOAColumn = {
@@ -30,14 +31,14 @@ type ProcessedResult = {
 interface SOAMobileRowProps {
   question: SOAQuestion;
   columns: SOAColumn[];
-  answerData?: { answer: string | null; answerVersion: number };
+  answerData?: SOATableAnswerData;
   questionStatus?: string;
   processedResult?: ProcessedResult;
   isFullyRemote: boolean;
   documentId: string;
   isPendingApproval: boolean;
   organizationId: string;
-  onUpdate?: (savedAnswer: string | null) => void;
+  onUpdate?: (payload: SOAFieldSavePayload) => void;
 }
 
 export function SOAMobileRow({
@@ -55,23 +56,35 @@ export function SOAMobileRow({
   const controlClosure = question.columnMapping.closure || '';
   const isControl7 = controlClosure.startsWith('7.');
 
-  let displayIsApplicable: boolean;
+  let displayIsApplicable: boolean | null;
   let justificationValue: string | null;
 
   if (isFullyRemote && isControl7) {
     displayIsApplicable = false;
-    justificationValue = processedResult?.justification
-      || answerData?.answer
-      || question.columnMapping.justification
-      || 'This control is not applicable as our organization operates fully remotely.';
+    justificationValue =
+      processedResult?.justification ||
+      answerData?.answer ||
+      question.columnMapping.justification ||
+      'This control is not applicable as our organization operates fully remotely.';
+  } else if (answerData?.savedIsApplicable !== undefined) {
+    displayIsApplicable = answerData.savedIsApplicable;
+    justificationValue =
+      displayIsApplicable === false
+        ? (answerData.answer ?? question.columnMapping.justification ?? null)
+        : null;
   } else {
-    displayIsApplicable = processedResult?.isApplicable !== null && processedResult?.isApplicable !== undefined
-      ? processedResult.isApplicable
-      : (question.columnMapping.isApplicable ?? true);
+    displayIsApplicable =
+      processedResult?.isApplicable !== null && processedResult?.isApplicable !== undefined
+        ? processedResult.isApplicable
+        : (question.columnMapping.isApplicable ?? true);
 
-    justificationValue = displayIsApplicable === false
-      ? (processedResult?.justification || answerData?.answer || question.columnMapping.justification || null)
-      : null;
+    justificationValue =
+      displayIsApplicable === false
+        ? (processedResult?.justification ||
+            answerData?.answer ||
+            question.columnMapping.justification ||
+            null)
+        : null;
   }
 
   return (

@@ -10,6 +10,7 @@ import { SOADocumentInfo } from './SOADocumentInfo';
 import { SOAPendingApprovalAlert } from './SOAPendingApprovalAlert';
 import { SubmitApprovalDialog } from './SubmitApprovalDialog';
 import { SOATable } from './SOATable';
+import type { SOAFieldSavePayload, SOATableAnswerData } from './EditableSOAFields';
 import type { FrameworkWithLatestDocument } from '../types';
 
 type Framework = FrameworkWithLatestDocument['framework'];
@@ -95,7 +96,7 @@ export function SOAFrameworkTable({
   const questions = configuration.questions as SOAQuestion[];
 
   // Create answers map from document answers
-  const [answersMap, setAnswersMap] = useState<Map<string, { answer: string | null; answerVersion: number }>>(() => {
+  const [answersMap, setAnswersMap] = useState<Map<string, SOATableAnswerData>>(() => {
     return new Map(
       (document?.answers || []).map((answer: { questionId: string; answer: string | null; answerVersion: number }) => [
         answer.questionId,
@@ -116,13 +117,14 @@ export function SOAFrameworkTable({
     );
   }, [document?.answers]);
 
-  const handleAnswerUpdate = (questionId: string, answer: string | null) => {
+  const handleAnswerUpdate = (questionId: string, payload: SOAFieldSavePayload) => {
     setAnswersMap((prev) => {
       const newMap = new Map(prev);
       const existing = newMap.get(questionId);
       newMap.set(questionId, {
-        answer,
+        answer: payload.justification,
         answerVersion: existing ? existing.answerVersion + 1 : 1,
+        savedIsApplicable: payload.isApplicable,
       });
       return newMap;
     });

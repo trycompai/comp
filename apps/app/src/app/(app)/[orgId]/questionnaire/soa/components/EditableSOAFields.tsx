@@ -22,6 +22,9 @@ import {
 import { X, Loader2, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSOADocument } from '../../hooks/useSOADocument';
+import type { SOAFieldSavePayload } from './soa-field-types';
+
+export type { SOAFieldSavePayload, SOATableAnswerData } from './soa-field-types';
 
 /** Matches policy table StatusIndicator: color swatch + label in foreground (black) text. */
 function ApplicableReadOnlyDisplay({ isApplicable }: { isApplicable: boolean | null }) {
@@ -50,7 +53,8 @@ interface EditableSOAFieldsProps {
   isControl7?: boolean;
   isFullyRemote?: boolean;
   organizationId: string;
-  onUpdate?: (savedAnswer: string | null) => void;
+  /** Called after a successful save so the table can override autofill/cache without a full reload. */
+  onUpdate?: (payload: SOAFieldSavePayload) => void;
 }
 
 export function EditableSOAFields({
@@ -112,9 +116,10 @@ export function EditableSOAFields({
       setIsEditing(false);
       setError(null);
       toast.success('Answer saved successfully');
-      // Call onUpdate with the saved answer value to update parent state optimistically
-      const savedAnswer = nextIsApplicable === false ? nextJustification : null;
-      onUpdate?.(savedAnswer);
+      onUpdate?.({
+        isApplicable: nextIsApplicable,
+        justification: nextIsApplicable === false ? nextJustification : null,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save answer';
       if (!isJustificationDialogOpen) {

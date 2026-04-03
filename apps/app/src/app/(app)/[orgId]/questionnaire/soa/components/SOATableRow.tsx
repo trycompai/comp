@@ -1,6 +1,7 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
+import type { SOAFieldSavePayload, SOATableAnswerData } from './EditableSOAFields';
 import { EditableSOAFields } from './EditableSOAFields';
 
 type SOAColumn = {
@@ -30,14 +31,14 @@ type ProcessedResult = {
 interface SOATableRowProps {
   question: SOAQuestion;
   columns: SOAColumn[];
-  answerData?: { answer: string | null; answerVersion: number };
+  answerData?: SOATableAnswerData;
   questionStatus?: string;
   processedResult?: ProcessedResult;
   isFullyRemote: boolean;
   documentId: string;
   isPendingApproval: boolean;
   organizationId: string;
-  onUpdate?: (savedAnswer: string | null) => void;
+  onUpdate?: (payload: SOAFieldSavePayload) => void;
 }
 
 export function SOATableRow({
@@ -61,31 +62,41 @@ export function SOATableRow({
   const isControl7 = controlClosure.startsWith('7.');
   
   // Determine displayIsApplicable and justificationValue based on fully remote logic
-  let displayIsApplicable: boolean;
+  let displayIsApplicable: boolean | null;
   let justificationValue: string | null;
-  
+
   // If fully remote and control starts with "7.", always show NO (override any other value)
   if (isFullyRemote && isControl7) {
     displayIsApplicable = false;
-    justificationValue = processedResult?.justification 
-      || answerData?.answer
-      || question.columnMapping.justification
-      || 'This control is not applicable as our organization operates fully remotely.';
+    justificationValue =
+      processedResult?.justification ||
+      answerData?.answer ||
+      question.columnMapping.justification ||
+      'This control is not applicable as our organization operates fully remotely.';
+  } else if (answerData?.savedIsApplicable !== undefined) {
+    // Manual save overrides autofill processedResult so the table updates without a full reload
+    displayIsApplicable = answerData.savedIsApplicable;
+    justificationValue =
+      displayIsApplicable === false
+        ? (answerData.answer ?? question.columnMapping.justification ?? null)
+        : null;
   } else {
-    // Normal logic for other controls
-    const isApplicableValue = processedResult?.isApplicable !== null && processedResult?.isApplicable !== undefined
-      ? processedResult.isApplicable
-      : (question.columnMapping.isApplicable ?? true); // Default to YES
-    
-    // For justification: only show if isApplicable is NO
-    justificationValue = (isApplicableValue === false && processedResult?.justification) 
-      || (isApplicableValue === false && answerData?.answer)
-      || (isApplicableValue === false && question.columnMapping.justification)
-      || null;
-    
-    displayIsApplicable = processedResult?.isApplicable !== null && processedResult?.isApplicable !== undefined
-      ? processedResult.isApplicable
-      : (question.columnMapping.isApplicable ?? true); // Default to YES
+    // Normal logic: processedResult / column mapping until user saves (then branch above)
+    const isApplicableValue =
+      processedResult?.isApplicable !== null && processedResult?.isApplicable !== undefined
+        ? processedResult.isApplicable
+        : (question.columnMapping.isApplicable ?? true);
+
+    justificationValue =
+      (isApplicableValue === false && processedResult?.justification) ||
+      (isApplicableValue === false && answerData?.answer) ||
+      (isApplicableValue === false && question.columnMapping.justification) ||
+      null;
+
+    displayIsApplicable =
+      processedResult?.isApplicable !== null && processedResult?.isApplicable !== undefined
+        ? processedResult.isApplicable
+        : (question.columnMapping.isApplicable ?? true);
   }
 
   return (

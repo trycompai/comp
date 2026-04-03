@@ -3,8 +3,11 @@
 import { Card } from '@trycompai/ui';
 import { Button } from '@trycompai/design-system';
 import { ChevronUp, ChevronDown } from '@trycompai/design-system/icons';
+import type { SOAFieldSavePayload, SOATableAnswerData } from './EditableSOAFields';
 import { SOATableRow } from './SOATableRow';
 import { SOAMobileRow } from './SOAMobileRow';
+
+export type { SOATableAnswerData };
 
 type SOAColumn = {
   name: string;
@@ -33,7 +36,7 @@ type ProcessedResult = {
 interface SOATableProps {
   columns: SOAColumn[];
   questions: SOAQuestion[];
-  answersMap: Map<string, { answer: string | null; answerVersion: number }>;
+  answersMap: Map<string, SOATableAnswerData>;
   questionStatuses: Map<string, string>;
   processedResults: Map<string, ProcessedResult>;
   isFullyRemote: boolean;
@@ -42,7 +45,7 @@ interface SOATableProps {
   documentId: string;
   isPendingApproval: boolean;
   organizationId: string;
-  onAnswerUpdate?: (questionId: string, answer: string | null) => void;
+  onAnswerUpdate?: (questionId: string, payload: SOAFieldSavePayload) => void;
 }
 
 const columnLabelMap: Record<string, string> = {
@@ -79,7 +82,7 @@ export function SOATable({
     documentId,
     isPendingApproval,
     organizationId,
-    onUpdate: (savedAnswer: string | null) => onAnswerUpdate?.(question.id, savedAnswer),
+    onUpdate: (payload: SOAFieldSavePayload) => onAnswerUpdate?.(question.id, payload),
   });
 
   return (
