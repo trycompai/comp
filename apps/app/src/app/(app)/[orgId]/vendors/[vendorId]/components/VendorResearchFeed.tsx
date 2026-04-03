@@ -2,8 +2,8 @@
 
 import { Text } from '@trycompai/design-system';
 import { Checkmark } from '@trycompai/design-system/icons';
-import { motion } from 'motion/react';
-import { useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useMemo, useState, useEffect } from 'react';
 
 export type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
 
@@ -77,6 +77,62 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
   }
 
   return findings;
+}
+
+const AGENT_STATES = [
+  { icon: '🔍', label: 'Searching website' },
+  { icon: '📄', label: 'Reading pages' },
+  { icon: '🔎', label: 'Analyzing content' },
+  { icon: '🛡️', label: 'Checking security' },
+  { icon: '📋', label: 'Reviewing compliance' },
+  { icon: '🔗', label: 'Following links' },
+] as const;
+
+function ResearchAgent() {
+  const [stateIndex, setStateIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStateIndex((prev) => (prev + 1) % AGENT_STATES.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const state = AGENT_STATES[stateIndex]!;
+
+  return (
+    <div className="inline-flex items-center gap-2.5 bg-muted/40 border border-border/50 rounded-full pl-2 pr-3.5 py-1.5">
+      {/* Animated agent icon */}
+      <div className="relative w-7 h-7 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping [animation-duration:2s]" />
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={stateIndex}
+            initial={{ scale: 0.5, opacity: 0, rotate: -20 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            exit={{ scale: 0.5, opacity: 0, rotate: 20 }}
+            transition={{ duration: 0.3 }}
+            className="relative text-base"
+          >
+            {state.icon}
+          </motion.span>
+        </AnimatePresence>
+      </div>
+      {/* Rotating label */}
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={stateIndex}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.25 }}
+          className="text-xs text-muted-foreground"
+        >
+          {state.label}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
 }
 
 function CategoryCard({
@@ -220,15 +276,10 @@ export function VendorResearchFeed({
         </div>
       </div>
 
-      {/* Status pill */}
-      {isActive && statusText && (
+      {/* Animated AI research agent */}
+      {isActive && (
         <div className="px-5 pb-3">
-          <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-3 py-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            <span className="text-xs text-muted-foreground font-mono truncate max-w-[300px]">
-              {statusText}
-            </span>
-          </div>
+          <ResearchAgent />
         </div>
       )}
 
