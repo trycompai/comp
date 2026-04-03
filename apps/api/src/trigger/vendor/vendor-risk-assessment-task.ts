@@ -815,13 +815,13 @@ export const vendorRiskAssessmentTask: Task<
     const coreStartedAt = Date.now();
     const newsStartedAt = Date.now();
 
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => setTimeout(resolve, ms));
+
     // Run core research and news research in parallel
     const [coreResult, newsResult] = await Promise.allSettled([
       (async () => {
-        pushMessage(
-          'Checking trust portal and security pages...',
-          'searching',
-        );
+        pushMessage('Crawling vendor website...', 'searching');
         logger.info('🔍 Core research started', {
           vendor: payload.vendorName,
           website: payload.vendorWebsite,
@@ -833,7 +833,9 @@ export const vendorRiskAssessmentTask: Task<
         const durationMs = Date.now() - coreStartedAt;
         if (result) {
           const certCount = result.certifications?.length ?? 0;
-          const verifiedCount = result.certifications?.filter(c => c.status === 'verified').length ?? 0;
+          const verifiedCount =
+            result.certifications?.filter((c) => c.status === 'verified')
+              .length ?? 0;
           const linkCount = result.links?.length ?? 0;
           logger.info('✅ Core research completed', {
             vendor: payload.vendorName,
@@ -844,20 +846,32 @@ export const vendorRiskAssessmentTask: Task<
             hasAssessment: Boolean(result.securityAssessment),
             riskLevel: result.riskLevel ?? 'none',
           });
+
+          // Report each finding individually with delays so the UI
+          // shows them appearing one by one in real time
           if (result.certifications?.length) {
+            pushMessage('Extracting certifications...', 'analyzing');
+            await sleep(600);
             for (const cert of result.certifications) {
               if (cert.status === 'verified') {
-                pushMessage(`Found ${cert.type} certification`, 'found');
+                pushMessage(`Found ${cert.type}`, 'found');
+                await sleep(700);
               }
             }
           }
+
           if (result.links?.length) {
-            pushMessage(
-              `Found ${result.links.length} security/legal links`,
-              'found',
-            );
+            pushMessage('Extracting security and legal links...', 'analyzing');
+            await sleep(500);
+            for (const link of result.links) {
+              pushMessage(`Found ${link.label}`, 'found');
+              await sleep(500);
+            }
           }
+
           if (result.securityAssessment) {
+            pushMessage('Generating security assessment...', 'analyzing');
+            await sleep(800);
             pushMessage('Security assessment complete', 'found');
           }
         } else {
@@ -869,7 +883,6 @@ export const vendorRiskAssessmentTask: Task<
         return result;
       })(),
       (async () => {
-        pushMessage('Searching for recent news...', 'searching');
         logger.info('📰 News research started', {
           vendor: payload.vendorName,
           website: payload.vendorWebsite,
@@ -885,7 +898,13 @@ export const vendorRiskAssessmentTask: Task<
             durationMs,
             newsItems: result.length,
           });
-          pushMessage(`Found ${result.length} recent news items`, 'found');
+          // Stagger news reporting
+          pushMessage('Processing recent news...', 'analyzing');
+          await sleep(500);
+          for (const item of result) {
+            pushMessage(`Found: ${item.title}`, 'found');
+            await sleep(400);
+          }
         } else {
           logger.info('📰 News research returned no items', {
             vendor: payload.vendorName,
@@ -900,8 +919,10 @@ export const vendorRiskAssessmentTask: Task<
       vendor: payload.vendorName,
       coreStatus: coreResult.status,
       newsStatus: newsResult.status,
-      coreError: coreResult.status === 'rejected' ? String(coreResult.reason) : null,
-      newsError: newsResult.status === 'rejected' ? String(newsResult.reason) : null,
+      coreError:
+        coreResult.status === 'rejected' ? String(coreResult.reason) : null,
+      newsError:
+        newsResult.status === 'rejected' ? String(newsResult.reason) : null,
     });
 
     // --- Process core results ---
