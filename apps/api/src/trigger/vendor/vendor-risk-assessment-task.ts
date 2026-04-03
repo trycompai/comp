@@ -851,27 +851,27 @@ export const vendorRiskAssessmentTask: Task<
           // shows them appearing one by one in real time
           if (result.certifications?.length) {
             pushMessage('Extracting certifications...', 'analyzing');
-            await sleep(600);
+            await sleep(300);
             for (const cert of result.certifications) {
               if (cert.status === 'verified') {
                 pushMessage(`Found ${cert.type}`, 'found');
-                await sleep(700);
+                await sleep(250);
               }
             }
           }
 
           if (result.links?.length) {
             pushMessage('Extracting security and legal links...', 'analyzing');
-            await sleep(500);
+            await sleep(300);
             for (const link of result.links) {
               pushMessage(`Found ${link.label}`, 'found');
-              await sleep(500);
+              await sleep(200);
             }
           }
 
           if (result.securityAssessment) {
             pushMessage('Generating security assessment...', 'analyzing');
-            await sleep(800);
+            await sleep(400);
             pushMessage('Security assessment complete', 'found');
           }
         } else {
@@ -900,10 +900,10 @@ export const vendorRiskAssessmentTask: Task<
           });
           // Stagger news reporting
           pushMessage('Processing recent news...', 'analyzing');
-          await sleep(500);
+          await sleep(200);
           for (const item of result) {
             pushMessage(`Found: ${item.title}`, 'found');
-            await sleep(400);
+            await sleep(150);
           }
         } else {
           logger.info('📰 News research returned no items', {

@@ -141,24 +141,21 @@ function RadarVisualization({
         className="absolute inset-0"
         style={{ animation: 'radar-sweep 2.5s linear infinite' }}
       >
-        {/* The main sweep line */}
+        {/* The main sweep line — uses Tailwind classes for DS color compatibility */}
         <div
-          className="absolute left-1/2 bottom-1/2 origin-bottom -ml-px"
-          style={{
-            width: 2,
-            height: half,
-            background: `linear-gradient(to top, hsl(var(--color-primary) / 0.8), hsl(var(--color-primary) / 0.2), transparent)`,
-          }}
+          className="absolute left-1/2 bottom-1/2 origin-bottom -ml-px w-[2px] bg-gradient-to-t from-primary/80 via-primary/30 to-transparent"
+          style={{ height: half }}
         />
-        {/* Trail/cone behind the sweep */}
+        {/* Trail behind sweep */}
         <div
-          className="absolute origin-bottom-left"
+          className="absolute bg-primary/10"
           style={{
             left: '50%',
             bottom: '50%',
             width: half,
             height: half,
-            background: `conic-gradient(from -15deg, hsl(var(--color-primary) / 0.15) 0deg, transparent 40deg)`,
+            transformOrigin: 'bottom left',
+            clipPath: 'polygon(0% 100%, 100% 0%, 40% 100%)',
           }}
         />
       </div>
@@ -172,10 +169,9 @@ function RadarVisualization({
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.4 }}
-              className="absolute w-[7px] h-[7px] rounded-full bg-success animate-pulse"
+              className="absolute w-[7px] h-[7px] rounded-full bg-success animate-pulse shadow-[0_0_8px_theme(colors.success)]"
               style={{
                 ...BLIP_POSITIONS[i],
-                boxShadow: '0 0 8px hsl(var(--color-success) / 0.5)',
                 animationDelay: `${i * 300}ms`,
               }}
             />
@@ -270,14 +266,7 @@ export function VendorResearchFeed({
     <div className="rounded-xl border border-border overflow-hidden bg-gradient-to-b from-card to-card/80 shadow-lg">
       {/* Shimmer bar */}
       {isActive && (
-        <div
-          className="h-[2px] animate-[shimmer-bar_3s_ease-in-out_infinite]"
-          style={{
-            background:
-              'linear-gradient(90deg, transparent 0%, hsl(var(--color-primary) / 0.5) 30%, hsl(var(--color-success) / 0.5) 70%, transparent 100%)',
-            backgroundSize: '200% 100%',
-          }}
-        />
+        <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-[shimmer-bar_3s_ease-in-out_infinite] bg-[length:200%_100%]" />
       )}
 
       {/* Header */}
