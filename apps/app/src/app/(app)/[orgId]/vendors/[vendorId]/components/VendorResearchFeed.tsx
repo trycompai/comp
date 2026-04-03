@@ -137,7 +137,10 @@ function RadarVisualization({
       <div className="absolute w-px h-full bg-primary/[0.07]" />
 
       {/* Sonar sweep — visible line + gradient trail */}
-      <div className="absolute inset-0 animate-[spin_2.5s_linear_infinite]">
+      <div
+        className="absolute inset-0"
+        style={{ animation: 'radar-sweep 2.5s linear infinite' }}
+      >
         {/* The main sweep line */}
         <div
           className="absolute left-1/2 bottom-1/2 origin-bottom -ml-px"
@@ -155,7 +158,7 @@ function RadarVisualization({
             bottom: '50%',
             width: half,
             height: half,
-            background: `conic-gradient(from -15deg, hsl(var(--color-primary) / 0.12) 0deg, transparent 40deg)`,
+            background: `conic-gradient(from -15deg, hsl(var(--color-primary) / 0.15) 0deg, transparent 40deg)`,
           }}
         />
       </div>
@@ -169,7 +172,7 @@ function RadarVisualization({
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.4 }}
-              className="absolute w-[7px] h-[7px] rounded-full bg-success animate-[pulse_2s_ease-in-out_infinite]"
+              className="absolute w-[7px] h-[7px] rounded-full bg-success animate-pulse"
               style={{
                 ...BLIP_POSITIONS[i],
                 boxShadow: '0 0 8px hsl(var(--color-success) / 0.5)',

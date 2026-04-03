@@ -123,6 +123,15 @@ body {
   }
 }
 
+@keyframes radar-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .thinking-text {
   background: linear-gradient(
     90deg,
