@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@trycompai/design-system';
+import { cn } from '@trycompai/ui/cn';
 import { Textarea } from '@trycompai/ui/textarea';
 import {
   Select,
@@ -21,6 +22,24 @@ import {
 import { X, Loader2, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSOADocument } from '../../hooks/useSOADocument';
+
+/** Matches policy table StatusIndicator: color swatch + label in foreground (black) text. */
+function ApplicableReadOnlyDisplay({ isApplicable }: { isApplicable: boolean | null }) {
+  const swatchClass =
+    isApplicable === true
+      ? 'bg-primary'
+      : isApplicable === false
+        ? 'bg-red-600 dark:bg-red-400'
+        : 'bg-gray-400 dark:bg-gray-500';
+  const label = isApplicable === true ? 'Yes' : isApplicable === false ? 'No' : '\u2014';
+
+  return (
+    <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+      <div className={cn('size-2.5 shrink-0 rounded-none', swatchClass)} />
+      <span>{label}</span>
+    </div>
+  );
+}
 
 interface EditableSOAFieldsProps {
   documentId: string;
@@ -54,14 +73,6 @@ export function EditableSOAFields({
   const justificationTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [isJustificationDialogOpen, setJustificationDialogOpen] = useState(false);
   const dialogSavedRef = useRef(false);
-  const badgeBaseClasses =
-    'inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium tracking-wide w-[3rem]';
-  const badgeClasses =
-    isApplicable === true
-      ? `${badgeBaseClasses} bg-primary text-primary-foreground border-primary/70 shadow-sm shadow-primary/40`
-      : isApplicable === false
-        ? `${badgeBaseClasses} bg-destructive text-destructive-foreground border-destructive/70 shadow-sm shadow-destructive/40`
-        : `${badgeBaseClasses} bg-muted text-muted-foreground border-transparent`;
 
   useEffect(() => {
     setIsApplicable(initialIsApplicable);
@@ -186,9 +197,7 @@ export function EditableSOAFields({
     // Display mode
     return (
       <div className="flex w-full flex-col items-center gap-2 text-center">
-        <span className={`${badgeClasses} uppercase`}>
-          {isApplicable === true ? 'YES' : isApplicable === false ? 'NO' : '\u2014'}
-        </span>
+        <ApplicableReadOnlyDisplay isApplicable={isApplicable} />
       </div>
     );
   }
@@ -196,9 +205,7 @@ export function EditableSOAFields({
   if (!isEditing) {
     return (
       <div className="group relative flex w-full items-center justify-center">
-        <span className={`${badgeClasses} uppercase`}>
-          {isApplicable === true ? 'YES' : isApplicable === false ? 'NO' : '\u2014'}
-        </span>
+        <ApplicableReadOnlyDisplay isApplicable={isApplicable} />
         <button
           type="button"
           onClick={handleEditClick}
