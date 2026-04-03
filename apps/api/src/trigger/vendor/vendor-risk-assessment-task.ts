@@ -361,7 +361,9 @@ function mapCertificationToBadgeType(
 }
 
 /**
- * Extract compliance badges from risk assessment data
+ * Extract compliance badges from risk assessment data.
+ * Passes through ALL verified certifications — known types get normalized
+ * to a canonical slug, unknown types are kept as-is.
  */
 function extractComplianceBadges(
   data: Prisma.InputJsonValue,
@@ -375,18 +377,19 @@ function extractComplianceBadges(
       return null;
     }
 
-    const badges: Array<{ type: ComplianceBadgeType; verified: boolean }> = [];
-    const seenTypes = new Set<ComplianceBadgeType>();
+    const badges: Array<{ type: string; verified: boolean }> = [];
+    const seenTypes = new Set<string>();
 
     for (const cert of parsed.certifications) {
-      // Only include verified certifications
       if (cert.status !== 'verified') {
         continue;
       }
 
-      const badgeType = mapCertificationToBadgeType(cert.type);
-      if (badgeType && !seenTypes.has(badgeType)) {
-        seenTypes.add(badgeType);
+      // Normalize known types to canonical slugs, keep unknown as-is
+      const badgeType =
+        mapCertificationToBadgeType(cert.type) ?? cert.type.trim();
+      if (badgeType && !seenTypes.has(badgeType.toLowerCase())) {
+        seenTypes.add(badgeType.toLowerCase());
         badges.push({ type: badgeType, verified: true });
       }
     }

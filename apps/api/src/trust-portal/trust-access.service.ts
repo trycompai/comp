@@ -2496,16 +2496,20 @@ export class TrustAccessService {
       globalVendors.map((gv) => [gv.website, gv.riskAssessmentData]),
     );
 
-    // Add icon URLs to compliance badges and trust portal URL
+    // Enrich vendors with trust portal URL and compliance badges from GlobalVendors
     return vendors.map((vendor) => {
       // Default to original website URL
       let trustPortalUrl: string | null = vendor.website;
+      let badges = vendor.complianceBadges;
 
-      // Try to get trust portal URL from GlobalVendors riskAssessmentData
+      // Enrich from GlobalVendors riskAssessmentData
       if (vendor.website) {
         const riskData = globalVendorMap.get(vendor.website);
         if (riskData && typeof riskData === 'object' && riskData !== null) {
-          const links = (riskData as Record<string, unknown>).links;
+          const parsed = riskData as Record<string, unknown>;
+
+          // Extract trust portal URL
+          const links = parsed.links;
           if (Array.isArray(links) && links.length > 0) {
             const firstLink = links[0];
             if (
@@ -2517,16 +2521,72 @@ export class TrustAccessService {
               trustPortalUrl = firstLink.url;
             }
           }
+
+          // Extract compliance badges from riskAssessmentData when vendor record has none
+          if (!badges || !Array.isArray(badges) || badges.length === 0) {
+            badges = this.extractBadgesFromRiskData(parsed);
+          }
         }
       }
       return {
         ...vendor,
-        complianceBadges: this.formatComplianceBadgeLabels(
-          vendor.complianceBadges,
-        ),
+        complianceBadges: this.formatComplianceBadgeLabels(badges),
         trustPortalUrl,
       };
     });
+  }
+
+  /**
+   * Extract compliance badges from GlobalVendors riskAssessmentData certifications.
+   * Used as fallback when the vendor record has no complianceBadges synced yet.
+   */
+  private extractBadgesFromRiskData(
+    data: Record<string, unknown>,
+  ): Array<{ type: string; verified: boolean }> | null {
+    const certs = data.certifications;
+    if (!Array.isArray(certs)) return null;
+
+    const CERT_MAP: Record<string, string> = {
+      soc2: 'soc2',
+      'soc 2': 'soc2',
+      iso27001: 'iso27001',
+      'iso 27001': 'iso27001',
+      iso42001: 'iso42001',
+      'iso 42001': 'iso42001',
+      gdpr: 'gdpr',
+      hipaa: 'hipaa',
+      pcidss: 'pci_dss',
+      'pci dss': 'pci_dss',
+      pci_dss: 'pci_dss',
+      nen7510: 'nen7510',
+      'nen 7510': 'nen7510',
+      iso9001: 'iso9001',
+      'iso 9001': 'iso9001',
+    };
+
+    const badges: Array<{ type: string; verified: boolean }> = [];
+    const seen = new Set<string>();
+
+    for (const cert of certs) {
+      if (
+        !cert ||
+        typeof cert !== 'object' ||
+        cert.status !== 'verified' ||
+        typeof cert.type !== 'string'
+      )
+        continue;
+
+      const normalized = cert.type.toLowerCase().replace(/[^a-z0-9 _]/g, '');
+      // Use canonical slug for known certs, keep original type for unknown ones
+      const badgeType = CERT_MAP[normalized] ?? cert.type.trim();
+      const key = badgeType.toLowerCase();
+      if (badgeType && !seen.has(key)) {
+        seen.add(key);
+        badges.push({ type: badgeType, verified: true });
+      }
+    }
+
+    return badges.length > 0 ? badges : null;
   }
 
   /**
