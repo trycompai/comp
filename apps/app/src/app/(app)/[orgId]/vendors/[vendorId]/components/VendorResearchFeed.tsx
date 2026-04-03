@@ -137,30 +137,15 @@ function RadarVisualization({
       <div className="absolute w-px h-full bg-primary/[0.07]" />
 
       {/* Sonar sweep — SVG for pixel-perfect alignment */}
-      <svg
-        className="absolute inset-0 animate-spin text-foreground"
+      <div
+        className="absolute inset-0 animate-spin"
         style={{ animationDuration: '2.5s' }}
-        viewBox={`0 0 ${size} ${size}`}
-        width={size}
-        height={size}
       >
-        {/* Sweep line from center to edge */}
-        <line
-          x1={half}
-          y1={half}
-          x2={half}
-          y2={2}
-          stroke="currentColor"
-          strokeWidth="1"
-          opacity="0.5"
+        <div
+          className="absolute left-1/2 top-0 -translate-x-1/2 w-px bg-foreground/40"
+          style={{ height: half, top: 0 }}
         />
-        {/* Trail cone */}
-        <path
-          d={`M ${half} ${half} L ${half + half * 0.18} ${2} L ${half} ${2} Z`}
-          fill="currentColor"
-          opacity="0.08"
-        />
-      </svg>
+      </div>
 
       {/* Blips */}
       <AnimatePresence>
