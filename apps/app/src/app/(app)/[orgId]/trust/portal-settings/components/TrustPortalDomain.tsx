@@ -412,9 +412,13 @@ export function TrustPortalDomain({
                         </table>
 
                         <div className="space-y-4 p-4 lg:hidden">
-                          <div>
-                            <div className="mb-1 font-medium">Type:</div>
-                            <div>CNAME</div>
+                          <div className="flex items-center gap-2">
+                            {isCnameVerified ? (
+                              <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />
+                            ) : (
+                              <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                            )}
+                            <span className="font-medium">CNAME</span>
                           </div>
                           <div>
                             <div className="mb-1 font-medium">Name:</div>
@@ -447,9 +451,13 @@ export function TrustPortalDomain({
                             </div>
                           </div>
                           <div className="border-b" />
-                          <div>
-                            <div className="mb-1 font-medium">Type:</div>
-                            <div>TXT</div>
+                          <div className="flex items-center gap-2">
+                            {isTxtVerified ? (
+                              <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />
+                            ) : (
+                              <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                            )}
+                            <span className="font-medium">TXT</span>
                           </div>
                           <div>
                             <div className="mb-1 font-medium">Name:</div>
@@ -490,9 +498,13 @@ export function TrustPortalDomain({
                           {needsVercelTxt && (
                             <>
                               <div className="border-b" />
-                              <div>
-                                <div className="mb-1 font-medium">Type:</div>
-                                <div>TXT</div>
+                              <div className="flex items-center gap-2">
+                                {isVercelTxtVerified ? (
+                                  <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />
+                                ) : (
+                                  <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                                )}
+                                <span className="font-medium">TXT (_vercel)</span>
                               </div>
                               <div>
                                 <div className="mb-1 font-medium">Name:</div>
