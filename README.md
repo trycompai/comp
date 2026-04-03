@@ -1,361 +1,192 @@
-<!-- PROJECT LOGO -->
-<p align="center">
-  <a href="https://github.com/trycompai/comp">
-   <img src="https://assets.trycomp.ai/logo.png" alt="Logo" width="10%">
+<div align="center">
+  <a href="https://trycomp.ai">
+    <img src="https://assets.trycomp.ai/logo.png" width="80" alt="Comp AI logo" />
   </a>
+  <h1>Comp AI</h1>
+  <p><strong>The agentic compliance platform.</strong></p>
+  <p>Get SOC 2 and ISO 27001 audit-ready in record time, backed by enterprise-grade cybersecurity.</p>
 
-  <h3 align="center">Comp AI</h3>
-
-  <p align="center">
-    The open-source compliance platform.
-    <br />
-    <a href="https://trycomp.ai"><strong>Learn more »</strong></a>
-    <br />
-    <br />
-    <a href="https://discord.gg/compai">Discord</a>
-    ·
-    <a href="https://trycomp.ai">Website</a>
-    ·
-    <a href="https://trycomp.ai/docs">Documentation</a>
-    ·
-    <a href="https://github.com/trycompai/comp/issues">Issues</a>
-    ·
-    <a href="https://roadmap.trycomp.ai/roadmap">Roadmap</a>
+  <p>
+    <a href="https://www.producthunt.com/products/comp-ai-get-soc-2-iso-27001-gdpr/launches/comp-ai"><img src="https://img.shields.io/badge/Product%20Hunt-%231%20Product%20of%20the%20Day-DA552E" alt="Product Hunt" /></a>
+    <a href="https://github.com/trycompai/comp/stargazers"><img src="https://img.shields.io/github/stars/trycompai/comp" alt="GitHub Stars" /></a>
+    <a href="https://github.com/trycompai/comp/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License" /></a>
+    <a href="https://github.com/trycompai/comp/pulse"><img src="https://img.shields.io/github/commit-activity/m/trycompai/comp" alt="Commits per month" /></a>
   </p>
-</p>
 
-<p align="center">
-   <a href="https://www.producthunt.com/products/comp-ai-get-soc-2-iso-27001-gdpr/launches/comp-ai"><img src="https://img.shields.io/badge/Product%20Hunt-%231%20Product%20of%20the%Day%23DA552E" alt="Product Hunt"></a>
-   <a href="https://github.com/trycompai/comp/stargazers"><img src="https://img.shields.io/github/stars/trycompai/comp" alt="Github Stars"></a>
-   <a href="https://github.com/trycompai/comp/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License"></a>
-   <a href="https://github.com/trycompai/comp/pulse"><img src="https://img.shields.io/github/commit-activity/m/trycompai/comp" alt="Commits-per-month"></a>
-   <a href="https://github.com/trycompai/comp/issues"><img src="https://img.shields.io/badge/Help%20Wanted-Contribute-blue"></a>
-</p>
+  <p>
+    <a href="https://trycomp.ai">Website</a> ·
+    <a href="https://trycomp.ai/docs">Docs</a> ·
+    <a href="https://discord.gg/compai">Discord</a> ·
+    <a href="https://roadmap.trycomp.ai/roadmap">Roadmap</a> ·
+    <a href="https://github.com/trycompai/comp/issues">Issues</a>
+  </p>
+</div>
 
-## About
+## Overview
 
-### AI that handles compliance for you in hours.
+Comp AI automates compliance end-to-end: AI agents collect evidence from 500+ integrations, generate policies from your business context, and continuously monitor your security posture — all from a single, open-source platform.
 
-Comp AI is the fastest way to get compliant with frameworks like SOC 2, ISO 27001, HIPAA and GDPR. Comp AI automates evidence collection, policy management, and control implementation while keeping you in control of your data and infrastructure.
+- `apps/app` — main web app (Next.js 16, port `3000`)
+- `apps/api` — backend API (NestJS, port `3001`)
+- `apps/portal` — customer portal (Next.js 16, port `3002`)
+- `apps/docs` — documentation site
 
-## Recognition
+## Contents
 
-#### [ProductHunt](https://www.producthunt.com/posts/comp-ai)
+- [Quick start](#quick-start)
+- [Monorepo layout](#monorepo-layout)
+- [Run commands](#run-commands)
+- [Environment setup](#environment-setup)
+- [Database](#database)
+- [Package publishing](#package-publishing)
+- [Contributing](#contributing)
+- [License](#license)
 
-<a href="https://www.producthunt.com/posts/comp-ai?embed=true&utm_source=badge-top-post-badge&utm_medium=badge&utm_souce=badge-comp&#0045;ai" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=944698&theme=light&period=daily&t=1745500415958" alt="Comp&#0032;AI - The&#0032;open&#0032;source&#0032;Vanta&#0032;&#0038;&#0032;Drata&#0032;alternative | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-
-#### [Vercel](https://vercel.com/)
-
-<a href="https://vercel.com/oss">
-  <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />
-</a>
-
-### Built With
-
-- [Next.js](https://nextjs.org/?ref=trycomp.ai)
-- [Trigger.dev](https://trigger.dev/?ref=trycomp.ai)
-- [Prisma](https://prisma.io/?ref=trycomp.ai)
-- [Tailwind CSS](https://tailwindcss.com/?ref=trycomp.ai)
-- [Upstash](https://upstash.com/?ref=trycomp.ai)
-- [Vercel](https://vercel.com/?ref=trycomp.ai)
-
-## Contact us
-
-Contact our founders at hello@trycomp.ai to learn more about how we can help you achieve compliance.
-
-## Stay Up-to-Date
-
-Get access to the cloud hosted version of [Comp AI](https://trycomp.ai).
-
-## Getting Started
-
-To get a local copy up and running, please follow these simple steps.
+## Quick start
 
 ### Prerequisites
 
-Here is what you need to be able to run Comp AI.
+- Node.js `>=20`
+- Bun `>=1.1.36`
+- Docker (for Postgres)
 
-- Node.js (Version: >=20.x)
-- Bun (Version: >=1.1.36)
-- Postgres (Version: >=15.x)
+### Bootstrap
 
-## Development
+```bash
+git clone https://github.com/trycompai/comp.git
+cd comp
+bun install
 
-To get the project working locally with all integrations, follow these extended development steps
-
-### Setup
-
-## Add environment variables and fill them out with your credentials
-
-```sh
+# Copy env files
 cp apps/app/.env.example apps/app/.env
 cp apps/portal/.env.example apps/portal/.env
 cp packages/db/.env.example packages/db/.env
-```
 
-## Get code running locally
-
-1. Clone the repo
-
-```sh
-git clone https://github.com/trycompai/comp.git
-```
-
-2. Navigate to the project directory
-
-```sh
-cd comp
-```
-
-3. Install dependencies using Bun
-
-```sh
-bun install
-```
-
-4. Get Database Running
-
-```sh
+# Start database
 cd packages/db
-bun run docker:up # Spin up docker container
-bun run db:migrate # Run migrations
-```
+bun run docker:up
+bun run db:migrate
+cd ../..
 
-5. Generate Prisma Types for each app
-
-```sh
-cd apps/app
+# Generate Prisma clients
 bun run db:generate
-cd ../portal
-bun run db:generate
-cd ../api
-bun run db:generate
-```
 
-6. Run all apps in parallel from the root directory
-
-```sh
+# Start all apps
 bun run dev
 ```
 
----
+### Local endpoints
 
-### Environment Setup
+- App: `http://localhost:3000`
+- API: `http://localhost:3001`
+- Portal: `http://localhost:3002`
 
-Create the following `.env` files and fill them out with your credentials
+## Monorepo layout
 
-- `comp/apps/app/.env`
-- `comp/apps/portal/.env`
-- `comp/packages/db/.env`
+```text
+apps/
+  app/               Next.js main application
+  api/               NestJS backend API
+  portal/            Next.js customer portal
+  docs/              Documentation site
+  device-agent/      Electron desktop agent
 
-You can copy from the `.env.example` files:
+packages/
+  db/                Prisma schema, client, migrations
+  ui/                Shared component library
+  email/             Email templates (React Email)
+  kv/                Key-value store (Upstash Redis)
+  analytics/         Analytics utilities
+  auth/              Authentication (Better Auth)
+  integrations/      Third-party integrations
+  integration-platform/  Integration platform core
+  utils/             Shared utilities
+```
 
-### Linux / macOS
+## Run commands
 
-```sh
+```bash
+# Development (all apps)
+bun run dev
+
+# Generate Prisma clients (required after schema changes or pulling)
+bun run db:generate
+
+# Build all
+bun run build
+
+# Lint and type check
+bun run lint
+bun run check-types
+
+# Tests
+bun run test
+```
+
+## Environment setup
+
+Create `.env` files from the examples:
+
+```bash
 cp apps/app/.env.example apps/app/.env
 cp apps/portal/.env.example apps/portal/.env
 cp packages/db/.env.example packages/db/.env
 ```
 
-### Windows (Command Prompt)
-
-```cmd
-copy apps\app\.env.example apps\app\.env
-copy apps\portal\.env.example apps\portal\.env
-copy packages\db\.env.example packages\db\.env
-```
-
-### Windows (PowerShell)
-
-```powershell
-Copy-Item apps\app\.env.example -Destination apps\app\.env
-Copy-Item apps\portal\.env.example -Destination apps\portal\.env
-Copy-Item packages\db\.env.example -Destination packages\db\.env
-```
-
-Additionally, ensure the following required environment variables are added to `.env` in `comp/apps/app/.env`:
+Required variables for `apps/app/.env`:
 
 ```env
-AUTH_SECRET=""                  # Use `openssl rand -base64 32` to generate
-DATABASE_URL="postgresql://user:password@host:port/database"
-RESEND_API_KEY="" # Resend (https://resend.com/api-keys) - Resend Dashboard -> API Keys
+AUTH_SECRET=""                    # openssl rand -base64 32
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/comp"
+RESEND_API_KEY=""                # From https://resend.com/api-keys
 NEXT_PUBLIC_PORTAL_URL="http://localhost:3002"
-REVALIDATION_SECRET=""         # Use `openssl rand -base64 32` to generate
+REVALIDATION_SECRET=""           # openssl rand -base64 32
 ```
 
-> ✅ Make sure you have all of these variables in your `.env` file.
-> If you're copying from `.env.example`, it might be missing the last two (`NEXT_PUBLIC_PORTAL_URL` and `REVALIDATION_SECRET`), so be sure to add them manually.
+### Third-party services
 
-Some environment variables may not load correctly from `.env` — in such cases, **hard-code** the values directly in the relevant files (see Hardcoding section below).
+- **Google OAuth** — [Cloud Console](https://console.cloud.google.com/auth/clients). Add redirect URIs for `localhost:3000` and `localhost:3002`.
+- **Trigger.dev** — [cloud.trigger.dev](https://cloud.trigger.dev). Create a project and set the project ID in `apps/app/trigger.config.ts`.
+- **Upstash Redis** — [console.upstash.com](https://console.upstash.com). Create a Redis database and add the URL/token to `.env`.
 
----
+## Database
 
-### Cloud & Auth Configuration
+```bash
+cd packages/db
 
-#### 1. Trigger.dev
+# Start Postgres (Docker)
+bun run docker:up
 
-- Create an account on [https://cloud.trigger.dev](https://cloud.trigger.dev)
-- Create a project and copy the Project ID
-- In `comp/apps/app/trigger.config.ts`, set:
-  ```ts
-  project: 'proj_****az***ywb**ob*';
-  ```
+# Run migrations
+bun run db:migrate
 
-#### 2. Google OAuth
+# Generate Prisma client
+bun run db:generate
 
-- Go to [Google Cloud OAuth Console](https://console.cloud.google.com/auth/clients)
-- Create an OAuth client:
-  - Type: Web Application
-  - Name: `comp_app` # You can choose a different name if you prefer!
-- Add these **Authorized Redirect URIs**:
+# Push schema (no migration)
+bun run db:push
 
-  ```
-  http://localhost
-  http://localhost:3000
-  http://localhost:3002
-  http://localhost:3000/api/auth/callback/google
-  http://localhost:3002/api/auth/callback/google
-  http://localhost:3000/auth
-  http://localhost:3002/auth
-  ```
+# Seed data
+bun run db:seed
 
-- After creating the app, copy the `GOOGLE_ID` and `GOOGLE_SECRET`
-  - Add them to your `.env` files
-  - If that doesn’t work, hard-code them in:
-    ```
-    comp/apps/portal/src/app/lib/auth.ts
-    ```
+# Open Prisma Studio
+bun run db:studio
 
-#### 3. Redis (Upstash)
-
-- Go to [https://console.upstash.com](https://console.upstash.com)
-- Create a Redis database
-- Copy the **Redis URL** and **TOKEN**
-- Add them to your `.env` file, or hard-code them if the environment variables are not being recognized in:
-  ```
-  comp/packages/kv/src/index.ts
-  ```
-
----
-
-### Database Setup
-
-Start and initialize the PostgreSQL database using Docker:
-
-1. Start the database:
-
-   ```sh
-   cd packages/db
-   bun docker:up
-   ```
-
-2. Default credentials:
-   - Database name: `comp`
-   - Username: `postgres`
-   - Password: `postgres`
-
-3. To change the default password:
-
-   ```sql
-   ALTER USER postgres WITH PASSWORD 'new_password';
-   ```
-
-4. If you encounter the following error:
-
-   ```
-   HINT: No function matches the given name and argument types...
-   ```
-
-   Run the fix:
-
-   ```sh
-   psql "postgresql://postgres:<your_password>@localhost:5432/comp" -f ./packages/db/prisma/functionDefinition.sql
-   ```
-
-   Expected output: `CREATE FUNCTION`
-
-   > 💡 `comp` is the database name. Make sure to use the correct **port** and **database name** for your setup.
-
-5. Apply schema and seed:
-
-```sh
- # Generate Prisma client
- bun db:generate
-
- # Push the schema to the database
- bun db:push
-
- # Optional: Seed the database with initial data
- bun db:seed
+# Stop / remove database
+bun run docker:down
+bun run docker:clean
 ```
 
-Other useful database commands:
+Default credentials: `postgres:postgres@localhost:5432/comp`
 
-```sh
-# Open Prisma Studio to view/edit data
-bun db:studio
+## Package publishing
 
-# Run database migrations
-bun db:migrate
+Published to npm via semantic-release on merges to `release`:
 
-# Stop the database container
-bun docker:down
-
-# Remove the database container and volume
-bun docker:clean
-```
-
----
-
-### Start Development
-
-Once everything is configured:
-
-```sh
-bun run dev
-```
-
-Or use the Turbo repo script:
-
-```sh
-turbo dev
-```
-
-> 💡 Make sure you have Turbo installed. If not, you can install it using Bun:
-
-```sh
-bun add -g turbo
-```
-
-🎉 Yay! You now have a working local instance of Comp AI! 🚀
-
-## Deployment
-
-### Docker
-
-Steps to deploy Comp AI on Docker are coming soon.
-
-### Vercel
-
-Steps to deploy Comp AI on Vercel are coming soon.
-
-## 📦 Package Publishing
-
-This repository uses semantic-release to automatically publish packages to npm when merging to the `release` branch. The following packages are published:
-
-- `@trycompai/db` - Database utilities with Prisma client
-- `@trycompai/email` - Email templates and components
-- `@trycompai/kv` - Key-value store utilities using Upstash Redis
-- `@trycompai/ui` - UI component library with Tailwind CSS
-
-### Setup
-
-1. **NPM Token**: Add your npm token as `NPM_TOKEN` in GitHub repository secrets
-2. **Release Branch**: Create and merge PRs into the `release` branch to trigger publishing
-3. **Versioning**: Uses conventional commits for automatic version bumping
-
-### Usage
+- `@trycompai/db` — Database utilities
+- `@trycompai/email` — Email templates
+- `@trycompai/kv` — Key-value store
+- `@trycompai/ui` — Component library
 
 ```bash
 # Install a published package
@@ -363,37 +194,24 @@ npm install @trycompai/ui
 
 # Use in your project
 import { Button } from '@trycompai/ui/button'
-import { client } from '@trycompai/kv'
 ```
 
-### Development
+## Recognition
 
-```bash
-# Build all packages
-bun run build
+<a href="https://www.producthunt.com/posts/comp-ai?embed=true&utm_source=badge-top-post-badge&utm_medium=badge&utm_souce=badge-comp&#0045;ai" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=944698&theme=light&period=daily&t=1745500415958" alt="Comp AI — #1 Product of the Day" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
-# Build specific package
-bun run -F @trycompai/ui build
+<a href="https://vercel.com/oss"><img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" /></a>
 
-# Test packages locally
-bun run release:packages --dry-run
-```
-
-## Contributors
+## Contributing
 
 <a href="https://github.com/trycompai/comp/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=trycompai/comp" />
 </a>
 
-## Repo Activity
-
-![Alt](https://repobeats.axiom.co/api/embed/1371c2fe20e274ff1e0e8d4ca225455dea609cb9.svg 'Repobeats analytics image')
-
-<!-- LICENSE -->
+![Repo activity](https://repobeats.axiom.co/api/embed/1371c2fe20e274ff1e0e8d4ca225455dea609cb9.svg 'Repobeats analytics image')
 
 ## License
 
-Comp AI, Inc. is a commercial open source company, which means some parts of this open source repository require a commercial license. The concept is called "Open Core" where the core technology (99%) is fully open source, licensed under [AGPLv3](https://opensource.org/license/agpl-v3) and the last 1% is covered under a commercial license (["/ee" Enterprise Edition"]).
+Comp AI, Inc. is a commercial open source company. The core technology (99%) is licensed under [AGPLv3](https://opensource.org/license/agpl-v3). Enterprise features under `/ee` require a commercial license. See [LICENSE](https://github.com/trycompai/comp/blob/main/LICENSE) for details.
 
-> [!TIP]
-> We work closely with the community and always invite feedback about what should be open and what is fine to be commercial. This list is not set and stone and we have moved things from commercial to open in the past. Please open a [discussion](https://github.com/trycompai/comp/discussions) if you feel like something is wrong.
+Open a [discussion](https://github.com/trycompai/comp/discussions) if you have questions about what's open vs commercial.
