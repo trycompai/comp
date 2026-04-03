@@ -13,7 +13,7 @@ import {
 import type { EvidenceFormAnalysisResult } from '@/app/api/evidence-forms/analyze/route';
 import { FileUploader } from '@/components/file-uploader';
 import { api } from '@/lib/api-client';
-import { meetingFields } from '@comp/company';
+import { meetingFields } from '@trycompai/company';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
@@ -184,7 +184,6 @@ export function CompanySubmissionWizard({
           fileType: file.type || 'application/octet-stream',
           fileData,
         },
-        organizationId,
       );
 
       if (response.error || !response.data) {
@@ -405,7 +404,6 @@ export function CompanySubmissionWizard({
     const response = await api.post(
       `/v1/evidence-forms/${submitFormType}/submissions`,
       payload,
-      organizationId,
     );
 
     if (response.error) {

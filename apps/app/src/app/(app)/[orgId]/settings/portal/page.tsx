@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@db/server';
 import type { Metadata } from 'next';
 import { PortalSettings } from './portal-settings';
 

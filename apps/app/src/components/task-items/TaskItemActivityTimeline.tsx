@@ -1,12 +1,13 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Circle, Loader2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { CircleFilled } from '@trycompai/design-system/icons';
+import { Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskItem } from '@/hooks/use-task-items';
 import { useTaskItemActivity } from './hooks/use-task-item-activity';
 import { useEffect, useState, useMemo } from 'react';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 
 interface TaskItemActivityTimelineProps {
   taskItem: TaskItem;
@@ -96,7 +97,7 @@ export function TaskItemActivityTimeline({ taskItem, onActivityLoaded }: TaskIte
               
               <div className="flex items-center gap-3 relative">
                 <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center relative z-10">
-                  <Circle className="h-2 w-2 text-muted-foreground fill-current" />
+                  <CircleFilled className="h-2 w-2 text-muted-foreground" />
               </div>
                 <Button
                   variant="ghost"

@@ -37,15 +37,13 @@ jobs:
       - name: Build DB package
         working-directory: ./packages/db
         run: bun run build
-      - name: Copy schema to api and generate client
+      - name: Copy model files to api schema dir
         working-directory: ./apps/api
         run: |
-          mkdir -p prisma
-          cp ../../packages/db/dist/schema.prisma prisma/schema.prisma
-          bunx prisma generate
+          find ../../packages/db/prisma/schema -name '*.prisma' ! -name 'schema.prisma' -exec cp {} prisma/schema/ \;
       - name: 🚀 Deploy Trigger.dev
         working-directory: ./apps/api
         timeout-minutes: 20
         env:
           TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
-        run: bunx trigger.dev@4.0.6 deploy --env staging --log-level debug
+        run: bunx trigger.dev@4.4.3 deploy --env staging --log-level debug

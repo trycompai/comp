@@ -1,8 +1,8 @@
 'use client';
 
 import { useComments, useCommentWithAttachments } from '@/hooks/use-comments-api';
-import { useOrganizationMembers } from '@/hooks/use-organization-members';
-import { Button } from '@comp/ui/button';
+import { useMentionableMembers } from '@/hooks/use-mentionable-members';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,24 +10,26 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import type { CommentEntityType } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { Camera, FileIcon, Loader2, Paperclip, X } from 'lucide-react';
 import { useParams, usePathname } from 'next/navigation';
 import type React from 'react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { CommentRichTextField } from './CommentRichTextField';
 
 interface CommentFormProps {
   entityId: string;
   entityType: CommentEntityType;
+  /** Resource to check for mention filtering. Defaults to entityType. */
+  mentionResource?: string;
   /** Optional org override; otherwise uses `orgId` from URL params */
   organizationId?: string;
 }
 
-export function CommentForm({ entityId, entityType, organizationId }: CommentFormProps) {
+export function CommentForm({ entityId, entityType, mentionResource, organizationId }: CommentFormProps) {
   const [newComment, setNewComment] = useState<JSONContent | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,24 +54,7 @@ export function CommentForm({ entityId, entityType, organizationId }: CommentFor
     enabled: Boolean(resolvedOrgId),
   });
   const { createCommentWithFiles } = useCommentWithAttachments();
-  const { members } = useOrganizationMembers();
-
-  // Convert members to MentionUser format - only show admin/owner users
-  const mentionMembers = useMemo(() => {
-    if (!members) return [];
-    return members
-      .filter((member) => {
-        if (!member.role) return false;
-        const roles = member.role.split(',').map((r) => r.trim().toLowerCase());
-        return roles.includes('owner') || roles.includes('admin');
-      })
-      .map((member) => ({
-        id: member.user.id,
-        name: member.user.name || member.user.email || 'Unknown',
-        email: member.user.email || '',
-        image: member.user.image,
-      }));
-  }, [members]);
+  const { members: mentionMembers } = useMentionableMembers(mentionResource ?? entityType);
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
@@ -151,22 +136,17 @@ export function CommentForm({ entityId, entityType, organizationId }: CommentFor
 
   // Check if comment has content
   const hasContent = useCallback((content: JSONContent | null): boolean => {
-    if (!content || !content.content) return false;
+    if (!content) return false;
 
-    // Check if there's any text content
-    const hasText = content.content.some((node) => {
-      if (node.type === 'paragraph' && node.content) {
-        return node.content.some((child) => {
-          if (child.type === 'text' && child.text?.trim()) return true;
-          if (child.type === 'mention') return true; // Mentions count as content
-          return false;
-        });
-      }
+    const hasContentInNode = (node: JSONContent): boolean => {
       if (node.type === 'mention') return true;
-      return false;
-    });
+      if (node.type === 'text' && node.text?.trim()) return true;
 
-    return hasText;
+      if (!node.content || node.content.length === 0) return false;
+      return node.content.some(hasContentInNode);
+    };
+
+    return hasContentInNode(content);
   }, []);
 
   const handleCommentSubmit = async () => {

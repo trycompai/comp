@@ -1,23 +1,27 @@
 import { TaskOverview } from '@/components/risks/tasks/task-overview';
-import { getUsers } from '@/hooks/use-users';
-import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { cache } from 'react';
+
 interface PageProps {
   params: Promise<{ riskId: string; taskId: string }>;
 }
 
 export default async function RiskPage({ params }: PageProps) {
   const { riskId, taskId } = await params;
-  const task = await getTask(riskId, taskId);
-  const users = await getUsers();
 
+  const [taskResult, peopleResult] = await Promise.all([
+    serverApi.get<any>(`/v1/tasks/${taskId}`),
+    serverApi.get<any>('/v1/people'),
+  ]);
+
+  const task = taskResult.data;
   if (!task) {
     redirect('/');
   }
+
+  // Extract users from people response (same shape as getUsers helper)
+  const users = (peopleResult.data?.data ?? []).map((p: any) => p.user);
 
   return (
     <div className="flex flex-col gap-4">
@@ -25,28 +29,6 @@ export default async function RiskPage({ params }: PageProps) {
     </div>
   );
 }
-
-const getTask = cache(async (riskId: string, taskId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session || !session.session.activeOrganizationId) {
-    redirect('/');
-  }
-
-  const task = await db.task.findUnique({
-    where: {
-      id: taskId,
-      organizationId: session.session.activeOrganizationId,
-    },
-    include: {
-      assignee: true,
-    },
-  });
-
-  return task;
-});
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

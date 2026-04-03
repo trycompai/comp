@@ -9,4 +9,5 @@ export interface UpdateOrganizationDto {
   fleetDmLabelId?: number;
   isFleetSetupCompleted?: boolean;
   primaryColor?: string;
+  advancedModeEnabled?: boolean;
 }

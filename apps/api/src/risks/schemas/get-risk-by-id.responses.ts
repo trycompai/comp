@@ -152,6 +152,23 @@ export const GET_RISK_BY_ID_RESPONSES: Record<number, ApiResponseOptions> = {
       },
     },
   },
+  403: {
+    status: 403,
+    description: 'Forbidden - User does not have permission to access this risk',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'You do not have access to view this risk',
+            },
+          },
+        },
+      },
+    },
+  },
   404: {
     status: 404,
     description: 'Risk not found',

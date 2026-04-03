@@ -1,8 +1,8 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@db/server';
 // Remove unused Role import if not needed elsewhere
-// import { Role } from "@comp/db/types";
+// import { Role } from "@trycompai/db/types";
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 // Adjust safe-action import for colocalized structure
@@ -36,7 +36,7 @@ export const revokeInvitation = authActionClient
       const currentUserMember = await db.member.findFirst({
         where: {
           organizationId: ctx.session.activeOrganizationId,
-          userId: ctx.user.id,
+          userId: ctx.user!.id,
           deactivated: false,
         },
       });
@@ -75,7 +75,7 @@ export const revokeInvitation = authActionClient
       });
 
       revalidatePath(`/${ctx.session.activeOrganizationId}/settings/users`);
-      revalidateTag(`user_${ctx.user.id}`, 'max');
+      revalidateTag(`user_${ctx.user!.id}`, 'max');
 
       return {
         success: true,

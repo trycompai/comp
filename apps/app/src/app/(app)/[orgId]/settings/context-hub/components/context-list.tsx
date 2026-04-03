@@ -1,6 +1,5 @@
 'use client';
 
-import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,8 +10,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@comp/ui/alert-dialog';
-import { Button } from '@comp/ui/button';
+} from '@trycompai/ui/alert-dialog';
+import { Button } from '@trycompai/ui/button';
 import {
   Card,
   CardContent,
@@ -20,7 +19,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@comp/ui/card';
+} from '@trycompai/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -28,19 +27,30 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import type { Context } from '@db';
 import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useContextEntries } from '../hooks/useContextEntries';
 import { ContextForm } from './context-form';
 
-export function ContextList({ entries, locale }: { entries: Context[]; locale: string }) {
+export function ContextList({ entries: initialEntries, locale }: { entries: Context[]; locale: string }) {
+  const { entries, deleteEntry } = useContextEntries({ initialData: initialEntries });
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
 
   const handleEditOpen = (id: string, open: boolean) => {
     setEditDialogOpen((prev) => ({ ...prev, [id]: open }));
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteEntry(id);
+      toast.success('Context entry deleted');
+    } catch {
+      toast.error('Something went wrong');
+    }
   };
 
   return (
@@ -136,20 +146,7 @@ export function ContextList({ entries, locale }: { entries: Context[]; locale: s
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={async () => {
-                                try {
-                                  const result = await deleteContextEntryAction({
-                                    id: entry.id,
-                                  });
-                                  if (result?.data?.success) {
-                                    toast.success('Context entry deleted');
-                                  }
-                                } catch (error) {
-                                  toast.error('Something went wrong');
-                                }
-                              }}
-                            >
+                            <AlertDialogAction onClick={() => handleDelete(entry.id)}>
                               Delete
                             </AlertDialogAction>
                           </AlertDialogFooter>

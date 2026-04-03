@@ -1,4 +1,3 @@
-import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin';
 import { withBotId } from 'botid/next/config';
 import type { NextConfig } from 'next';
 import path from 'path';
@@ -13,6 +12,7 @@ const config: NextConfig = {
   // Ensure Turbopack can import .md files as raw strings during dev
   turbopack: {
     root: workspaceRoot,
+    resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.json'],
     rules: {
       '*.md': {
         loaders: ['raw-loader'],
@@ -21,12 +21,7 @@ const config: NextConfig = {
     },
   },
 
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      // Very important, DO NOT REMOVE, it's needed for Prisma to work in the server bundle
-      config.plugins = [...config.plugins, new PrismaPlugin()];
-    }
-
+  webpack: (config) => {
     // Enable importing .md files as raw strings during webpack builds
     config.module = config.module || { rules: [] };
     config.module.rules = config.module.rules || [];
@@ -44,11 +39,12 @@ const config: NextConfig = {
       : '',
   reactStrictMode: false,
   transpilePackages: [
+    '@trycompai/auth',
     '@trycompai/db',
-    '@prisma/client',
     '@trycompai/design-system',
+    '@trycompai/ui',
     '@carbon/icons-react',
-    '@comp/company',
+    '@trycompai/company',
   ],
   images: {
     remotePatterns: [
@@ -58,6 +54,8 @@ const config: NextConfig = {
       },
     ],
   },
+
+  serverExternalPackages: ['jspdf'],
 
   experimental: {
     serverActions: {
@@ -87,6 +85,25 @@ const config: NextConfig = {
         output: 'standalone' as const,
       }
     : {}),
+
+  // Security headers
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'none'",
+          },
+        ],
+      },
+    ];
+  },
 
   // PostHog proxy for better tracking
   async rewrites() {

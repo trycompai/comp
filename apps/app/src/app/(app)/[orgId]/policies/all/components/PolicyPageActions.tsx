@@ -1,13 +1,14 @@
 'use client';
 
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
-import { downloadAllPolicies } from '@/lib/pdf-generator';
+import { api } from '@/lib/api-client';
 import { Add, Download } from '@carbon/icons-react';
 import type { Policy } from '@db';
 import { Button, HStack } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import { getLogsForPolicy } from '../../[policyId]/data';
+import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface PolicyPageActionsProps {
   policies: Policy[];
@@ -18,18 +19,28 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+  const { hasPermission } = usePermissions();
 
   const handleDownloadAll = async () => {
     setIsDownloadingAll(true);
     try {
-      const logsEntries = await Promise.all(
-        policies.map(async (policy) => {
-          const logs = await getLogsForPolicy(policy.id);
-          return [policy.id, logs] as const;
-        }),
+      const res = await api.get<{ downloadUrl: string; name: string; policyCount: number }>(
+        '/v1/policies/download-all',
       );
-      const policyLogs = Object.fromEntries(logsEntries);
-      downloadAllPolicies(policies, policyLogs);
+
+      if (res.error || !res.data?.downloadUrl) {
+        toast.error('Failed to generate PDF. Please try again.');
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = res.data.downloadUrl;
+      link.download = `${res.data.name ?? 'all-policies'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch {
+      toast.error('Failed to download policies.');
     } finally {
       setIsDownloadingAll(false);
     }
@@ -54,9 +65,11 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
             Download All
           </Button>
         )}
-        <Button iconLeft={<Add />} onClick={handleCreatePolicy}>
-          Create Policy
-        </Button>
+        {hasPermission('policy', 'create') && (
+          <Button iconLeft={<Add />} onClick={handleCreatePolicy}>
+            Create Policy
+          </Button>
+        )}
       </HStack>
       <CreatePolicySheet />
     </>

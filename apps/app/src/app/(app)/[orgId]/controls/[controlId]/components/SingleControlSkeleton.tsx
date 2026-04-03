@@ -1,6 +1,6 @@
-import { CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 
-import { Card } from '@comp/ui/card';
+import { Card } from '@trycompai/ui/card';
 
 export const SingleControlSkeleton = () => {
   return (

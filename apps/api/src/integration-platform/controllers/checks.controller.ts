@@ -7,13 +7,21 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import type { Prisma } from '@db';
+import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../../auth/permission.guard';
+import { RequirePermission } from '../../auth/require-permission.decorator';
+import { OrganizationId } from '../../auth/auth-context.decorator';
 import {
   getManifest,
   getAvailableChecks,
   runAllChecks,
-} from '@comp/integration-platform';
+} from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
+import { ConnectionService } from '../services/connection.service';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
@@ -24,6 +32,9 @@ interface RunChecksDto {
 }
 
 @Controller({ path: 'integrations/checks', version: '1' })
+@ApiTags('Integrations')
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@ApiSecurity('apikey')
 export class ChecksController {
   private readonly logger = new Logger(ChecksController.name);
 
@@ -32,12 +43,14 @@ export class ChecksController {
     private readonly providerRepository: ProviderRepository,
     private readonly credentialVaultService: CredentialVaultService,
     private readonly checkRunRepository: CheckRunRepository,
+    private readonly connectionService: ConnectionService,
   ) {}
 
   /**
    * List available checks for a provider
    */
   @Get('providers/:providerSlug')
+  @RequirePermission('integration', 'read')
   async listProviderChecks(@Param('providerSlug') providerSlug: string) {
     const manifest = getManifest(providerSlug);
     if (!manifest) {
@@ -58,7 +71,12 @@ export class ChecksController {
    * List available checks for a connection
    */
   @Get('connections/:connectionId')
-  async listConnectionChecks(@Param('connectionId') connectionId: string) {
+  @RequirePermission('integration', 'read')
+  async listConnectionChecks(
+    @Param('connectionId') connectionId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
@@ -92,10 +110,13 @@ export class ChecksController {
    * Run checks for a connection
    */
   @Post('connections/:connectionId/run')
+  @RequirePermission('integration', 'update')
   async runConnectionChecks(
     @Param('connectionId') connectionId: string,
     @Body() body: RunChecksDto,
+    @OrganizationId() organizationId: string,
   ) {
+    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
@@ -251,7 +272,18 @@ export class ChecksController {
         await this.checkRunRepository.addResults(resultsToStore);
       }
 
-      // Update the check run status
+      // Collect execution logs from all check results
+      const allLogs = result.results.flatMap((checkResult) =>
+        checkResult.result.logs.map((log) => ({
+          check: checkResult.checkName,
+          level: log.level,
+          message: log.message,
+          ...(log.data ? { data: log.data } : {}),
+          timestamp: log.timestamp.toISOString(),
+        })),
+      );
+
+      // Update the check run status with logs
       const startTime = checkRun.startedAt?.getTime() || Date.now();
       await this.checkRunRepository.complete(checkRun.id, {
         status: result.totalFindings > 0 ? 'failed' : 'success',
@@ -259,6 +291,9 @@ export class ChecksController {
         totalChecked: result.results.length,
         passedCount: result.totalPassing,
         failedCount: result.totalFindings,
+        logs: allLogs.length > 0
+          ? (allLogs as unknown as Prisma.InputJsonValue)
+          : undefined,
       });
 
       return {
@@ -268,20 +303,29 @@ export class ChecksController {
         ...result,
       };
     } catch (error) {
-      // Mark the check run as failed
+      // Mark the check run as failed with error details
       const startTime = checkRun.startedAt?.getTime() || Date.now();
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
       await this.checkRunRepository.complete(checkRun.id, {
         status: 'failed',
         durationMs: Date.now() - startTime,
         totalChecked: 0,
         passedCount: 0,
         failedCount: 0,
-        errorMessage: error instanceof Error ? error.message : String(error),
+        errorMessage,
+        logs: [{
+          check: body.checkId || 'all',
+          level: 'error',
+          message: errorMessage,
+          ...(errorStack ? { data: { stack: errorStack } } : {}),
+          timestamp: new Date().toISOString(),
+        }] as unknown as Prisma.InputJsonValue,
       });
 
       this.logger.error(`Check execution failed: ${error}`);
       throw new HttpException(
-        `Check execution failed: ${error instanceof Error ? error.message : String(error)}`,
+        `Check execution failed: ${errorMessage}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -291,10 +335,12 @@ export class ChecksController {
    * Run a specific check for a connection
    */
   @Post('connections/:connectionId/run/:checkId')
+  @RequirePermission('integration', 'update')
   async runSingleCheck(
     @Param('connectionId') connectionId: string,
     @Param('checkId') checkId: string,
+    @OrganizationId() organizationId: string,
   ) {
-    return this.runConnectionChecks(connectionId, { checkId });
+    return this.runConnectionChecks(connectionId, { checkId }, organizationId);
   }
 }

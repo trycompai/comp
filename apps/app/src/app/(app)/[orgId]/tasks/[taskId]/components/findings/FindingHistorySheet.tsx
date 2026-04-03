@@ -1,15 +1,15 @@
 'use client';
 
 import { useFindingHistory, type FindingHistoryEntry } from '@/hooks/use-findings-api';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { ScrollArea } from '@comp/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@comp/ui/sheet';
+} from '@trycompai/ui/sheet';
 import { formatDistanceToNow } from 'date-fns';
 import { History, Loader2 } from 'lucide-react';
 

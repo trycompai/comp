@@ -43,6 +43,7 @@ export const createMockSession = (overrides?: Partial<Session>): Session => ({
   ipAddress: '127.0.0.1',
   userAgent: 'test-agent',
   activeOrganizationId: 'org_test123',
+  impersonatedBy: null,
   ...overrides,
 });
 
@@ -58,6 +59,10 @@ export const createMockUser = (overrides?: Partial<User>): User => ({
   updatedAt: new Date(),
   emailNotificationsUnsubscribed: false,
   emailPreferences: DEFAULT_EMAIL_PREFERENCES,
+  role: 'user',
+  banned: null,
+  banReason: null,
+  banExpires: null,
   isPlatformAdmin: false,
   ...overrides,
 });
@@ -74,6 +79,8 @@ export const createMockMember = (overrides?: Partial<Member>): Member => ({
   fleetDmLabelId: null,
   jobTitle: null,
   deactivated: false,
+  externalUserId: null,
+  externalUserSource: null,
   ...overrides,
 });
 

@@ -3,7 +3,7 @@
 import { authActionClient } from '@/actions/safe-action';
 import { removeMemberFromOrgChart } from '@/lib/org-chart';
 import type { Departments } from '@db';
-import { db, Prisma } from '@db';
+import { db, Prisma } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { appErrors } from '../types';
@@ -44,7 +44,7 @@ export const updateEmployee = authActionClient
     const currentUserMember = await db.member.findFirst({
       where: {
         organizationId: organizationId,
-        userId: ctx.user.id,
+        userId: ctx.user!.id,
       },
     });
 

@@ -1,5 +1,6 @@
+import { filterComplianceMembers } from '@/lib/compliance';
 import { trainingVideos } from '@/lib/data/training-videos';
-import { db } from '@db';
+import { db } from '@db/server';
 
 export async function getPeopleScore(organizationId: string) {
   // Get all active members (employees and contractors); exclude inactive/deactivated
@@ -14,13 +15,8 @@ export async function getPeopleScore(organizationId: string) {
     },
   });
 
-  // Filter to only employees and contractors
-  const employees = allMembers.filter((member) => {
-    const roles = member.role.includes(',')
-      ? member.role.split(',').map((r) => r.trim())
-      : [member.role];
-    return roles.includes('employee') || roles.includes('contractor');
-  });
+  // Filter to members with the compliance obligation
+  const employees = await filterComplianceMembers(allMembers, organizationId);
 
   if (employees.length === 0) {
     return {

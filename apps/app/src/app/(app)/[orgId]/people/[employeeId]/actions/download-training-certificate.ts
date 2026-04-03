@@ -2,6 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { env } from '@/env.mjs';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 
 const downloadCertificateSchema = z.object({
@@ -32,23 +33,26 @@ export const downloadTrainingCertificate = authActionClient
       );
     }
 
-    // Call the API to generate the certificate
     const apiUrl =
       env.NEXT_PUBLIC_API_URL ||
       process.env.API_BASE_URL ||
       'http://localhost:3333';
 
-    const internalToken = env.INTERNAL_API_TOKEN;
-    if (!internalToken) {
-      throw new Error('INTERNAL_API_TOKEN not configured');
+    // Forward session cookies for authentication
+    const headerStore = await headers();
+    const cookieHeader = headerStore.get('cookie');
+
+    const requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (cookieHeader) {
+      requestHeaders['Cookie'] = cookieHeader;
     }
 
     const response = await fetch(`${apiUrl}/v1/training/generate-certificate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-internal-token': internalToken,
-      },
+      headers: requestHeaders,
       body: JSON.stringify({
         memberId,
         organizationId,

@@ -1,12 +1,14 @@
+import { filterComplianceMembers } from '@/lib/compliance';
 import { auth } from '@/utils/auth';
 import { s3Client, BUCKET_NAME } from '@/app/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { db } from '@db';
+import { db } from '@db/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { TeamMembers } from './all/components/TeamMembers';
+import { getEmployeeSyncConnections } from './all/data/queries';
 import { PeoplePageTabs } from './components/PeoplePageTabs';
 import { EmployeesOverview } from './dashboard/components/EmployeesOverview';
 import { DeviceComplianceChart } from './devices/components/DeviceComplianceChart';
@@ -45,22 +47,21 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
     where: {
       organizationId: orgId,
       deactivated: false,
+      isActive: true,
     },
     include: {
       user: {
         select: {
           name: true,
           email: true,
+          role: true,
         },
       },
     },
   });
 
-  // Check if there are employees to show the Employee Tasks tab
-  const employees = membersWithUsers.filter((member) => {
-    const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
-    return roles.includes('employee') || roles.includes('contractor');
-  });
+  // Check if there are members with compliance obligations
+  const employees = await filterComplianceMembers(membersWithUsers, orgId);
 
   const showEmployeeTasks = employees.length > 0;
 
@@ -123,9 +124,10 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   let agentDevices: DeviceWithChecks[] = [];
   let fleetDevices: Host[] = [];
 
-  const [agentResult, fleetResult] = await Promise.allSettled([
+  const [agentResult, fleetResult, employeeSyncData] = await Promise.allSettled([
     getEmployeeDevicesFromDB(),
     getFleetHosts(),
+    getEmployeeSyncConnections(orgId),
   ]);
 
   if (agentResult.status === 'fulfilled') {
@@ -139,6 +141,10 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   } else {
     console.error('Error fetching Fleet devices:', fleetResult.reason);
   }
+
+  const syncConnections = employeeSyncData.status === 'fulfilled'
+    ? employeeSyncData.value
+    : null;
 
   // Filter out Fleet hosts for members who already have device-agent devices
   // Device agent takes priority over Fleet
@@ -157,6 +163,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           canInviteUsers={canInviteUsers}
           isAuditor={isAuditor}
           isCurrentUserOwner={isCurrentUserOwner}
+          organizationId={orgId}
         />
       }
       employeeTasksContent={showEmployeeTasks ? <EmployeesOverview /> : null}
@@ -178,6 +185,8 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           members={membersWithUsers}
         />
       }
+      showRoleMapping={false}
+      roleMappingContent={null}
       showEmployeeTasks={showEmployeeTasks}
       canInviteUsers={canInviteUsers}
       canManageMembers={canManageMembers}

@@ -3,6 +3,11 @@ enum PolicyDisplayFormat {
   PDF
 }
 
+enum PolicyVisibility {
+  ALL        // Visible to everyone in organization
+  DEPARTMENT // Only visible to specified departments
+}
+
 model Policy {
   id               String              @id @default(dbgenerated("generate_prefixed_cuid('pol'::text)"))
   name             String
@@ -18,6 +23,10 @@ model Policy {
   isArchived       Boolean             @default(false)
   displayFormat    PolicyDisplayFormat @default(EDITOR)
   pdfUrl           String?
+
+  // Visibility settings (for department-specific policies)
+  visibility           PolicyVisibility @default(ALL)
+  visibleToDepartments Departments[]    @default([])
 
   // Dates
   createdAt       DateTime  @default(now())

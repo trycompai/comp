@@ -1,6 +1,5 @@
 'use server';
 
-import { db } from '@db';
 /**
  * Server actions for task automation
  * These actions securely call the enterprise API with server-side license key
@@ -63,8 +62,6 @@ async function callEnterpriseApi<T>(
       url.searchParams.append(key, value);
     });
   }
-
-  console.log('url', url.toString());
 
   const method = options.method || 'GET';
 
@@ -192,7 +189,7 @@ export async function executeAutomationScript(data: {
   version?: number; // Optional: test specific version
 }) {
   try {
-    const result = await callEnterpriseApi('/api/tasks-automations/trigger/execute', {
+    const result = await callEnterpriseApi<{ runId: string }>('/api/tasks-automations/trigger/execute', {
       method: 'POST',
       body: data,
     });
@@ -246,8 +243,7 @@ export async function analyzeAutomationWorkflow(scriptContent: string) {
 
 export const getAutomationRunStatus = async (runId: string) => {
   try {
-    const result = await callEnterpriseApi('/api/tasks-automations/runs/${runId}', {
-      params: { runId },
+    const result = await callEnterpriseApi(`/api/tasks-automations/runs/${runId}`, {
     });
 
     return {
@@ -355,25 +351,21 @@ export async function publishAutomation(
       throw new Error('Enterprise API failed to publish');
     }
 
-    // Save version record to database
-    const version = await db.evidenceAutomationVersion.create({
-      data: {
-        evidenceAutomationId: automationId,
+    // Save version record via NestJS API (also enables automation in one transaction)
+    const { serverApi } = await import('@/lib/api-server');
+    const versionRes = await serverApi.post(
+      `/v1/tasks/${taskId}/automations/${automationId}/versions`,
+      {
         version: response.version,
         scriptKey: response.scriptKey,
         changelog,
       },
-    });
+    );
 
-    // Enable automation if not already enabled
-    await db.evidenceAutomation.update({
-      where: { id: automationId },
-      data: { isEnabled: true },
-    });
-
+    const versionData = versionRes.data as { success: boolean; version: { version: number } } | undefined;
     return {
       success: true,
-      version,
+      version: versionData?.version,
     };
   } catch (error) {
     console.error('[publishAutomation] Failed:', error);
@@ -424,20 +416,22 @@ export async function restoreVersion(
 }
 
 /**
- * Update evaluation criteria for an automation
+ * Update evaluation criteria for an automation.
+ * Routes through NestJS API for RBAC + audit logging.
  */
-export async function updateEvaluationCriteria(automationId: string, evaluationCriteria: string) {
+export async function updateEvaluationCriteria(
+  taskId: string,
+  automationId: string,
+  evaluationCriteria: string,
+) {
   try {
-    await db.evidenceAutomation.update({
-      where: { id: automationId },
-      data: { evaluationCriteria },
-    });
-
-    await revalidateCurrentPath();
-
-    return {
-      success: true,
-    };
+    const { serverApi } = await import('@/lib/api-server');
+    const response = await serverApi.patch(
+      `/v1/tasks/${taskId}/automations/${automationId}`,
+      { evaluationCriteria },
+    );
+    if (response.error) throw new Error(response.error);
+    return { success: true };
   } catch (error) {
     console.error('[updateEvaluationCriteria] Failed:', error);
     return {
@@ -448,20 +442,22 @@ export async function updateEvaluationCriteria(automationId: string, evaluationC
 }
 
 /**
- * Toggle automation enabled state
+ * Toggle automation enabled state.
+ * Routes through NestJS API for RBAC + audit logging.
  */
-export async function toggleAutomationEnabled(automationId: string, isEnabled: boolean) {
+export async function toggleAutomationEnabled(
+  taskId: string,
+  automationId: string,
+  isEnabled: boolean,
+) {
   try {
-    await db.evidenceAutomation.update({
-      where: { id: automationId },
-      data: { isEnabled },
-    });
-
-    await revalidateCurrentPath();
-
-    return {
-      success: true,
-    };
+    const { serverApi } = await import('@/lib/api-server');
+    const response = await serverApi.patch(
+      `/v1/tasks/${taskId}/automations/${automationId}`,
+      { isEnabled },
+    );
+    if (response.error) throw new Error(response.error);
+    return { success: true };
   } catch (error) {
     console.error('[toggleAutomationEnabled] Failed:', error);
     return {

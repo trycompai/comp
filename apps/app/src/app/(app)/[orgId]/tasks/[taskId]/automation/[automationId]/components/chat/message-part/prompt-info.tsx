@@ -17,7 +17,7 @@ interface FieldInfo {
 interface PromptInfoProps {
   input?: any; // Will be the parsed input from the tool
   output?: any;
-  state: 'input-available' | 'output-available' | 'output-error' | 'input-streaming';
+  state: string;
   errorText?: string;
   onInfoProvided?: (info: Record<string, string>) => void;
 }

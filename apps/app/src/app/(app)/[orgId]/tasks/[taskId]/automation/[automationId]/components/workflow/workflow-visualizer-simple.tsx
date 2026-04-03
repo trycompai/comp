@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
+} from '@trycompai/ui/dropdown-menu';
 import { EvidenceAutomationVersion } from '@db';
 import { Code, Loader2, RotateCcw, Upload, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
@@ -150,8 +150,6 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     enabled: !!script?.content,
   });
 
-  console.log('steps', steps);
-
   const testResult = useMemo<TestResult | null>(() => {
     if (!executionResult && !executionError) return null;
     if (executionError) return { status: 'error', error: executionError.message };
@@ -185,7 +183,6 @@ export function WorkflowVisualizerSimple({ className }: Props) {
       automationIdRef.current !== 'new' ? automationIdRef.current : automationId;
 
     if (!orgId || !taskId || !resolvedAutomationId || resolvedAutomationId === 'new') {
-      console.warn('Cannot test automation without a saved ID');
       toast.error('Save the automation before testing.');
       return;
     }
@@ -232,8 +229,8 @@ Please fix the automation script to resolve this error.`;
       { text: errorMessage },
       {
         body: {
-          modelId: 'openai/gpt-5-mini',
-          reasoningEffort: 'medium',
+          modelId: 'google/gemini-3.1-flash-lite-preview',
+          reasoningEffort: 'high',
           orgId,
           taskId,
           automationId,

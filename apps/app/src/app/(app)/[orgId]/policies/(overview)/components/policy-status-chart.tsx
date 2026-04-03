@@ -8,7 +8,7 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@comp/ui/chart';
+} from '@trycompai/ui/chart';
 import { Card, HStack, Stack, Text } from '@trycompai/design-system';
 import { Information } from '@trycompai/design-system/icons';
 

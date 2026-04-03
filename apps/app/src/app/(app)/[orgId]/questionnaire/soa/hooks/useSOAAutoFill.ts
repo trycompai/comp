@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { env } from '@/env.mjs';
-import { jwtManager } from '@/utils/jwt-manager';
 
 interface UseSOAAutoFillProps {
   questions: Array<{
@@ -35,17 +34,12 @@ export function useSOAAutoFill({ questions, documentId, organizationId, onUpdate
     setProcessedResults(new Map());
 
     try {
-      // Use fetch with ReadableStream for SSE (EventSource only supports GET)
-      // credentials: 'include' is required to send cookies for authentication
-      const token = await jwtManager.getValidToken();
       const response = await fetch(
         `${env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}/v1/soa/auto-fill`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            'X-Organization-Id': organizationId,
           },
           credentials: 'include',
           body: JSON.stringify({

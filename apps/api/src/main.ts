@@ -8,16 +8,33 @@ import * as express from 'express';
 import helmet from 'helmet';
 import path from 'path';
 import { AppModule } from './app.module';
+import { isTrustedOrigin } from './auth/auth.server';
+import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
+import { originCheckMiddleware } from './auth/origin-check.middleware';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
 let app: INestApplication | null = null;
 
 async function bootstrap(): Promise<void> {
-  app = await NestFactory.create(AppModule);
+  // Disable body parser - required for better-auth NestJS integration
+  // The library will re-add body parsers after handling auth routes
+  app = await NestFactory.create(AppModule, {
+    bodyParser: false,
+  });
 
-  // Enable CORS for all origins - security is handled by authentication
+  // Enable CORS with origin validation.
+  // Uses a callback to support dynamic trust portal subdomains
+  // (e.g. security.trycomp.ai, acme.trust.inc) and verified custom domains.
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (non-browser clients, same-origin, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+      isTrustedOrigin(origin)
+        .then((trusted) => callback(null, trusted))
+        .catch(() => callback(null, false));
+    },
     credentials: true,
     exposedHeaders: ['Content-Disposition'],
   });
@@ -38,13 +55,35 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // STEP 3: Configure body parser
+  // STEP 3a: Origin header validation for CSRF protection
+  // Rejects state-changing requests from untrusted origins.
+  // Defense-in-depth: CORS blocks fetch-based CSRF, this blocks form-based CSRF.
+  app.use(originCheckMiddleware);
+
+  // STEP 3b: Rate-limit better-auth admin routes (impersonation, ban, set-role, etc.)
+  // These bypass NestJS controllers so the global ThrottlerGuard doesn't apply.
+  app.use(adminAuthRateLimiter);
+
+  // STEP 4a: Configure body parser
   // NOTE: Attachment uploads are sent as base64 in JSON, so request payloads are
   // larger than the raw file size. Keep this above the user-facing max file size.
-  app.use(express.json({ limit: '150mb' }));
-  app.use(express.urlencoded({ limit: '150mb', extended: true }));
+  // IMPORTANT: Skip body parsing for /api/auth routes — better-auth needs the raw
+  // request stream to properly read the body (including OAuth callbackURL).
+  // Express-level middleware runs BEFORE NestJS module middleware, so without this
+  // skip, express.json() would consume the stream before better-auth's handler.
+  const jsonParser = express.json({ limit: '150mb' });
+  const urlencodedParser = express.urlencoded({ limit: '150mb', extended: true });
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.path.startsWith('/api/auth')) {
+      return next();
+    }
+    jsonParser(req, res, (err?: unknown) => {
+      if (err) return next(err);
+      urlencodedParser(req, res, next);
+    });
+  });
 
-  // STEP 4: Enable global pipes and filters
+  // STEP 4b: Enable global pipes and filters
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

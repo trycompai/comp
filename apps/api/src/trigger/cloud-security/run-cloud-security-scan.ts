@@ -59,6 +59,7 @@ export const runCloudSecurityScan = task({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
             'x-organization-id': organizationId,
           },
         },

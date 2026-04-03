@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { logger } from '@/utils/logger';
-import { db } from '@db';
+import { db } from '@db/server';
 import { vectorIndex } from '../core/client';
 import {
   findAllOrganizationEmbeddings,

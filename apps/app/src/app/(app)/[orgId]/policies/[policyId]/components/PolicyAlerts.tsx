@@ -1,7 +1,5 @@
 'use client';
 
-import { acceptRequestedPolicyChangesAction } from '@/actions/policies/accept-requested-policy-changes';
-import { denyRequestedPolicyChangesAction } from '@/actions/policies/deny-requested-policy-changes';
 import { authClient } from '@/utils/auth-client';
 import type { Member, Policy, User } from '@db';
 import {
@@ -15,10 +13,11 @@ import {
 } from '@trycompai/design-system';
 import { Archive, Renew, Time } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
-import { useAction } from 'next-safe-action/hooks';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useRef } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
+import { usePolicy } from '../hooks/usePolicy';
 
 interface PolicyAlertsProps {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
@@ -30,52 +29,56 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
   const { data: activeMember } = authClient.useActiveMember();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { orgId, policyId } = useParams<{ orgId: string; policyId: string }>();
+  const { hasPermission } = usePermissions();
   const canCurrentUserApprove = policy?.approverId === activeMember?.id;
+  const canUpdate = hasPermission('policy', 'update');
+  const [isApproving, setIsApproving] = useState(false);
+  const [isDenying, setIsDenying] = useState(false);
+
+  const { acceptChanges, denyChanges } = usePolicy({
+    policyId,
+    organizationId: orgId,
+  });
 
   const approveCommentRef = useRef<HTMLTextAreaElement>(null);
   const rejectCommentRef = useRef<HTMLTextAreaElement>(null);
 
-  const denyPolicyChanges = useAction(denyRequestedPolicyChangesAction, {
-    onSuccess: () => {
-      toast.info('Policy changes denied!');
-      onMutate?.();
-    },
-    onError: () => {
-      toast.error('Failed to deny policy changes.');
-    },
-  });
-
-  const acceptPolicyChanges = useAction(acceptRequestedPolicyChangesAction, {
-    onSuccess: () => {
-      toast.success('Policy changes accepted and published!');
-      onMutate?.();
-    },
-    onError: () => {
-      toast.error('Failed to accept policy changes.');
-    },
-  });
-
-  const handleApprove = () => {
+  const handleApprove = async () => {
     if (policy?.id && policy.approverId) {
       const comment = approveCommentRef.current?.value?.trim() || undefined;
-      acceptPolicyChanges.execute({
-        id: policy.id,
-        approverId: policy.approverId,
-        comment,
-        entityId: policy.id,
-      });
+      setIsApproving(true);
+      try {
+        await acceptChanges({
+          approverId: policy.approverId,
+          comment,
+        });
+        toast.success('Policy changes accepted and published!');
+        onMutate?.();
+      } catch {
+        toast.error('Failed to accept policy changes.');
+      } finally {
+        setIsApproving(false);
+      }
     }
   };
 
-  const handleDeny = () => {
+  const handleDeny = async () => {
     if (policy?.id && policy.approverId) {
       const comment = rejectCommentRef.current?.value?.trim() || undefined;
-      denyPolicyChanges.execute({
-        id: policy.id,
-        approverId: policy.approverId,
-        comment,
-        entityId: policy.id,
-      });
+      setIsDenying(true);
+      try {
+        await denyChanges({
+          approverId: policy.approverId,
+          comment,
+        });
+        toast.info('Policy changes denied!');
+        onMutate?.();
+      } catch {
+        toast.error('Failed to deny policy changes.');
+      } finally {
+        setIsDenying(false);
+      }
     }
   };
 
@@ -107,8 +110,8 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
           description="Review this policy and approve or reject the pending changes."
           onApprove={handleApprove}
           onReject={handleDeny}
-          approveLoading={acceptPolicyChanges.isPending}
-          rejectLoading={denyPolicyChanges.isPending}
+          approveLoading={isApproving}
+          rejectLoading={isDenying}
           approveConfirmation={{
             title: 'Approve Policy Changes',
             description: 'Are you sure you want to approve these policy changes?',
@@ -180,14 +183,16 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
                 </Text>
               </Stack>
             </HStack>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleOpenArchiveSheet}
-              iconLeft={<Renew size={12} />}
-            >
-              Restore
-            </Button>
+            {canUpdate && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleOpenArchiveSheet}
+                iconLeft={<Renew size={12} />}
+              >
+                Restore
+              </Button>
+            )}
           </HStack>
         </div>
       )}

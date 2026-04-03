@@ -1,9 +1,9 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { Button } from '@comp/ui/button';
-import { Icons } from '@comp/ui/icons';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@trycompai/ui/button';
+import { Icons } from '@trycompai/ui/icons';
+import { Spinner } from '@trycompai/design-system';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -22,7 +22,12 @@ export function MicrosoftSignIn({
     try {
       // Build the callback URL with search params
       const baseURL = window.location.origin;
-      const path = inviteCode ? `/invite/${inviteCode}` : '/';
+      const isDeviceAuth = searchParams?.get('device_auth') === 'true';
+      const path = isDeviceAuth
+        ? '/auth/device-callback'
+        : inviteCode
+          ? `/invite/${inviteCode}`
+          : '/';
       const redirectTo = new URL(path, baseURL);
 
       // Append all search params if they exist
@@ -87,7 +92,7 @@ export function MicrosoftSignIn({
       disabled={isLoading}
     >
       {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Spinner size="sm" />
       ) : (
         <>
           <Icons.Microsoft className="h-4 w-4" />

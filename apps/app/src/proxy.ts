@@ -1,10 +1,9 @@
-// Note: proxy must not call Prisma/BetterAuth APIs. Use cookie presence only.
 import { NextRequest, NextResponse } from 'next/server';
 
 export const config = {
   matcher: [
-    // Skip auth-related routes (removed onboarding from exclusions)
-    '/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|research).*)',
+    // Skip auth-related routes and static assets
+    '/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|research|.*\\.svg$|.*\\.png$|.*\\.jpg$|.*\\.ico$|.*\\.webp$).*)',
   ],
 };
 
@@ -28,14 +27,13 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    // Cookie-only gating (auth will validate server-side on actual routes)
-    const secureCookieName = '__Secure-better-auth.session_token';
-    const fallbackCookieName = 'better-auth.session_token';
-
-    let sessionToken = request.cookies.get(secureCookieName)?.value;
-    if (!sessionToken) {
-      sessionToken = request.cookies.get(fallbackCookieName)?.value;
-    }
+    // Check for session cookies across all environment prefixes
+    const sessionToken =
+      request.cookies.get('__Secure-better-auth.session_token')?.value ||
+      request.cookies.get('better-auth.session_token')?.value ||
+      request.cookies.get('__Secure-staging.session_token')?.value ||
+      request.cookies.get('staging.session_token')?.value ||
+      request.cookies.get('local.session_token')?.value;
     const hasToken = Boolean(sessionToken);
     const nextUrl = request.nextUrl;
     const requestHeaders = new Headers(request.headers);
@@ -79,19 +77,8 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // 2. Authenticated users (avoid DB calls in middleware)
-    if (hasToken) {
-      const isRootPath = nextUrl.pathname === '/';
-
-      // If user hits root: route based on active org presence
-      if (isRootPath) {
-        const url = new URL('/setup', request.url);
-        nextUrl.searchParams.forEach((value, key) => {
-          url.searchParams.set(key, value);
-        });
-        return NextResponse.redirect(url);
-      }
-    }
+    // Org existence and membership checks happen in the app layouts/pages so
+    // users get the proper redirect instead of a raw 403 response from middleware.
 
     return response;
   } catch (err) {

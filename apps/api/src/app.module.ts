@@ -21,6 +21,10 @@ import { EvidenceExportModule } from './tasks/evidence-export/evidence-export.mo
 import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
 import { TrustPortalModule } from './trust-portal/trust-portal.module';
+import { ControlTemplateModule } from './framework-editor/control-template/control-template.module';
+import { FrameworkEditorFrameworkModule } from './framework-editor/framework/framework.module';
+import { PolicyTemplateModule } from './framework-editor/policy-template/policy-template.module';
+import { RequirementModule } from './framework-editor/requirement/requirement.module';
 import { TaskTemplateModule } from './framework-editor/task-template/task-template.module';
 import { FindingTemplateModule } from './finding-template/finding-template.module';
 import { FindingsModule } from './findings/findings.module';
@@ -36,7 +40,15 @@ import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
 import { OrgChartModule } from './org-chart/org-chart.module';
 import { TrainingModule } from './training/training.module';
 import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
+import { FrameworksModule } from './frameworks/frameworks.module';
+import { AuditModule } from './audit/audit.module';
+import { ControlsModule } from './controls/controls.module';
+import { RolesModule } from './roles/roles.module';
+import { EmailModule } from './email/email.module';
+import { SecretsModule } from './secrets/secrets.module';
 import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
+import { StripeModule } from './stripe/stripe.module';
+import { AdminOrganizationsModule } from './admin-organizations/admin-organizations.module';
 
 @Module({
   imports: [
@@ -70,6 +82,10 @@ import { SecurityPenetrationTestsModule } from './security-penetration-tests/sec
     CommentsModule,
     HealthModule,
     TrustPortalModule,
+    ControlTemplateModule,
+    FrameworkEditorFrameworkModule,
+    PolicyTemplateModule,
+    RequirementModule,
     TaskTemplateModule,
     FindingTemplateModule,
     FindingsModule,
@@ -85,7 +101,15 @@ import { SecurityPenetrationTestsModule } from './security-penetration-tests/sec
     TrainingModule,
     OrgChartModule,
     EvidenceFormsModule,
+    FrameworksModule,
+    RolesModule,
+    AuditModule,
+    ControlsModule,
+    EmailModule,
+    SecretsModule,
     SecurityPenetrationTestsModule,
+    StripeModule,
+    AdminOrganizationsModule,
   ],
   controllers: [AppController],
   providers: [

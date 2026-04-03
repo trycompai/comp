@@ -1,7 +1,7 @@
 import type { AuthContext } from '@/auth/types';
 import { EvidenceFormsService } from './evidence-forms.service';
 import type { AttachmentsService } from '@/attachments/attachments.service';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 
 jest.mock(
   '@/attachments/attachments.service',
@@ -11,7 +11,7 @@ jest.mock(
   { virtual: true },
 );
 
-jest.mock('@trycompai/db', () => {
+jest.mock('@db', () => {
   const evidenceFormTypeEnum = {
     board_meeting: 'board_meeting',
     it_leadership_meeting: 'it_leadership_meeting',
@@ -46,8 +46,8 @@ type MockDb = {
 describe('EvidenceFormsService', () => {
   const authContext: AuthContext = {
     organizationId: 'org_123',
-    authType: 'jwt',
-    isApiKey: false,
+    authType: 'session',
+    isApiKey: false, isPlatformAdmin: false,
     userRoles: ['admin'],
     userId: 'usr_reviewer',
     userEmail: 'reviewer@example.com',

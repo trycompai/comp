@@ -1,6 +1,11 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsOptional, IsBoolean } from 'class-validator';
+import { IsOptional, IsBoolean, IsString, IsEnum } from 'class-validator';
 import { CreatePolicyDto } from './create-policy.dto';
+
+export enum DisplayFormat {
+  EDITOR = 'EDITOR',
+  PDF = 'PDF',
+}
 
 export class UpdatePolicyDto extends PartialType(CreatePolicyDto) {
   @ApiProperty({
@@ -11,4 +16,14 @@ export class UpdatePolicyDto extends PartialType(CreatePolicyDto) {
   @IsOptional()
   @IsBoolean()
   isArchived?: boolean;
+
+  @ApiProperty({
+    description: 'Display format for this policy',
+    enum: DisplayFormat,
+    example: DisplayFormat.EDITOR,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(DisplayFormat)
+  displayFormat?: DisplayFormat;
 }

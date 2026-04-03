@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { useParams } from 'next/navigation';
 
 const fetcher = async (key: string) => {
-  const res = await fetch(key, { cache: 'no-store' });
+  const res = await fetch(key, { cache: 'no-store', credentials: 'include' });
   if (!res.ok) {
     throw new Error('Failed to fetch image url');
   }

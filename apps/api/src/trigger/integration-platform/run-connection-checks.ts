@@ -1,4 +1,4 @@
-import { getManifest, runAllChecks } from '@comp/integration-platform';
+import { getManifest, runAllChecks } from '@trycompai/integration-platform';
 import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk';
 
@@ -92,10 +92,14 @@ export const runConnectionChecks = task({
     try {
       logger.info('Ensuring valid credentials...');
       const response = await fetch(
-        `${apiUrl}/v1/integrations/connections/${connectionId}/ensure-valid-credentials?organizationId=${organizationId}`,
+        `${apiUrl}/v1/integrations/connections/${connectionId}/ensure-valid-credentials`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+            'x-organization-id': organizationId,
+          },
         },
       );
 

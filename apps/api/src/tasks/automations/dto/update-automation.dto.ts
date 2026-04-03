@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsBoolean } from 'class-validator';
 
 export class UpdateAutomationDto {
   @ApiProperty({
@@ -19,4 +19,20 @@ export class UpdateAutomationDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiProperty({
+    description: 'Whether the automation is enabled',
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isEnabled?: boolean;
+
+  @ApiProperty({
+    description: 'Evaluation criteria for the automation',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  evaluationCriteria?: string;
 }

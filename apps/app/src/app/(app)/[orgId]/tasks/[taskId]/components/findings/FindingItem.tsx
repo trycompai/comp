@@ -3,9 +3,9 @@
 import type { Finding } from '@/hooks/use-findings-api';
 import { FINDING_TYPE_LABELS } from '@/hooks/use-findings-api';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -13,15 +13,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Textarea } from '@comp/ui/textarea';
+} from '@trycompai/ui/dropdown-menu';
+import { Textarea } from '@trycompai/ui/textarea';
 import { FindingStatus, FindingType } from '@db';
 import { formatDistanceToNow } from 'date-fns';
 import { ChevronDown, ChevronUp, MoreVertical, Trash2 } from 'lucide-react';
@@ -37,8 +37,8 @@ interface FindingItemProps {
   isExpanded: boolean;
   canChangeStatus: boolean;
   canSetRestrictedStatus: boolean;
-  isAuditor: boolean;
-  isPlatformAdmin: boolean;
+  canSetReadyForReview: boolean;
+  canDelete?: boolean;
   isTarget?: boolean; // Whether this finding is the navigation target
   onToggleExpand: () => void;
   onStatusChange: (status: FindingStatus, revisionNote?: string) => Promise<void> | void;
@@ -54,8 +54,8 @@ export function FindingItem({
   isExpanded,
   canChangeStatus,
   canSetRestrictedStatus,
-  isAuditor,
-  isPlatformAdmin,
+  canSetReadyForReview,
+  canDelete = canSetRestrictedStatus,
   isTarget = false,
   onToggleExpand,
   onStatusChange,
@@ -150,8 +150,6 @@ export function FindingItem({
   // - Auditors can set: open, needs_revision, closed
   // - Non-auditor admins/owners can set: open, ready_for_review
   const statusOptions = useMemo(() => {
-    const canSetReadyForReview = isPlatformAdmin || !isAuditor;
-
     return [
       { value: FindingStatus.open, label: 'Open', disabled: false },
       {
@@ -173,7 +171,7 @@ export function FindingItem({
         hint: !canSetRestrictedStatus ? 'Auditor only' : undefined,
       },
     ];
-  }, [isPlatformAdmin, isAuditor, canSetRestrictedStatus]);
+  }, [canSetRestrictedStatus, canSetReadyForReview]);
 
   return (
     <div
@@ -290,7 +288,7 @@ export function FindingItem({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleViewHistory}>History</DropdownMenuItem>
-              {canSetRestrictedStatus && (
+              {canDelete && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

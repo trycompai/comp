@@ -1,4 +1,5 @@
 import { getFeatureFlags } from '@/app/posthog';
+import { requireRoutePermission } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -12,6 +13,8 @@ export default async function Layout({
   params: Promise<{ orgId: string }>;
 }) {
   const { orgId } = await params;
+
+  await requireRoutePermission('settings', orgId);
 
   const session = await auth.api.getSession({
     headers: await headers(),

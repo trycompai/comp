@@ -89,6 +89,7 @@ model FrameworkEditorControlTemplate {
   policyTemplates FrameworkEditorPolicyTemplate[]
   requirements    FrameworkEditorRequirement[]
   taskTemplates   FrameworkEditorTaskTemplate[]
+  documentTypes   EvidenceFormType[]
 
   // Dates
   createdAt DateTime @default(now())

@@ -1,10 +1,10 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
-import { Icons } from '@comp/ui/icons';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
+import { cn } from '@trycompai/ui/cn';
+import { Icons } from '@trycompai/ui/icons';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import {
   ClipboardCheck,
   FileTextIcon,
@@ -74,9 +74,17 @@ export function MainMenu({
 
   const items: MenuItem[] = [
     {
+      id: 'overview',
+      path: '/:organizationId/overview',
+      name: 'Overview',
+      disabled: false,
+      icon: Gauge,
+      protected: false,
+    },
+    {
       id: 'frameworks',
       path: '/:organizationId/frameworks',
-      name: 'Overview',
+      name: 'Frameworks',
       disabled: false,
       icon: Gauge,
       protected: false,
@@ -306,8 +314,8 @@ const Item = ({
                 )}
                 disabled
               >
-                <Icon size={16} />
-                {!isCollapsed && <span className="ml-2 truncate">Coming Soon</span>}
+                {isCollapsed && <Icon size={16} />}
+                {!isCollapsed && <span className="truncate">Coming Soon</span>}
               </Button>
             </TooltipTrigger>
             {isCollapsed && <TooltipContent side="right">Coming Soon</TooltipContent>}
@@ -329,10 +337,10 @@ const Item = ({
               asChild
             >
               <Link href={itemPath} onClick={onItemClick}>
-                <Icon size={16} />
+                {isCollapsed && <Icon size={16} />}
                 {!isCollapsed && (
                   <>
-                    <span className="ml-2 flex-1 truncate text-left">{item.name}</span>
+                    <span className="flex-1 truncate text-left">{item.name}</span>
                     {item.badge && (
                       <Badge variant={item.badge.variant} className="ml-auto text-xs">
                         {item.badge.text}

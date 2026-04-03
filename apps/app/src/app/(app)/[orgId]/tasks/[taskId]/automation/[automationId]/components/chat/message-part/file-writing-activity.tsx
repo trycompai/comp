@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 
 interface FileWritingActivityProps {
   input: any;
-  state: 'input-streaming' | 'input-available' | 'output-available' | 'output-error';
+  state: string;
   output?: any;
   isAnimating: boolean;
 }

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { CreateContextDto } from './dto/create-context.dto';
 import { UpdateContextDto } from './dto/update-context.dto';
 
@@ -7,17 +7,52 @@ import { UpdateContextDto } from './dto/update-context.dto';
 export class ContextService {
   private readonly logger = new Logger(ContextService.name);
 
-  async findAllByOrganization(organizationId: string) {
+  async findAllByOrganization(
+    organizationId: string,
+    options?: { search?: string; page?: number; perPage?: number },
+  ) {
     try {
+      const where: any = {
+        organizationId,
+        ...(options?.search && {
+          question: { contains: options.search, mode: 'insensitive' },
+        }),
+      };
+
+      if (options?.page && options?.perPage) {
+        const skip = (options.page - 1) * options.perPage;
+        const [entries, total] = await Promise.all([
+          db.context.findMany({
+            where,
+            skip,
+            take: options.perPage,
+            orderBy: { createdAt: 'desc' },
+          }),
+          db.context.count({ where }),
+        ]);
+
+        const pageCount = Math.ceil(total / options.perPage);
+
+        // Resolve any legacy framework IDs in answers
+        const resolvedEntries = await this.resolveFrameworkIds(entries);
+
+        this.logger.log(
+          `Retrieved ${entries.length} context entries (page ${options.page}) for organization ${organizationId}`,
+        );
+        return { data: resolvedEntries, count: total, pageCount };
+      }
+
       const contextEntries = await db.context.findMany({
-        where: { organizationId },
+        where,
         orderBy: { createdAt: 'desc' },
       });
+
+      const resolvedEntries = await this.resolveFrameworkIds(contextEntries);
 
       this.logger.log(
         `Retrieved ${contextEntries.length} context entries for organization ${organizationId}`,
       );
-      return contextEntries;
+      return { data: resolvedEntries, count: resolvedEntries.length };
     } catch (error) {
       this.logger.error(
         `Failed to retrieve context entries for organization ${organizationId}:`,
@@ -25,6 +60,36 @@ export class ContextService {
       );
       throw error;
     }
+  }
+
+  private readonly FRAMEWORK_ID_PATTERN = /\bfrk_[a-z0-9]+\b/g;
+
+  private async resolveFrameworkIds<T extends { answer: string }>(
+    entries: T[],
+  ): Promise<T[]> {
+    const allIds = new Set<string>();
+    for (const entry of entries) {
+      const matches = entry.answer.match(this.FRAMEWORK_ID_PATTERN);
+      if (matches) {
+        for (const id of matches) allIds.add(id);
+      }
+    }
+    if (allIds.size === 0) return entries;
+
+    const frameworks = await db.frameworkEditorFramework.findMany({
+      where: { id: { in: Array.from(allIds) } },
+      select: { id: true, name: true },
+    });
+    const idToName = new Map(frameworks.map((f) => [f.id, f.name]));
+
+    return entries.map((entry) => {
+      const resolved = entry.answer.replace(
+        this.FRAMEWORK_ID_PATTERN,
+        (id) => idToName.get(id) ?? id,
+      );
+      if (resolved === entry.answer) return entry;
+      return { ...entry, answer: resolved };
+    });
   }
 
   async findById(id: string, organizationId: string) {

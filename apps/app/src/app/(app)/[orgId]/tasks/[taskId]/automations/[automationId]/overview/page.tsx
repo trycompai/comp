@@ -1,6 +1,16 @@
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
+import type {
+  EvidenceAutomation,
+  EvidenceAutomationRun,
+  EvidenceAutomationVersion,
+  Task,
+} from '@db';
 import { redirect } from 'next/navigation';
 import { AutomationOverview } from './components/AutomationOverview';
+
+type RunWithAutomationName = EvidenceAutomationRun & {
+  evidenceAutomation: { name: string };
+};
 
 export default async function AutomationOverviewPage({
   params,
@@ -9,18 +19,31 @@ export default async function AutomationOverviewPage({
 }) {
   const { taskId, orgId, automationId } = await params;
 
-  const task = await getTask(taskId);
-  if (!task) {
+  const [taskRes, automationRes, runsRes, versionsRes] = await Promise.all([
+    serverApi.get<Task>(`/v1/tasks/${taskId}`),
+    serverApi.get<{ success: boolean; automation: EvidenceAutomation }>(
+      `/v1/tasks/${taskId}/automations/${automationId}`,
+    ),
+    serverApi.get<RunWithAutomationName[]>(
+      `/v1/tasks/${taskId}/automations/${automationId}/runs`,
+    ),
+    serverApi.get<{ success: boolean; versions: EvidenceAutomationVersion[] }>(
+      `/v1/tasks/${taskId}/automations/${automationId}/versions?limit=10`,
+    ),
+  ]);
+
+  const task = taskRes.data;
+  if (!task || taskRes.error) {
     redirect(`/${orgId}/tasks`);
   }
 
-  const automation = await getAutomation(automationId);
+  const automation = automationRes.data?.automation;
   if (!automation) {
     redirect(`/${orgId}/tasks/${taskId}`);
   }
 
-  const runs = await getAutomationRuns(automationId);
-  const versions = await getAutomationVersions(automationId);
+  const runs = Array.isArray(runsRes.data) ? runsRes.data : [];
+  const versions = versionsRes.data?.versions ?? [];
 
   return (
     <AutomationOverview
@@ -31,67 +54,3 @@ export default async function AutomationOverviewPage({
     />
   );
 }
-
-const getTask = async (taskId: string) => {
-  try {
-    const task = await db.task.findUnique({
-      where: {
-        id: taskId,
-      },
-    });
-
-    return task;
-  } catch (error) {
-    console.error('[getTask] Database query failed:', error);
-    throw error;
-  }
-};
-
-const getAutomation = async (automationId: string) => {
-  try {
-    const automation = await db.evidenceAutomation.findUnique({
-      where: {
-        id: automationId,
-      },
-    });
-
-    return automation;
-  } catch (error) {
-    console.error('[getAutomation] Database query failed:', error);
-    throw error;
-  }
-};
-
-const getAutomationRuns = async (automationId: string) => {
-  const runs = await db.evidenceAutomationRun.findMany({
-    where: {
-      evidenceAutomationId: automationId,
-    },
-    include: {
-      evidenceAutomation: {
-        select: {
-          name: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-
-  return runs;
-};
-
-const getAutomationVersions = async (automationId: string) => {
-  const versions = await db.evidenceAutomationVersion.findMany({
-    where: {
-      evidenceAutomationId: automationId,
-    },
-    orderBy: {
-      version: 'desc',
-    },
-    take: 10,
-  });
-
-  return versions;
-};

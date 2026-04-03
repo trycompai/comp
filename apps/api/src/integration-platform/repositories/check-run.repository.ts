@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '@db';
-import type { IntegrationRunStatus, Prisma } from '@prisma/client';
+import type { IntegrationRunStatus, Prisma } from '@db';
 
 export interface CreateCheckRunDto {
   connectionId: string;

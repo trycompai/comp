@@ -11,15 +11,10 @@ import {
 } from '@trycompai/design-system';
 import { Add, Close, Edit, Link as LinkIcon, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 import { GripVertical } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useTrustPortalCustomLinks } from '@/hooks/use-trust-portal-custom-links';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import {
-  createCustomLinkAction,
-  updateCustomLinkAction,
-  deleteCustomLinkAction,
-  reorderCustomLinksAction,
-} from '../actions/custom-links';
-import { useAction } from 'next-safe-action/hooks';
 import {
   DndContext,
   closestCenter,
@@ -56,10 +51,12 @@ function SortableLink({
   link,
   onEdit,
   onDelete,
+  canUpdate,
 }: {
   link: CustomLink;
   onEdit: (link: CustomLink) => void;
   onDelete: (linkId: string) => void;
+  canUpdate: boolean;
 }) {
   const {
     attributes,
@@ -93,21 +90,23 @@ function SortableLink({
       <div className="flex-1 space-y-1">
         <div className="flex items-start justify-between">
           <h4 className="font-medium">{link.title}</h4>
-          <DropdownMenu>
-            <DropdownMenuTrigger variant="ellipsis">
-              <OverflowMenuVertical size={16} />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(link)}>
-                <Edit size={16} />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDelete(link.id)}>
-                <TrashCan size={16} />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canUpdate && (
+            <DropdownMenu>
+              <DropdownMenuTrigger variant="ellipsis">
+                <OverflowMenuVertical size={16} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onEdit(link)}>
+                  <Edit size={16} />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete(link.id)}>
+                  <TrashCan size={16} />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
         {link.description && (
           <p className="text-sm text-muted-foreground">{link.description}</p>
@@ -130,6 +129,15 @@ export function TrustPortalCustomLinks({
   initialLinks,
   orgId,
 }: TrustPortalCustomLinksProps) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
+  const {
+    createLink: createLinkApi,
+    updateLink: updateLinkApi,
+    deleteLink: deleteLinkApi,
+    reorderLinks: reorderLinksApi,
+  } = useTrustPortalCustomLinks(orgId);
+
   const [links, setLinks] = useState<CustomLink[]>(initialLinks);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<CustomLink | null>(null);
@@ -137,58 +145,14 @@ export function TrustPortalCustomLinks({
   const [description, setDescription] = useState('');
   const [url, setUrl] = useState('');
 
+  const [isMutating, setIsMutating] = useState(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
-
-  const createLink = useAction(createCustomLinkAction, {
-    onSuccess: ({ data }) => {
-      if (data) {
-        setLinks((prev) => [...prev, data as CustomLink]);
-        toast.success('Link created successfully');
-        resetForm();
-      }
-    },
-    onError: () => {
-      toast.error('Failed to create link');
-    },
-  });
-
-  const updateLink = useAction(updateCustomLinkAction, {
-    onSuccess: ({ data }) => {
-      if (data) {
-        setLinks((prev) =>
-          prev.map((l) => (l.id === data.id ? (data as CustomLink) : l)),
-        );
-        toast.success('Link updated successfully');
-        resetForm();
-      }
-    },
-    onError: () => {
-      toast.error('Failed to update link');
-    },
-  });
-
-  const deleteLink = useAction(deleteCustomLinkAction, {
-    onSuccess: () => {
-      toast.success('Link deleted successfully');
-    },
-    onError: () => {
-      toast.error('Failed to delete link');
-    },
-  });
-
-  const reorderLinks = useAction(reorderCustomLinksAction, {
-    onSuccess: () => {
-      toast.success('Links reordered');
-    },
-    onError: () => {
-      toast.error('Failed to reorder links');
-    },
-  });
 
   const resetForm = () => {
     setTitle('');
@@ -198,10 +162,8 @@ export function TrustPortalCustomLinks({
     setIsModalOpen(false);
   };
 
-  const handleSave = () => {
-    if (createLink.status === 'executing' || updateLink.status === 'executing') {
-      return;
-    }
+  const handleSave = async () => {
+    if (isMutating) return;
 
     if (!title.trim() || !url.trim()) {
       toast.error('Title and URL are required');
@@ -222,21 +184,37 @@ export function TrustPortalCustomLinks({
     }
 
     setUrl(normalizedUrl);
+    setIsMutating(true);
 
-    if (editingLink) {
-      updateLink.execute({
-        linkId: editingLink.id,
-        title,
-        description: description || null,
-        url: normalizedUrl,
-      });
-    } else {
-      createLink.execute({
-        orgId,
-        title,
-        description: description || null,
-        url: normalizedUrl,
-      });
+    try {
+      if (editingLink) {
+        const updated = await updateLinkApi(editingLink.id, {
+          title,
+          description: description || null,
+          url: normalizedUrl,
+        });
+        if (updated) {
+          setLinks((prev) =>
+            prev.map((l) => (l.id === (updated as CustomLink).id ? (updated as CustomLink) : l)),
+          );
+        }
+        toast.success('Link updated successfully');
+      } else {
+        const created = await createLinkApi({
+          title,
+          description: description || null,
+          url: normalizedUrl,
+        });
+        if (created) {
+          setLinks((prev) => [...prev, created as CustomLink]);
+        }
+        toast.success('Link created successfully');
+      }
+      resetForm();
+    } catch {
+      toast.error(editingLink ? 'Failed to update link' : 'Failed to create link');
+    } finally {
+      setIsMutating(false);
     }
   };
 
@@ -248,9 +226,14 @@ export function TrustPortalCustomLinks({
     setIsModalOpen(true);
   };
 
-  const handleDelete = (linkId: string) => {
+  const handleDelete = async (linkId: string) => {
     setLinks((prev) => prev.filter((l) => l.id !== linkId));
-    deleteLink.execute({ linkId });
+    try {
+      await deleteLinkApi(linkId);
+      toast.success('Link deleted successfully');
+    } catch {
+      toast.error('Failed to delete link');
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -261,11 +244,11 @@ export function TrustPortalCustomLinks({
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
         const newItems = arrayMove(items, oldIndex, newIndex);
-        
-        reorderLinks.execute({
-          orgId,
-          linkIds: newItems.map((item) => item.id),
-        });
+
+        reorderLinksApi(newItems.map((item) => item.id)).then(
+          () => toast.success('Links reordered'),
+          () => toast.error('Failed to reorder links'),
+        );
 
         return newItems;
       });
@@ -281,9 +264,11 @@ export function TrustPortalCustomLinks({
             Add external links to display on your trust portal (e.g., StatusPage, support site)
           </p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} iconLeft={<Add size={16} />}>
-          Add Link
-        </Button>
+        {canUpdate && (
+          <Button onClick={() => setIsModalOpen(true)} iconLeft={<Add size={16} />}>
+            Add Link
+          </Button>
+        )}
       </div>
 
       {links.length === 0 ? (
@@ -309,6 +294,7 @@ export function TrustPortalCustomLinks({
                   link={link}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  canUpdate={canUpdate}
                 />
               ))}
             </div>
@@ -375,7 +361,7 @@ export function TrustPortalCustomLinks({
                   <Button
                     onClick={handleSave}
                     width="full"
-                    loading={createLink.status === 'executing' || updateLink.status === 'executing'}
+                    loading={isMutating}
                   >
                     {editingLink ? 'Update' : 'Create'}
                   </Button>

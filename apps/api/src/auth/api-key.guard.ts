@@ -24,14 +24,15 @@ export class ApiKeyGuard implements CanActivate {
     }
 
     // Validate the API key
-    const organizationId = await this.apiKeyService.validateApiKey(apiKey);
+    const result = await this.apiKeyService.validateApiKey(apiKey);
 
-    if (!organizationId) {
+    if (!result) {
       throw new UnauthorizedException('Invalid or expired API key');
     }
 
-    // Attach the organization ID to the request for use in controllers
-    (request as any).organizationId = organizationId;
+    // Attach the organization ID and scopes to the request for use in controllers
+    (request as any).organizationId = result.organizationId;
+    (request as any).apiKeyScopes = result.scopes;
 
     return true;
   }

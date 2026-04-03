@@ -1,5 +1,6 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,14 +29,9 @@ import {
   Upload,
 } from '@trycompai/design-system/icons';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import Dropzone from 'react-dropzone';
 import { toast } from 'sonner';
-import { getPolicyPdfUrlAction } from '../actions/get-policy-pdf-url';
-import { uploadPolicyPdfAction } from '../actions/upload-policy-pdf';
-import { deletePolicyPdfAction } from '../actions/delete-policy-pdf';
 
 interface PdfViewerProps {
   policyId: string;
@@ -63,64 +59,38 @@ export function PdfViewer({
 }: PdfViewerProps) {
   // Combine both checks - can't modify if pending approval OR version is read-only
   const isReadOnly = isPendingApproval || isVersionReadOnly;
-  const router = useRouter();
+  const api = useApi();
   const [files, setFiles] = useState<File[]>([]);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [isUrlLoading, setUrlLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const { execute: getUrl } = useAction(getPolicyPdfUrlAction, {
-    onSuccess: (result) => {
-      const url = result?.data?.data ?? null;
-      if (result?.data?.success && url) {
-        setSignedUrl(url);
-      } else {
-        setSignedUrl(null);
-      }
-    },
-    onError: () => toast.error('Could not load the policy document.'),
-    onSettled: () => setUrlLoading(false),
-  });
 
   // Fetch the secure, temporary URL when the component loads with an S3 key.
   useEffect(() => {
     if (pdfUrl) {
       setUrlLoading(true);
       setSignedUrl(null); // Reset before fetching
-      getUrl({ policyId, versionId });
+      const query = versionId ? `?versionId=${versionId}` : '';
+      api.get<{ url: string }>(`/v1/policies/${policyId}/pdf-url${query}`).then((response) => {
+        if (response.data?.url) {
+          setSignedUrl(response.data.url);
+        } else {
+          setSignedUrl(null);
+        }
+        setUrlLoading(false);
+      }).catch(() => {
+        toast.error('Could not load the policy document.');
+        setUrlLoading(false);
+      });
     } else {
       // No PDF for this version - reset state
       setSignedUrl(null);
       setUrlLoading(false);
     }
-  }, [pdfUrl, policyId, versionId, getUrl]);
-
-  const { execute: upload, status: uploadStatus } = useAction(uploadPolicyPdfAction, {
-    onSuccess: (result) => {
-      if (result?.data?.success) {
-        toast.success('PDF uploaded successfully.');
-        setFiles([]);
-        onMutate?.();
-      } else {
-        toast.error(result?.data?.error || 'Failed to upload PDF.');
-      }
-    },
-    onError: (error) => toast.error(error.error.serverError || 'Failed to upload PDF.'),
-  });
-
-  const { execute: deletePdf, status: deleteStatus } = useAction(deletePolicyPdfAction, {
-    onSuccess: (result) => {
-      if (result?.data?.success) {
-        toast.success('PDF deleted successfully.');
-        setSignedUrl(null);
-        onMutate?.();
-      } else {
-        toast.error(result?.data?.error || 'Failed to delete PDF.');
-      }
-    },
-    onError: (error) => toast.error(error.error.serverError || 'Failed to delete PDF.'),
-  });
+  }, [pdfUrl, policyId, versionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleReplaceClick = () => {
     fileInputRef.current?.click();
@@ -149,15 +119,28 @@ export function PdfViewer({
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => {
+    reader.onload = async () => {
       const base64Data = (reader.result as string).split(',')[1];
-      upload({
-        policyId,
-        versionId,
-        fileName: file.name,
-        fileType: file.type,
-        fileData: base64Data,
-      });
+      setIsUploading(true);
+      try {
+        const response = await api.post(`/v1/policies/${policyId}/pdf`, {
+          versionId,
+          fileName: file.name,
+          fileType: file.type,
+          fileData: base64Data,
+        });
+        if (response.error) {
+          toast.error(response.error || 'Failed to upload PDF.');
+        } else {
+          toast.success('PDF uploaded successfully.');
+          setFiles([]);
+          onMutate?.();
+        }
+      } catch {
+        toast.error('Failed to upload PDF.');
+      } finally {
+        setIsUploading(false);
+      }
     };
     reader.onerror = () => toast.error('Failed to read the file for uploading.');
   };
@@ -183,8 +166,24 @@ export function PdfViewer({
     handleUpload(acceptedFiles);
   };
 
-  const isUploading = uploadStatus === 'executing';
-  const isDeleting = deleteStatus === 'executing';
+  const handleDeletePdf = async () => {
+    setIsDeleting(true);
+    try {
+      const query = versionId ? `?versionId=${versionId}` : '';
+      const response = await api.delete(`/v1/policies/${policyId}/pdf${query}`);
+      if (response.error) {
+        toast.error(response.error || 'Failed to delete PDF.');
+      } else {
+        toast.success('PDF deleted successfully.');
+        setSignedUrl(null);
+        onMutate?.();
+      }
+    } catch {
+      toast.error('Failed to delete PDF.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const fileName = pdfUrl?.split('/').pop() || '';
   const MAX_FILENAME_LENGTH = 50;
@@ -271,7 +270,7 @@ export function PdfViewer({
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() => {
-                        deletePdf({ policyId, versionId });
+                        handleDeletePdf();
                         setIsDeleteDialogOpen(false);
                       }}
                       variant="destructive"

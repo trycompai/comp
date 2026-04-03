@@ -116,6 +116,12 @@ export const steps: Step[] = [
     options: ['Google Workspace', 'Microsoft 365', 'Okta', 'Auth0', 'Email/Password', 'Other'],
   },
   {
+    key: 'infrastructure',
+    question: 'Where do you host your applications and data?',
+    placeholder: 'e.g., AWS',
+    options: ['AWS', 'Google Cloud', 'Microsoft Azure', 'Heroku', 'Vercel', 'Other'],
+  },
+  {
     key: 'software',
     question: 'What software do you use?',
     placeholder: 'e.g., Rippling',
@@ -127,12 +133,6 @@ export const steps: Step[] = [
     question: 'How does your team work?',
     placeholder: 'e.g., Remote',
     options: ['Fully remote', 'Hybrid (office + remote)', 'Office-based'],
-  },
-  {
-    key: 'infrastructure',
-    question: 'Where do you host your applications and data?',
-    placeholder: 'e.g., AWS',
-    options: ['AWS', 'Google Cloud', 'Microsoft Azure', 'Heroku', 'Vercel', 'Other'],
   },
   {
     key: 'dataTypes',

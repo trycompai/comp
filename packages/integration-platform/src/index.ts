@@ -93,8 +93,42 @@ export {
   type TaskTemplateId,
 } from './task-mappings';
 
+// DSL Engine (declarative check and sync definitions)
+export {
+  interpretDeclarativeCheck,
+  interpretDeclarativeSync,
+  evaluateCondition,
+  evaluateOperator,
+  resolvePath,
+  interpolate,
+  interpolateTemplate,
+  validateIntegrationDefinition,
+  CheckDefinitionSchema,
+  SyncEmployeeSchema,
+  SyncDefinitionSchema,
+  DynamicIntegrationDefinitionSchema,
+  ConditionSchema,
+  DSLStepSchema,
+  CodeStepSchema,
+} from './dsl';
+
+export type {
+  DSLStep,
+  CodeStep,
+  CheckDefinition,
+  SyncEmployee,
+  SyncDefinition,
+  Condition,
+  DynamicIntegrationDefinition,
+  ValidationResult,
+  PaginationConfig,
+} from './dsl';
+
 // Individual manifests (for direct import if needed)
 export { manifest as githubManifest } from './manifests/github';
+
+// Directory sync email include/exclude terms (Google Workspace, JumpCloud, checks)
+export { matchesSyncFilterTerms, parseSyncFilterTerms } from './sync-filter/email-exclusion-terms';
 
 // API Response types (for frontend and API type sharing)
 export type {

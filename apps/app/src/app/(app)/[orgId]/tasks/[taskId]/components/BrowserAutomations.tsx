@@ -1,6 +1,5 @@
 'use client';
 
-import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import type { BrowserAutomation } from '../hooks/types';
 import { useBrowserAutomations } from '../hooks/useBrowserAutomations';
@@ -21,7 +20,6 @@ interface BrowserAutomationsProps {
 }
 
 export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAutomationsProps) {
-  const { orgId } = useParams<{ orgId: string }>();
   const [dialogState, setDialogState] = useState<{
     open: boolean;
     mode: 'create' | 'edit';
@@ -30,15 +28,14 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   const [authUrl, setAuthUrl] = useState('https://github.com');
 
   // Hooks
-  const context = useBrowserContext({ organizationId: orgId });
-  const automations = useBrowserAutomations({ taskId, organizationId: orgId });
+  const context = useBrowserContext();
+  const automations = useBrowserAutomations({ taskId });
 
   const handleNeedsReauth = useCallback(() => {
     context.startAuth(authUrl);
   }, [context, authUrl]);
 
   const execution = useBrowserExecution({
-    organizationId: orgId,
     onNeedsReauth: handleNeedsReauth,
     onComplete: automations.fetchAutomations,
   });

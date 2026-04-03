@@ -1,6 +1,7 @@
 'use client';
 
-import type { JSONContent } from '@tiptap/react';
+import type { Extension } from '@tiptap/core';
+import type { JSONContent, Editor as TipTapEditorType } from '@tiptap/react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { useEffect, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
@@ -25,6 +26,8 @@ export interface EditorProps {
   showToolbar?: boolean;
   minHeight?: string;
   maxHeight?: string;
+  additionalExtensions?: Extension[];
+  onEditorReady?: (editor: TipTapEditorType) => void;
 }
 
 export const Editor = ({
@@ -39,7 +42,9 @@ export const Editor = ({
   showWordCount = true,
   showToolbar = true,
   minHeight = '500px',
-  maxHeight = '500px',
+  maxHeight = 'calc(100dvh - 30rem)',
+  additionalExtensions,
+  onEditorReady,
 }: EditorProps) => {
   const [saveStatus, setSaveStatus] = useState<'Saved' | 'Saving' | 'Unsaved'>('Saved');
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
@@ -52,7 +57,10 @@ export const Editor = ({
   const formattedContent = readOnly && validated ? linkifyContent(validated) : validated;
 
   const editor = useEditor({
-    extensions: defaultExtensions({ placeholder, openLinksOnClick: readOnly }),
+    extensions: [
+      ...defaultExtensions({ placeholder, openLinksOnClick: readOnly }),
+      ...(additionalExtensions ?? []),
+    ],
     content: formattedContent || '',
     editable: !readOnly,
     immediatelyRender: false,
@@ -81,9 +89,23 @@ export const Editor = ({
     },
   });
 
+  // Sync editable state with readOnly prop — TipTap v3's useEditor preserves
+  // the current editable state on option updates, so we must set it explicitly.
+  useEffect(() => {
+    if (editor && !editor.isDestroyed) {
+      editor.setEditable(!readOnly);
+    }
+  }, [editor, readOnly]);
+
   useEffect(() => {
     setInitialLoadComplete(true);
   }, []);
+
+  useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
 
   const debouncedSave = useDebouncedCallback(async (content: JSONContent) => {
     if (!onSave) return;
@@ -153,3 +175,8 @@ export {
 
 // Export mention extension
 export { createMentionExtension, type MentionUser } from './extensions/mention';
+
+// Export suggestions extension
+export { SuggestionsExtension, suggestionsPluginKey } from './extensions/suggestions';
+export type { SuggestionRange as EditorSuggestionRange } from './extensions/suggestions';
+export type { Editor as TipTapEditor } from '@tiptap/react';

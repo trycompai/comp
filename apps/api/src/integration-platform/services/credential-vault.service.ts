@@ -51,9 +51,9 @@ export class CredentialVaultService {
   ) {}
 
   private getSecretKey(): string {
-    const secretKey = process.env.SECRET_KEY;
+    const secretKey = process.env.ENCRYPTION_KEY;
     if (!secretKey) {
-      throw new Error('SECRET_KEY environment variable is not set');
+      throw new Error('ENCRYPTION_KEY environment variable is not set');
     }
     return secretKey;
   }

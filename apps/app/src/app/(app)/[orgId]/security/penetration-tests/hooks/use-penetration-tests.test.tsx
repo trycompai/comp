@@ -10,17 +10,6 @@ import {
   usePenetrationTests,
 } from './use-penetration-tests';
 
-vi.mock('../actions/billing', () => ({
-  preauthorizePentestRun: vi.fn().mockResolvedValue({ authorized: true, isOverage: false }),
-}));
-
-vi.mock('@/utils/jwt-manager', () => ({
-  jwtManager: {
-    getValidToken: vi.fn().mockResolvedValue(null),
-    forceRefresh: vi.fn().mockResolvedValue(null),
-  },
-}));
-
 const createJsonResponse = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
     status,
@@ -239,13 +228,15 @@ describe('use-penetration-tests hooks', () => {
     expect(requestBody.repoUrl).toBeUndefined();
   });
 
-  it('preauthorization rejection prevents run creation', async () => {
-    const { preauthorizePentestRun } = await import('../actions/billing');
-    vi.mocked(preauthorizePentestRun).mockResolvedValueOnce({
-      authorized: false,
-      isOverage: false,
-      error: 'No active pentest subscription.',
-    });
+  it('billing action failure surfaces the error after run creation', async () => {
+    // First call: create pentest (success)
+    fetchMock.mockResolvedValueOnce(
+      createJsonResponse({ id: 'run_billed', status: 'provisioning' }),
+    );
+    // Second call: billing charge (failure via API)
+    fetchMock.mockResolvedValueOnce(
+      createJsonResponse({ error: 'No active pentest subscription.' }, 402),
+    );
 
     const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
 
@@ -257,29 +248,8 @@ describe('use-penetration-tests hooks', () => {
       ).rejects.toThrow('No active pentest subscription.');
     });
 
-    // The API should never be called when preauthorization fails
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.current.error).toBe('No active pentest subscription.');
-  });
-
-  it('preauthorization failure from thrown error surfaces the error', async () => {
-    const { preauthorizePentestRun } = await import('../actions/billing');
-    vi.mocked(preauthorizePentestRun).mockRejectedValueOnce(
-      new Error('Billing authorization failed.'),
-    );
-
-    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
-
-    await act(async () => {
-      await expect(
-        result.current.createReport({
-          targetUrl: 'https://app.example.com',
-        }),
-      ).rejects.toThrow('Billing authorization failed.');
-    });
-
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(result.current.error).toBe('Billing authorization failed.');
   });
 
   it('surfaces json provider error objects from create response', async () => {

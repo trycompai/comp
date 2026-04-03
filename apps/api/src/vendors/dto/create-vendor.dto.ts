@@ -7,12 +7,13 @@ import {
   IsUrl,
   IsBoolean,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import {
   VendorCategory,
   VendorStatus,
   Likelihood,
   Impact,
-} from '@trycompai/db';
+} from '@db';
 
 export class CreateVendorDto {
   @ApiProperty({
@@ -99,6 +100,7 @@ export class CreateVendorDto {
   })
   @IsOptional()
   @IsUrl()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   website?: string;
 
   @ApiProperty({

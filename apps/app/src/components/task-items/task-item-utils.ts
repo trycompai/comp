@@ -1,14 +1,14 @@
 import {
-  Clock3,
-  Eye,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  TrendingUp,
-  Gauge,
-  ArrowDownRight,
-  Circle,
-} from 'lucide-react';
+  Time,
+  View,
+  CheckmarkOutline,
+  Misuse,
+  WarningAlt,
+  UpToTop,
+  Meter,
+  ArrowDown,
+  RadioButton,
+} from '@trycompai/design-system/icons';
 import type { TaskItemStatus, TaskItemPriority } from '@/hooks/use-task-items';
 
 export const STATUS_OPTIONS: { value: TaskItemStatus; label: string }[] = [
@@ -29,17 +29,17 @@ export const PRIORITY_OPTIONS: { value: TaskItemPriority; label: string }[] = [
 export const getStatusIcon = (status: TaskItemStatus) => {
   switch (status) {
     case 'todo':
-      return Circle;
+      return RadioButton;
     case 'done':
-      return CheckCircle2;
+      return CheckmarkOutline;
     case 'in_progress':
-      return Clock3;
+      return Time;
     case 'in_review':
-      return Eye;
+      return View;
     case 'canceled':
-      return XCircle;
+      return Misuse;
     default:
-      return Circle;
+      return RadioButton;
   }
 };
 
@@ -61,15 +61,15 @@ export const getStatusColor = (status: TaskItemStatus) => {
 export const getPriorityIcon = (priority: TaskItemPriority) => {
   switch (priority) {
     case 'urgent':
-      return AlertTriangle;
+      return WarningAlt;
     case 'high':
-      return TrendingUp;
+      return UpToTop;
     case 'medium':
-      return Gauge;
+      return Meter;
     case 'low':
-      return ArrowDownRight;
+      return ArrowDown;
     default:
-      return Gauge;
+      return Meter;
   }
 };
 

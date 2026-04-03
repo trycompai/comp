@@ -9,8 +9,8 @@ import type {
   VendorStatus,
   Likelihood,
   Impact,
+  Prisma,
 } from '@db';
-import type { JsonValue } from '@prisma/client/runtime/library';
 
 // Default polling interval for real-time updates (5 seconds)
 const DEFAULT_POLLING_INTERVAL = 5000;
@@ -54,7 +54,7 @@ export interface VendorsResponse {
  */
 export interface VendorResponse extends Vendor {
   // GlobalVendors risk assessment data merged by API
-  riskAssessmentData?: JsonValue | null;
+  riskAssessmentData?: Prisma.JsonValue | null;
   riskAssessmentVersion?: string | null;
   riskAssessmentUpdatedAt?: string | null;
 }
@@ -171,6 +171,12 @@ export function useVendor(
  * Hook for vendor CRUD operations (mutations)
  * Use alongside useVendors/useVendor and call mutate() after mutations
  */
+interface TriggerAssessmentResponse {
+  success: boolean;
+  runId: string;
+  publicAccessToken: string;
+}
+
 export function useVendorActions() {
   const api = useApi();
 
@@ -207,10 +213,39 @@ export function useVendorActions() {
     [api],
   );
 
+  const triggerAssessment = useCallback(
+    async (vendorId: string) => {
+      const response = await api.post<TriggerAssessmentResponse>(
+        `/v1/vendors/${vendorId}/trigger-assessment`,
+        {},
+      );
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data!;
+    },
+    [api],
+  );
+
+  const regenerateMitigation = useCallback(
+    async (vendorId: string) => {
+      const response = await fetch(`/api/vendors/${vendorId}/regenerate-mitigation`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger mitigation regeneration');
+      }
+    },
+    [],
+  );
+
   return {
     createVendor,
     updateVendor,
     deleteVendor,
+    triggerAssessment,
+    regenerateMitigation,
   };
 }
 

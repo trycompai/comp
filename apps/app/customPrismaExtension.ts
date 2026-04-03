@@ -33,8 +33,7 @@ export class PrismaExtension implements BuildExtension {
   constructor(private options: PrismaExtensionOptions) {
     this.moduleExternals = [
       '@prisma/client',
-      '@prisma/engines',
-      '@trycompai/db', // Add the published package to externals
+      '@trycompai/db',
     ];
   }
 
@@ -115,15 +114,23 @@ export class PrismaExtension implements BuildExtension {
     const env: Record<string, string | undefined> = {};
 
     // Copy the prisma schema from the published package to the build output path
-    const schemaDestinationPath = join(manifest.outputPath, 'prisma', 'schema.prisma');
+    // Copy the entire schema directory (multi-file schema)
+    const sourceDir = dirname(schemaPath);
+    const schemaDestinationDir = join(manifest.outputPath, 'prisma', 'schema');
     context.logger.debug(
-      `Copying the prisma schema from ${schemaPath} to ${schemaDestinationPath}`,
+      `Copying the prisma schema directory from ${sourceDir} to ${schemaDestinationDir}`,
     );
-    await cp(schemaPath, schemaDestinationPath);
+    await mkdir(schemaDestinationDir, { recursive: true });
+    await cp(sourceDir, schemaDestinationDir, { recursive: true });
 
-    // Add prisma generate command to generate the client from the copied schema
+    // Patch schema.prisma to use prisma-client-js (populates @prisma/client at runtime)
     commands.push(
-      `${binaryForRuntime(manifest.runtime)} node_modules/prisma/build/index.js generate --schema=./prisma/schema.prisma`,
+      `sed -i 's/provider.*=.*"prisma-client"/provider = "prisma-client-js"/' ./prisma/schema/schema.prisma && sed -i '/output.*=.*"/d' ./prisma/schema/schema.prisma`,
+    );
+
+    // Generate client from the multi-file schema directory
+    commands.push(
+      `${binaryForRuntime(manifest.runtime)} node_modules/prisma/build/index.js generate --schema=./prisma/schema`,
     );
 
     // Only handle migrations if requested
@@ -184,11 +191,22 @@ export class PrismaExtension implements BuildExtension {
     context: ExtendedBuildContext,
     schemaSourcePath: string,
   ): Promise<void> {
-    const schemaDir = resolve(context.workingDir, 'prisma');
-    const schemaDestinationPath = resolve(schemaDir, 'schema.prisma');
+    // schemaSourcePath points to a file inside the schema directory.
+    // Copy the entire directory (multi-file schema) to the local prisma/schema/ dir.
+    const sourceDir = dirname(schemaSourcePath);
+    const localSchemaDir = resolve(context.workingDir, 'prisma', 'schema');
 
-    await mkdir(schemaDir, { recursive: true });
-    await cp(schemaSourcePath, schemaDestinationPath);
+    await mkdir(localSchemaDir, { recursive: true });
+    await cp(sourceDir, localSchemaDir, { recursive: true });
+
+    // Patch schema.prisma to use prisma-client-js (default output → @prisma/client)
+    const localSchemaFile = resolve(localSchemaDir, 'schema.prisma');
+    const { readFileSync, writeFileSync } = await import('node:fs');
+    let schemaContent = readFileSync(localSchemaFile, 'utf8');
+    schemaContent = schemaContent
+      .replace(/provider\s*=\s*"prisma-client"/g, 'provider = "prisma-client-js"')
+      .replace(/\s*output\s*=\s*"[^"]*"\n?/g, '\n');
+    writeFileSync(localSchemaFile, schemaContent);
 
     const clientEntryPoint = resolve(context.workingDir, 'node_modules/.prisma/client/default.js');
 
@@ -207,7 +225,7 @@ export class PrismaExtension implements BuildExtension {
     }
 
     context.logger.log('Prisma client missing. Generating before Trigger indexing.');
-    await this.runPrismaGenerate(context, prismaBinary, schemaDestinationPath);
+    await this.runPrismaGenerate(context, prismaBinary, localSchemaDir);
   }
 
   private runPrismaGenerate(
@@ -265,30 +283,51 @@ export class PrismaExtension implements BuildExtension {
   }
 
   private buildSchemaCandidates(context: ExtendedBuildContext): string[] {
-    const candidates = new Set<string>();
-
-    const addNodeModuleCandidates = (start: string | undefined) => {
-      if (!start) {
-        return;
-      }
-
-      let current = start;
-      while (true) {
-        candidates.add(resolve(current, 'node_modules/@trycompai/db/dist/schema.prisma'));
-        const parent = dirname(current);
-        if (parent === current) {
-          break;
-        }
-        current = parent;
+    const candidates: string[] = [];
+    const seen = new Set<string>();
+    const add = (p: string) => {
+      const resolved = resolve(p);
+      if (!seen.has(resolved)) {
+        seen.add(resolved);
+        candidates.push(resolved);
       }
     };
 
+    // Strategy 1: Resolve @trycompai/db via Node module resolution (follows workspace symlinks)
+    try {
+      const dbPkgJson = require.resolve('@trycompai/db/package.json', {
+        paths: [context.workingDir],
+      });
+      const dbRoot = dirname(dbPkgJson);
+      add(join(dbRoot, 'dist', 'schema.prisma'));
+      add(join(dbRoot, 'prisma', 'schema', 'schema.prisma'));
+    } catch {
+      // Package not resolvable yet (pre-install), fall through to other strategies
+    }
+
+    // Strategy 2: Walk up node_modules hierarchy from workingDir and workspaceDir
+    const addNodeModuleCandidates = (start: string | undefined) => {
+      if (!start) return;
+      let current = start;
+      while (true) {
+        const dbDir = resolve(current, 'node_modules', '@trycompai', 'db');
+        add(join(dbDir, 'dist', 'schema.prisma'));
+        add(join(dbDir, 'prisma', 'schema', 'schema.prisma'));
+        const parent = dirname(current);
+        if (parent === current) break;
+        current = parent;
+      }
+    };
     addNodeModuleCandidates(context.workingDir);
     addNodeModuleCandidates(context.workspaceDir);
 
-    candidates.add(resolve(context.workingDir, '../../packages/db/dist/schema.prisma'));
-    candidates.add(resolve(context.workingDir, '../packages/db/dist/schema.prisma'));
+    // Strategy 3: Relative monorepo paths (apps/api → packages/db, apps/app → packages/db)
+    for (const rel of ['../../packages/db', '../packages/db']) {
+      const dbDir = resolve(context.workingDir, rel);
+      add(join(dbDir, 'dist', 'schema.prisma'));
+      add(join(dbDir, 'prisma', 'schema', 'schema.prisma'));
+    }
 
-    return Array.from(candidates);
+    return candidates;
   }
 }

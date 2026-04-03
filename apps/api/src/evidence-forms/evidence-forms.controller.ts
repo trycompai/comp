@@ -1,6 +1,9 @@
 import { AuthContext, OrganizationId } from '@/auth/auth-context.decorator';
 import { HybridAuthGuard } from '@/auth/hybrid-auth.guard';
+import { PermissionGuard } from '@/auth/permission.guard';
+import { RequirePermission } from '@/auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '@/auth/types';
+import { AuditRead } from '@/audit/skip-audit-log.decorator';
 import {
   Body,
   Controller,
@@ -20,7 +23,7 @@ import { EvidenceFormsService } from './evidence-forms.service';
 
 @ApiTags('Evidence Forms')
 @Controller({ path: 'evidence-forms', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
@@ -32,6 +35,7 @@ export class EvidenceFormsController {
   constructor(private readonly evidenceFormsService: EvidenceFormsService) {}
 
   @Get()
+  @RequirePermission('evidence', 'read')
   @ApiOperation({
     summary: 'List evidence forms',
     description: 'List all available pre-built evidence forms',
@@ -41,6 +45,7 @@ export class EvidenceFormsController {
   }
 
   @Get('statuses')
+  @RequirePermission('evidence', 'read')
   @ApiOperation({
     summary: 'Get submission statuses for all forms',
     description:
@@ -51,6 +56,7 @@ export class EvidenceFormsController {
   }
 
   @Get('my-submissions')
+  @RequirePermission('evidence', 'read')
   @ApiOperation({
     summary: 'Get current user submissions',
     description:
@@ -69,6 +75,7 @@ export class EvidenceFormsController {
   }
 
   @Get('my-submissions/pending-count')
+  @RequirePermission('evidence', 'read')
   @ApiOperation({
     summary: 'Get pending submission count for current user',
     description:
@@ -85,6 +92,7 @@ export class EvidenceFormsController {
   }
 
   @Get(':formType')
+  @RequirePermission('evidence', 'read')
   @ApiOperation({
     summary: 'Get form definition and submissions',
     description:
@@ -109,6 +117,7 @@ export class EvidenceFormsController {
   }
 
   @Get(':formType/submissions/:submissionId')
+  @RequirePermission('evidence', 'read')
   @ApiOperation({
     summary: 'Get a single submission',
     description:
@@ -149,6 +158,7 @@ export class EvidenceFormsController {
   }
 
   @Post(':formType/submissions')
+  @RequirePermission('evidence', 'create')
   @ApiOperation({
     summary: 'Submit evidence form entry',
     description:
@@ -169,6 +179,7 @@ export class EvidenceFormsController {
   }
 
   @Post(':formType/upload-submission')
+  @RequirePermission('evidence', 'create')
   @ApiOperation({
     summary: 'Upload a file as an evidence submission',
     description:
@@ -189,6 +200,7 @@ export class EvidenceFormsController {
   }
 
   @Patch(':formType/submissions/:submissionId/review')
+  @RequirePermission('evidence', 'update')
   @ApiOperation({
     summary: 'Review a submission',
     description:
@@ -211,6 +223,7 @@ export class EvidenceFormsController {
   }
 
   @Post('uploads')
+  @RequirePermission('evidence', 'create')
   @ApiOperation({
     summary: 'Upload evidence form file',
     description:
@@ -229,6 +242,8 @@ export class EvidenceFormsController {
   }
 
   @Get(':formType/export.csv')
+  @RequirePermission('evidence', 'read')
+  @AuditRead()
   @ApiOperation({
     summary: 'Export form submissions to CSV',
     description: 'Export all form submissions for an organization as CSV',

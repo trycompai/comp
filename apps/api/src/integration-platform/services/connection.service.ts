@@ -3,14 +3,14 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { getManifest } from '@comp/integration-platform';
+import { getManifest } from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionAuthTeardownService } from './connection-auth-teardown.service';
 import type {
   IntegrationConnection,
   IntegrationConnectionStatus,
-} from '@prisma/client';
+} from '@db';
 
 export interface CreateConnectionInput {
   providerSlug: string;
@@ -30,6 +30,17 @@ export class ConnectionService {
   async getConnection(connectionId: string): Promise<IntegrationConnection> {
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
+      throw new NotFoundException(`Connection ${connectionId} not found`);
+    }
+    return connection;
+  }
+
+  async getConnectionForOrg(
+    connectionId: string,
+    organizationId: string,
+  ): Promise<IntegrationConnection> {
+    const connection = await this.connectionRepository.findById(connectionId);
+    if (!connection || connection.organizationId !== organizationId) {
       throw new NotFoundException(`Connection ${connectionId} not found`);
     }
     return connection;

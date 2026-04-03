@@ -2,7 +2,7 @@
 import { AssignedUser } from '@/components/assigned-user';
 import { StatusDate } from '@/components/status-date';
 import { StatusIndicator } from '@/components/status-indicator';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import type { RiskStatus } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';

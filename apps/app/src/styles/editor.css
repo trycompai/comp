@@ -218,3 +218,363 @@ pre .hljs-strong {
 .ProseMirror hr {
   @apply border-border my-6;
 }
+
+/* ── Suggestions navigation bar ── */
+
+.suggestions-top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 16px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.1), 0 0 0 1px hsl(0 0% 0% / 0.04);
+}
+
+:is(.dark, [data-theme='dark']) .suggestions-top-bar {
+  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.35), 0 0 0 1px hsl(0 0% 100% / 0.06);
+}
+
+.suggestions-bar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  background: transparent;
+}
+
+.suggestions-bar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.suggestions-bar-accept-all {
+  color: hsl(142 71% 28%);
+  background: hsl(142 71% 45% / 0.1);
+  border-color: hsl(142 71% 45% / 0.25);
+}
+
+.suggestions-bar-accept-all:not(:disabled):hover {
+  background: hsl(142 71% 45% / 0.2);
+  border-color: hsl(142 71% 45% / 0.4);
+}
+
+:is(.dark, [data-theme='dark']) .suggestions-bar-accept-all {
+  color: hsl(142 71% 70%);
+  background: hsl(142 71% 45% / 0.12);
+  border-color: hsl(142 71% 45% / 0.2);
+}
+
+.suggestions-bar-reject-all {
+  color: hsl(0 84% 40%);
+  background: hsl(0 84% 60% / 0.08);
+  border-color: hsl(0 84% 60% / 0.2);
+}
+
+.suggestions-bar-reject-all:not(:disabled):hover {
+  background: hsl(0 84% 60% / 0.15);
+  border-color: hsl(0 84% 60% / 0.35);
+}
+
+:is(.dark, [data-theme='dark']) .suggestions-bar-reject-all {
+  color: hsl(0 84% 68%);
+  background: hsl(0 84% 60% / 0.1);
+  border-color: hsl(0 84% 60% / 0.18);
+}
+
+/* ── Inline suggestion decorations ── */
+
+.suggestion-insert {
+  background: hsl(142 71% 45% / 0.2);
+  color: hsl(142 71% 25%);
+  border-radius: 3px;
+  padding: 1px 4px;
+  text-decoration: underline;
+  text-decoration-color: hsl(142 71% 45% / 0.5);
+  text-underline-offset: 2px;
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-insert {
+  background: hsl(142 71% 45% / 0.15);
+  color: hsl(142 71% 70%);
+}
+
+.suggestion-delete {
+  background: hsl(0 84% 60% / 0.15);
+  color: hsl(0 84% 40%);
+  text-decoration: line-through;
+  text-decoration-color: hsl(0 84% 60% / 0.7);
+  opacity: 0.7;
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-delete {
+  background: hsl(0 84% 60% / 0.12);
+  color: hsl(0 84% 70%);
+}
+
+/* suggestion-modified is no longer used — modify shows as green insert + red delete */
+
+/* Shared spacing tokens for suggestion blocks */
+.ProseMirror {
+  --suggestion-padding-y: 8px;
+  --suggestion-padding-x: 12px;
+  --suggestion-border-width: 4px;
+  --suggestion-border-radius: 0 4px 4px 0;
+  --suggestion-margin-y: 4px;
+}
+
+.suggestion-new-section {
+  position: relative;
+  background: hsl(142 71% 45% / 0.08);
+  box-shadow: inset var(--suggestion-border-width) 0 0 hsl(142 71% 45% / 0.6);
+  margin: var(--suggestion-margin-y) 0;
+  padding: var(--suggestion-padding-y) var(--suggestion-padding-x)
+    var(--suggestion-padding-y) calc(var(--suggestion-border-width) + var(--suggestion-padding-x));
+  font-weight: normal;
+  font-size: inherit;
+}
+
+.suggestion-new-section h1,
+.suggestion-new-section h2,
+.suggestion-new-section h3,
+.suggestion-new-section h4 {
+  font-weight: 600;
+}
+
+/* Green block paragraphs inherit editor p styles — tighten spacing */
+.suggestion-new-section p {
+  @apply my-1;
+}
+
+.suggestion-deleted-section {
+  position: relative;
+  background: hsl(0 84% 60% / 0.04);
+  box-shadow: inset var(--suggestion-border-width) 0 0 hsl(0 84% 60% / 0.6);
+  opacity: 0.5;
+  text-decoration: line-through;
+  padding: var(--suggestion-padding-y) var(--suggestion-padding-x)
+    var(--suggestion-padding-y) calc(var(--suggestion-border-width) + var(--suggestion-padding-x));
+}
+
+/* Shift bullet dots right so they don't overlap with the inset border */
+.ProseMirror ul > li.suggestion-deleted-section::before,
+.ProseMirror ul > li.suggestion-focused::before {
+  left: var(--suggestion-border-width);
+}
+
+/* Merge consecutive deleted sections into one continuous red block.
+ * Remove margins between adjacent deleted nodes so backgrounds join seamlessly. */
+.ProseMirror > .suggestion-change-group + .suggestion-deleted-section,
+.ProseMirror > .suggestion-deleted-section + .suggestion-deleted-section {
+  margin-top: 0 !important;
+}
+
+.ProseMirror > .suggestion-deleted-section:has(+ .suggestion-deleted-section) {
+  margin-bottom: 0 !important;
+}
+
+/* When individual ul nodes are decorated as deleted, extend background
+ * to left edge so they merge visually with adjacent h2/p deleted blocks.
+ * TipTap renders each bullet as a separate <ul> with ml-6 (24px indent). */
+.ProseMirror > ul.suggestion-deleted-section,
+.ProseMirror > ol.suggestion-deleted-section {
+  margin-left: 0 !important;
+  padding-left: calc(var(--suggestion-border-width) + var(--suggestion-padding-x) + 24px) !important;
+}
+
+/* Focused change — the currently navigated change gets extra emphasis */
+.suggestion-deleted-section.suggestion-focused {
+  background: hsl(0 84% 60% / 0.08);
+  box-shadow: inset var(--suggestion-border-width) 0 0 hsl(0 84% 60% / 0.9);
+  opacity: 0.7;
+}
+
+/* ── Per-change action buttons ── */
+
+.suggestion-change-group {
+  position: relative;
+  margin: var(--suggestion-margin-y) 0;
+}
+
+.suggestion-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 8px;
+  background: hsl(142 71% 45% / 0.06);
+  border-bottom: 1px solid hsl(142 71% 45% / 0.15);
+  border-radius: 4px 4px 0 0;
+}
+
+.suggestion-actions-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.suggestion-feedback-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.suggestion-feedback-input {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  border: 1px solid hsl(var(--border));
+  border-radius: 4px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  outline: none;
+}
+
+.suggestion-feedback-input:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3);
+}
+
+.suggestion-feedback-input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.suggestion-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  background: transparent;
+  color: hsl(0 0% 40%);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-action-btn {
+  color: hsl(0 0% 70%);
+}
+
+.suggestion-action-btn:hover {
+  background: hsl(0 0% 0% / 0.05);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-action-btn:hover {
+  background: hsl(0 0% 100% / 0.08);
+}
+
+.suggestion-action-accept {
+  color: hsl(142 71% 30%);
+}
+
+.suggestion-action-accept:hover {
+  background: hsl(142 71% 45% / 0.15);
+  border-color: hsl(142 71% 45% / 0.3);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-action-accept {
+  color: hsl(142 71% 65%);
+}
+
+.suggestion-action-reject {
+  color: hsl(0 84% 45%);
+}
+
+.suggestion-action-reject:hover {
+  background: hsl(0 84% 60% / 0.12);
+  border-color: hsl(0 84% 60% / 0.3);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-action-reject {
+  color: hsl(0 84% 65%);
+}
+
+.suggestion-action-feedback {
+  color: hsl(220 70% 45%);
+}
+
+.suggestion-action-feedback:hover {
+  background: hsl(220 70% 50% / 0.12);
+  border-color: hsl(220 70% 50% / 0.3);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-action-feedback {
+  color: hsl(220 70% 70%);
+}
+
+.suggestion-delete-group .suggestion-actions {
+  background: hsl(0 84% 60% / 0.06);
+  border-bottom: 1px solid hsl(0 84% 60% / 0.15);
+}
+
+
+/* ── Loading skeleton ── */
+
+.suggestion-loading {
+  padding: var(--suggestion-padding-y) var(--suggestion-padding-x)
+    var(--suggestion-padding-y) calc(var(--suggestion-border-width) + var(--suggestion-padding-x));
+  background: hsl(142 71% 45% / 0.04);
+  box-shadow: inset var(--suggestion-border-width) 0 0 hsl(142 71% 45% / 0.3);
+}
+
+.suggestion-skeleton-line {
+  position: relative;
+  overflow: hidden;
+  background: hsl(0 0% 0% / 0.08);
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-skeleton-line {
+  background: hsl(0 0% 100% / 0.1);
+}
+
+.suggestion-skeleton-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(0 0% 0% / 0.06) 50%,
+    transparent 100%
+  );
+  animation: suggestion-shimmer 1.6s ease-in-out infinite;
+}
+
+:is(.dark, [data-theme='dark']) .suggestion-skeleton-line::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(0 0% 100% / 0.08) 50%,
+    transparent 100%
+  );
+}
+
+@keyframes suggestion-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.suggestion-loading-content {
+  opacity: 0.3;
+  pointer-events: none;
+}
+

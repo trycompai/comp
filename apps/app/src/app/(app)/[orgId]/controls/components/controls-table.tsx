@@ -21,6 +21,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ControlWithRelations } from '../data/queries';
 import { StatusIndicator } from '@/components/status-indicator';
 import { getControlStatus } from '../lib/utils';
+import { usePermissions } from '@/hooks/use-permissions';
 
 const DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
@@ -40,6 +41,7 @@ export function ControlsTable({ promises }: ControlsTableProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { hasPermission } = usePermissions();
   const [search, setSearch] = React.useState('');
   const [sortDirection, setSortDirection] = React.useState<SortDirection>('asc');
   const [page, setPage] = React.useState(1);
@@ -112,7 +114,9 @@ export function ControlsTable({ promises }: ControlsTableProps) {
       <DataTableHeader>
         <DataTableSearch placeholder="Search controls..." value={search} onChange={setSearch} />
         <DataTableFilters>
-          <Button onClick={handleOpenCreateControl}>Create Control</Button>
+          {hasPermission('control', 'create') && (
+            <Button onClick={handleOpenCreateControl}>Create Control</Button>
+          )}
         </DataTableFilters>
       </DataTableHeader>
       <Table

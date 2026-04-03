@@ -1,20 +1,21 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   HttpCode,
   HttpStatus,
   Res,
+  Param,
   BadRequestException,
-  UnauthorizedException,
-  Headers,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiProduces,
-  ApiHeader,
+  ApiSecurity,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { TrainingService } from './training.service';
@@ -22,32 +23,69 @@ import {
   SendTrainingCompletionDto,
   SendTrainingCompletionResponseDto,
 } from './dto/send-training-completion.dto';
+import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
+import { OrganizationId, MemberId } from '../auth/auth-context.decorator';
 
 @ApiTags('Training')
-@Controller('training')
+@Controller({ path: 'training', version: '1' })
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@ApiSecurity('apikey')
 export class TrainingController {
-  private validateInternalToken(token: string | undefined): void {
-    const expectedToken = process.env.INTERNAL_API_TOKEN;
-
-    if (!expectedToken) {
-      throw new UnauthorizedException(
-        'INTERNAL_API_TOKEN not configured on server',
-      );
-    }
-
-    if (!token || token !== expectedToken) {
-      throw new UnauthorizedException('Invalid or missing internal API token');
-    }
-  }
   constructor(private readonly trainingService: TrainingService) {}
+
+  @Get('completions')
+  @RequirePermission('portal', 'read')
+  @ApiOperation({
+    summary: 'Get training video completions for the authenticated user',
+    description:
+      'Returns all training video completion records for the authenticated member. Requires session authentication.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of training video completion records',
+  })
+  async getCompletions(
+    @MemberId() memberId: string | undefined,
+    @OrganizationId() organizationId: string,
+  ) {
+    if (!memberId) {
+      throw new BadRequestException('Session authentication required');
+    }
+    return this.trainingService.getCompletions(memberId, organizationId);
+  }
+
+  @Post('completions/:videoId/complete')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('portal', 'update')
+  @ApiOperation({
+    summary: 'Mark a training video as complete',
+    description:
+      'Marks a specific training video as completed for the authenticated member. Triggers completion email if all training is now done.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The updated completion record',
+  })
+  async markVideoComplete(
+    @MemberId() memberId: string | undefined,
+    @OrganizationId() organizationId: string,
+    @Param('videoId') videoId: string,
+  ) {
+    if (!memberId) {
+      throw new BadRequestException('Session authentication required');
+    }
+    return this.trainingService.markVideoComplete(
+      memberId,
+      organizationId,
+      videoId,
+    );
+  }
 
   @Post('send-completion-email')
   @HttpCode(HttpStatus.OK)
-  @ApiHeader({
-    name: 'x-internal-token',
-    description: 'Internal API token for service-to-service calls',
-    required: true,
-  })
+  @RequirePermission('training', 'update')
   @ApiOperation({
     summary: 'Send training completion email with certificate',
     description:
@@ -59,15 +97,13 @@ export class TrainingController {
     type: SendTrainingCompletionResponseDto,
   })
   async sendTrainingCompletionEmail(
-    @Headers('x-internal-token') token: string,
+    @OrganizationId() organizationId: string,
     @Body() dto: SendTrainingCompletionDto,
   ): Promise<SendTrainingCompletionResponseDto> {
-    this.validateInternalToken(token);
-
     const result =
       await this.trainingService.sendTrainingCompletionEmailIfComplete(
         dto.memberId,
-        dto.organizationId,
+        organizationId,
       );
 
     return result;
@@ -75,11 +111,7 @@ export class TrainingController {
 
   @Post('generate-certificate')
   @HttpCode(HttpStatus.OK)
-  @ApiHeader({
-    name: 'x-internal-token',
-    description: 'Internal API token for service-to-service calls',
-    required: true,
-  })
+  @RequirePermission('training', 'read')
   @ApiOperation({
     summary: 'Generate training completion certificate PDF',
     description:
@@ -95,15 +127,46 @@ export class TrainingController {
     description: 'Training not complete or member not found',
   })
   async generateCertificate(
-    @Headers('x-internal-token') token: string,
+    @OrganizationId() organizationId: string,
     @Body() dto: SendTrainingCompletionDto,
     @Res() res: Response,
   ): Promise<void> {
-    this.validateInternalToken(token);
-
     const result = await this.trainingService.generateCertificate(
       dto.memberId,
-      dto.organizationId,
+      organizationId,
+    );
+
+    if ('error' in result) {
+      throw new BadRequestException(result.error);
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${result.fileName}"`,
+    );
+    res.send(result.pdf);
+  }
+
+  @Post('generate-hipaa-certificate')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('training', 'read')
+  @ApiOperation({
+    summary: 'Generate HIPAA training certificate PDF',
+    description:
+      'Generates a PDF certificate for a member who has completed the HIPAA Security Awareness Training.',
+  })
+  @ApiProduces('application/pdf')
+  @ApiResponse({ status: 200, description: 'PDF certificate file' })
+  @ApiResponse({ status: 400, description: 'HIPAA training not complete or member not found' })
+  async generateHipaaCertificate(
+    @OrganizationId() organizationId: string,
+    @Body() dto: SendTrainingCompletionDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const result = await this.trainingService.generateHipaaCertificate(
+      dto.memberId,
+      organizationId,
     );
 
     if ('error' in result) {

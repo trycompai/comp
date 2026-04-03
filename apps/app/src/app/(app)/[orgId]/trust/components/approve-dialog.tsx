@@ -1,5 +1,6 @@
 import { useAccessRequest, useApproveAccessRequest } from '@/hooks/use-access-requests';
-import { Button } from '@comp/ui/button';
+import { usePermissions } from '@/hooks/use-permissions';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -7,8 +8,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@comp/ui/field';
+} from '@trycompai/ui/dialog';
+import { Field, FieldError, FieldLabel } from '@trycompai/ui/field';
 import { useForm } from '@tanstack/react-form';
 import { toast } from 'sonner';
 import { DurationPicker } from './duration-picker';
@@ -22,6 +23,8 @@ export function ApproveDialog({
   requestId: string;
   onClose: () => void;
 }) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const { data } = useAccessRequest(orgId, requestId);
   const { mutateAsync: approveRequest } = useApproveAccessRequest(orgId);
 
@@ -122,7 +125,7 @@ export function ApproveDialog({
             </Button>
             <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
               {([canSubmit, isSubmitting]) => (
-                <Button type="submit" disabled={!canSubmit || isSubmitting}>
+                <Button type="submit" disabled={!canSubmit || isSubmitting || !canUpdate}>
                   {isSubmitting ? 'Approving...' : 'Approve & Send NDA'}
                 </Button>
               )}

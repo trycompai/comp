@@ -1,6 +1,7 @@
 name: Device Agent Release
 
 on:
+  workflow_dispatch:
   push:
     branches: ['**']
     paths:
@@ -18,6 +19,7 @@ jobs:
       tag_name: ${{ steps.version.outputs.tag_name }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
       portal_url: ${{ steps.version.outputs.portal_url }}
+      api_url: ${{ steps.version.outputs.api_url }}
       release_name: ${{ steps.version.outputs.release_name }}
       auto_update_url: ${{ steps.version.outputs.auto_update_url }}
       s3_env: ${{ steps.version.outputs.s3_env }}
@@ -50,12 +52,14 @@ jobs:
             TAG_NAME="device-agent-v${NEXT_VERSION}"
             IS_PRERELEASE="false"
             PORTAL_URL="https://portal.trycomp.ai"
+            API_URL="https://api.trycomp.ai"
             RELEASE_NAME="Device Agent v${NEXT_VERSION}"
             S3_ENV="production"
           else
             TAG_NAME="device-agent-v${NEXT_VERSION}-staging.${GITHUB_RUN_NUMBER}"
             IS_PRERELEASE="true"
             PORTAL_URL="https://portal.staging.trycomp.ai"
+            API_URL="https://api.staging.trycomp.ai"
             RELEASE_NAME="Device Agent v${NEXT_VERSION} (Staging #${GITHUB_RUN_NUMBER})"
             S3_ENV="staging"
           fi
@@ -67,6 +71,7 @@ jobs:
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
           echo "portal_url=$PORTAL_URL" >> $GITHUB_OUTPUT
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
           echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
           echo "auto_update_url=$AUTO_UPDATE_URL" >> $GITHUB_OUTPUT
           echo "s3_env=$S3_ENV" >> $GITHUB_OUTPUT
@@ -77,6 +82,7 @@ jobs:
           echo "Tag name: $TAG_NAME"
           echo "Pre-release: $IS_PRERELEASE"
           echo "Portal URL: $PORTAL_URL"
+          echo "API URL: $API_URL"
           echo "Auto-update URL: $AUTO_UPDATE_URL"
           echo "S3 env: $S3_ENV"
 
@@ -112,6 +118,7 @@ jobs:
       - name: Build
         env:
           PORTAL_URL: ${{ needs.detect-version.outputs.portal_url }}
+          API_URL: ${{ needs.detect-version.outputs.api_url }}
           AGENT_VERSION: ${{ needs.detect-version.outputs.version }}
         run: bun run build
 
@@ -170,6 +177,7 @@ jobs:
       - name: Build
         env:
           PORTAL_URL: ${{ needs.detect-version.outputs.portal_url }}
+          API_URL: ${{ needs.detect-version.outputs.api_url }}
           AGENT_VERSION: ${{ needs.detect-version.outputs.version }}
         run: bun run build
 
@@ -194,18 +202,22 @@ jobs:
           ESIGNER_CREDENTIAL_ID: ${{ secrets.ESIGNER_CREDENTIAL_ID }}
           ESIGNER_TOTP_SECRET: ${{ secrets.ESIGNER_TOTP_SECRET }}
         run: |
-          # Download and extract CodeSignTool
+          if (-not $env:ESIGNER_USERNAME -or -not $env:ESIGNER_PASSWORD -or -not $env:ESIGNER_CREDENTIAL_ID -or -not $env:ESIGNER_TOTP_SECRET) {
+            throw "One or more ESIGNER secrets are not configured. Cannot sign."
+          }
+
           Invoke-WebRequest -Uri "https://github.com/SSLcom/CodeSignTool/releases/download/v1.3.0/CodeSignTool-v1.3.0-windows.zip" -OutFile "codesigntool.zip"
           Expand-Archive -Path "codesigntool.zip" -DestinationPath "codesigntool"
 
-          # Find the jar file
           $jar = Get-ChildItem -Path "codesigntool" -Recurse -Filter "code_sign_tool-*.jar" | Select-Object -First 1
           if (-not $jar) { throw "CodeSignTool jar not found" }
           Write-Host "Found CodeSignTool jar at: $($jar.FullName)"
+          $cstDir = $jar.Directory.Parent
 
-          # Sign each .exe file using Java directly (skips .bat which needs bundled JDK)
-          Get-ChildItem -Filter "*.exe" | ForEach-Object {
+          $releaseDir = Get-Location
+          Get-ChildItem -Path $releaseDir -Filter "*.exe" | ForEach-Object {
             Write-Host "Signing $($_.Name)..."
+            Push-Location $cstDir.FullName
             & java -Xmx1024M -jar "$($jar.FullName)" sign `
               -username="$env:ESIGNER_USERNAME" `
               -password="$env:ESIGNER_PASSWORD" `
@@ -213,9 +225,30 @@ jobs:
               -totp_secret="$env:ESIGNER_TOTP_SECRET" `
               -input_file_path="$($_.FullName)" `
               -override="true"
-            if ($LASTEXITCODE -ne 0) { throw "Code signing failed for $($_.Name)" }
-            Write-Host "Signed $($_.Name) successfully"
+            $signExitCode = $LASTEXITCODE
+            Pop-Location
+            if ($signExitCode -ne 0) { throw "Code signing failed for $($_.Name) (exit code: $signExitCode)" }
+            Write-Host "CodeSignTool completed for $($_.Name)"
           }
+
+      - name: Verify Windows code signature
+        shell: powershell
+        working-directory: packages/device-agent/release
+        run: |
+          $allSigned = $true
+          Get-ChildItem -Filter "*.exe" | ForEach-Object {
+            $sig = Get-AuthenticodeSignature -FilePath $_.FullName
+            Write-Host "File: $($_.Name)"
+            Write-Host "  Status: $($sig.Status)"
+            Write-Host "  Signer: $($sig.SignerCertificate.Subject)"
+            Write-Host "  Issuer: $($sig.SignerCertificate.Issuer)"
+            Write-Host "  Valid from: $($sig.SignerCertificate.NotBefore) to $($sig.SignerCertificate.NotAfter)"
+            if ($sig.Status -ne 'Valid') {
+              Write-Host "::error::Signature verification FAILED for $($_.Name) - Status: $($sig.Status)"
+              $allSigned = $false
+            }
+          }
+          if (-not $allSigned) { throw "One or more .exe files are NOT properly signed. Failing build." }
 
       - name: Recalculate latest.yml hash after signing
         shell: bash
@@ -291,6 +324,7 @@ jobs:
       - name: Build
         env:
           PORTAL_URL: ${{ needs.detect-version.outputs.portal_url }}
+          API_URL: ${{ needs.detect-version.outputs.api_url }}
           AGENT_VERSION: ${{ needs.detect-version.outputs.version }}
         run: bun run build
 

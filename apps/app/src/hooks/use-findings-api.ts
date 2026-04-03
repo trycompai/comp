@@ -2,7 +2,7 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
-import type { EvidenceFormType } from '@comp/company';
+import type { EvidenceFormType } from '@trycompai/company';
 import type { FindingStatus, FindingType } from '@db';
 import { useCallback } from 'react';
 

@@ -1,5 +1,5 @@
 import { env } from '@/env.mjs';
-import { client } from '@comp/kv';
+import { client } from '@trycompai/kv';
 import { Ratelimit } from '@upstash/ratelimit';
 import type { NextRequest } from 'next/server';
 

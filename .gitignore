@@ -6,6 +6,8 @@ node_modules
 .pnp.js
 
 .idea/
+.superpowers/
+docs/superpowers/
 # testing
 coverage
 
@@ -39,6 +41,10 @@ yarn-error.log*
 
 # turbo
 .turbo
+
+# claude code - personal settings and memory (commands/ is shared)
+.claude/settings.local.json
+.claude/projects/
 
 # react-email
 .react-email
@@ -87,4 +93,6 @@ packages/*/dist
 scripts/sync-release-branch.sh
 /.vscode
 
-.claude/projects/-Users-marfuen-code-comp/
+.claude/audit-findings.md
+
+.superpowers/*

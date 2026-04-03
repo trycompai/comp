@@ -3,8 +3,8 @@ import { useRouter } from 'next/navigation';
 import type * as React from 'react';
 
 import { getCommonPinningStyles } from '@/lib/data-table';
-import { cn } from '@comp/ui/cn';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
+import { cn } from '@trycompai/ui/cn';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
 import { DataTablePagination } from './data-table-pagination';
 
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {

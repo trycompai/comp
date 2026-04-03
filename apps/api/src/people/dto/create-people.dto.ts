@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
+  IsNotEmpty,
   IsOptional,
   IsEnum,
   IsBoolean,
   IsNumber,
 } from 'class-validator';
-import { Departments } from '@trycompai/db';
+import { Departments } from '@db';
 
 export class CreatePeopleDto {
   @ApiProperty({
@@ -14,13 +15,15 @@ export class CreatePeopleDto {
     example: 'usr_abc123def456',
   })
   @IsString()
+  @IsNotEmpty()
   userId: string;
 
   @ApiProperty({
-    description: 'Role for the member',
+    description: 'Role for the member (built-in role name or custom role ID)',
     example: 'admin',
   })
   @IsString()
+  @IsNotEmpty()
   role: string;
 
   @ApiProperty({

@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { AnswerQuestionResult } from '@/trigger/questionnaire/answer-question';
 import { answerQuestion } from '@/trigger/questionnaire/answer-question';
 import { generateAnswerWithRAGBatch } from '@/trigger/questionnaire/answer-question-helpers';
+import { tasks } from '@trigger.dev/sdk';
+import type { parseQuestionnaireTask } from '@/trigger/questionnaire/parse-questionnaire';
 import { ParseQuestionnaireDto } from './dto/parse-questionnaire.dto';
 import {
   ExportQuestionnaireDto,
@@ -148,7 +150,7 @@ export class QuestionnaireService {
       const zip = new AdmZip();
 
       for (const format of formats) {
-        const exportFile = generateExportFile(
+        const exportFile = await generateExportFile(
           answered.map((a) => ({ question: a.question, answer: a.answer })),
           format,
           vendorName,
@@ -182,7 +184,7 @@ export class QuestionnaireService {
     }
 
     // Single format export (default behavior)
-    const exportFile = generateExportFile(
+    const exportFile = await generateExportFile(
       answered.map((a) => ({ question: a.question, answer: a.answer })),
       dto.format as ExportFormat,
       vendorName,
@@ -211,7 +213,8 @@ export class QuestionnaireService {
 
   async uploadAndParse(
     dto: UploadAndParseDto,
-  ): Promise<{ questionnaireId: string; totalQuestions: number }> {
+  ): Promise<{ runId: string; publicAccessToken: string }> {
+    // Upload file to S3 first
     const uploadInfo = await uploadQuestionnaireFile({
       organizationId: dto.organizationId,
       fileName: dto.fileName,
@@ -220,38 +223,32 @@ export class QuestionnaireService {
       source: dto.source || 'internal',
     });
 
-    // Use AI-powered extraction (faster, handles all file formats)
-    const questionsAndAnswers = await extractQuestionsWithAI(
-      dto.fileData,
-      dto.fileType,
-      this.contentLogger,
-    );
-
-    const questionnaireId = await persistQuestionnaireResult(
-      {
-        organizationId: dto.organizationId,
-        fileName: dto.fileName,
-        fileType: dto.fileType,
-        fileSize:
-          uploadInfo?.fileSize ?? Buffer.from(dto.fileData, 'base64').length,
-        s3Key: uploadInfo?.s3Key ?? null,
-        questionsAndAnswers: questionsAndAnswers.map((qa) => ({
-          question: qa.question,
-          answer: null,
-          sources: undefined,
-        })),
-        source: dto.source || 'internal',
-      },
-      this.storageLogger,
-    );
-
-    if (!questionnaireId) {
-      throw new Error('Failed to save questionnaire');
+    if (!uploadInfo) {
+      throw new Error('Failed to upload questionnaire file to S3');
     }
 
+    // Trigger async processing via Trigger.dev
+    const handle = await tasks.trigger<typeof parseQuestionnaireTask>(
+      'parse-questionnaire',
+      {
+        inputType: 's3' as const,
+        organizationId: dto.organizationId,
+        s3Key: uploadInfo.s3Key,
+        fileName: dto.fileName,
+        fileType: dto.fileType,
+        fileSize: uploadInfo.fileSize,
+      },
+    );
+
+    this.logger.log('Triggered async questionnaire parsing', {
+      runId: handle.id,
+      s3Key: uploadInfo.s3Key,
+      fileName: dto.fileName,
+    });
+
     return {
-      questionnaireId,
-      totalQuestions: questionsAndAnswers.length,
+      runId: handle.id,
+      publicAccessToken: handle.publicAccessToken,
     };
   }
 
@@ -433,7 +430,7 @@ export class QuestionnaireService {
       format: dto.format,
     });
 
-    return generateExportFile(
+    return await generateExportFile(
       questionsAndAnswers,
       dto.format as ExportFormat,
       questionnaire.filename,
@@ -492,6 +489,70 @@ export class QuestionnaireService {
     sources?: AnswerQuestionResult['sources'];
   }): Promise<void> {
     await saveGeneratedAnswer(params);
+  }
+
+  async findAll(organizationId: string) {
+    return db.questionnaire.findMany({
+      where: {
+        organizationId,
+        status: { in: ['completed', 'parsing'] },
+      },
+      select: {
+        id: true,
+        filename: true,
+        fileType: true,
+        status: true,
+        totalQuestions: true,
+        answeredQuestions: true,
+        source: true,
+        createdAt: true,
+        updatedAt: true,
+        questions: {
+          orderBy: { questionIndex: 'asc' },
+          select: {
+            id: true,
+            question: true,
+            answer: true,
+            status: true,
+            questionIndex: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findById(id: string, organizationId: string) {
+    return db.questionnaire.findUnique({
+      where: { id, organizationId },
+      include: {
+        questions: {
+          orderBy: { questionIndex: 'asc' },
+          select: {
+            id: true,
+            question: true,
+            answer: true,
+            status: true,
+            questionIndex: true,
+            sources: true,
+          },
+        },
+      },
+    });
+  }
+
+  async deleteById(id: string, organizationId: string) {
+    const questionnaire = await db.questionnaire.findUnique({
+      where: { id, organizationId },
+    });
+
+    if (!questionnaire) {
+      throw new NotFoundException(`Questionnaire with ID ${id} not found`);
+    }
+
+    await db.questionnaire.delete({ where: { id } });
+
+    return { success: true };
   }
 
   // Private helper methods

@@ -1,25 +1,25 @@
 'use client';
 
 import {
-  AIChatBody,
-  Badge,
-  Button,
-  Card,
-  HStack,
-  Stack,
-  Text,
-  Textarea,
-} from '@trycompai/design-system';
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
 import {
-  ArrowDown,
-  CheckmarkFilled,
-  CircleFilled,
-  Close,
-  Error,
-  Time,
-} from '@trycompai/design-system/icons';
+  Message,
+  MessageContent,
+  MessageResponse,
+} from '@/components/ai-elements/message';
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputFooter,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { Button } from '@trycompai/design-system';
+import { Close, MagicWand } from '@trycompai/design-system/icons';
 import type { ChatStatus } from 'ai';
-import { useState } from 'react';
 import type { PolicyChatUIMessage } from '../../types';
 
 interface PolicyAiAssistantProps {
@@ -27,8 +27,8 @@ interface PolicyAiAssistantProps {
   status: ChatStatus;
   errorMessage?: string | null;
   sendMessage: (payload: { text: string }) => void;
+  stop?: () => void;
   close?: () => void;
-  hasActiveProposal?: boolean;
 }
 
 export function PolicyAiAssistant({
@@ -36,244 +36,290 @@ export function PolicyAiAssistant({
   status,
   errorMessage,
   sendMessage,
+  stop,
   close,
-  hasActiveProposal,
 }: PolicyAiAssistantProps) {
-  const [input, setInput] = useState('');
-
-  const isLoading = status === 'streaming' || status === 'submitted';
-
-  const hasActiveTool = messages.some(
-    (m) =>
-      m.role === 'assistant' &&
-      m.parts.some(
-        (p) =>
-          p.type === 'tool-proposePolicy' &&
-          (p.state === 'input-streaming' ||
-            p.state === 'output-available' ||
-            p.state === 'output-error'),
-      ),
-  );
-
-  const handleSubmit = () => {
-    if (!input.trim()) return;
-    sendMessage({ text: input });
-    setInput('');
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
+  const isBusy = status === 'streaming' || status === 'submitted';
 
   return (
-    <Card
-      width="full"
-      title="AI Assistant"
-      headerAction={
-        close && (
-          <Button variant="ghost" size="icon-sm" onClick={close}>
-            <Close size={16} />
-          </Button>
-        )
-      }
-    >
-      <Stack gap="md">
-        <AIChatBody>
-          <Stack gap="sm">
-            {messages.length === 0 ? (
-              <Stack gap="sm">
-                <Text size="sm" variant="muted">
-                  I can help you edit, adapt, or check this policy for compliance. Try asking me
-                  things like:
-                </Text>
-                <Stack gap="xs">
-                  <Text size="xs" variant="muted">
-                    "Adapt this for a fully remote, distributed team."
-                  </Text>
-                  <Text size="xs" variant="muted">
-                    "Can I shorten the data retention timeframe and still meet SOC 2 standards?"
-                  </Text>
-                  <Text size="xs" variant="muted">
-                    "Modify the access control section to include contractors."
-                  </Text>
-                </Stack>
-              </Stack>
-            ) : (
-              messages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  hasActiveProposal={hasActiveProposal}
-                />
-              ))
-            )}
-            {isLoading && !hasActiveTool && (
-              <Text size="sm" variant="muted">
-                Thinking...
-              </Text>
-            )}
-          </Stack>
-        </AIChatBody>
+    <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm">
+      {close && (
+        <div className="flex items-center justify-between bg-primary px-3 py-2 text-primary-foreground">
+          <span className="text-sm font-semibold">AI Assistant</span>
+          <div className="text-primary-foreground [&_button]:text-primary-foreground/70 [&_button:hover]:text-primary-foreground">
+            <Button variant="ghost" size="icon" onClick={close} iconLeft={<Close size={14} />} />
+          </div>
+        </div>
+      )}
 
+      <Conversation className="min-h-0 flex-1">
+        <ConversationContent className="!gap-4 px-3 py-3">
+          {messages.length === 0 ? (
+            <ConversationEmptyState>
+              <div className="text-muted-foreground">
+                <MagicWand size={24} />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-medium">Policy AI Assistant</h3>
+                <p className="text-xs text-muted-foreground">I can help you edit, adapt, or check this policy for compliance.</p>
+              </div>
+              <div className="space-y-0.5 text-center text-xs italic text-muted-foreground/70">
+                <p>&quot;Add a section covering third-party vendor access controls.&quot;</p>
+                <p>&quot;Update the incident response steps to align with SOC 2.&quot;</p>
+                <p>&quot;Rewrite the data retention clause for GDPR compliance.&quot;</p>
+              </div>
+            </ConversationEmptyState>
+          ) : (
+            <>
+              {messages.map((message, messageIndex) => {
+                // A tool in an older message that never completed was interrupted.
+                // A tool in the latest message is only interrupted if we're no longer busy.
+                const isLastMessage = messageIndex === messages.length - 1;
+                const isMessageStopped = isLastMessage ? !isBusy : true;
+
+                return (
+                <Message from={message.role} key={message.id}>
+                  <MessageContent>
+                    {message.parts.map((part, index) => {
+                      if (part.type === 'text') {
+                        if (message.role === 'user') {
+                          return (
+                            <div key={`${message.id}-${index}`} className="flex justify-end">
+                              <div className="rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-sm text-primary-foreground">
+                                {part.text}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <MessageResponse key={`${message.id}-${index}`}>
+                            {part.text}
+                          </MessageResponse>
+                        );
+                      }
+
+                      if (part.type === 'tool-proposePolicy') {
+                        return (
+                          <PolicyToolCard
+                            key={`${message.id}-${index}`}
+                            state={part.state}
+                            stopped={isMessageStopped}
+                          />
+                        );
+                      }
+
+                      if (
+                        part.type === 'tool-listVendors' ||
+                        part.type === 'tool-getVendor' ||
+                        part.type === 'tool-listPolicies' ||
+                        part.type === 'tool-getPolicy' ||
+                        part.type === 'tool-listEvidence'
+                      ) {
+                        return (
+                          <DataToolCard
+                            key={`${message.id}-${index}`}
+                            toolName={part.type}
+                            state={part.state}
+                            stopped={isMessageStopped}
+                          />
+                        );
+                      }
+
+                      return null;
+                    })}
+                  </MessageContent>
+                </Message>
+                );
+              })}
+              <ThinkingIndicator status={status} messages={messages} />
+            </>
+          )}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
+
+      <div className="border-t px-3 py-2">
         {errorMessage && (
-          <Stack>
-            <Text size="xs" variant="destructive">
-              {errorMessage}
-            </Text>
-          </Stack>
+          <div className="mb-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {errorMessage}
+          </div>
         )}
 
-        <Stack gap="xs">
-          <Textarea
-            size="full"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about this policy..."
-            rows={2}
-          />
-          <HStack justify="end">
-            <Button size="sm" onClick={handleSubmit} disabled={isLoading || !input.trim()}>
-              Send
-            </Button>
-          </HStack>
-        </Stack>
-      </Stack>
-    </Card>
-  );
-}
-
-function MessageBubble({
-  message,
-  hasActiveProposal,
-}: {
-  message: PolicyChatUIMessage;
-  hasActiveProposal?: boolean;
-}) {
-  const isUser = message.role === 'user';
-
-  return (
-    <div
-      className={
-        isUser ? 'ml-auto max-w-[85%] rounded-lg bg-secondary px-3 py-2' : 'text-foreground'
-      }
-    >
-      {message.parts.map((part, index) => {
-        if (part.type === 'text') {
-          return (
-            <div key={`${message.id}-${index}`} className="whitespace-pre-wrap text-sm">
-              {part.text}
-            </div>
-          );
-        }
-
-        if (part.type === 'tool-proposePolicy') {
-          return (
-            <ToolCard
-              key={`${message.id}-${index}`}
-              part={part}
-              hasActiveProposal={hasActiveProposal}
-            />
-          );
-        }
-
-        return null;
-      })}
+        <PromptInput
+          onSubmit={({ text }) => {
+            if (!text.trim() || isBusy) return;
+            sendMessage({ text });
+          }}
+        >
+          <PromptInputTextarea placeholder="Let me know what to edit..." disabled={isBusy} className="min-h-[2rem] max-h-[4rem]" />
+          <PromptInputFooter>
+            <div />
+            {isBusy && stop ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={stop}
+              >
+                Stop
+              </Button>
+            ) : (
+              <PromptInputSubmit status={status} />
+            )}
+          </PromptInputFooter>
+        </PromptInput>
+      </div>
     </div>
   );
 }
 
-function ToolCard({
-  part,
-  hasActiveProposal,
+function PolicyToolCard({
+  state,
+  stopped,
 }: {
-  part: {
-    type: 'tool-proposePolicy';
-    state: 'input-streaming' | 'input-available' | 'output-available' | 'output-error';
-    input?: {
-      title?: string;
-      summary?: string;
-      detail?: string;
-      content?: string;
-    };
-  };
-  hasActiveProposal?: boolean;
+  state: string;
+  stopped: boolean;
 }) {
-  const toolInput = part.input;
+  const isCompleted = state === 'output-available';
+  const isError = state === 'output-error';
+  const isWorking = !isCompleted && !isError;
 
-  const isInProgress = part.state === 'input-streaming' || part.state === 'input-available';
-  const isCompleted = part.state === 'output-available';
-
-  const title =
-    (isCompleted
-      ? toolInput?.title || toolInput?.summary
-      : toolInput?.title || 'Configuring policy updates') || 'Policy updates ready for your review';
-
-  const bodyText = (() => {
-    if (isInProgress) {
-      return (
-        toolInput?.detail ||
-        'I am preparing an updated version of this policy. Please wait a moment before accepting any changes.'
-      );
-    }
-    if (isCompleted) {
-      return (
-        toolInput?.detail ||
-        'The updated policy is ready. Review the diff in the editor before applying changes.'
-      );
-    }
+  // Interrupted — streaming stopped while tool was in progress
+  if (isWorking && stopped) {
     return (
-      toolInput?.detail ||
-      'Review the proposed changes in the editor preview below before applying them.'
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+        <span>Interrupted</span>
+      </div>
     );
-  })();
+  }
 
-  const truncatedBodyText = bodyText.length > 180 ? `${bodyText.slice(0, 177)}…` : bodyText;
+  // Working state: same compact style as data tool cards
+  if (isWorking) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <svg
+          className="h-3 w-3 shrink-0 animate-spin text-primary"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+        >
+          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+        </svg>
+        <span>Updating policy…</span>
+      </div>
+    );
+  }
 
-  type ToolState = typeof part.state;
-  const statusConfig: Record<ToolState, { label: string; icon: React.ReactNode }> = {
-    'input-streaming': { label: 'Drafting', icon: <CircleFilled size={12} /> },
-    'input-available': {
-      label: 'Running',
-      icon: <Time size={12} className="animate-pulse" />,
-    },
-    'output-available': {
-      label: 'Completed',
-      icon: <CheckmarkFilled size={12} className="text-green-600" />,
-    },
-    'output-error': { label: 'Error', icon: <Error size={12} className="text-red-600" /> },
-  };
+  // Error state
+  if (isError) {
+    return (
+      <p className="text-sm text-destructive">
+        Something went wrong while generating updates. Please try again.
+      </p>
+    );
+  }
 
-  const { label, icon } = statusConfig[part.state];
+  // Completed state: the AI's text response already explains the changes,
+  // so just show a minimal checkmark — no redundant alert banner.
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+      <svg className="h-3 w-3 text-primary/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 6L9 17l-5-5" />
+      </svg>
+      <span>Policy updated</span>
+    </div>
+  );
+}
+
+const TOOL_LABELS: Record<string, { loading: string; done: string }> = {
+  'tool-listVendors': { loading: 'Fetching vendors', done: 'Fetched vendors' },
+  'tool-getVendor': { loading: 'Looking up vendor details', done: 'Looked up vendor details' },
+  'tool-listPolicies': { loading: 'Fetching policies', done: 'Fetched policies' },
+  'tool-getPolicy': { loading: 'Reading policy content', done: 'Read policy content' },
+  'tool-listEvidence': { loading: 'Fetching evidence', done: 'Fetched evidence' },
+};
+
+function DataToolCard({
+  toolName,
+  state,
+  stopped,
+}: {
+  toolName: string;
+  state: string;
+  stopped: boolean;
+}) {
+  const isComplete = state === 'output-available';
+  const labels = TOOL_LABELS[toolName] ?? { loading: 'Fetching data', done: 'Fetched data' };
+
+  // Once complete, show a compact done state
+  if (isComplete) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+        <svg className="h-3 w-3 text-primary/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+        <span>{labels.done}</span>
+      </div>
+    );
+  }
+
+  // Interrupted
+  if (stopped) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+        <span>{labels.done}</span>
+      </div>
+    );
+  }
+
+  // Loading state
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <svg
+        className="h-3 w-3 shrink-0 animate-spin text-primary"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      >
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+      </svg>
+      <span>{labels.loading}…</span>
+    </div>
+  );
+}
+
+function ThinkingIndicator({
+  status,
+  messages,
+}: {
+  status: ChatStatus;
+  messages: PolicyChatUIMessage[];
+}) {
+  // Show when streaming/submitted but the last message is still the user's
+  // (AI hasn't started responding yet), or the AI message has no visible parts
+  if (status !== 'streaming' && status !== 'submitted') return null;
+
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage) return null;
+
+  // If the last message is from the user, AI hasn't started yet
+  // If it's from the assistant but has no parts, it's still thinking
+  const isThinking =
+    lastMessage.role === 'user' ||
+    (lastMessage.role === 'assistant' && lastMessage.parts.length === 0);
+
+  if (!isThinking) return null;
 
   return (
-    <Card
-      title={title}
-      headerAction={
-        <Badge variant="secondary">
-          <HStack gap="xs" align="center">
-            {icon}
-            <span className="text-[10px] uppercase tracking-wider">{label}</span>
-          </HStack>
-        </Badge>
-      }
-    >
-      <Stack gap="sm">
-        <Text size="xs" variant="muted">
-          {truncatedBodyText}
-        </Text>
-        {hasActiveProposal && isCompleted && (
-          <HStack gap="xs" align="center">
-            <ArrowDown size={12} className="text-primary" />
-            <Text size="xs" variant="primary">
-              View proposed changes below
-            </Text>
-          </HStack>
-        )}
-      </Stack>
-    </Card>
+    <div className="flex items-center gap-1.5 py-1">
+      <div className="flex gap-1">
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:0ms]" />
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:150ms]" />
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:300ms]" />
+      </div>
+    </div>
   );
 }

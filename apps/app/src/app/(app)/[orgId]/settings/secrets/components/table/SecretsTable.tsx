@@ -42,22 +42,16 @@ import {
   ViewOff,
 } from '@trycompai/design-system/icons';
 import { Copy } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import type { Secret } from '../../hooks/useSecrets';
+import { useSecrets } from '../../hooks/useSecrets';
 import { EditSecretDialog } from '../EditSecretDialog';
 
-interface Secret {
-  id: string;
-  name: string;
-  description: string | null;
-  category: string | null;
-  createdAt: string;
-  updatedAt: string;
-  lastUsedAt: string | null;
-}
-
 interface SecretsTableProps {
-  secrets: Secret[];
+  initialSecrets: Secret[];
 }
 
 const CATEGORY_MAP: Record<string, string> = {
@@ -76,7 +70,11 @@ function formatDate(date: string): string {
   }).format(new Date(date));
 }
 
-export function SecretsTable({ secrets }: SecretsTableProps) {
+export function SecretsTable({ initialSecrets }: SecretsTableProps) {
+  const { secrets, deleteSecret } = useSecrets({ initialData: initialSecrets });
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('organization', 'update');
+
   const [revealedSecrets, setRevealedSecrets] = useState<Record<string, string>>({});
   const [loadingSecrets, setLoadingSecrets] = useState<Record<string, boolean>>({});
   const [editingSecret, setEditingSecret] = useState<Secret | null>(null);
@@ -101,16 +99,14 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
     setLoadingSecrets((prev) => ({ ...prev, [secretId]: true }));
 
     try {
-      const pathSegments = window.location.pathname.split('/');
-      const orgId = pathSegments[1];
-
-      const response = await fetch(`/api/secrets/${secretId}?organizationId=${orgId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch secret');
+      const response = await apiClient.get<{ secret: { value: string } }>(
+        `/v1/secrets/${secretId}`,
+      );
+      if (response.error || !response.data?.secret?.value) {
+        throw new Error(response.error || 'Failed to fetch secret');
       }
 
-      const data = await response.json();
-      setRevealedSecrets((prev) => ({ ...prev, [secretId]: data.secret.value }));
+      setRevealedSecrets((prev) => ({ ...prev, [secretId]: response.data!.secret.value }));
     } catch (error) {
       toast.error('Failed to reveal secret');
       console.error('Error revealing secret:', error);
@@ -137,22 +133,10 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
 
     setIsDeleting(true);
     try {
-      const pathSegments = window.location.pathname.split('/');
-      const orgId = pathSegments[1];
-
-      const response = await fetch(
-        `/api/secrets/${secretToDelete.id}?organizationId=${orgId}`,
-        { method: 'DELETE' },
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to delete secret');
-      }
-
+      await deleteSecret(secretToDelete.id);
       toast.success('Secret deleted successfully');
       setDeleteDialogOpen(false);
       setSecretToDelete(null);
-      window.location.reload();
     } catch (error) {
       toast.error('Failed to delete secret');
       console.error('Error deleting secret:', error);
@@ -169,7 +153,7 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
         secret.name.toLowerCase().includes(query) ||
         secret.description?.toLowerCase().includes(query),
     );
-  }, [secrets, searchQuery, ]);
+  }, [secrets, searchQuery]);
 
   const pageCount = Math.max(1, Math.ceil(filteredSecrets.length / perPage));
   const paginatedSecrets = filteredSecrets.slice((page - 1) * perPage, page * perPage);
@@ -232,7 +216,7 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
               <TableHead>CATEGORY</TableHead>
               <TableHead>LAST USED</TableHead>
               <TableHead>CREATED</TableHead>
-              <TableHead>ACTIONS</TableHead>
+              {canUpdate && <TableHead>ACTIONS</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -301,40 +285,42 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
                     {formatDate(secret.createdAt)}
                   </Text>
                 </TableCell>
-                <TableCell>
-                  <div className="flex justify-center">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        variant="ellipsis"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <OverflowMenuVertical />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingSecret(secret);
-                          }}
+                {canUpdate && (
+                  <TableCell>
+                    <div className="flex justify-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          variant="ellipsis"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Edit size={16} />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(secret);
-                          }}
-                        >
-                          <TrashCan size={16} />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
+                          <OverflowMenuVertical />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingSecret(secret);
+                            }}
+                          >
+                            <Edit size={16} />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(secret);
+                            }}
+                          >
+                            <TrashCan size={16} />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
@@ -370,7 +356,6 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
           secret={editingSecret}
           open={!!editingSecret}
           onOpenChange={(open) => !open && setEditingSecret(null)}
-          onSecretUpdated={() => window.location.reload()}
         />
       )}
     </Stack>

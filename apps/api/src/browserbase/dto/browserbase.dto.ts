@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsBoolean, IsUrl } from 'class-validator';
+import { IsSafeUrl } from '../validators/url-safety.validator';
 
 // ===== Session DTOs =====
 
@@ -17,6 +18,8 @@ export class NavigateToUrlDto {
   sessionId: string;
 
   @ApiProperty({ description: 'URL to navigate to' })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
   @IsString()
   @IsNotEmpty()
   url: string;
@@ -29,6 +32,8 @@ export class CheckAuthDto {
   sessionId: string;
 
   @ApiProperty({ description: 'URL to check auth status on' })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
   @IsString()
   @IsNotEmpty()
   url: string;
@@ -60,6 +65,8 @@ export class CreateBrowserAutomationDto {
   description?: string;
 
   @ApiProperty({ description: 'Target URL to start from' })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
   @IsString()
   @IsNotEmpty()
   targetUrl: string;
@@ -87,6 +94,8 @@ export class UpdateBrowserAutomationDto {
   description?: string;
 
   @ApiPropertyOptional({ description: 'Target URL to start from' })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
   @IsString()
   @IsOptional()
   targetUrl?: string;

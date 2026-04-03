@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Departments } from '@trycompai/db';
+import { Departments } from '@db';
 
 export class UserResponseDto {
   @ApiProperty({
@@ -51,6 +51,13 @@ export class UserResponseDto {
     nullable: true,
   })
   lastLogin: Date | null;
+
+  @ApiProperty({
+    description: 'Platform role of the user (managed by Better Auth admin plugin)',
+    example: 'user',
+    nullable: true,
+  })
+  role: string | null;
 }
 
 export class PeopleResponseDto {
@@ -103,6 +110,12 @@ export class PeopleResponseDto {
     example: true,
   })
   isActive: boolean;
+
+  @ApiProperty({
+    description: 'Whether member is deactivated',
+    example: false,
+  })
+  deactivated: boolean;
 
   @ApiProperty({
     description: 'FleetDM label ID for member devices',

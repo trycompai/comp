@@ -1,19 +1,15 @@
 import {
   emailOTPClient,
-  inferAdditionalFields,
   multiSessionClient,
   organizationClient,
 } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
-import { auth } from './auth';
-
-console.log('process.env.NEXT_PUBLIC_BETTER_AUTH_URL', process.env.NEXT_PUBLIC_BETTER_AUTH_URL);
+import { ac, allRoles } from '@trycompai/auth';
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333',
   plugins: [
-    organizationClient(),
-    inferAdditionalFields<typeof auth>(),
+    organizationClient({ ac, roles: allRoles }),
     emailOTPClient(),
     multiSessionClient(),
   ],

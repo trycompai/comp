@@ -1,7 +1,7 @@
 import { env } from '@/env.mjs';
+import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
 import { openai } from '@ai-sdk/openai';
-import { db } from '@db';
 import { generateObject } from 'ai';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -78,6 +78,11 @@ export type EvidenceFormAnalysisResult = z.infer<typeof analysisResultSchema>;
 /** @deprecated Use EvidenceFormAnalysisResult instead */
 export type MeetingMinutesAnalysisResult = EvidenceFormAnalysisResult;
 
+interface AuthMeResponse {
+  user: { id: string } | null;
+  organizations: Array<{ id: string }>;
+}
+
 export async function POST(req: Request) {
   if (!env.OPENAI_API_KEY) {
     return NextResponse.json({ error: 'AI analysis is not configured.' }, { status: 500 });
@@ -101,16 +106,11 @@ export async function POST(req: Request) {
     );
   }
 
-  const member = await db.member.findFirst({
-    where: {
-      userId: session.user.id,
-      organizationId,
-      deactivated: false,
-    },
-    select: { id: true },
-  });
+  const meResponse = await serverApi.get<AuthMeResponse>('/v1/auth/me');
+  const organizations = meResponse.data?.organizations ?? [];
+  const isMember = organizations.some((org) => org.id === organizationId);
 
-  if (!member) {
+  if (!isMember) {
     return new Response('Unauthorized', { status: 401 });
   }
 

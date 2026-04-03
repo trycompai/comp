@@ -16,6 +16,7 @@ import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from '../tasks/dto/task-responses.dto';
 import { UploadAttachmentDto } from './upload-attachment.dto';
 import { s3Client } from '@/app/s3';
+import { validateFileContent } from '../utils/file-type-validation';
 
 @Injectable()
 export class AttachmentsService {
@@ -122,6 +123,9 @@ export class AttachmentsService {
           `File size exceeds maximum allowed size of ${this.MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB`,
         );
       }
+
+      // Validate file content matches declared MIME type
+      validateFileContent(fileBuffer, uploadDto.fileType, uploadDto.fileName);
 
       // Generate unique file key
       const fileId = randomBytes(16).toString('hex');
@@ -292,6 +296,16 @@ export class AttachmentsService {
   }
 
   /**
+   * Get attachment by ID
+   */
+  async getAttachmentById(organizationId: string, attachmentId: string) {
+    return db.attachment.findFirst({
+      where: { id: attachmentId, organizationId },
+      select: { id: true, name: true, type: true },
+    });
+  }
+
+  /**
    * Delete attachment from S3 and database
    */
   async deleteAttachment(
@@ -438,6 +452,40 @@ export class AttachmentsService {
     return getSignedUrl(this.s3Client, getCommand, {
       expiresIn: this.SIGNED_URL_EXPIRY,
     });
+  }
+
+  /**
+   * Generate a presigned URL for viewing a PDF inline in the browser
+   */
+  async getPresignedInlinePdfUrl(s3Key: string): Promise<string> {
+    const getCommand = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+      ResponseContentDisposition: 'inline',
+      ResponseContentType: 'application/pdf',
+    });
+
+    return getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: this.SIGNED_URL_EXPIRY,
+    });
+  }
+
+  /**
+   * Upload a buffer to S3 with a specific key (no auto-generated path)
+   */
+  async uploadBuffer(
+    s3Key: string,
+    buffer: Buffer,
+    contentType: string,
+  ): Promise<void> {
+    const putCommand = new PutObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+      Body: buffer,
+      ContentType: contentType,
+    });
+
+    await this.s3Client.send(putCommand);
   }
 
   async getObjectBuffer(s3Key: string): Promise<Buffer> {

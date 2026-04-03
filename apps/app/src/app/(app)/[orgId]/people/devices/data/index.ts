@@ -2,7 +2,7 @@
 
 import { getFleetInstance } from '@/lib/fleet';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { headers } from 'next/headers';
 import type { CheckDetails, DeviceWithChecks } from '../types';
 import type { Host } from '../types';
@@ -24,7 +24,17 @@ export const getEmployeeDevicesFromDB: () => Promise<DeviceWithChecks[]> = async
   }
 
   const devices = await db.device.findMany({
-    where: { organizationId },
+    where: {
+      organizationId,
+      // Exclude devices for users whose User.role is platform admin (not org Member.role).
+      NOT: {
+        member: {
+          user: {
+            role: 'admin',
+          },
+        },
+      },
+    },
     include: {
       member: {
         include: {
@@ -65,7 +75,7 @@ export const getEmployeeDevicesFromDB: () => Promise<DeviceWithChecks[]> = async
 
 /**
  * Fetches Fleet (legacy) devices for the current organization.
- * Returns Host[] exactly as main branch — untouched Fleet logic.
+ * Excludes members whose User.role is platform admin (same as getEmployeeDevicesFromDB).
  */
 export const getFleetHosts: () => Promise<Host[] | null> = async () => {
   const session = await auth.api.getSession({
@@ -80,11 +90,16 @@ export const getFleetHosts: () => Promise<Host[] | null> = async () => {
     return null;
   }
 
-  // Find all members belonging to the organization.
+  // Members with Fleet labels (exclude platform admins — same filter as device-agent path).
   const employees = await db.member.findMany({
     where: {
       organizationId,
       deactivated: false,
+      NOT: {
+        user: {
+          role: 'admin',
+        },
+      },
     },
     include: {
       user: true,

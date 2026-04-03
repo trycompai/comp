@@ -1,3 +1,1257 @@
+## [3.15.1](https://github.com/trycompai/comp/compare/v3.15.0...v3.15.1) (2026-04-03)
+
+
+### Bug Fixes
+
+* fix trust portal domain verification ([c21c656](https://github.com/trycompai/comp/commit/c21c6565d94de0939e772d963c32652da5672438))
+
+# [3.15.0](https://github.com/trycompai/comp/compare/v3.14.1...v3.15.0) (2026-04-03)
+
+
+### Bug Fixes
+
+* **onboarding:** reorder steps so cloud question comes before software ([#2445](https://github.com/trycompai/comp/issues/2445)) ([e488a95](https://github.com/trycompai/comp/commit/e488a95e598a60e30af502ea0b3a1dffe211db3a))
+* **policies:** preserve entityId when re-generating a policy ([#2382](https://github.com/trycompai/comp/issues/2382)) ([0324329](https://github.com/trycompai/comp/commit/0324329270e8969582ace7f572dab426635aa73f))
+* **portal:** resolve hydration issue in user menu ([#2438](https://github.com/trycompai/comp/issues/2438)) ([4d3faaf](https://github.com/trycompai/comp/commit/4d3faaf31ed7cc83c2fbe643f6423671195b96f5))
+* **tasks:** prevent framework-specific content leaks in split header paragraphs ([#2381](https://github.com/trycompai/comp/issues/2381)) ([b318ca5](https://github.com/trycompai/comp/commit/b318ca5be89f319a914629c1e923b5ec1c4429b5))
+* use activeOrganizationId for org redirect on app open ([#2444](https://github.com/trycompai/comp/issues/2444)) ([79fb25d](https://github.com/trycompai/comp/commit/79fb25dd0aae127d7330fba0b97f715f86709ddc))
+
+
+### Features
+
+* implement HIPAA training completion flow and support multiple devices per employee ([b3c18ea](https://github.com/trycompai/comp/commit/b3c18ea0472a28e048693ae38a58b8c45b534809))
+* **integrations:** prompt user to import after Google Workspace connection ([#2383](https://github.com/trycompai/comp/issues/2383)) ([6ab00a5](https://github.com/trycompai/comp/commit/6ab00a5afb3316321c6ce86bc1280076a6988395))
+* **people:** add status filter to team members page ([#2379](https://github.com/trycompai/comp/issues/2379)) ([c41e5c5](https://github.com/trycompai/comp/commit/c41e5c5dee571875aca808c2f675a6a0e457eeff))
+* **portal:** allow employees to view signed policies ([#2446](https://github.com/trycompai/comp/issues/2446)) ([883caeb](https://github.com/trycompai/comp/commit/883caebd30bab00243e7dfc8355d91ab04e08cc1))
+* **tasks:** add filter for automated vs manual evidence tasks ([#2380](https://github.com/trycompai/comp/issues/2380)) ([2fa21e4](https://github.com/trycompai/comp/commit/2fa21e4bf03db4e3881644a507c57f68740a0d53))
+
+## [3.14.1](https://github.com/trycompai/comp/compare/v3.14.0...v3.14.1) (2026-04-02)
+
+
+### Bug Fixes
+
+* robust schema resolution in Trigger.dev Prisma extension ([#2442](https://github.com/trycompai/comp/issues/2442)) ([1bde775](https://github.com/trycompai/comp/commit/1bde775b08c7693e987dc1be643fa974c8697ba0))
+
+# [3.14.0](https://github.com/trycompai/comp/compare/v3.13.1...v3.14.0) (2026-04-02)
+
+
+### Bug Fixes
+
+* add SSL support to PrismaPg adapter for RDS/staging (rejectUnauthorized: false) ([#2418](https://github.com/trycompai/comp/issues/2418)) ([451c6a1](https://github.com/trycompai/comp/commit/451c6a104c8832de0b55cced9da8f719426b26c4))
+* **api:** pin prisma@7.6.0 in Dockerfile generate step (prevents stale v6 binary resolution) ([#2423](https://github.com/trycompai/comp/issues/2423)) ([13a7b77](https://github.com/trycompai/comp/commit/13a7b77642497d177af18e748f5ab9b98b40d86a))
+* **api:** upgrade Dockerfile base images for Prisma v7 Node.js requirement (bun 1.3.11, node 22) ([#2425](https://github.com/trycompai/comp/issues/2425)) ([dc9351c](https://github.com/trycompai/comp/commit/dc9351ca705f85467c68be858b975f43fffc3f46))
+* **app:** comment button gets disabled with numbered formatting ([#2368](https://github.com/trycompai/comp/issues/2368)) ([0586dfe](https://github.com/trycompai/comp/commit/0586dfe8fd63530fac7650c0be1ae9a80c0b9148))
+* **auth:** make Microsoft OAuth tenantId configurable via env var ([#2412](https://github.com/trycompai/comp/issues/2412)) ([ffb260b](https://github.com/trycompai/comp/commit/ffb260b0220f30bb7f6edd513cb311ee383dcd64)), closes [#2411](https://github.com/trycompai/comp/issues/2411)
+* **company:** make Access Request form options in Documents ([#2369](https://github.com/trycompai/comp/issues/2369)) ([f461c4d](https://github.com/trycompai/comp/commit/f461c4ddf6672e3be17cbaef09a1a4077c1f99eb))
+* **db:** point prisma.config.ts to schema directory for multi-file schema support in migrations ([#2422](https://github.com/trycompai/comp/issues/2422)) ([8a05e29](https://github.com/trycompai/comp/commit/8a05e29d0186c46e30f1055bd6665629ce1f01e0))
+* **db:** remove dotenv/config import from prisma.config.ts (not available in Docker build context) ([#2426](https://github.com/trycompai/comp/issues/2426)) ([a98cf93](https://github.com/trycompai/comp/commit/a98cf939610f50c9d564f6d551aff7db3313fe63))
+* **db:** use process.env fallback for DATABASE_URL in prisma.config.ts ([#2416](https://github.com/trycompai/comp/issues/2416)) ([3e29382](https://github.com/trycompai/comp/commit/3e29382c157dc8e4e66a3443eb9084b2b4facdfb))
+* default to SSL for non-localhost connections, remove buggy cleanUrl stripping ([#2430](https://github.com/trycompai/comp/issues/2430)) ([98213f8](https://github.com/trycompai/comp/commit/98213f81f371945ff385bb25ad17d5aaaef82e04))
+* Enable 'Ready for Review' menu for client on Document Finding ([#2404](https://github.com/trycompai/comp/issues/2404)) ([12e5e3a](https://github.com/trycompai/comp/commit/12e5e3a9c4d1f9ec81659c49bf9714b7d63af8d4))
+* handle stale Ramp sync provider in legacy orgs ([3d6d1d4](https://github.com/trycompai/comp/commit/3d6d1d43fa3820989ee5967313f6ef2c6e25ce5f))
+* install ca-certificates before wget, clean apt after download ([#2433](https://github.com/trycompai/comp/issues/2433)) ([772ac48](https://github.com/trycompai/comp/commit/772ac4865a634d898c0fe908a54b9bbaeea5aa49))
+* install ca-certificates before wget, clean apt after download ([#2434](https://github.com/trycompai/comp/issues/2434)) ([b7b7944](https://github.com/trycompai/comp/commit/b7b79446654ef9a79930f33bc042fe015690726a))
+* **portal:** remove getJwtToken and use session-cookie auth directly ([67aacf5](https://github.com/trycompai/comp/commit/67aacf5b8c038d364eca92021f8dccbab2454d90))
+* scope stale provider cleanup to ramp only ([a3313cd](https://github.com/trycompai/comp/commit/a3313cd6af15193f209d5457f826c753348e3a90))
+* set trigger.dev runtime to node-22 (Prisma v7 requires node >=20.19 || >=22.12) ([#2419](https://github.com/trycompai/comp/issues/2419)) ([f688334](https://github.com/trycompai/comp/commit/f688334a37044d50a68d847760826e125274cc78))
+* strip sslmode from connection string before passing to pg (prevent double-parsing) ([#2420](https://github.com/trycompai/comp/issues/2420)) ([00e6f13](https://github.com/trycompai/comp/commit/00e6f13c6f22d9caee6f011783991cfe95f8f3a7))
+* strip sslmode from DATABASE_URL to avoid conflict with explicit ssl option ([#2435](https://github.com/trycompai/comp/issues/2435)) ([335dcd2](https://github.com/trycompai/comp/commit/335dcd280afac73bfc895ab8a74af110e85faff6))
+* use AWS RDS CA bundle for proper SSL verification, simplify client SSL config ([#2432](https://github.com/trycompai/comp/issues/2432)) ([863f14b](https://github.com/trycompai/comp/commit/863f14be9ba0c3c418196026662c9b6de530e60b))
+* use installed prisma binary instead of bunx (fixes prisma/config resolution in Docker) ([#2427](https://github.com/trycompai/comp/issues/2427)) ([fab6693](https://github.com/trycompai/comp/commit/fab6693b5e0d900472fa06a5f7c8978107ec7785))
+* use process.env fallback for DATABASE_URL in all prisma.config.ts files (build envs have no DB) ([#2417](https://github.com/trycompai/comp/issues/2417)) ([977a705](https://github.com/trycompai/comp/commit/977a705a52432b68114d1e082e239e877431c9d3))
+
+
+### Features
+
+* **app, api, framework-editor:** restructure compliance app and add framework editor CLI ([30516d4](https://github.com/trycompai/comp/commit/30516d43f9feccbe1111aeb4838d5e32a4db3ae0))
+* migrate prisma from v6 to v7 ([59e0db9](https://github.com/trycompai/comp/commit/59e0db91ae640ae21d340666fb6e23e169fb8f12))
+* remove Ramp integration entirely ([a04c486](https://github.com/trycompai/comp/commit/a04c48627d79631aa718947bfacb9fb724ebb502))
+
+## [3.13.1](https://github.com/trycompai/comp/compare/v3.13.0...v3.13.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* **policies:** include all non-archived policies in download-all bundle ([908879f](https://github.com/trycompai/comp/commit/908879f0832a578ece056205a03c390f584acb1d))
+
+# [3.13.0](https://github.com/trycompai/comp/compare/v3.12.2...v3.13.0) (2026-03-30)
+
+
+### Bug Fixes
+
+* fix error with policy rendering ([e9cd567](https://github.com/trycompai/comp/commit/e9cd5673a2605ab09182a76d1d4217d8b6b4a4dd))
+* **integration-platform:** move buildHeaders inside request lambda for token refresh ([4349f50](https://github.com/trycompai/comp/commit/4349f5069d6bb55a44eba5791336abcc26ccf002))
+* **policy-editor:** enhance permission handling during loading state ([089ceb7](https://github.com/trycompai/comp/commit/089ceb715f59f9c04e3e206d8e587b6b408f1918))
+* **policy-editor:** simplify permission handling in PolicyEditorWrapper ([#2400](https://github.com/trycompai/comp/issues/2400)) ([e4fb01a](https://github.com/trycompai/comp/commit/e4fb01a1be682e8f47ca9fafcf8c42594455af5c))
+
+
+### Features
+
+* **integration-platform:** add bodyEncoding option to fetch step ([22759b8](https://github.com/trycompai/comp/commit/22759b8d3243d915eb9629e0747a749eca4eebf7))
+
+## [3.12.2](https://github.com/trycompai/comp/compare/v3.12.1...v3.12.2) (2026-03-30)
+
+
+### Bug Fixes
+
+* **auth:** use better-auth APIs instead of direct DB session operations ([17378d9](https://github.com/trycompai/comp/commit/17378d95e7e9c5b71e011dac4d681e2442196cf2))
+* skip audit log for chat history and expose task templates to ui ([9baf09c](https://github.com/trycompai/comp/commit/9baf09c1e648960f7c38495a751aab07436ae4d7))
+
+## [3.12.1](https://github.com/trycompai/comp/compare/v3.12.0...v3.12.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* upload attachments stuck loading ([7dc6bf9](https://github.com/trycompai/comp/commit/7dc6bf9a9da1cc231e59001a4569dff81f1f7b10))
+
+# [3.12.0](https://github.com/trycompai/comp/compare/v3.11.5...v3.12.0) (2026-03-30)
+
+
+### Bug Fixes
+
+* **integration-platform:** clear stale syncDefinition on upsert, deduplicate VariableSchema ([ebfa25a](https://github.com/trycompai/comp/commit/ebfa25a08be22b5a71576b78ec4a787d62e583b6))
+* **integration-platform:** persist syncDefinition to database ([6f08b6b](https://github.com/trycompai/comp/commit/6f08b6b5242e0eadbd5e6422f2dc3cf48d2a6c3a))
+* **integration-platform:** remove redundant per-check re-validation in validate endpoint ([b116616](https://github.com/trycompai/comp/commit/b116616e8f8e72aefd6b7ddcd940e1dba7aca0b4))
+* **integration-platform:** validate syncDefinition before storing, fix success flag ([4b007ff](https://github.com/trycompai/comp/commit/4b007ff4dfb5a578720daab1d6e492479b828646))
+* use value import for Prisma (DbNull requires runtime access) ([73d0fa6](https://github.com/trycompai/comp/commit/73d0fa6fd72f0a486d48a6af7ca598a016f6ccff))
+
+
+### Features
+
+* **integration-platform:** add code step and dynamic employee sync ([3ddfaef](https://github.com/trycompai/comp/commit/3ddfaef188eb84de70fb1e193432f2aa9ba45366))
+
+## [3.11.5](https://github.com/trycompai/comp/compare/v3.11.4...v3.11.5) (2026-03-25)
+
+
+### Bug Fixes
+
+* **vendors:** skip assignee validation when assignee hasn't changed ([9e508c2](https://github.com/trycompai/comp/commit/9e508c2c4b2a7728c4f8d4778323f31729a82a15))
+
+## [3.11.4](https://github.com/trycompai/comp/compare/v3.11.3...v3.11.4) (2026-03-25)
+
+
+### Bug Fixes
+
+* **vendors:** fix PATCH 400 error for vendors with empty descriptions ([cdc71c7](https://github.com/trycompai/comp/commit/cdc71c7f69b59090a8407f3bd10c1adb98defce5))
+
+## [3.11.3](https://github.com/trycompai/comp/compare/v3.11.2...v3.11.3) (2026-03-25)
+
+
+### Bug Fixes
+
+* **trust-portal:** fix CORS for custom domain trust portals ([#2371](https://github.com/trycompai/comp/issues/2371)) ([0d54899](https://github.com/trycompai/comp/commit/0d5489959d3675d3de7f1bc36c34b3c52c876f10))
+
+## [3.11.2](https://github.com/trycompai/comp/compare/v3.11.1...v3.11.2) (2026-03-25)
+
+
+### Bug Fixes
+
+* **frameworks:** respect securityTrainingStepEnabled in overview people score ([160f8d2](https://github.com/trycompai/comp/commit/160f8d2a0bdc4a2bb8547a9884c10f84a152dab5))
+
+## [3.11.1](https://github.com/trycompai/comp/compare/v3.11.0...v3.11.1) (2026-03-24)
+
+
+### Bug Fixes
+
+* **policies:** use backend endpoint for bulk policy PDF download ([0bdc261](https://github.com/trycompai/comp/commit/0bdc261d2c99dc353623e09b1783979c2ca58500))
+* **policies:** use content-disposition attachment for bulk PDF download ([9d77b89](https://github.com/trycompai/comp/commit/9d77b89c54a460dfe1ee82da5044a9c7ce0b2d69))
+
+# [3.11.0](https://github.com/trycompai/comp/compare/v3.10.4...v3.11.0) (2026-03-24)
+
+
+### Bug Fixes
+
+* **integration-platform:** filter GWS employees by org units and filter mode on employee-access ([cfa39e3](https://github.com/trycompai/comp/commit/cfa39e3a25696cfb45a8a7cf1539dc2d36634368))
+* **integration-platform:** remove duplcated user filtering logic across two check files ([0408858](https://github.com/trycompai/comp/commit/0408858b8c00b7174cf15a6384c092961e5b3c4b))
+* **questionnaire:** correct maxDuration values for parsing tasks ([70c8d7e](https://github.com/trycompai/comp/commit/70c8d7e11976479c02047ad826d262bfc958880c))
+* **questionnaire:** update model name in logging for question parsing ([4884007](https://github.com/trycompai/comp/commit/4884007ce3cbf71453edc159bdf8c59b27c9fe0f))
+* **questionnaire:** update upload status message for async parsing tracking ([414475d](https://github.com/trycompai/comp/commit/414475d87be1e4acf4650bd2cdad1ca53f3e92ce))
+
+
+### Features
+
+* **questionnaire:** add fileSize to questionnaire upload and parsing ([e8937d1](https://github.com/trycompai/comp/commit/e8937d1506a5d1232b78d60bb4970479e21bada4))
+* **questionnaire:** update upload and parse functionality to trigger async processing ([b460cab](https://github.com/trycompai/comp/commit/b460cabd563a52e116d5dbdbc634e5272d78e9e7))
+
+## [3.10.4](https://github.com/trycompai/comp/compare/v3.10.3...v3.10.4) (2026-03-20)
+
+
+### Bug Fixes
+
+* 2FA GWS workspace returning users that have been excluded from the config ([bac5138](https://github.com/trycompai/comp/commit/bac513835f8a3a235acfa4596451dc09733f4819))
+* allow trust portal subdomains and custom domains through CORS ([#2354](https://github.com/trycompai/comp/issues/2354)) ([10c467d](https://github.com/trycompai/comp/commit/10c467d3786fcc7dd32f5661788c4b745a660bb2))
+
+## [3.10.3](https://github.com/trycompai/comp/compare/v3.10.2...v3.10.3) (2026-03-20)
+
+
+### Bug Fixes
+
+* **api:** validate WebP files with full RIFF+WEBP signature check ([#2348](https://github.com/trycompai/comp/issues/2348)) ([0c41717](https://github.com/trycompai/comp/commit/0c417170d0ecb822d3f834c22ebea5370063ed3e)), closes [hi#bit](https://github.com/hi/issues/bit)
+
+## [3.10.2](https://github.com/trycompai/comp/compare/v3.10.1...v3.10.2) (2026-03-19)
+
+
+### Bug Fixes
+
+* **app:** add Suspense boundary for useSearchParams in SingleTask ([c99dea0](https://github.com/trycompai/comp/commit/c99dea082216dc08f0d49526b27e4cd73fce33c3))
+* **app:** dynamically import jspdf in PolicyPageActions ([13f692e](https://github.com/trycompai/comp/commit/13f692e4ad0a7c96caca83bc656b401cada56c53))
+* **app:** dynamically import jspdf to fix turbopack build ([d361db1](https://github.com/trycompai/comp/commit/d361db1a5e85c1aa51331568b21ffe6bf8cf0e4c))
+* **app:** lazy-load jspdf in pdf-generator to fix turbopack SSR build ([01c827d](https://github.com/trycompai/comp/commit/01c827d96122c8efa156bb6e526c8d333dd36a27))
+* **app:** route findings links to findings tab on task and document pages ([4cccdf6](https://github.com/trycompai/comp/commit/4cccdf65540f3b2b657f6e803e6d696144b6becc))
+* **app:** show create finding button in empty findings state ([be938b7](https://github.com/trycompai/comp/commit/be938b766681b19675bc91b95463046b5fd18550))
+* **app:** use dynamic import for posthog-node to avoid async_hooks error ([d9879bb](https://github.com/trycompai/comp/commit/d9879bb8bff66304500076fc8977d2995840c7e2))
+
+## [3.10.1](https://github.com/trycompai/comp/compare/v3.10.0...v3.10.1) (2026-03-19)
+
+
+### Bug Fixes
+
+* add Pending status to people table filter ([0879078](https://github.com/trycompai/comp/commit/0879078412f826d96dcb86ee74675beb9bc6337e))
+* **app:** fix paragraph breaks issue in task description display ([#2327](https://github.com/trycompai/comp/issues/2327)) ([0a96a65](https://github.com/trycompai/comp/commit/0a96a651262c3ba58b1089978b2e5f35cb768d0b))
+* **integrations:** stop GWS sync from reactivating deactivated members ([826875f](https://github.com/trycompai/comp/commit/826875f05d4afd2f9ca0b5ef16119163739e6673))
+
+# [3.10.0](https://github.com/trycompai/comp/compare/v3.9.0...v3.10.0) (2026-03-19)
+
+
+### Bug Fixes
+
+* **integrations:** filter GWS employee sync by organizational units ([#2336](https://github.com/trycompai/comp/issues/2336)) ([e3a9867](https://github.com/trycompai/comp/commit/e3a98674ea4e4f2d2c470d873c3f11ebb3067d02))
+* **portal:** show Company Forms section even when all tasks are completed ([#2334](https://github.com/trycompai/comp/issues/2334)) ([5661cd6](https://github.com/trycompai/comp/commit/5661cd650247a4cc13192c1d1dd3a8aa28141cba))
+* **vendors:** extract root domain from subdomain vendor websites ([#2337](https://github.com/trycompai/comp/issues/2337)) ([8c6865b](https://github.com/trycompai/comp/commit/8c6865bd07a11d986b03ab111764a9a73e793ae1))
+* **vendors:** validate vendor research URLs belong to correct domain ([#2335](https://github.com/trycompai/comp/issues/2335)) ([37a9813](https://github.com/trycompai/comp/commit/37a9813b5e52d88c3c623aab40028fbb6389a4ea))
+
+
+### Features
+
+* **people:** add Agent Installed column and hide deactivated users by default ([#2331](https://github.com/trycompai/comp/issues/2331)) ([67041ab](https://github.com/trycompai/comp/commit/67041ab42e5ce916c5cab01d6dae27f847df0abc))
+
+# [3.9.0](https://github.com/trycompai/comp/compare/v3.8.0...v3.9.0) (2026-03-18)
+
+
+### Bug Fixes
+
+* strip emoji characters in policy PDF export and update trigger.dev to 4.4.3 ([65ccbe9](https://github.com/trycompai/comp/commit/65ccbe9c4a7460237b0225504764fa79aa718136))
+
+
+### Features
+
+* **trust-portal:** enhance domain verification process with Vercel API integration ([06a9336](https://github.com/trycompai/comp/commit/06a9336db276f294760881e4a677e622da559d7e))
+
+# [3.8.0](https://github.com/trycompai/comp/compare/v3.7.2...v3.8.0) (2026-03-17)
+
+
+### Bug Fixes
+
+* **api:** make sure azure assessmet tile is not empty ([d5915ca](https://github.com/trycompai/comp/commit/d5915cafa77b6eb82510369b0ee396be32f54784))
+* **app:** upgrade the model in workflow visualizer file ([c1194be](https://github.com/trycompai/comp/commit/c1194bee67d11f53a972e40167768c778eb2f9db))
+* **app:** use claude-sonnet-4.6 model ([ae5ad4b](https://github.com/trycompai/comp/commit/ae5ad4b89059af4112e87d5e91be82b29da01815))
+* **app:** use gemini 3.1 flash lite with high reasoning ([31fc265](https://github.com/trycompai/comp/commit/31fc2653ced83ce47ca3aa29d43a8c756584d431))
+* fix inline editing for sections in ai policy editor ([2ac265b](https://github.com/trycompai/comp/commit/2ac265bb31ff7120428ed4f1f5b0f851f60e6900))
+* **integration-platform:** improve error handling in RampRoleMappingContent ([6105a67](https://github.com/trycompai/comp/commit/6105a674fe3eb78533c9bf690de9d95f73d165de))
+
+
+### Features
+
+* improve AI policy editor, better UI/UX and smarter ([7f873aa](https://github.com/trycompai/comp/commit/7f873aa655f70fa6946c4b1f48337db989261992))
+* **integration-platform:** add Ramp role mapping functionality ([3cf5fe4](https://github.com/trycompai/comp/commit/3cf5fe4c5f923459fd6e93187ce6251424fe7b5a))
+* **integration-platform:** enhance role mapping persistence logic ([7e52ec4](https://github.com/trycompai/comp/commit/7e52ec41a1789cc1a1ba042b397811d1c2db4809))
+* **integration-platform:** enhance sync logging for role mapping configuration ([433a1be](https://github.com/trycompai/comp/commit/433a1be746e6c913b03ccbfe1800dec1450f1965))
+* **integration-platform:** implement RampApiService for user management ([638e670](https://github.com/trycompai/comp/commit/638e670aa8b82b749aed5deaade5a8def58be2c4))
+* **integration-platform:** integrate logging for role mapping and sync operations ([13e6446](https://github.com/trycompai/comp/commit/13e644659bee5dfe38de30b75481a9f3f284dd73))
+* **integration-platform:** validate connection existence in role mapping endpoints ([5d373ec](https://github.com/trycompai/comp/commit/5d373ec4add70fb0b801761dd5657755acc271b5))
+* **policy-editor:** add inline AI text editing via selection bubble ([#2326](https://github.com/trycompai/comp/issues/2326)) ([f85e757](https://github.com/trycompai/comp/commit/f85e757770acf5189d3983056b07930392e9b771))
+
+## [3.7.2](https://github.com/trycompai/comp/compare/v3.7.1...v3.7.2) (2026-03-17)
+
+
+### Bug Fixes
+
+* bring back vendor research ([4c9d53c](https://github.com/trycompai/comp/commit/4c9d53cabafc49756c1b3c2227272d08492c82a2))
+
+## [3.7.1](https://github.com/trycompai/comp/compare/v3.7.0...v3.7.1) (2026-03-17)
+
+
+### Bug Fixes
+
+* optimize api build and update dependencies ([64cbd78](https://github.com/trycompai/comp/commit/64cbd788efb2bbe8a2ba2a314d892146363a3c93))
+* **organization:** disable non-portal notifications for employee and contractor roles ([80fe633](https://github.com/trycompai/comp/commit/80fe633880086d670ab3581c8da4791c36b1dc28))
+
+# [3.7.0](https://github.com/trycompai/comp/compare/v3.6.0...v3.7.0) (2026-03-16)
+
+
+### Bug Fixes
+
+* **auth:** add rate limiting for admin endpoints ([f81148b](https://github.com/trycompai/comp/commit/f81148babdd66b05a55d3ce4b6eaaeb07cef4d50))
+* fall back to workflow scanning when code scanning API returns 403 ([#2311](https://github.com/trycompai/comp/issues/2311)) ([5a5fe85](https://github.com/trycompai/comp/commit/5a5fe854cc6c6f448072fcc4cf37f641f2a319a3))
+
+
+### Features
+
+* **admin-organizations:** add admin dashboard ([e5318ec](https://github.com/trycompai/comp/commit/e5318ecc8372b7f2bea9f100eb4026082ecb9a4b))
+
+# [3.6.0](https://github.com/trycompai/comp/compare/v3.5.0...v3.6.0) (2026-03-14)
+
+
+### Features
+
+* **auth:** add SessionOnlyGuard to enforce user session authentication for assistant chat ([ac97916](https://github.com/trycompai/comp/commit/ac97916c6092d3d8f913921787c205fae571ba4a))
+
+# [3.5.0](https://github.com/trycompai/comp/compare/v3.4.0...v3.5.0) (2026-03-14)
+
+
+### Features
+
+* **integration-platform:** enhance sync controller with Ramp user integration and external user ID support ([#2298](https://github.com/trycompai/comp/issues/2298)) ([3f8cb4b](https://github.com/trycompai/comp/commit/3f8cb4b7b8717f0e3d63458b1c4818155a6603ed))
+* **training:** update download training certificate action to forward session cookies for authentication ([#2300](https://github.com/trycompai/comp/issues/2300)) ([7d12e56](https://github.com/trycompai/comp/commit/7d12e5693bbee42e1b9913e888d31077ac35112e))
+
+# [3.4.0](https://github.com/trycompai/comp/compare/v3.3.0...v3.4.0) (2026-03-14)
+
+
+### Features
+
+* **training:** update download training certificate action to forward session cookies for authentication ([7558b7b](https://github.com/trycompai/comp/commit/7558b7bca46c9987d2f2ee1e4670e22f0c65438c))
+
+# [3.3.0](https://github.com/trycompai/comp/compare/v3.2.1...v3.3.0) (2026-03-13)
+
+
+### Features
+
+* **api:** add getCompletions and markVideoComplete to TrainingService ([68343a5](https://github.com/trycompai/comp/commit/68343a5f00e908c79f1a20fedf48bd80b18adca5))
+* **api:** add new training video completion endpoints to OpenAPI spec ([3ab13eb](https://github.com/trycompai/comp/commit/3ab13eb732c267636917c9b50042c5c0fa962f6c))
+* **api:** add portal training completion endpoints ([e0c0739](https://github.com/trycompai/comp/commit/e0c0739684c6a267bbc0b4772c3a8d20c13d8d8d))
+* **auth:** add portal permission resource for employee self-service ([58b4604](https://github.com/trycompai/comp/commit/58b46041590bd0240abb82b15aa610ddb67bce36))
+
+## [3.2.1](https://github.com/trycompai/comp/compare/v3.2.0...v3.2.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* **app:** prevent integration dialog content from overflowing modal ([#2292](https://github.com/trycompai/comp/issues/2292)) ([184e29a](https://github.com/trycompai/comp/commit/184e29a605c56cbf7015508da4b5f6cb17fe0da8))
+
+# [3.2.0](https://github.com/trycompai/comp/compare/v3.1.0...v3.2.0) (2026-03-11)
+
+
+### Bug Fixes
+
+* **workflow:** streamline CodeSignTool extraction process in device-agent-release.yml ([#2283](https://github.com/trycompai/comp/issues/2283)) ([5c35bf1](https://github.com/trycompai/comp/commit/5c35bf16428ed18a7366ed117c8af31a9737696b))
+
+
+### Features
+
+* **device-agent:** implement device registration and authentication flow ([#2281](https://github.com/trycompai/comp/issues/2281)) ([542dcb3](https://github.com/trycompai/comp/commit/542dcb3e4ae826d649d4dd866ac41dfbb8af48ef))
+
+# [3.1.0](https://github.com/trycompai/comp/compare/v3.0.0...v3.1.0) (2026-03-11)
+
+
+### Features
+
+* **auth:** enhance security with rate limiting and redirect URL validation ([#2273](https://github.com/trycompai/comp/issues/2273)) ([34ea67f](https://github.com/trycompai/comp/commit/34ea67f10c4d0fad3e57f5e8b0e522bae13d3934))
+
+# [3.0.0](https://github.com/trycompai/comp/compare/v2.0.0...v3.0.0) (2026-03-10)
+
+
+* Feat/rbac v1 ([#2092](https://github.com/trycompai/comp/issues/2092)) ([be119ab](https://github.com/trycompai/comp/commit/be119ab2c8b69d892b577a44b9b8216b3604deaf))
+
+
+### Bug Fixes
+
+* **auth:** enhance cookie handling in proxyRequest for cross-subdomain compatibility ([#2237](https://github.com/trycompai/comp/issues/2237)) ([dba6599](https://github.com/trycompai/comp/commit/dba6599773fdaf0bf7788d9faeb9e1230abc099f))
+* **auth:** update cookie handling and improve session management ([#2236](https://github.com/trycompai/comp/issues/2236)) ([d6a4612](https://github.com/trycompai/comp/commit/d6a4612eba8a667d7c27c57d97ec5f4b1ba5e0bc))
+* **auth:** update organization check logic in HybridAuthGuard to include skipOrgCheck condition ([#2253](https://github.com/trycompai/comp/issues/2253)) ([7536c1b](https://github.com/trycompai/comp/commit/7536c1bee650ac6b289391c4ee459e38fb5ce7d5))
+* **env:** update SECRET_KEY references to ENCRYPTION_KEY in services and utilities ([#2246](https://github.com/trycompai/comp/issues/2246)) ([6f75a1d](https://github.com/trycompai/comp/commit/6f75a1dd7dee2d9973cce8a0e4d19559dfc7f7c6))
+* **notifications:** add 'use client' directive to loading component ([#2270](https://github.com/trycompai/comp/issues/2270)) ([f7fa52b](https://github.com/trycompai/comp/commit/f7fa52b19cd8e8fd067ab4c37140b0c10a8080d8))
+* **onboarding:** add additionalProperties validation to vendor and risk extraction schemas ([#2256](https://github.com/trycompai/comp/issues/2256)) ([c40ad3d](https://github.com/trycompai/comp/commit/c40ad3d5414cc092ebcd533769c7183b3c24317b))
+* **portal:** resolve device agent 401 by validating Bearer tokens via DB ([#2259](https://github.com/trycompai/comp/issues/2259)) ([8ca0faf](https://github.com/trycompai/comp/commit/8ca0faff23022dc4d2105ee38b0a441375007e06))
+* **proxy:** update route matcher to include additional static asset exclusions ([#2238](https://github.com/trycompai/comp/issues/2238)) ([637df18](https://github.com/trycompai/comp/commit/637df183b17b5e31b504262b0f69e182e9c0f27d))
+* **questionnaire:** always revalidate questionnaires on mount to prevent stale data ([#2251](https://github.com/trycompai/comp/issues/2251)) ([7db90ae](https://github.com/trycompai/comp/commit/7db90ae85cc2f09b96817c581d1cc1398c2e23ec))
+* **questionnaire:** replace generic error with NotFoundException for missing questionnaires ([#2245](https://github.com/trycompai/comp/issues/2245)) ([db6a425](https://github.com/trycompai/comp/commit/db6a42512957a1ca4f840fe82fa5b0c26b69572b))
+
+
+### Features
+
+* **cloud-security:** add legacy integration endpoints for AWS and GCP ([#2262](https://github.com/trycompai/comp/issues/2262)) ([32f3e3a](https://github.com/trycompai/comp/commit/32f3e3a2ad6ae15ead8bd0fd3a8b78a8f700bcbd))
+* **docs:** update add-integration documentation with evidence tasks ([#2242](https://github.com/trycompai/comp/issues/2242)) ([a7f98e9](https://github.com/trycompai/comp/commit/a7f98e9d1505505785a2f34a2e132103988dcde5))
+* **email:** implement email module and controller for sending emails ([#2255](https://github.com/trycompai/comp/issues/2255)) ([74be7f6](https://github.com/trycompai/comp/commit/74be7f64d08c7c12c60b1ac1e41ecdcd5a1c4ca1))
+* **email:** refactor email sending logic and add new templates ([#2250](https://github.com/trycompai/comp/issues/2250)) ([c81e4f5](https://github.com/trycompai/comp/commit/c81e4f59108b9dd841591506e3b6b5b59ab75d2d))
+* **questionnaire:** add @Public() decorator to parse/upload/token endpoint for token-based authentication ([#2248](https://github.com/trycompai/comp/issues/2248)) ([2fbb7cb](https://github.com/trycompai/comp/commit/2fbb7cb2e9fa01ca5751c9fdf3e1f11239b6b724))
+* **vendors:** include assignee user details in vendor retrieval ([#2244](https://github.com/trycompai/comp/issues/2244)) ([ad50380](https://github.com/trycompai/comp/commit/ad50380c263df6c72e6172d10ffc8f5baba6d2e7))
+
+
+### BREAKING CHANGES
+
+* Employee and contractor roles in portal now have
+restricted permissions matching the app. Previously they had member
+management and organization update permissions.
+
+Part of ENG-138: Complete Permission System
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* test(rbac): add PermissionGuard unit tests
+
+Add comprehensive tests for PermissionGuard covering:
+- Permission bypass when no permissions required
+- API key bypass behavior
+- Role-based access for privileged vs restricted roles
+- Fallback behavior when better-auth API unavailable
+- isRestrictedRole static method for all role types
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): migrate controllers from RequireRoles to RequirePermission
+
+Migrate all API controllers to use the new better-auth permission system:
+- findings.controller.ts: finding create/update/delete permissions
+- task-management.controller.ts: task CRUD + assign permissions
+- people.controller.ts: member delete permission for removeHost
+- evidence-export.controller.ts: evidence export permission
+
+Also fix TypeScript errors in permission.guard.spec.ts for fetch mocking.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): add assignment-based filtering for employee/contractor roles
+
+Implement assignment filtering to restrict employees/contractors to only
+see resources they are assigned to:
+
+- Add memberId to AuthContext for assignment checking
+- Create assignment-filter utility with filter builders and access checkers
+- Update tasks controller/service with assignment filtering on GET endpoints
+- Update risks controller/service with assignment filtering on GET endpoints
+- Add PermissionGuard and @RequirePermission to tasks and risks endpoints
+
+Employees/contractors now only see:
+- Tasks where they are the assignee
+- Risks where they are the assignee
+
+Privileged roles (owner, admin, program_manager, auditor) see all resources.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): add department-based policy visibility
+
+Allow admins to control which departments can see specific policies:
+
+Schema changes:
+- Add PolicyVisibility enum (ALL, DEPARTMENT)
+- Add visibility and visibleToDepartments fields to Policy model
+
+API changes:
+- Add memberDepartment to AuthContext for visibility filtering
+- Create department-visibility utility with filter builders
+- Update policies controller to filter by visibility for restricted roles
+- Update policies service to accept visibility filter
+
+Policies can now be:
+- Visible to ALL (default) - everyone in the organization sees them
+- Visible to specific DEPARTMENTS only - only members in those departments see them
+
+Privileged roles (owner, admin, program_manager, auditor) see all policies
+regardless of visibility settings.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(auth): centralize auth on API with security hardening
+
+- Move auth server to API, app now uses proxy to forward auth requests
+- Remove localStorage token storage (XSS prevention)
+- Add rate limiting to auth proxy (60/min general, 10/min sensitive)
+- Add redirect URL validation to prevent open redirects
+- Add AUTH_SECRET validation at startup
+- Make all debug logging conditional on NODE_ENV
+- Simplify root page routing (no activeOrganizationId dependency)
+- Use URL-based RBAC with direct DB member lookup
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): add shared auth package and API integration
+
+- Add @trycompai/auth package with centralized permissions and role definitions
+- Update API auth module to integrate with better-auth server
+- Add 403 responses to policy and risk endpoints for Swagger
+- Add assignment filter and department visibility utilities with tests
+- Sync permissions across app and portal
+- Update tsconfig and nest-cli for proper module resolution
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): enable dynamic access control for custom roles
+
+- Add dynamicAccessControl config to organization plugin
+- Add OrganizationRole table for storing custom roles
+- Configure maximum 20 roles per organization
+- Add schema mapping for better-auth role table
+
+Resolves: ENG-145
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): add Custom Roles API for dynamic role management
+
+- Add roles module with CRUD endpoints for custom roles
+- Implement privilege escalation prevention
+- Add permission validation against valid resources/actions
+- Protect built-in roles (owner, admin, auditor, employee, contractor)
+- Add OrganizationRole table migration
+- Limit to 20 custom roles per organization
+- Require ac:create/read/update/delete permissions for role management
+
+Implements: ENG-146
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): support multiple roles for privilege escalation checks
+
+- Update roles service to accept array of roles instead of single role
+- Add getCombinedPermissions to merge permissions from all user roles
+- Update controller to pass full userRoles array
+- Users with multiple roles now get combined permissions for validation
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* fix(auth): prevent JWKS key regeneration causing session loss
+
+Add explicit jwks configuration with rotationInterval to prevent
+better-auth from creating new JWKS keys on each request. Without this,
+all existing JWTs become invalid when the API restarts because new
+signing keys are generated.
+
+- Set rotationInterval to 30 days for monthly key rotation
+- Set gracePeriod to 7 days so old keys remain valid after rotation
+
+Fixes: Session persistence across API restarts
+
+References:
+- https://github.com/better-auth/better-auth/issues/6215
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* test(rbac): add unit tests for Custom Roles API
+
+- Add 18 tests for RolesService covering CRUD operations
+- Add 9 tests for RolesController
+- Test permission validation and privilege escalation prevention
+- Test multiple roles support for privilege checking
+- Test edge cases (duplicate names, max roles limit, reserved names)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* docs: add testing guidelines for API development
+
+- Update .cursorrules with testing requirements and conventions
+- Add apps/api/CLAUDE.md with API-specific development guidelines
+- Document when to write tests, how to run them, and test patterns
+- Include RBAC system documentation
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* refactor(docs): move API testing rules to apps/api
+
+- Remove API-specific testing rules from root .cursorrules
+- Create apps/api/.cursorrules with API testing requirements
+- Keep root .cursorrules focused on commit message conventions
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* test(rbac): add privilege escalation test for role updates
+
+Ensures that users cannot escalate privileges when updating
+role permissions, not just when creating roles.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): implement Custom Roles UI (ENG-148)
+
+- Add roles settings pages (list, create, edit) with permission matrix
+- Add "Select all" feature to quickly set all permissions
+- Integrate custom roles into member management UI:
+  - Role filter dropdown shows all roles dynamically
+  - Invite modal supports custom role selection
+  - Edit member role supports custom roles
+- Allow normal spelling for role names (spaces, capitalization)
+- Add loading skeletons with proper PageLayout wrappers
+- Add comprehensive tests for RolesTable, RoleForm, PermissionMatrix
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* chore(docs): add API endpoints for managing custom roles
+
+* chore(auth): implement cleanup of stale JWKS records on secret change
+
+* chore(permissions): implement user permissions resolution and route protection
+
+- Add functions to resolve user permissions based on roles and organization
+- Implement route permission checks to guard access to various app sections
+- Introduce new layout components for route protection across multiple pages
+- Update existing components to utilize the new permissions system for access control
+
+* chore(api): migrate to session-based authentication and add controls management
+
+* refactor(auth): update permission checks to include cookie header
+
+* refactor(api): update permission guard logging to include request details
+
+* refactor(api): remove unnecessary logging from getPolicy function
+
+* chore(api): handle optional chaining for user ID in various actions
+
+* refactor(app): update policy editor to check version read-only state
+
+* refactor(api): enhance version content handling and validation in policies
+
+* refactor(app): update PolicyArchiveSheet to use new design system components
+
+* feat(audit): implement audit logging interceptor and related functionality
+
+* refactor(audit): add audit log constants, resolvers, and utilities
+
+* refactor(auth): add isPlatformAdmin support in authentication and guards
+
+* chore(api): add unit tests for PeopleController and PeopleService
+
+* chore(tests): add unit tests for layout and questionnaire data queries
+
+* chore(api): implement pagination and filtering for risks retrieval
+
+* chore(api): add onboarding endpoint to retrieve organization onboarding data
+
+* refactor(vendors): migrate vendor data fetching to server API and remove obsolete queries
+
+* refactor(api): update controllers and services to use new API structure and enhance data fetching
+
+* refactor(soa): remove console logs for component initialization and debugging
+
+* refactor(auth): implement service token authentication and update guards
+
+* refactor(trust): replace server action with API call for brand settings
+
+* chore(openapi): add new endpoints for trust portal settings management
+
+* chore(trust): add endpoints for managing trust portal settings and favicon
+
+* feat(auth): add API key validation with scopes and new auth controller
+
+* refactor(auth): update resource mapping from "portal" to "trust" in permissions
+
+* feat(tasks): add bulk submit for review functionality and task approval methods
+
+* feat(audit): add comprehensive audit commands for design system, hooks, RBAC, unit tests, and production readiness
+
+* feat(auth): add apiKey resource and permissions to roles and decorators
+
+* refactor: standardize roles in packages/auth package
+
+* refactor(auth): add createdAt field to user response and update environment variables
+
+* refactor(env): add internal API token to environment configuration
+
+* fix(CompanyFormPageClient): remove orgId parameter from API call
+
+* refactor: add AWS credentials validation and integration test actions
+
+* refactor(cloud-tests): update authentication method to use session cookie
+
+* chore: add unit tests
+
+* chore(trust): enhance permission gating tests and mock localStorage
+
+* chore(db): add multiple migrations for policy visibility and role management
+
+* chore: fix stuff
+
+* feat: add audit log controller and integrate with existing modules
+
+* feat: add audit log controller and integrate with existing modules
+
+* chore: remove CODE_OF_CONDUCT and commitlint configuration files
+
+* feat(api): implement pentest billing module with Stripe integration
+
+- Add PentestBillingController and PentestBillingService for managing subscriptions and billing.
+- Implement endpoints for subscription status, creating checkout sessions, handling success callbacks, and managing billing portals.
+- Integrate role-based access control for billing actions using @RequirePermission.
+- Introduce tools for AI chat to fetch organization and policy data based on user permissions.
+- Update app.module.ts to include StripeModule and RolesModule for billing functionalities.
+- Ensure all new features are covered by tests and adhere to project guidelines.
+
+* feat(api): implement triggerEmail function for email notifications
+
+- Introduce triggerEmail function to replace sendEmail for sending email notifications.
+- Update various notifier services to utilize triggerEmail for sending emails.
+- Add new send-email task to handle email sending via the trigger.dev SDK.
+- Update package.json and bun.lock to include @react-email/render dependency.
+- Ensure all changes are covered by tests and adhere to project guidelines.
+
+* feat(db): add migrations for policy visibility, organization roles, role notifications, JWKS expiration, and API key scopes
+
+- Create new enum type "PolicyVisibility" and update "Policy" table to include visibility and visibleToDepartments fields.
+- Introduce "organization_role" table for dynamic roles with associated permissions and foreign key constraints.
+- Add "role_notification_setting" table to manage notification settings per role within organizations.
+- Extend "jwks" table to include "expiresAt" timestamp for better key management.
+- Change "permissions" column in "organization_role" from jsonb to text for compatibility with better-auth.
+
+* chore: update .gitignore and remove outdated audit findings document
+
+- Update .gitignore to reflect the new path for audit findings.
+- Remove the outdated audit findings document from the repository.
+
+* chore(deps): update ai-sdk packages and remove unused DraggableCards component
+
+- Upgrade @ai-sdk dependencies to version 3.0.0 for @ai-sdk/anthropic, @ai-sdk/groq, @ai-sdk/openai, @ai-sdk/provider, and @ai-sdk/react.
+- Update @ai-sdk/rsc to version 2.0.0 and @ai-sdk/provider-utils to version 4.0.19.
+- Remove the unused DraggableCards component from the project.
+- Adjust types in InviteMembersModal and other components for better type safety.
+
+* fix(api): add error handling to streaming pump in assistant chat controller
+
+Wrap the ReadableStream pump loop in try/catch/finally to handle stream
+read errors gracefully (e.g., client disconnects) and ensure res.end()
+is always called.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): validate organization exists in service token auth
+
+Service token auth now verifies the x-organization-id header references
+a real organization in the database, preventing operations against
+non-existent or arbitrary organization IDs.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): audit preflight failure no longer blocks requests + filter expired API keys
+
+1. Wrap audit preflight in .catch() so a failure in pre-flight data
+   collection (e.g., bad controlIds) never blocks the actual API request.
+   The request proceeds with empty audit context instead.
+
+2. Filter expired API keys at the DB level to reduce payload size
+   during validation. The full-table scan design (per-key salts) is a
+   known limitation that requires a schema migration to fully resolve.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): add keyPrefix for indexed API key lookup
+
+Store first 8 chars of the plaintext key as `keyPrefix` for O(1) indexed
+lookup instead of loading all active keys into memory.
+
+Backwards compatible: legacy keys without a prefix fall back to scanning
+only keys where keyPrefix IS NULL, and the prefix is backfilled on first
+successful validation so future lookups are fast.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): handle errors in @Res() streaming endpoint + set isServiceToken explicitly
+
+1. Wrap completions endpoint in try/catch since @Res() bypasses NestJS
+   exception filters. Errors now return proper JSON responses instead
+   of hanging.
+
+2. Explicitly set isServiceToken=false in API key and session auth
+   handlers to prevent accidental fallthrough in PermissionGuard.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): validate domain format in trust portal to prevent path injection
+
+Add domain format validation in addCustomDomain and checkDnsRecords to
+ensure user-provided domain values can't inject path segments into
+Vercel API or DNS lookup URLs.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): merge duplicate permissions, skip chat audit, add maxSteps, fix control mapping descriptions
+
+1. PermissionGuard: merge actions for duplicate resources instead of
+   overwriting, preventing silently dropped permission checks.
+
+2. Assistant chat completions: add @SkipAuditLog() to prevent noisy
+   "Created app" audit entries on every chat message.
+
+3. Assistant chat: add maxSteps=5 to streamText so the model can
+   synthesize tool results into natural language responses.
+
+4. Audit log resolvers: extract resource name from URL path instead
+   of hardcoding "policy". fetchControlIds now dynamically resolves
+   the correct Prisma model.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* feat: rBAC support and major security improvements
+
+Role-Based Access Control (RBAC) system with custom roles,
+permission guards, and audit logging across the platform.
+
+Key changes:
+- Hybrid auth guard for session, API key, service token
+- Permission guard with better-auth and custom roles
+- Granular resource:action permissions
+- Audit log interceptor with mutation tracking
+- API key prefix indexing for O(1) lookups
+- Service token org existence validation
+- Domain validation to prevent SSRF
+- Streaming endpoint error handling
+- AI assistant chat with permission-gated tools
+* all API endpoints now require RBAC
+permissions via @RequirePermission decorators.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+# [2.0.0](https://github.com/trycompai/comp/compare/v1.88.1...v2.0.0) (2026-03-10)
+
+
+* [comp] Production Deploy ([#2269](https://github.com/trycompai/comp/issues/2269)) ([0fcaaf9](https://github.com/trycompai/comp/commit/0fcaaf9d98f72c868f1d4e3d009b54d3dedc9aee)), closes [#2092](https://github.com/trycompai/comp/issues/2092)
+
+
+### BREAKING CHANGES
+
+* Employee and contractor roles in portal now have
+restricted permissions matching the app. Previously they had member
+management and organization update permissions.
+
+Part of ENG-138: Complete Permission System
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* test(rbac): add PermissionGuard unit tests
+
+Add comprehensive tests for PermissionGuard covering:
+- Permission bypass when no permissions required
+- API key bypass behavior
+- Role-based access for privileged vs restricted roles
+- Fallback behavior when better-auth API unavailable
+- isRestrictedRole static method for all role types
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): migrate controllers from RequireRoles to RequirePermission
+
+Migrate all API controllers to use the new better-auth permission system:
+- findings.controller.ts: finding create/update/delete permissions
+- task-management.controller.ts: task CRUD + assign permissions
+- people.controller.ts: member delete permission for removeHost
+- evidence-export.controller.ts: evidence export permission
+
+Also fix TypeScript errors in permission.guard.spec.ts for fetch mocking.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): add assignment-based filtering for employee/contractor roles
+
+Implement assignment filtering to restrict employees/contractors to only
+see resources they are assigned to:
+
+- Add memberId to AuthContext for assignment checking
+- Create assignment-filter utility with filter builders and access checkers
+- Update tasks controller/service with assignment filtering on GET endpoints
+- Update risks controller/service with assignment filtering on GET endpoints
+- Add PermissionGuard and @RequirePermission to tasks and risks endpoints
+
+Employees/contractors now only see:
+- Tasks where they are the assignee
+- Risks where they are the assignee
+
+Privileged roles (owner, admin, program_manager, auditor) see all resources.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): add department-based policy visibility
+
+Allow admins to control which departments can see specific policies:
+
+Schema changes:
+- Add PolicyVisibility enum (ALL, DEPARTMENT)
+- Add visibility and visibleToDepartments fields to Policy model
+
+API changes:
+- Add memberDepartment to AuthContext for visibility filtering
+- Create department-visibility utility with filter builders
+- Update policies controller to filter by visibility for restricted roles
+- Update policies service to accept visibility filter
+
+Policies can now be:
+- Visible to ALL (default) - everyone in the organization sees them
+- Visible to specific DEPARTMENTS only - only members in those departments see them
+
+Privileged roles (owner, admin, program_manager, auditor) see all policies
+regardless of visibility settings.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(auth): centralize auth on API with security hardening
+
+- Move auth server to API, app now uses proxy to forward auth requests
+- Remove localStorage token storage (XSS prevention)
+- Add rate limiting to auth proxy (60/min general, 10/min sensitive)
+- Add redirect URL validation to prevent open redirects
+- Add AUTH_SECRET validation at startup
+- Make all debug logging conditional on NODE_ENV
+- Simplify root page routing (no activeOrganizationId dependency)
+- Use URL-based RBAC with direct DB member lookup
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): add shared auth package and API integration
+
+- Add @trycompai/auth package with centralized permissions and role definitions
+- Update API auth module to integrate with better-auth server
+- Add 403 responses to policy and risk endpoints for Swagger
+- Add assignment filter and department visibility utilities with tests
+- Sync permissions across app and portal
+- Update tsconfig and nest-cli for proper module resolution
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): enable dynamic access control for custom roles
+
+- Add dynamicAccessControl config to organization plugin
+- Add OrganizationRole table for storing custom roles
+- Configure maximum 20 roles per organization
+- Add schema mapping for better-auth role table
+
+Resolves: ENG-145
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): add Custom Roles API for dynamic role management
+
+- Add roles module with CRUD endpoints for custom roles
+- Implement privilege escalation prevention
+- Add permission validation against valid resources/actions
+- Protect built-in roles (owner, admin, auditor, employee, contractor)
+- Add OrganizationRole table migration
+- Limit to 20 custom roles per organization
+- Require ac:create/read/update/delete permissions for role management
+
+Implements: ENG-146
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): support multiple roles for privilege escalation checks
+
+- Update roles service to accept array of roles instead of single role
+- Add getCombinedPermissions to merge permissions from all user roles
+- Update controller to pass full userRoles array
+- Users with multiple roles now get combined permissions for validation
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* fix(auth): prevent JWKS key regeneration causing session loss
+
+Add explicit jwks configuration with rotationInterval to prevent
+better-auth from creating new JWKS keys on each request. Without this,
+all existing JWTs become invalid when the API restarts because new
+signing keys are generated.
+
+- Set rotationInterval to 30 days for monthly key rotation
+- Set gracePeriod to 7 days so old keys remain valid after rotation
+
+Fixes: Session persistence across API restarts
+
+References:
+- https://github.com/better-auth/better-auth/issues/6215
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* test(rbac): add unit tests for Custom Roles API
+
+- Add 18 tests for RolesService covering CRUD operations
+- Add 9 tests for RolesController
+- Test permission validation and privilege escalation prevention
+- Test multiple roles support for privilege checking
+- Test edge cases (duplicate names, max roles limit, reserved names)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* docs: add testing guidelines for API development
+
+- Update .cursorrules with testing requirements and conventions
+- Add apps/api/CLAUDE.md with API-specific development guidelines
+- Document when to write tests, how to run them, and test patterns
+- Include RBAC system documentation
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* refactor(docs): move API testing rules to apps/api
+
+- Remove API-specific testing rules from root .cursorrules
+- Create apps/api/.cursorrules with API testing requirements
+- Keep root .cursorrules focused on commit message conventions
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* test(rbac): add privilege escalation test for role updates
+
+Ensures that users cannot escalate privileges when updating
+role permissions, not just when creating roles.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* feat(rbac): implement Custom Roles UI (ENG-148)
+
+- Add roles settings pages (list, create, edit) with permission matrix
+- Add "Select all" feature to quickly set all permissions
+- Integrate custom roles into member management UI:
+  - Role filter dropdown shows all roles dynamically
+  - Invite modal supports custom role selection
+  - Edit member role supports custom roles
+- Allow normal spelling for role names (spaces, capitalization)
+- Add loading skeletons with proper PageLayout wrappers
+- Add comprehensive tests for RolesTable, RoleForm, PermissionMatrix
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* chore(docs): add API endpoints for managing custom roles
+
+* chore(auth): implement cleanup of stale JWKS records on secret change
+
+* chore(permissions): implement user permissions resolution and route protection
+
+- Add functions to resolve user permissions based on roles and organization
+- Implement route permission checks to guard access to various app sections
+- Introduce new layout components for route protection across multiple pages
+- Update existing components to utilize the new permissions system for access control
+
+* chore(api): migrate to session-based authentication and add controls management
+
+* refactor(auth): update permission checks to include cookie header
+
+* refactor(api): update permission guard logging to include request details
+
+* refactor(api): remove unnecessary logging from getPolicy function
+
+* chore(api): handle optional chaining for user ID in various actions
+
+* refactor(app): update policy editor to check version read-only state
+
+* refactor(api): enhance version content handling and validation in policies
+
+* refactor(app): update PolicyArchiveSheet to use new design system components
+
+* feat(audit): implement audit logging interceptor and related functionality
+
+* refactor(audit): add audit log constants, resolvers, and utilities
+
+* refactor(auth): add isPlatformAdmin support in authentication and guards
+
+* chore(api): add unit tests for PeopleController and PeopleService
+
+* chore(tests): add unit tests for layout and questionnaire data queries
+
+* chore(api): implement pagination and filtering for risks retrieval
+
+* chore(api): add onboarding endpoint to retrieve organization onboarding data
+
+* refactor(vendors): migrate vendor data fetching to server API and remove obsolete queries
+
+* refactor(api): update controllers and services to use new API structure and enhance data fetching
+
+* refactor(soa): remove console logs for component initialization and debugging
+
+* refactor(auth): implement service token authentication and update guards
+
+* refactor(trust): replace server action with API call for brand settings
+
+* chore(openapi): add new endpoints for trust portal settings management
+
+* chore(trust): add endpoints for managing trust portal settings and favicon
+
+* feat(auth): add API key validation with scopes and new auth controller
+
+* refactor(auth): update resource mapping from "portal" to "trust" in permissions
+
+* feat(tasks): add bulk submit for review functionality and task approval methods
+
+* feat(audit): add comprehensive audit commands for design system, hooks, RBAC, unit tests, and production readiness
+
+* feat(auth): add apiKey resource and permissions to roles and decorators
+
+* refactor: standardize roles in packages/auth package
+
+* refactor(auth): add createdAt field to user response and update environment variables
+
+* refactor(env): add internal API token to environment configuration
+
+* fix(CompanyFormPageClient): remove orgId parameter from API call
+
+* refactor: add AWS credentials validation and integration test actions
+
+* refactor(cloud-tests): update authentication method to use session cookie
+
+* chore: add unit tests
+
+* chore(trust): enhance permission gating tests and mock localStorage
+
+* chore(db): add multiple migrations for policy visibility and role management
+
+* chore: fix stuff
+
+* feat: add audit log controller and integrate with existing modules
+
+* feat: add audit log controller and integrate with existing modules
+
+* chore: remove CODE_OF_CONDUCT and commitlint configuration files
+
+* feat(api): implement pentest billing module with Stripe integration
+
+- Add PentestBillingController and PentestBillingService for managing subscriptions and billing.
+- Implement endpoints for subscription status, creating checkout sessions, handling success callbacks, and managing billing portals.
+- Integrate role-based access control for billing actions using @RequirePermission.
+- Introduce tools for AI chat to fetch organization and policy data based on user permissions.
+- Update app.module.ts to include StripeModule and RolesModule for billing functionalities.
+- Ensure all new features are covered by tests and adhere to project guidelines.
+
+* feat(api): implement triggerEmail function for email notifications
+
+- Introduce triggerEmail function to replace sendEmail for sending email notifications.
+- Update various notifier services to utilize triggerEmail for sending emails.
+- Add new send-email task to handle email sending via the trigger.dev SDK.
+- Update package.json and bun.lock to include @react-email/render dependency.
+- Ensure all changes are covered by tests and adhere to project guidelines.
+
+* feat(db): add migrations for policy visibility, organization roles, role notifications, JWKS expiration, and API key scopes
+
+- Create new enum type "PolicyVisibility" and update "Policy" table to include visibility and visibleToDepartments fields.
+- Introduce "organization_role" table for dynamic roles with associated permissions and foreign key constraints.
+- Add "role_notification_setting" table to manage notification settings per role within organizations.
+- Extend "jwks" table to include "expiresAt" timestamp for better key management.
+- Change "permissions" column in "organization_role" from jsonb to text for compatibility with better-auth.
+
+* chore: update .gitignore and remove outdated audit findings document
+
+- Update .gitignore to reflect the new path for audit findings.
+- Remove the outdated audit findings document from the repository.
+
+* chore(deps): update ai-sdk packages and remove unused DraggableCards component
+
+- Upgrade @ai-sdk dependencies to version 3.0.0 for @ai-sdk/anthropic, @ai-sdk/groq, @ai-sdk/openai, @ai-sdk/provider, and @ai-sdk/react.
+- Update @ai-sdk/rsc to version 2.0.0 and @ai-sdk/provider-utils to version 4.0.19.
+- Remove the unused DraggableCards component from the project.
+- Adjust types in InviteMembersModal and other components for better type safety.
+
+* fix(api): add error handling to streaming pump in assistant chat controller
+
+Wrap the ReadableStream pump loop in try/catch/finally to handle stream
+read errors gracefully (e.g., client disconnects) and ensure res.end()
+is always called.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): validate organization exists in service token auth
+
+Service token auth now verifies the x-organization-id header references
+a real organization in the database, preventing operations against
+non-existent or arbitrary organization IDs.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): audit preflight failure no longer blocks requests + filter expired API keys
+
+1. Wrap audit preflight in .catch() so a failure in pre-flight data
+   collection (e.g., bad controlIds) never blocks the actual API request.
+   The request proceeds with empty audit context instead.
+
+2. Filter expired API keys at the DB level to reduce payload size
+   during validation. The full-table scan design (per-key salts) is a
+   known limitation that requires a schema migration to fully resolve.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): add keyPrefix for indexed API key lookup
+
+Store first 8 chars of the plaintext key as `keyPrefix` for O(1) indexed
+lookup instead of loading all active keys into memory.
+
+Backwards compatible: legacy keys without a prefix fall back to scanning
+only keys where keyPrefix IS NULL, and the prefix is backfilled on first
+successful validation so future lookups are fast.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): handle errors in @Res() streaming endpoint + set isServiceToken explicitly
+
+1. Wrap completions endpoint in try/catch since @Res() bypasses NestJS
+   exception filters. Errors now return proper JSON responses instead
+   of hanging.
+
+2. Explicitly set isServiceToken=false in API key and session auth
+   handlers to prevent accidental fallthrough in PermissionGuard.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): validate domain format in trust portal to prevent path injection
+
+Add domain format validation in addCustomDomain and checkDnsRecords to
+ensure user-provided domain values can't inject path segments into
+Vercel API or DNS lookup URLs.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(api): merge duplicate permissions, skip chat audit, add maxSteps, fix control mapping descriptions
+
+1. PermissionGuard: merge actions for duplicate resources instead of
+   overwriting, preventing silently dropped permission checks.
+
+2. Assistant chat completions: add @SkipAuditLog() to prevent noisy
+   "Created app" audit entries on every chat message.
+
+3. Assistant chat: add maxSteps=5 to streamText so the model can
+   synthesize tool results into natural language responses.
+
+4. Audit log resolvers: extract resource name from URL path instead
+   of hardcoding "policy". fetchControlIds now dynamically resolves
+   the correct Prisma model.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* feat: rBAC support and major security improvements
+
+Role-Based Access Control (RBAC) system with custom roles,
+permission guards, and audit logging across the platform.
+
+Key changes:
+- Hybrid auth guard for session, API key, service token
+- Permission guard with better-auth and custom roles
+- Granular resource:action permissions
+- Audit log interceptor with mutation tracking
+- API key prefix indexing for O(1) lookups
+- Service token org existence validation
+- Domain validation to prevent SSRF
+- Streaming endpoint error handling
+- AI assistant chat with permission-gated tools
+* all API endpoints now require RBAC
+permissions via @RequirePermission decorators.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+## [1.88.1](https://github.com/trycompai/comp/compare/v1.88.0...v1.88.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* **evidence-forms:** regenerate presigned URLs on submission retrieval ([#2223](https://github.com/trycompai/comp/issues/2223)) ([783db83](https://github.com/trycompai/comp/commit/783db83f15f98aed4554c28a6c6a637c84463ee6))
+
+# [1.88.0](https://github.com/trycompai/comp/compare/v1.87.0...v1.88.0) (2026-03-05)
+
+
+### Bug Fixes
+
+* allow year selection in join date picker ([#2211](https://github.com/trycompai/comp/issues/2211)) ([57acab0](https://github.com/trycompai/comp/commit/57acab032f964dd912254d00a29a6ff598dbc329))
+* **app:** hide inactive user tasks on People/Tasks tab ([#2219](https://github.com/trycompai/comp/issues/2219)) ([caef0d9](https://github.com/trycompai/comp/commit/caef0d9c5811f74f423419ef1c0bd526868d198d))
+* **billing:** harden server actions against open redirect and runId abuse ([#2217](https://github.com/trycompai/comp/issues/2217)) ([e77e278](https://github.com/trycompai/comp/commit/e77e2786a9241f58b2b2d8b033c83c3acc5ff6dc))
+* prevent secret input text from overflowing its container ([#2210](https://github.com/trycompai/comp/issues/2210)) ([4489667](https://github.com/trycompai/comp/commit/448966765ccc311050438660a466de8087d52710))
+* **security:** incremental penetration-tests lifecycle and webhook contract fixes ([#2208](https://github.com/trycompai/comp/issues/2208)) ([8a5b115](https://github.com/trycompai/comp/commit/8a5b1158af078f2711cad374a761f61f12c1fc7e))
+
+
+### Features
+
+* add disclaimer to cloud integrations about Cloud Tests usage ([#2213](https://github.com/trycompai/comp/issues/2213)) ([a7ca4fd](https://github.com/trycompai/comp/commit/a7ca4fd458d161512ccaf92c650ca3ea6d134ece))
+* add pagination to context hub table ([#2214](https://github.com/trycompai/comp/issues/2214)) ([f2b282c](https://github.com/trycompai/comp/commit/f2b282c9b9b487ec83c3efb3a6637abe9979ea30))
+* consolidate automation failure emails into daily digest ([#2216](https://github.com/trycompai/comp/issues/2216)) ([f23df39](https://github.com/trycompai/comp/commit/f23df39be66c04a733e3c38c8233ee7551ee09cd))
+* **pentest:** subscription billing + GitHub repo selector ([#2212](https://github.com/trycompai/comp/issues/2212)) ([9ec0449](https://github.com/trycompai/comp/commit/9ec044952f0938e9d992a6610069b1b75ef6af4b))
+* show success banner when all cloud tests pass ([#2215](https://github.com/trycompai/comp/issues/2215)) ([adc8644](https://github.com/trycompai/comp/commit/adc864474e0f214fff75f10ce556d8a9e868f655))
+
 # [1.87.0](https://github.com/trycompai/comp/compare/v1.86.1...v1.87.0) (2026-03-02)
 
 
@@ -93,7 +1347,7 @@
 
 ### Bug Fixes
 
-* **api:** add @comp/company package to Dockerfile ([#2148](https://github.com/trycompai/comp/issues/2148)) ([d91bcaa](https://github.com/trycompai/comp/commit/d91bcaa5a92557a1b47a12ec6b396715744fca7f))
+* **api:** add @trycompai/company package to Dockerfile ([#2148](https://github.com/trycompai/comp/issues/2148)) ([d91bcaa](https://github.com/trycompai/comp/commit/d91bcaa5a92557a1b47a12ec6b396715744fca7f))
 * **api:** inline mergeDeviceLists to fix production runtime crash ([#2146](https://github.com/trycompai/comp/issues/2146)) ([04ef343](https://github.com/trycompai/comp/commit/04ef343011defa91609ba9ba69b85776063198db))
 
 ## [1.83.1](https://github.com/trycompai/comp/compare/v1.83.0...v1.83.1) (2026-02-17)

@@ -1,5 +1,5 @@
 import type { Control, Task } from '@db';
-import type { FrameworkInstanceWithControls } from '../types';
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import { countStrictlyCompletedTasks } from './taskEvidenceDocumentsScore';
 
 export interface FrameworkStats {

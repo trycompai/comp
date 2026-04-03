@@ -1,26 +1,25 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
-  ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { AuthContext } from '../../auth/auth-context.decorator';
-import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
-import type { AuthContext as AuthContextType } from '../../auth/types';
+import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
+import { CreateTaskTemplateDto } from './dto/create-task-template.dto';
 import { UpdateTaskTemplateDto } from './dto/update-task-template.dto';
 import { TaskTemplateService } from './task-template.service';
 import { ValidateIdPipe } from './pipes/validate-id.pipe';
@@ -34,24 +33,36 @@ import { DELETE_TASK_TEMPLATE_RESPONSES } from './schemas/delete-task-template.r
 
 @ApiTags('Framework Editor Task Templates')
 @Controller({ path: 'framework-editor/task-template', version: '1' })
-@UseGuards(HybridAuthGuard)
-@ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
+@UseGuards(PlatformAdminGuard)
 export class TaskTemplateController {
   constructor(private readonly taskTemplateService: TaskTemplateService) {}
+
+  @Post()
+  @ApiOperation(TASK_TEMPLATE_OPERATIONS.createTaskTemplate)
+  @ApiBody(TASK_TEMPLATE_BODIES.createTaskTemplate)
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
+  async createTaskTemplate(
+    @Body() dto: CreateTaskTemplateDto,
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return this.taskTemplateService.create(dto, frameworkId);
+  }
 
   @Get()
   @ApiOperation(TASK_TEMPLATE_OPERATIONS.getAllTaskTemplates)
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[200])
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[401])
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[500])
-  async getAllTaskTemplates() {
-    return await this.taskTemplateService.findAll();
+  async getAllTaskTemplates(
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return await this.taskTemplateService.findAll(frameworkId);
   }
 
   @Get(':id')
@@ -63,22 +74,8 @@ export class TaskTemplateController {
   @ApiResponse(GET_TASK_TEMPLATE_BY_ID_RESPONSES[500])
   async getTaskTemplateById(
     @Param('id', ValidateIdPipe) taskTemplateId: string,
-    @AuthContext() authContext: AuthContextType,
   ) {
-    const taskTemplate =
-      await this.taskTemplateService.findById(taskTemplateId);
-
-    return {
-      ...taskTemplate,
-      authType: authContext.authType,
-      ...(authContext.userId &&
-        authContext.userEmail && {
-          authenticatedUser: {
-            id: authContext.userId,
-            email: authContext.userEmail,
-          },
-        }),
-    };
+    return await this.taskTemplateService.findById(taskTemplateId);
   }
 
   @Patch(':id')
@@ -100,24 +97,11 @@ export class TaskTemplateController {
   async updateTaskTemplate(
     @Param('id', ValidateIdPipe) taskTemplateId: string,
     @Body() updateTaskTemplateDto: UpdateTaskTemplateDto,
-    @AuthContext() authContext: AuthContextType,
   ) {
-    const updatedTaskTemplate = await this.taskTemplateService.updateById(
+    return await this.taskTemplateService.updateById(
       taskTemplateId,
       updateTaskTemplateDto,
     );
-
-    return {
-      ...updatedTaskTemplate,
-      authType: authContext.authType,
-      ...(authContext.userId &&
-        authContext.userEmail && {
-          authenticatedUser: {
-            id: authContext.userId,
-            email: authContext.userEmail,
-          },
-        }),
-    };
   }
 
   @Delete(':id')
@@ -129,20 +113,7 @@ export class TaskTemplateController {
   @ApiResponse(DELETE_TASK_TEMPLATE_RESPONSES[500])
   async deleteTaskTemplate(
     @Param('id', ValidateIdPipe) taskTemplateId: string,
-    @AuthContext() authContext: AuthContextType,
   ) {
-    const result = await this.taskTemplateService.deleteById(taskTemplateId);
-
-    return {
-      ...result,
-      authType: authContext.authType,
-      ...(authContext.userId &&
-        authContext.userEmail && {
-          authenticatedUser: {
-            id: authContext.userId,
-            email: authContext.userEmail,
-          },
-        }),
-    };
+    return await this.taskTemplateService.deleteById(taskTemplateId);
   }
 }

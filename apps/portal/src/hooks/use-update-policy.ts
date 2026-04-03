@@ -16,6 +16,7 @@ export function useUpdatePolicyContent() {
     mutationFn: async ({ policyId, organizationId, content }: UpdatePolicyContentInput) => {
       const response = await fetch(`/api/policies/${policyId}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },

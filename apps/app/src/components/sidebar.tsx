@@ -1,25 +1,20 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
-import { getOrganizations } from '@/data/getOrganizations';
+import { serverApi } from '@/lib/api-server';
+import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { cn } from '@comp/ui/cn';
-import { db, type Organization, Role } from '@db';
+import { cn } from '@trycompai/ui/cn';
+import { db, type Organization, Role } from '@db/server';
 import { cookies, headers } from 'next/headers';
 import { MainMenu } from './main-menu';
 import { OrganizationSwitcher } from './organization-switcher';
 import { SidebarCollapseButton } from './sidebar-collapse-button';
 import { SidebarLogo } from './sidebar-logo';
 
-// Helper to safely parse comma-separated roles string
-function parseRolesString(rolesStr: string | null | undefined): Role[] {
-  if (!rolesStr) return [];
-  return rolesStr
-    .split(',')
-    .map((r) => r.trim())
-    .filter((r) => r in Role) as Role[];
-}
+// Use shared parseRolesString from permissions lib
+import { parseRolesString } from '@/lib/permissions';
 
 export async function Sidebar({
   organization,
@@ -30,7 +25,8 @@ export async function Sidebar({
 }) {
   const cookieStore = await cookies();
   const isCollapsed = collapsed || cookieStore.get('sidebar-collapsed')?.value === 'true';
-  const { organizations } = await getOrganizations();
+  const meRes = await serverApi.get<{ organizations: OrganizationFromMe[] }>('/v1/auth/me');
+  const organizations = meRes.data?.organizations ?? [];
 
   // Generate logo URLs for all organizations
   const logoUrls: Record<string, string> = {};

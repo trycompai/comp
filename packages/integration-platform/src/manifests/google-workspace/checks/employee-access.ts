@@ -1,12 +1,16 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
+import {
+  filterGoogleWorkspaceUsersForChecks,
+  parseGoogleWorkspaceCheckUserFilter,
+} from '../check-user-filter';
 import type {
   GoogleWorkspaceRoleAssignmentsResponse,
   GoogleWorkspaceRolesResponse,
   GoogleWorkspaceUser,
   GoogleWorkspaceUsersResponse,
 } from '../types';
-import { includeSuspendedVariable } from '../variables';
+import { includeSuspendedVariable, targetOrgUnitsVariable } from '../variables';
 
 /**
  * Employee Access Review Check
@@ -18,12 +22,12 @@ export const employeeAccessCheck: IntegrationCheck = {
   name: 'Employee Access Review',
   description: 'Fetch all employees and their roles from Google Workspace for access review',
   taskMapping: TASK_TEMPLATES.employeeAccess,
-  variables: [includeSuspendedVariable],
+  variables: [targetOrgUnitsVariable, includeSuspendedVariable],
 
   run: async (ctx: CheckContext) => {
     ctx.log('Starting Google Workspace Employee Access check');
 
-    const includeSuspended = ctx.variables.include_suspended === 'true';
+    const userFilterConfig = parseGoogleWorkspaceCheckUserFilter(ctx.variables);
 
     // Fetch all roles first to build a role ID -> name map
     ctx.log('Fetching available roles...');
@@ -123,16 +127,20 @@ export const employeeAccessCheck: IntegrationCheck = {
 
     ctx.log(`Fetched ${allUsers.length} total users`);
 
-    // Filter users
-    const activeUsers = allUsers.filter((user) => {
-      if (user.suspended && !includeSuspended) {
-        return false;
+    if (userFilterConfig.targetOrgUnits?.length) {
+      const ouCounts = new Map<string, number>();
+      for (const user of allUsers) {
+        const ou = user.orgUnitPath ?? '/';
+        ouCounts.set(ou, (ouCounts.get(ou) ?? 0) + 1);
       }
-      if (user.archived) {
-        return false;
-      }
-      return true;
-    });
+      ctx.log(
+        `Filtering to OUs: ${userFilterConfig.targetOrgUnits.join(', ')}. ` +
+          `User OUs: ${[...ouCounts.entries()].map(([ou, count]) => `${ou} (${count})`).join(', ')}`,
+      );
+    }
+
+    // Same rules as 2FA check and employee sync (sync.controller.ts)
+    const activeUsers = filterGoogleWorkspaceUsersForChecks(allUsers, userFilterConfig);
 
     ctx.log(`Found ${activeUsers.length} active users after filtering`);
 

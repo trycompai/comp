@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '@/actions/safe-action';
@@ -34,7 +34,7 @@ export const reactivateMember = authActionClient
       const currentUserMember = await db.member.findFirst({
         where: {
           organizationId: ctx.session.activeOrganizationId,
-          userId: ctx.user.id,
+          userId: ctx.user!.id,
           deactivated: false,
         },
       });

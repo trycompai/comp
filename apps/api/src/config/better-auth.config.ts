@@ -2,23 +2,31 @@ import { registerAs } from '@nestjs/config';
 import { z } from 'zod';
 
 const betterAuthConfigSchema = z.object({
-  url: z.string().url('BETTER_AUTH_URL must be a valid URL'),
+  url: z.string().url('BASE_URL must be a valid URL'),
 });
 
 export type BetterAuthConfig = z.infer<typeof betterAuthConfigSchema>;
 
+/**
+ * Better Auth configuration for the API.
+ *
+ * BASE_URL should point to the API itself since the API is the auth server.
+ * For example:
+ * - Production: https://api.trycomp.ai
+ * - Staging: https://api.staging.trycomp.ai
+ * - Development: http://localhost:3333
+ */
 export const betterAuthConfig = registerAs(
   'betterAuth',
   (): BetterAuthConfig => {
-    const url = process.env.BETTER_AUTH_URL;
+    const url = process.env.BASE_URL;
 
     if (!url) {
-      throw new Error('BETTER_AUTH_URL environment variable is required');
+      throw new Error('BASE_URL environment variable is required');
     }
 
     const config = { url };
 
-    // Validate configuration at startup
     const result = betterAuthConfigSchema.safeParse(config);
 
     if (!result.success) {

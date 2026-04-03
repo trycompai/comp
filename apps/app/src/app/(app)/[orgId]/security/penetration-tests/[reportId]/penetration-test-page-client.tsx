@@ -1,8 +1,8 @@
 'use client';
 
 import { api } from '@/lib/api-client';
-import { Badge } from '@comp/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { Badge } from '@trycompai/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { AlertCircle, ArrowLeft, ExternalLink, FileText, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@trycompai/design-system';

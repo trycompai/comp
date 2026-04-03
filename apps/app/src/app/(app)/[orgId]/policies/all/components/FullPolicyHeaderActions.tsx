@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,34 +8,38 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Icons } from '@comp/ui/icons';
-import { useAction } from 'next-safe-action/hooks';
+} from '@trycompai/ui/dropdown-menu';
+import { Icons } from '@trycompai/ui/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { regenerateFullPoliciesAction } from '../actions/regenerate-full-policies';
+import { usePolicyActions } from '../hooks/usePolicyActions';
+import { usePermissions } from '@/hooks/use-permissions';
 
 export function FullPolicyHeaderActions() {
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const { regenerateAll } = usePolicyActions();
+  const { hasPermission } = usePermissions();
 
-  const regenerate = useAction(regenerateFullPoliciesAction, {
-    onSuccess: () => {
-      toast.success('Policy regeneration started. This may take a few minutes.');
-      setRegenerateConfirmOpen(false);
-    },
-    onError: (error) => {
-      toast.error(error.error.serverError || 'Failed to regenerate policies');
-    },
-  });
+  if (!hasPermission('policy', 'update')) return null;
 
   const handleRegenerate = async () => {
-    await regenerate.execute({});
+    setIsRegenerating(true);
+    try {
+      await regenerateAll();
+      toast.success('Policy regeneration started. This may take a few minutes.');
+      setRegenerateConfirmOpen(false);
+    } catch {
+      toast.error('Failed to regenerate policies');
+    } finally {
+      setIsRegenerating(false);
+    }
   };
 
   return (
@@ -68,12 +72,12 @@ export function FullPolicyHeaderActions() {
             <Button
               variant="outline"
               onClick={() => setRegenerateConfirmOpen(false)}
-              disabled={regenerate.status === 'executing'}
+              disabled={isRegenerating}
             >
               Cancel
             </Button>
-            <Button onClick={handleRegenerate} disabled={regenerate.status === 'executing'}>
-              {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
+            <Button onClick={handleRegenerate} disabled={isRegenerating}>
+              {isRegenerating ? 'Working…' : 'Confirm'}
             </Button>
           </DialogFooter>
         </DialogContent>

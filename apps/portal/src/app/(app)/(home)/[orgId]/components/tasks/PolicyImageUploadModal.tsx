@@ -2,15 +2,16 @@
 
 import { useRef, useState } from 'react';
 
-import { Button } from '@comp/ui/button';
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { ImagePlus, Trash2, Loader2 } from 'lucide-react';
+  Spinner,
+} from '@trycompai/design-system';
+import { Add, TrashCan } from '@trycompai/design-system/icons';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { FleetPolicy } from '../../types';
@@ -83,6 +84,7 @@ export function PolicyImageUploadModal({
 
       const response = await fetch('/api/confirm-fleet-policy', {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 
@@ -95,7 +97,6 @@ export function PolicyImageUploadModal({
       handleClose(false);
       onRefresh();
     } catch (error) {
-      console.error('Failed to upload policy images', error);
       const message = error instanceof Error ? error.message : 'Failed to upload policy images';
       toast.error(message);
     } finally {
@@ -105,11 +106,7 @@ export function PolicyImageUploadModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent
-        onInteractOutside={(e) => {
-          e.preventDefault();
-        }}
-      >
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Upload Policy Images</DialogTitle>
         </DialogHeader>
@@ -125,14 +122,15 @@ export function PolicyImageUploadModal({
           />
           {files.length === 0 && (
             <div className="flex items-center justify-center w-full h-48">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-24 h-24 text-muted-foreground/50"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <ImagePlus className="h-8 w-8" />
-              </Button>
+              <div className="w-24 h-24 text-muted-foreground/50">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Add size={32} />
+                </Button>
+              </div>
             </div>
           )}
 
@@ -157,16 +155,17 @@ export function PolicyImageUploadModal({
                         </div>
                         <span className="truncate">{item.file.name}</span>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-500 hover:text-red-600"
-                        disabled={isLoading}
-                        onClick={() => onRemoveFile(item)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="text-red-500 hover:text-red-600">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          disabled={isLoading}
+                          onClick={() => onRemoveFile(item)}
+                        >
+                          <TrashCan size={16} />
+                        </Button>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -197,7 +196,7 @@ export function PolicyImageUploadModal({
             Cancel
           </Button>
           <Button type="button" onClick={handleSubmit} disabled={files.length === 0 || isLoading}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Submit'}
+            {isLoading ? <Spinner size="sm" /> : 'Submit'}
           </Button>
         </DialogFooter>
       </DialogContent>

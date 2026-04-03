@@ -1,57 +1,70 @@
 import { AppOnboarding } from '@/components/app-onboarding';
-import type { SearchParams } from '@/types';
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';
 import { VendorsTable } from './components/VendorsTable';
-import { getAssignees, getVendors } from './data/queries';
-import type { GetVendorsSchema } from './data/validations';
-import { vendorsSearchParamsCache } from './data/validations';
+
+interface VendorsApiResponse {
+  data: Array<Record<string, unknown>>;
+  count: number;
+}
+
+interface PeopleApiResponse {
+  data: Array<{
+    id: string;
+    role: string;
+    deactivated: boolean;
+    user: {
+      id: string;
+      name: string | null;
+      email: string;
+      image: string | null;
+    };
+  }>;
+}
+
+interface OnboardingApiResponse {
+  triggerJobId: string | null;
+}
 
 export default async function Page({
-  searchParams,
   params,
 }: {
-  searchParams: SearchParams;
   params: Promise<{ orgId: string }>;
 }) {
   const { orgId } = await params;
 
-  const parsedSearchParams = await vendorsSearchParamsCache.parse(searchParams);
-
-  const [vendorsResult, assignees, onboarding] = await Promise.all([
-    getVendors(orgId, parsedSearchParams),
-    getAssignees(orgId),
-    db.onboarding.findFirst({
-      where: { organizationId: orgId },
-      select: { triggerJobId: true },
-    }),
+  const [vendorsResult, peopleResult, onboardingResult] = await Promise.all([
+    serverApi.get<VendorsApiResponse>('/v1/vendors'),
+    serverApi.get<PeopleApiResponse>('/v1/people'),
+    serverApi.get<OnboardingApiResponse>('/v1/organization/onboarding'),
   ]);
 
-  // Helper function to check if the current view is the default, unfiltered one
-  function isDefaultView(params: GetVendorsSchema): boolean {
-    return (
-      params.filters.length === 0 &&
-      !params.status &&
-      !params.department &&
-      !params.assigneeId &&
-      params.page === 1 &&
-      !params.name
-    );
-  }
+  const vendors = vendorsResult.data?.data ?? [];
+  const people = peopleResult.data?.data ?? [];
+  const assignees = people
+    .filter((p) => !p.deactivated && !['employee', 'contractor'].includes(p.role))
+    .map((p) => ({
+      id: p.id,
+      role: p.role,
+      user: p.user,
+      organizationId: orgId,
+      deactivated: false,
+    }));
 
-  const isEmpty = vendorsResult.data.length === 0;
-  const isDefault = isDefaultView(parsedSearchParams);
-  const isOnboardingActive = Boolean(onboarding?.triggerJobId);
+  // GET /v1/organization/onboarding returns { triggerJobId, ... } flat (no data wrapper)
+  const onboardingRunId = onboardingResult.data?.triggerJobId ?? null;
+  const isEmpty = vendors.length === 0;
+  const isOnboardingActive = Boolean(onboardingRunId);
 
-  // Show AppOnboarding only if empty, default view, AND onboarding is not active
-  if (isEmpty && isDefault && !isOnboardingActive) {
+  // Show AppOnboarding only if empty AND onboarding is not active
+  if (isEmpty && !isOnboardingActive) {
     return (
       <PageLayout
         header={
           <PageHeader
             title="Vendors"
-            actions={<CreateVendorSheet assignees={assignees} organizationId={orgId} />}
+            actions={<CreateVendorSheet assignees={assignees as any} organizationId={orgId} />}
           />
         }
       >
@@ -90,16 +103,14 @@ export default async function Page({
       header={
         <PageHeader
           title="Vendors"
-          actions={<CreateVendorSheet assignees={assignees} organizationId={orgId} />}
+          actions={<CreateVendorSheet assignees={assignees as any} organizationId={orgId} />}
         />
       }
     >
       <VendorsTable
-        vendors={vendorsResult.data}
-        pageCount={vendorsResult.pageCount}
-        assignees={assignees}
-        onboardingRunId={onboarding?.triggerJobId ?? null}
-        searchParams={parsedSearchParams}
+        vendors={vendors as any}
+        assignees={assignees as any}
+        onboardingRunId={onboardingRunId}
         orgId={orgId}
       />
     </PageLayout>

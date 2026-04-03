@@ -21,16 +21,17 @@ interface PolicyFiltersProps {
   policies: Policy[];
 }
 
-const STATUS_OPTIONS: { value: PolicyStatus | 'all'; label: string }[] = [
+const STATUS_OPTIONS: { value: PolicyStatus | 'all' | 'archived'; label: string }[] = [
   { value: 'all', label: 'All Statuses' },
   { value: 'draft', label: 'Draft' },
   { value: 'published', label: 'Published' },
   { value: 'needs_review', label: 'Needs Review' },
+  { value: 'archived', label: 'Archived' },
 ];
 
 export function PolicyFilters({ policies }: PolicyFiltersProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<PolicyStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<PolicyStatus | 'all' | 'archived'>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [sortColumn, setSortColumn] = useState<'name' | 'status' | 'updatedAt'>('updatedAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -55,8 +56,13 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
     }
 
     // Status filter
-    if (statusFilter !== 'all') {
-      result = result.filter((p) => p.status === statusFilter);
+    if (statusFilter === 'archived') {
+      result = result.filter((p) => p.isArchived);
+    } else {
+      result = result.filter((p) => !p.isArchived);
+      if (statusFilter !== 'all') {
+        result = result.filter((p) => p.status === statusFilter);
+      }
     }
 
     // Department filter
@@ -91,9 +97,9 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
 
   const statusLabel = STATUS_OPTIONS.find((opt) => opt.value === statusFilter)?.label ?? 'Status';
 
-  const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  const formatDepartment = (str: string) => str.toUpperCase();
   const departmentLabel =
-    departmentFilter === 'all' ? 'All Departments' : capitalize(departmentFilter);
+    departmentFilter === 'all' ? 'All Departments' : formatDepartment(departmentFilter);
 
   return (
     <Stack gap="md">
@@ -116,7 +122,7 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
           <div className="flex-1 md:w-[160px] md:flex-none">
             <Select
               value={statusFilter}
-              onValueChange={(v) => setStatusFilter((v ?? 'all') as PolicyStatus | 'all')}
+              onValueChange={(v) => setStatusFilter((v ?? 'all') as PolicyStatus | 'all' | 'archived')}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Status">{statusLabel}</SelectValue>
@@ -139,7 +145,7 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
                 <SelectItem value="all">All Departments</SelectItem>
                 {departments.map((dept) => (
                   <SelectItem key={dept} value={dept}>
-                    {capitalize(dept)}
+                    {formatDepartment(dept)}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -2,22 +2,43 @@ import {
   Controller,
   Post,
   Get,
+  Param,
   Query,
   Body,
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../../auth/permission.guard';
+import { RequirePermission } from '../../auth/require-permission.decorator';
+import {
+  OrganizationId,
+  AuthContext,
+} from '../../auth/auth-context.decorator';
+import type { AuthContext as AuthContextType } from '../../auth/types';
 import { db } from '@db';
+import type { Prisma } from '@db';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
-import { getManifest, type OAuthConfig } from '@comp/integration-platform';
-
-interface SyncQuery {
-  organizationId: string;
-  connectionId: string;
-}
+import {
+  getManifest,
+  registry,
+  matchesSyncFilterTerms,
+  parseSyncFilterTerms,
+  interpretDeclarativeSync,
+  type OAuthConfig,
+  type SyncDefinition,
+} from '@trycompai/integration-platform';
+import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
+import { GenericEmployeeSyncService } from '../services/generic-employee-sync.service';
+import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
+import { CheckRunRepository } from '../repositories/check-run.repository';
+import { createCheckContext } from '@trycompai/integration-platform';
+import { filterUsersByOrgUnits } from './sync-ou-filter';
 
 interface GoogleWorkspaceUser {
   id: string;
@@ -37,71 +58,15 @@ interface GoogleWorkspaceUsersResponse {
   nextPageToken?: string;
 }
 
-interface RampUser {
-  id: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  employee_id?: string | null;
-  status?: 'USER_ACTIVE' | 'USER_INACTIVE' | 'USER_SUSPENDED';
-}
-
-interface RampUsersResponse {
-  data: RampUser[];
-  page: {
-    next?: string | null;
-  };
-}
-
 type GoogleWorkspaceSyncFilterMode = 'all' | 'exclude' | 'include';
 
 const GOOGLE_WORKSPACE_SYNC_FILTER_MODES =
   new Set<GoogleWorkspaceSyncFilterMode>(['all', 'exclude', 'include']);
 
-const parseSyncFilterTerms = (value: unknown): string[] => {
-  const rawValues = Array.isArray(value)
-    ? value.map((item) => String(item))
-    : typeof value === 'string'
-      ? [value]
-      : [];
-
-  return Array.from(
-    new Set(
-      rawValues
-        .flatMap((item) => item.split(/[\n,;]+/))
-        .map((item) => item.trim().toLowerCase())
-        .filter((item) => item.length > 0),
-    ),
-  );
-};
-
-const isFullEmailTerm = (term: string): boolean =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(term);
-
-const matchesSyncFilterTerm = (email: string, term: string): boolean => {
-  if (email === term) {
-    return true;
-  }
-
-  if (term.startsWith('@')) {
-    return email.endsWith(term);
-  }
-
-  if (isFullEmailTerm(term)) {
-    return false;
-  }
-
-  if (term.includes('@')) {
-    return email.includes(term);
-  }
-
-  return email.endsWith(`@${term}`) || email.includes(term);
-};
-
-const matchesSyncFilterTerms = (email: string, terms: string[]): boolean =>
-  terms.some((term) => matchesSyncFilterTerm(email, term));
-
 @Controller({ path: 'integrations/sync', version: '1' })
+@ApiTags('Integrations')
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@ApiSecurity('apikey')
 export class SyncController {
   private readonly logger = new Logger(SyncController.name);
 
@@ -109,18 +74,24 @@ export class SyncController {
     private readonly connectionRepository: ConnectionRepository,
     private readonly credentialVaultService: CredentialVaultService,
     private readonly oauthCredentialsService: OAuthCredentialsService,
+    private readonly syncLoggerService: IntegrationSyncLoggerService,
+    private readonly genericSyncService: GenericEmployeeSyncService,
+    private readonly dynamicIntegrationRepo: DynamicIntegrationRepository,
+    private readonly checkRunRepo: CheckRunRepository,
   ) {}
 
   /**
    * Sync employees from Google Workspace
    */
   @Post('google-workspace/employees')
-  async syncGoogleWorkspaceEmployees(@Query() query: SyncQuery) {
-    const { organizationId, connectionId } = query;
-
-    if (!organizationId || !connectionId) {
+  @RequirePermission('integration', 'update')
+  async syncGoogleWorkspaceEmployees(
+    @OrganizationId() organizationId: string,
+    @Query('connectionId') connectionId: string,
+  ) {
+    if (!connectionId) {
       throw new HttpException(
-        'organizationId and connectionId are required',
+        'connectionId is required',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -277,6 +248,19 @@ export class SyncController {
       string,
       unknown
     >;
+
+    // Filter by organizational unit if configured
+    const targetOrgUnits = Array.isArray(syncVariables.target_org_units)
+      ? (syncVariables.target_org_units as string[])
+      : undefined;
+    const ouFilteredUsers = filterUsersByOrgUnits(users, targetOrgUnits);
+
+    if (targetOrgUnits && targetOrgUnits.length > 0) {
+      this.logger.log(
+        `Google Workspace OU filter kept ${ouFilteredUsers.length}/${users.length} users (OUs: ${targetOrgUnits.join(', ')})`,
+      );
+    }
+
     const rawSyncFilterMode = syncVariables.sync_user_filter_mode;
     const syncFilterMode: GoogleWorkspaceSyncFilterMode =
       typeof rawSyncFilterMode === 'string' &&
@@ -300,7 +284,7 @@ export class SyncController {
       effectiveSyncFilterMode = 'all';
     }
 
-    const filteredUsers = users.filter((user) => {
+    const filteredUsers = ouFilteredUsers.filter((user) => {
       const email = user.primaryEmail.toLowerCase();
 
       if (effectiveSyncFilterMode === 'exclude' && excludedTerms.length > 0) {
@@ -315,7 +299,7 @@ export class SyncController {
     });
 
     this.logger.log(
-      `Google Workspace sync filter mode "${effectiveSyncFilterMode}" kept ${filteredUsers.length}/${users.length} users`,
+      `Google Workspace sync filter mode "${effectiveSyncFilterMode}" kept ${filteredUsers.length}/${ouFilteredUsers.length} users`,
     );
 
     // Active users to import/reactivate are based on the selected filter mode
@@ -329,10 +313,10 @@ export class SyncController {
       activeUsers.map((u) => u.primaryEmail.toLowerCase()),
     );
     const allSuspendedEmails = new Set(
-      users.filter((u) => u.suspended).map((u) => u.primaryEmail.toLowerCase()),
+      ouFilteredUsers.filter((u) => u.suspended).map((u) => u.primaryEmail.toLowerCase()),
     );
     const allActiveEmails = new Set(
-      users
+      ouFilteredUsers
         .filter((u) => !u.suspended)
         .map((u) => u.primaryEmail.toLowerCase()),
     );
@@ -357,7 +341,7 @@ export class SyncController {
           | 'reactivated'
           | 'error';
         reason?: string;
-        rampStatus?: RampUser['status'] | 'USER_MISSING';
+        providerStatus?: string;
       }>,
     };
 
@@ -397,26 +381,17 @@ export class SyncController {
         });
 
         if (existingMember) {
-          // If member was deactivated but is now active in GW, reactivate them
-          if (existingMember.deactivated) {
-            await db.member.update({
-              where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
-            });
-            results.reactivated++;
-            results.details.push({
-              email: normalizedEmail,
-              status: 'reactivated',
-              reason: 'User is active again in Google Workspace',
-            });
-          } else {
-            results.skipped++;
-            results.details.push({
-              email: normalizedEmail,
-              status: 'skipped',
-              reason: 'Already a member',
-            });
-          }
+          // Never reactivate deactivated members — whether deactivated manually
+          // by an admin or by a previous sync, they should stay deactivated.
+          // Admins can reactivate manually if needed.
+          results.skipped++;
+          results.details.push({
+            email: normalizedEmail,
+            status: 'skipped',
+            reason: existingMember.deactivated
+              ? 'Member is deactivated'
+              : 'Already a member',
+          });
           continue;
         }
 
@@ -460,7 +435,7 @@ export class SyncController {
 
     const deactivationGwDomains =
       effectiveSyncFilterMode === 'include'
-        ? new Set(users.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()))
+        ? new Set(ouFilteredUsers.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()))
         : new Set(
             filteredUsers.map((u) =>
               u.primaryEmail.split('@')[1]?.toLowerCase(),
@@ -547,15 +522,10 @@ export class SyncController {
    * Check if Google Workspace is connected for an organization
    */
   @Post('google-workspace/status')
+  @RequirePermission('integration', 'read')
   async getGoogleWorkspaceStatus(
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
   ) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const connection = await this.connectionRepository.findBySlugAndOrg(
       'google-workspace',
@@ -583,12 +553,14 @@ export class SyncController {
    * Sync employees from Rippling
    */
   @Post('rippling/employees')
-  async syncRipplingEmployees(@Query() query: SyncQuery) {
-    const { organizationId, connectionId } = query;
-
-    if (!organizationId || !connectionId) {
+  @RequirePermission('integration', 'update')
+  async syncRipplingEmployees(
+    @OrganizationId() organizationId: string,
+    @Query('connectionId') connectionId: string,
+  ) {
+    if (!connectionId) {
       throw new HttpException(
-        'organizationId and connectionId are required',
+        'connectionId is required',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -822,7 +794,7 @@ export class SyncController {
           | 'reactivated'
           | 'error';
         reason?: string;
-        rampStatus?: RampUser['status'] | 'USER_MISSING';
+        providerStatus?: string;
       }>,
     };
 
@@ -951,13 +923,8 @@ export class SyncController {
    * Check if Rippling is connected for an organization
    */
   @Post('rippling/status')
-  async getRipplingStatus(@Query('organizationId') organizationId: string) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  @RequirePermission('integration', 'read')
+  async getRipplingStatus(@OrganizationId() organizationId: string) {
 
     const connection = await this.connectionRepository.findBySlugAndOrg(
       'rippling',
@@ -982,387 +949,17 @@ export class SyncController {
   }
 
   /**
-   * Sync employees from Ramp
-   */
-  @Post('ramp/employees')
-  async syncRampEmployees(@Query() query: SyncQuery) {
-    const { organizationId, connectionId } = query;
-
-    if (!organizationId || !connectionId) {
-      throw new HttpException(
-        'organizationId and connectionId are required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const connection = await this.connectionRepository.findById(connectionId);
-    if (!connection) {
-      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
-    }
-
-    if (connection.organizationId !== organizationId) {
-      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
-    }
-
-    const provider = await db.integrationProvider.findUnique({
-      where: { id: connection.providerId },
-    });
-
-    if (!provider || provider.slug !== 'ramp') {
-      throw new HttpException(
-        'This endpoint only supports Ramp connections',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const manifest = getManifest('ramp');
-    if (!manifest) {
-      throw new HttpException(
-        'Ramp manifest not found',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
-    let credentials =
-      await this.credentialVaultService.getDecryptedCredentials(connectionId);
-
-    if (!credentials?.access_token) {
-      throw new HttpException(
-        'No valid credentials found. Please reconnect the integration.',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
-    const oauthConfig =
-      manifest.auth.type === 'oauth2' ? manifest.auth.config : null;
-
-    if (oauthConfig?.supportsRefreshToken && credentials.refresh_token) {
-      try {
-        const oauthCredentials =
-          await this.oauthCredentialsService.getCredentials(
-            'ramp',
-            organizationId,
-          );
-
-        if (oauthCredentials) {
-          const newToken = await this.credentialVaultService.refreshOAuthTokens(
-            connectionId,
-            {
-              tokenUrl: oauthConfig.tokenUrl,
-              refreshUrl: oauthConfig.refreshUrl,
-              clientId: oauthCredentials.clientId,
-              clientSecret: oauthCredentials.clientSecret,
-              clientAuthMethod: oauthConfig.clientAuthMethod,
-            },
-          );
-          if (newToken) {
-            credentials =
-              await this.credentialVaultService.getDecryptedCredentials(
-                connectionId,
-              );
-            if (!credentials?.access_token) {
-              throw new Error('Failed to get refreshed credentials');
-            }
-            this.logger.log('Successfully refreshed Ramp OAuth token');
-          }
-        }
-      } catch (refreshError) {
-        this.logger.warn(
-          `Token refresh failed, trying with existing token: ${refreshError}`,
-        );
-      }
-    }
-
-    const accessToken = credentials?.access_token;
-    if (!accessToken) {
-      throw new HttpException(
-        'No valid credentials found. Please reconnect the integration.',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
-    const fetchRampUsers = async (status?: RampUser['status']) => {
-      const users: RampUser[] = [];
-      let nextUrl: string | null = null;
-
-      try {
-        do {
-          const url = nextUrl
-            ? new URL(nextUrl)
-            : new URL('https://api.ramp.com/developer/v1/users');
-          if (!nextUrl) {
-            url.searchParams.set('page_size', '100');
-            if (status) {
-              url.searchParams.set('status', status);
-            }
-          }
-
-          const response = await fetch(url.toString(), {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (!response.ok) {
-            if (response.status === 401) {
-              throw new HttpException(
-                'Ramp credentials expired. Please reconnect.',
-                HttpStatus.UNAUTHORIZED,
-              );
-            }
-            if (response.status === 403) {
-              throw new HttpException(
-                'Ramp access denied. Ensure users:read scope is granted.',
-                HttpStatus.FORBIDDEN,
-              );
-            }
-
-            const errorText = await response.text();
-            this.logger.error(
-              `Ramp API error: ${response.status} ${response.statusText} - ${errorText}`,
-            );
-            throw new HttpException(
-              'Failed to fetch users from Ramp',
-              HttpStatus.BAD_GATEWAY,
-            );
-          }
-
-          const data: RampUsersResponse = await response.json();
-          if (data.data?.length) {
-            users.push(...data.data);
-          }
-
-          nextUrl = data.page?.next ?? null;
-        } while (nextUrl);
-      } catch (error) {
-        if (error instanceof HttpException) throw error;
-        this.logger.error(`Error fetching Ramp users: ${error}`);
-        throw new HttpException(
-          'Failed to fetch users from Ramp',
-          HttpStatus.BAD_GATEWAY,
-        );
-      }
-
-      return users;
-    };
-
-    const baseUsers = await fetchRampUsers();
-    const suspendedUsers = await fetchRampUsers('USER_SUSPENDED');
-    const users = [...baseUsers, ...suspendedUsers];
-
-    const activeUsers = users.filter((u) => u.status === 'USER_ACTIVE');
-    const inactiveUsers = users.filter((u) => u.status === 'USER_INACTIVE');
-
-    const activeEmails = new Set(
-      activeUsers
-        .map((u) => u.email?.toLowerCase())
-        .filter((email): email is string => Boolean(email)),
-    );
-    const inactiveEmails = new Set(
-      inactiveUsers
-        .map((u) => u.email?.toLowerCase())
-        .filter((email): email is string => Boolean(email)),
-    );
-    const suspendedEmails = new Set(
-      suspendedUsers
-        .map((u) => u.email?.toLowerCase())
-        .filter((email): email is string => Boolean(email)),
-    );
-
-    this.logger.log(
-      `Found ${activeUsers.length} active, ${inactiveUsers.length} inactive, and ${suspendedUsers.length} suspended Ramp users`,
-    );
-
-    const results = {
-      imported: 0,
-      skipped: 0,
-      deactivated: 0,
-      reactivated: 0,
-      errors: 0,
-      details: [] as Array<{
-        email: string;
-        status:
-          | 'imported'
-          | 'skipped'
-          | 'deactivated'
-          | 'reactivated'
-          | 'error';
-        reason?: string;
-        rampStatus?: RampUser['status'] | 'USER_MISSING';
-      }>,
-    };
-
-    for (const rampUser of activeUsers) {
-      const normalizedEmail = rampUser.email?.toLowerCase();
-      if (!normalizedEmail) {
-        continue;
-      }
-
-      try {
-        const existingUser = await db.user.findUnique({
-          where: { email: normalizedEmail },
-        });
-
-        let userId: string;
-
-        if (existingUser) {
-          userId = existingUser.id;
-        } else {
-          const displayName =
-            `${rampUser.first_name ?? ''} ${rampUser.last_name ?? ''}`.trim() ||
-            normalizedEmail.split('@')[0];
-
-          const newUser = await db.user.create({
-            data: {
-              email: normalizedEmail,
-              name: displayName,
-              emailVerified: true,
-            },
-          });
-          userId = newUser.id;
-        }
-
-        const existingMember = await db.member.findFirst({
-          where: {
-            organizationId,
-            userId,
-          },
-        });
-
-        if (existingMember) {
-          if (existingMember.deactivated) {
-            await db.member.update({
-              where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
-            });
-            results.reactivated++;
-            results.details.push({
-              email: normalizedEmail,
-              status: 'reactivated',
-              reason: 'User is active again in Ramp',
-            });
-          } else {
-            results.skipped++;
-            results.details.push({
-              email: normalizedEmail,
-              status: 'skipped',
-              reason: 'Already a member',
-            });
-          }
-          continue;
-        }
-
-        await db.member.create({
-          data: {
-            organizationId,
-            userId,
-            role: 'employee',
-            isActive: true,
-          },
-        });
-
-        results.imported++;
-        results.details.push({
-          email: normalizedEmail,
-          status: 'imported',
-        });
-      } catch (error) {
-        this.logger.error(`Error importing Ramp user: ${error}`);
-        results.errors++;
-        results.details.push({
-          email: normalizedEmail,
-          status: 'error',
-          reason: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    }
-
-    const allOrgMembers = await db.member.findMany({
-      where: {
-        organizationId,
-        deactivated: false,
-      },
-      include: {
-        user: true,
-      },
-    });
-
-    const rampDomains = new Set(
-      users
-        .map((u) => u.email?.split('@')[1]?.toLowerCase())
-        .filter((domain): domain is string => Boolean(domain)),
-    );
-
-    for (const member of allOrgMembers) {
-      const memberEmail = member.user.email.toLowerCase();
-      const memberDomain = memberEmail.split('@')[1];
-
-      if (!memberDomain || !rampDomains.has(memberDomain)) {
-        continue;
-      }
-
-      const isSuspended = suspendedEmails.has(memberEmail);
-      const isInactive = inactiveEmails.has(memberEmail);
-      const isRemoved =
-        !activeEmails.has(memberEmail) && !isSuspended && !isInactive;
-      const rampStatus: RampUser['status'] | 'USER_MISSING' = isSuspended
-        ? 'USER_SUSPENDED'
-        : isInactive
-          ? 'USER_INACTIVE'
-          : isRemoved
-            ? 'USER_MISSING'
-            : 'USER_ACTIVE';
-
-      if (isSuspended || isInactive || isRemoved) {
-        try {
-          await db.member.update({
-            where: { id: member.id },
-            data: { deactivated: true, isActive: false },
-          });
-          results.deactivated++;
-          results.details.push({
-            email: member.user.email,
-            status: 'deactivated',
-            reason: isSuspended
-              ? 'User is suspended in Ramp'
-              : isInactive
-                ? 'User is inactive in Ramp'
-                : 'User was removed from Ramp',
-            rampStatus,
-          });
-          this.logger.log(
-            `Ramp deactivated member ${member.user.email} (${rampStatus})`,
-          );
-        } catch (error) {
-          this.logger.error(`Error deactivating member: ${error}`);
-        }
-      }
-    }
-
-    this.logger.log(
-      `Ramp sync complete: ${results.imported} imported, ${results.reactivated} reactivated, ${results.deactivated} deactivated, ${results.skipped} skipped, ${results.errors} errors`,
-    );
-
-    return {
-      success: true,
-      totalFound: activeUsers.length,
-      totalInactive: inactiveUsers.length,
-      totalSuspended: suspendedUsers.length,
-      ...results,
-    };
-  }
-
-  /**
    * Sync employees from JumpCloud
    */
   @Post('jumpcloud/employees')
-  async syncJumpCloudEmployees(@Query() query: SyncQuery) {
-    const { organizationId, connectionId } = query;
-
-    if (!organizationId || !connectionId) {
+  @RequirePermission('integration', 'update')
+  async syncJumpCloudEmployees(
+    @OrganizationId() organizationId: string,
+    @Query('connectionId') connectionId: string,
+  ) {
+    if (!connectionId) {
       throw new HttpException(
-        'organizationId and connectionId are required',
+        'connectionId is required',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -1865,13 +1462,8 @@ export class SyncController {
    * Check if JumpCloud is connected for an organization
    */
   @Post('jumpcloud/status')
-  async getJumpCloudStatus(@Query('organizationId') organizationId: string) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  @RequirePermission('integration', 'read')
+  async getJumpCloudStatus(@OrganizationId() organizationId: string) {
 
     const connection = await this.connectionRepository.findBySlugAndOrg(
       'jumpcloud',
@@ -1896,52 +1488,13 @@ export class SyncController {
   }
 
   /**
-   * Check if Ramp is connected for an organization
-   */
-  @Post('ramp/status')
-  async getRampStatus(@Query('organizationId') organizationId: string) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const connection = await this.connectionRepository.findBySlugAndOrg(
-      'ramp',
-      organizationId,
-    );
-
-    if (!connection || connection.status !== 'active') {
-      return {
-        connected: false,
-        connectionId: null,
-        lastSyncAt: null,
-        nextSyncAt: null,
-      };
-    }
-
-    return {
-      connected: true,
-      connectionId: connection.id,
-      lastSyncAt: connection.lastSyncAt?.toISOString() ?? null,
-      nextSyncAt: connection.nextSyncAt?.toISOString() ?? null,
-    };
-  }
-
-  /**
    * Get the current employee sync provider for an organization
    */
   @Get('employee-sync-provider')
+  @RequirePermission('integration', 'read')
   async getEmployeeSyncProvider(
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
   ) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const org = await db.organization.findUnique({
       where: { id: organizationId },
@@ -1950,6 +1503,15 @@ export class SyncController {
 
     if (!org) {
       throw new HttpException('Organization not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Clear stale provider for integrations that have been removed
+    if (org.employeeSyncProvider === 'ramp') {
+      await db.organization.update({
+        where: { id: organizationId },
+        data: { employeeSyncProvider: null },
+      });
+      return { provider: null };
     }
 
     return {
@@ -1961,27 +1523,20 @@ export class SyncController {
    * Set the employee sync provider for an organization
    */
   @Post('employee-sync-provider')
+  @RequirePermission('integration', 'update')
   async setEmployeeSyncProvider(
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
     @Body() body: { provider: string | null },
   ) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const { provider } = body;
 
     // Validate provider if set
     if (provider) {
-      const validProviders = [
-        'google-workspace',
-        'rippling',
-        'jumpcloud',
-        'ramp',
-      ];
+      const allManifests = registry.getActiveManifests();
+      const validProviders = allManifests
+        .filter((m) => m.capabilities?.includes('sync'))
+        .map((m) => m.id);
       if (!validProviders.includes(provider)) {
         throw new HttpException(
           `Invalid provider. Must be one of: ${validProviders.join(', ')}`,
@@ -2016,5 +1571,281 @@ export class SyncController {
       success: true,
       provider,
     };
+  }
+
+  // ============================================================================
+  // Dynamic sync endpoints (for dynamic integrations with syncDefinition)
+  // ============================================================================
+
+  /**
+   * Get all providers that support employee sync (both code-based and dynamic).
+   * Used by the frontend to render the provider selector dynamically.
+   */
+  @Get('available-providers')
+  @RequirePermission('integration', 'read')
+  async getAvailableSyncProviders(
+    @OrganizationId() organizationId: string,
+  ) {
+    const allManifests = registry.getActiveManifests();
+    const syncProviders = allManifests.filter((m) =>
+      m.capabilities?.includes('sync'),
+    );
+
+    const results = await Promise.all(
+      syncProviders.map(async (m) => {
+        const connection = await db.integrationConnection.findFirst({
+          where: {
+            organizationId,
+            status: 'active',
+            provider: { slug: m.id },
+          },
+          select: {
+            id: true,
+            status: true,
+            lastSyncAt: true,
+            nextSyncAt: true,
+          },
+        });
+        return {
+          slug: m.id,
+          name: m.name,
+          logoUrl: m.logoUrl,
+          connected: !!connection,
+          connectionId: connection?.id ?? null,
+          lastSyncAt: connection?.lastSyncAt?.toISOString() ?? null,
+          nextSyncAt: connection?.nextSyncAt?.toISOString() ?? null,
+        };
+      }),
+    );
+
+    return { providers: results };
+  }
+
+  /**
+   * Generic sync endpoint for dynamic integrations.
+   * Runs the syncDefinition (DSL/code steps) and processes the resulting employees.
+   *
+   * NOTE: This route uses :providerSlug param. NestJS matches routes in order,
+   * so the hardcoded routes above (google-workspace/employees, etc.) take priority.
+   * This only matches for slugs that don't match the 4 built-in providers.
+   */
+  @Post('dynamic/:providerSlug/employees')
+  @RequirePermission('integration', 'update')
+  async syncDynamicProviderEmployees(
+    @OrganizationId() organizationId: string,
+    @Param('providerSlug') providerSlug: string,
+    @Query('connectionId') connectionId: string,
+  ) {
+    if (!connectionId) {
+      throw new HttpException(
+        'connectionId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    this.logger.log(
+      `[DynamicSync] Starting sync for provider="${providerSlug}" connection="${connectionId}" org="${organizationId}"`,
+    );
+
+    // 1. Validate connection
+    const connection = await this.connectionRepository.findById(connectionId);
+    if (!connection || connection.organizationId !== organizationId) {
+      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    // 2. Get manifest from registry — must have 'sync' capability
+    const manifest = getManifest(providerSlug);
+    if (!manifest) {
+      throw new HttpException(
+        `Integration "${providerSlug}" not found`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    if (!manifest.capabilities?.includes('sync')) {
+      throw new HttpException(
+        `Integration "${providerSlug}" does not support sync`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // 3. Get dynamic integration — must have syncDefinition
+    const dynamicIntegration =
+      await this.dynamicIntegrationRepo.findBySlug(providerSlug);
+    if (!dynamicIntegration?.syncDefinition) {
+      throw new HttpException(
+        `Integration "${providerSlug}" has no sync definition`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // 4. Get & refresh credentials
+    let credentials =
+      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+    if (!credentials) {
+      throw new HttpException(
+        'No valid credentials found. Please reconnect the integration.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    // Try to refresh OAuth token if applicable
+    if (manifest.auth.type === 'oauth2' && credentials.refresh_token) {
+      const oauthConfig = manifest.auth.config as OAuthConfig;
+      try {
+        const oauthCredentials =
+          await this.oauthCredentialsService.getCredentials(
+            providerSlug,
+            organizationId,
+          );
+        if (oauthCredentials) {
+          const newToken =
+            await this.credentialVaultService.refreshOAuthTokens(
+              connectionId,
+              {
+                tokenUrl: oauthConfig.tokenUrl,
+                refreshUrl: oauthConfig.refreshUrl,
+                clientId: oauthCredentials.clientId,
+                clientSecret: oauthCredentials.clientSecret,
+                clientAuthMethod: oauthConfig.clientAuthMethod,
+              },
+            );
+          if (newToken) {
+            credentials =
+              await this.credentialVaultService.getDecryptedCredentials(
+                connectionId,
+              );
+          }
+        }
+      } catch (refreshError) {
+        this.logger.warn(
+          `Token refresh failed for ${providerSlug}, trying with existing token: ${refreshError}`,
+        );
+      }
+    }
+
+    const accessToken = credentials?.access_token;
+    this.logger.log(
+      `[DynamicSync] Credentials ready for "${providerSlug}" (auth=${manifest.auth.type}, hasToken=${!!accessToken})`,
+    );
+
+    // 5. Create a sync run record (same table as check runs — agent reads both the same way)
+    const syncRun = await this.checkRunRepo.create({
+      connectionId,
+      checkId: `sync:${providerSlug}`,
+      checkName: `Employee Sync: ${manifest.name}`,
+    });
+
+    // 6. Create CheckContext with logging that captures to the run
+    const { ctx, getResults } = createCheckContext({
+      manifest,
+      accessToken: typeof accessToken === 'string' ? accessToken : undefined,
+      credentials: (credentials ?? {}) as Record<string, string>,
+      variables:
+        ((connection.variables as Record<string, unknown>) ?? {}) as Record<string, string | boolean | number | string[]>,
+      connectionId,
+      organizationId,
+      metadata:
+        (connection.metadata as Record<string, unknown>) ?? {},
+      logger: {
+        info: (msg, data) => this.logger.log(msg, data),
+        warn: (msg, data) => this.logger.warn(msg, data),
+        error: (msg, data) => this.logger.error(msg, data),
+      },
+    });
+
+    try {
+      // 7. Run sync definition → get SyncEmployee[]
+      const syncDefinition =
+        dynamicIntegration.syncDefinition as unknown as SyncDefinition;
+      const syncRunner = interpretDeclarativeSync({
+        definition: syncDefinition,
+      });
+
+      const employees = await syncRunner.run(ctx);
+
+      this.logger.log(
+        `[DynamicSync] Sync definition produced ${employees.length} employees for "${providerSlug}"`,
+      );
+
+      // 8. Process employees via generic service
+      const result = await this.genericSyncService.processEmployees({
+        organizationId,
+        employees,
+        options: {
+          providerName: manifest.name,
+        },
+      });
+
+      // 9. Persist execution logs + results to the run record
+      const executionLogs = getResults().logs.map((log) => ({
+        level: log.level,
+        message: log.message,
+        ...(log.data ? { data: log.data } : {}),
+        timestamp: log.timestamp.toISOString(),
+      }));
+
+      const startTime = syncRun.startedAt?.getTime() || Date.now();
+      await this.checkRunRepo.complete(syncRun.id, {
+        status: result.errors > 0 ? 'failed' : 'success',
+        durationMs: Date.now() - startTime,
+        totalChecked: result.totalFound,
+        passedCount: result.imported + result.reactivated,
+        failedCount: result.errors,
+        logs: executionLogs.length > 0
+          ? (executionLogs as unknown as Prisma.InputJsonValue)
+          : undefined,
+      });
+
+      this.logger.log(
+        `[DynamicSync] Sync complete for "${providerSlug}": imported=${result.imported} skipped=${result.skipped} deactivated=${result.deactivated} reactivated=${result.reactivated} errors=${result.errors}`,
+      );
+
+      return {
+        ...result,
+        syncRunId: syncRun.id,
+      };
+    } catch (error) {
+      // Persist error + whatever logs were captured before the failure
+      const executionLogs = getResults().logs.map((log) => ({
+        level: log.level,
+        message: log.message,
+        ...(log.data ? { data: log.data } : {}),
+        timestamp: log.timestamp.toISOString(),
+      }));
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      const startTime = syncRun.startedAt?.getTime() || Date.now();
+      await this.checkRunRepo.complete(syncRun.id, {
+        status: 'failed',
+        durationMs: Date.now() - startTime,
+        totalChecked: 0,
+        passedCount: 0,
+        failedCount: 0,
+        errorMessage,
+        logs: [
+          ...executionLogs,
+          {
+            level: 'error',
+            message: `Sync execution failed: ${errorMessage}`,
+            ...(errorStack ? { data: { stack: errorStack } } : {}),
+            timestamp: new Date().toISOString(),
+          },
+        ] as unknown as Prisma.InputJsonValue,
+      });
+
+      this.logger.error(
+        `[DynamicSync] Sync failed for "${providerSlug}": ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        {
+          message: `Sync execution failed: ${errorMessage}`,
+          syncRunId: syncRun.id,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

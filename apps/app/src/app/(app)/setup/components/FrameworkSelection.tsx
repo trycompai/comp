@@ -1,8 +1,12 @@
 'use client';
 
 import { FrameworkPill } from '@/components/framework-pill';
+import { useApi } from '@/hooks/use-api';
 import type { FrameworkEditorFramework } from '@db';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import useSWR from 'swr';
+
+type Framework = Pick<FrameworkEditorFramework, 'id' | 'name' | 'description' | 'version' | 'visible'>;
 
 interface FrameworkSelectionProps {
   value: string[];
@@ -11,12 +15,17 @@ interface FrameworkSelectionProps {
 }
 
 export function FrameworkSelection({ value, onChange, onLoadingChange }: FrameworkSelectionProps) {
-  const [frameworks, setFrameworks] = useState<
-    Pick<FrameworkEditorFramework, 'id' | 'name' | 'description' | 'version' | 'visible'>[]
-  >([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const api = useApi();
   const onChangeRef = useRef(onChange);
   const valueRef = useRef(value);
+
+  const { data: frameworks = [], isLoading } = useSWR<Framework[]>(
+    '/v1/frameworks/available',
+    async (endpoint: string) => {
+      const response = await api.get<{ data: Framework[] }>(endpoint);
+      return Array.isArray(response.data?.data) ? response.data.data : [];
+    },
+  );
 
   // Keep refs up to date
   useEffect(() => {
@@ -24,26 +33,12 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
     valueRef.current = value;
   });
 
+  // Notify parent of loading state
   useEffect(() => {
-    async function fetchFrameworks() {
-      try {
-        onLoadingChange?.(true);
-        const response = await fetch('/api/frameworks');
-        if (!response.ok) throw new Error('Failed to fetch frameworks');
-        const data = await response.json();
-        setFrameworks(data.frameworks);
-      } catch (error) {
-        console.error('Error fetching frameworks:', error);
-      } finally {
-        setIsLoading(false);
-        onLoadingChange?.(false);
-      }
-    }
+    onLoadingChange?.(isLoading);
+  }, [isLoading, onLoadingChange]);
 
-    fetchFrameworks();
-  }, []); // Only run once on mount
-
-  // Separate effect for auto-selection - only when frameworks first load
+  // Auto-select first visible framework when frameworks load
   useEffect(() => {
     if (frameworks.length > 0 && (!valueRef.current || valueRef.current.length === 0)) {
       const visibleFrameworks = frameworks.filter((f) => f.visible);
@@ -51,7 +46,7 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
         onChangeRef.current([visibleFrameworks[0].id]);
       }
     }
-  }, [frameworks]); // Only depend on frameworks
+  }, [frameworks]);
 
   if (isLoading) {
     return null;

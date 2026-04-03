@@ -1,5 +1,6 @@
 import { logger } from '@trigger.dev/sdk';
 import { firecrawlVendorDataSchema, type FirecrawlVendorData } from './schema';
+import { extractVendorDomain, isUrlFromVendorDomain } from './url-validation';
 
 type FirecrawlStartResponse = {
   success: boolean;
@@ -48,6 +49,14 @@ function normalizeUrl(url: string | null | undefined): string | null {
 export async function firecrawlExtractVendorData(
   website: string,
 ): Promise<FirecrawlVendorData | null> {
+  // Extract vendor domain for URL validation
+  const vendorDomain = extractVendorDomain(website);
+  if (!vendorDomain) {
+    logger.warn('Could not extract vendor domain for URL validation', {
+      website,
+    });
+    return null;
+  }
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) {
     logger.warn(
@@ -77,9 +86,11 @@ export async function firecrawlExtractVendorData(
 
 Goal: return the MOST SPECIFIC, DIRECT URL for each document type below. Do not return general category pages.
 
-You may crawl the site (including subdomains) and follow internal links. Trust portals are often linked in the header/footer under: "Trust", "Trust Center", "Security", "Compliance", "Legal", "Governance", "Privacy", "Data Processing", "DPA".
+CRITICAL: Only return URLs that belong to the domain "${vendorDomain}" or its subdomains (e.g., trust.${vendorDomain}, security.${vendorDomain}). Do NOT return URLs from any other domain. If you cannot find a page on ${vendorDomain}, return an empty string for that field.
 
-Return ONLY absolute https URLs. If you cannot find a dedicated page that matches the definition, return an empty string.
+You may crawl the site (including subdomains of ${vendorDomain}) and follow internal links. Trust portals are often linked in the header/footer under: "Trust", "Trust Center", "Security", "Compliance", "Legal", "Governance", "Privacy", "Data Processing", "DPA".
+
+Return ONLY absolute https URLs on ${vendorDomain}. If you cannot find a dedicated page that matches the definition, return an empty string.
 
 DEFINITIONS (be strict):
 1) trust_portal_url:
@@ -193,13 +204,46 @@ When multiple candidates exist, choose the most direct URL that best matches the
         return null;
       }
 
+      // Normalize URLs and filter out any that don't belong to the vendor's domain
+      const validateVendorUrl = (
+        url: string | null | undefined,
+        label: string,
+      ): string | null => {
+        const normalized = normalizeUrl(url);
+        if (!normalized) return null;
+        if (!isUrlFromVendorDomain(normalized, vendorDomain)) {
+          logger.warn('Filtered out URL from wrong domain', {
+            vendorDomain,
+            label,
+            url: normalized,
+          });
+          return null;
+        }
+        return normalized;
+      };
+
       const normalized = {
         ...parsed.data,
-        privacy_policy_url: normalizeUrl(parsed.data.privacy_policy_url),
-        terms_of_service_url: normalizeUrl(parsed.data.terms_of_service_url),
-        security_overview_url: normalizeUrl(parsed.data.security_overview_url),
-        trust_portal_url: normalizeUrl(parsed.data.trust_portal_url),
-        soc2_report_url: normalizeUrl(parsed.data.soc2_report_url),
+        privacy_policy_url: validateVendorUrl(
+          parsed.data.privacy_policy_url,
+          'privacy_policy',
+        ),
+        terms_of_service_url: validateVendorUrl(
+          parsed.data.terms_of_service_url,
+          'terms_of_service',
+        ),
+        security_overview_url: validateVendorUrl(
+          parsed.data.security_overview_url,
+          'security_overview',
+        ),
+        trust_portal_url: validateVendorUrl(
+          parsed.data.trust_portal_url,
+          'trust_portal',
+        ),
+        soc2_report_url: validateVendorUrl(
+          parsed.data.soc2_report_url,
+          'soc2_report',
+        ),
       };
 
       logger.info('Firecrawl extraction completed', {

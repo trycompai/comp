@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 
 @Injectable()
@@ -128,6 +128,46 @@ export class AutomationsService {
       success: true,
       message: 'Automation deleted successfully',
     };
+  }
+
+  async createVersion(
+    automationId: string,
+    data: { version: number; scriptKey: string; changelog?: string },
+  ) {
+    const [version] = await db.$transaction([
+      db.evidenceAutomationVersion.create({
+        data: {
+          evidenceAutomationId: automationId,
+          version: data.version,
+          scriptKey: data.scriptKey,
+          changelog: data.changelog,
+        },
+      }),
+      // Enable automation on publish if not already enabled
+      db.evidenceAutomation.update({
+        where: { id: automationId },
+        data: { isEnabled: true },
+      }),
+    ]);
+    return { success: true, version };
+  }
+
+  async findRunsByAutomationId(automationId: string) {
+    const runs = await db.evidenceAutomationRun.findMany({
+      where: {
+        evidenceAutomationId: automationId,
+      },
+      include: {
+        evidenceAutomation: {
+          select: { name: true },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return runs;
   }
 
   async listVersions(automationId: string, limit?: number, offset?: number) {

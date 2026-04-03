@@ -4,8 +4,8 @@ import {
   evidenceFormDefinitions,
   type EvidenceFormType,
 } from '@/app/(app)/[orgId]/documents/forms';
+import { usePermissions } from '@/hooks/use-permissions';
 import { api } from '@/lib/api-client';
-import { useActiveMember } from '@/utils/auth-client';
 import {
   Button,
   Empty,
@@ -94,12 +94,10 @@ export function CompanySubmissionDetailPageClient({
   organizationId,
   formType,
   submissionId,
-  isPlatformAdmin,
 }: {
   organizationId: string;
   formType: EvidenceFormType;
   submissionId: string;
-  isPlatformAdmin: boolean;
 }) {
   const endpoint = `/v1/evidence-forms/${formType}/submissions/${submissionId}`;
   const swrKey: readonly [string, string] = [endpoint, organizationId];
@@ -107,7 +105,7 @@ export function CompanySubmissionDetailPageClient({
   const { data, isLoading, error, mutate } = useSWR<EvidenceSubmissionResponse>(
     swrKey,
     async ([path, orgId]: readonly [string, string]) => {
-      const response = await api.get<EvidenceSubmissionResponse>(path, orgId);
+      const response = await api.get<EvidenceSubmissionResponse>(path);
       if (response.error || !response.data) {
         throw new Error(response.error ?? 'Failed to load submission');
       }
@@ -117,10 +115,8 @@ export function CompanySubmissionDetailPageClient({
 
   const [reviewReason, setReviewReason] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const { data: activeMember } = useActiveMember();
-  const memberRoles = activeMember?.role?.split(',').map((role: string) => role.trim()) || [];
-  const isAuditor = memberRoles.includes('auditor');
-  const isAdminOrOwner = memberRoles.includes('admin') || memberRoles.includes('owner');
+  const { hasPermission } = usePermissions();
+  const canReview = hasPermission('evidence', 'update');
 
   const handleReview = async (action: 'approved' | 'rejected') => {
     if (action === 'rejected' && !reviewReason.trim()) {
@@ -133,7 +129,6 @@ export function CompanySubmissionDetailPageClient({
       const response = await api.patch(
         `/v1/evidence-forms/${formType}/submissions/${submissionId}/review`,
         { action, reason: reviewReason.trim() || undefined },
-        organizationId,
       );
 
       if (response.error) {
@@ -345,8 +340,8 @@ export function CompanySubmissionDetailPageClient({
           </div>
         </div>
 
-        {/* Review action area — only for access requests */}
-        {formType === 'access-request' && submission.status === 'pending' && (
+        {/* Review action area — only for access requests when user has update permission */}
+        {formType === 'access-request' && submission.status === 'pending' && canReview && (
           <div className="rounded-md border border-border">
             <div className="divide-y divide-border">
               <div className="p-4">

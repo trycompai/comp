@@ -5,14 +5,16 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 
-import type { EmployeeSyncConnectionsData } from '../data/queries';
+import type { EmployeeSyncConnectionsData, SyncProviderInfo } from '../data/queries';
 
-type SyncProvider = 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp';
+type BuiltInSyncProvider = 'google-workspace' | 'rippling' | 'jumpcloud';
+type SyncProvider = string;
 
 interface SyncResult {
   success: boolean;
   totalFound: number;
   imported: number;
+  updated: number;
   reactivated: number;
   deactivated: number;
   skipped: number;
@@ -28,7 +30,6 @@ interface UseEmployeeSyncReturn {
   googleWorkspaceConnectionId: string | null;
   ripplingConnectionId: string | null;
   jumpcloudConnectionId: string | null;
-  rampConnectionId: string | null;
   selectedProvider: SyncProvider | null;
   isSyncing: boolean;
   syncEmployees: (provider: SyncProvider) => Promise<SyncResult | null>;
@@ -36,7 +37,15 @@ interface UseEmployeeSyncReturn {
   hasAnyConnection: boolean;
   getProviderName: (provider: SyncProvider) => string;
   getProviderLogo: (provider: SyncProvider) => string;
+  /** All available sync providers (built-in + dynamic) */
+  availableProviders: SyncProviderInfo[];
 }
+
+const BUILT_IN_PROVIDERS = new Set<string>([
+  'google-workspace',
+  'rippling',
+  'jumpcloud',
+]);
 
 const PROVIDER_CONFIG = {
   'google-workspace': {
@@ -53,11 +62,6 @@ const PROVIDER_CONFIG = {
     name: 'JumpCloud',
     shortName: 'JumpCloud',
     logo: 'https://img.logo.dev/jumpcloud.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ&format=png&retina=true',
-  },
-  ramp: {
-    name: 'Ramp',
-    shortName: 'Ramp',
-    logo: 'https://img.logo.dev/ramp.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ&format=png&retina=true',
   },
 } as const;
 
@@ -76,7 +80,6 @@ export const useEmployeeSync = ({
   const googleWorkspaceConnectionId = data?.googleWorkspaceConnectionId ?? null;
   const ripplingConnectionId = data?.ripplingConnectionId ?? null;
   const jumpcloudConnectionId = data?.jumpcloudConnectionId ?? null;
-  const rampConnectionId = data?.rampConnectionId ?? null;
   const selectedProvider = data?.selectedProvider ?? null;
 
   const setSyncProvider = async (provider: SyncProvider | null) => {
@@ -90,7 +93,10 @@ export const useEmployeeSync = ({
       mutate({ ...data!, selectedProvider: provider }, false);
 
       if (provider) {
-        toast.success(`${PROVIDER_CONFIG[provider].name} set as your employee sync provider`);
+        const name = provider in PROVIDER_CONFIG
+          ? PROVIDER_CONFIG[provider as BuiltInSyncProvider].name
+          : (availableProviders.find((p) => p.slug === provider)?.name ?? provider);
+        toast.success(`${name} set as your employee sync provider`);
       }
     } catch (error) {
       toast.error('Failed to set sync provider');
@@ -98,23 +104,35 @@ export const useEmployeeSync = ({
     }
   };
 
+  const availableProviders = data?.availableProviders ?? [];
+
+  const getConnectionIdForProvider = (provider: SyncProvider): string | null => {
+    if (provider === 'google-workspace') return googleWorkspaceConnectionId;
+    if (provider === 'rippling') return ripplingConnectionId;
+    if (provider === 'jumpcloud') return jumpcloudConnectionId;
+    // Dynamic provider — look up from availableProviders
+    const dynProvider = availableProviders.find((p) => p.slug === provider);
+    return dynProvider?.connectionId ?? null;
+  };
+
+  const getSyncUrl = (provider: SyncProvider, connectionId: string): string => {
+    if (BUILT_IN_PROVIDERS.has(provider)) {
+      return `/v1/integrations/sync/${provider}/employees?organizationId=${organizationId}&connectionId=${connectionId}`;
+    }
+    return `/v1/integrations/sync/dynamic/${provider}/employees?organizationId=${organizationId}&connectionId=${connectionId}`;
+  };
+
   const syncEmployees = async (provider: SyncProvider): Promise<SyncResult | null> => {
-    const connectionId =
-      provider === 'google-workspace'
-        ? googleWorkspaceConnectionId
-        : provider === 'rippling'
-          ? ripplingConnectionId
-          : provider === 'jumpcloud'
-            ? jumpcloudConnectionId
-            : rampConnectionId;
+    const connectionId = getConnectionIdForProvider(provider);
 
     if (!connectionId) {
-      toast.error(`${PROVIDER_CONFIG[provider].name} is not connected`);
+      const providerName = getProviderName(provider);
+      toast.error(`${providerName} is not connected`);
       return null;
     }
 
     setIsSyncing(true);
-    const config = PROVIDER_CONFIG[provider];
+    const providerName = getProviderName(provider);
 
     try {
       // Set as sync provider if not already
@@ -123,24 +141,27 @@ export const useEmployeeSync = ({
       }
 
       const response = await apiClient.post<SyncResult>(
-        `/v1/integrations/sync/${provider}/employees?organizationId=${organizationId}&connectionId=${connectionId}`,
+        getSyncUrl(provider, connectionId),
       );
 
       if (response.data?.success) {
-        const { imported, reactivated, deactivated, skipped, errors } = response.data;
+        const { imported, updated, reactivated, deactivated, skipped, errors } = response.data;
 
         if (imported > 0) {
           toast.success(`Imported ${imported} new employee${imported > 1 ? 's' : ''}`);
+        }
+        if (updated > 0) {
+          toast.success(`Updated roles for ${updated} employee${updated > 1 ? 's' : ''}`);
         }
         if (reactivated > 0) {
           toast.success(`Reactivated ${reactivated} employee${reactivated > 1 ? 's' : ''}`);
         }
         if (deactivated > 0) {
           toast.info(
-            `Deactivated ${deactivated} employee${deactivated > 1 ? 's' : ''} (no longer in ${config.name})`,
+            `Deactivated ${deactivated} employee${deactivated > 1 ? 's' : ''} (no longer in ${providerName})`,
           );
         }
-        if (imported === 0 && reactivated === 0 && deactivated === 0 && skipped > 0) {
+        if (imported === 0 && updated === 0 && reactivated === 0 && deactivated === 0 && skipped > 0) {
           toast.info('All employees are already synced');
         }
         if (errors > 0) {
@@ -156,32 +177,48 @@ export const useEmployeeSync = ({
 
       return null;
     } catch (error) {
-      toast.error(`Failed to sync employees from ${config.name}`);
+      toast.error(`Failed to sync employees from ${providerName}`);
       return null;
     } finally {
       setIsSyncing(false);
     }
   };
 
-  const getProviderName = (provider: SyncProvider) => PROVIDER_CONFIG[provider].shortName;
-  const getProviderLogo = (provider: SyncProvider) => PROVIDER_CONFIG[provider].logo;
+  const getProviderName = (provider: SyncProvider): string => {
+    if (provider in PROVIDER_CONFIG) {
+      return PROVIDER_CONFIG[provider as BuiltInSyncProvider].shortName;
+    }
+    const dynProvider = availableProviders.find((p) => p.slug === provider);
+    return dynProvider?.name ?? provider;
+  };
+  const getProviderLogo = (provider: SyncProvider): string => {
+    if (provider in PROVIDER_CONFIG) {
+      return PROVIDER_CONFIG[provider as BuiltInSyncProvider].logo;
+    }
+    const dynProvider = availableProviders.find((p) => p.slug === provider);
+    return dynProvider?.logoUrl ?? '';
+  };
+
+  const hasAnyBuiltInConnection = !!(
+    googleWorkspaceConnectionId ||
+    ripplingConnectionId ||
+    jumpcloudConnectionId
+  );
+  const hasDynamicConnection = availableProviders.some(
+    (p) => p.connected && !BUILT_IN_PROVIDERS.has(p.slug),
+  );
 
   return {
     googleWorkspaceConnectionId,
     ripplingConnectionId,
     jumpcloudConnectionId,
-    rampConnectionId,
     selectedProvider,
     isSyncing,
     syncEmployees,
     setSyncProvider,
-    hasAnyConnection: !!(
-      googleWorkspaceConnectionId ||
-      ripplingConnectionId ||
-      jumpcloudConnectionId ||
-      rampConnectionId
-    ),
+    hasAnyConnection: hasAnyBuiltInConnection || hasDynamicConnection,
     getProviderName,
     getProviderLogo,
+    availableProviders,
   };
 };

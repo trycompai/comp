@@ -1,7 +1,6 @@
 'use client';
 
 import { env } from '@/env.mjs';
-import { jwtManager } from '@/utils/jwt-manager';
 
 /**
  * Download evidence PDF for a specific automation
@@ -10,17 +9,15 @@ export async function downloadAutomationPDF({
   taskId,
   automationId,
   automationName,
-  organizationId,
 }: {
   taskId: string;
   automationId: string;
   automationName?: string;
-  organizationId: string;
 }): Promise<void> {
   const baseUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
   const endpoint = `/v1/tasks/${taskId}/evidence/automation/${automationId}/pdf`;
 
-  await downloadFile(baseUrl + endpoint, organizationId, {
+  await downloadFile(baseUrl + endpoint, {
     fallbackBaseName: automationName ? `${automationName}-evidence` : 'automation-evidence',
     fallbackExtension: 'pdf',
   });
@@ -32,18 +29,16 @@ export async function downloadAutomationPDF({
 export async function downloadTaskEvidenceZip({
   taskId,
   taskTitle,
-  organizationId,
   includeJson = false,
 }: {
   taskId: string;
   taskTitle?: string;
-  organizationId: string;
   includeJson?: boolean;
 }): Promise<void> {
   const baseUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
   const endpoint = `/v1/tasks/${taskId}/evidence/export?includeJson=${includeJson}`;
 
-  await downloadFile(baseUrl + endpoint, organizationId, {
+  await downloadFile(baseUrl + endpoint, {
     fallbackBaseName: taskTitle ? `${taskTitle}-evidence` : 'task-evidence',
     fallbackExtension: 'zip',
   });
@@ -54,17 +49,15 @@ export async function downloadTaskEvidenceZip({
  */
 export async function downloadAllEvidenceZip({
   organizationName,
-  organizationId,
   includeJson = false,
 }: {
   organizationName?: string;
-  organizationId: string;
   includeJson?: boolean;
 }): Promise<void> {
   const baseUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
   const endpoint = `/v1/evidence-export/all?includeJson=${includeJson}`;
 
-  await downloadFile(baseUrl + endpoint, organizationId, {
+  await downloadFile(baseUrl + endpoint, {
     fallbackBaseName: organizationName
       ? `${organizationName}-all-evidence`
       : 'all-evidence',
@@ -92,29 +85,10 @@ function buildFallbackFilename(baseName: string, extension: string): string {
 
 async function downloadFile(
   url: string,
-  organizationId: string,
   fallback?: { fallbackBaseName: string; fallbackExtension: string },
 ): Promise<void> {
-  const headers: Record<string, string> = {
-    'X-Organization-Id': organizationId,
-  };
-
-  // Add JWT token for authentication
-  if (typeof window !== 'undefined') {
-    try {
-      const token = await jwtManager.getValidToken();
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-    } catch (error) {
-      console.error('Error getting JWT token:', error);
-      throw new Error('Authentication failed');
-    }
-  }
-
   const response = await fetch(url, {
     method: 'GET',
-    headers,
     credentials: 'include',
   });
 

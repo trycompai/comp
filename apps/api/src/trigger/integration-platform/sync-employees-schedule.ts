@@ -1,4 +1,4 @@
-import { getManifest } from '@comp/integration-platform';
+import { getManifest } from '@trycompai/integration-platform';
 import { db } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 
@@ -197,11 +197,9 @@ async function syncProvider(params: SyncProviderParams): Promise<SyncResult> {
     case 'jumpcloud':
       return syncJumpCloud({ connectionId, organizationId });
 
-    case 'ramp':
-      return syncRamp({ connectionId, organizationId });
-
     default:
-      throw new Error(`No sync handler for provider: ${providerSlug}`);
+      // Try generic dynamic sync endpoint for non-built-in providers
+      return syncDynamicProvider({ providerSlug, connectionId, organizationId });
   }
 }
 
@@ -215,13 +213,14 @@ async function syncGoogleWorkspace({
   const url = new URL(
     `${API_BASE_URL}/v1/integrations/sync/google-workspace/employees`,
   );
-  url.searchParams.set('organizationId', organizationId);
   url.searchParams.set('connectionId', connectionId);
 
   const response = await fetch(url.toString(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+      'x-organization-id': organizationId,
     },
   });
 
@@ -253,13 +252,14 @@ async function syncRippling({
   const url = new URL(
     `${API_BASE_URL}/v1/integrations/sync/rippling/employees`,
   );
-  url.searchParams.set('organizationId', organizationId);
   url.searchParams.set('connectionId', connectionId);
 
   const response = await fetch(url.toString(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+      'x-organization-id': organizationId,
     },
   });
 
@@ -289,13 +289,14 @@ async function syncJumpCloud({
   const url = new URL(
     `${API_BASE_URL}/v1/integrations/sync/jumpcloud/employees`,
   );
-  url.searchParams.set('organizationId', organizationId);
   url.searchParams.set('connectionId', connectionId);
 
   const response = await fetch(url.toString(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+      'x-organization-id': organizationId,
     },
   });
 
@@ -315,27 +316,34 @@ async function syncJumpCloud({
   };
 }
 
-async function syncRamp({
+async function syncDynamicProvider({
+  providerSlug,
   connectionId,
   organizationId,
 }: {
+  providerSlug: string;
   connectionId: string;
   organizationId: string;
 }): Promise<SyncResult> {
-  const url = new URL(`${API_BASE_URL}/v1/integrations/sync/ramp/employees`);
-  url.searchParams.set('organizationId', organizationId);
+  const url = new URL(
+    `${API_BASE_URL}/v1/integrations/sync/dynamic/${providerSlug}/employees`,
+  );
   url.searchParams.set('connectionId', connectionId);
 
   const response = await fetch(url.toString(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+      'x-organization-id': organizationId,
     },
   });
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`Ramp sync failed: ${response.status} - ${errorBody}`);
+    throw new Error(
+      `Dynamic sync failed for ${providerSlug}: ${response.status} - ${errorBody}`,
+    );
   }
 
   const data = await response.json();

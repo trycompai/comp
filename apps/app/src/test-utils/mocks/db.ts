@@ -65,6 +65,23 @@ export const mockDb = {
     delete: vi.fn(),
     deleteMany: vi.fn(),
   },
+  context: {
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    count: vi.fn(),
+  },
+  questionnaire: {
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
   $transaction: vi.fn((fn) => fn(mockDb)),
 };
 
@@ -73,7 +90,7 @@ export const mockDb = {
 // import { vi } from 'vitest';
 //
 // // Mock db module before any other imports
-// vi.mock('@comp/db', async () => {
+// vi.mock('@trycompai/db', async () => {
 //   const { mockDb } = await import('@/test-utils/mocks/db');
 //   return { db: mockDb };
 // });

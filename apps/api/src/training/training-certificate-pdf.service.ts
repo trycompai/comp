@@ -53,15 +53,38 @@ export class TrainingCertificatePdfService {
     return cleanedText;
   }
 
-  /**
-   * Generates a training completion certificate PDF with Comp AI branding
-   */
+  async generateHipaaCertificatePdf(params: {
+    userName: string;
+    organizationName: string;
+    completedAt: Date;
+  }): Promise<Buffer> {
+    return this.generateCertificatePdf({
+      ...params,
+      title: 'HIPAA Security Awareness Training',
+      subtitle: 'HIPAA Security Awareness Training program',
+    });
+  }
+
   async generateTrainingCertificatePdf(params: {
     userName: string;
     organizationName: string;
     completedAt: Date;
   }): Promise<Buffer> {
-    const { userName, organizationName, completedAt } = params;
+    return this.generateCertificatePdf({
+      ...params,
+      title: 'Security Awareness Training',
+      subtitle: 'Security Awareness Training program',
+    });
+  }
+
+  private async generateCertificatePdf(params: {
+    userName: string;
+    organizationName: string;
+    completedAt: Date;
+    title: string;
+    subtitle: string;
+  }): Promise<Buffer> {
+    const { userName, organizationName, completedAt, title, subtitle } = params;
 
     const doc = new jsPDF({
       orientation: 'landscape',
@@ -112,7 +135,7 @@ export class TrainingCertificatePdfService {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(26);
     doc.setTextColor(18, 18, 18);
-    doc.text('Security Awareness Training', pageWidth / 2, 62, {
+    doc.text(this.cleanTextForPDF(title), pageWidth / 2, 62, {
       align: 'center',
     });
 
@@ -158,7 +181,7 @@ export class TrainingCertificatePdfService {
         align: 'center',
       },
     );
-    doc.text('Security Awareness Training program', pageWidth / 2, 117, {
+    doc.text(this.cleanTextForPDF(subtitle), pageWidth / 2, 117, {
       align: 'center',
     });
     // "for" in normal, org name in bold - manually center

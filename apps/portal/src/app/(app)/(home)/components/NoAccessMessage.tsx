@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@trycompai/ui/alert';
 import { WarningAlt } from '@trycompai/design-system/icons';
 
 interface NoAccessMessageProps {

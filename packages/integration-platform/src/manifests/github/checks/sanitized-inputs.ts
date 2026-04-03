@@ -237,6 +237,8 @@ export const sanitizedInputsCheck: IntegrationCheck = {
       isPrivate: boolean;
       isGhasEnabled: boolean;
     }): Promise<CodeScanningStatus> => {
+      let apiGot403 = false;
+
       // First, try the default setup API
       try {
         const setup = await ctx.fetch<GitHubCodeScanningDefaultSetup>(
@@ -252,32 +254,23 @@ export const sanitizedInputsCheck: IntegrationCheck = {
       } catch (error) {
         const errorStr = String(error);
 
-        // Check for 403 Forbidden - indicates permission issues or GHAS not enabled
-        // Return early without checking workflows since we can't verify they're actually running
         if (errorStr.includes('403') || errorStr.includes('Forbidden')) {
+          // The code-scanning API requires GHAS for private repos, but reading
+          // workflow file contents only requires contents:read. A 403 here does
+          // not mean we can't check for code scanning workflows.
           ctx.log(
-            `Code scanning API returned 403 for ${repoName} (private: ${isPrivate}, ghas: ${isGhasEnabled})`,
+            `Code scanning API returned 403 for ${repoName} (private: ${isPrivate}, ghas: ${isGhasEnabled}). Falling back to workflow file scanning.`,
           );
-
-          // For private repos, distinguish between GHAS not enabled vs permission issue
-          if (isPrivate) {
-            if (isGhasEnabled) {
-              // GHAS is enabled but we still got 403 - it's a permission issue
-              return { status: 'permission-denied', isPrivate };
-            }
-            // GHAS is not enabled - that's why we got 403
-            return { status: 'ghas-required' };
-          }
-
-          return { status: 'permission-denied', isPrivate };
+          apiGot403 = true;
+        } else {
+          // Other errors - API might not be available, continue to check workflows
+          ctx.log(`Code scanning default setup not available for ${repoName}: ${errorStr}`);
         }
-
-        // Other errors - API might not be available, continue to check workflows
-        ctx.log(`Code scanning default setup not available for ${repoName}: ${errorStr}`);
       }
 
       // Fall back to checking for workflow files with code scanning
-      // Only reached if API didn't return 403 (meaning we have access but default setup isn't on)
+      // This catches repos using third-party SAST tools (Semgrep, Snyk, Trivy, etc.)
+      // that upload SARIF results via github/codeql-action/upload-sarif
       const codeScanningWorkflows = await findCodeScanningWorkflows(repoName, tree);
       if (codeScanningWorkflows.length > 0) {
         return {
@@ -285,6 +278,17 @@ export const sanitizedInputsCheck: IntegrationCheck = {
           method: 'workflow',
           workflow: codeScanningWorkflows[0],
         };
+      }
+
+      // No workflows found either - determine appropriate failure status
+      if (apiGot403) {
+        if (isPrivate) {
+          if (isGhasEnabled) {
+            return { status: 'permission-denied', isPrivate };
+          }
+          return { status: 'ghas-required' };
+        }
+        return { status: 'permission-denied', isPrivate };
       }
 
       return { status: 'not-configured' };

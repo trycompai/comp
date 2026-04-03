@@ -29,9 +29,10 @@ export class TriggerVendorRiskAssessmentVendorDto {
 }
 
 export class TriggerSingleVendorRiskAssessmentDto {
-  @ApiProperty({ description: 'Organization ID', example: 'org_abc123' })
+  @ApiProperty({ description: 'Organization ID (deprecated — use auth context)', example: 'org_abc123', required: false })
+  @IsOptional()
   @IsString()
-  organizationId: string;
+  organizationId?: string;
 
   @ApiProperty({ description: 'Vendor ID', example: 'vnd_abc123' })
   @IsString()
@@ -58,9 +59,10 @@ export class TriggerSingleVendorRiskAssessmentDto {
 }
 
 export class TriggerVendorRiskAssessmentBatchDto {
-  @ApiProperty({ description: 'Organization ID', example: 'org_abc123' })
+  @ApiProperty({ description: 'Organization ID (deprecated — use auth context)', example: 'org_abc123', required: false })
+  @IsOptional()
   @IsString()
-  organizationId: string;
+  organizationId?: string;
 
   @ApiProperty({
     description:

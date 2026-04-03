@@ -52,7 +52,6 @@ export function useAccessRequests(orgId: string) {
     queryFn: async () => {
       const response = await api.get<AccessRequest[]>(
         '/v1/trust-access/admin/requests',
-        orgId,
       );
 
       if (response.error) {
@@ -73,7 +72,6 @@ export function useApproveAccessRequest(orgId: string) {
       const response = await api.post<ApproveAccessRequestResponse>(
         `/v1/trust-access/admin/requests/${requestId}/approve`,
         { durationDays },
-        orgId,
       );
 
       if (response.error) {
@@ -99,7 +97,6 @@ export function useDenyAccessRequest(orgId: string) {
       const response = await api.post(
         `/v1/trust-access/admin/requests/${requestId}/deny`,
         { reason },
-        orgId,
       );
 
       if (response.error) {
@@ -124,7 +121,6 @@ export function useAccessRequest(orgId: string, requestId: string) {
     queryFn: async () => {
       const response = await api.get<AccessRequest>(
         `/v1/trust-access/admin/requests/${requestId}`,
-        orgId,
       );
 
       if (response.error) {
@@ -144,7 +140,6 @@ export function useAccessGrants(orgId: string) {
     queryFn: async () => {
       const response = await api.get<AccessGrant[]>(
         '/v1/trust-access/admin/grants',
-        orgId,
       );
 
       if (response.error) {
@@ -165,7 +160,6 @@ export function useRevokeAccessGrant(orgId: string) {
       const response = await api.post(
         `/v1/trust-access/admin/grants/${grantId}/revoke`,
         { reason },
-        orgId,
       );
 
       if (response.error) {
@@ -190,7 +184,6 @@ export function useResendAccessEmail(orgId: string) {
       const response = await api.post(
         `/v1/trust-access/admin/grants/${grantId}/resend-access-email`,
         {},
-        orgId,
       );
 
       if (response.error) {
@@ -210,7 +203,6 @@ export function useResendNda(orgId: string) {
       const response = await api.post(
         `/v1/trust-access/admin/requests/${requestId}/resend-nda`,
         {},
-        orgId,
       );
 
       if (response.error) {
@@ -235,7 +227,6 @@ export function usePreviewNda(orgId: string) {
       }>(
         `/v1/trust-access/admin/requests/${requestId}/preview-nda`,
         {},
-        orgId,
       );
 
       if (response.error) {

@@ -1,7 +1,7 @@
 import { AGENT_VERSION, API_ROUTES } from '../shared/constants';
 import type { CheckInRequest, CheckInResponse, CheckResult } from '../shared/types';
 import { log } from './logger';
-import { getAuth, getPortalUrl } from './store';
+import { getApiUrl, getAuth } from './store';
 
 export interface ReportResult {
   allSucceeded: boolean;
@@ -13,7 +13,7 @@ export interface ReportResult {
 }
 
 /**
- * Sends compliance check results to the portal API for ALL registered organizations.
+ * Sends compliance check results to the NestJS API for ALL registered organizations.
  * The same check results are reported to each org's device record.
  */
 export async function reportCheckResults(checks: CheckResult[]): Promise<ReportResult> {
@@ -23,9 +23,8 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
     return { allSucceeded: false, isCompliant: false, sessionExpired: false, allDevicesNotFound: false };
   }
 
-  const portalUrl = getPortalUrl();
-  const cookieName = auth.cookieName ?? 'better-auth.session_token';
-  const cookieHeader = `${cookieName}=${auth.sessionToken}`;
+  const apiUrl = getApiUrl();
+  const authHeader = `Bearer ${auth.sessionToken}`;
 
   let allSucceeded = true;
   let anyNonCompliant = false;
@@ -40,10 +39,10 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
     };
 
     try {
-      const response = await fetch(`${portalUrl}${API_ROUTES.CHECK_IN}`, {
+      const response = await fetch(`${apiUrl}${API_ROUTES.CHECK_IN}`, {
         method: 'POST',
         headers: {
-          Cookie: cookieHeader,
+          Authorization: authHeader,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),

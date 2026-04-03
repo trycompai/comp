@@ -1,5 +1,6 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import { trackEvent, trackOnboardingEvent } from '@/utils/tracking';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { sendGTMEvent } from '@next/third-parties/google';
@@ -31,6 +32,7 @@ export function useOnboardingForm({
 }: UseOnboardingFormProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const api = useApi();
 
   // Helper to build URL with search params
   const buildUrlWithParams = (path: string, params?: Record<string, string>) => {
@@ -224,10 +226,9 @@ export function useOnboardingForm({
   const handlePrefillAll = async () => {
     try {
       // Fetch frameworks to get valid IDs
-      const response = await fetch('/api/frameworks');
-      if (!response.ok) throw new Error('Failed to fetch frameworks');
-      const data = await response.json();
-      const visibleFrameworks = data.frameworks.filter((f: { visible: boolean }) => f.visible);
+      const response = await api.get<{ data: { id: string; visible: boolean }[] }>('/v1/frameworks/available');
+      const allFrameworks = Array.isArray(response.data?.data) ? response.data.data : [];
+      const visibleFrameworks = allFrameworks.filter((f) => f.visible);
       
       // Use first two visible frameworks, or just the first one if only one exists
       const frameworkIds = visibleFrameworks

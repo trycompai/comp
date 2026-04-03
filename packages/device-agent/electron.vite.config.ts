@@ -14,6 +14,9 @@ export default defineConfig({
       __PORTAL_URL__: JSON.stringify(
         process.env.PORTAL_URL || 'https://portal.trycomp.ai',
       ),
+      __API_URL__: JSON.stringify(
+        process.env.API_URL || 'https://api.trycomp.ai',
+      ),
       __AGENT_VERSION__: JSON.stringify(
         process.env.AGENT_VERSION || pkg.version,
       ),

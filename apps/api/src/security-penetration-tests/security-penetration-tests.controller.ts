@@ -22,6 +22,9 @@ import type { Request } from 'express';
 import type { Response } from 'express';
 import { OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { Public } from '../auth/public.decorator';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
 import { SecurityPenetrationTestsService } from './security-penetration-tests.service';
 
@@ -33,13 +36,14 @@ import { SecurityPenetrationTestsService } from './security-penetration-tests.se
   description: 'Organization ID (required for session auth, optional for API key auth)',
   required: false,
 })
+@UseGuards(HybridAuthGuard, PermissionGuard)
 export class SecurityPenetrationTestsController {
   constructor(
     private readonly service: SecurityPenetrationTestsService,
   ) {}
 
   @Get()
-  @UseGuards(HybridAuthGuard)
+  @RequirePermission('pentest', 'read')
   @ApiOperation({
     summary: 'List penetration test runs',
     description:
@@ -54,7 +58,7 @@ export class SecurityPenetrationTestsController {
   }
 
   @Post()
-  @UseGuards(HybridAuthGuard)
+  @RequirePermission('pentest', 'create')
   @HttpCode(201)
   @ApiOperation({
     summary: 'Create penetration test',
@@ -77,7 +81,7 @@ export class SecurityPenetrationTestsController {
   }
 
   @Get('github/repos')
-  @UseGuards(HybridAuthGuard)
+  @RequirePermission('pentest', 'read')
   @ApiOperation({
     summary: 'List accessible GitHub repositories',
     description:
@@ -92,7 +96,7 @@ export class SecurityPenetrationTestsController {
   }
 
   @Get(':id')
-  @UseGuards(HybridAuthGuard)
+  @RequirePermission('pentest', 'read')
   @ApiOperation({
     summary: 'Get penetration test status',
     description: 'Returns a penetration test run with progress metadata.',
@@ -113,7 +117,7 @@ export class SecurityPenetrationTestsController {
   }
 
   @Get(':id/progress')
-  @UseGuards(HybridAuthGuard)
+  @RequirePermission('pentest', 'read')
   @ApiOperation({
     summary: 'Get penetration test progress',
     description: 'Returns detailed progress for an in-flight report run.',
@@ -127,7 +131,7 @@ export class SecurityPenetrationTestsController {
   }
 
   @Get(':id/report')
-  @UseGuards(HybridAuthGuard)
+  @RequirePermission('pentest', 'read')
   @ApiOperation({
     summary: 'Get penetration test output',
     description: 'Returns the markdown report output for a completed run.',
@@ -152,7 +156,7 @@ export class SecurityPenetrationTestsController {
   }
 
   @Get(':id/pdf')
-  @UseGuards(HybridAuthGuard)
+  @RequirePermission('pentest', 'read')
   @ApiOperation({
     summary: 'Get penetration test PDF',
     description: 'Returns the PDF version of a completed report.',
@@ -180,6 +184,7 @@ export class SecurityPenetrationTestsController {
   }
 
   @Post('webhook')
+  @Public()
   @ApiOperation({
     summary: 'Receive penetration test webhook events',
     description:

@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if echo \"$file\" | grep -qE '\\.(ts|tsx)$' && echo \"$file\" | grep -qE '^(apps/api|apps/app)/'; then echo 'TypeScript file modified — remember to run typecheck before committing'; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if echo \"$file\" | grep -q 'packages/db/prisma/generated'; then echo 'BLOCKED: Do not write to generated Prisma files' && exit 1; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

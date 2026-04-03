@@ -20,7 +20,7 @@ import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
-import { Prisma, TrustFramework } from '@prisma/client';
+import { Prisma, TrustFramework } from '@db';
 import archiver from 'archiver';
 import { PassThrough, Readable } from 'stream';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
@@ -79,7 +79,7 @@ export class TrustAccessService {
 
   private readonly TRUST_APP_URL =
     process.env.TRUST_APP_URL ||
-    process.env.BASE_URL ||
+    process.env.PORTAL_URL ||
     'http://localhost:3008';
 
   private generateToken(length: number): string {
@@ -238,10 +238,10 @@ export class TrustAccessService {
   ) {
     if (
       !process.env.TRUST_APP_URL &&
-      !process.env.BASE_URL &&
+      !process.env.PORTAL_URL &&
       process.env.NODE_ENV === 'production'
     ) {
-      throw new Error('TRUST_APP_URL or BASE_URL must be set in production');
+      throw new Error('TRUST_APP_URL or PORTAL_URL must be set in production');
     }
   }
 

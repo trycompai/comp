@@ -248,7 +248,9 @@ export function updateTrayMenu(
  */
 export function openStatusWindow(): void {
   if (statusWindow && !statusWindow.isDestroyed()) {
+    statusWindow.show();
     statusWindow.focus();
+    app.focus({ steal: true });
     return;
   }
 
@@ -274,6 +276,13 @@ export function openStatusWindow(): void {
 
   statusWindow.on('closed', () => {
     statusWindow = null;
+  });
+
+  // Ensure window is visible and focused (tray-only apps open windows behind others)
+  statusWindow.once('ready-to-show', () => {
+    statusWindow?.show();
+    statusWindow?.focus();
+    app.focus({ steal: true });
   });
 }
 

@@ -1,4 +1,4 @@
-import { db, Prisma } from '@db';
+import { db, Prisma } from '@db/server';
 
 /**
  * Removes a member's node (and all connected edges) from the org chart.

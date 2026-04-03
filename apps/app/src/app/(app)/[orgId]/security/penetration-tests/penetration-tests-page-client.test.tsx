@@ -55,7 +55,7 @@ vi.mock('@/hooks/use-integration-platform', () => ({
   useIntegrationMutations: vi.fn().mockReturnValue({ startOAuth: startOAuthMock }),
 }));
 
-vi.mock('@comp/ui/select', () => ({
+vi.mock('@trycompai/ui/select', () => ({
   Select: ({ children, onValueChange }: { children: ReactNode; onValueChange?: (value: string) => void }) => (
     <div data-testid="github-repo-select">{children}</div>
   ),
@@ -67,15 +67,15 @@ vi.mock('@comp/ui/select', () => ({
   SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
 }));
 
-vi.mock('@comp/ui/input', () => ({
+vi.mock('@trycompai/ui/input', () => ({
   Input: (props: React.ComponentProps<'input'>) => <input {...props} />,
 }));
 
-vi.mock('@comp/ui/label', () => ({
+vi.mock('@trycompai/ui/label', () => ({
   Label: ({ children, ...props }: React.ComponentProps<'label'>) => <label {...props}>{children}</label>,
 }));
 
-vi.mock('@comp/ui/table', () => ({
+vi.mock('@trycompai/ui/table', () => ({
   Table: ({ children }: { children: ReactNode }) => <table>{children}</table>,
   TableBody: ({ children }: { children: ReactNode }) => <tbody>{children}</tbody>,
   TableCell: ({ children }: { children: ReactNode }) => <td>{children}</td>,
@@ -84,7 +84,7 @@ vi.mock('@comp/ui/table', () => ({
   TableRow: ({ children }: { children: ReactNode }) => <tr>{children}</tr>,
 }));
 
-vi.mock('@comp/ui/dialog', () => ({
+vi.mock('@trycompai/ui/dialog', () => ({
   Dialog: ({ children, open }: { children: ReactNode; open: boolean }) => (
     <div data-open={String(open)}>{children}</div>
   ),
@@ -95,7 +95,7 @@ vi.mock('@comp/ui/dialog', () => ({
   DialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
 }));
 
-vi.mock('@comp/ui/card', () => ({
+vi.mock('@trycompai/ui/card', () => ({
   Card: ({ children }: { children: ReactNode }) => <section>{children}</section>,
   CardContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   CardDescription: ({ children }: { children: ReactNode }) => <p>{children}</p>,
@@ -103,27 +103,8 @@ vi.mock('@comp/ui/card', () => ({
   CardTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
 }));
 
-vi.mock('@comp/ui/badge', () => ({
+vi.mock('@trycompai/ui/badge', () => ({
   Badge: ({ children }: { children: ReactNode }) => <span>{children}</span>,
-}));
-
-vi.mock('@comp/ui/module-gate', () => ({
-  ModuleGate: ({ title, description, action, features }: { title: string; description?: string; action?: ReactNode; features?: string[] }) => (
-    <div data-testid="module-gate">
-      <h2>{title}</h2>
-      {description && <p>{description}</p>}
-      {features?.map((f: string) => <span key={f}>{f}</span>)}
-      {action}
-    </div>
-  ),
-}));
-
-vi.mock('./components/pentest-preview-animation', () => ({
-  PentestPreviewAnimation: () => <div data-testid="pentest-preview" />,
-}));
-
-vi.mock('./actions/billing', () => ({
-  subscribeToPentestPlan: vi.fn(),
 }));
 
 vi.mock('@trycompai/design-system', () => ({
@@ -215,16 +196,8 @@ describe('PenetrationTestsPageClient', () => {
     } as ReturnType<typeof pentestHooks.useGithubRepos>);
   });
 
-  it('renders locked state when subscription is not active', () => {
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={false} usage={null} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
-
-    expect(screen.getByText('Find vulnerabilities before attackers do')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Get started/ })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Create Report' })).not.toBeInTheDocument();
-  });
-
   it('renders an empty state and call-to-action when no reports exist', () => {
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getAllByText('No reports yet')).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Create your first report' })).toBeInTheDocument();
@@ -238,7 +211,7 @@ describe('PenetrationTestsPageClient', () => {
       resetError: vi.fn(),
     });
 
-    const { getByText } = render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    const { getByText } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     fireEvent.click(getByText('Create your first report'));
 
@@ -256,7 +229,7 @@ describe('PenetrationTestsPageClient', () => {
       completedReports: [reportRows[1]],
     });
 
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('1 completed report')).toBeInTheDocument();
   });
@@ -271,7 +244,7 @@ describe('PenetrationTestsPageClient', () => {
       completedReports: [reportRows[1], { ...reportRows[1], id: 'run_completed_2' }],
     });
 
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('2 reports in progress')).toBeInTheDocument();
   });
@@ -286,7 +259,7 @@ describe('PenetrationTestsPageClient', () => {
       completedReports: [{ ...reportRows[1], id: 'run_completed_2' }, reportRows[1]],
     });
 
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('2 completed reports')).toBeInTheDocument();
   });
@@ -319,7 +292,7 @@ describe('PenetrationTestsPageClient', () => {
       completedReports: [],
     });
 
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('In progress (0/2)')).toBeInTheDocument();
   });
@@ -334,7 +307,7 @@ describe('PenetrationTestsPageClient', () => {
       completedReports: [reportRows[1]],
     });
 
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('https://running.example.com')).toBeInTheDocument();
     expect(screen.getByText('https://completed.example.com')).toBeInTheDocument();
@@ -370,7 +343,7 @@ describe('PenetrationTestsPageClient', () => {
       completedReports: [],
     });
 
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('https://no-repo.example.com')).toBeInTheDocument();
     expect(screen.getByText('—')).toBeInTheDocument();
@@ -386,7 +359,7 @@ describe('PenetrationTestsPageClient', () => {
       completedReports: [],
     });
 
-    const { container } = render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    const { container } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(container.querySelector('.animate-spin')).toBeTruthy();
   });
@@ -419,7 +392,7 @@ describe('PenetrationTestsPageClient', () => {
       completedReports: [],
     });
 
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('In progress (1/2)')).toBeInTheDocument();
   });
@@ -452,14 +425,14 @@ describe('PenetrationTestsPageClient', () => {
       completedReports: [],
     });
 
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     expect(screen.getByText('In progress')).toBeInTheDocument();
     expect(screen.queryByText('(n/a/n/a)')).toBeNull();
   });
 
   it('creates a report and navigates to the report detail page', async () => {
-    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await act(async () => {
       fireEvent.click(getByText('Create Report'));
@@ -490,7 +463,7 @@ describe('PenetrationTestsPageClient', () => {
   });
 
   it('requires target URL before submitting report request', async () => {
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
     const submitForm = screen.getByText('Start penetration test').closest('form');
 
     await act(async () => {
@@ -504,7 +477,7 @@ describe('PenetrationTestsPageClient', () => {
   });
 
   it('creates a report without repository URL when only target is provided', async () => {
-    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await act(async () => {
       fireEvent.click(getByText('Create Report'));
@@ -530,7 +503,7 @@ describe('PenetrationTestsPageClient', () => {
   it('surfaces errors when run creation fails', async () => {
     createReportMock.mockRejectedValue(new Error('No active pentest subscription.'));
 
-    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await act(async () => {
       fireEvent.click(getByText('Create Report'));
@@ -558,7 +531,7 @@ describe('PenetrationTestsPageClient', () => {
   it('surfaces a generic error message when run creation fails with non-error value', async () => {
     createReportMock.mockRejectedValue('service-down');
 
-    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    const { getByText, getByLabelText } = render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await act(async () => {
       fireEvent.click(getByText('Create Report'));
@@ -584,7 +557,7 @@ describe('PenetrationTestsPageClient', () => {
   });
 
   it('shows a Connect GitHub button when GitHub is not connected', async () => {
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await act(async () => {
       fireEvent.click(screen.getByText('Create Report'));
@@ -606,7 +579,7 @@ describe('PenetrationTestsPageClient', () => {
       isLoading: false,
     } as ReturnType<typeof pentestHooks.useGithubRepos>);
 
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await act(async () => {
       fireEvent.click(screen.getByText('Create Report'));
@@ -617,7 +590,7 @@ describe('PenetrationTestsPageClient', () => {
   });
 
   it('starts GitHub OAuth when Connect GitHub button is clicked', async () => {
-    render(<PenetrationTestsPageClient orgId="org_123" hasActiveSubscription={true} usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }} pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }} />);
+    render(<PenetrationTestsPageClient orgId="org_123" />);
 
     await act(async () => {
       fireEvent.click(screen.getByText('Create Report'));
@@ -628,135 +601,5 @@ describe('PenetrationTestsPageClient', () => {
     });
 
     expect(startOAuthMock).toHaveBeenCalledWith('github', expect.any(String));
-  });
-
-  it('displays usage indicator when usage data is provided', () => {
-    render(
-      <PenetrationTestsPageClient
-        orgId="org_123"
-        hasActiveSubscription={true}
-        usage={{ includedRuns: 3, usedRuns: 2, remainingRuns: 1, currentPeriodEnd: '2026-03-01T00:00:00Z' }}
-        pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }}
-      />,
-    );
-
-    expect(screen.getByText('2/3 runs used this period')).toBeInTheDocument();
-  });
-
-  it('shows dynamic dialog description based on remaining runs', async () => {
-    render(
-      <PenetrationTestsPageClient
-        orgId="org_123"
-        hasActiveSubscription={true}
-        usage={{ includedRuns: 3, usedRuns: 1, remainingRuns: 2, currentPeriodEnd: '2026-03-01T00:00:00Z' }}
-        pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }}
-      />,
-    );
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Create Report'));
-    });
-
-    expect(screen.getByText('You have 2 of 3 included runs remaining this period.')).toBeInTheDocument();
-  });
-
-  it('shows overage warning in dialog when no remaining runs', async () => {
-    render(
-      <PenetrationTestsPageClient
-        orgId="org_123"
-        hasActiveSubscription={true}
-        usage={{ includedRuns: 3, usedRuns: 3, remainingRuns: 0, currentPeriodEnd: '2026-03-01T00:00:00Z' }}
-        pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }}
-      />,
-    );
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Create Report'));
-    });
-
-    expect(screen.getByText('You have used all included runs. This run will be charged at $49.')).toBeInTheDocument();
-  });
-
-  it('shows overage confirmation dialog when submitting with zero remaining runs', async () => {
-    const { getByLabelText } = render(
-      <PenetrationTestsPageClient
-        orgId="org_123"
-        hasActiveSubscription={true}
-        usage={{ includedRuns: 3, usedRuns: 3, remainingRuns: 0, currentPeriodEnd: '2026-03-01T00:00:00Z' }}
-        pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }}
-      />,
-    );
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Create Report'));
-    });
-
-    await act(async () => {
-      fireEvent.change(getByLabelText('Target URL'), { target: { value: 'https://example.com' } });
-      fireEvent.click(screen.getByText('Start penetration test'));
-    });
-
-    expect(screen.getByText('Overage charge')).toBeInTheDocument();
-    expect(screen.getByText(/This run will be charged at \$49\. Continue\?/)).toBeInTheDocument();
-    expect(createReportMock).not.toHaveBeenCalled();
-  });
-
-  it('creates report after confirming overage dialog', async () => {
-    const { getByLabelText } = render(
-      <PenetrationTestsPageClient
-        orgId="org_123"
-        hasActiveSubscription={true}
-        usage={{ includedRuns: 3, usedRuns: 3, remainingRuns: 0, currentPeriodEnd: '2026-03-01T00:00:00Z' }}
-        pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }}
-      />,
-    );
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Create Report'));
-    });
-
-    await act(async () => {
-      fireEvent.change(getByLabelText('Target URL'), { target: { value: 'https://example.com' } });
-      fireEvent.click(screen.getByText('Start penetration test'));
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Confirm & start'));
-    });
-
-    await waitFor(() => {
-      expect(createReportMock).toHaveBeenCalledWith({
-        targetUrl: 'https://example.com',
-        repoUrl: undefined,
-      });
-    });
-  });
-
-  it('does not create report when overage dialog is cancelled', async () => {
-    const { getByLabelText } = render(
-      <PenetrationTestsPageClient
-        orgId="org_123"
-        hasActiveSubscription={true}
-        usage={{ includedRuns: 3, usedRuns: 3, remainingRuns: 0, currentPeriodEnd: '2026-03-01T00:00:00Z' }}
-        pricing={{ subscriptionPrice: '$99/mo', overagePrice: '$49' }}
-      />,
-    );
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Create Report'));
-    });
-
-    await act(async () => {
-      fireEvent.change(getByLabelText('Target URL'), { target: { value: 'https://example.com' } });
-      fireEvent.click(screen.getByText('Start penetration test'));
-    });
-
-    // Find the Cancel button in the overage dialog (there are multiple Cancel buttons)
-    const cancelButtons = screen.getAllByText('Cancel');
-    await act(async () => {
-      fireEvent.click(cancelButtons[cancelButtons.length - 1]);
-    });
-
-    expect(createReportMock).not.toHaveBeenCalled();
   });
 });

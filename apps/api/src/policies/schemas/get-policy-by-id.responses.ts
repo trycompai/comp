@@ -38,6 +38,23 @@ export const GET_POLICY_BY_ID_RESPONSES: Record<string, ApiResponseOptions> = {
       },
     },
   },
+  403: {
+    status: 403,
+    description: 'Forbidden - User does not have permission to access this policy',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'You do not have access to view this policy',
+            },
+          },
+        },
+      },
+    },
+  },
   404: {
     status: 404,
     description: 'Policy not found',

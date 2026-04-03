@@ -1,8 +1,8 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@comp/ui/collapsible';
+import { Badge } from '@trycompai/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@trycompai/ui/collapsible';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { useMemo, useState } from 'react';

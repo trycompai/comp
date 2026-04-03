@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { TableHead, TableHeader, TableRow } from '@comp/ui/table';
+import { Button } from '@trycompai/ui/button';
+import { TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';

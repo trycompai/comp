@@ -1,8 +1,8 @@
 'use client';
 import { AssignedUser } from '@/components/assigned-user';
 import { StatusIndicator } from '@/components/status-indicator';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
 import type { Departments, RiskStatus } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';

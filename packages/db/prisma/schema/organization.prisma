@@ -58,6 +58,7 @@ model Organization {
   // Integration Platform
   integrationConnections IntegrationConnection[]
   integrationOAuthApps   IntegrationOAuthApp[]
+  integrationSyncLogs    IntegrationSyncLog[]
 
   // Pentest Subscription
   pentestSubscription PentestSubscription?
@@ -75,6 +76,10 @@ model Organization {
 
   // Org Chart
   organizationChart OrganizationChart?
+
+  // RBAC
+  organizationRoles          OrganizationRole[]
+  roleNotificationSettings   RoleNotificationSetting[]
 
   @@index([slug])
 }

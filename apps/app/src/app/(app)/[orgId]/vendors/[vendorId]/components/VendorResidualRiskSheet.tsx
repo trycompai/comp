@@ -1,7 +1,7 @@
 'use client';
 
 import { ResidualRiskForm } from '@/app/(app)/[orgId]/vendors/[vendorId]/forms/risks/ResidualRiskForm';
-import { useMediaQuery } from '@comp/ui/hooks';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import type { Vendor } from '@db';
 import {
   Drawer,

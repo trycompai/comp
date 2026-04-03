@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 
 export const MarkdownRenderer = memo(function MarkdownRenderer({ content }: { content: string }) {
@@ -77,7 +78,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content }: { co
   );
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
+    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, [rehypeSanitize, defaultSchema]]} components={components}>
       {content}
     </ReactMarkdown>
   );

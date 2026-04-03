@@ -2,10 +2,15 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
   Post,
   Query,
   Res,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
   Logger,
 } from '@nestjs/common';
@@ -17,8 +22,19 @@ import {
   ApiOkResponse,
   ApiProduces,
   ApiQuery,
+  ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { Public } from '../auth/public.decorator';
+import { RequirePermission } from '../auth/require-permission.decorator';
+import {
+  OrganizationId,
+  AuthContext,
+} from '../auth/auth-context.decorator';
+import { AuditRead } from '../audit/skip-audit-log.decorator';
+import type { AuthContext as AuthContextType } from '../auth/types';
 import { ParseQuestionnaireDto } from './dto/parse-questionnaire.dto';
 import { ExportQuestionnaireDto } from './dto/export-questionnaire.dto';
 import { AnswerSingleQuestionDto } from './dto/answer-single-question.dto';
@@ -48,6 +64,8 @@ import {
   path: 'questionnaire',
   version: '1',
 })
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@ApiSecurity('apikey')
 export class QuestionnaireController {
   private readonly logger = new Logger(QuestionnaireController.name);
 
@@ -56,7 +74,68 @@ export class QuestionnaireController {
     private readonly trustAccessService: TrustAccessService,
   ) {}
 
+  @Get()
+  @RequirePermission('questionnaire', 'read')
+  @ApiOkResponse({ description: 'List of questionnaires' })
+  async findAll(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.questionnaireService.findAll(organizationId);
+    return {
+      data,
+      count: data.length,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Get(':id')
+  @RequirePermission('questionnaire', 'read')
+  @ApiOkResponse({ description: 'Questionnaire details' })
+  async findById(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const questionnaire = await this.questionnaireService.findById(
+      id,
+      organizationId,
+    );
+    if (!questionnaire) {
+      throw new NotFoundException('Questionnaire not found');
+    }
+    return {
+      ...questionnaire,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Delete(':id')
+  @RequirePermission('questionnaire', 'delete')
+  @ApiOkResponse({ description: 'Questionnaire deleted' })
+  async deleteById(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.questionnaireService.deleteById(id, organizationId);
+  }
+
   @Post('parse')
+  @RequirePermission('questionnaire', 'read')
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Parsed questionnaire content',
@@ -69,6 +148,7 @@ export class QuestionnaireController {
   }
 
   @Post('answer-single')
+  @RequirePermission('questionnaire', 'update')
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Generated single answer result',
@@ -89,7 +169,11 @@ export class QuestionnaireController {
       },
     },
   })
-  async answerSingleQuestion(@Body() dto: AnswerSingleQuestionDto) {
+  async answerSingleQuestion(
+    @Body() dto: AnswerSingleQuestionDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    dto.organizationId = organizationId;
     const result = await this.questionnaireService.answerSingleQuestion(dto);
     return {
       success: result.success,
@@ -104,6 +188,7 @@ export class QuestionnaireController {
   }
 
   @Post('save-answer')
+  @RequirePermission('questionnaire', 'update')
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Save manual or generated answer',
@@ -115,11 +200,16 @@ export class QuestionnaireController {
       },
     },
   })
-  async saveAnswer(@Body() dto: SaveAnswerDto) {
+  async saveAnswer(
+    @Body() dto: SaveAnswerDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    dto.organizationId = organizationId;
     return this.questionnaireService.saveAnswer(dto);
   }
 
   @Post('delete-answer')
+  @RequirePermission('questionnaire', 'delete')
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Delete questionnaire answer',
@@ -131,11 +221,17 @@ export class QuestionnaireController {
       },
     },
   })
-  async deleteAnswer(@Body() dto: DeleteAnswerDto) {
+  async deleteAnswer(
+    @Body() dto: DeleteAnswerDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    dto.organizationId = organizationId;
     return this.questionnaireService.deleteAnswer(dto);
   }
 
   @Post('export')
+  @RequirePermission('questionnaire', 'read')
+  @AuditRead()
   @ApiConsumes('application/json')
   @ApiProduces(
     'application/pdf',
@@ -148,7 +244,9 @@ export class QuestionnaireController {
   async exportById(
     @Body() dto: ExportByIdDto,
     @Res({ passthrough: true }) res: Response,
+    @OrganizationId() organizationId: string,
   ): Promise<void> {
+    dto.organizationId = organizationId;
     const result = await this.questionnaireService.exportById(dto);
 
     res.setHeader('Content-Type', result.mimeType);
@@ -161,23 +259,29 @@ export class QuestionnaireController {
   }
 
   @Post('upload-and-parse')
+  @RequirePermission('questionnaire', 'create')
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description:
-      'Upload file, parse questions (no answers), save to DB, return questionnaireId',
+      'Upload file and trigger async parsing. Returns runId for realtime tracking.',
     schema: {
       type: 'object',
       properties: {
-        questionnaireId: { type: 'string' },
-        totalQuestions: { type: 'number' },
+        runId: { type: 'string' },
+        publicAccessToken: { type: 'string' },
       },
     },
   })
-  async uploadAndParse(@Body() dto: UploadAndParseDto) {
+  async uploadAndParse(
+    @Body() dto: UploadAndParseDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    dto.organizationId = organizationId;
     return this.questionnaireService.uploadAndParse(dto);
   }
 
   @Post('upload-and-parse/upload')
+  @RequirePermission('questionnaire', 'create')
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -221,16 +325,14 @@ export class QuestionnaireController {
       organizationId: string;
       source?: 'internal' | 'external';
     },
+    @OrganizationId() organizationId: string,
   ) {
     if (!file) {
       throw new BadRequestException('file is required');
     }
-    if (!body.organizationId) {
-      throw new BadRequestException('organizationId is required');
-    }
 
     const dto: UploadAndParseDto = {
-      organizationId: body.organizationId,
+      organizationId,
       fileName: file.originalname,
       fileType: file.mimetype,
       fileData: file.buffer.toString('base64'),
@@ -241,6 +343,7 @@ export class QuestionnaireController {
   }
 
   @Post('parse/upload')
+  @RequirePermission('questionnaire', 'create')
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -287,18 +390,16 @@ export class QuestionnaireController {
       source?: 'internal' | 'external';
     },
     @Res({ passthrough: true }) res: Response,
+    @OrganizationId() organizationId: string,
   ): Promise<void> {
     if (!file) {
       throw new BadRequestException('file is required');
-    }
-    if (!body.organizationId) {
-      throw new BadRequestException('organizationId is required');
     }
 
     const dto: ExportQuestionnaireDto = {
       fileData: file.buffer.toString('base64'),
       fileType: file.mimetype,
-      organizationId: body.organizationId,
+      organizationId,
       fileName: file.originalname,
       vendorName: undefined,
       format: body.format || 'xlsx',
@@ -321,6 +422,8 @@ export class QuestionnaireController {
   }
 
   @Post('parse/upload/token')
+  @Public()
+  @UseGuards() // Override class-level guards — this endpoint uses token-based auth
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiQuery({
@@ -398,6 +501,8 @@ export class QuestionnaireController {
   }
 
   @Post('answers/export')
+  @RequirePermission('questionnaire', 'read')
+  @AuditRead()
   @ApiConsumes('application/json')
   @ApiProduces(
     'application/pdf',
@@ -407,7 +512,9 @@ export class QuestionnaireController {
   async autoAnswerAndExport(
     @Body() dto: ExportQuestionnaireDto,
     @Res({ passthrough: true }) res: Response,
+    @OrganizationId() organizationId: string,
   ): Promise<void> {
+    dto.organizationId = organizationId;
     const result = await this.questionnaireService.autoAnswerAndExport(dto);
 
     res.setHeader('Content-Type', result.mimeType);
@@ -424,6 +531,7 @@ export class QuestionnaireController {
   }
 
   @Post('answers/export/upload')
+  @RequirePermission('questionnaire', 'create')
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -458,18 +566,16 @@ export class QuestionnaireController {
     @UploadedFile() file: Express.Multer.File,
     @Body() body: { organizationId: string; format?: 'pdf' | 'csv' | 'xlsx' },
     @Res({ passthrough: true }) res: Response,
+    @OrganizationId() organizationId: string,
   ): Promise<void> {
     if (!file) {
       throw new BadRequestException('file is required');
-    }
-    if (!body.organizationId) {
-      throw new BadRequestException('organizationId is required');
     }
 
     const dto: ExportQuestionnaireDto = {
       fileData: file.buffer.toString('base64'),
       fileType: file.mimetype,
-      organizationId: body.organizationId,
+      organizationId,
       fileName: file.originalname,
       vendorName: undefined,
       format: body.format || 'xlsx',
@@ -491,12 +597,15 @@ export class QuestionnaireController {
   }
 
   @Post('auto-answer')
+  @RequirePermission('questionnaire', 'update')
   @ApiConsumes('application/json')
   @ApiProduces('text/event-stream')
   async autoAnswer(
     @Body() dto: AutoAnswerDto,
     @Res() res: Response,
+    @OrganizationId() organizationId: string,
   ): Promise<void> {
+    dto.organizationId = organizationId;
     setupSSEHeaders(res);
     const send = createSafeSSESender(res);
 

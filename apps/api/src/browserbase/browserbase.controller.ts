@@ -9,7 +9,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -18,6 +17,8 @@ import {
 } from '@nestjs/swagger';
 import { OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { BrowserbaseService } from './browserbase.service';
 import {
   AuthStatusResponseDto,
@@ -36,19 +37,15 @@ import {
 
 @ApiTags('Browserbase')
 @Controller({ path: 'browserbase', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description: 'Organization ID (required for session auth)',
-  required: true,
-})
 export class BrowserbaseController {
   constructor(private readonly browserbaseService: BrowserbaseService) {}
 
   // ===== Organization Context =====
 
   @Post('org-context')
+  @RequirePermission('integration', 'create')
   @ApiOperation({
     summary: 'Get or create organization browser context',
     description:
@@ -66,6 +63,7 @@ export class BrowserbaseController {
   }
 
   @Get('org-context')
+  @RequirePermission('integration', 'read')
   @ApiOperation({
     summary: 'Get organization browser context status',
     description: 'Gets the current browser context for the org if it exists',
@@ -87,6 +85,7 @@ export class BrowserbaseController {
   // ===== Session Management =====
 
   @Post('session')
+  @RequirePermission('integration', 'read')
   @ApiOperation({
     summary: 'Create a new browser session',
     description: 'Creates a new browser session using the org context',
@@ -105,6 +104,7 @@ export class BrowserbaseController {
   }
 
   @Post('session/close')
+  @RequirePermission('integration', 'read')
   @ApiOperation({
     summary: 'Close a browser session',
   })
@@ -122,6 +122,7 @@ export class BrowserbaseController {
   // ===== Browser Navigation =====
 
   @Post('navigate')
+  @RequirePermission('integration', 'read')
   @ApiOperation({
     summary: 'Navigate to a URL',
     description: 'Navigates the browser session to the specified URL',
@@ -137,6 +138,7 @@ export class BrowserbaseController {
   }
 
   @Post('check-auth')
+  @RequirePermission('integration', 'read')
   @ApiOperation({
     summary: 'Check authentication status',
     description: 'Checks if the user is logged in on the specified site',
@@ -156,6 +158,7 @@ export class BrowserbaseController {
   // ===== Browser Automations CRUD =====
 
   @Post('automations')
+  @RequirePermission('task', 'create')
   @ApiOperation({
     summary: 'Create a browser automation',
   })
@@ -173,6 +176,7 @@ export class BrowserbaseController {
   }
 
   @Get('automations/task/:taskId')
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get all browser automations for a task',
   })
@@ -191,6 +195,7 @@ export class BrowserbaseController {
   }
 
   @Get('automations/:automationId')
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get a browser automation by ID',
   })
@@ -209,6 +214,7 @@ export class BrowserbaseController {
   }
 
   @Patch('automations/:automationId')
+  @RequirePermission('task', 'update')
   @ApiOperation({
     summary: 'Update a browser automation',
   })
@@ -229,6 +235,7 @@ export class BrowserbaseController {
   }
 
   @Delete('automations/:automationId')
+  @RequirePermission('task', 'delete')
   @ApiOperation({
     summary: 'Delete a browser automation',
   })
@@ -247,6 +254,7 @@ export class BrowserbaseController {
   // ===== Automation Execution =====
 
   @Post('automations/:automationId/start-live')
+  @RequirePermission('task', 'update')
   @ApiOperation({
     summary: 'Start automation with live view',
     description:
@@ -274,6 +282,7 @@ export class BrowserbaseController {
   }
 
   @Post('automations/:automationId/execute')
+  @RequirePermission('task', 'update')
   @ApiOperation({
     summary: 'Execute automation on existing session',
     description: 'Runs the automation on a pre-created session',
@@ -302,6 +311,7 @@ export class BrowserbaseController {
   }
 
   @Post('automations/:automationId/run')
+  @RequirePermission('task', 'update')
   @ApiOperation({
     summary: 'Run a browser automation',
     description: 'Executes the automation and returns the result',
@@ -325,6 +335,7 @@ export class BrowserbaseController {
   // ===== Run History =====
 
   @Get('automations/:automationId/runs')
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get run history for an automation',
   })
@@ -343,6 +354,7 @@ export class BrowserbaseController {
   }
 
   @Get('runs/:runId')
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get a specific run by ID',
   })

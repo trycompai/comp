@@ -1,5 +1,9 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
+import {
+  filterGoogleWorkspaceUsersForChecks,
+  parseGoogleWorkspaceCheckUserFilter,
+} from '../check-user-filter';
 import type { GoogleWorkspaceUser, GoogleWorkspaceUsersResponse } from '../types';
 import { includeSuspendedVariable, targetOrgUnitsVariable } from '../variables';
 
@@ -17,8 +21,7 @@ export const twoFactorAuthCheck: IntegrationCheck = {
   run: async (ctx: CheckContext) => {
     ctx.log('Starting Google Workspace 2FA check');
 
-    const targetOrgUnits = ctx.variables.target_org_units as string[] | undefined;
-    const includeSuspended = ctx.variables.include_suspended === 'true';
+    const userFilterConfig = parseGoogleWorkspaceCheckUserFilter(ctx.variables);
 
     // Fetch all users with pagination
     const allUsers: GoogleWorkspaceUser[] = [];
@@ -48,27 +51,20 @@ export const twoFactorAuthCheck: IntegrationCheck = {
 
     ctx.log(`Fetched ${allUsers.length} total users`);
 
-    // Filter users based on settings
-    const usersToCheck = allUsers.filter((user) => {
-      // Skip suspended users unless explicitly included
-      if (user.suspended && !includeSuspended) {
-        return false;
+    if (userFilterConfig.targetOrgUnits?.length) {
+      const ouCounts = new Map<string, number>();
+      for (const user of allUsers) {
+        const ou = user.orgUnitPath ?? '/';
+        ouCounts.set(ou, (ouCounts.get(ou) ?? 0) + 1);
       }
+      ctx.log(
+        `Filtering to OUs: ${userFilterConfig.targetOrgUnits.join(', ')}. ` +
+          `User OUs: ${[...ouCounts.entries()].map(([ou, count]) => `${ou} (${count})`).join(', ')}`,
+      );
+    }
 
-      // Skip archived users
-      if (user.archived) {
-        return false;
-      }
-
-      // Filter by org unit if specified
-      if (targetOrgUnits && targetOrgUnits.length > 0) {
-        return targetOrgUnits.some(
-          (ou) => user.orgUnitPath === ou || user.orgUnitPath.startsWith(`${ou}/`),
-        );
-      }
-
-      return true;
-    });
+    // Org units + sync email filter — same rules as employee sync (sync.controller.ts)
+    const usersToCheck = filterGoogleWorkspaceUsersForChecks(allUsers, userFilterConfig);
 
     ctx.log(`Checking ${usersToCheck.length} users after filtering`);
 

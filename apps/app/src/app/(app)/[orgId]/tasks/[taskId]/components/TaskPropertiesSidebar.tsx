@@ -1,17 +1,29 @@
 'use client';
 
+import { SelectAssignee } from '@/components/SelectAssignee';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
+import { usePermissions } from '@/hooks/use-permissions';
 import type { Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
 import { format } from 'date-fns';
-import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
+import {
+  Grid,
+  Input,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Label,
+  Section,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  Stack,
+  Text,
+} from '@trycompai/design-system';
+import { Calendar } from 'lucide-react';
 import { useTask } from '../hooks/use-task';
-import { PropertySelector } from './PropertySelector';
-import { DEPARTMENT_COLORS, taskDepartments, taskFrequencies, taskStatuses } from './constants';
+import { taskStatuses, taskFrequencies, taskDepartments } from './constants';
 
 interface TaskPropertiesSidebarProps {
   handleUpdateTask: (
@@ -29,333 +41,134 @@ export function TaskPropertiesSidebar({
   const { orgId } = useParams<{ orgId: string }>();
   const { task, isLoading } = useTask();
   const { members } = useOrganizationMembers();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('task', 'update');
 
-  const assignedMember =
-    !task?.assigneeId || !members ? null : members.find((m) => m.id === task.assigneeId);
+  if (isLoading || !task) return null;
 
-  const approverMember =
-    !task?.approverId || !members ? null : members.find((m) => m.id === task.approverId);
-
-  if (isLoading) return <div>Loading...</div>;
-  if (!task) return null;
-
-  // Lock status changes when task is in review and approval is enabled
   const isStatusLocked = evidenceApprovalEnabled && task.status === 'in_review';
 
   const handleStatusChange = (selectedStatus: string | null) => {
-    if (!selectedStatus) return;
-
-    // Prevent manual status changes when task is pending approval
+    if (!selectedStatus || selectedStatus === 'none') return;
     if (isStatusLocked) return;
-
-    // Intercept "done" status when evidence approval is enabled
     if (evidenceApprovalEnabled && selectedStatus === 'done' && onRequestApproval) {
       onRequestApproval();
       return;
     }
-
-    handleUpdateTask({
-      status: selectedStatus as TaskStatus,
-      reviewDate: selectedStatus === 'done' ? new Date() : task.reviewDate,
-    });
+    handleUpdateTask({ status: selectedStatus as TaskStatus });
   };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Properties</h3>
+    <Section title="Evidence Settings">
+      <Stack gap="md">
+        <Grid cols={{ base: '1', md: '2' }} gap="4">
+          {/* Status */}
+          <Stack gap="sm">
+            <Label>Status</Label>
+            <Select
+              value={task.status}
+              onValueChange={handleStatusChange}
+              disabled={!canUpdate || isStatusLocked}
+            >
+              <SelectTrigger>
+                <span className="capitalize">{task.status.replace('_', ' ')}</span>
+              </SelectTrigger>
+              <SelectContent>
+                {taskStatuses.filter((s) => s !== 'in_review').map((status) => (
+                  <SelectItem key={status} value={status}>
+                    <span className="capitalize">{status.replace('_', ' ')}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Stack>
 
-      <div className="space-y-3">
-        {/* Status Selector */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Status</span>
-          <PropertySelector<TaskStatus>
-            value={task.status}
-            options={taskStatuses.filter((s) => s !== 'in_review')}
-            getKey={(status) => status}
-            renderOption={(status) => (
-              <div className="flex items-center gap-2">
-                <TaskStatusIndicator status={status} />
-                <span className="capitalize">{status.replace('_', ' ')}</span>
-              </div>
-            )}
-            onSelect={handleStatusChange}
-            trigger={
-              <Button
-                variant="ghost"
-                className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center gap-2 px-2 py-0.5 font-medium capitalize transition-colors cursor-pointer"
-                disabled={isStatusLocked}
-              >
-                <TaskStatusIndicator status={task.status} />
-                {task.status.replace('_', ' ')}
-              </Button>
-            }
-            searchPlaceholder="Change status..."
-            emptyText="No status found."
-            contentWidth="w-48"
-            disabled={isStatusLocked}
-          />
-        </div>
-
-        {/* Assignee Selector */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Assignee</span>
-          <PropertySelector<Member & { user: User }>
-            value={task.assigneeId}
-            options={members ?? []}
-            getKey={(member) => member.id}
-            getSearchValue={(member) => `${member.user?.name || ''} ${member.user?.email || ''}`.trim() || member.id}
-            renderOption={(member) => (
-              <div className="flex items-center gap-2 w-full">
-                <Avatar className="h-5 w-5 shrink-0">
-                  {member.user?.image && (
-                    <AvatarImage src={member.user.image} alt={member.user.name ?? member.user.email ?? ''} />
-                  )}
-                  <AvatarFallback>
-                    {member.user?.name?.charAt(0) ?? member.user?.email?.charAt(0)?.toUpperCase() ?? '?'}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="truncate">{member.user.name || member.user.email}</span>
-              </div>
-            )}
-            onSelect={(selectedAssigneeId) => {
-              handleUpdateTask({
-                assigneeId: selectedAssigneeId === null ? null : selectedAssigneeId,
-              });
-            }}
-            trigger={
-              <Button
-                variant="ghost"
-                className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center justify-end gap-1.5 px-2 py-0.5 transition-colors cursor-pointer"
-                disabled={members?.length === 0}
-              >
-                {assignedMember ? (
-                  <>
-                    <Avatar className="h-4 w-4">
-                      {assignedMember.user?.image && (
-                        <AvatarImage
-                          src={assignedMember.user.image}
-                          alt={assignedMember.user.name ?? assignedMember.user.email ?? ''}
-                        />
-                      )}
-                      <AvatarFallback className="text-[10px]">
-                        {assignedMember.user?.name?.charAt(0) ?? assignedMember.user?.email?.charAt(0)?.toUpperCase() ?? '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{assignedMember.user.name || assignedMember.user.email}</span>
-                  </>
-                ) : (
-                  <span className="font-medium">Unassigned</span>
-                )}
-              </Button>
-            }
-            searchPlaceholder="Change assignee..."
-            emptyText="No member found."
-            contentWidth="w-64"
-            disabled={members?.length === 0}
-            allowUnassign={true}
-            showCheck={false}
-          />
-        </div>
-
-        {/* Approver Selector (visible when evidence approval is enabled) */}
-        {evidenceApprovalEnabled && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Approver</span>
-            <PropertySelector<Member & { user: User }>
-              value={task.approverId}
-              options={members ?? []}
-              getKey={(member) => member.id}
-              getSearchValue={(member) => `${member.user?.name || ''} ${member.user?.email || ''}`.trim() || member.id}
-              renderOption={(member) => (
-                <div className="flex items-center gap-2 w-full">
-                  <Avatar className="h-5 w-5 shrink-0">
-                    {member.user?.image && (
-                      <AvatarImage src={member.user.image} alt={member.user.name ?? member.user.email ?? ''} />
-                    )}
-                    <AvatarFallback>
-                      {member.user?.name?.charAt(0) ?? member.user?.email?.charAt(0)?.toUpperCase() ?? '?'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="truncate">{member.user.name || member.user.email}</span>
-                </div>
-              )}
-              onSelect={(selectedApproverId) => {
-                handleUpdateTask({
-                  approverId: selectedApproverId === null ? null : selectedApproverId,
-                });
-              }}
-              trigger={
-                <Button
-                  variant="ghost"
-                  className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center justify-end gap-1.5 px-2 py-0.5 transition-colors cursor-pointer"
-                  disabled={members?.length === 0}
-                >
-                  {approverMember ? (
-                    <>
-                      <Avatar className="h-4 w-4">
-                        {approverMember.user?.image && (
-                          <AvatarImage
-                            src={approverMember.user.image}
-                            alt={approverMember.user.name ?? approverMember.user.email ?? ''}
-                          />
-                        )}
-                        <AvatarFallback className="text-[10px]">
-                          {approverMember.user?.name?.charAt(0) ?? approverMember.user?.email?.charAt(0)?.toUpperCase() ?? '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{approverMember.user.name || approverMember.user.email}</span>
-                    </>
-                  ) : (
-                    <span className="font-medium">Unassigned</span>
-                  )}
-                </Button>
-              }
-              searchPlaceholder="Change approver..."
-              emptyText="No member found."
-              contentWidth="w-64"
-              disabled={members?.length === 0}
-              allowUnassign={true}
-              showCheck={false}
+          {/* Assignee */}
+          <Stack gap="sm">
+            <Label>Assignee</Label>
+            <SelectAssignee
+              assignees={members ?? []}
+              assigneeId={task.assigneeId ?? ''}
+              onAssigneeChange={(id) => handleUpdateTask({ assigneeId: id || null })}
+              withTitle={false}
             />
-          </div>
-        )}
+          </Stack>
 
-        {/* Frequency Selector */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Frequency</span>
-          <PropertySelector<TaskFrequency>
-            value={task.frequency}
-            options={taskFrequencies}
-            getKey={(freq) => freq}
-            renderOption={(freq) => <span className="capitalize">{freq.replace('_', ' ')}</span>}
-            onSelect={(selectedFreq) => {
-              handleUpdateTask({
-                frequency: selectedFreq === null ? null : (selectedFreq as TaskFrequency),
-              });
-            }}
-            trigger={
-              <Button
-                variant="ghost"
-                className="hover:bg-muted data-[state=open]:bg-muted h-auto w-auto px-2 py-0.5 font-medium capitalize transition-colors cursor-pointer"
-              >
-                {task.frequency ? task.frequency.replace('_', ' ') : 'None'}
-              </Button>
-            }
-            searchPlaceholder="Change frequency..."
-            emptyText="No frequency found."
-            contentWidth="w-48"
-            allowUnassign={true}
-            unassignLabel="None"
-          />
-        </div>
+          {/* Frequency */}
+          <Stack gap="sm">
+            <Label>Frequency</Label>
+            <Select
+              value={task.frequency || 'none'}
+              onValueChange={(value) => handleUpdateTask({ frequency: (value === 'none' ? null : value) as TaskFrequency | null })}
+              disabled={!canUpdate}
+            >
+              <SelectTrigger>
+                <span className="capitalize">{task.frequency ? task.frequency.replace('_', ' ') : 'None'}</span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {taskFrequencies.map((freq) => (
+                  <SelectItem key={freq} value={freq}>
+                    <span className="capitalize">{freq.replace('_', ' ')}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Stack>
 
-        {/* Department Selector */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Department</span>
-          <PropertySelector<Departments>
-            value={task.department ?? 'none'}
-            options={taskDepartments}
-            getKey={(dept) => dept}
-            renderOption={(dept) => {
-              if (dept === 'none') {
-                return <span className="text-muted-foreground">None</span>;
-              }
-              const mainColor = DEPARTMENT_COLORS[dept] ?? DEPARTMENT_COLORS.none;
-              const lightBgColor = `${mainColor}1A`;
-              return (
-                <Badge
-                  className="border-l-2 px-1.5 py-0 text-xs font-normal uppercase"
-                  style={{
-                    backgroundColor: lightBgColor,
-                    color: mainColor,
-                    borderLeftColor: mainColor,
-                  }}
-                >
-                  {dept}
-                </Badge>
-              );
-            }}
-            onSelect={(selectedDept) => {
-              handleUpdateTask({
-                department: selectedDept as Departments,
-              });
-            }}
-            trigger={
-              <Button
-                variant="ghost"
-                className="flex h-auto w-auto items-center justify-end gap-1.5 px-2 py-0.5 hover:bg-muted data-[state=open]:bg-muted transition-colors cursor-pointer"
-              >
-                {(() => {
-                  const currentDept = task.department ?? 'none';
-                  if (currentDept === 'none') {
-                    return <span className="font-medium">None</span>;
-                  }
-                  const mainColor = DEPARTMENT_COLORS[currentDept] ?? DEPARTMENT_COLORS.none;
-                  const lightBgColor = `${mainColor}1A`;
-                  return (
-                    <Badge
-                      className="border-l-2 px-1.5 py-0 text-xs font-normal uppercase"
-                      style={{
-                        backgroundColor: lightBgColor,
-                        color: mainColor,
-                        borderLeftColor: mainColor,
-                      }}
-                    >
-                      {currentDept}
-                    </Badge>
-                  );
-                })()}
-              </Button>
-            }
-            searchPlaceholder="Change department..."
-            emptyText="No department found."
-            contentWidth="w-48"
-          />
-        </div>
+          {/* Department */}
+          <Stack gap="sm">
+            <Label>Department</Label>
+            <Select
+              value={task.department || 'none'}
+              onValueChange={(value) => handleUpdateTask({ department: (value === 'none' ? null : value) as Departments | null })}
+              disabled={!canUpdate}
+            >
+              <SelectTrigger>
+                {task.department ? task.department.toUpperCase() : 'None'}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {taskDepartments.filter((d) => d !== 'none').map((dept) => (
+                  <SelectItem key={dept} value={dept}>
+                    {dept.toUpperCase()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Stack>
 
-        {/* Control */}
-        {task.controls && task.controls.length > 0 && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Control</span>
-            <div className="flex flex-col items-end gap-1">
-              {task.controls.map((control) => (
-                <Link
-                  key={control.id}
-                  href={`/${orgId}/controls/${control.id}`}
-                  className="inline-flex items-center px-2 py-1 text-xs bg-muted rounded hover:bg-muted/80 transition-colors max-w-[200px] truncate"
-                  title={control.name}
-                >
-                  {control.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+          {/* Review Date */}
+          <Stack gap="sm">
+            <Label>Review Date</Label>
+            <InputGroup>
+              <InputGroupInput
+                type="text"
+                value={task.reviewDate ? format(new Date(task.reviewDate), 'M/d/yyyy') : ''}
+                placeholder="Not set"
+                disabled
+                readOnly
+              />
+              <InputGroupAddon align="inline-end">
+                <Calendar size={16} />
+              </InputGroupAddon>
+            </InputGroup>
+          </Stack>
 
-        {/* Review Date */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Review Date</span>
-          <div className="flex items-center gap-2">
-            {task.reviewDate ? (
-              <span className="text-sm font-medium">
-                {format(new Date(task.reviewDate), 'M/d/yyyy')}
-              </span>
-            ) : (
-              <span className="text-sm px-2 font-medium">None</span>
-            )}
-          </div>
-        </div>
-
-        {/* Approved At - shown when task has been approved */}
-        {task.approvedAt && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Approved At</span>
-            <span className="text-sm font-medium">
-              {format(new Date(task.approvedAt), 'M/d/yyyy')}
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
+          {/* Approver */}
+          {evidenceApprovalEnabled && (
+            <Stack gap="sm">
+              <Label>Approver</Label>
+              <SelectAssignee
+                assignees={members ?? []}
+                assigneeId={task.approverId ?? ''}
+                onAssigneeChange={(id) => handleUpdateTask({ approverId: id || null })}
+                withTitle={false}
+              />
+            </Stack>
+          )}
+        </Grid>
+      </Stack>
+    </Section>
   );
 }

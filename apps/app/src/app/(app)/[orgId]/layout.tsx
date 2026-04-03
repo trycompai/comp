@@ -1,24 +1,18 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
-import { getOrganizations } from '@/data/getOrganizations';
+import { serverApi } from '@/lib/api-server';
+import { canAccessApp, parseRolesString } from '@/lib/permissions';
+import { resolveUserPermissions } from '@/lib/permissions.server';
+import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { db, Role } from '@db';
+import { db, Role } from '@db/server';
 import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppShellWrapper } from './components/AppShellWrapper';
-
-// Helper to safely parse comma-separated roles string
-function parseRolesString(rolesStr: string | null | undefined): Role[] {
-  if (!rolesStr) return [];
-  return rolesStr
-    .split(',')
-    .map((r) => r.trim())
-    .filter((r) => r in Role) as Role[];
-}
 
 const HotKeys = dynamic(() => import('@/components/hot-keys').then((mod) => mod.HotKeys), {
   ssr: true,
@@ -73,39 +67,42 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
-  // Sync activeOrganizationId BEFORE any redirects that might use it
-  // This ensures session.activeOrganizationId is always correct for users with multiple orgs
+  // Sync activeOrganizationId if it doesn't match the URL's orgId.
+  // Uses better-auth's API so both server and client-side session state stay in sync.
   const currentActiveOrgId = session.session.activeOrganizationId;
   if (!currentActiveOrgId || currentActiveOrgId !== requestedOrgId) {
     try {
       await auth.api.setActiveOrganization({
         headers: requestHeaders,
-        body: {
-          organizationId: requestedOrgId,
-        },
+        body: { organizationId: requestedOrgId },
       });
     } catch (error) {
       console.error('[Layout] Failed to sync activeOrganizationId:', error);
-      // Continue anyway - the URL params are the source of truth for this request
     }
   }
 
-  const roles = parseRolesString(member.role);
-  const hasAccess =
-    roles.includes(Role.owner) || roles.includes(Role.admin) || roles.includes(Role.auditor);
+  // Resolve effective permissions from all roles (built-in + custom)
+  const permissions = await resolveUserPermissions(member.role, requestedOrgId);
 
-  if (!hasAccess) {
+  // Check if user can access the main app (has app:read or any app route permission)
+  const hasAppAccess = canAccessApp(permissions);
+  if (!hasAppAccess) {
     return redirect('/no-access');
   }
 
-  // If this org is not accessible on current plan, redirect to upgrade
-  if (!organization.hasAccess) {
-    return redirect(`/upgrade/${organization.id}`);
-  }
+  // Parse roles for UI display purposes (auditor-specific UI)
+  const roles = parseRolesString(member.role);
 
-  // If onboarding is required and user isn't already on onboarding, redirect
-  if (!organization.onboardingCompleted) {
-    return redirect(`/onboarding/${organization.id}`);
+  const isUserAdmin = session.user.role === 'admin';
+
+  if (!isUserAdmin) {
+    if (!organization.hasAccess) {
+      return redirect(`/upgrade/${organization.id}`);
+    }
+
+    if (!organization.onboardingCompleted) {
+      return redirect(`/onboarding/${organization.id}`);
+    }
   }
 
   const onboarding = await db.onboarding.findFirst({
@@ -114,8 +111,9 @@ export default async function Layout({
     },
   });
 
-  // Fetch organizations and feature flags for sidebar
-  const { organizations } = await getOrganizations();
+  // Fetch organizations for sidebar via API
+  const meRes = await serverApi.get<{ organizations: OrganizationFromMe[] }>('/v1/auth/me');
+  const organizations = meRes.data?.organizations ?? [];
 
   // Generate logo URLs for all organizations
   const logoUrls: Record<string, string> = {};
@@ -150,7 +148,8 @@ export default async function Layout({
     isWebAutomationsEnabled =
       flags['is-web-automations-enabled'] === true ||
       flags['is-web-automations-enabled'] === 'true';
-    isSecurityEnabled = flags['is-security-enabled'] === true || flags['is-security-enabled'] === 'true';
+    isSecurityEnabled =
+      flags['is-security-enabled'] === true || flags['is-security-enabled'] === 'true';
   }
 
   // Check auditor role
@@ -161,7 +160,7 @@ export default async function Layout({
   const user = {
     name: session.user.name,
     email: session.user.email,
-    image: session.user.image,
+    image: session.user.image ?? null,
   };
 
   return (
@@ -181,7 +180,9 @@ export default async function Layout({
         isSecurityEnabled={isSecurityEnabled}
         hasAuditorRole={hasAuditorRole}
         isOnlyAuditor={isOnlyAuditor}
+        permissions={permissions}
         user={user}
+        isAdmin={isUserAdmin}
       >
         {children}
       </AppShellWrapper>

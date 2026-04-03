@@ -8,7 +8,6 @@ import {
 } from '@/app/(app)/[orgId]/documents/forms';
 import { api } from '@/lib/api-client';
 import { useActiveMember } from '@/utils/auth-client';
-import { jwtManager } from '@/utils/jwt-manager';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -32,12 +31,17 @@ import {
   InputGroupAddon,
   InputGroupInput,
   PageHeader,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   Text,
 } from '@trycompai/design-system';
 import {
@@ -56,9 +60,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR, { useSWRConfig } from 'swr';
@@ -129,7 +133,7 @@ async function evidenceFormFetcher([endpoint, orgId]: readonly [
   string,
   string,
 ]): Promise<EvidenceFormResponse> {
-  const response = await api.get<EvidenceFormResponse>(endpoint, orgId);
+  const response = await api.get<EvidenceFormResponse>(endpoint);
   if (response.error || !response.data) {
     throw new Error(response.error ?? 'Failed to load submissions');
   }
@@ -141,13 +145,15 @@ async function evidenceFormFetcher([endpoint, orgId]: readonly [
 export function CompanyFormPageClient({
   organizationId,
   formType,
-  isPlatformAdmin,
+  isPlatformAdmin = false,
 }: {
   organizationId: string;
   formType: EvidenceFormType;
-  isPlatformAdmin: boolean;
+  isPlatformAdmin?: boolean;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'submissions';
   const { mutate: globalMutate } = useSWRConfig();
   const [search, setSearch] = useState('');
   const [isExporting, setIsExporting] = useState(false);
@@ -243,25 +249,13 @@ export function CompanyFormPageClient({
 
     setIsExporting(true);
     try {
-      const token = await jwtManager.getValidToken();
-      if (!token) {
-        throw new Error('Authentication failed');
-      }
-
       const exportTypes = isMeeting ? MEETING_SUB_TYPES : [formType];
       const results: { blob: Blob; exportType: string }[] = [];
 
       for (const exportType of exportTypes) {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333'}/v1/evidence-forms/${exportType}/export.csv`,
-          {
-            method: 'GET',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'X-Organization-Id': organizationId,
-            },
-            credentials: 'include',
-          },
+        const response = await api.raw(
+          `/v1/evidence-forms/${exportType}/export.csv`,
+          { method: 'GET', organizationId },
         );
 
         if (response.status === 400) {
@@ -312,7 +306,6 @@ export function CompanyFormPageClient({
           fileType: selectedFile.type || 'application/octet-stream',
           fileData,
         },
-        organizationId,
       );
 
       if (response.error) {
@@ -411,178 +404,185 @@ export function CompanyFormPageClient({
         </Text>
       </div>
 
-      {/* ─── Submissions List ─── */}
-      <div className="space-y-3">
-        <div className="w-full md:max-w-[300px]">
-          <InputGroup>
-            <InputGroupAddon>
-              <Search size={16} />
-            </InputGroupAddon>
-            <InputGroupInput
-              placeholder="Search submissions..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </InputGroup>
-        </div>
+      <Tabs defaultValue={defaultTab}>
+        <Stack gap="lg">
+          <TabsList variant="underline">
+            <TabsTrigger value="submissions">Submissions</TabsTrigger>
+            <TabsTrigger value="findings">Findings</TabsTrigger>
+          </TabsList>
 
-        {isLoading ? (
-          <Empty>
-            <EmptyMedia variant="icon">
-              <Catalog />
-            </EmptyMedia>
-            <EmptyHeader>
-              <EmptyTitle>No submissions yet</EmptyTitle>
-              <EmptyDescription>
-                Start by creating a new submission, click the New Submission button above.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : !data || data.submissions.length === 0 ? (
-          <Empty>
-            <EmptyMedia variant="icon">
-              <Catalog />
-            </EmptyMedia>
-            <EmptyHeader>
-              <EmptyTitle>No submissions yet</EmptyTitle>
-              <EmptyDescription>
-                Start by creating a new submission, click the New Submission button above.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : (
-          <Table variant="bordered" style={{ tableLayout: 'fixed' }}>
-            <colgroup>
-              <col style={{ width: submissionDateColumnWidth }} />
-              {isMeeting && <col style={{ width: meetingTypeColumnWidth }} />}
-              <col style={{ width: submittedByColumnWidth }} />
-              {formType === 'access-request' && <col style={{ width: statusColumnWidth }} />}
-              {showSummaryColumn && <col style={{ width: summaryColumnWidth }} />}
-              {isAdminOrOwner && <col style={{ width: actionsColumnWidth }} />}
-            </colgroup>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <div className="whitespace-nowrap">Submission Date</div>
-                </TableHead>
-                {isMeeting && (
-                  <TableHead>
-                    <div className="whitespace-nowrap">Meeting Type</div>
-                  </TableHead>
-                )}
-                <TableHead>
-                  <div className="whitespace-nowrap">Submitted By</div>
-                </TableHead>
-                {formType === 'access-request' && (
-                  <TableHead>
-                    <div className="whitespace-nowrap">Status</div>
-                  </TableHead>
-                )}
-                {showSummaryColumn && <TableHead>Summary</TableHead>}
-                {isAdminOrOwner && (
-                  <TableHead>
-                    <div className="whitespace-nowrap">Actions</div>
-                  </TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.submissions.map((submission) => {
-                const summaryValue = summaryField
-                  ? String(submission.data[summaryField.key] ?? '')
-                  : '';
-                const matrixSummary = matrixSummaryField
-                  ? `${getMatrixRowCount(submission.data[matrixSummaryField.key])} row(s)`
-                  : '';
-                const rowSummary = summaryField ? truncate(summaryValue, 80) : matrixSummary;
+          <TabsContent value="submissions">
+          <div className="space-y-3">
+            <div className="w-full md:max-w-[300px]">
+              <InputGroup>
+                <InputGroupAddon>
+                  <Search size={16} />
+                </InputGroupAddon>
+                <InputGroupInput
+                  placeholder="Search submissions..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </InputGroup>
+            </div>
 
-                const submissionFormType = submission.formType ?? formType;
-
-                return (
-                  <TableRow
-                    key={submission.id}
-                    onClick={() =>
-                      router.push(
-                        `/${organizationId}/documents/${submissionFormType}/submissions/${submission.id}`,
-                      )
-                    }
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <TableCell>
-                      <div className="whitespace-nowrap">
-                        {formatSubmissionDate(
-                          submission.data.submissionDate,
-                          submission.submittedAt,
-                        )}
-                      </div>
-                    </TableCell>
+            {isLoading ? (
+              <Empty>
+                <EmptyMedia variant="icon">
+                  <Catalog />
+                </EmptyMedia>
+                <EmptyHeader>
+                  <EmptyTitle>No submissions yet</EmptyTitle>
+                  <EmptyDescription>
+                    Start by creating a new submission, click the New Submission button above.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : !data || data.submissions.length === 0 ? (
+              <Empty>
+                <EmptyMedia variant="icon">
+                  <Catalog />
+                </EmptyMedia>
+                <EmptyHeader>
+                  <EmptyTitle>No submissions yet</EmptyTitle>
+                  <EmptyDescription>
+                    Start by creating a new submission, click the New Submission button above.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <Table variant="bordered" style={{ tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: submissionDateColumnWidth }} />
+                  {isMeeting && <col style={{ width: meetingTypeColumnWidth }} />}
+                  <col style={{ width: submittedByColumnWidth }} />
+                  {formType === 'access-request' && <col style={{ width: statusColumnWidth }} />}
+                  {showSummaryColumn && <col style={{ width: summaryColumnWidth }} />}
+                  {isAdminOrOwner && <col style={{ width: actionsColumnWidth }} />}
+                </colgroup>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>
+                      <div className="whitespace-nowrap">Submission Date</div>
+                    </TableHead>
                     {isMeeting && (
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {MEETING_TYPE_LABELS[submissionFormType] ?? submissionFormType}
-                        </Badge>
-                      </TableCell>
+                      <TableHead>
+                        <div className="whitespace-nowrap">Meeting Type</div>
+                      </TableHead>
                     )}
-                    <TableCell>
-                      <span className="block truncate">
-                        {submission.submittedBy?.name ?? submission.submittedBy?.email ?? 'Unknown'}
-                      </span>
-                    </TableCell>
+                    <TableHead>
+                      <div className="whitespace-nowrap">Submitted By</div>
+                    </TableHead>
                     {formType === 'access-request' && (
-                      <TableCell>
-                        <div>
-                          <StatusBadge status={submission.status} />
-                        </div>
-                      </TableCell>
+                      <TableHead>
+                        <div className="whitespace-nowrap">Status</div>
+                      </TableHead>
                     )}
-                    {showSummaryColumn && (
-                      <TableCell>
-                        <span className="block truncate text-muted-foreground">
-                          {rowSummary || '—'}
-                        </span>
-                      </TableCell>
-                    )}
+                    {showSummaryColumn && <TableHead>Summary</TableHead>}
                     {isAdminOrOwner && (
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger
-                              variant="ellipsis"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <OverflowMenuVertical />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSubmissionToDelete(submission);
-                                  setDeleteDialogOpen(true);
-                                }}
-                              >
-                                <TrashCan size={16} />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
+                      <TableHead>
+                        <div className="whitespace-nowrap">Actions</div>
+                      </TableHead>
                     )}
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+                </TableHeader>
+                <TableBody>
+                  {data.submissions.map((submission) => {
+                    const summaryValue = summaryField
+                      ? String(submission.data[summaryField.key] ?? '')
+                      : '';
+                    const matrixSummary = matrixSummaryField
+                      ? `${getMatrixRowCount(submission.data[matrixSummaryField.key])} row(s)`
+                      : '';
+                    const rowSummary = summaryField ? truncate(summaryValue, 80) : matrixSummary;
 
-      <DocumentFindingsSection
-        formType={formType}
-        isAuditor={isAuditor}
-        isPlatformAdmin={isPlatformAdmin}
-        isAdminOrOwner={isAdminOrOwner}
-      />
+                    const submissionFormType = submission.formType ?? formType;
+
+                    return (
+                      <TableRow
+                        key={submission.id}
+                        onClick={() =>
+                          router.push(
+                            `/${organizationId}/documents/${submissionFormType}/submissions/${submission.id}`,
+                          )
+                        }
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <TableCell>
+                          <div className="whitespace-nowrap">
+                            {formatSubmissionDate(
+                              submission.data.submissionDate,
+                              submission.submittedAt,
+                            )}
+                          </div>
+                        </TableCell>
+                        {isMeeting && (
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {MEETING_TYPE_LABELS[submissionFormType] ?? submissionFormType}
+                            </Badge>
+                          </TableCell>
+                        )}
+                        <TableCell>
+                          <span className="block truncate">
+                            {submission.submittedBy?.name ?? submission.submittedBy?.email ?? 'Unknown'}
+                          </span>
+                        </TableCell>
+                        {formType === 'access-request' && (
+                          <TableCell>
+                            <div>
+                              <StatusBadge status={submission.status} />
+                            </div>
+                          </TableCell>
+                        )}
+                        {showSummaryColumn && (
+                          <TableCell>
+                            <span className="block truncate text-muted-foreground">
+                              {rowSummary || '—'}
+                            </span>
+                          </TableCell>
+                        )}
+                        {isAdminOrOwner && (
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <div className="flex justify-center">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger
+                                  variant="ellipsis"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <OverflowMenuVertical />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    variant="destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSubmissionToDelete(submission);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    <TrashCan size={16} />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+          </TabsContent>
+
+          <TabsContent value="findings">
+            <DocumentFindingsSection formType={formType} isPlatformAdmin={isPlatformAdmin} />
+          </TabsContent>
+        </Stack>
+      </Tabs>
 
       <Dialog
         open={isUploadOpen}

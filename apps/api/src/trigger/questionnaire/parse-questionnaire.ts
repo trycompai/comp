@@ -239,12 +239,14 @@ export const parseQuestionnaireTask = task({
   retry: {
     maxAttempts: 2,
   },
+  maxDuration: 60 * 30, // 30 minutes (in seconds) for large PDF questionnaires
   run: async (payload: {
     inputType: 'file' | 'url' | 'attachment' | 's3';
     organizationId: string;
     fileData?: string;
     fileName?: string;
     fileType?: string;
+    fileSize?: number;
     url?: string;
     attachmentId?: string;
     s3Key?: string;
@@ -342,9 +344,10 @@ export const parseQuestionnaireTask = task({
           'questionnaire';
         const s3Key = payload.s3Key || '';
         const fileType = payload.fileType || 'application/octet-stream';
-        const fileSize = payload.fileData
-          ? Buffer.from(payload.fileData, 'base64').length
-          : 0;
+        const fileSize = payload.fileSize
+          ?? (payload.fileData
+            ? Buffer.from(payload.fileData, 'base64').length
+            : 0);
 
         const questionnaire = await db.questionnaire.create({
           data: {

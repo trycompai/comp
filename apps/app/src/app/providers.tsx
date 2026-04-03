@@ -1,9 +1,8 @@
 'use client';
 
-import { JwtTokenManager } from '@/components/auth/jwt-token-manager';
 import { env } from '@/env.mjs';
-import { AnalyticsProvider } from '@comp/analytics';
-import { Toaster } from '@comp/ui/sooner';
+import { AnalyticsProvider } from '@trycompai/analytics';
+import { Toaster } from '@trycompai/ui/sooner';
 import { GoogleTagManager } from '@next/third-parties/google';
 import {
   defaultShouldDehydrateQuery,
@@ -86,7 +85,6 @@ export function Providers({ children, session }: ProviderProps) {
           userId={session?.user?.id ?? undefined}
           userEmail={session?.user?.email ?? undefined}
         >
-          <JwtTokenManager />
           {children}
           <Toaster richColors />
         </AnalyticsProvider>

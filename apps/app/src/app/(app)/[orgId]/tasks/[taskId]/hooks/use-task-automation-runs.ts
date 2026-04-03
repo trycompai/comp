@@ -34,7 +34,6 @@ export function useTaskAutomationRuns({
     async () => {
       const response = await api.get<AutomationRunWithName[]>(
         `/v1/tasks/${taskId}/automations/runs`,
-        orgId,
       );
 
       if (response.error) {

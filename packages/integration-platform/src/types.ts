@@ -654,7 +654,7 @@ export interface IntegrationCheck {
    * Use TASK_TEMPLATES helper for autocomplete.
    *
    * @example
-   * import { TASK_TEMPLATES } from '@comp/integration-platform';
+   * import { TASK_TEMPLATES } from '@trycompai/integration-platform';
    * taskMapping: TASK_TEMPLATES.codeChanges, // Branch protection
    * taskMapping: TASK_TEMPLATES.secureCode,  // Dependabot
    */
@@ -846,4 +846,13 @@ export interface IntegrationRegistry {
 
   /** Get handler for integration */
   getHandler(id: string): IntegrationHandler | undefined;
+
+  /** Register a dynamic (DB-loaded) manifest. Code manifests cannot be overridden. */
+  registerDynamic(manifest: IntegrationManifest): void;
+
+  /** Remove a dynamic manifest. Code manifests cannot be removed. */
+  unregisterDynamic(id: string): void;
+
+  /** Replace all dynamic manifests at once. Code manifests are preserved. */
+  refreshDynamic(manifests: IntegrationManifest[]): void;
 }

@@ -39,12 +39,13 @@ jobs:
         working-directory: ./packages/integration-platform
         run: bun run build
 
-      - name: Copy schema to app and generate client
-        working-directory: ./apps/app
+      - name: Generate Prisma clients
         run: |
-          mkdir -p prisma
-          cp ../../packages/db/dist/schema.prisma prisma/schema.prisma
-          bunx prisma generate
+          cd packages/db && node scripts/generate-prisma-client-js.js
+          cd ../..
+          cd apps/app && mkdir -p prisma/schema
+          find ../../packages/db/prisma/schema -name '*.prisma' ! -name 'schema.prisma' -exec cp {} prisma/schema/ \;
+          bunx prisma generate --schema=prisma/schema
 
       - name: 🚀 Deploy Trigger.dev
         working-directory: ./apps/app
@@ -54,4 +55,4 @@ jobs:
           VERCEL_ACCESS_TOKEN: ${{ secrets.VERCEL_ACCESS_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
-        run: bunx trigger.dev@4.0.6 deploy
+        run: bunx trigger.dev@4.4.3 deploy

@@ -3,7 +3,7 @@
 import { auth } from '@/app/lib/auth';
 import { getFleetInstance } from '@/utils/fleet';
 import type { FleetPolicyResult, Member } from '@db';
-import { db } from '@db';
+import { db } from '@db/server';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -57,8 +57,8 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
   // Fleet policies - only fetch if member has a fleet device label
   const fleetData = await getFleetPolicies(member);
 
-  // Device agent device - fetch from DB
-  const agentDevice = await db.device.findFirst({
+  // Device agent devices - fetch all for this member
+  const agentDevices = await db.device.findMany({
     where: {
       memberId: member.id,
       organizationId: orgId,
@@ -75,7 +75,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
         member={member}
         fleetPolicies={fleetData.fleetPolicies}
         host={fleetData.device}
-        agentDevice={agentDevice}
+        agentDevices={agentDevices}
       />
     </PageLayout>
   );

@@ -1,8 +1,8 @@
 'use client';
 
-import { cn } from '@comp/ui/cn';
-import { Icons } from '@comp/ui/icons';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { cn } from '@trycompai/ui/cn';
+import { Icons } from '@trycompai/ui/icons';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import { Reorder, motion } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';

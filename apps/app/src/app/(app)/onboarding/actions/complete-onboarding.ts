@@ -5,7 +5,7 @@ import { steps } from '@/app/(app)/setup/lib/constants';
 import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/trigger/tasks/onboarding/onboard-organization';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
@@ -64,7 +64,7 @@ export const completeOnboarding = authActionClientWithoutOrg
       // Verify user has access to this organization
       const member = await db.member.findFirst({
         where: {
-          userId: ctx.user.id,
+          userId: ctx.user!.id,
           organizationId: parsedInput.organizationId,
           deactivated: false,
         },
@@ -139,11 +139,9 @@ export const completeOnboarding = authActionClientWithoutOrg
                     approved: false,
                   },
                 });
-                console.log(`Added custom vendor to GlobalVendors: ${vendor.name}`);
               }
             } catch (error) {
-              // Log but don't fail - GlobalVendors is a nice-to-have
-              console.warn(`Failed to add vendor ${vendor.name} to GlobalVendors:`, error);
+              // GlobalVendors is a nice-to-have - don't fail
             }
           }
         }

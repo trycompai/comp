@@ -1,13 +1,10 @@
 'use client';
 
-import { deleteVersionAction } from '@/actions/policies/delete-version';
-import { submitVersionForApprovalAction } from '@/actions/policies/submit-version-for-approval';
-import { updateVersionContentAction } from '@/actions/policies/update-version-content';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { PolicyEditor } from '@/components/editor/policy-editor';
-import '@/styles/editor.css';
 import { useChat } from '@ai-sdk/react';
-import { Badge } from '@comp/ui/badge';
+import { Badge } from '@trycompai/ui/badge';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import {
   Dialog,
   DialogContent,
@@ -15,17 +12,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { DiffViewer } from '@comp/ui/diff-viewer';
+} from '@trycompai/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { validateAndFixTipTapContent } from '@comp/ui/editor';
+} from '@trycompai/ui/dropdown-menu';
+import { validateAndFixTipTapContent, SuggestionsExtension } from '@trycompai/ui/editor';
 import { PolicyStatus, type Member, type PolicyDisplayFormat, type PolicyVersion, type User } from '@db';
-import type { JSONContent } from '@tiptap/react';
+import type { JSONContent, Editor as TipTapEditor } from '@tiptap/react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,29 +41,26 @@ import {
   TabsList,
   TabsTrigger,
 } from '@trycompai/design-system';
-import { Checkmark, Close, MagicWand } from '@trycompai/design-system/icons';
+import { Close, MagicWand } from '@trycompai/design-system/icons';
 import { DefaultChatTransport } from 'ai';
 import { format } from 'date-fns';
-import { structuredPatch } from 'diff';
-import {
-  ArrowDownUp,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  Trash2,
-  Upload,
-} from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowDownUp, ChevronDown, ChevronLeft, ChevronRight, FileText, Trash2, Upload } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
+import { usePolicy } from '../../hooks/usePolicy';
+import { usePolicyVersions } from '../../hooks/usePolicyVersions';
+import { usePermissions } from '@/hooks/use-permissions';
 import { PdfViewer } from '../../components/PdfViewer';
 import { PublishVersionDialog } from '../../components/PublishVersionDialog';
 import type { PolicyChatUIMessage } from '../types';
-import { markdownToTipTapJSON } from './ai/markdown-utils';
 import { PolicyAiAssistant } from './ai/policy-ai-assistant';
+import { useSuggestions } from '../hooks/use-suggestions';
+import { buildPositionMap } from '../lib/build-position-map';
+import { InlineEditBubble } from './ai/inline-edit-bubble';
+import { markdownToTipTapJSON } from './ai/markdown-utils';
+
+import { SuggestionsTopBar } from './ai/suggestions-top-bar';
 
 type PolicyVersionWithPublisher = PolicyVersion & {
   publishedBy: (Member & { user: User }) | null;
@@ -98,29 +91,35 @@ interface LatestProposal {
   reviewHint: string;
 }
 
-function getLatestProposedPolicy(messages: PolicyChatUIMessage[]): LatestProposal | null {
-  const lastAssistantMessage = [...messages].reverse().find((m) => m.role === 'assistant');
-  if (!lastAssistantMessage?.parts) return null;
-
+/**
+ * Scan ALL assistant messages for the latest completed proposePolicy tool call.
+ * This ensures the card stays visible even when a new streaming response starts
+ * (the previous completed proposal lives on an earlier message).
+ */
+function getLatestCompletedProposal(messages: PolicyChatUIMessage[]): LatestProposal | null {
   let latest: LatestProposal | null = null;
 
-  lastAssistantMessage.parts.forEach((part, index) => {
-    if (part.type !== 'tool-proposePolicy') return;
-    if (part.state === 'input-streaming' || part.state === 'output-error') return;
-    const input = part.input;
-    if (!input?.content) return;
+  for (const msg of messages) {
+    if (msg.role !== 'assistant' || !msg.parts) continue;
+    for (let index = 0; index < msg.parts.length; index++) {
+      const part = msg.parts[index];
+      if (!part || part.type !== 'tool-proposePolicy') continue;
+      if (part.state === 'input-streaming' || part.state === 'output-error') continue;
+      const input = part.input;
+      if (!input?.content) continue;
 
-    latest = {
-      key: `${lastAssistantMessage.id}:${index}`,
-      content: input.content,
-      summary: input.summary ?? 'Proposing policy changes',
-      title: input.title ?? input.summary ?? 'Policy updates ready for your review',
-      detail:
-        input.detail ??
-        'I have prepared an updated version of this policy based on your instructions.',
-      reviewHint: input.reviewHint ?? 'Review the proposed changes below before applying them.',
-    };
-  });
+      latest = {
+        key: `${msg.id}:${index}`,
+        content: input.content,
+        summary: input.summary ?? 'Proposing policy changes',
+        title: input.title ?? input.summary ?? 'Policy updates ready for your review',
+        detail:
+          input.detail ??
+          'I have prepared an updated version of this policy based on your instructions.',
+        reviewHint: input.reviewHint ?? 'Review the proposed changes below before applying them.',
+      };
+    }
+  }
 
   return latest;
 }
@@ -152,6 +151,8 @@ interface PolicyContentManagerProps {
   /** Initial version ID to view (from URL param) */
   initialVersionId?: string;
   onMutate?: () => void;
+  /** Callback to update version content in the cache (optimistic update) */
+  onVersionContentChange?: (versionId: string, content: JSONContent[]) => void;
 }
 
 export function PolicyContentManager({
@@ -171,9 +172,28 @@ export function PolicyContentManager({
   assignees = [],
   initialVersionId,
   onMutate,
+  onVersionContentChange,
 }: PolicyContentManagerProps) {
-  const router = useRouter();
+  const { orgId } = useParams<{ orgId: string }>();
+
+  const { updatePolicy } = usePolicy({
+    policyId,
+    organizationId: orgId,
+  });
+
+  const { deleteVersion, submitForApproval, updateVersionContent } = usePolicyVersions({
+    policyId,
+    organizationId: orgId,
+  });
+
+  const { hasPermission } = usePermissions();
+  const canUpdatePolicy = hasPermission('policy', 'update');
+  const canPublishPolicy = hasPermission('policy', 'update');
+  const canDeletePolicy = hasPermission('policy', 'delete');
+
   const [showAiAssistant, setShowAiAssistant] = useState(false);
+  const isWideDesktop = useMediaQuery('(min-width: 1280px)');
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [editorKey, setEditorKey] = useState(0);
   const [activeTab, setActiveTab] = useState<string>(displayFormat);
   const previousTabRef = useRef<string>(displayFormat);
@@ -185,8 +205,38 @@ export function PolicyContentManager({
   });
 
   const [dismissedProposalKey, setDismissedProposalKey] = useState<string | null>(null);
-  const [isApplying, setIsApplying] = useState(false);
+  const [editorInstance, setEditorInstance] = useState<TipTapEditor | null>(null);
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
+
+  // Stable callback refs so the extension doesn't need to be recreated
+  // when suggestion handlers change
+  const suggestionCallbacksRef = useRef<{
+    onAccept: (id: string) => void;
+    onReject: (id: string) => void;
+    onEditClick: (id: string) => void;
+    onFeedbackSubmit: (id: string, feedback: string) => void;
+    onFeedbackCancel: () => void;
+  }>({
+    onAccept: () => {},
+    onReject: () => {},
+    onEditClick: () => {},
+    onFeedbackSubmit: () => {},
+    onFeedbackCancel: () => {},
+  });
+
+  const suggestionsExtension = useMemo(
+    () =>
+      SuggestionsExtension.configure({
+        onAccept: (id: string) => suggestionCallbacksRef.current.onAccept(id),
+        onReject: (id: string) => suggestionCallbacksRef.current.onReject(id),
+        onEditClick: (id: string) => suggestionCallbacksRef.current.onEditClick(id),
+        onFeedbackSubmit: (id: string, feedback: string) => suggestionCallbacksRef.current.onFeedbackSubmit(id, feedback),
+        onFeedbackCancel: () => suggestionCallbacksRef.current.onFeedbackCancel(),
+        markdownToJSON: markdownToTipTapJSON,
+      }),
+    [],
+  );
+
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
   const [localHasChanges, setLocalHasChanges] = useState(hasUnpublishedChanges);
 
@@ -345,29 +395,20 @@ export function PolicyContentManager({
 
     setIsDeletingVersion(true);
     try {
-      const result = await deleteVersionAction({
-        versionId: versionToDelete.id,
-        policyId,
-      });
-
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to delete version');
-      }
-
+      await deleteVersion(versionToDelete.id);
       toast.success(`Version ${versionToDelete.version} deleted`);
 
       // If we deleted the selected version, switch to another one
       if (viewingVersion === versionToDelete.id) {
-        const remainingVersions = versions.filter((v) => v.id !== versionToDelete.id);
+        const remainingVersions = versions.filter(v => v.id !== versionToDelete.id);
         setViewingVersion(currentVersionId ?? remainingVersions[0]?.id ?? '');
       }
 
       setDeleteVersionDialogOpen(false);
       setVersionToDelete(null);
       onMutate?.();
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete version');
+    } catch {
+      toast.error('Failed to delete version');
     } finally {
       setIsDeletingVersion(false);
     }
@@ -388,23 +429,13 @@ export function PolicyContentManager({
 
     setIsSubmittingForApproval(true);
     try {
-      const result = await submitVersionForApprovalAction({
-        policyId,
-        versionId: viewingVersion,
-        approverId: publishApproverId,
-        entityId: policyId,
-      });
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to submit version for approval');
-      }
-
+      await submitForApproval(viewingVersion, publishApproverId);
       toast.success(`Version ${versionToPublish.version} submitted for approval`);
       setIsPublishApprovalDialogOpen(false);
       setPublishApproverId(null);
       onMutate?.();
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to submit version for approval');
+    } catch {
+      toast.error('Failed to submit version for approval');
     } finally {
       setIsSubmittingForApproval(false);
     }
@@ -416,6 +447,7 @@ export function PolicyContentManager({
   // 2. Viewing a version that's not the published one (for published policies)
   // 3. OR policy is draft/needs_review
   const canPublishCurrentVersion = useMemo(() => {
+    if (!canPublishPolicy) return false;
     if (isPendingApproval) return false;
     if (isViewingPendingVersion) return false;
 
@@ -426,7 +458,7 @@ export function PolicyContentManager({
 
     // For draft/needs_review, can publish the current version
     return policyStatus === PolicyStatus.draft || policyStatus === PolicyStatus.needs_review;
-  }, [isPendingApproval, isViewingPendingVersion, policyStatus, isViewingActiveVersion]);
+  }, [canPublishPolicy, isPendingApproval, isViewingPendingVersion, policyStatus, isViewingActiveVersion]);
 
   // Content to display is always currentContent (editable)
   const displayContent = useMemo(() => {
@@ -437,6 +469,7 @@ export function PolicyContentManager({
     messages,
     status,
     sendMessage: baseSendMessage,
+    stop: stopChat,
   } = useChat<PolicyChatUIMessage>({
     transport: new DefaultChatTransport({
       api: `/api/policies/${policyId}/chat`,
@@ -449,93 +482,85 @@ export function PolicyContentManager({
 
   const sendMessage = (payload: { text: string }) => {
     setChatErrorMessage(null);
-    baseSendMessage(payload);
+    // Send current editor content so the AI sees the latest state,
+    // not stale DB content (e.g. after accepting changes)
+    const currentContent = editorInstance
+      ? buildPositionMap(editorInstance.state.doc).markdown
+      : '';
+    baseSendMessage(payload, { body: { currentContent } });
   };
 
-  const latestProposal = useMemo(() => getLatestProposedPolicy(messages), [messages]);
+  // ── Proposal state management ──────────────────────────────────────
+  // Scan ALL assistant messages for the latest completed proposePolicy tool call.
+  // Unlike before, this doesn't only check the last assistant message — it finds
+  // the most recent completed proposal across the entire conversation so that
+  // starting a new streaming response doesn't cause the card to vanish.
 
-  const activeProposal =
-    latestProposal && latestProposal.key !== dismissedProposalKey ? latestProposal : null;
-
-  const proposedPolicyMarkdown = activeProposal?.content ?? null;
-
-  const hasPendingProposal = useMemo(
-    () =>
-      messages.some(
-        (m) =>
-          m.role === 'assistant' &&
-          m.parts?.some(
-            (part) =>
-              part.type === 'tool-proposePolicy' &&
-              (part.state === 'input-streaming' || part.state === 'input-available'),
-          ),
-      ),
+  const latestCompletedProposal = useMemo(
+    () => getLatestCompletedProposal(messages),
     [messages],
   );
 
-  const switchFormat = useAction(switchPolicyDisplayFormatAction, {
-    onSuccess: () => {
-      // Server action succeeded, update ref for next operation
-      previousTabRef.current = activeTab;
-    },
-    onError: () => {
-      toast.error('Failed to switch view.');
-      // Roll back to the previous tab state on error
-      setActiveTab(previousTabRef.current);
-      // Also restore AI assistant visibility if we were switching from EDITOR
-      if (previousTabRef.current === 'EDITOR' && aiAssistantEnabled) {
-        setShowAiAssistant(true);
+  // The last fully-completed, non-dismissed proposal the user can act on.
+  // Clear dismissedProposalKey when a new proposal arrives so it's not blocked.
+  const activeProposal = useMemo(() => {
+    if (!latestCompletedProposal) return null;
+    if (latestCompletedProposal.key === dismissedProposalKey) return null;
+    return latestCompletedProposal;
+  }, [latestCompletedProposal, dismissedProposalKey]);
+
+  const proposedPolicyMarkdown = activeProposal?.content ?? null;
+
+  const handleSwitchFormat = async (format: string) => {
+    previousTabRef.current = activeTab;
+    // Only persist the preference if the user can update the policy
+    if (canUpdatePolicy) {
+      try {
+        await updatePolicy({ displayFormat: format });
+      } catch {
+        toast.error('Failed to switch view.');
+        setActiveTab(previousTabRef.current);
+        if (previousTabRef.current === 'EDITOR' && aiAssistantEnabled) {
+          setShowAiAssistant(true);
+        }
       }
-    },
+    }
+  };
+
+  const suggestions = useSuggestions({
+    editor: editorInstance,
+    proposedMarkdown: proposedPolicyMarkdown,
   });
 
-  const currentPolicyMarkdown = useMemo(
-    () => convertContentToMarkdown(currentContent),
-    [currentContent],
-  );
-
-  const diffPatch = useMemo(() => {
-    if (!proposedPolicyMarkdown) return null;
-    return createGitPatch('Proposed Changes', currentPolicyMarkdown, proposedPolicyMarkdown);
-  }, [currentPolicyMarkdown, proposedPolicyMarkdown]);
-
-  async function applyProposedChanges() {
-    if (!activeProposal || !viewingVersion) return;
-
-    // Don't allow applying changes to read-only versions
-    if (isVersionReadOnly) {
-      toast.error('Cannot modify a published or pending version. Create a new version first.');
-      return;
+  // Auto-dismiss proposal when ranges transition from active → inactive
+  const wasActiveRef = useRef(false);
+  useEffect(() => {
+    if (suggestions.isActive) {
+      wasActiveRef.current = true;
+    } else if (wasActiveRef.current && activeProposal) {
+      // Was active, now inactive — all ranges resolved
+      wasActiveRef.current = false;
+      setDismissedProposalKey(activeProposal.key);
     }
+  }, [suggestions.isActive, activeProposal]);
 
-    const { content, key } = activeProposal;
-
-    setIsApplying(true);
-    try {
-      const jsonContent = markdownToTipTapJSON(content);
-      const result = await updateVersionContentAction({
-        policyId,
-        versionId: viewingVersion,
-        content: jsonContent,
-        entityId: policyId,
-      });
-
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to apply changes');
-      }
-
-      setCurrentContent(jsonContent);
-      setEditorKey((prev) => prev + 1);
-      setDismissedProposalKey(key);
-      toast.success('Policy updated with AI suggestions');
-    } catch (err) {
-      console.error('Failed to apply changes:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to apply changes');
-    } finally {
-      setIsApplying(false);
+  // Reset loading state when AI finishes responding or errors
+  useEffect(() => {
+    if (status === 'ready' || status === 'error') {
+      suggestions.resetLoading();
     }
-  }
+  }, [status, suggestions.resetLoading]);
 
+  // Wire suggestion callbacks via refs (avoids recreating the extension)
+  suggestionCallbacksRef.current = {
+    onAccept: suggestions.accept,
+    onReject: suggestions.reject,
+    onEditClick: suggestions.startEditing,
+    onFeedbackSubmit: suggestions.giveFeedback,
+    onFeedbackCancel: suggestions.cancelEditing,
+  };
+
+  // Filter out per-hunk feedback messages (and their AI responses) from chat display
   // Track local changes made in editor (after save)
   const handleContentSaved = (content: Array<JSONContent>) => {
     setCurrentContent(content);
@@ -553,11 +578,11 @@ export function PolicyContentManager({
           if (format === 'PDF') {
             setShowAiAssistant(false);
           }
-          switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' });
+          handleSwitchFormat(format);
         }}
       >
         <Stack gap="md">
-          <HStack justify="between" align="center">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Left side: Tabs */}
             <div>
               <TabsList variant="default">
@@ -732,7 +757,7 @@ export function PolicyContentManager({
                         const isActive = version.id === currentVersionId;
                         const isPending = version.id === pendingVersionId;
                         const isSelected = version.id === viewingVersion;
-                        const canDelete = !isActive && !isPending;
+                        const canDelete = canDeletePolicy && !isActive && !isPending;
                         return (
                           <div
                             key={version.id}
@@ -844,7 +869,7 @@ export function PolicyContentManager({
                 </Button>
               )}
               {/* For read-only versions (published/pending), show button to create new version */}
-              {isVersionReadOnly && !isPendingApproval && (
+              {isVersionReadOnly && !isViewingPendingVersion && canUpdatePolicy && (
                 <Button
                   size="default"
                   onClick={() => setIsPublishDialogOpen(true)}
@@ -853,7 +878,7 @@ export function PolicyContentManager({
                   Create new version
                 </Button>
               )}
-              {!isPendingApproval && aiAssistantEnabled && activeTab === 'EDITOR' && (
+              {!isVersionReadOnly && canUpdatePolicy && aiAssistantEnabled && activeTab === 'EDITOR' && (
                 <Button
                   variant={showAiAssistant ? 'default' : 'outline'}
                   size="default"
@@ -864,16 +889,52 @@ export function PolicyContentManager({
                 </Button>
               )}
             </div>
-          </HStack>
+          </div>
+
+          {/* Mobile/tablet and medium desktop: AI assistant above the editor */}
+          {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && !isWideDesktop && (
+            <div className="h-[400px]">
+              <PolicyAiAssistant
+                messages={messages}
+                status={status}
+                errorMessage={chatErrorMessage}
+                sendMessage={sendMessage}
+                stop={stopChat}
+                close={() => setShowAiAssistant(false)}
+              />
+            </div>
+          )}
 
           <div
             className={
-              showAiAssistant && aiAssistantEnabled ? 'flex flex-col lg:flex-row gap-6' : ''
+              showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex flex-row items-start gap-6' : ''
             }
           >
-            <div className={showAiAssistant && aiAssistantEnabled ? 'flex-[7] min-w-0' : 'w-full'}>
+            <div className={showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex-[7] min-w-0 max-h-[calc(100dvh-24rem)] overflow-y-auto' : 'w-full'}>
               <Stack gap="sm">
                 <TabsContent value="EDITOR">
+                  {suggestions.isActive && (
+                    <SuggestionsTopBar
+                      activeCount={suggestions.activeCount}
+                      totalCount={suggestions.totalCount}
+                      currentIndex={suggestions.currentIndex}
+                      onAcceptAll={suggestions.acceptAll}
+                      onRejectAll={suggestions.rejectAll}
+                      onPrev={suggestions.goToPrev}
+                      onNext={suggestions.goToNext}
+                      onDismiss={() => {
+                        suggestions.dismissAll();
+                        if (activeProposal) setDismissedProposalKey(activeProposal.key);
+                      }}
+                    />
+                  )}
+                  {editorInstance && !isVersionReadOnly && canUpdatePolicy && (
+                    <InlineEditBubble
+                      editor={editorInstance}
+                      policyId={policyId}
+                      disabled={suggestions.isActive}
+                    />
+                  )}
                   <PolicyEditorWrapper
                     key={`${editorKey}-${viewingVersion}`}
                     policyId={policyId}
@@ -885,6 +946,11 @@ export function PolicyContentManager({
                     isViewingPendingVersion={isViewingPendingVersion}
                     policyStatus={policyStatus}
                     onContentChange={handleContentSaved}
+                    onVersionContentChange={onVersionContentChange}
+                    saveVersionContent={updateVersionContent}
+                    onEditorReady={setEditorInstance}
+                    additionalExtensions={[suggestionsExtension]}
+                    suggestionsActive={suggestions.isActive}
                   />
                 </TabsContent>
                 <TabsContent value="PDF">
@@ -894,7 +960,7 @@ export function PolicyContentManager({
                     versionId={viewingVersion}
                     pdfUrl={selectedVersion?.pdfUrl}
                     isPendingApproval={isPendingApproval}
-                    isVersionReadOnly={isVersionReadOnly}
+                    isVersionReadOnly={isVersionReadOnly || !canUpdatePolicy}
                     isViewingActiveVersion={isViewingActiveVersion}
                     isViewingPendingVersion={isViewingPendingVersion}
                     onMutate={onMutate}
@@ -903,51 +969,23 @@ export function PolicyContentManager({
               </Stack>
             </div>
 
-            {aiAssistantEnabled && showAiAssistant && activeTab === 'EDITOR' && (
-              <div className="flex-[3] min-w-0 self-stretch">
+            {/* Wide desktop (1536px+): AI assistant side panel */}
+            {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && isWideDesktop && (
+              <div className="flex-[3] min-w-[320px] sticky top-0 h-[calc(100dvh-24rem)]">
                 <PolicyAiAssistant
                   messages={messages}
                   status={status}
                   errorMessage={chatErrorMessage}
                   sendMessage={sendMessage}
+                  stop={stopChat}
                   close={() => setShowAiAssistant(false)}
-                  hasActiveProposal={!!activeProposal && !hasPendingProposal}
                 />
               </div>
             )}
           </div>
+
         </Stack>
       </Tabs>
-
-      {proposedPolicyMarkdown && diffPatch && activeProposal && !hasPendingProposal && (
-        <Section
-          title="Proposed Changes"
-          description="The AI has proposed updates to this policy. Review the changes above and click 'Apply Changes' to accept them."
-          actions={
-            <HStack gap="sm">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDismissedProposalKey(activeProposal.key)}
-                iconLeft={<Close size={12} />}
-              >
-                Dismiss
-              </Button>
-              <Button
-                size="sm"
-                onClick={applyProposedChanges}
-                disabled={isApplying}
-                loading={isApplying}
-                iconLeft={!isApplying ? <Checkmark size={12} /> : undefined}
-              >
-                Apply Changes
-              </Button>
-            </HStack>
-          }
-        >
-          <DiffViewer patch={diffPatch} />
-        </Section>
-      )}
 
       {/* Create Version Dialog */}
       <PublishVersionDialog
@@ -960,7 +998,6 @@ export function PolicyContentManager({
           setPendingVersionSwitch(newVersionId);
           setLocalHasChanges(false);
           onMutate?.();
-          router.refresh();
         }}
       />
 
@@ -1043,58 +1080,6 @@ export function PolicyContentManager({
   );
 }
 
-function createGitPatch(fileName: string, oldStr: string, newStr: string): string {
-  const patch = structuredPatch(fileName, fileName, oldStr, newStr, '', '', { context: 1 });
-  const lines: string[] = [
-    `diff --git a/${fileName} b/${fileName}`,
-    `--- a/${fileName}`,
-    `+++ b/${fileName}`,
-  ];
-
-  for (const hunk of patch.hunks) {
-    lines.push(`@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@`);
-    for (const line of hunk.lines) {
-      lines.push(line);
-    }
-  }
-
-  return lines.join('\n');
-}
-
-function convertContentToMarkdown(content: Array<JSONContent>): string {
-  function extractText(node: JSONContent): string {
-    if (node.type === 'text' && typeof node.text === 'string') {
-      return node.text;
-    }
-
-    if (Array.isArray(node.content)) {
-      const texts = node.content.map(extractText).filter(Boolean);
-
-      switch (node.type) {
-        case 'heading': {
-          const level = (node.attrs as Record<string, unknown>)?.level || 1;
-          return '\n' + '#'.repeat(Number(level)) + ' ' + texts.join('') + '\n';
-        }
-        case 'paragraph':
-          return texts.join('') + '\n';
-        case 'bulletList':
-        case 'orderedList':
-          return '\n' + texts.join('');
-        case 'listItem':
-          return '- ' + texts.join('') + '\n';
-        case 'blockquote':
-          return '\n> ' + texts.join('\n> ') + '\n';
-        default:
-          return texts.join('');
-      }
-    }
-
-    return '';
-  }
-
-  return content.map(extractText).join('\n').trim();
-}
-
 function PolicyEditorWrapper({
   policyId,
   versionId,
@@ -1105,6 +1090,11 @@ function PolicyEditorWrapper({
   isViewingPendingVersion,
   policyStatus,
   onContentChange,
+  onVersionContentChange,
+  saveVersionContent,
+  onEditorReady,
+  additionalExtensions,
+  suggestionsActive = false,
 }: {
   policyId: string;
   versionId: string;
@@ -1115,43 +1105,34 @@ function PolicyEditorWrapper({
   isViewingPendingVersion: boolean;
   policyStatus?: string;
   onContentChange?: (content: Array<JSONContent>) => void;
+  onVersionContentChange?: (versionId: string, content: JSONContent[]) => void;
+  saveVersionContent: (versionId: string, content: JSONContent[]) => Promise<unknown>;
+  onEditorReady?: (editor: TipTapEditor) => void;
+  additionalExtensions?: import('@tiptap/core').Extension[];
+  suggestionsActive?: boolean;
 }) {
+  const { hasPermission } = usePermissions();
+  const canUpdatePolicy = hasPermission('policy', 'update');
+
   const formattedContent = Array.isArray(policyContent)
     ? policyContent
     : [policyContent as JSONContent];
-  const sanitizedContent = formattedContent.map((node) => {
-    if (node.marks) node.marks = node.marks.filter((mark) => mark.type !== 'textStyle');
-    if (node.content) node.content = node.content.map((child) => child);
-    return node;
-  });
-  const validatedDoc = validateAndFixTipTapContent(sanitizedContent);
+  const validatedDoc = validateAndFixTipTapContent(formattedContent);
   const normalizedContent = (validatedDoc.content || []) as Array<JSONContent>;
 
   async function savePolicy(content: Array<JSONContent>): Promise<void> {
     if (!versionId) return;
 
-    try {
-      // Save to the specific version's content
-      const result = await updateVersionContentAction({
-        policyId,
-        versionId,
-        content,
-        entityId: policyId,
-      });
+    await saveVersionContent(versionId, content);
 
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to save');
-      }
-
-      onContentChange?.(content);
-    } catch (error) {
-      console.error('Error saving policy version:', error);
-      throw error;
-    }
+    onContentChange?.(content);
+    // Update the versions cache so switching versions shows the latest content
+    onVersionContentChange?.(versionId, content);
   }
 
   // Determine if editor should be read-only
-  const isReadOnly = isPendingApproval || isVersionReadOnly;
+  // isVersionReadOnly already covers the pending version case (isViewingPendingVersion)
+  const isReadOnly = isVersionReadOnly || !canUpdatePolicy;
 
   // Get status message and styling for all states
   const getStatusInfo = (): {
@@ -1201,14 +1182,23 @@ function PolicyEditorWrapper({
   return (
     <Section>
       <Stack gap="sm">
-        {statusInfo && (
+        {statusInfo && !suggestionsActive && (
           <div
             className={`flex items-center gap-4 rounded-lg border px-4 py-3 text-sm text-foreground ${statusInfo.className}`}
           >
             <span>{statusInfo.message}</span>
           </div>
         )}
-        <PolicyEditor content={normalizedContent} onSave={savePolicy} readOnly={isReadOnly} />
+        <div className="pb-6 rounded-b-xl shadow-[0_8px_16px_-10px_hsl(0_0%_0%/0.1)]">
+          <PolicyEditor
+            content={normalizedContent}
+            onSave={savePolicy}
+            readOnly={isReadOnly}
+            onEditorReady={onEditorReady}
+            additionalExtensions={additionalExtensions}
+            showToolbar={!suggestionsActive}
+          />
+        </div>
       </Stack>
     </Section>
   );

@@ -1,13 +1,15 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useApi } from '@/hooks/use-api';
 import { usePeopleActions } from '@/hooks/use-people-api';
+import { parseRolesString } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
+import useSWR from 'swr';
 import type { Invitation, Role } from '@db';
 import {
   Empty,
@@ -29,28 +31,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Button,
 } from '@trycompai/design-system';
-import { Search } from '@trycompai/design-system/icons';
+import { InProgress, Search } from '@trycompai/design-system/icons';
 
+import { apiClient } from '@/lib/api-client';
+import { buildDisplayItems, filterDisplayItems } from './filter-members';
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TeamMembersData } from './TeamMembers';
 
-// Import the server actions themselves to get their types
-import type { reactivateMember } from '../actions/reactivateMember';
-import type { removeMember } from '../actions/removeMember';
-import type { revokeInvitation } from '../actions/revokeInvitation';
-
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
 
-// Define prop types using typeof for the actions still used
 interface TeamMembersClientProps {
   data: TeamMembersData;
   organizationId: string;
-  removeMemberAction: typeof removeMember;
-  reactivateMemberAction: typeof reactivateMember;
-  revokeInvitationAction: typeof revokeInvitation;
   canManageMembers: boolean;
   canInviteUsers: boolean;
   isAuditor: boolean;
@@ -60,24 +56,9 @@ interface TeamMembersClientProps {
   memberIdsWithDeviceAgent: string[];
 }
 
-// Define a simplified type for merged list items
-interface DisplayItem extends Partial<MemberWithUser>, Partial<Invitation> {
-  type: 'member' | 'invitation';
-  displayName: string;
-  displayEmail: string;
-  displayRole: string | string[]; // Simplified role display, could be comma-separated
-  displayStatus: 'active' | 'pending' | 'deactivated';
-  displayId: string; // Use member.id or invitation.id
-  processedRoles: Role[];
-  isDeactivated?: boolean;
-}
-
 export function TeamMembersClient({
   data,
   organizationId,
-  removeMemberAction,
-  reactivateMemberAction,
-  revokeInvitationAction,
   canManageMembers,
   canInviteUsers,
   isAuditor,
@@ -93,27 +74,42 @@ export function TeamMembersClient({
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
 
-  const { unlinkDevice } = usePeopleActions();
+  const { unlinkDevice, removeMember, reactivateMember } = usePeopleActions();
+  const api = useApi();
+
+  // Fetch custom roles for the role combobox
+  const { data: rolesData } = useSWR(
+    `/v1/roles`,
+    async (endpoint: string) => {
+      const res = await api.get<{ customRoles: Array<{ id: string; name: string; permissions: Record<string, string[]> }> }>(endpoint);
+      return res.data?.customRoles ?? [];
+    },
+  );
+  const customRoles = (rolesData ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    permissions: r.permissions,
+  }));
 
   // Employee sync hook with server-fetched initial data
   const {
     googleWorkspaceConnectionId,
     ripplingConnectionId,
     jumpcloudConnectionId,
-    rampConnectionId,
     selectedProvider,
     isSyncing,
     syncEmployees,
     hasAnyConnection,
     getProviderName,
     getProviderLogo,
+    availableProviders,
   } = useEmployeeSync({ organizationId, initialData: employeeSyncData });
 
   const lastSyncAt = employeeSyncData.lastSyncAt;
   const nextSyncAt = employeeSyncData.nextSyncAt;
 
   const handleEmployeeSync = async (
-    provider: 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp',
+    provider: string,
   ) => {
     const result = await syncEmployees(provider);
     if (result?.success) {
@@ -121,72 +117,12 @@ export function TeamMembersClient({
     }
   };
 
-  // Combine and type members and invitations for filtering/display
-  const allItems: DisplayItem[] = [
-    ...data.members.map((member) => {
-      // Process the role to handle comma-separated values
-      const roles =
-        typeof member.role === 'string' && member.role.includes(',')
-          ? (member.role.split(',') as Role[])
-          : Array.isArray(member.role)
-            ? member.role
-            : [member.role as Role];
-
-      const isInactive = member.deactivated || !member.isActive;
-
-      return {
-        ...member,
-        type: 'member' as const,
-        displayName: member.user.name || member.user.email || '',
-        displayEmail: member.user.email || '',
-        displayRole: member.role, // Keep original for filtering
-        displayStatus: isInactive ? ('deactivated' as const) : ('active' as const),
-        displayId: member.id,
-        // Add processed roles for rendering
-        processedRoles: roles,
-        isDeactivated: isInactive,
-      };
-    }),
-    ...data.pendingInvitations.map((invitation) => {
-      // Process the role to handle comma-separated values
-      const roles =
-        typeof invitation.role === 'string' && invitation.role.includes(',')
-          ? (invitation.role.split(',') as Role[])
-          : Array.isArray(invitation.role)
-            ? invitation.role
-            : [invitation.role as Role];
-
-      return {
-        ...invitation,
-        type: 'invitation' as const,
-        displayName: invitation.email.split('@')[0], // Or just email
-        displayEmail: invitation.email,
-        displayRole: invitation.role, // Keep original for filtering
-        displayStatus: 'pending' as const,
-        displayId: invitation.id,
-        // Add processed roles for rendering
-        processedRoles: roles,
-      };
-    }),
-  ];
-
-  const filteredItems = allItems.filter((item) => {
-    const matchesSearch =
-      item.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.displayEmail.toLowerCase().includes(searchQuery.toLowerCase());
-
-    // Check if the role filter matches any of the member's roles
-    const matchesRole = !roleFilter || item.processedRoles.includes(roleFilter as Role);
-
-    // Status filter: 'active' shows non-deactivated members + pending invitations
-    // 'deactivated' shows only deactivated members
-    // empty shows everything
-    const matchesStatus =
-      !statusFilter ||
-      (statusFilter === 'active' && item.displayStatus !== 'deactivated') ||
-      (statusFilter === 'deactivated' && item.displayStatus === 'deactivated');
-
-    return matchesSearch && matchesRole && matchesStatus;
+  const allItems = buildDisplayItems(data);
+  const filteredItems = filterDisplayItems({
+    items: allItems,
+    searchQuery,
+    roleFilter,
+    statusFilter,
   });
 
   const activeMembers = filteredItems.filter((item) => item.type === 'member');
@@ -201,46 +137,39 @@ export function TeamMembersClient({
   const pageSizeOptions = [10, 25, 50, 100];
 
   const handleCancelInvitation = async (invitationId: string) => {
-    const result = await revokeInvitationAction({ invitationId });
-    if (result?.data) {
-      if (result.data?.error) {
-        toast.error(String(result?.data?.error) || 'Failed to cancel invitation');
+    try {
+      const response = await apiClient.delete(`/v1/auth/invitations/${invitationId}`);
+      if (response.error) {
+        toast.error(response.error);
         return;
       }
-      // Success case
       toast.success('Invitation has been cancelled');
-      // Data revalidates server-side via action's revalidatePath
-      router.refresh(); // Add client-side refresh as well
-    } else {
-      // Error case
-      const errorMessage = result?.serverError || 'Failed to add user';
-      console.error('Cancel Invitation Error:', errorMessage);
+      router.refresh();
+    } catch (error) {
+      console.error('Cancel Invitation Error:', error);
+      toast.error('Failed to cancel invitation');
     }
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    const result = await removeMemberAction({ memberId });
-    if (result?.data?.success) {
-      // Success case
-      toast.success('has been removed from the organization');
-      router.refresh(); // Add client-side refresh as well
-    } else {
-      // Error case
-      const errorMessage = result?.serverError || 'Failed to remove member';
-      console.error('Remove Member Error:', errorMessage);
-      toast.error(errorMessage);
+    try {
+      await removeMember(memberId);
+      toast.success('Member has been removed from the organization');
+      router.refresh();
+    } catch (error) {
+      console.error('Remove Member Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to remove member');
     }
   };
 
   const handleReactivateMember = async (memberId: string) => {
-    const result = await reactivateMemberAction({ memberId });
-    if (result?.data?.success) {
+    try {
+      await reactivateMember(memberId);
       toast.success('Member has been reinstated');
       router.refresh();
-    } else {
-      const errorMessage = result?.serverError || 'Failed to reinstate member';
-      console.error('Reactivate Member Error:', errorMessage);
-      toast.error(errorMessage);
+    } catch (error) {
+      console.error('Reactivate Member Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to reinstate member');
     }
   };
 
@@ -251,12 +180,12 @@ export function TeamMembersClient({
   };
 
   // Update handleUpdateRole to use authClient and add toasts
-  const handleUpdateRole = async (memberId: string, roles: Role[]) => {
+  const handleUpdateRole = async (memberId: string, roles: string[]) => {
     const rolesArray = Array.isArray(roles) ? roles : [roles];
     const member = data.members.find((m) => m.id === memberId);
 
     // Client-side check (optional, robust check should be server-side in authClient)
-    const memberRoles = member?.role?.split(',').map((r) => r.trim()) ?? [];
+    const memberRoles = parseRolesString(member?.role);
     if (member && memberRoles.includes('owner') && !rolesArray.includes('owner')) {
       // Show toast error directly, no need to return an error object
       toast.error('The Owner role cannot be removed.');
@@ -310,16 +239,17 @@ export function TeamMembersClient({
           <Select
             value={statusFilter || undefined}
             onValueChange={(value) => {
-              setStatusFilter(value === 'all' ? '' : (value ?? ''));
+              setStatusFilter(value ?? '');
               setPage(1);
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="All People" />
+              <SelectValue placeholder="Active" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All People</SelectItem>
               <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="deactivated">Deactivated</SelectItem>
             </SelectContent>
           </Select>
@@ -346,39 +276,42 @@ export function TeamMembersClient({
           </Select>
         </div>
         {hasAnyConnection && (
-          <div className="w-[200px]">
-            <Select
-              onValueChange={(value) => {
-                if (value) {
-                  handleEmployeeSync(
-                    value as 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp',
-                  );
-                }
-              }}
-              disabled={isSyncing || !canManageMembers}
-            >
-              <SelectTrigger>
-                {isSyncing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Syncing...
-                  </>
-                ) : selectedProvider ? (
-                  <div className="flex items-center gap-2">
-                    <Image
-                      src={getProviderLogo(selectedProvider)}
-                      alt={getProviderName(selectedProvider)}
-                      width={16}
-                      height={16}
-                      className="rounded-sm"
-                      unoptimized
-                    />
-                    <span className="truncate">{getProviderName(selectedProvider)}</span>
-                  </div>
-                ) : (
-                  <SelectValue placeholder="Select sync source" />
-                )}
-              </SelectTrigger>
+          <div className="flex items-center gap-2">
+            <div className="w-[200px]">
+              <Select
+                onValueChange={(value) => {
+                  if (value) {
+                    handleEmployeeSync(
+                      value as 'google-workspace' | 'rippling' | 'jumpcloud',
+                    );
+                  }
+                }}
+                disabled={isSyncing || !canManageMembers}
+              >
+                <SelectTrigger>
+                  {isSyncing ? (
+                    <>
+                      <InProgress size={16} className="mr-2 animate-spin" />
+                      Syncing...
+                    </>
+                  ) : selectedProvider ? (
+                    <div className="flex items-center gap-2">
+                      {getProviderLogo(selectedProvider) && (
+                        <Image
+                          src={getProviderLogo(selectedProvider)}
+                          alt={getProviderName(selectedProvider)}
+                          width={16}
+                          height={16}
+                          className="rounded-sm"
+                          unoptimized
+                        />
+                      )}
+                      <span className="truncate">{getProviderName(selectedProvider)}</span>
+                    </div>
+                  ) : (
+                    <SelectValue placeholder="Select sync source" />
+                  )}
+                </SelectTrigger>
               <SelectContent>
                 <div className="px-2 py-1.5 text-xs text-muted-foreground space-y-1">
                   {selectedProvider ? (
@@ -454,26 +387,32 @@ export function TeamMembersClient({
                     </div>
                   </SelectItem>
                 )}
-                {rampConnectionId && (
-                  <SelectItem value="ramp">
-                    <div className="flex items-center gap-2">
-                      <Image
-                        src={getProviderLogo('ramp')}
-                        alt="Ramp"
-                        width={16}
-                        height={16}
-                        className="rounded-sm"
-                        unoptimized
-                      />
-                      Ramp
-                      {selectedProvider === 'ramp' && (
-                        <span className="ml-auto text-xs text-muted-foreground">Active</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                )}
+                {/* Dynamic sync providers (from dynamic integrations) */}
+                {availableProviders
+                  .filter((p) => p.connected && !['google-workspace', 'rippling', 'jumpcloud'].includes(p.slug))
+                  .map((provider) => (
+                    <SelectItem key={provider.slug} value={provider.slug}>
+                      <div className="flex items-center gap-2">
+                        {provider.logoUrl && (
+                          <Image
+                            src={provider.logoUrl}
+                            alt={provider.name}
+                            width={16}
+                            height={16}
+                            className="rounded-sm"
+                            unoptimized
+                          />
+                        )}
+                        {provider.name}
+                        {selectedProvider === provider.slug && (
+                          <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
               </SelectContent>
-            </Select>
+              </Select>
+            </div>
           </div>
         )}
       </div>
@@ -512,6 +451,7 @@ export function TeamMembersClient({
               <TableHead>
                 <div className="w-[160px]">ROLE</div>
               </TableHead>
+              <TableHead>DEVICE</TableHead>
               <TableHead>TASKS</TableHead>
               <TableHead>ACTIONS</TableHead>
             </TableRow>
@@ -528,6 +468,7 @@ export function TeamMembersClient({
                   onReactivate={handleReactivateMember}
                   canEdit={canManageMembers}
                   isCurrentUserOwner={isCurrentUserOwner}
+                  customRoles={customRoles}
                   taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}
                   hasDeviceAgentDevice={memberIdsWithDeviceAgent.includes(
                     (item as MemberWithUser).id,

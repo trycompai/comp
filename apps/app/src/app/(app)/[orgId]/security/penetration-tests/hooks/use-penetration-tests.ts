@@ -8,11 +8,10 @@ import type {
   PentestReportStatus,
   PentestRun,
 } from '@/lib/security/penetration-tests-client';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
 import { isReportInProgress, sortReportsByUpdatedAtDesc } from '../lib';
-import { preauthorizePentestRun } from '../actions/billing';
 
 const reportListEndpoint = '/v1/security-penetration-tests';
 const githubReposEndpoint = '/v1/security-penetration-tests/github/repos';
@@ -237,21 +236,12 @@ export function useCreatePenetrationTest(
   const { mutate } = useSWRConfig();
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Stable nonce per target URL — prevents duplicate overage charges if the
-  // API call fails after billing succeeds and the user retries.
-  const nonceRef = useRef<string>(crypto.randomUUID());
 
   const createReport = useCallback(
     async (payload: CreatePayload): Promise<CreatePenetrationTestResponse> => {
       setIsCreating(true);
       setError(null);
       try {
-        // Preauthorize billing before creating the run
-        const authResult = await preauthorizePentestRun(organizationId, nonceRef.current);
-        if (!authResult.authorized) {
-          throw new Error(authResult.error ?? 'Billing authorization failed.');
-        }
-
         const response = await api.post<{
           id?: string;
           status?: PentestReportStatus;
@@ -276,6 +266,15 @@ export function useCreatePenetrationTest(
         const reportId = response.data?.id;
         if (!reportId) {
           throw new Error('Could not resolve report ID from create response.');
+        }
+
+        const billingRes = await api.post(
+          '/v1/pentest-billing/charge',
+          { runId: reportId },
+          organizationId,
+        );
+        if (billingRes.error) {
+          throw new Error(billingRes.error);
         }
 
         const data: CreatePenetrationTestResponse = {
@@ -322,8 +321,6 @@ export function useCreatePenetrationTest(
         }
         void mutate(reportListKey(organizationId));
         void mutate(reportKey(organizationId, reportId));
-        // Rotate nonce so the next submission gets a fresh idempotency key
-        nonceRef.current = crypto.randomUUID();
         return data;
       } catch (reportError) {
         const message =

@@ -3,10 +3,30 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
-import { db, TaskStatus } from '@trycompai/db';
+import { filterDescriptionByFrameworks } from './description-framework-filter';
+import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
+
+function computeNextTaskReviewDate(frequency: TaskFrequency | null | undefined): Date {
+  const now = new Date();
+  switch (frequency) {
+    case TaskFrequency.daily:
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    case TaskFrequency.weekly:
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
+    case TaskFrequency.monthly:
+      return new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    case TaskFrequency.quarterly:
+      return new Date(now.getFullYear(), now.getMonth() + 3, now.getDate());
+    case TaskFrequency.yearly:
+      return new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+    default:
+      return new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+  }
+}
 
 @Injectable()
 export class TasksService {
@@ -44,30 +64,112 @@ export class TasksService {
   }
 
   /**
-   * Get all tasks for an organization
+   * Fetch the active framework names for an organisation.
    */
-  async getTasks(organizationId: string): Promise<TaskResponseDto[]> {
-    try {
-      const tasks = await db.task.findMany({
-        where: {
-          organizationId,
-        },
-        orderBy: [{ status: 'asc' }, { order: 'asc' }, { createdAt: 'asc' }],
-      });
+  private async getActiveFrameworkNames(
+    organizationId: string,
+  ): Promise<string[]> {
+    const instances = await db.frameworkInstance.findMany({
+      where: { organizationId },
+      include: {
+        framework: { select: { name: true } },
+      },
+    });
+    return instances.map((fi) => fi.framework.name);
+  }
 
-      return tasks.map((task) => ({
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
-        taskTemplateId: task.taskTemplateId,
-      }));
+  /**
+   * Get all tasks for an organization
+   * @param organizationId - The organization ID
+   * @param assignmentFilter - Optional filter for assignment-based access (for employee/contractor roles)
+   */
+  async getTasks(
+    organizationId: string,
+    assignmentFilter: Prisma.TaskWhereInput = {},
+    options?: { includeRelations?: boolean },
+  ) {
+    try {
+      const [tasks, activeFrameworkNames] = await Promise.all([
+        db.task.findMany({
+          where: {
+            organizationId,
+            ...assignmentFilter,
+          },
+          ...(options?.includeRelations && {
+            include: {
+              controls: {
+                select: { id: true, name: true },
+              },
+              evidenceAutomations: {
+                select: {
+                  id: true,
+                  isEnabled: true,
+                  name: true,
+                  runs: {
+                    orderBy: { createdAt: 'desc' as const },
+                    take: 3,
+                    select: {
+                      status: true,
+                      success: true,
+                      evaluationStatus: true,
+                      createdAt: true,
+                      triggeredBy: true,
+                      runDuration: true,
+                    },
+                  },
+                },
+              },
+            },
+          }),
+          orderBy: [{ status: 'asc' }, { order: 'asc' }, { createdAt: 'asc' }],
+        }),
+        this.getActiveFrameworkNames(organizationId),
+      ]);
+
+      const filterDescription = (desc: string) =>
+        filterDescriptionByFrameworks(desc, activeFrameworkNames);
+
+      if (options?.includeRelations) {
+        return {
+          data: tasks.map((t) => ({
+            ...t,
+            description: filterDescription(t.description),
+          })),
+          count: tasks.length,
+        };
+      }
+
+      return {
+        data: tasks.map((task) => ({
+          id: task.id,
+          title: task.title,
+          description: filterDescription(task.description),
+          status: task.status,
+          createdAt: task.createdAt,
+          updatedAt: task.updatedAt,
+          taskTemplateId: task.taskTemplateId,
+        })),
+        count: tasks.length,
+      };
     } catch (error) {
       console.error('Error fetching tasks:', error);
       throw new InternalServerErrorException('Failed to fetch tasks');
     }
+  }
+
+  async getTaskTemplates(frameworkId?: string) {
+    const templates = await db.frameworkEditorTaskTemplate.findMany({
+      orderBy: { name: 'asc' },
+      where: frameworkId
+        ? {
+            controlTemplates: {
+              some: { requirements: { some: { frameworkId } } },
+            },
+          }
+        : undefined,
+    });
+
+    return templates;
   }
 
   /**
@@ -76,24 +178,34 @@ export class TasksService {
   async getTask(
     organizationId: string,
     taskId: string,
-  ): Promise<TaskResponseDto> {
+  ) {
     try {
-      const task = await db.task.findFirst({
-        where: {
-          id: taskId,
-          organizationId,
-        },
-        include: {
-          assignee: true,
-          approver: { include: { user: true } },
-        },
-      });
+      const [task, activeFrameworkNames] = await Promise.all([
+        db.task.findFirst({
+          where: {
+            id: taskId,
+            organizationId,
+          },
+          include: {
+            assignee: true,
+            controls: true,
+            approver: { include: { user: true } },
+          },
+        }),
+        this.getActiveFrameworkNames(organizationId),
+      ]);
 
       if (!task) {
         throw new BadRequestException('Task not found or access denied');
       }
 
-      return task;
+      return {
+        ...task,
+        description: filterDescriptionByFrameworks(
+          task.description,
+          activeFrameworkNames,
+        ),
+      };
     } catch (error) {
       console.error('Error fetching task:', error);
       if (error instanceof BadRequestException) {
@@ -144,7 +256,7 @@ export class TasksService {
         where,
         include: {
           user: {
-            select: { id: true, name: true, email: true, image: true },
+            select: { id: true, name: true, email: true, image: true, role: true },
           },
         },
         orderBy: { timestamp: 'desc' },
@@ -184,6 +296,54 @@ export class TasksService {
   }
 
   /**
+   * Get page options for the tasks overview page
+   */
+  async getTaskPageOptions(organizationId: string, userId?: string) {
+    const [controls, frameworkInstances, organization, member] =
+      await Promise.all([
+        db.control.findMany({
+          where: { organizationId },
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        }),
+        db.frameworkInstance.findMany({
+          where: { organizationId },
+          include: {
+            framework: { select: { id: true, name: true } },
+            requirementsMapped: { select: { controlId: true } },
+          },
+        }),
+        db.organization.findUnique({
+          where: { id: organizationId },
+          select: { name: true, evidenceApprovalEnabled: true },
+        }),
+        userId
+          ? db.member.findFirst({
+              where: { userId, organizationId, deactivated: false },
+              select: { role: true },
+            })
+          : null,
+      ]);
+
+    const roles =
+      member?.role
+        ?.split(',')
+        .map((r) => r.trim())
+        .filter(Boolean) || [];
+    const hasEvidenceExportAccess = roles.some((r) =>
+      ['auditor', 'admin', 'owner'].includes(r),
+    );
+
+    return {
+      controls,
+      frameworkInstances,
+      organizationName: organization?.name ?? null,
+      hasEvidenceExportAccess,
+      evidenceApprovalEnabled: organization?.evidenceApprovalEnabled ?? false,
+    };
+  }
+
+  /**
    * Update status for multiple tasks
    */
   async updateTasksStatus(
@@ -194,13 +354,21 @@ export class TasksService {
     changedByUserId: string,
   ): Promise<{ updatedCount: number }> {
     try {
+      // Enforce approval workflow: exclude tasks that can't be bulk-updated
+      const where: Record<string, unknown> = {
+        id: { in: taskIds },
+        organizationId,
+        // Cannot change status of tasks currently in review
+        status: { not: 'in_review' as TaskStatus },
+      };
+
+      // Cannot mark tasks as done if they have an approver assigned
+      if (status === TaskStatus.done) {
+        where.approverId = null;
+      }
+
       const result = await db.task.updateMany({
-        where: {
-          id: {
-            in: taskIds,
-          },
-          organizationId,
-        },
+        where,
         data: {
           status,
           updatedAt: new Date(),
@@ -249,6 +417,16 @@ export class TasksService {
     changedByUserId: string,
   ): Promise<{ updatedCount: number }> {
     try {
+      if (assigneeId) {
+        const assigneeMember = await db.member.findFirst({
+          where: { id: assigneeId, organizationId },
+          include: { user: { select: { role: true } } },
+        });
+        if (assigneeMember?.user.role === 'admin') {
+          throw new BadRequestException('Cannot assign a platform admin as assignee');
+        }
+      }
+
       const result = await db.task.updateMany({
         where: {
           id: {
@@ -333,10 +511,12 @@ export class TasksService {
     organizationId: string,
     taskId: string,
     updateData: {
+      title?: string;
+      description?: string;
       status?: TaskStatus;
       assigneeId?: string | null;
       approverId?: string | null;
-      frequency?: string;
+      frequency?: TaskFrequency;
       department?: string;
       reviewDate?: Date | null;
     },
@@ -354,6 +534,7 @@ export class TasksService {
           title: true,
           status: true,
           assigneeId: true,
+          approverId: true,
         },
       });
 
@@ -363,18 +544,52 @@ export class TasksService {
 
       // Prepare update data - Prisma handles updatedAt automatically
       const dataToUpdate: {
+        title?: string;
+        description?: string;
         status?: TaskStatus;
         assigneeId?: string | null;
         approverId?: string | null;
-        frequency?: string;
+        frequency?: TaskFrequency;
         department?: string;
         reviewDate?: Date | null;
       } = {};
 
+      if (updateData.title !== undefined) {
+        dataToUpdate.title = updateData.title;
+      }
+      if (updateData.description !== undefined) {
+        dataToUpdate.description = updateData.description;
+      }
       if (updateData.status !== undefined) {
+        // Prevent bypassing the approval workflow via direct status change
+        if (existingTask.status === 'in_review' && updateData.status !== 'in_review') {
+          throw new BadRequestException(
+            'Cannot change status directly while task is in review. Use the approve or reject actions instead.',
+          );
+        }
+        // Prevent directly setting status to 'done' when an approver is assigned
+        // (must go through submitForReview → approveTask workflow)
+        if (
+          updateData.status === 'done' &&
+          existingTask.status !== 'done' &&
+          existingTask.approverId
+        ) {
+          throw new BadRequestException(
+            'Cannot mark task as done directly when an approver is assigned. Submit for review instead.',
+          );
+        }
         dataToUpdate.status = updateData.status;
       }
       if (updateData.assigneeId !== undefined) {
+        if (updateData.assigneeId !== null) {
+          const assigneeMember = await db.member.findFirst({
+            where: { id: updateData.assigneeId, organizationId },
+            include: { user: { select: { role: true } } },
+          });
+          if (assigneeMember?.user.role === 'admin') {
+            throw new BadRequestException('Cannot assign a platform admin as assignee');
+          }
+        }
         dataToUpdate.assigneeId =
           updateData.assigneeId === null ? null : updateData.assigneeId;
       }
@@ -384,12 +599,23 @@ export class TasksService {
       }
       if (updateData.frequency !== undefined) {
         dataToUpdate.frequency = updateData.frequency;
+        // When frequency changes, recalculate the review date
+        dataToUpdate.reviewDate = computeNextTaskReviewDate(updateData.frequency);
       }
       if (updateData.department !== undefined) {
         dataToUpdate.department = updateData.department;
       }
       if (updateData.reviewDate !== undefined) {
         dataToUpdate.reviewDate = updateData.reviewDate;
+      }
+
+      // When status changes to done, set review date based on frequency
+      if (updateData.status === TaskStatus.done && !updateData.reviewDate) {
+        const task = await db.task.findFirst({
+          where: { id: taskId, organizationId },
+          select: { frequency: true },
+        });
+        dataToUpdate.reviewDate = computeNextTaskReviewDate(task?.frequency);
       }
 
       // Get the current member for audit logging
@@ -523,6 +749,146 @@ export class TasksService {
   }
 
   /**
+   * Create a new task
+   */
+  async createTask(
+    organizationId: string,
+    createData: {
+      title: string;
+      description: string;
+      assigneeId?: string | null;
+      frequency?: string | null;
+      department?: string | null;
+      controlIds?: string[];
+      taskTemplateId?: string | null;
+      vendorId?: string | null;
+    },
+  ): Promise<TaskResponseDto> {
+    try {
+      // Get automation status from template if one is selected
+      let automationStatus: 'AUTOMATED' | 'MANUAL' = 'AUTOMATED';
+      if (createData.taskTemplateId) {
+        const template = await db.frameworkEditorTaskTemplate.findUnique({
+          where: { id: createData.taskTemplateId },
+          select: { automationStatus: true },
+        });
+        if (template) {
+          automationStatus = template.automationStatus;
+        }
+      }
+
+      const task = await db.task.create({
+        data: {
+          title: createData.title,
+          description: createData.description,
+          assigneeId: createData.assigneeId || null,
+          organizationId,
+          status: 'todo',
+          order: 0,
+          frequency: (createData.frequency as TaskFrequency) || null,
+          department: (createData.department as Departments) || null,
+          automationStatus,
+          taskTemplateId: createData.taskTemplateId || null,
+          ...(createData.controlIds &&
+            createData.controlIds.length > 0 && {
+              controls: {
+                connect: createData.controlIds.map((id) => ({ id })),
+              },
+            }),
+          ...(createData.vendorId && {
+            vendors: {
+              connect: { id: createData.vendorId },
+            },
+          }),
+        },
+      });
+
+      return {
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+        taskTemplateId: task.taskTemplateId,
+      };
+    } catch (error) {
+      console.error('Error creating task:', error);
+      throw new InternalServerErrorException('Failed to create task');
+    }
+  }
+
+  /**
+   * Regenerate task from its associated template
+   */
+  async regenerateFromTemplate(
+    organizationId: string,
+    taskId: string,
+  ) {
+    const task = await db.task.findFirst({
+      where: { id: taskId, organizationId },
+      include: { taskTemplate: true },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    if (!task.taskTemplate) {
+      throw new BadRequestException('Task has no associated template to regenerate from');
+    }
+
+    const updated = await db.task.update({
+      where: { id: taskId },
+      data: {
+        title: task.taskTemplate.name,
+        description: task.taskTemplate.description,
+        automationStatus: task.taskTemplate.automationStatus,
+      },
+    });
+
+    return { id: updated.id, title: updated.title };
+  }
+
+  /**
+   * Reorder tasks (update order and status for multiple tasks)
+   */
+  async reorderTasks(
+    organizationId: string,
+    updates: { id: string; order: number; status: TaskStatus }[],
+  ): Promise<void> {
+    for (const { id, order, status } of updates) {
+      await db.task.update({
+        where: { id, organizationId },
+        data: { order, status },
+      });
+    }
+  }
+
+  /**
+   * Delete a single task by ID
+   */
+  async deleteTask(
+    organizationId: string,
+    taskId: string,
+  ): Promise<void> {
+    const task = await db.task.findFirst({
+      where: {
+        id: taskId,
+        organizationId,
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    await db.task.delete({
+      where: { id: taskId },
+    });
+  }
+
+  /**
    * Submit a task for review (moves status to in_review)
    */
   async submitForReview(
@@ -555,6 +921,10 @@ export class TasksService {
 
     if (!approver) {
       throw new BadRequestException('Approver not found or is deactivated');
+    }
+
+    if (approver.user.role === 'admin') {
+      throw new BadRequestException('Cannot assign a platform admin as approver');
     }
 
     const currentMember = await db.member.findFirst({
@@ -628,6 +998,10 @@ export class TasksService {
 
     if (!approver) {
       throw new BadRequestException('Approver not found or is deactivated');
+    }
+
+    if (approver.user.role === 'admin') {
+      throw new BadRequestException('Cannot assign a platform admin as approver');
     }
 
     const tasks = await db.task.findMany({
@@ -743,7 +1117,7 @@ export class TasksService {
         data: {
           status: TaskStatus.done,
           approvedAt: now,
-          reviewDate: now,
+          reviewDate: computeNextTaskReviewDate(task.frequency),
           previousStatus: null,
         },
         include: { assignee: true, approver: true },

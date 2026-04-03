@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { sendEmail } from '../email/resend';
+import { triggerEmail } from '../email/trigger-email';
 import { AccessGrantedEmail } from '../email/templates/access-granted';
 import { AccessReclaimEmail } from '../email/templates/access-reclaim';
 import { NdaSigningEmail } from '../email/templates/nda-signing';
@@ -17,7 +17,7 @@ export class TrustEmailService {
   }): Promise<void> {
     const { toEmail, toName, organizationName, ndaSigningLink } = params;
 
-    const { id } = await sendEmail({
+    const { id } = await triggerEmail({
       to: toEmail,
       subject: `NDA Signature Required - ${organizationName}`,
       react: NdaSigningEmail({
@@ -40,7 +40,7 @@ export class TrustEmailService {
   }): Promise<void> {
     const { toEmail, toName, organizationName, expiresAt, portalUrl } = params;
 
-    const { id } = await sendEmail({
+    const { id } = await triggerEmail({
       to: toEmail,
       subject: `Access Granted - ${organizationName}`,
       react: AccessGrantedEmail({
@@ -64,7 +64,7 @@ export class TrustEmailService {
   }): Promise<void> {
     const { toEmail, toName, organizationName, accessLink, expiresAt } = params;
 
-    const { id } = await sendEmail({
+    const { id } = await triggerEmail({
       to: toEmail,
       subject: `Access Your Compliance Data - ${organizationName}`,
       react: AccessReclaimEmail({
@@ -102,7 +102,7 @@ export class TrustEmailService {
       reviewUrl,
     } = params;
 
-    const { id } = await sendEmail({
+    const { id } = await triggerEmail({
       to: toEmail,
       subject: `New Trust Portal Access Request - ${organizationName}`,
       react: AccessRequestNotificationEmail({

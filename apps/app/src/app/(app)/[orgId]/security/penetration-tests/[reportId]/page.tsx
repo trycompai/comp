@@ -1,5 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@db/server';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';

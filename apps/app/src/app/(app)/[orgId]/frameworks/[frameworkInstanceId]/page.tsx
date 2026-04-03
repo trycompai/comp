@@ -1,87 +1,58 @@
-import { auth } from '@/utils/auth';
-import { db } from '@db';
-import { headers } from 'next/headers';
+import { serverApi } from '@/lib/api-server';
+import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import PageWithBreadcrumb from '../../../../../components/pages/PageWithBreadcrumb';
-import { getSingleFrameworkInstanceWithControls } from '../data/getSingleFrameworkInstanceWithControls';
 import { FrameworkOverview } from './components/FrameworkOverview';
 import { FrameworkRequirements } from './components/FrameworkRequirements';
 
 interface PageProps {
   params: Promise<{
+    orgId: string;
     frameworkInstanceId: string;
   }>;
 }
 
 export default async function FrameworkPage({ params }: PageProps) {
-  const { frameworkInstanceId } = await params;
+  const { orgId: organizationId, frameworkInstanceId } = await params;
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const frameworkRes = await serverApi.get<any>(
+    `/v1/frameworks/${frameworkInstanceId}`,
+  );
 
-  if (!session) {
-    redirect('/');
+  if (!frameworkRes.data) {
+    redirect(`/${organizationId}/frameworks`);
   }
 
-  const organizationId = session.session.activeOrganizationId;
-
-  if (!organizationId) {
-    redirect('/');
-  }
-
-  const frameworkInstanceWithControls = await getSingleFrameworkInstanceWithControls({
-    organizationId,
-    frameworkInstanceId,
-  });
-
-  if (!frameworkInstanceWithControls) {
-    redirect('/');
-  }
-
-  // Fetch requirement definitions for this framework
-  const requirementDefinitions = await db.frameworkEditorRequirement.findMany({
-    where: {
-      frameworkId: frameworkInstanceWithControls.frameworkId,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-  });
-
-  const frameworkName = frameworkInstanceWithControls.framework.name;
-
-  const tasks = await db.task.findMany({
-    where: {
-      organizationId,
-      controls: {
-        some: {
-          id: frameworkInstanceWithControls.id,
-        },
-      },
-    },
-    include: {
-      controls: true,
-    },
-  });
+  const framework = frameworkRes.data;
+  const frameworkInstanceWithControls = {
+    ...framework,
+    controls: framework.controls ?? [],
+  };
+  const frameworkName = framework.framework?.name ?? 'Framework';
 
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        { label: 'Frameworks', href: `/${organizationId}/frameworks` },
-        { label: frameworkName, current: true },
-      ]}
-    >
-      <div className="flex flex-col gap-6">
-        <FrameworkOverview
-          frameworkInstanceWithControls={frameworkInstanceWithControls}
-          tasks={tasks || []}
-        />
-        <FrameworkRequirements
-          requirementDefinitions={requirementDefinitions}
-          frameworkInstanceWithControls={frameworkInstanceWithControls}
-        />
-      </div>
-    </PageWithBreadcrumb>
+    <PageLayout>
+      <Breadcrumb
+        items={[
+          {
+            label: 'Frameworks',
+            href: `/${organizationId}/frameworks`,
+            props: { render: <Link href={`/${organizationId}/frameworks`} /> },
+          },
+          { label: frameworkName, isCurrent: true },
+        ]}
+      />
+      <FrameworkOverview
+        frameworkInstanceWithControls={frameworkInstanceWithControls}
+        tasks={framework.tasks || []}
+        evidenceSubmissions={framework.evidenceSubmissions || []}
+      />
+      <FrameworkRequirements
+        requirementDefinitions={framework.requirementDefinitions || []}
+        frameworkInstanceWithControls={frameworkInstanceWithControls}
+        tasks={framework.tasks || []}
+        evidenceSubmissions={framework.evidenceSubmissions || []}
+      />
+    </PageLayout>
   );
 }

@@ -28,7 +28,7 @@ model Task {
   evidenceAutomations EvidenceAutomation[]
   browserAutomations  BrowserAutomation[]
 
-  EvidenceAutomationRun EvidenceAutomationRun[]
+  evidenceAutomationRuns EvidenceAutomationRun[]
   integrationCheckRuns  IntegrationCheckRun[]
   findings              Finding[]
 
