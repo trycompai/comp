@@ -1,5 +1,6 @@
 'use client';
 
+import { useDnsStatus } from '@/hooks/use-dns-status';
 import { DEFAULT_CNAME_TARGET, useDomain } from '@/hooks/use-domain';
 import { Button } from '@trycompai/ui/button';
 import {
@@ -13,11 +14,12 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { Input } from '@trycompai/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
+import { Alert, AlertDescription } from '@trycompai/design-system';
+import { CheckmarkFilled, Copy, Launch, Renew, WarningFilled } from '@trycompai/design-system/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, CheckCircle, ClipboardCopy, ExternalLink, Loader2 } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -47,10 +49,6 @@ export function TrustPortalDomain({
   vercelVerification: string | null;
   orgId: string;
 }) {
-  const [isCnameVerified, setIsCnameVerified] = useState(false);
-  const [isTxtVerified, setIsTxtVerified] = useState(false);
-  const [isVercelTxtVerified, setIsVercelTxtVerified] = useState(false);
-
   const { data: domainStatus } = useDomain(initialDomain);
 
   const verificationInfo = useMemo(() => {
@@ -81,14 +79,15 @@ export function TrustPortalDomain({
     return target.endsWith('.') ? target : `${target}.`;
   }, [domainStatus?.data?.cnameTarget]);
 
-  useEffect(() => {
-    const isCnameVerified = localStorage.getItem(`${initialDomain}-isCnameVerified`);
-    const isTxtVerified = localStorage.getItem(`${initialDomain}-isTxtVerified`);
-    const isVercelTxtVerified = localStorage.getItem(`${initialDomain}-isVercelTxtVerified`);
-    setIsCnameVerified(isCnameVerified === 'true');
-    setIsTxtVerified(isTxtVerified === 'true');
-    setIsVercelTxtVerified(isVercelTxtVerified === 'true');
-  }, [initialDomain]);
+  const {
+    isCnameVerified,
+    isTxtVerified,
+    isVercelTxtVerified,
+    mutate: recheckDns,
+  } = useDnsStatus({
+    domain: initialDomain,
+    enabled: !!initialDomain && !isEffectivelyVerified,
+  });
 
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('trust', 'update');
@@ -104,14 +103,6 @@ export function TrustPortalDomain({
   });
 
   const onSubmit = async (data: z.infer<typeof trustPortalDomainSchema>) => {
-    setIsCnameVerified(false);
-    setIsTxtVerified(false);
-    setIsVercelTxtVerified(false);
-
-    localStorage.removeItem(`${initialDomain}-isCnameVerified`);
-    localStorage.removeItem(`${initialDomain}-isTxtVerified`);
-    localStorage.removeItem(`${initialDomain}-isVercelTxtVerified`);
-
     setIsUpdatingDomain(true);
     try {
       const result = await submitCustomDomain(data.domain);
@@ -137,33 +128,10 @@ export function TrustPortalDomain({
     setIsCheckingDns(true);
     try {
       const data = await checkDns(form.watch('domain'));
+      // Update SWR cache with the result directly — no duplicate request
+      recheckDns(data, { revalidate: false });
       if (data && typeof data === 'object' && 'error' in data && data.error) {
         toast.error(data.error as string);
-        if (data.isCnameVerified) {
-          setIsCnameVerified(true);
-          localStorage.setItem(`${initialDomain}-isCnameVerified`, 'true');
-        }
-        if (data.isTxtVerified) {
-          setIsTxtVerified(true);
-          localStorage.setItem(`${initialDomain}-isTxtVerified`, 'true');
-        }
-        if (data.isVercelTxtVerified) {
-          setIsVercelTxtVerified(true);
-          localStorage.setItem(`${initialDomain}-isVercelTxtVerified`, 'true');
-        }
-      } else if (data && typeof data === 'object') {
-        if (data.isCnameVerified) {
-          setIsCnameVerified(true);
-          localStorage.removeItem(`${initialDomain}-isCnameVerified`);
-        }
-        if (data.isTxtVerified) {
-          setIsTxtVerified(true);
-          localStorage.removeItem(`${initialDomain}-isTxtVerified`);
-        }
-        if (data.isVercelTxtVerified) {
-          setIsVercelTxtVerified(true);
-          localStorage.removeItem(`${initialDomain}-isVercelTxtVerified`);
-        }
       }
     } catch {
       toast.error(
@@ -198,7 +166,7 @@ export function TrustPortalDomain({
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger type="button">
-                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                <CheckmarkFilled size={16} className="text-success" />
                               </TooltipTrigger>
                               <TooltipContent>Domain is verified</TooltipContent>
                             </Tooltip>
@@ -207,7 +175,7 @@ export function TrustPortalDomain({
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger type="button">
-                                <AlertCircle className="h-4 w-4 text-red-500" />
+                                <WarningFilled size={16} className="text-destructive" />
                               </TooltipTrigger>
                               <TooltipContent>Domain is not verified yet</TooltipContent>
                             </Tooltip>
@@ -235,7 +203,7 @@ export function TrustPortalDomain({
                           disabled={isCheckingDns}
                         >
                           {isCheckingDns ? (
-                            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                            <Renew size={16} className="mr-1 animate-spin" />
                           ) : null}
                           Check DNS record
                         </Button>
@@ -251,35 +219,30 @@ export function TrustPortalDomain({
                 !isEffectivelyVerified && (
                   <div className="space-y-2 pt-2">
                     {verificationInfo && (
-                      <div className="rounded-md border border-amber-200 bg-amber-100 p-4 dark:border-amber-900 dark:bg-amber-950">
-                        <div className="flex gap-3">
-                          <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-                          <p className="text-amber-800 text-sm dark:text-amber-200">
-                            This domain is linked to another Vercel account. To use it with this
-                            project, add a {verificationInfo.type} record at{' '}
-                            {verificationInfo.domain} to verify ownership. You can remove the record
-                            after verification is complete.
-                            <a
-                              href="https://vercel.com/docs/domains/troubleshooting#misconfigured-domain-issues"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-white underline dark:text-white ml-2"
-                            >
-                              Learn more
-                              <ExternalLink className="ml-1 mb-0.5 inline-block h-4 w-4 font-bold text-white dark:text-white stroke-2" />
-                            </a>
-                          </p>
-                        </div>
-                      </div>
+                      <Alert variant="warning">
+                        <AlertDescription>
+                          This domain is linked to another Vercel account. To use it with this
+                          project, add a {verificationInfo.type} record at{' '}
+                          {verificationInfo.domain} to verify ownership. You can remove the record
+                          after verification is complete.{' '}
+                          <a
+                            href="https://vercel.com/docs/domains/troubleshooting#misconfigured-domain-issues"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Learn more <Launch size={14} className="mb-0.5 inline-block" />
+                          </a>
+                        </AlertDescription>
+                      </Alert>
                     )}
                     <div className="rounded-md border">
                       <div className="text-sm">
-                        <table className="hidden w-full lg:table">
+                        <table className="hidden w-full table-fixed lg:table">
                           <thead>
                             <tr className="[&_th]:px-3 [&_th]:py-2 [&_th]:text-left">
-                              <th>Verified</th>
-                              <th>Type</th>
-                              <th>Name</th>
+                              <th className="w-20">Verified</th>
+                              <th className="w-16">Type</th>
+                              <th className="w-1/4">Name</th>
                               <th>Value</th>
                             </tr>
                           </thead>
@@ -287,15 +250,15 @@ export function TrustPortalDomain({
                             <tr className="border-t [&_td]:px-3 [&_td]:py-2">
                               <td>
                                 {isCnameVerified ? (
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                  <CheckmarkFilled size={16} className="text-success" />
                                 ) : (
-                                  <AlertCircle className="h-4 w-4 text-red-500" />
+                                  <WarningFilled size={16} className="text-destructive" />
                                 )}
                               </td>
                               <td>CNAME</td>
                               <td>
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="min-w-0 break-words">{initialDomain}</span>
+                                  <span className="min-w-0 break-all">{initialDomain}</span>
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -303,13 +266,13 @@ export function TrustPortalDomain({
                                     onClick={() => handleCopy(initialDomain, 'Name')}
                                     className="h-6 w-6 shrink-0"
                                   >
-                                    <ClipboardCopy className="h-4 w-4" />
+                                    <Copy size={16} />
                                   </Button>
                                 </div>
                               </td>
                               <td>
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="min-w-0 break-words">{cnameTarget}</span>
+                                  <span className="min-w-0 break-all">{cnameTarget}</span>
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -317,7 +280,7 @@ export function TrustPortalDomain({
                                     onClick={() => handleCopy(cnameTarget, 'Value')}
                                     className="h-6 w-6 shrink-0"
                                   >
-                                    <ClipboardCopy className="h-4 w-4" />
+                                    <Copy size={16} />
                                   </Button>
                                 </div>
                               </td>
@@ -325,15 +288,15 @@ export function TrustPortalDomain({
                             <tr className="border-t [&_td]:px-3 [&_td]:py-2">
                               <td>
                                 {isTxtVerified ? (
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                  <CheckmarkFilled size={16} className="text-success" />
                                 ) : (
-                                  <AlertCircle className="h-4 w-4 text-red-500" />
+                                  <WarningFilled size={16} className="text-destructive" />
                                 )}
                               </td>
                               <td>TXT</td>
                               <td>
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="min-w-0 break-words">@</span>
+                                  <span className="min-w-0 break-all">@</span>
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -343,13 +306,13 @@ export function TrustPortalDomain({
                                     }
                                     className="h-6 w-6 shrink-0"
                                   >
-                                    <ClipboardCopy className="h-4 w-4" />
+                                    <Copy size={16} />
                                   </Button>
                                 </div>
                               </td>
                               <td>
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="min-w-0 break-words">
+                                  <span className="min-w-0 break-all">
                                     compai-domain-verification={orgId}
                                   </span>
                                   <Button
@@ -361,7 +324,7 @@ export function TrustPortalDomain({
                                     }
                                     className="h-6 w-6 shrink-0"
                                   >
-                                    <ClipboardCopy className="h-4 w-4" />
+                                    <Copy size={16} />
                                   </Button>
                                 </div>
                               </td>
@@ -370,15 +333,15 @@ export function TrustPortalDomain({
                               <tr className="border-t [&_td]:px-3 [&_td]:py-2">
                                 <td>
                                   {isVercelTxtVerified ? (
-                                    <CheckCircle className="h-4 w-4 text-green-500" />
+                                    <CheckmarkFilled size={16} className="text-success" />
                                   ) : (
-                                    <AlertCircle className="h-4 w-4 text-red-500" />
+                                    <WarningFilled size={16} className="text-destructive" />
                                   )}
                                 </td>
                                 <td>TXT</td>
                                 <td>
                                   <div className="flex items-center justify-between gap-2">
-                                    <span className="min-w-0 break-words">_vercel</span>
+                                    <span className="min-w-0 break-all">_vercel</span>
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -386,13 +349,13 @@ export function TrustPortalDomain({
                                       onClick={() => handleCopy('_vercel', 'Name')}
                                       className="h-6 w-6 shrink-0"
                                     >
-                                      <ClipboardCopy className="h-4 w-4" />
+                                      <Copy size={16} />
                                     </Button>
                                   </div>
                                 </td>
                                 <td>
                                   <div className="flex items-center justify-between gap-2">
-                                    <span className="min-w-0 break-words">
+                                    <span className="min-w-0 break-all">
                                       {effectiveVercelTxtValue}
                                     </span>
                                     <Button
@@ -402,7 +365,7 @@ export function TrustPortalDomain({
                                       onClick={() => handleCopy(effectiveVercelTxtValue || '', 'Value')}
                                       className="h-6 w-6 shrink-0"
                                     >
-                                      <ClipboardCopy className="h-4 w-4" />
+                                      <Copy size={16} />
                                     </Button>
                                   </div>
                                 </td>
@@ -412,14 +375,18 @@ export function TrustPortalDomain({
                         </table>
 
                         <div className="space-y-4 p-4 lg:hidden">
-                          <div>
-                            <div className="mb-1 font-medium">Type:</div>
-                            <div>CNAME</div>
+                          <div className="flex items-center gap-2">
+                            {isCnameVerified ? (
+                              <CheckmarkFilled size={16} className="shrink-0 text-success" />
+                            ) : (
+                              <WarningFilled size={16} className="shrink-0 text-destructive" />
+                            )}
+                            <span className="font-medium">CNAME</span>
                           </div>
                           <div>
                             <div className="mb-1 font-medium">Name:</div>
                             <div className="flex items-center justify-between gap-2">
-                              <span className="min-w-0 break-words">{form.watch('domain')}</span>
+                              <span className="min-w-0 break-all">{form.watch('domain')}</span>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -427,14 +394,14 @@ export function TrustPortalDomain({
                                 onClick={() => handleCopy(form.watch('domain'), 'Name')}
                                 className="h-6 w-6 shrink-0"
                               >
-                                <ClipboardCopy className="h-4 w-4" />
+                                <Copy size={16} />
                               </Button>
                             </div>
                           </div>
                           <div>
                             <div className="mb-1 font-medium">Value:</div>
                             <div className="flex items-center justify-between gap-2">
-                              <span className="min-w-0 break-words">{cnameTarget}</span>
+                              <span className="min-w-0 break-all">{cnameTarget}</span>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -442,19 +409,23 @@ export function TrustPortalDomain({
                                 onClick={() => handleCopy(cnameTarget, 'Value')}
                                 className="h-6 w-6 shrink-0"
                               >
-                                <ClipboardCopy className="h-4 w-4" />
+                                <Copy size={16} />
                               </Button>
                             </div>
                           </div>
                           <div className="border-b" />
-                          <div>
-                            <div className="mb-1 font-medium">Type:</div>
-                            <div>TXT</div>
+                          <div className="flex items-center gap-2">
+                            {isTxtVerified ? (
+                              <CheckmarkFilled size={16} className="shrink-0 text-success" />
+                            ) : (
+                              <WarningFilled size={16} className="shrink-0 text-destructive" />
+                            )}
+                            <span className="font-medium">TXT</span>
                           </div>
                           <div>
                             <div className="mb-1 font-medium">Name:</div>
                             <div className="flex items-center justify-between gap-2">
-                              <span className="min-w-0 break-words">@</span>
+                              <span className="min-w-0 break-all">@</span>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -464,14 +435,14 @@ export function TrustPortalDomain({
                                 }
                                 className="h-6 w-6 shrink-0"
                               >
-                                <ClipboardCopy className="h-4 w-4" />
+                                <Copy size={16} />
                               </Button>
                             </div>
                           </div>
                           <div>
                             <div className="mb-1 font-medium">Value:</div>
                             <div className="flex items-center justify-between gap-2">
-                              <span className="min-w-0 break-words">
+                              <span className="min-w-0 break-all">
                                 compai-domain-verification={orgId}
                               </span>
                               <Button
@@ -483,21 +454,25 @@ export function TrustPortalDomain({
                                 }
                                 className="h-6 w-6 shrink-0"
                               >
-                                <ClipboardCopy className="h-4 w-4" />
+                                <Copy size={16} />
                               </Button>
                             </div>
                           </div>
                           {needsVercelTxt && (
                             <>
                               <div className="border-b" />
-                              <div>
-                                <div className="mb-1 font-medium">Type:</div>
-                                <div>TXT</div>
+                              <div className="flex items-center gap-2">
+                                {isVercelTxtVerified ? (
+                                  <CheckmarkFilled size={16} className="shrink-0 text-success" />
+                                ) : (
+                                  <WarningFilled size={16} className="shrink-0 text-destructive" />
+                                )}
+                                <span className="font-medium">TXT (_vercel)</span>
                               </div>
                               <div>
                                 <div className="mb-1 font-medium">Name:</div>
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="min-w-0 break-words">_vercel</span>
+                                  <span className="min-w-0 break-all">_vercel</span>
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -505,14 +480,14 @@ export function TrustPortalDomain({
                                     onClick={() => handleCopy('_vercel', 'Name')}
                                     className="h-6 w-6 shrink-0"
                                   >
-                                    <ClipboardCopy className="h-4 w-4" />
+                                    <Copy size={16} />
                                   </Button>
                                 </div>
                               </div>
                               <div>
                                 <div className="mb-1 font-medium">Value:</div>
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="min-w-0 break-words">{effectiveVercelTxtValue}</span>
+                                  <span className="min-w-0 break-all">{effectiveVercelTxtValue}</span>
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -520,7 +495,7 @@ export function TrustPortalDomain({
                                     onClick={() => handleCopy(effectiveVercelTxtValue || '', 'Value')}
                                     className="h-6 w-6 shrink-0"
                                   >
-                                    <ClipboardCopy className="h-4 w-4" />
+                                    <Copy size={16} />
                                   </Button>
                                 </div>
                               </div>
@@ -544,9 +519,9 @@ export function TrustPortalDomain({
               }
             >
               {isUpdatingDomain ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                <Renew size={16} className="mr-1 animate-spin" />
               ) : null}
-              {'Save'}
+              Save
             </Button>
           </CardFooter>
         </Card>
