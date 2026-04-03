@@ -62,6 +62,18 @@ export function TrustPortalDomain({
     return null;
   }, [domainStatus]);
 
+  // Domain is truly verified only when both our DB and Vercel agree.
+  // While Vercel data is loading, fall back to DB value to avoid flicker.
+  const isVercelVerified = domainStatus?.data?.verified;
+  const isEffectivelyVerified =
+    domainVerified && (isVercelVerified === undefined || isVercelVerified);
+
+  // Show _vercel TXT row if DB says so OR live Vercel data has verification requirements
+  const needsVercelTxt = isVercelDomain || verificationInfo !== null;
+
+  // Prefer live Vercel verification value over stale DB value
+  const effectiveVercelTxtValue = verificationInfo?.value ?? vercelVerification;
+
   // Get the actual CNAME target from Vercel, with fallback
   // Normalize to include trailing dot for DNS record display
   const cnameTarget = useMemo(() => {
@@ -182,7 +194,7 @@ export function TrustPortalDomain({
                     <FormLabel className="flex items-center gap-2">
                       Custom Domain
                       {initialDomain !== '' &&
-                        (domainVerified ? (
+                        (isEffectivelyVerified ? (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger type="button">
@@ -215,7 +227,7 @@ export function TrustPortalDomain({
                           disabled={!canUpdate}
                         />
                       </FormControl>
-                      {field.value === initialDomain && initialDomain !== '' && !domainVerified && (
+                      {field.value === initialDomain && initialDomain !== '' && !isEffectivelyVerified && (
                         <Button
                           type="button"
                           className="md:max-w-[300px]"
@@ -236,7 +248,7 @@ export function TrustPortalDomain({
 
               {form.watch('domain') === initialDomain &&
                 initialDomain !== '' &&
-                !domainVerified && (
+                !isEffectivelyVerified && (
                   <div className="space-y-2 pt-2">
                     {verificationInfo && (
                       <div className="rounded-md border border-amber-200 bg-amber-100 p-4 dark:border-amber-900 dark:bg-amber-950">
@@ -354,7 +366,7 @@ export function TrustPortalDomain({
                                 </div>
                               </td>
                             </tr>
-                            {isVercelDomain && (
+                            {needsVercelTxt && (
                               <tr className="border-t [&_td]:px-3 [&_td]:py-2">
                                 <td>
                                   {isVercelTxtVerified ? (
@@ -371,7 +383,7 @@ export function TrustPortalDomain({
                                       variant="ghost"
                                       size="icon"
                                       type="button"
-                                      onClick={() => handleCopy(vercelVerification || '', 'Name')}
+                                      onClick={() => handleCopy(effectiveVercelTxtValue || '', 'Name')}
                                       className="h-6 w-6 shrink-0"
                                     >
                                       <ClipboardCopy className="h-4 w-4" />
@@ -381,13 +393,13 @@ export function TrustPortalDomain({
                                 <td>
                                   <div className="flex items-center justify-between gap-2">
                                     <span className="min-w-0 break-words">
-                                      {vercelVerification}
+                                      {effectiveVercelTxtValue}
                                     </span>
                                     <Button
                                       variant="ghost"
                                       size="icon"
                                       type="button"
-                                      onClick={() => handleCopy(vercelVerification || '', 'Value')}
+                                      onClick={() => handleCopy(effectiveVercelTxtValue || '', 'Value')}
                                       className="h-6 w-6 shrink-0"
                                     >
                                       <ClipboardCopy className="h-4 w-4" />
@@ -475,7 +487,7 @@ export function TrustPortalDomain({
                               </Button>
                             </div>
                           </div>
-                          {isVercelDomain && (
+                          {needsVercelTxt && (
                             <>
                               <div className="border-b" />
                               <div>
@@ -490,7 +502,7 @@ export function TrustPortalDomain({
                                     variant="ghost"
                                     size="icon"
                                     type="button"
-                                    onClick={() => handleCopy(vercelVerification || '', 'Name')}
+                                    onClick={() => handleCopy(effectiveVercelTxtValue || '', 'Name')}
                                     className="h-6 w-6 shrink-0"
                                   >
                                     <ClipboardCopy className="h-4 w-4" />
@@ -500,12 +512,12 @@ export function TrustPortalDomain({
                               <div>
                                 <div className="mb-1 font-medium">Value:</div>
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="min-w-0 break-words">{vercelVerification}</span>
+                                  <span className="min-w-0 break-words">{effectiveVercelTxtValue}</span>
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     type="button"
-                                    onClick={() => handleCopy(vercelVerification || '', 'Value')}
+                                    onClick={() => handleCopy(effectiveVercelTxtValue || '', 'Value')}
                                     className="h-6 w-6 shrink-0"
                                   >
                                     <ClipboardCopy className="h-4 w-4" />

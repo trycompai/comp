@@ -110,6 +110,7 @@ async function getCustomDomains(): Promise<Set<string>> {
     const trusts = await db.trust.findMany({
       where: {
         domain: { not: null },
+        domainVerified: true,
         status: 'published',
       },
       select: { domain: true },

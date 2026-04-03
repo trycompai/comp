@@ -752,6 +752,20 @@ export class TrustPortalService {
           ? currentTrust.domainVerified
           : false;
 
+      // Remove old domain from Vercel if switching to a different one
+      if (currentTrust?.domain && currentTrust.domain !== domain) {
+        try {
+          await this.vercelApi.delete(
+            `/v9/projects/${projectId}/domains/${currentTrust.domain}`,
+            { params: { teamId } },
+          );
+        } catch (error) {
+          this.logger.warn(
+            `Failed to remove old domain ${currentTrust.domain} from Vercel: ${error}`,
+          );
+        }
+      }
+
       // Check if domain already exists on the Vercel project
       const existingDomainsResp = await this.vercelApi.get(
         `/v9/projects/${projectId}/domains`,
@@ -761,22 +775,54 @@ export class TrustPortalService {
       const existingDomains: Array<{ name: string }> =
         existingDomainsResp.data?.domains ?? [];
 
-      if (existingDomains.some((d) => d.name === domain)) {
-        const domainOwner = await db.trust.findUnique({
-          where: { organizationId, domain },
+      const alreadyOnProject = existingDomains.some((d) => d.name === domain);
+
+      if (alreadyOnProject) {
+        const domainOwner = await db.trust.findFirst({
+          where: { domain, organizationId: { not: organizationId } },
+          select: { organizationId: true },
         });
 
-        if (!domainOwner || domainOwner.organizationId === organizationId) {
-          await this.vercelApi.delete(
-            `/v9/projects/${projectId}/domains/${domain}`,
-            { params: { teamId } },
-          );
-        } else {
+        if (domainOwner) {
           return {
             success: false,
             error: 'Domain is already in use by another organization',
           };
         }
+
+        // Domain already on Vercel for this org — fetch current status
+        // instead of deleting and re-adding (which regenerates verification tokens)
+        const statusResp = await this.vercelApi.get(
+          `/v9/projects/${projectId}/domains/${domain}`,
+          { params: { teamId } },
+        );
+
+        const statusData = statusResp.data;
+        const isVercelDomain = statusData.verified === false;
+        const vercelVerification =
+          statusData.verification?.[0]?.value || null;
+
+        await db.trust.upsert({
+          where: { organizationId },
+          update: {
+            domain,
+            domainVerified,
+            isVercelDomain,
+            vercelVerification,
+          },
+          create: {
+            organizationId,
+            domain,
+            domainVerified: false,
+            isVercelDomain,
+            vercelVerification,
+          },
+        });
+
+        return {
+          success: true,
+          needsVerification: !domainVerified,
+        };
       }
 
       this.logger.log(`Adding domain to Vercel project: ${domain}`);
@@ -902,6 +948,16 @@ export class TrustPortalService {
   async checkDnsRecords(organizationId: string, domain: string) {
     this.validateDomain(domain);
 
+    // Verify the domain belongs to this organization
+    const trustRecord = await db.trust.findUnique({
+      where: { organizationId },
+    });
+    if (!trustRecord || trustRecord.domain !== domain) {
+      throw new BadRequestException(
+        'Domain does not match the configured domain for this organization',
+      );
+    }
+
     const rootDomain = domain.split('.').slice(-2).join('.');
 
     const [cnameResp, txtResp, vercelTxtResp] = await Promise.all([
@@ -937,13 +993,45 @@ export class TrustPortalService {
     const txtRecords = txtResp.data?.records?.TXT;
     const vercelTxtRecords = vercelTxtResp?.data?.records?.TXT;
 
-    const trustRecord = await db.trust.findUnique({
-      where: { organizationId, domain },
-      select: { isVercelDomain: true, vercelVerification: true },
-    });
+    // Fetch fresh verification state from Vercel instead of relying on
+    // potentially stale DB values (tokens change if domain was re-added).
+    let liveIsVercelDomain = false;
+    let liveVercelVerification: string | null = null;
+
+    if (process.env.TRUST_PORTAL_PROJECT_ID && process.env.VERCEL_TEAM_ID) {
+      try {
+        const vercelStatusResp = await this.vercelApi.get(
+          `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${domain}`,
+          { params: { teamId: process.env.VERCEL_TEAM_ID } },
+        );
+        const vercelData = vercelStatusResp.data;
+        liveIsVercelDomain = vercelData.verified === false;
+        liveVercelVerification =
+          vercelData.verification?.[0]?.value || null;
+
+        // Sync DB with live Vercel state
+        await db.trust.update({
+          where: { organizationId },
+          data: {
+            isVercelDomain: liveIsVercelDomain,
+            vercelVerification: liveVercelVerification,
+          },
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Failed to fetch live Vercel status for ${domain}, falling back to DB: ${error}`,
+        );
+        const trustRecord = await db.trust.findUnique({
+          where: { organizationId, domain },
+          select: { isVercelDomain: true, vercelVerification: true },
+        });
+        liveIsVercelDomain = trustRecord?.isVercelDomain === true;
+        liveVercelVerification = trustRecord?.vercelVerification ?? null;
+      }
+    }
 
     const expectedTxtValue = `compai-domain-verification=${organizationId}`;
-    const expectedVercelTxtValue = trustRecord?.vercelVerification;
+    const expectedVercelTxtValue = liveVercelVerification;
 
     // Check CNAME
     let isCnameVerified = false;
@@ -993,7 +1081,7 @@ export class TrustPortalService {
       });
     }
 
-    const requiresVercelTxt = trustRecord?.isVercelDomain === true;
+    const requiresVercelTxt = liveIsVercelDomain;
     const isVerified =
       isCnameVerified &&
       isTxtVerified &&
@@ -1010,32 +1098,41 @@ export class TrustPortalService {
       };
     }
 
-    await db.trust.upsert({
-      where: { organizationId, domain },
-      update: { domainVerified: true, status: 'published' },
-      create: {
-        organizationId,
-        domain,
-        status: 'published',
-      },
-    });
-
     // Trigger Vercel to re-verify the domain so it provisions SSL and starts serving.
-    // Without this, Vercel doesn't know DNS has been configured and the domain stays inactive
-    // (previously required CS to manually click "Refresh" in Vercel dashboard).
+    // Only mark domainVerified=true in our DB if Vercel accepts the verification.
+    let vercelVerified = false;
     if (process.env.TRUST_PORTAL_PROJECT_ID && process.env.VERCEL_TEAM_ID) {
       try {
-        await this.vercelApi.post(
+        const verifyResp = await this.vercelApi.post(
           `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${domain}/verify`,
           {},
           { params: { teamId: process.env.VERCEL_TEAM_ID } },
         );
+        vercelVerified = verifyResp.data?.verified === true;
       } catch (error) {
-        // Non-fatal — domain is verified on our side, Vercel will eventually pick it up
         this.logger.warn(
           `Failed to trigger Vercel domain verification for ${domain}: ${error}`,
         );
       }
+    }
+
+    await db.trust.update({
+      where: { organizationId },
+      data: {
+        domainVerified: vercelVerified,
+        ...(vercelVerified ? { status: 'published' as const } : {}),
+      },
+    });
+
+    if (!vercelVerified) {
+      return {
+        success: false,
+        isCnameVerified,
+        isTxtVerified,
+        isVercelTxtVerified,
+        error:
+          'DNS records verified but Vercel has not yet confirmed domain ownership. Please ensure the _vercel TXT record is correctly configured and try again.',
+      };
     }
 
     return {
