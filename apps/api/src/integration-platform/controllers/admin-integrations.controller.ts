@@ -69,6 +69,8 @@ export class AdminIntegrationsController {
         credentialUpdatedAt: credential?.updatedAt,
         clientIdHint: credential?.clientIdHint,
         clientSecretHint: credential?.clientSecretHint,
+        encryptedClientId: credential?.encryptedClientId,
+        encryptedClientSecret: credential?.encryptedClientSecret,
         existingCustomSettings:
           (credential as { customSettings?: Record<string, unknown> } | undefined)
             ?.customSettings || undefined,
