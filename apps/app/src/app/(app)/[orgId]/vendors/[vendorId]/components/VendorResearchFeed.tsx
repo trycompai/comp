@@ -146,8 +146,8 @@ function RadarVisualization({
       >
         <defs>
           <linearGradient id="sweep-line" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%" className="[stop-color:theme(colors.primary)]" stopOpacity="0.8" />
-            <stop offset="60%" className="[stop-color:theme(colors.primary)]" stopOpacity="0.3" />
+            <stop offset="0%" className="[stop-color:theme(colors.primary)]" stopOpacity="1" />
+            <stop offset="60%" className="[stop-color:theme(colors.primary)]" stopOpacity="0.5" />
             <stop offset="100%" className="[stop-color:theme(colors.primary)]" stopOpacity="0" />
           </linearGradient>
         </defs>
@@ -158,12 +158,12 @@ function RadarVisualization({
           x2={half}
           y2={2}
           stroke="url(#sweep-line)"
-          strokeWidth="2"
+          strokeWidth="1"
         />
-        {/* Trail cone */}
+        {/* Trail cone — narrow and subtle */}
         <path
-          d={`M ${half} ${half} L ${half + half * 0.35} ${2} L ${half} ${2} Z`}
-          className="fill-primary/10"
+          d={`M ${half} ${half} L ${half + half * 0.18} ${2} L ${half} ${2} Z`}
+          className="fill-primary/[0.06]"
         />
       </svg>
 
