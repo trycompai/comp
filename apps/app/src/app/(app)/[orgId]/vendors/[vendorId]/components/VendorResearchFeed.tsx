@@ -138,32 +138,27 @@ function RadarVisualization({
 
       {/* Sonar sweep — SVG for pixel-perfect alignment */}
       <svg
-        className="absolute inset-0 animate-spin"
+        className="absolute inset-0 animate-spin text-foreground"
         style={{ animationDuration: '2.5s' }}
         viewBox={`0 0 ${size} ${size}`}
         width={size}
         height={size}
       >
-        <defs>
-          <linearGradient id="sweep-line" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%" className="[stop-color:theme(colors.primary)]" stopOpacity="1" />
-            <stop offset="60%" className="[stop-color:theme(colors.primary)]" stopOpacity="0.5" />
-            <stop offset="100%" className="[stop-color:theme(colors.primary)]" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {/* Sweep line from center to top */}
+        {/* Sweep line from center to edge */}
         <line
           x1={half}
           y1={half}
           x2={half}
           y2={2}
-          stroke="url(#sweep-line)"
+          stroke="currentColor"
           strokeWidth="1"
+          opacity="0.5"
         />
-        {/* Trail cone — narrow and subtle */}
+        {/* Trail cone */}
         <path
           d={`M ${half} ${half} L ${half + half * 0.18} ${2} L ${half} ${2} Z`}
-          className="fill-primary/[0.06]"
+          fill="currentColor"
+          opacity="0.08"
         />
       </svg>
 
