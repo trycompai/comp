@@ -9,7 +9,7 @@ import type { Organization } from '@db';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Balancer from 'react-wrap-balancer';
+
 import { usePostPaymentOnboarding } from '../hooks/usePostPaymentOnboarding';
 
 interface PostPaymentOnboardingProps {
@@ -157,12 +157,12 @@ export function PostPaymentOnboarding({
         <div className="mb-8">
           <AnimatedWrapper delay={800} animationKey={`title-${step?.key}`}>
             <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">
-              <Balancer>{step?.question || ''}</Balancer>
+              <span className="text-balance">{step?.question || ''}</span>
             </h1>
           </AnimatedWrapper>
           <AnimatedWrapper delay={1000} animationKey={`subtitle-${step?.key}`}>
             <p className="text-md md:text-lg text-muted-foreground flex items-center flex-wrap">
-              <Balancer>Our AI will personalize the platform based on your answers.</Balancer>
+              <span className="text-balance">Our AI will personalize the platform based on your answers.</span>
             </p>
           </AnimatedWrapper>
         </div>
