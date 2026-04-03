@@ -1,5 +1,8 @@
 import type { OrgFramework } from './frameworks';
-import type { VendorRiskAssessmentDataV1 } from './agent-types';
+import type {
+  VendorRiskAssessmentDataV1,
+  VendorRiskAssessmentNewsItem,
+} from './agent-types';
 
 export function buildRiskAssessmentDescription(params: {
   vendorName: string;
@@ -35,4 +38,18 @@ export function buildRiskAssessmentDescription(params: {
     securityAssessment:
       (base.securityAssessment ?? '') + checklistSuffix || null,
   } satisfies VendorRiskAssessmentDataV1);
+}
+
+/**
+ * Merge news items into an existing risk assessment data object.
+ * Used when core research completes first and news arrives later.
+ */
+export function mergeNewsIntoRiskAssessment(
+  existing: VendorRiskAssessmentDataV1,
+  news: VendorRiskAssessmentNewsItem[],
+): VendorRiskAssessmentDataV1 {
+  return {
+    ...existing,
+    news: news.length > 0 ? news : existing.news,
+  };
 }
