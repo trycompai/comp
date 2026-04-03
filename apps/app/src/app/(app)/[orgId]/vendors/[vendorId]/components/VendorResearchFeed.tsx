@@ -43,7 +43,7 @@ function FeedMessage({
     <div
       className={`flex items-center gap-3 py-2 px-3 rounded-lg transition-all duration-500 ease-out ${
         visible ? 'translate-x-0' : '-translate-x-4'
-      } ${isFound ? 'bg-success/10' : ''} ${isError ? 'bg-destructive/10' : ''}`}
+      } ${isError ? 'bg-destructive/10' : ''}`}
       style={{
         opacity: visible ? fadeOpacity : 0,
         transition: 'opacity 500ms ease-out, transform 500ms ease-out',
