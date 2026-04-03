@@ -183,7 +183,7 @@ export class TrustPortalService {
       // Vercel API endpoint: GET /v9/projects/{projectId}/domains/{domain}
       const [domainResponse, configResponse] = await Promise.all([
         this.vercelApi.get<VercelDomainResponse>(
-          `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${domain}`,
+          `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}`,
           {
             params: {
               teamId: process.env.VERCEL_TEAM_ID,
@@ -193,7 +193,7 @@ export class TrustPortalService {
         // Get domain config to retrieve the actual CNAME target
         // Vercel API endpoint: GET /v6/domains/{domain}/config
         this.vercelApi
-          .get<VercelDomainConfigResponse>(`/v6/domains/${domain}/config`, {
+          .get<VercelDomainConfigResponse>(`/v6/domains/${TrustPortalService.safeDomainPath(domain)}/config`, {
             params: {
               teamId: process.env.VERCEL_TEAM_ID,
             },
@@ -756,7 +756,7 @@ export class TrustPortalService {
       if (currentTrust?.domain && currentTrust.domain !== domain) {
         try {
           await this.vercelApi.delete(
-            `/v9/projects/${projectId}/domains/${currentTrust.domain}`,
+            `/v9/projects/${projectId}/domains/${TrustPortalService.safeDomainPath(currentTrust.domain)}`,
             { params: { teamId } },
           );
         } catch (error) {
@@ -793,7 +793,7 @@ export class TrustPortalService {
         // Domain already on Vercel for this org — fetch current status
         // instead of deleting and re-adding (which regenerates verification tokens)
         const statusResp = await this.vercelApi.get(
-          `/v9/projects/${projectId}/domains/${domain}`,
+          `/v9/projects/${projectId}/domains/${TrustPortalService.safeDomainPath(domain)}`,
           { params: { teamId } },
         );
 
@@ -937,6 +937,11 @@ export class TrustPortalService {
     }
   }
 
+  /** Encode a validated domain for safe use in URL path segments. */
+  private static safeDomainPath(domain: string): string {
+    return encodeURIComponent(domain);
+  }
+
   /**
    * DNS CNAME patterns for Vercel verification.
    */
@@ -962,16 +967,16 @@ export class TrustPortalService {
 
     const [cnameResp, txtResp, vercelTxtResp] = await Promise.all([
       axios
-        .get(`https://networkcalc.com/api/dns/lookup/${domain}`)
+        .get(`https://networkcalc.com/api/dns/lookup/${TrustPortalService.safeDomainPath(domain)}`)
         .catch(() => null),
       axios
         .get(
-          `https://networkcalc.com/api/dns/lookup/${rootDomain}?type=TXT`,
+          `https://networkcalc.com/api/dns/lookup/${TrustPortalService.safeDomainPath(rootDomain)}?type=TXT`,
         )
         .catch(() => null),
       axios
         .get(
-          `https://networkcalc.com/api/dns/lookup/_vercel.${rootDomain}?type=TXT`,
+          `https://networkcalc.com/api/dns/lookup/_vercel.${TrustPortalService.safeDomainPath(rootDomain)}?type=TXT`,
         )
         .catch(() => null),
     ]);
@@ -1001,7 +1006,7 @@ export class TrustPortalService {
     if (process.env.TRUST_PORTAL_PROJECT_ID && process.env.VERCEL_TEAM_ID) {
       try {
         const vercelStatusResp = await this.vercelApi.get(
-          `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${domain}`,
+          `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}`,
           { params: { teamId: process.env.VERCEL_TEAM_ID } },
         );
         const vercelData = vercelStatusResp.data;
@@ -1103,7 +1108,7 @@ export class TrustPortalService {
     if (process.env.TRUST_PORTAL_PROJECT_ID && process.env.VERCEL_TEAM_ID) {
       try {
         const verifyResp = await this.vercelApi.post(
-          `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${domain}/verify`,
+          `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}/verify`,
           {},
           { params: { teamId: process.env.VERCEL_TEAM_ID } },
         );
