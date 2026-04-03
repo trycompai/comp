@@ -136,26 +136,36 @@ function RadarVisualization({
       <div className="absolute w-full h-px bg-primary/[0.07]" />
       <div className="absolute w-px h-full bg-primary/[0.07]" />
 
-      {/* Sonar sweep — uses Tailwind animate-spin with custom duration */}
-      <div className="absolute inset-0 animate-spin" style={{ animationDuration: '2.5s' }}>
-        {/* The main sweep line — uses Tailwind classes for DS color compatibility */}
-        <div
-          className="absolute left-1/2 bottom-1/2 origin-bottom -ml-px w-[2px] bg-gradient-to-t from-primary/80 via-primary/30 to-transparent"
-          style={{ height: half }}
+      {/* Sonar sweep — SVG for pixel-perfect alignment */}
+      <svg
+        className="absolute inset-0 animate-spin"
+        style={{ animationDuration: '2.5s' }}
+        viewBox={`0 0 ${size} ${size}`}
+        width={size}
+        height={size}
+      >
+        <defs>
+          <linearGradient id="sweep-line" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" className="[stop-color:theme(colors.primary)]" stopOpacity="0.8" />
+            <stop offset="60%" className="[stop-color:theme(colors.primary)]" stopOpacity="0.3" />
+            <stop offset="100%" className="[stop-color:theme(colors.primary)]" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* Sweep line from center to top */}
+        <line
+          x1={half}
+          y1={half}
+          x2={half}
+          y2={2}
+          stroke="url(#sweep-line)"
+          strokeWidth="2"
         />
-        {/* Trail behind sweep */}
-        <div
-          className="absolute bg-primary/10"
-          style={{
-            left: '50%',
-            bottom: '50%',
-            width: half,
-            height: half,
-            transformOrigin: 'bottom left',
-            clipPath: 'polygon(0% 100%, 100% 0%, 40% 100%)',
-          }}
+        {/* Trail cone */}
+        <path
+          d={`M ${half} ${half} L ${half + half * 0.35} ${2} L ${half} ${2} Z`}
+          className="fill-primary/10"
         />
-      </div>
+      </svg>
 
       {/* Blips */}
       <AnimatePresence>
