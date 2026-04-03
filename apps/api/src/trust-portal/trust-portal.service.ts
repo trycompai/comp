@@ -1093,13 +1093,18 @@ export class TrustPortalService {
       (!requiresVercelTxt || isVercelTxtVerified);
 
     if (!isVerified) {
+      const failedRecords: string[] = [];
+      if (!isCnameVerified) failedRecords.push('CNAME');
+      if (!isTxtVerified) failedRecords.push('TXT');
+      if (requiresVercelTxt && !isVercelTxtVerified)
+        failedRecords.push('_vercel TXT');
+
       return {
         success: false,
         isCnameVerified,
         isTxtVerified,
         isVercelTxtVerified,
-        error:
-          'Error verifying DNS records. Please ensure both CNAME and TXT records are correctly configured, or wait a few minutes and try again.',
+        error: `DNS verification failed: ${failedRecords.join(', ')} record${failedRecords.length > 1 ? 's are' : ' is'} not configured correctly. Please update ${failedRecords.length > 1 ? 'these records' : 'this record'} and try again.`,
       };
     }
 
