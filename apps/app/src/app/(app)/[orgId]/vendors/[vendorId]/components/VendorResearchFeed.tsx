@@ -25,7 +25,6 @@ type Finding = {
   id: string;
 };
 
-/** Stable positions for radar blips */
 const BLIP_POSITIONS: Array<Record<string, string>> = [
   { top: '18%', right: '22%' },
   { bottom: '28%', left: '18%' },
@@ -98,26 +97,65 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
   return findings;
 }
 
-function RadarVisualization({ blipCount }: { blipCount: number }) {
+function RadarVisualization({
+  blipCount,
+  size,
+}: {
+  blipCount: number;
+  size: number;
+}) {
+  const half = size / 2;
+  const r1 = size * 0.72;
+  const r2 = size * 0.44;
+  const r3 = size * 0.18;
+
   return (
-    <div className="relative flex-shrink-0 w-[160px] h-[160px] flex items-center justify-center">
+    <div
+      className="relative flex-shrink-0 flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
       {/* Circles */}
-      <div className="absolute w-[160px] h-[160px] rounded-full border border-primary/10" />
-      <div className="absolute w-[115px] h-[115px] rounded-full border border-primary/[0.08]" />
-      <div className="absolute w-[70px] h-[70px] rounded-full border border-primary/[0.06]" />
-      <div className="absolute w-[28px] h-[28px] rounded-full bg-primary/10" />
+      <div
+        className="absolute rounded-full border border-primary/15"
+        style={{ width: size, height: size }}
+      />
+      <div
+        className="absolute rounded-full border border-primary/12"
+        style={{ width: r1, height: r1 }}
+      />
+      <div
+        className="absolute rounded-full border border-primary/10"
+        style={{ width: r2, height: r2 }}
+      />
+      <div
+        className="absolute rounded-full bg-primary/10"
+        style={{ width: r3, height: r3 }}
+      />
 
       {/* Crosshairs */}
-      <div className="absolute w-full h-px bg-primary/[0.05]" />
-      <div className="absolute w-px h-full bg-primary/[0.05]" />
+      <div className="absolute w-full h-px bg-primary/[0.07]" />
+      <div className="absolute w-px h-full bg-primary/[0.07]" />
 
-      {/* Sweep */}
-      <div className="absolute inset-0 animate-[spin_3s_linear_infinite]">
+      {/* Sonar sweep — visible line + gradient trail */}
+      <div className="absolute inset-0 animate-[spin_2.5s_linear_infinite]">
+        {/* The main sweep line */}
         <div
-          className="absolute left-1/2 bottom-1/2 w-[2px] h-[80px] -ml-px origin-bottom"
+          className="absolute left-1/2 bottom-1/2 origin-bottom -ml-px"
           style={{
-            background:
-              'linear-gradient(to top, hsl(var(--color-primary) / 0.6), transparent)',
+            width: 2,
+            height: half,
+            background: `linear-gradient(to top, hsl(var(--color-primary) / 0.8), hsl(var(--color-primary) / 0.2), transparent)`,
+          }}
+        />
+        {/* Trail/cone behind the sweep */}
+        <div
+          className="absolute origin-bottom-left"
+          style={{
+            left: '50%',
+            bottom: '50%',
+            width: half,
+            height: half,
+            background: `conic-gradient(from -15deg, hsl(var(--color-primary) / 0.12) 0deg, transparent 40deg)`,
           }}
         />
       </div>
@@ -156,11 +194,11 @@ function ScanCategory({
   startIndex: number;
   isActive: boolean;
 }) {
-  const hasFIndings = items.length > 0;
+  const hasFindings = items.length > 0;
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        {hasFIndings ? (
+        {hasFindings ? (
           <Checkmark size={12} className="text-success" />
         ) : isActive ? (
           <span className="w-3 h-3 rounded-full border-2 border-muted-foreground/30 border-t-primary animate-spin" />
@@ -169,18 +207,18 @@ function ScanCategory({
         )}
         <span
           className={`text-[11px] uppercase tracking-wider ${
-            hasFIndings ? 'text-muted-foreground' : 'text-muted-foreground/50'
+            hasFindings ? 'text-muted-foreground' : 'text-muted-foreground/50'
           }`}
         >
           {label}
         </span>
-        {hasFIndings && (
+        {hasFindings && (
           <span className="text-[11px] text-muted-foreground/50">
             ({items.length})
           </span>
         )}
       </div>
-      {hasFIndings && (
+      {hasFindings && (
         <div className="flex flex-wrap gap-2 ml-5">
           {items.map((f, i) => (
             <FindingBadge key={f.id} finding={f} index={startIndex + i} />
@@ -217,6 +255,7 @@ export function VendorResearchFeed({
   vendorName,
 }: VendorResearchFeedProps) {
   const findings = useMemo(() => parseFindings(messages), [messages]);
+  const hasFindings = findings.length > 0;
 
   const certs = findings.filter((f) => f.kind === 'cert');
   const links = findings.filter((f) => f.kind === 'link');
@@ -253,49 +292,62 @@ export function VendorResearchFeed({
               : 'Research complete'}
           </Text>
         </div>
-        {findings.length > 0 && (
+        {hasFindings && (
           <span className="text-xs text-muted-foreground tabular-nums">
             {findings.length} {findings.length === 1 ? 'finding' : 'findings'}
           </span>
         )}
       </div>
 
-      {/* Radar + Findings */}
-      <div className="flex gap-6 px-5 py-4">
-        <RadarVisualization blipCount={findings.length} />
-
-        <div className="flex-1 min-w-0">
-          {/* Scanning checklist — always visible, items transition from pending to done */}
-          <div className="space-y-3">
-            <ScanCategory
-              label="Certifications"
-              items={certs}
-              startIndex={0}
-              isActive={isActive}
-            />
-            <ScanCategory
-              label="Security & Legal Links"
-              items={links}
-              startIndex={certs.length}
-              isActive={isActive}
-            />
-            <ScanCategory
-              label="Security Assessment"
-              items={other.filter((f) => f.kind === 'assessment')}
-              startIndex={certs.length + links.length}
-              isActive={isActive}
-            />
-            <ScanCategory
-              label="Recent News"
-              items={other.filter((f) => f.kind === 'news')}
-              startIndex={certs.length + links.length + 1}
-              isActive={isActive}
-            />
+      {/* Empty state: centered large radar + checklist below */}
+      {!hasFindings && (
+        <div className="flex flex-col items-center px-5 py-6 gap-6">
+          <RadarVisualization blipCount={0} size={200} />
+          <div className="flex gap-8">
+            <ScanCategory label="Certifications" items={[]} startIndex={0} isActive={isActive} />
+            <ScanCategory label="Links" items={[]} startIndex={0} isActive={isActive} />
+            <ScanCategory label="Assessment" items={[]} startIndex={0} isActive={isActive} />
+            <ScanCategory label="News" items={[]} startIndex={0} isActive={isActive} />
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Bottom spacer */}
+      {/* With findings: side-by-side radar + badges */}
+      {hasFindings && (
+        <div className="flex gap-6 px-5 py-4">
+          <RadarVisualization blipCount={findings.length} size={160} />
+
+          <div className="flex-1 min-w-0">
+            <div className="space-y-3">
+              <ScanCategory
+                label="Certifications"
+                items={certs}
+                startIndex={0}
+                isActive={isActive}
+              />
+              <ScanCategory
+                label="Security & Legal Links"
+                items={links}
+                startIndex={certs.length}
+                isActive={isActive}
+              />
+              <ScanCategory
+                label="Security Assessment"
+                items={other.filter((f) => f.kind === 'assessment')}
+                startIndex={certs.length + links.length}
+                isActive={isActive}
+              />
+              <ScanCategory
+                label="Recent News"
+                items={other.filter((f) => f.kind === 'news')}
+                startIndex={certs.length + links.length + 1}
+                isActive={isActive}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="h-1" />
     </div>
   );
