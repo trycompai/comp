@@ -3,6 +3,8 @@
 import { isFailureRunStatus } from '@/app/(app)/[orgId]/cloud-tests/status';
 import { VendorRiskAssessmentSkeleton } from '@/components/vendor-risk-assessment/VendorRiskAssessmentSkeleton';
 import { VendorRiskAssessmentView } from '@/components/vendor-risk-assessment/VendorRiskAssessmentView';
+import { VendorNewsLoadingPlaceholder } from '@/components/vendor-risk-assessment/VendorNewsLoadingPlaceholder';
+import { parseVendorRiskAssessmentDescription } from '@/components/vendor-risk-assessment/parse-vendor-risk-assessment-description';
 import { Comments } from '@/components/comments/Comments';
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
@@ -12,12 +14,14 @@ import { useVendor, useVendorActions, type VendorResponse } from '@/hooks/use-ve
 import { usePermissions } from '@/hooks/use-permissions';
 import { SecondaryFields } from './secondary-fields/secondary-fields';
 import { VendorResearchBadges, VendorResearchLinks } from './VendorResearchSection';
+import { VendorResearchFeed } from './VendorResearchFeed';
 import { VendorInherentRiskChart } from './VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './VendorResidualRiskChart';
 import type { Member, User, Vendor } from '@db';
 import { CommentEntityType } from '@db';
 import type { Prisma } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   Breadcrumb,
   Button,
@@ -130,6 +134,37 @@ export function VendorDetailTabs({
     return ['EXECUTING', 'QUEUED', 'PENDING', 'WAITING'].includes(assessmentRun.status);
   }, [assessmentRun]);
 
+  // Extract research progress from trigger.dev run metadata
+  const researchMetadata = useMemo(() => {
+    if (!assessmentRun?.metadata) return null;
+    const meta = assessmentRun.metadata as Record<string, unknown>;
+    type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
+    const validTypes = new Set<string>(['searching', 'found', 'analyzing', 'error']);
+    const rawMessages = (meta.messages as Array<{ text: string; type: string; timestamp: number }>) ?? [];
+    return {
+      phase: (meta.phase as string) ?? 'starting',
+      messages: rawMessages.map((m) => ({
+        ...m,
+        type: (validTypes.has(m.type) ? m.type : 'analyzing') as MessageType,
+      })),
+      coreReady: (meta.coreReady as boolean) ?? false,
+      newsReady: (meta.newsReady as boolean) ?? false,
+    };
+  }, [assessmentRun?.metadata]);
+
+  // Trigger SWR refetch when core data or news data becomes ready
+  useEffect(() => {
+    if (researchMetadata?.coreReady) {
+      void refreshVendor();
+    }
+  }, [researchMetadata?.coreReady, refreshVendor]);
+
+  useEffect(() => {
+    if (researchMetadata?.newsReady) {
+      void refreshVendor();
+    }
+  }, [researchMetadata?.newsReady, refreshVendor]);
+
   useEffect(() => {
     if (!assessmentRun?.status) return;
     if (assessmentRun.status === 'COMPLETED') {
@@ -240,6 +275,19 @@ export function VendorDetailTabs({
   const riskAssessmentData = resolvedVendor.riskAssessmentData;
   const riskAssessmentUpdatedAt = resolvedVendor.riskAssessmentUpdatedAt ?? null;
   const showSkeleton = resolvedVendor.status === 'in_progress' || isRiskAssessmentGenerating || isRealtimeRunActive;
+
+  // Check if risk assessment data has news
+  const hasNews = useMemo(() => {
+    if (!riskAssessmentData) return false;
+    const parsed = parseVendorRiskAssessmentDescription(
+      typeof riskAssessmentData === 'string' ? riskAssessmentData : JSON.stringify(riskAssessmentData),
+    );
+    return (parsed?.news?.length ?? 0) > 0;
+  }, [riskAssessmentData]);
+
+  // Determine which phase to show in the risk assessment tab
+  const showResearchFeed = isRealtimeRunActive && !riskAssessmentData && researchMetadata;
+  const showNewsPlaceholder = isRealtimeRunActive && riskAssessmentData && !hasNews && researchMetadata && !researchMetadata.newsReady;
 
   return (
     <>
@@ -353,26 +401,48 @@ export function VendorDetailTabs({
 
             <TabsContent value="risk-assessment">
               <Stack gap="md">
-                {riskAssessmentData ? (
-                  <VendorRiskAssessmentView
-                    source={{
-                      title: 'Risk Assessment',
-                      description: JSON.stringify(riskAssessmentData),
-                      createdAt: (riskAssessmentUpdatedAt ?? resolvedVendor.updatedAt).toISOString(),
-                      entityType: 'vendor',
-                      createdByName: null,
-                      createdByEmail: null,
-                    }}
-                  />
-                ) : (
-                  <div className="rounded-lg border border-border bg-card p-8 text-center">
-                    {showSkeleton ? (
-                      <VendorRiskAssessmentSkeleton />
-                    ) : (
-                      <Text variant="muted" size="sm">No risk assessment found yet.</Text>
-                    )}
-                  </div>
-                )}
+                <AnimatePresence mode="wait">
+                  {showResearchFeed ? (
+                    <motion.div
+                      key="research-feed"
+                      initial={{ opacity: 1 }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    >
+                      <VendorResearchFeed
+                        messages={researchMetadata.messages}
+                        isActive={isRealtimeRunActive}
+                      />
+                    </motion.div>
+                  ) : riskAssessmentData ? (
+                    <motion.div
+                      key="assessment-data"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <VendorRiskAssessmentView
+                        source={{
+                          title: 'Risk Assessment',
+                          description: JSON.stringify(riskAssessmentData),
+                          createdAt: (riskAssessmentUpdatedAt ?? resolvedVendor.updatedAt).toISOString(),
+                          entityType: 'vendor',
+                          createdByName: null,
+                          createdByEmail: null,
+                        }}
+                      />
+                      {showNewsPlaceholder && <VendorNewsLoadingPlaceholder />}
+                    </motion.div>
+                  ) : (
+                    <div className="rounded-lg border border-border bg-card p-8 text-center">
+                      {showSkeleton ? (
+                        <VendorRiskAssessmentSkeleton />
+                      ) : (
+                        <Text variant="muted" size="sm">No risk assessment found yet.</Text>
+                      )}
+                    </div>
+                  )}
+                </AnimatePresence>
               </Stack>
             </TabsContent>
 
