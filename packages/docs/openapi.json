@@ -21289,6 +21289,11 @@
             "description": "Whether member is active",
             "example": true
           },
+          "deactivated": {
+            "type": "boolean",
+            "description": "Whether member is deactivated",
+            "example": false
+          },
           "fleetDmLabelId": {
             "type": "object",
             "description": "FleetDM label ID for member devices",
@@ -21313,6 +21318,7 @@
           "department",
           "jobTitle",
           "isActive",
+          "deactivated",
           "fleetDmLabelId",
           "user"
         ]

@@ -11,6 +11,7 @@ import {
 } from '@trycompai/design-system/icons';
 import Image from 'next/image';
 import { useState } from 'react';
+import { View, ViewOff } from '@trycompai/design-system/icons';
 
 interface AdditionalOAuthSetting {
   id: string;
@@ -38,6 +39,8 @@ export interface Integration {
   credentialUpdatedAt?: string;
   clientIdHint?: string;
   clientSecretHint?: string;
+  decryptedClientId?: string;
+  decryptedClientSecret?: string;
   existingCustomSettings?: Record<string, unknown>;
   setupInstructions?: string;
   createAppUrl?: string;
@@ -151,6 +154,13 @@ export function IntegrationCard({
             <span>Updated {new Date(integration.credentialUpdatedAt).toLocaleDateString()}</span>
           )}
         </div>
+
+        {integration.hasCredentials && integration.decryptedClientId && (
+          <CardCredentialsSummary
+            clientId={integration.decryptedClientId}
+            clientSecret={integration.decryptedClientSecret}
+          />
+        )}
 
         {integration.authType === 'oauth2' && (
           <OAuthConfig
@@ -352,6 +362,42 @@ function OAuthConfig({
         </div>
       )}
     </>
+  );
+}
+
+function CardCredentialsSummary({
+  clientId,
+  clientSecret,
+}: {
+  clientId: string;
+  clientSecret?: string;
+}) {
+  const [showSecret, setShowSecret] = useState(false);
+
+  return (
+    <div className="space-y-1.5 rounded-lg bg-muted p-3">
+      <div className="flex items-center gap-2">
+        <span className="w-16 shrink-0 text-xs text-muted-foreground">Client ID</span>
+        <code className="min-w-0 truncate rounded border bg-background px-2 py-0.5 text-xs select-all">
+          {clientId}
+        </code>
+      </div>
+      {clientSecret && (
+        <div className="flex items-center gap-2">
+          <span className="w-16 shrink-0 text-xs text-muted-foreground">Secret</span>
+          <code className="min-w-0 truncate rounded border bg-background px-2 py-0.5 text-xs select-all">
+            {showSecret ? clientSecret : `${'•'.repeat(Math.min(clientSecret.length, 20))}${clientSecret.slice(-4)}`}
+          </code>
+          <button
+            type="button"
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+            onClick={() => setShowSecret(!showSecret)}
+          >
+            {showSecret ? <ViewOff size={14} /> : <View size={14} />}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

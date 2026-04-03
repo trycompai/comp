@@ -1,6 +1,7 @@
 'use client';
 
 import { api } from '@/lib/api-client';
+import { decrypt, type EncryptedData } from '@/lib/encryption';
 import {
   Button,
   Card,
@@ -19,6 +20,34 @@ import { useState } from 'react';
 import useSWR from 'swr';
 import { IntegrationCard, type Integration } from './components/IntegrationCard';
 
+interface ApiIntegration extends Integration {
+  encryptedClientId?: EncryptedData;
+  encryptedClientSecret?: EncryptedData;
+}
+
+async function decryptIntegrations(integrations: ApiIntegration[]): Promise<Integration[]> {
+  return Promise.all(
+    integrations.map(async (integration) => {
+      if (!integration.hasCredentials || !integration.encryptedClientId) {
+        return integration;
+      }
+
+      try {
+        const [decryptedClientId, decryptedClientSecret] = await Promise.all([
+          decrypt(integration.encryptedClientId),
+          integration.encryptedClientSecret
+            ? decrypt(integration.encryptedClientSecret)
+            : Promise.resolve(undefined),
+        ]);
+
+        return { ...integration, decryptedClientId, decryptedClientSecret };
+      } catch {
+        return integration;
+      }
+    }),
+  );
+}
+
 export default function AdminIntegrationsPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -28,9 +57,10 @@ export default function AdminIntegrationsPage() {
     isLoading,
     mutate,
   } = useSWR<Integration[]>('admin-integrations', async () => {
-    const response = await api.get<Integration[]>('/v1/admin/integrations');
+    const response = await api.get<ApiIntegration[]>('/v1/admin/integrations');
     if (response.error) throw new Error(response.error);
-    return response.data || [];
+    const raw = response.data || [];
+    return decryptIntegrations(raw);
   });
 
   const filteredIntegrations = integrations?.filter((i) => {
