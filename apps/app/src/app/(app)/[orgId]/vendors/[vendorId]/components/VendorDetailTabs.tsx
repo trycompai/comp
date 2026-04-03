@@ -93,6 +93,7 @@ export function VendorDetailTabs({
   const [descriptionValue, setDescriptionValue] = useState('');
   const [isMitigationLoading, setIsMitigationLoading] = useState(false);
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const { data: taskItemsData, mutate: refreshTaskItems } = useTaskItems(
     vendorId, 'vendor', 1, 50, 'createdAt', 'desc', {},
@@ -155,6 +156,7 @@ export function VendorDetailTabs({
   // Trigger SWR refetch when core data or news data becomes ready
   useEffect(() => {
     if (researchMetadata?.coreReady) {
+      setIsRegenerating(false);
       void refreshVendor();
     }
   }, [researchMetadata?.coreReady, refreshVendor]);
@@ -172,12 +174,14 @@ export function VendorDetailTabs({
       void refreshTaskItems();
       setAssessmentRunId(null);
       setAssessmentToken(null);
+      setIsRegenerating(false);
     } else if (isFailureRunStatus(assessmentRun.status)) {
       toast.error('Risk assessment failed. Please try again.');
       void refreshVendor();
       void refreshTaskItems();
       setAssessmentRunId(null);
       setAssessmentToken(null);
+      setIsRegenerating(false);
     }
   }, [assessmentRun?.status, refreshVendor, refreshTaskItems]);
 
@@ -264,6 +268,7 @@ export function VendorDetailTabs({
       refreshVendor();
       if (result.runId && result.publicAccessToken) {
         handleAssessmentTriggered(result.runId, result.publicAccessToken);
+        setIsRegenerating(true);
       }
     } catch {
       toast.error('Failed to trigger risk assessment regeneration');
@@ -286,8 +291,9 @@ export function VendorDetailTabs({
   }, [riskAssessmentData]);
 
   // Determine which phase to show in the risk assessment tab
-  const showResearchFeed = isRealtimeRunActive && !riskAssessmentData && researchMetadata;
-  const showNewsPlaceholder = isRealtimeRunActive && riskAssessmentData && !hasNews && researchMetadata && !researchMetadata.newsReady;
+  // Show feed when: run is active AND (no data yet OR user just clicked regenerate and core hasn't arrived)
+  const showResearchFeed = isRealtimeRunActive && researchMetadata && (!riskAssessmentData || (isRegenerating && !researchMetadata.coreReady));
+  const showNewsPlaceholder = isRealtimeRunActive && riskAssessmentData && !isRegenerating && !hasNews && researchMetadata && !researchMetadata.newsReady;
 
   return (
     <>
