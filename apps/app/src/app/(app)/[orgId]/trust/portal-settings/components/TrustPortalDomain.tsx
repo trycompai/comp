@@ -81,18 +81,25 @@ export function TrustPortalDomain({
     return target.endsWith('.') ? target : `${target}.`;
   }, [domainStatus?.data?.cnameTarget]);
 
-  useEffect(() => {
-    const isCnameVerified = localStorage.getItem(`${initialDomain}-isCnameVerified`);
-    const isTxtVerified = localStorage.getItem(`${initialDomain}-isTxtVerified`);
-    const isVercelTxtVerified = localStorage.getItem(`${initialDomain}-isVercelTxtVerified`);
-    setIsCnameVerified(isCnameVerified === 'true');
-    setIsTxtVerified(isTxtVerified === 'true');
-    setIsVercelTxtVerified(isVercelTxtVerified === 'true');
-  }, [initialDomain]);
-
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('trust', 'update');
   const { submitCustomDomain, checkDns } = useTrustPortalSettings();
+
+  // Auto-check DNS on mount to show current record status without user clicking
+  useEffect(() => {
+    if (!initialDomain || isEffectivelyVerified) return;
+
+    let cancelled = false;
+    checkDns(initialDomain)
+      .then((data) => {
+        if (cancelled || !data || typeof data !== 'object') return;
+        setIsCnameVerified(!!data.isCnameVerified);
+        setIsTxtVerified(!!data.isTxtVerified);
+        setIsVercelTxtVerified(!!data.isVercelTxtVerified);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [initialDomain, isEffectivelyVerified, checkDns]);
   const [isUpdatingDomain, setIsUpdatingDomain] = useState(false);
   const [isCheckingDns, setIsCheckingDns] = useState(false);
 
