@@ -1099,7 +1099,6 @@ export class TrustPortalService {
     }
 
     // Trigger Vercel to re-verify the domain so it provisions SSL and starts serving.
-    // Only mark domainVerified=true in our DB if Vercel accepts the verification.
     let vercelVerified = false;
     if (process.env.TRUST_PORTAL_PROJECT_ID && process.env.VERCEL_TEAM_ID) {
       try {
@@ -1116,15 +1115,23 @@ export class TrustPortalService {
       }
     }
 
+    // For cross-account domains (liveIsVercelDomain=true), Vercel must confirm
+    // the _vercel TXT record before the domain will serve traffic.
+    // For same-account domains, DNS verification is sufficient — Vercel will
+    // pick up the CNAME on its own, so don't block on the verify response.
+    const domainFullyVerified = requiresVercelTxt
+      ? vercelVerified
+      : true;
+
     await db.trust.update({
       where: { organizationId },
       data: {
-        domainVerified: vercelVerified,
-        ...(vercelVerified ? { status: 'published' as const } : {}),
+        domainVerified: domainFullyVerified,
+        ...(domainFullyVerified ? { status: 'published' as const } : {}),
       },
     });
 
-    if (!vercelVerified) {
+    if (!domainFullyVerified) {
       return {
         success: false,
         isCnameVerified,

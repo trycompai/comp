@@ -383,7 +383,7 @@ export function TrustPortalDomain({
                                       variant="ghost"
                                       size="icon"
                                       type="button"
-                                      onClick={() => handleCopy(effectiveVercelTxtValue || '', 'Name')}
+                                      onClick={() => handleCopy('_vercel', 'Name')}
                                       className="h-6 w-6 shrink-0"
                                     >
                                       <ClipboardCopy className="h-4 w-4" />
@@ -502,7 +502,7 @@ export function TrustPortalDomain({
                                     variant="ghost"
                                     size="icon"
                                     type="button"
-                                    onClick={() => handleCopy(effectiveVercelTxtValue || '', 'Name')}
+                                    onClick={() => handleCopy('_vercel', 'Name')}
                                     className="h-6 w-6 shrink-0"
                                   >
                                     <ClipboardCopy className="h-4 w-4" />
