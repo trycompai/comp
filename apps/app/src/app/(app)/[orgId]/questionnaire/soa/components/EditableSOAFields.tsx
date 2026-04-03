@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@trycompai/design-system';
-import { cn } from '@trycompai/ui/cn';
 import { Textarea } from '@trycompai/ui/textarea';
 import {
   Select,
@@ -22,27 +21,10 @@ import {
 import { X, Loader2, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSOADocument } from '../../hooks/useSOADocument';
+import { ApplicableReadOnlyDisplay, ApplicableSwatchRow } from './ApplicableSwatch';
 import type { SOAFieldSavePayload } from './soa-field-types';
 
 export type { SOAFieldSavePayload, SOATableAnswerData } from './soa-field-types';
-
-/** Matches policy table StatusIndicator: color swatch + label in foreground (black) text. */
-function ApplicableReadOnlyDisplay({ isApplicable }: { isApplicable: boolean | null }) {
-  const swatchClass =
-    isApplicable === true
-      ? 'bg-primary'
-      : isApplicable === false
-        ? 'bg-red-600 dark:bg-red-400'
-        : 'bg-gray-400 dark:bg-gray-500';
-  const label = isApplicable === true ? 'Yes' : isApplicable === false ? 'No' : '\u2014';
-
-  return (
-    <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-      <div className={cn('size-2.5 shrink-0 rounded-none', swatchClass)} />
-      <span>{label}</span>
-    </div>
-  );
-}
 
 interface EditableSOAFieldsProps {
   documentId: string;
@@ -230,10 +212,14 @@ export function EditableSOAFields({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="null" disabled>
-              {'\u2014'}
+              <ApplicableSwatchRow isApplicable={null} />
             </SelectItem>
-            <SelectItem value="yes">YES</SelectItem>
-            <SelectItem value="no">NO</SelectItem>
+            <SelectItem value="yes">
+              <ApplicableSwatchRow isApplicable />
+            </SelectItem>
+            <SelectItem value="no">
+              <ApplicableSwatchRow isApplicable={false} />
+            </SelectItem>
           </SelectContent>
         </Select>
         <Button
