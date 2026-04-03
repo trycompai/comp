@@ -1,3 +1,8 @@
+/**
+ * @deprecated Use firecrawlResearchCore and firecrawlResearchNews instead.
+ * This file is kept temporarily for reference. Safe to delete after verifying
+ * the parallel implementation works correctly in production.
+ */
 import Firecrawl from '@mendable/firecrawl-js';
 import { logger } from '@trigger.dev/sdk';
 import { vendorRiskAssessmentAgentSchema } from './agent-schema';
@@ -109,65 +114,111 @@ Focus on their official website ${vendorWebsite} (especially trust/security/comp
     `${origin}/compliance`,
   ];
 
-  const agentResponse = await firecrawlClient.agent({
-    prompt,
-    urls: seedUrls,
-    strictConstrainToURLs: false, // allow following links from seed URLs, but seeds anchor it to the right domain
-    schema: {
-      type: 'object',
-      properties: {
-        risk_level: { type: 'string' },
-        security_assessment: { type: 'string' },
-        last_researched_at: { type: 'string' },
-        certifications: {
-          type: 'array',
-          items: {
+  let agentResponse;
+  try {
+    agentResponse = await firecrawlClient.agent({
+      prompt,
+      urls: seedUrls,
+      strictConstrainToURLs: false,
+      maxCredits: 1000,
+      timeout: 480, // 8 minutes — enough for thorough research, with headroom before trigger.dev's 10min maxDuration
+      pollInterval: 5,
+      schema: {
+        type: 'object',
+        properties: {
+          risk_level: { type: 'string' },
+          security_assessment: { type: 'string' },
+          last_researched_at: { type: 'string' },
+          certifications: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                type: { type: 'string' },
+                status: {
+                  type: 'string',
+                  enum: ['verified', 'expired', 'not_certified', 'unknown'],
+                },
+                issued_at: { type: 'string' },
+                expires_at: { type: 'string' },
+                url: { type: 'string' },
+              },
+              required: ['type'],
+            },
+          },
+          links: {
             type: 'object',
             properties: {
-              type: { type: 'string' },
-              status: {
-                type: 'string',
-                enum: ['verified', 'expired', 'not_certified', 'unknown'],
-              },
-              issued_at: { type: 'string' },
-              expires_at: { type: 'string' },
-              url: { type: 'string' },
+              privacy_policy_url: { type: 'string' },
+              terms_of_service_url: { type: 'string' },
+              trust_center_url: { type: 'string' },
+              security_page_url: { type: 'string' },
+              soc2_report_url: { type: 'string' },
             },
-            required: ['type'],
           },
-        },
-        links: {
-          type: 'object',
-          properties: {
-            privacy_policy_url: { type: 'string' },
-            terms_of_service_url: { type: 'string' },
-            trust_center_url: { type: 'string' },
-            security_page_url: { type: 'string' },
-            soc2_report_url: { type: 'string' },
-          },
-        },
-        news: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              date: { type: 'string' },
-              title: { type: 'string' },
-              summary: { type: 'string' },
-              source: { type: 'string' },
-              url: { type: 'string' },
-              sentiment: {
-                type: 'string',
-                enum: ['positive', 'negative', 'neutral'],
+          news: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                date: { type: 'string' },
+                title: { type: 'string' },
+                summary: { type: 'string' },
+                source: { type: 'string' },
+                url: { type: 'string' },
+                sentiment: {
+                  type: 'string',
+                  enum: ['positive', 'negative', 'neutral'],
+                },
               },
+              required: ['date', 'title'],
             },
-            required: ['date', 'title'],
           },
         },
+        required: ['security_assessment'],
       },
-      required: ['security_assessment'],
-    },
-  });
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : String(error);
+    const isBillingOrRateLimit =
+      message.includes('402') ||
+      message.includes('429') ||
+      message.includes('Payment Required') ||
+      message.includes('Rate') ||
+      message.includes('Too Many Requests');
+
+    if (isBillingOrRateLimit) {
+      // Billing/rate-limit errors — re-throw so the task fails and trigger.dev
+      // sends a Slack notification. The parent try-catch resets the vendor status
+      // so the customer never sees error details, just a normal "assessed" state.
+      logger.error('Firecrawl API billing or rate limit error', {
+        vendorName,
+        vendorWebsite,
+        error: message,
+      });
+      throw error;
+    }
+
+    // Transient errors (network, timeout, etc.) — log and return null so the task
+    // continues with a minimal assessment instead of failing outright.
+    logger.error('Firecrawl Agent SDK call failed', {
+      vendorName,
+      vendorWebsite,
+      error: message,
+    });
+    return null;
+  }
+
+  // Verify the agent job actually completed successfully
+  if (!agentResponse.success || agentResponse.status === 'failed') {
+    logger.warn('Firecrawl agent job did not complete successfully', {
+      vendorWebsite,
+      status: agentResponse.status,
+      error: agentResponse.error,
+    });
+    return null;
+  }
 
   const parsed = vendorRiskAssessmentAgentSchema.safeParse(agentResponse.data);
   if (!parsed.success) {
