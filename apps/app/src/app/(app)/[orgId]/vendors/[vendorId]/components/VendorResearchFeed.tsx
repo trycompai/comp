@@ -142,7 +142,7 @@ function RadarVisualization({
         style={{ animationDuration: '2.5s' }}
       >
         <div
-          className="absolute left-1/2 top-0 -translate-x-1/2 w-px bg-foreground/40"
+          className="absolute left-1/2 top-0 -translate-x-1/2 w-px bg-primary/60"
           style={{ height: half, top: 0 }}
         />
       </div>
