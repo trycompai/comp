@@ -1,8 +1,9 @@
 'use client';
 
 import { Text } from '@trycompai/design-system';
-import { Checkmark, Search } from '@trycompai/design-system/icons';
-import { useEffect, useRef, useState } from 'react';
+import { Checkmark } from '@trycompai/design-system/icons';
+import { motion, AnimatePresence } from 'motion/react';
+import { useMemo } from 'react';
 
 export type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
 
@@ -18,71 +19,149 @@ interface VendorResearchFeedProps {
   vendorName?: string;
 }
 
-const MAX_VISIBLE = 6;
+type Finding = {
+  label: string;
+  kind: 'cert' | 'link' | 'assessment' | 'news';
+  id: string;
+};
 
-function FeedMessage({
-  message,
-  position,
-}: {
-  message: ResearchMessage;
-  position: number; // 0 = newest, higher = older
-}) {
-  const [visible, setVisible] = useState(false);
+/** Stable positions for radar blips */
+const BLIP_POSITIONS: Array<Record<string, string>> = [
+  { top: '18%', right: '22%' },
+  { bottom: '28%', left: '18%' },
+  { top: '42%', left: '15%' },
+  { bottom: '20%', right: '28%' },
+  { top: '22%', left: '30%' },
+  { bottom: '35%', right: '15%' },
+  { top: '30%', right: '15%' },
+  { bottom: '15%', left: '30%' },
+  { top: '15%', left: '45%' },
+  { bottom: '42%', right: '20%' },
+  { top: '35%', right: '35%' },
+  { bottom: '25%', left: '40%' },
+  { top: '50%', left: '12%' },
+  { bottom: '12%', right: '40%' },
+  { top: '25%', right: '12%' },
+];
 
-  useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 50);
-    return () => clearTimeout(timer);
-  }, []);
+function parseFindings(messages: ResearchMessage[]): Finding[] {
+  const findings: Finding[] = [];
+  const seen = new Set<string>();
 
-  const isFound = message.type === 'found';
-  const isError = message.type === 'error';
-  const fadeOpacity =
-    position <= 1 ? 1 : position === 2 ? 0.7 : position === 3 ? 0.45 : 0.25;
+  for (const msg of messages) {
+    if (msg.type !== 'found') continue;
+    const text = msg.text;
 
+    if (text === 'Security assessment complete') {
+      if (!seen.has('__assessment__')) {
+        seen.add('__assessment__');
+        findings.push({
+          label: 'Security Assessment',
+          kind: 'assessment',
+          id: '__assessment__',
+        });
+      }
+      continue;
+    }
+
+    if (text.startsWith('Found: ')) {
+      const title = text.slice(7);
+      const id = `news-${title}`;
+      if (!seen.has(id)) {
+        seen.add(id);
+        findings.push({ label: title, kind: 'news', id });
+      }
+      continue;
+    }
+
+    const match = text.match(/^Found (.+?)(?:\s+certification)?$/);
+    if (match) {
+      const name = match[1]!;
+      const id = name.toLowerCase();
+      if (seen.has(id)) continue;
+      seen.add(id);
+
+      const linkKeywords = [
+        'trust',
+        'privacy',
+        'terms',
+        'security overview',
+        'soc 2 report',
+      ];
+      const isLink = linkKeywords.some((kw) =>
+        name.toLowerCase().includes(kw),
+      );
+      findings.push({ label: name, kind: isLink ? 'link' : 'cert', id });
+    }
+  }
+
+  return findings;
+}
+
+function RadarVisualization({ blipCount }: { blipCount: number }) {
   return (
-    <div
-      className={`flex items-center gap-3 py-2 px-3 rounded-lg transition-all duration-500 ease-out ${
-        visible ? 'translate-x-0' : '-translate-x-4'
-      } ${isError ? 'bg-destructive/10' : ''}`}
-      style={{
-        opacity: visible ? fadeOpacity : 0,
-        transition: 'opacity 500ms ease-out, transform 500ms ease-out',
-      }}
-    >
-      <span className="shrink-0">
-        {message.type === 'found' && (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success/20">
-            <Checkmark size={12} className="text-success" />
-          </span>
+    <div className="relative flex-shrink-0 w-[160px] h-[160px] flex items-center justify-center">
+      {/* Circles */}
+      <div className="absolute w-[160px] h-[160px] rounded-full border border-primary/10" />
+      <div className="absolute w-[115px] h-[115px] rounded-full border border-primary/[0.08]" />
+      <div className="absolute w-[70px] h-[70px] rounded-full border border-primary/[0.06]" />
+      <div className="absolute w-[28px] h-[28px] rounded-full bg-primary/10" />
+
+      {/* Crosshairs */}
+      <div className="absolute w-full h-px bg-primary/[0.05]" />
+      <div className="absolute w-px h-full bg-primary/[0.05]" />
+
+      {/* Sweep */}
+      <div className="absolute inset-0 animate-[spin_3s_linear_infinite]">
+        <div
+          className="absolute left-1/2 bottom-1/2 w-[2px] h-[80px] -ml-px origin-bottom"
+          style={{
+            background:
+              'linear-gradient(to top, hsl(var(--color-primary) / 0.6), transparent)',
+          }}
+        />
+      </div>
+
+      {/* Blips */}
+      <AnimatePresence>
+        {Array.from({ length: Math.min(blipCount, BLIP_POSITIONS.length) }).map(
+          (_, i) => (
+            <motion.div
+              key={`blip-${i}`}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="absolute w-[7px] h-[7px] rounded-full bg-success animate-[pulse_2s_ease-in-out_infinite]"
+              style={{
+                ...BLIP_POSITIONS[i],
+                boxShadow: '0 0 8px hsl(var(--color-success) / 0.5)',
+                animationDelay: `${i * 300}ms`,
+              }}
+            />
+          ),
         )}
-        {message.type === 'searching' && (
-          <span className="flex h-5 w-5 items-center justify-center">
-            <Search size={14} className="text-primary animate-pulse" />
-          </span>
-        )}
-        {message.type === 'analyzing' && (
-          <span className="flex h-5 w-5 items-center justify-center">
-            <span className="w-3.5 h-3.5 rounded-full border-2 border-accent-foreground/50 border-t-transparent animate-spin" />
-          </span>
-        )}
-        {message.type === 'error' && (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive/20 text-destructive text-xs font-bold">
-            !
-          </span>
-        )}
-      </span>
-      <span
-        className={`text-sm font-mono tracking-tight ${
-          isFound
-            ? 'text-success font-medium'
-            : isError
-              ? 'text-destructive'
-              : 'text-muted-foreground'
-        }`}
-      >
-        {message.text}
-      </span>
+      </AnimatePresence>
     </div>
+  );
+}
+
+function FindingBadge({ finding, index }: { finding: Finding; index: number }) {
+  const isCert = finding.kind === 'cert' || finding.kind === 'assessment';
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.85, y: 4 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.08, ease: 'easeOut' }}
+      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] ${
+        isCert
+          ? 'border-success/15 bg-success/[0.06]'
+          : 'border-primary/15 bg-primary/[0.06]'
+      }`}
+    >
+      {isCert && <Checkmark size={12} className="text-success shrink-0" />}
+      {!isCert && <span className="text-primary text-xs shrink-0">↗</span>}
+      <span className="text-card-foreground truncate">{finding.label}</span>
+    </motion.div>
   );
 }
 
@@ -91,63 +170,126 @@ export function VendorResearchFeed({
   isActive,
   vendorName,
 }: VendorResearchFeedProps) {
-  // Only show the last N messages, newest at bottom
-  const visibleMessages = messages.slice(-MAX_VISIBLE);
+  const findings = useMemo(() => parseFindings(messages), [messages]);
 
-  // Count real findings
-  const foundCount = messages.filter((m) => m.type === 'found').length;
+  const statusText = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i]!;
+      if (msg.type === 'searching' || msg.type === 'analyzing') {
+        return msg.text;
+      }
+    }
+    return null;
+  }, [messages]);
+
+  const certs = findings.filter((f) => f.kind === 'cert');
+  const links = findings.filter((f) => f.kind === 'link');
+  const other = findings.filter(
+    (f) => f.kind === 'assessment' || f.kind === 'news',
+  );
 
   return (
-    <div className="rounded-xl border border-border bg-gradient-to-b from-card to-card/80 shadow-lg overflow-hidden">
+    <div className="rounded-xl border border-border overflow-hidden bg-gradient-to-b from-card to-card/80 shadow-lg">
+      {/* Shimmer bar */}
+      {isActive && (
+        <div
+          className="h-[2px] animate-[shimmer-bar_3s_ease-in-out_infinite]"
+          style={{
+            background:
+              'linear-gradient(90deg, transparent 0%, hsl(var(--color-primary) / 0.5) 30%, hsl(var(--color-success) / 0.5) 70%, transparent 100%)',
+            backgroundSize: '200% 100%',
+          }}
+        />
+      )}
+
       {/* Header */}
-      <div className="relative px-5 pt-5 pb-3">
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/80" />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {isActive && (
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
-              </span>
-            )}
-            <Text size="sm" weight="semibold">
-              {isActive
-                ? `Researching ${vendorName ?? 'vendor'} security posture`
-                : 'Research complete'}
-            </Text>
-          </div>
-          {foundCount > 0 && (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {foundCount} {foundCount === 1 ? 'finding' : 'findings'}
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <div className="flex items-center gap-3">
+          {isActive && (
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
             </span>
           )}
+          <Text size="sm" weight="semibold">
+            {isActive
+              ? `Researching ${vendorName ?? 'vendor'} security posture`
+              : 'Research complete'}
+          </Text>
         </div>
+        {findings.length > 0 && (
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {findings.length} {findings.length === 1 ? 'finding' : 'findings'}
+          </span>
+        )}
       </div>
 
-      {/* Message feed — only last N messages, older ones fade */}
-      <div className="px-4 pb-4">
-        <div className="space-y-1">
-          {visibleMessages.map((msg, i) => {
-            const position = visibleMessages.length - 1 - i;
-            return (
-              <FeedMessage
-                key={`${msg.timestamp}-${msg.text}`}
-                message={msg}
-                position={position}
-              />
-            );
-          })}
-          {isActive && messages.length > 0 && (
-            <div className="flex items-center gap-3 py-2 px-3 opacity-40">
-              <span className="flex gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0ms]" />
-                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:150ms]" />
-                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:300ms]" />
+      {/* Radar + Findings */}
+      <div className="flex gap-6 px-5 py-4">
+        <RadarVisualization blipCount={findings.length} />
+
+        <div className="flex-1 min-w-0">
+          {findings.length > 0 ? (
+            <div className="space-y-3">
+              {certs.length > 0 && (
+                <div>
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+                    Certifications
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {certs.map((f, i) => (
+                      <FindingBadge key={f.id} finding={f} index={i} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {links.length > 0 && (
+                <div>
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+                    Links
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {links.map((f, i) => (
+                      <FindingBadge
+                        key={f.id}
+                        finding={f}
+                        index={certs.length + i}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {other.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {other.map((f, i) => (
+                    <FindingBadge
+                      key={f.id}
+                      finding={f}
+                      index={certs.length + links.length + i}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center h-full">
+              <span className="text-sm text-muted-foreground">
+                Scanning vendor website...
               </span>
             </div>
           )}
         </div>
       </div>
+
+      {/* Status text */}
+      {isActive && statusText && (
+        <div className="flex items-center gap-2 px-5 pb-4">
+          <span className="w-1 h-1 rounded-full bg-primary animate-pulse" />
+          <span className="text-xs font-mono text-muted-foreground/70 truncate">
+            {statusText}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

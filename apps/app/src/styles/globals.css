@@ -114,6 +114,15 @@ body {
   }
 }
 
+@keyframes shimmer-bar {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 .thinking-text {
   background: linear-gradient(
     90deg,
