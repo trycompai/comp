@@ -337,7 +337,7 @@ export function VendorDetailTabs({
               {isViewingTask ? (selectedTaskTitle || 'Task') : resolvedVendor.name}
             </h1>
           )}
-          {!isViewingTask && (
+          {!isViewingTask && !isRegenerating && (
             <VendorResearchBadges riskAssessmentData={resolvedVendor.riskAssessmentData} />
           )}
         </div>
@@ -376,7 +376,7 @@ export function VendorDetailTabs({
               </Text>
             )
           )}
-        {!isViewingTask && (
+        {!isViewingTask && !isRegenerating && (
           <VendorResearchLinks riskAssessmentData={resolvedVendor.riskAssessmentData} />
         )}
       </Stack>
