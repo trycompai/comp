@@ -1099,7 +1099,7 @@ export class TrustPortalService {
         isTxtVerified,
         isVercelTxtVerified,
         error:
-          'Error verifying DNS records. Please ensure both CNAME and TXT records are correctly configured, or wait a few minutes and try again.',
+          'Some DNS records are not configured correctly. Please check the records marked as unverified above and try again.',
       };
     }
 
