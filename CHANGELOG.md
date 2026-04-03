@@ -1,3 +1,23 @@
+# [3.15.0](https://github.com/trycompai/comp/compare/v3.14.1...v3.15.0) (2026-04-03)
+
+
+### Bug Fixes
+
+* **onboarding:** reorder steps so cloud question comes before software ([#2445](https://github.com/trycompai/comp/issues/2445)) ([e488a95](https://github.com/trycompai/comp/commit/e488a95e598a60e30af502ea0b3a1dffe211db3a))
+* **policies:** preserve entityId when re-generating a policy ([#2382](https://github.com/trycompai/comp/issues/2382)) ([0324329](https://github.com/trycompai/comp/commit/0324329270e8969582ace7f572dab426635aa73f))
+* **portal:** resolve hydration issue in user menu ([#2438](https://github.com/trycompai/comp/issues/2438)) ([4d3faaf](https://github.com/trycompai/comp/commit/4d3faaf31ed7cc83c2fbe643f6423671195b96f5))
+* **tasks:** prevent framework-specific content leaks in split header paragraphs ([#2381](https://github.com/trycompai/comp/issues/2381)) ([b318ca5](https://github.com/trycompai/comp/commit/b318ca5be89f319a914629c1e923b5ec1c4429b5))
+* use activeOrganizationId for org redirect on app open ([#2444](https://github.com/trycompai/comp/issues/2444)) ([79fb25d](https://github.com/trycompai/comp/commit/79fb25dd0aae127d7330fba0b97f715f86709ddc))
+
+
+### Features
+
+* implement HIPAA training completion flow and support multiple devices per employee ([b3c18ea](https://github.com/trycompai/comp/commit/b3c18ea0472a28e048693ae38a58b8c45b534809))
+* **integrations:** prompt user to import after Google Workspace connection ([#2383](https://github.com/trycompai/comp/issues/2383)) ([6ab00a5](https://github.com/trycompai/comp/commit/6ab00a5afb3316321c6ce86bc1280076a6988395))
+* **people:** add status filter to team members page ([#2379](https://github.com/trycompai/comp/issues/2379)) ([c41e5c5](https://github.com/trycompai/comp/commit/c41e5c5dee571875aca808c2f675a6a0e457eeff))
+* **portal:** allow employees to view signed policies ([#2446](https://github.com/trycompai/comp/issues/2446)) ([883caeb](https://github.com/trycompai/comp/commit/883caebd30bab00243e7dfc8355d91ab04e08cc1))
+* **tasks:** add filter for automated vs manual evidence tasks ([#2380](https://github.com/trycompai/comp/issues/2380)) ([2fa21e4](https://github.com/trycompai/comp/commit/2fa21e4bf03db4e3881644a507c57f68740a0d53))
+
 ## [3.14.1](https://github.com/trycompai/comp/compare/v3.14.0...v3.14.1) (2026-04-02)
 
 
