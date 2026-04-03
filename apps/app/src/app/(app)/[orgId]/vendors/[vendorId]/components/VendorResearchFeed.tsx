@@ -1,8 +1,8 @@
 'use client';
 
-import { CardContent, Text } from '@trycompai/design-system';
+import { Text } from '@trycompai/design-system';
 import { Checkmark, Search } from '@trycompai/design-system/icons';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 
 export type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
 
@@ -18,7 +18,6 @@ interface VendorResearchFeedProps {
   vendorName?: string;
 }
 
-// Filler messages shown between real updates to keep the feed alive
 const FILLER_MESSAGES = [
   'Scanning security documentation...',
   'Reviewing compliance certifications...',
@@ -30,9 +29,42 @@ const FILLER_MESSAGES = [
   'Reviewing access control policies...',
   'Checking business continuity plans...',
   'Analyzing third-party audit reports...',
+  'Reviewing subprocessor agreements...',
+  'Checking SOC 2 report availability...',
+  'Scanning for penetration test results...',
+  'Reviewing data retention policies...',
+  'Checking GDPR compliance documentation...',
+  'Analyzing network security architecture...',
+  'Reviewing authentication mechanisms...',
+  'Checking API security practices...',
+  'Scanning for ISO 27001 evidence...',
+  'Reviewing change management processes...',
+  'Checking disaster recovery plans...',
+  'Analyzing vendor supply chain...',
+  'Reviewing employee security training...',
+  'Checking physical security controls...',
+  'Scanning trust portal pages...',
+  'Reviewing security whitepapers...',
+  'Checking bug bounty programs...',
+  'Analyzing infrastructure security...',
+  'Reviewing logging and monitoring...',
+  'Checking data classification policies...',
+  'Scanning for recent security assessments...',
+  'Reviewing SLA commitments...',
+  'Checking regulatory compliance status...',
+  'Analyzing identity management practices...',
+  'Reviewing secure development lifecycle...',
 ];
 
-function FeedMessage({ message }: { message: ResearchMessage }) {
+const MAX_VISIBLE = 5;
+
+function FeedMessage({
+  message,
+  position,
+}: {
+  message: ResearchMessage;
+  position: number; // 0 = newest, higher = older
+}) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -42,12 +74,18 @@ function FeedMessage({ message }: { message: ResearchMessage }) {
 
   const isFound = message.type === 'found';
   const isError = message.type === 'error';
+  // Older messages fade out progressively
+  const fadeOpacity = position <= 1 ? 1 : position === 2 ? 0.7 : position === 3 ? 0.4 : 0.2;
 
   return (
     <div
       className={`flex items-center gap-3 py-2 px-3 rounded-lg transition-all duration-500 ease-out ${
-        visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        visible ? 'translate-x-0' : '-translate-x-4'
       } ${isFound ? 'bg-success/10' : ''} ${isError ? 'bg-destructive/10' : ''}`}
+      style={{
+        opacity: visible ? fadeOpacity : 0,
+        transition: 'opacity 500ms ease-out, transform 500ms ease-out',
+      }}
     >
       <span className="shrink-0">
         {message.type === 'found' && (
@@ -86,10 +124,6 @@ function FeedMessage({ message }: { message: ResearchMessage }) {
   );
 }
 
-/**
- * Drip-feeds messages with a delay so they appear one-at-a-time,
- * and injects simulated "scanning..." messages during long pauses.
- */
 function useDripFeed(
   realMessages: ResearchMessage[],
   isActive: boolean,
@@ -100,8 +134,8 @@ function useDripFeed(
   const fillerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fillerIndexRef = useRef(0);
   const lastRealCountRef = useRef(0);
+  const usedFillersRef = useRef(new Set<number>());
 
-  // Queue new real messages as they arrive
   useEffect(() => {
     const newMessages = realMessages.slice(lastRealCountRef.current);
     if (newMessages.length > 0) {
@@ -110,7 +144,6 @@ function useDripFeed(
     }
   }, [realMessages]);
 
-  // Drain queue one message at a time with delay
   const drainOne = useCallback(() => {
     if (queueRef.current.length === 0) return;
     const next = queueRef.current.shift()!;
@@ -118,6 +151,8 @@ function useDripFeed(
 
     if (queueRef.current.length > 0) {
       drainTimerRef.current = setTimeout(drainOne, 600);
+    } else {
+      drainTimerRef.current = null;
     }
   }, []);
 
@@ -133,7 +168,19 @@ function useDripFeed(
     return () => clearInterval(interval);
   }, [realMessages, drainOne]);
 
-  // Inject filler messages during long silences
+  // Pick a random unused filler, or reset if all used
+  const pickFiller = useCallback(() => {
+    if (usedFillersRef.current.size >= FILLER_MESSAGES.length) {
+      usedFillersRef.current.clear();
+    }
+    let idx: number;
+    do {
+      idx = Math.floor(Math.random() * FILLER_MESSAGES.length);
+    } while (usedFillersRef.current.has(idx));
+    usedFillersRef.current.add(idx);
+    return FILLER_MESSAGES[idx]!;
+  }, []);
+
   useEffect(() => {
     if (!isActive) {
       if (fillerTimerRef.current) clearInterval(fillerTimerRef.current);
@@ -141,24 +188,20 @@ function useDripFeed(
     }
 
     fillerTimerRef.current = setInterval(() => {
-      // Only inject filler if queue is empty (no real messages waiting)
       if (queueRef.current.length === 0) {
-        const text =
-          FILLER_MESSAGES[fillerIndexRef.current % FILLER_MESSAGES.length];
-        fillerIndexRef.current++;
+        const text = pickFiller();
         setDisplayed((prev) => [
           ...prev,
           { text, type: 'searching' as MessageType, timestamp: Date.now() },
         ]);
       }
-    }, 4000);
+    }, 3500);
 
     return () => {
       if (fillerTimerRef.current) clearInterval(fillerTimerRef.current);
     };
-  }, [isActive]);
+  }, [isActive, pickFiller]);
 
-  // Cleanup timers
   useEffect(() => {
     return () => {
       if (drainTimerRef.current) clearTimeout(drainTimerRef.current);
@@ -174,16 +217,36 @@ export function VendorResearchFeed({
   isActive,
   vendorName,
 }: VendorResearchFeedProps) {
-  const feedEndRef = useRef<HTMLDivElement>(null);
   const displayedMessages = useDripFeed(messages, isActive);
 
-  useEffect(() => {
-    feedEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [displayedMessages.length]);
+  // Only show the last N messages, newest at bottom
+  const visibleMessages = displayedMessages.slice(-MAX_VISIBLE);
+
+  // Count findings from real messages (not fillers)
+  const findings = useMemo(() => {
+    let certs = 0;
+    let links = 0;
+    let assessment = false;
+    let news = 0;
+    for (const msg of displayedMessages) {
+      if (msg.type !== 'found') continue;
+      const t = msg.text.toLowerCase();
+      if (t.includes('certification')) certs++;
+      if (t.includes('link')) links++;
+      if (t.includes('assessment')) assessment = true;
+      if (t.includes('news')) {
+        const match = msg.text.match(/(\d+)/);
+        if (match) news = Number.parseInt(match[1]!, 10);
+      }
+    }
+    return { certs, links, assessment, news };
+  }, [displayedMessages]);
+
+  const hasFindings = findings.certs > 0 || findings.links > 0 || findings.assessment || findings.news > 0;
 
   return (
     <div className="rounded-xl border border-border bg-gradient-to-b from-card to-card/80 shadow-lg overflow-hidden">
-      {/* Header with accent bar */}
+      {/* Header */}
       <div className="relative px-5 pt-5 pb-3">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/80" />
         <div className="flex items-center gap-3">
@@ -201,15 +264,19 @@ export function VendorResearchFeed({
         </div>
       </div>
 
-      {/* Message feed */}
-      <div className="px-4 pb-4">
-        <div className="max-h-72 overflow-y-auto space-y-1 scrollbar-thin">
-          {displayedMessages.map((msg, i) => (
-            <FeedMessage
-              key={`${msg.timestamp}-${i}`}
-              message={msg}
-            />
-          ))}
+      {/* Message feed — only last N messages, older ones fade */}
+      <div className="px-4 pb-2">
+        <div className="space-y-1">
+          {visibleMessages.map((msg, i) => {
+            const position = visibleMessages.length - 1 - i;
+            return (
+              <FeedMessage
+                key={`${msg.timestamp}-${msg.text}`}
+                message={msg}
+                position={position}
+              />
+            );
+          })}
           {isActive && displayedMessages.length > 0 && (
             <div className="flex items-center gap-3 py-2 px-3 opacity-40">
               <span className="flex gap-1">
@@ -219,9 +286,52 @@ export function VendorResearchFeed({
               </span>
             </div>
           )}
-          <div ref={feedEndRef} />
         </div>
       </div>
+
+      {/* Findings counter */}
+      {hasFindings && (
+        <div className="px-5 py-3 border-t border-border/50 flex items-center gap-4">
+          {findings.certs > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-success/20">
+                <Checkmark size={10} className="text-success" />
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {findings.certs} {findings.certs === 1 ? 'certification' : 'certifications'}
+              </span>
+            </div>
+          )}
+          {findings.links > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-success/20">
+                <Checkmark size={10} className="text-success" />
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {findings.links} {findings.links === 1 ? 'link' : 'links'}
+              </span>
+            </div>
+          )}
+          {findings.assessment && (
+            <div className="flex items-center gap-1.5">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-success/20">
+                <Checkmark size={10} className="text-success" />
+              </span>
+              <span className="text-xs text-muted-foreground">assessment</span>
+            </div>
+          )}
+          {findings.news > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-success/20">
+                <Checkmark size={10} className="text-success" />
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {findings.news} news {findings.news === 1 ? 'item' : 'items'}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
