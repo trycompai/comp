@@ -10,14 +10,19 @@ import {
 import { openai } from '@ai-sdk/openai';
 import type { Prisma } from '@db';
 import type { Task } from '@trigger.dev/sdk';
-import { logger, queue, schemaTask } from '@trigger.dev/sdk';
+import { logger, metadata, queue, schemaTask } from '@trigger.dev/sdk';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 
 import { resolveTaskCreatorAndAssignee } from './vendor-risk-assessment/assignee';
 import { VENDOR_RISK_ASSESSMENT_TASK_ID } from './vendor-risk-assessment/constants';
-import { buildRiskAssessmentDescription } from './vendor-risk-assessment/description';
-import { firecrawlAgentVendorRiskAssessment } from './vendor-risk-assessment/firecrawl-agent';
+import {
+  buildRiskAssessmentDescription,
+  mergeNewsIntoRiskAssessment,
+} from './vendor-risk-assessment/description';
+import { firecrawlResearchCore } from './vendor-risk-assessment/firecrawl-agent-core';
+import { firecrawlResearchNews } from './vendor-risk-assessment/firecrawl-agent-news';
+import type { ResearchMessage } from './vendor-risk-assessment/metadata-types';
 import {
   buildFrameworkChecklist,
   getDefaultFrameworks,
@@ -479,6 +484,7 @@ export const vendorRiskAssessmentTask: Task<
         id: true,
         website: true,
         status: true,
+        logoUrl: true,
       },
     });
 
@@ -664,10 +670,24 @@ export const vendorRiskAssessmentTask: Task<
         }
       }
 
-      // Still mark the org-specific vendor as assessed
+      // Extract compliance badges and logo from cached GlobalVendors data
+      const cachedBadges = globalVendor?.riskAssessmentData
+        ? extractComplianceBadges(
+            globalVendor.riskAssessmentData as Prisma.InputJsonValue,
+          )
+        : null;
+      const cachedLogoUrl = generateLogoUrl(vendor.website);
+
+      // Still mark the org-specific vendor as assessed, and sync badges/logo
       await db.vendor.update({
         where: { id: vendor.id },
-        data: { status: VendorStatus.assessed },
+        data: {
+          status: VendorStatus.assessed,
+          ...(cachedBadges ? { complianceBadges: cachedBadges } : {}),
+          ...(cachedLogoUrl && !vendor.logoUrl
+            ? { logoUrl: cachedLogoUrl }
+            : {}),
+        },
       });
       return {
         success: true,
@@ -765,151 +785,255 @@ export const vendorRiskAssessmentTask: Task<
     const organizationFrameworks = getDefaultFrameworks();
     const frameworkChecklist = buildFrameworkChecklist(organizationFrameworks);
 
-    // Do research if needed (vendor doesn't exist, no data, or explicitly requested)
-    const research =
-      needsResearch && payload.vendorWebsite
-        ? await firecrawlAgentVendorRiskAssessment({
-            vendorName: payload.vendorName,
-            vendorWebsite: payload.vendorWebsite,
-          })
-        : null;
+    try {
+    // Helper to append a progress message to run metadata
+    const messages: ResearchMessage[] = [];
+    const pushMessage = (text: string, type: ResearchMessage['type']) => {
+      const msg: ResearchMessage = { text, type, timestamp: Date.now() };
+      messages.push(msg);
+      metadata.set('messages', messages);
+    };
 
-    const description = buildRiskAssessmentDescription({
-      vendorName: payload.vendorName,
-      vendorWebsite: payload.vendorWebsite ?? null,
-      research,
-      frameworkChecklist,
-      organizationFrameworks,
-    });
+    // Initialize metadata
+    metadata.set('phase', 'starting');
+    metadata.set('messages', []);
+    metadata.set('coreReady', false);
+    metadata.set('newsReady', false);
 
-    const data = parseRiskAssessmentJson(description);
+    metadata.set('phase', 'researching');
+    pushMessage(`Analyzing ${payload.vendorWebsite}...`, 'searching');
 
-    // Upsert GlobalVendors with risk assessment data (shared across all organizations)
-    // Version is auto-incremented (v1 -> v2 -> v3, etc.)
-    // Concurrency: serialize the final "read latest version + write + bump version" step.
-    const lockKey = domain ?? normalizedWebsite;
-    const { nextVersion, updatedWebsites } = await withAdvisoryLock({
-      lockKey,
-      run: async () => {
-        const latestGlobalVendors = domain
-          ? await db.globalVendors.findMany({
-              where: { website: { contains: domain } },
-              select: {
-                website: true,
-                riskAssessmentVersion: true,
-                riskAssessmentUpdatedAt: true,
-              },
-              orderBy: [
-                { riskAssessmentUpdatedAt: 'desc' },
-                { createdAt: 'desc' },
-              ],
-            })
-          : [];
-
-        const currentMax = maxVersion(latestGlobalVendors);
-        const computedNext = incrementVersion(currentMax);
-        const now = new Date();
-
-        if (latestGlobalVendors.length > 0) {
-          for (const gv of latestGlobalVendors) {
-            await db.globalVendors.update({
-              where: { website: gv.website },
-              data: {
-                company_name: payload.vendorName,
-                riskAssessmentData: data,
-                riskAssessmentVersion: computedNext,
-                riskAssessmentUpdatedAt: now,
-              },
-            });
+    // Run core research and news research in parallel
+    const [coreResult, newsResult] = await Promise.allSettled([
+      (async () => {
+        pushMessage(
+          'Checking trust portal and security pages...',
+          'searching',
+        );
+        const result = await firecrawlResearchCore({
+          vendorName: payload.vendorName,
+          vendorWebsite: payload.vendorWebsite!,
+        });
+        if (result?.certifications?.length) {
+          for (const cert of result.certifications) {
+            if (cert.status === 'verified') {
+              pushMessage(`Found ${cert.type} certification`, 'found');
+            }
           }
+        }
+        if (result?.links?.length) {
+          pushMessage(
+            `Found ${result.links.length} security/legal links`,
+            'found',
+          );
+        }
+        if (result?.securityAssessment) {
+          pushMessage('Security assessment complete', 'found');
+        }
+        return result;
+      })(),
+      (async () => {
+        pushMessage('Searching for recent news...', 'searching');
+        const result = await firecrawlResearchNews({
+          vendorName: payload.vendorName,
+          vendorWebsite: payload.vendorWebsite!,
+        });
+        if (result?.length) {
+          pushMessage(`Found ${result.length} recent news items`, 'found');
+        }
+        return result;
+      })(),
+    ]);
+
+    // --- Process core results ---
+    const coreData =
+      coreResult.status === 'fulfilled' ? coreResult.value : null;
+
+    if (coreData) {
+      pushMessage('Writing core research to database...', 'analyzing');
+
+      const description = buildRiskAssessmentDescription({
+        vendorName: payload.vendorName,
+        vendorWebsite: payload.vendorWebsite ?? null,
+        research: { ...coreData, news: null },
+        frameworkChecklist,
+        organizationFrameworks,
+      });
+      const data = parseRiskAssessmentJson(description);
+
+      // Upsert GlobalVendors (same advisory lock pattern as before)
+      const lockKey = domain ?? normalizedWebsite;
+      const { nextVersion, updatedWebsites } = await withAdvisoryLock({
+        lockKey,
+        run: async () => {
+          const latestGlobalVendors = domain
+            ? await db.globalVendors.findMany({
+                where: { website: { contains: domain } },
+                select: {
+                  website: true,
+                  riskAssessmentVersion: true,
+                  riskAssessmentUpdatedAt: true,
+                },
+                orderBy: [
+                  { riskAssessmentUpdatedAt: 'desc' },
+                  { createdAt: 'desc' },
+                ],
+              })
+            : [];
+
+          const currentMax = maxVersion(latestGlobalVendors);
+          const computedNext = incrementVersion(currentMax);
+          const now = new Date();
+
+          if (latestGlobalVendors.length > 0) {
+            for (const gv of latestGlobalVendors) {
+              await db.globalVendors.update({
+                where: { website: gv.website },
+                data: {
+                  company_name: payload.vendorName,
+                  riskAssessmentData: data,
+                  riskAssessmentVersion: computedNext,
+                  riskAssessmentUpdatedAt: now,
+                },
+              });
+            }
+            return {
+              nextVersion: computedNext,
+              updatedWebsites: latestGlobalVendors.map((gv) => gv.website),
+            };
+          }
+
+          await db.globalVendors.upsert({
+            where: { website: normalizedWebsite },
+            create: {
+              website: normalizedWebsite,
+              company_name: payload.vendorName,
+              riskAssessmentData: data,
+              riskAssessmentVersion: computedNext,
+              riskAssessmentUpdatedAt: now,
+            },
+            update: {
+              company_name: payload.vendorName,
+              riskAssessmentData: data,
+              riskAssessmentVersion: computedNext,
+              riskAssessmentUpdatedAt: now,
+            },
+          });
+
           return {
             nextVersion: computedNext,
-            updatedWebsites: latestGlobalVendors.map((gv) => gv.website),
+            updatedWebsites: [normalizedWebsite],
           };
-        }
+        },
+      });
 
-        await db.globalVendors.upsert({
-          where: { website: normalizedWebsite },
-          create: {
-            website: normalizedWebsite,
-            company_name: payload.vendorName,
-            riskAssessmentData: data,
-            riskAssessmentVersion: computedNext,
-            riskAssessmentUpdatedAt: now,
-          },
-          update: {
-            company_name: payload.vendorName,
-            riskAssessmentData: data,
-            riskAssessmentVersion: computedNext,
-            riskAssessmentUpdatedAt: now,
+      // Extract risk level and badges
+      const rawRiskLevel = extractRiskLevel(data);
+      const normalizedRiskLvl = await normalizeRiskLevel(rawRiskLevel);
+      const inherentProbability = mapRiskLevelToLikelihood(normalizedRiskLvl);
+      const inherentImpact = mapRiskLevelToImpact(normalizedRiskLvl);
+      const residualProbability = mapRiskLevelToLikelihood(normalizedRiskLvl);
+      const residualImpact = mapRiskLevelToImpact(normalizedRiskLvl);
+      const complianceBadges = extractComplianceBadges(data);
+      const logoUrl = generateLogoUrl(vendor.website);
+
+      // Update vendor with core data (keep status in_progress — news may still be loading)
+      await db.vendor.update({
+        where: { id: vendor.id },
+        data: {
+          inherentProbability,
+          inherentImpact,
+          residualProbability,
+          residualImpact,
+          ...(complianceBadges ? { complianceBadges } : {}),
+          ...(logoUrl ? { logoUrl } : {}),
+        },
+      });
+
+      metadata.set('phase', 'core_complete');
+      metadata.set('coreReady', true);
+
+      logger.info('Core research completed', {
+        vendor: payload.vendorName,
+        version: nextVersion,
+      });
+
+      // --- Process news results (merge into existing data) ---
+      const newsData =
+        newsResult.status === 'fulfilled' ? newsResult.value : null;
+
+      if (newsData && newsData.length > 0) {
+        pushMessage('Adding news to research data...', 'analyzing');
+
+        await withAdvisoryLock({
+          lockKey,
+          run: async () => {
+            // Read current data, merge news, write back
+            const websites =
+              updatedWebsites.length > 0
+                ? updatedWebsites
+                : [normalizedWebsite];
+            for (const website of websites) {
+              const gv = await db.globalVendors.findUnique({
+                where: { website },
+                select: { riskAssessmentData: true },
+              });
+              if (!gv?.riskAssessmentData) continue;
+
+              const existingParsed = gv.riskAssessmentData as Record<
+                string,
+                unknown
+              >;
+              const existingTyped =
+                existingParsed as unknown as import('./vendor-risk-assessment/agent-types').VendorRiskAssessmentDataV1;
+              const merged = mergeNewsIntoRiskAssessment(
+                existingTyped,
+                newsData,
+              );
+
+              await db.globalVendors.update({
+                where: { website },
+                data: {
+                  riskAssessmentData: JSON.parse(JSON.stringify(merged)),
+                },
+              });
+            }
           },
         });
 
-        return {
-          nextVersion: computedNext,
-          updatedWebsites: [normalizedWebsite],
-        };
-      },
-    });
-
-    if (updatedWebsites.length > 1) {
-      logger.info('Updated multiple duplicates', {
-        vendor: payload.vendorName,
-        count: updatedWebsites.length,
-        websites: updatedWebsites,
-      });
+        metadata.set('newsReady', true);
+        logger.info('News research merged', {
+          vendor: payload.vendorName,
+          newsCount: newsData.length,
+        });
+      } else if (newsResult.status === 'rejected') {
+        pushMessage('News research could not be completed', 'error');
+        logger.warn('News research failed, continuing with core data only', {
+          vendor: payload.vendorName,
+          error:
+            newsResult.reason instanceof Error
+              ? newsResult.reason.message
+              : String(newsResult.reason),
+        });
+      }
+    } else {
+      // Core research failed
+      if (coreResult.status === 'rejected') {
+        pushMessage('Research encountered an issue', 'error');
+        metadata.set('phase', 'failed');
+        throw coreResult.reason;
+      }
+      // Core returned null (API key missing, invalid URL, etc.)
+      pushMessage('Could not complete research for this vendor', 'error');
+      metadata.set('phase', 'failed');
     }
 
-    const rawRiskLevel = extractRiskLevel(data);
-    const normalizedRiskLevel = await normalizeRiskLevel(rawRiskLevel);
-
-    // Log if risk level is missing (AI fallback already logs for ambiguous values)
-    if (!rawRiskLevel) {
-      logger.info('No risk level in assessment data, defaulting to medium', {
-        vendor: payload.vendorName,
-      });
-    } else if (normalizedRiskLevel) {
-      logger.info('Risk level normalized', {
-        vendor: payload.vendorName,
-        rawRiskLevel,
-        normalizedRiskLevel,
-      });
-    }
-
-    const inherentProbability = mapRiskLevelToLikelihood(normalizedRiskLevel);
-    const inherentImpact = mapRiskLevelToImpact(normalizedRiskLevel);
-    const residualProbability = mapRiskLevelToLikelihood(normalizedRiskLevel);
-    const residualImpact = mapRiskLevelToImpact(normalizedRiskLevel);
-
-    // Extract compliance badges from risk assessment certifications
-    const complianceBadges = extractComplianceBadges(data);
-    if (complianceBadges) {
-      logger.info('Extracted compliance badges from risk assessment', {
-        vendor: payload.vendorName,
-        badges: complianceBadges,
-      });
-    }
-
-    // Generate logo URL from website using Google Favicon API
-    const logoUrl = generateLogoUrl(vendor.website);
-
-    // Mark org-specific vendor as assessed
+    // Mark vendor as assessed and flip verify task
     await db.vendor.update({
       where: { id: vendor.id },
-      data: {
-        status: VendorStatus.assessed,
-        inherentProbability,
-        inherentImpact,
-        residualProbability,
-        residualImpact,
-        // Only set complianceBadges if we found any, otherwise leave unchanged
-        ...(complianceBadges ? { complianceBadges } : {}),
-        // Only set logoUrl if we generated one, otherwise leave unchanged
-        ...(logoUrl ? { logoUrl } : {}),
-      },
+      data: { status: VendorStatus.assessed },
     });
 
-    // Flip verify task to "todo" once the risk assessment is ready (only if it wasn't already completed/canceled).
     await db.taskItem.updateMany({
       where: {
         id: verifyTaskItemId,
@@ -919,25 +1043,54 @@ export const vendorRiskAssessmentTask: Task<
         status: TaskItemStatus.todo,
         description:
           'Review the latest Risk Assessment and confirm it is accurate.',
-        // Keep stable assignee/creator
         assigneeId: assigneeMemberId,
         updatedById: creatorMemberId,
       },
     });
 
+    metadata.set('phase', 'complete');
+
     logger.info('✅ COMPLETED', {
       vendor: payload.vendorName,
-      researched: Boolean(research),
-      version: nextVersion,
+      researched: Boolean(coreData),
     });
 
     return {
       success: true,
       vendorId: vendor.id,
       deduped: false,
-      researched: Boolean(research),
-      riskAssessmentVersion: nextVersion,
+      researched: Boolean(coreData),
+      riskAssessmentVersion: coreData ? 'latest' : null,
       verifyTaskItemId,
     };
+    } catch (error) {
+      // Reset vendor status so the UI no longer shows an infinite loading state.
+      // The user can retry later once the underlying issue is resolved.
+      logger.error('❌ Risk assessment failed, resetting vendor status', {
+        vendor: payload.vendorName,
+        vendorId: vendor.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      await db.vendor.update({
+        where: { id: vendor.id },
+        data: { status: VendorStatus.assessed },
+      });
+
+      // Also reset the verify task back to todo so it doesn't stay stuck
+      if (typeof verifyTaskItemId === 'string') {
+        await db.taskItem.updateMany({
+          where: {
+            id: verifyTaskItemId,
+            status: {
+              notIn: [TaskItemStatus.done, TaskItemStatus.canceled],
+            },
+          },
+          data: { status: TaskItemStatus.todo },
+        });
+      }
+
+      throw error; // Re-throw so trigger.dev still records the failure and retries
+    }
   },
 });
