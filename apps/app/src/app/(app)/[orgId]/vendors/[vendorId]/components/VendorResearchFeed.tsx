@@ -145,6 +145,52 @@ function RadarVisualization({ blipCount }: { blipCount: number }) {
   );
 }
 
+function ScanCategory({
+  label,
+  items,
+  startIndex,
+  isActive,
+}: {
+  label: string;
+  items: Finding[];
+  startIndex: number;
+  isActive: boolean;
+}) {
+  const hasFIndings = items.length > 0;
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        {hasFIndings ? (
+          <Checkmark size={12} className="text-success" />
+        ) : isActive ? (
+          <span className="w-3 h-3 rounded-full border-2 border-muted-foreground/30 border-t-primary animate-spin" />
+        ) : (
+          <span className="w-3 h-3 rounded-full border-2 border-muted-foreground/20" />
+        )}
+        <span
+          className={`text-[11px] uppercase tracking-wider ${
+            hasFIndings ? 'text-muted-foreground' : 'text-muted-foreground/50'
+          }`}
+        >
+          {label}
+        </span>
+        {hasFIndings && (
+          <span className="text-[11px] text-muted-foreground/50">
+            ({items.length})
+          </span>
+        )}
+      </div>
+      {hasFIndings && (
+        <div className="flex flex-wrap gap-2 ml-5">
+          {items.map((f, i) => (
+            <FindingBadge key={f.id} finding={f} index={startIndex + i} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FindingBadge({ finding, index }: { finding: Finding; index: number }) {
   const isCert = finding.kind === 'cert' || finding.kind === 'assessment';
   return (
@@ -171,16 +217,6 @@ export function VendorResearchFeed({
   vendorName,
 }: VendorResearchFeedProps) {
   const findings = useMemo(() => parseFindings(messages), [messages]);
-
-  const statusText = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i]!;
-      if (msg.type === 'searching' || msg.type === 'analyzing') {
-        return msg.text;
-      }
-    }
-    return null;
-  }, [messages]);
 
   const certs = findings.filter((f) => f.kind === 'cert');
   const links = findings.filter((f) => f.kind === 'link');
@@ -229,67 +265,38 @@ export function VendorResearchFeed({
         <RadarVisualization blipCount={findings.length} />
 
         <div className="flex-1 min-w-0">
-          {findings.length > 0 ? (
-            <div className="space-y-3">
-              {certs.length > 0 && (
-                <div>
-                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
-                    Certifications
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {certs.map((f, i) => (
-                      <FindingBadge key={f.id} finding={f} index={i} />
-                    ))}
-                  </div>
-                </div>
-              )}
-              {links.length > 0 && (
-                <div>
-                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
-                    Links
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {links.map((f, i) => (
-                      <FindingBadge
-                        key={f.id}
-                        finding={f}
-                        index={certs.length + i}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-              {other.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {other.map((f, i) => (
-                    <FindingBadge
-                      key={f.id}
-                      finding={f}
-                      index={certs.length + links.length + i}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center h-full">
-              <span className="text-sm text-muted-foreground">
-                Scanning vendor website...
-              </span>
-            </div>
-          )}
+          {/* Scanning checklist — always visible, items transition from pending to done */}
+          <div className="space-y-3">
+            <ScanCategory
+              label="Certifications"
+              items={certs}
+              startIndex={0}
+              isActive={isActive}
+            />
+            <ScanCategory
+              label="Security & Legal Links"
+              items={links}
+              startIndex={certs.length}
+              isActive={isActive}
+            />
+            <ScanCategory
+              label="Security Assessment"
+              items={other.filter((f) => f.kind === 'assessment')}
+              startIndex={certs.length + links.length}
+              isActive={isActive}
+            />
+            <ScanCategory
+              label="Recent News"
+              items={other.filter((f) => f.kind === 'news')}
+              startIndex={certs.length + links.length + 1}
+              isActive={isActive}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Status text */}
-      {isActive && statusText && (
-        <div className="flex items-center gap-2 px-5 pb-4">
-          <span className="w-1 h-1 rounded-full bg-primary animate-pulse" />
-          <span className="text-xs font-mono text-muted-foreground/70 truncate">
-            {statusText}
-          </span>
-        </div>
-      )}
+      {/* Bottom spacer */}
+      <div className="h-1" />
     </div>
   );
 }
