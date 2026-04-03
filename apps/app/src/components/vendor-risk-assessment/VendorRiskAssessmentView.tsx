@@ -3,6 +3,7 @@
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@trycompai/design-system';
 import { Launch, Security } from '@trycompai/design-system/icons';
 import { useMemo } from 'react';
+import { motion } from 'motion/react';
 import { parseVendorRiskAssessmentDescription } from './parse-vendor-risk-assessment-description';
 import { filterCertifications } from './filter-certifications';
 import { VendorRiskAssessmentCertificationsCard } from './VendorRiskAssessmentCertificationsCard';
@@ -34,65 +35,89 @@ export function VendorRiskAssessmentView({ source }: { source: VendorRiskAssessm
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <div className="text-sm font-semibold flex items-center gap-2">
-              <Security size={16} />
-              Security Assessment
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data?.securityAssessment ? (
-            <SecurityAssessmentContent
-              text={
-                data.securityAssessment.includes('Framework-specific checks:')
-                  ? data.securityAssessment.split('Framework-specific checks:')[0].trim()
-                  : data.securityAssessment
-              }
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground italic">
-              No automated security assessment found.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {certifications.length > 0 && (
-        <VendorRiskAssessmentCertificationsCard
-          certifications={certifications}
-          verifiedCount={verifiedCount}
-        />
-      )}
-
-      {links.length > 0 && (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+      >
         <Card>
           <CardHeader>
             <CardTitle>
-              <div className="text-sm font-semibold">Links</div>
+              <div className="text-sm font-semibold flex items-center gap-2">
+                <Security size={16} />
+                Security Assessment
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {links.map((link, index) => (
-                <Button
-                  key={`${link.url}-${link.label}-${index}`}
-                  variant="outline"
-                  size="sm"
-                  iconRight={<Launch size={12} />}
-                  onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}
-                >
-                  {link.label}
-                </Button>
-              ))}
-            </div>
+            {data?.securityAssessment ? (
+              <SecurityAssessmentContent
+                text={
+                  data.securityAssessment.includes('Framework-specific checks:')
+                    ? data.securityAssessment.split('Framework-specific checks:')[0].trim()
+                    : data.securityAssessment
+                }
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground italic">
+                No automated security assessment found.
+              </p>
+            )}
           </CardContent>
         </Card>
+      </motion.div>
+
+      {certifications.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut', delay: 0.15 }}
+        >
+          <VendorRiskAssessmentCertificationsCard
+            certifications={certifications}
+            verifiedCount={verifiedCount}
+          />
+        </motion.div>
       )}
 
-      <VendorRiskAssessmentTimelineCard news={news} />
+      {links.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut', delay: 0.3 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <div className="text-sm font-semibold">Links</div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {links.map((link, index) => (
+                  <Button
+                    key={`${link.url}-${link.label}-${index}`}
+                    variant="outline"
+                    size="sm"
+                    iconRight={<Launch size={12} />}
+                    onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}
+                  >
+                    {link.label}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+      >
+        <VendorRiskAssessmentTimelineCard news={news} />
+      </motion.div>
     </div>
   );
 }
