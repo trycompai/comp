@@ -2,7 +2,7 @@
 
 import { Text } from '@trycompai/design-system';
 import { Checkmark } from '@trycompai/design-system/icons';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { useMemo } from 'react';
 
 export type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
@@ -24,24 +24,6 @@ type Finding = {
   kind: 'cert' | 'link' | 'assessment' | 'news';
   id: string;
 };
-
-const BLIP_POSITIONS: Array<Record<string, string>> = [
-  { top: '18%', right: '22%' },
-  { bottom: '28%', left: '18%' },
-  { top: '42%', left: '15%' },
-  { bottom: '20%', right: '28%' },
-  { top: '22%', left: '30%' },
-  { bottom: '35%', right: '15%' },
-  { top: '30%', right: '15%' },
-  { bottom: '15%', left: '30%' },
-  { top: '15%', left: '45%' },
-  { bottom: '42%', right: '20%' },
-  { top: '35%', right: '35%' },
-  { bottom: '25%', left: '40%' },
-  { top: '50%', left: '12%' },
-  { bottom: '12%', right: '40%' },
-  { top: '25%', right: '12%' },
-];
 
 function parseFindings(messages: ResearchMessage[]): Finding[] {
   const findings: Finding[] = [];
@@ -97,140 +79,93 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
   return findings;
 }
 
-function RadarVisualization({
-  blipCount,
-  size,
-}: {
-  blipCount: number;
-  size: number;
-}) {
-  const half = size / 2;
-  const r1 = size * 0.72;
-  const r2 = size * 0.44;
-  const r3 = size * 0.18;
-
-  return (
-    <div
-      className="relative flex-shrink-0 flex items-center justify-center"
-      style={{ width: size, height: size }}
-    >
-      {/* Circles */}
-      <div
-        className="absolute rounded-full border border-primary/15"
-        style={{ width: size, height: size }}
-      />
-      <div
-        className="absolute rounded-full border border-primary/12"
-        style={{ width: r1, height: r1 }}
-      />
-      <div
-        className="absolute rounded-full border border-primary/10"
-        style={{ width: r2, height: r2 }}
-      />
-      <div
-        className="absolute rounded-full bg-primary/10"
-        style={{ width: r3, height: r3 }}
-      />
-
-      {/* Crosshairs */}
-      <div className="absolute w-full h-px bg-primary/[0.07]" />
-      <div className="absolute w-px h-full bg-primary/[0.07]" />
-
-      {/* Sonar sweep — SVG for pixel-perfect alignment */}
-      <div
-        className="absolute inset-0 animate-spin"
-        style={{ animationDuration: '2.5s' }}
-      >
-        <div
-          className="absolute left-1/2 top-0 -translate-x-1/2 w-px bg-primary/60"
-          style={{ height: half, top: 0 }}
-        />
-      </div>
-
-      {/* Blips */}
-      <AnimatePresence>
-        {Array.from({ length: Math.min(blipCount, BLIP_POSITIONS.length) }).map(
-          (_, i) => (
-            <motion.div
-              key={`blip-${i}`}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.4 }}
-              className="absolute w-[7px] h-[7px] rounded-full bg-success animate-pulse shadow-[0_0_8px_theme(colors.success)]"
-              style={{
-                ...BLIP_POSITIONS[i],
-                animationDelay: `${i * 300}ms`,
-              }}
-            />
-          ),
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-function ScanCategory({
+function CategoryCard({
   label,
   items,
-  startIndex,
   isActive,
+  color,
 }: {
   label: string;
   items: Finding[];
-  startIndex: number;
   isActive: boolean;
+  color: 'success' | 'primary';
 }) {
-  const hasFindings = items.length > 0;
-  return (
-    <div>
-      <div className="flex items-center gap-2 mb-2">
-        {hasFindings ? (
-          <Checkmark size={12} className="text-success" />
-        ) : isActive ? (
-          <span className="w-3 h-3 rounded-full border-2 border-muted-foreground/30 border-t-primary animate-spin" />
-        ) : (
-          <span className="w-3 h-3 rounded-full border-2 border-muted-foreground/20" />
-        )}
-        <span
-          className={`text-[11px] uppercase tracking-wider ${
-            hasFindings ? 'text-muted-foreground' : 'text-muted-foreground/50'
-          }`}
-        >
-          {label}
-        </span>
-        {hasFindings && (
-          <span className="text-[11px] text-muted-foreground/50">
-            ({items.length})
-          </span>
-        )}
-      </div>
-      {hasFindings && (
-        <div className="flex flex-wrap gap-2 ml-5">
-          {items.map((f, i) => (
-            <FindingBadge key={f.id} finding={f} index={startIndex + i} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+  const done = items.length > 0;
 
-function FindingBadge({ finding, index }: { finding: Finding; index: number }) {
-  const isCert = finding.kind === 'cert' || finding.kind === 'assessment';
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.85, y: 4 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: index * 0.08, ease: 'easeOut' }}
-      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] ${
-        isCert
-          ? 'border-success/15 bg-success/[0.06]'
-          : 'border-primary/15 bg-primary/[0.06]'
+      layout
+      className={`rounded-lg border p-4 transition-colors duration-500 ${
+        done
+          ? 'border-border bg-card shadow-sm'
+          : 'border-dashed border-border/60 bg-muted/30'
       }`}
     >
-      {isCert && <Checkmark size={12} className="text-success shrink-0" />}
-      {!isCert && <span className="text-primary text-xs shrink-0">↗</span>}
-      <span className="text-card-foreground truncate">{finding.label}</span>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          {done ? (
+            <Checkmark size={14} className="text-success" />
+          ) : isActive ? (
+            <span className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 border-t-primary animate-spin" />
+          ) : (
+            <span className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/20" />
+          )}
+          <span
+            className={`text-sm font-medium ${
+              done ? 'text-card-foreground' : 'text-muted-foreground'
+            }`}
+          >
+            {label}
+          </span>
+        </div>
+        {done && (
+          <motion.span
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+              color === 'success'
+                ? 'bg-success/10 text-success'
+                : 'bg-primary/10 text-primary'
+            }`}
+          >
+            {items.length} found
+          </motion.span>
+        )}
+      </div>
+
+      {/* Items */}
+      {done ? (
+        <div className="flex flex-wrap gap-1.5">
+          {items.map((item, i) => (
+            <motion.span
+              key={item.id}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05, duration: 0.25 }}
+              className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ${
+                color === 'success'
+                  ? 'bg-success/[0.06] text-card-foreground'
+                  : 'bg-primary/[0.06] text-card-foreground'
+              }`}
+            >
+              {color === 'success' && (
+                <Checkmark size={10} className="text-success shrink-0" />
+              )}
+              {color === 'primary' && (
+                <span className="text-primary text-[10px] shrink-0">↗</span>
+              )}
+              <span className="truncate max-w-[200px]">{item.label}</span>
+            </motion.span>
+          ))}
+        </div>
+      ) : isActive ? (
+        <div className="flex gap-2">
+          <div className="h-6 w-16 rounded-md bg-muted animate-pulse" />
+          <div className="h-6 w-20 rounded-md bg-muted animate-pulse [animation-delay:200ms]" />
+          <div className="h-6 w-14 rounded-md bg-muted animate-pulse [animation-delay:400ms]" />
+        </div>
+      ) : null}
     </motion.div>
   );
 }
@@ -241,23 +176,28 @@ export function VendorResearchFeed({
   vendorName,
 }: VendorResearchFeedProps) {
   const findings = useMemo(() => parseFindings(messages), [messages]);
-  const hasFindings = findings.length > 0;
 
   const certs = findings.filter((f) => f.kind === 'cert');
   const links = findings.filter((f) => f.kind === 'link');
-  const other = findings.filter(
-    (f) => f.kind === 'assessment' || f.kind === 'news',
-  );
+  const assessments = findings.filter((f) => f.kind === 'assessment');
+  const news = findings.filter((f) => f.kind === 'news');
+  const totalFindings = findings.length;
+
+  // Current status from last searching/analyzing message
+  const statusText = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i]!;
+      if (msg.type === 'searching' || msg.type === 'analyzing') {
+        return msg.text;
+      }
+    }
+    return isActive ? 'Initializing research...' : null;
+  }, [messages, isActive]);
 
   return (
-    <div className="rounded-xl border border-border overflow-hidden bg-gradient-to-b from-card to-card/80 shadow-lg">
-      {/* Shimmer bar */}
-      {isActive && (
-        <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-[shimmer-bar_3s_ease-in-out_infinite] bg-[length:200%_100%]" />
-      )}
-
+    <div className="rounded-xl border border-border overflow-hidden bg-card shadow-lg">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+      <div className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
           {isActive && (
             <span className="relative flex h-2.5 w-2.5">
@@ -271,63 +211,54 @@ export function VendorResearchFeed({
               : 'Research complete'}
           </Text>
         </div>
-        {hasFindings && (
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {findings.length} {findings.length === 1 ? 'finding' : 'findings'}
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {totalFindings > 0 && (
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {totalFindings} {totalFindings === 1 ? 'finding' : 'findings'}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Empty state: centered large radar + checklist below */}
-      {!hasFindings && (
-        <div className="flex flex-col items-center px-5 py-6 gap-6">
-          <RadarVisualization blipCount={0} size={200} />
-          <div className="flex gap-8">
-            <ScanCategory label="Certifications" items={[]} startIndex={0} isActive={isActive} />
-            <ScanCategory label="Links" items={[]} startIndex={0} isActive={isActive} />
-            <ScanCategory label="Assessment" items={[]} startIndex={0} isActive={isActive} />
-            <ScanCategory label="News" items={[]} startIndex={0} isActive={isActive} />
+      {/* Status pill */}
+      {isActive && statusText && (
+        <div className="px-5 pb-3">
+          <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-3 py-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            <span className="text-xs text-muted-foreground font-mono truncate max-w-[300px]">
+              {statusText}
+            </span>
           </div>
         </div>
       )}
 
-      {/* With findings: side-by-side radar + badges */}
-      {hasFindings && (
-        <div className="flex gap-6 px-5 py-4">
-          <RadarVisualization blipCount={findings.length} size={160} />
-
-          <div className="flex-1 min-w-0">
-            <div className="space-y-3">
-              <ScanCategory
-                label="Certifications"
-                items={certs}
-                startIndex={0}
-                isActive={isActive}
-              />
-              <ScanCategory
-                label="Security & Legal Links"
-                items={links}
-                startIndex={certs.length}
-                isActive={isActive}
-              />
-              <ScanCategory
-                label="Security Assessment"
-                items={other.filter((f) => f.kind === 'assessment')}
-                startIndex={certs.length + links.length}
-                isActive={isActive}
-              />
-              <ScanCategory
-                label="Recent News"
-                items={other.filter((f) => f.kind === 'news')}
-                startIndex={certs.length + links.length + 1}
-                isActive={isActive}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="h-1" />
+      {/* Category cards grid */}
+      <div className="px-5 pb-5 grid grid-cols-2 gap-3">
+        <CategoryCard
+          label="Certifications"
+          items={certs}
+          isActive={isActive}
+          color="success"
+        />
+        <CategoryCard
+          label="Links"
+          items={links}
+          isActive={isActive}
+          color="primary"
+        />
+        <CategoryCard
+          label="Security Assessment"
+          items={assessments}
+          isActive={isActive}
+          color="success"
+        />
+        <CategoryCard
+          label="Recent News"
+          items={news}
+          isActive={isActive}
+          color="success"
+        />
+      </div>
     </div>
   );
 }
