@@ -139,11 +139,6 @@ export function EditableSOAFields({
 
   const handleEditClick = () => {
     setIsEditing(true);
-    if (isApplicable === false) {
-      setJustificationDialogOpen(true);
-    } else {
-      setJustificationDialogOpen(false);
-    }
   };
 
   const handleSelectChange = (value: 'yes' | 'no' | 'null') => {
