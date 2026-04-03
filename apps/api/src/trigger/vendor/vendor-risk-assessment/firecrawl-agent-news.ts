@@ -58,7 +58,7 @@ Search press releases, reputable news sources, and the company's blog/newsroom.`
       prompt,
       urls: [origin, `${origin}/blog`, `${origin}/newsroom`, `${origin}/press`],
       strictConstrainToURLs: false,
-      maxCredits: 300,
+      maxCredits: 500,
       timeout: 360,
       pollInterval: 5,
       schema: newsResponseSchema,

@@ -3,11 +3,11 @@
 import { Card, CardContent, Text } from '@trycompai/design-system';
 import { Checkmark, Search } from '@trycompai/design-system/icons';
 import { AnimatedSizeContainer } from '@trycompai/ui/animated-size-container';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
-type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
+export type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
 
-type ResearchMessage = {
+export type ResearchMessage = {
   text: string;
   type: MessageType;
   timestamp: number;
@@ -16,82 +16,224 @@ type ResearchMessage = {
 interface VendorResearchFeedProps {
   messages: ResearchMessage[];
   isActive: boolean;
+  vendorName?: string;
 }
 
-const MESSAGE_COLORS: Record<MessageType, string> = {
-  searching: 'text-blue-400',
-  found: 'text-green-400',
-  analyzing: 'text-muted-foreground',
-  error: 'text-red-400',
-};
+// Filler messages shown between real updates to keep the feed alive
+const FILLER_MESSAGES = [
+  'Scanning security documentation...',
+  'Reviewing compliance certifications...',
+  'Checking data processing agreements...',
+  'Analyzing security headers...',
+  'Reviewing incident response policies...',
+  'Checking encryption standards...',
+  'Scanning for vulnerability disclosures...',
+  'Reviewing access control policies...',
+  'Checking business continuity plans...',
+  'Analyzing third-party audit reports...',
+];
 
-const MESSAGE_ICONS: Record<MessageType, React.ReactNode> = {
-  searching: <Search size={12} className="text-blue-400 shrink-0" />,
-  found: <Checkmark size={12} className="text-green-400 shrink-0" />,
-  analyzing: (
-    <span className="w-3 h-3 shrink-0 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
-  ),
-  error: <span className="text-red-400 shrink-0 text-xs">✗</span>,
-};
-
-function FeedMessage({ message }: { message: ResearchMessage }) {
+function FeedMessage({
+  message,
+  index,
+}: {
+  message: ResearchMessage;
+  index: number;
+}) {
   const [visible, setVisible] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Trigger fade-in on mount
-    const frame = requestAnimationFrame(() => setVisible(true));
-    return () => cancelAnimationFrame(frame);
+    const timer = setTimeout(() => setVisible(true), 50);
+    return () => clearTimeout(timer);
   }, []);
+
+  const isFound = message.type === 'found';
+  const isError = message.type === 'error';
 
   return (
     <div
-      ref={containerRef}
-      className={`flex items-start gap-2 py-1 transition-all duration-300 ${
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-      }`}
+      className={`flex items-center gap-3 py-2 px-3 rounded-lg transition-all duration-500 ease-out ${
+        visible
+          ? 'opacity-100 translate-x-0'
+          : 'opacity-0 -translate-x-4'
+      } ${isFound ? 'bg-emerald-500/10' : ''} ${isError ? 'bg-red-500/10' : ''}`}
     >
-      <span className="mt-0.5">{MESSAGE_ICONS[message.type]}</span>
-      <span className={`text-xs font-mono ${MESSAGE_COLORS[message.type]}`}>
+      <span className="shrink-0">
+        {message.type === 'found' && (
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
+            <Checkmark size={12} className="text-emerald-400" />
+          </span>
+        )}
+        {message.type === 'searching' && (
+          <span className="flex h-5 w-5 items-center justify-center">
+            <Search size={14} className="text-blue-400 animate-pulse" />
+          </span>
+        )}
+        {message.type === 'analyzing' && (
+          <span className="flex h-5 w-5 items-center justify-center">
+            <span className="w-3.5 h-3.5 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" />
+          </span>
+        )}
+        {message.type === 'error' && (
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500/20 text-red-400 text-xs font-bold">
+            !
+          </span>
+        )}
+      </span>
+      <span
+        className={`text-sm font-mono tracking-tight ${
+          isFound
+            ? 'text-emerald-300 font-medium'
+            : isError
+              ? 'text-red-300'
+              : 'text-muted-foreground'
+        }`}
+      >
         {message.text}
       </span>
     </div>
   );
 }
 
-export function VendorResearchFeed({ messages, isActive }: VendorResearchFeedProps) {
+/**
+ * Drip-feeds messages with a delay so they appear one-at-a-time,
+ * and injects simulated "scanning..." messages during long pauses.
+ */
+function useDripFeed(
+  realMessages: ResearchMessage[],
+  isActive: boolean,
+): ResearchMessage[] {
+  const [displayed, setDisplayed] = useState<ResearchMessage[]>([]);
+  const queueRef = useRef<ResearchMessage[]>([]);
+  const drainTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fillerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fillerIndexRef = useRef(0);
+  const lastRealCountRef = useRef(0);
+
+  // Queue new real messages as they arrive
+  useEffect(() => {
+    const newMessages = realMessages.slice(lastRealCountRef.current);
+    if (newMessages.length > 0) {
+      queueRef.current.push(...newMessages);
+      lastRealCountRef.current = realMessages.length;
+    }
+  }, [realMessages]);
+
+  // Drain queue one message at a time with delay
+  const drainOne = useCallback(() => {
+    if (queueRef.current.length === 0) return;
+    const next = queueRef.current.shift()!;
+    setDisplayed((prev) => [...prev, next]);
+
+    if (queueRef.current.length > 0) {
+      drainTimerRef.current = setTimeout(drainOne, 600);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (queueRef.current.length > 0 && !drainTimerRef.current) {
+      drainOne();
+    }
+    const interval = setInterval(() => {
+      if (queueRef.current.length > 0 && !drainTimerRef.current) {
+        drainOne();
+      }
+    }, 300);
+    return () => clearInterval(interval);
+  }, [realMessages, drainOne]);
+
+  // Inject filler messages during long silences
+  useEffect(() => {
+    if (!isActive) {
+      if (fillerTimerRef.current) clearInterval(fillerTimerRef.current);
+      return;
+    }
+
+    fillerTimerRef.current = setInterval(() => {
+      // Only inject filler if queue is empty (no real messages waiting)
+      if (queueRef.current.length === 0) {
+        const text =
+          FILLER_MESSAGES[fillerIndexRef.current % FILLER_MESSAGES.length];
+        fillerIndexRef.current++;
+        setDisplayed((prev) => [
+          ...prev,
+          { text, type: 'searching' as MessageType, timestamp: Date.now() },
+        ]);
+      }
+    }, 4000);
+
+    return () => {
+      if (fillerTimerRef.current) clearInterval(fillerTimerRef.current);
+    };
+  }, [isActive]);
+
+  // Cleanup timers
+  useEffect(() => {
+    return () => {
+      if (drainTimerRef.current) clearTimeout(drainTimerRef.current);
+      if (fillerTimerRef.current) clearInterval(fillerTimerRef.current);
+    };
+  }, []);
+
+  return displayed;
+}
+
+export function VendorResearchFeed({
+  messages,
+  isActive,
+  vendorName,
+}: VendorResearchFeedProps) {
   const feedEndRef = useRef<HTMLDivElement>(null);
+  const displayedMessages = useDripFeed(messages, isActive);
 
   useEffect(() => {
     feedEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [messages.length]);
+  }, [displayedMessages.length]);
 
   return (
-    <Card>
-      <CardContent>
-        <div className="py-4">
-          <div className="flex items-center gap-2 mb-4">
-            {isActive && (
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
-              </span>
-            )}
-            <Text size="sm" weight="medium">
-              {isActive ? 'Researching vendor security posture...' : 'Research complete'}
-            </Text>
-          </div>
-
-          <AnimatedSizeContainer width={false}>
-            <div className="max-h-64 overflow-y-auto">
-              {messages.map((msg, i) => (
-                <FeedMessage key={`${msg.timestamp}-${i}`} message={msg} />
-              ))}
-              <div ref={feedEndRef} />
-            </div>
-          </AnimatedSizeContainer>
+    <div className="rounded-xl border border-border bg-gradient-to-b from-card to-card/80 shadow-lg overflow-hidden">
+      {/* Header with animated gradient bar */}
+      <div className="relative px-5 pt-5 pb-3">
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-violet-500 to-emerald-500 opacity-80" />
+        <div className="flex items-center gap-3">
+          {isActive && (
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500" />
+            </span>
+          )}
+          <Text size="sm" weight="semibold">
+            {isActive
+              ? `Researching ${vendorName ?? 'vendor'} security posture`
+              : 'Research complete'}
+          </Text>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Message feed */}
+      <div className="px-4 pb-4">
+        <AnimatedSizeContainer width={false}>
+          <div className="max-h-72 overflow-y-auto space-y-1 scrollbar-thin">
+            {displayedMessages.map((msg, i) => (
+              <FeedMessage
+                key={`${msg.timestamp}-${i}`}
+                message={msg}
+                index={i}
+              />
+            ))}
+            {isActive && displayedMessages.length > 0 && (
+              <div className="flex items-center gap-3 py-2 px-3 opacity-40">
+                <span className="flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:150ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:300ms]" />
+                </span>
+              </div>
+            )}
+            <div ref={feedEndRef} />
+          </div>
+        </AnimatedSizeContainer>
+      </div>
+    </div>
   );
 }

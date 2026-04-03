@@ -418,6 +418,7 @@ export function VendorDetailTabs({
                       <VendorResearchFeed
                         messages={researchMetadata.messages}
                         isActive={isRealtimeRunActive}
+                        vendorName={resolvedVendor.name}
                       />
                     </motion.div>
                   ) : riskAssessmentData ? (
