@@ -136,11 +136,8 @@ function RadarVisualization({
       <div className="absolute w-full h-px bg-primary/[0.07]" />
       <div className="absolute w-px h-full bg-primary/[0.07]" />
 
-      {/* Sonar sweep — visible line + gradient trail */}
-      <div
-        className="absolute inset-0"
-        style={{ animation: 'radar-sweep 2.5s linear infinite' }}
-      >
+      {/* Sonar sweep — uses Tailwind animate-spin with custom duration */}
+      <div className="absolute inset-0 animate-spin" style={{ animationDuration: '2.5s' }}>
         {/* The main sweep line — uses Tailwind classes for DS color compatibility */}
         <div
           className="absolute left-1/2 bottom-1/2 origin-bottom -ml-px w-[2px] bg-gradient-to-t from-primary/80 via-primary/30 to-transparent"
