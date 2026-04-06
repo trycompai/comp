@@ -88,13 +88,13 @@ function ScanningGlass({
 }: {
   onCardChange: (index: number) => void;
 }) {
-  const tops  = ['25%', '25%', '75%', '75%', '25%'];
+  const tops  = ['28%', '28%', '72%', '72%', '28%'];
   const lefts = ['25%', '75%', '75%', '25%', '25%'];
   const lastCardRef = useRef(-1);
 
   return (
     <motion.div
-      className="pointer-events-none absolute z-10 -translate-x-[15px] -translate-y-[15px]"
+      className="pointer-events-none absolute z-10 -translate-x-[18px] -translate-y-[18px]"
       animate={{ top: tops, left: lefts }}
       transition={{
         duration: 8,
