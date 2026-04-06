@@ -46,7 +46,7 @@ Focus on their official website ${vendorWebsite} (especially trust/security/comp
       prompt,
       urls: seedUrls,
       strictConstrainToURLs: false,
-      maxCredits: 700,
+      maxCredits: 2500,
       timeout: 360,
       pollInterval: 5,
       schema: {
