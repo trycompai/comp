@@ -109,19 +109,22 @@ function buildScanPath(pendingIndices: number[]) {
   for (const idx of pendingIndices) {
     const c = CARD_CENTERS[idx]!;
 
-    // Arrive at center
-    tops.push(`${c.top}%`);
-    lefts.push(`${c.left}%`);
-    times.push(t);
-
-    // Full circle at constant radius (no spiral ramp — just a clean circle)
-    for (let s = 1; s <= steps; s++) {
-      const angle = (s / steps) * Math.PI * 2;
-      const dx = Math.round(circleRadiusPx * Math.sin(angle));
-      const dy = Math.round(-circleRadiusPx * Math.cos(angle));
-      tops.push(`calc(${c.top}% + ${dy}px)`);
-      lefts.push(`calc(${c.left}% + ${dx}px)`);
-      times.push(t + circleFraction * (s / steps));
+    // Spiral out from center → full circle → spiral back to center
+    // Radius ramps 0→1→0 via sin(progress * π) so path starts and ends at center
+    for (let s = 0; s <= steps; s++) {
+      const progress = s / steps;
+      const angle = progress * Math.PI * 2;
+      const ramp = Math.sin(progress * Math.PI); // 0 → 1 → 0
+      const dx = Math.round(circleRadiusPx * ramp * Math.sin(angle));
+      const dy = Math.round(-circleRadiusPx * ramp * Math.cos(angle));
+      if (dx === 0 && dy === 0) {
+        tops.push(`${c.top}%`);
+        lefts.push(`${c.left}%`);
+      } else {
+        tops.push(`calc(${c.top}% + ${dy}px)`);
+        lefts.push(`calc(${c.left}% + ${dx}px)`);
+      }
+      times.push(t + circleFraction * progress);
     }
     t += circleFraction + travelFraction;
   }
