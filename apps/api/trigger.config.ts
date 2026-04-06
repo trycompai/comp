@@ -1,4 +1,3 @@
-import { PrismaInstrumentation } from '@prisma/instrumentation';
 import { syncVercelEnvVars } from '@trigger.dev/build/extensions/core';
 import { defineConfig } from '@trigger.dev/sdk';
 import { prismaExtension } from './customPrismaExtension';
@@ -9,7 +8,6 @@ export default defineConfig({
   runtime: 'node-22',
   project: 'proj_zhioyrusqertqgafqgpj', // API project
   logLevel: 'log',
-  instrumentations: [new PrismaInstrumentation()],
   maxDuration: 300, // 5 minutes
   build: {
     extensions: [
