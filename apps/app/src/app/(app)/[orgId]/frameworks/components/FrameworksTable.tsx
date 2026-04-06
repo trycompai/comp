@@ -228,7 +228,7 @@ export function FrameworksTable({
                     </HStack>
                   </TableCell>
                   <TableCell>
-                    <div className="line-clamp-1 max-w-[300px]">
+                    <div className="line-clamp-2">
                       <Text size="sm" variant="muted">
                         {fw.framework.description?.trim() || '—'}
                       </Text>
