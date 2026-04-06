@@ -56,6 +56,25 @@ export function extractCommentContext(
 }
 
 /**
+ * Detects action sub-endpoints (e.g. trigger-assessment) on resources
+ * and returns a human-readable description instead of the generic
+ * "Created <resource>" that the POST method would produce.
+ */
+export function extractActionDescription(
+  path: string,
+  method: string,
+): string | null {
+  if (method !== 'POST') return null;
+
+  const pathWithoutQuery = path.split('?')[0]!;
+
+  if (/\/vendors\/[^/]+\/trigger-assessment\/?$/.test(pathWithoutQuery))
+    return 'Triggered vendor risk assessment';
+
+  return null;
+}
+
+/**
  * Detects download/export GET endpoints and returns a human-readable
  * description. Returns null for non-download endpoints.
  */

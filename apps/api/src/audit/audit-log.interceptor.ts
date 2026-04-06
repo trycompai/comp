@@ -24,6 +24,7 @@ import {
   type ChangesRecord,
   buildChanges,
   buildDescription,
+  extractActionDescription,
   extractCommentContext,
   extractDownloadDescription,
   extractEntityId,
@@ -129,6 +130,10 @@ export class AuditLogInterceptor implements NestInterceptor {
                 responseBody,
                 requestBody,
               );
+              const actionDesc = extractActionDescription(
+                request.url,
+                method,
+              );
               const downloadDesc = extractDownloadDescription(
                 request.url,
                 method,
@@ -145,7 +150,7 @@ export class AuditLogInterceptor implements NestInterceptor {
                 (request as { userRoles?: string[] }).userRoles,
               );
               let descriptionOverride: string | null =
-                versionDesc ?? downloadDesc ?? policyActionDesc ?? findingDesc;
+                actionDesc ?? versionDesc ?? downloadDesc ?? policyActionDesc ?? findingDesc;
 
               const isAutomationUpdate = policyActionDesc && /automations/.test(request.url) && method === 'PATCH';
               const isAttachmentAction = policyActionDesc && /attachments/.test(request.url);

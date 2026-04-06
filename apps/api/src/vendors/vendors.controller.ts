@@ -9,7 +9,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { SkipAuditLog } from '../audit/skip-audit-log.decorator';
 import {
   ApiBody,
   ApiOperation,
@@ -179,7 +178,6 @@ export class VendorsController {
 
   @Post(':id/trigger-assessment')
   @RequirePermission('vendor', 'update')
-  @SkipAuditLog()
   @ApiOperation({ summary: 'Trigger vendor risk assessment' })
   @ApiParam(VENDOR_PARAMS.vendorId)
   async triggerAssessment(
