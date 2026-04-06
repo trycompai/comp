@@ -39,7 +39,7 @@ import { MultiRoleCombobox } from './MultiRoleCombobox';
 import { RemoveDeviceAlert } from './RemoveDeviceAlert';
 import { RemoveMemberAlert } from './RemoveMemberAlert';
 import type { CustomRoleOption } from './MultiRoleCombobox';
-import type { MemberWithUser } from './TeamMembers';
+import type { MemberWithUser, TaskCompletion } from './TeamMembers';
 
 interface MemberRowProps {
   member: MemberWithUser;
@@ -50,7 +50,7 @@ interface MemberRowProps {
   canEdit: boolean;
   isCurrentUserOwner: boolean;
   customRoles?: CustomRoleOption[];
-  taskCompletion?: { completed: number; total: number };
+  taskCompletion?: TaskCompletion;
   hasDeviceAgentDevice?: boolean;
 }
 
@@ -254,16 +254,28 @@ export function MemberRow({
         {/* TASKS */}
         <TableCell>
           {taskCompletion ? (
-            <div className="w-[170px]">
+            <div className="w-[220px]">
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full bg-primary transition-all"
                   style={{ width: `${taskProgressPercent}%` }}
                 />
               </div>
-              <Text size="xs" variant="muted">
-                {taskCompletion.completed}/{taskCompletion.total} complete
-              </Text>
+              <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+                <Text size="xs" variant="muted">
+                  Policies {taskCompletion.policies.completed}/{taskCompletion.policies.total}
+                </Text>
+                {taskCompletion.training.total > 0 && (
+                  <Text size="xs" variant="muted">
+                    Training {taskCompletion.training.completed}/{taskCompletion.training.total}
+                  </Text>
+                )}
+                {taskCompletion.hipaa && (
+                  <Text size="xs" variant="muted">
+                    HIPAA {taskCompletion.hipaa.completed}/{taskCompletion.hipaa.total}
+                  </Text>
+                )}
+              </div>
             </div>
           ) : (
             <Text size="sm" variant="muted">

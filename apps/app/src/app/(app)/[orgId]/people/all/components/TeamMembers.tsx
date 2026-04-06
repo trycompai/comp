@@ -1,4 +1,5 @@
 import { filterComplianceMembers } from '@/lib/compliance';
+import { HIPAA_TRAINING_ID } from '@/lib/data/hipaa-training-content';
 import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
 import { serverApi } from '@/lib/server-api-client';
 import type { Invitation, Member, User } from '@db';
@@ -13,6 +14,14 @@ export interface MemberWithUser extends Member {
 export interface TeamMembersData {
   members: MemberWithUser[];
   pendingInvitations: Invitation[];
+}
+
+export interface TaskCompletion {
+  completed: number;
+  total: number;
+  policies: { completed: number; total: number };
+  training: { completed: number; total: number };
+  hipaa?: { completed: number; total: number };
 }
 
 export interface TeamMembersProps {
@@ -51,7 +60,7 @@ export async function TeamMembers(props: TeamMembersProps) {
   const employeeSyncData = await getEmployeeSyncConnections(organizationId);
 
   // Build task completion map for employees/contractors
-  const taskCompletionMap: Record<string, { completed: number; total: number }> = {};
+  const taskCompletionMap: Record<string, TaskCompletion> = {};
 
   const employeeMembers = await filterComplianceMembers(members, organizationId);
 
@@ -69,10 +78,17 @@ export async function TeamMembers(props: TeamMembersProps) {
   ];
 
   if (employeeMembers.length > 0) {
-    const org = await db.organization.findUnique({
-      where: { id: organizationId },
-      select: { securityTrainingStepEnabled: true },
-    });
+    const [org, hipaaInstance] = await Promise.all([
+      db.organization.findUnique({
+        where: { id: organizationId },
+        select: { securityTrainingStepEnabled: true },
+      }),
+      db.frameworkInstance.findFirst({
+        where: { organizationId, framework: { name: 'HIPAA' } },
+        select: { id: true },
+      }),
+    ]);
+    const hasHipaaFramework = !!hipaaInstance;
 
     const policies = await db.policy.findMany({
       where: {
@@ -92,20 +108,40 @@ export async function TeamMembers(props: TeamMembersProps) {
 
     const totalPolicies = policies.length;
     const totalTrainingVideos = org?.securityTrainingStepEnabled ? trainingVideosData.length : 0;
-    const totalTasks = totalPolicies + totalTrainingVideos;
+    const totalHipaaTraining = hasHipaaFramework ? 1 : 0;
+    const totalTasks = totalPolicies + totalTrainingVideos + totalHipaaTraining;
 
     for (const employee of employeeMembers) {
       const policiesCompleted = policies.filter((p) => p.signedBy.includes(employee.id)).length;
 
       const trainingsCompleted = org?.securityTrainingStepEnabled
         ? trainingCompletions.filter(
-            (tc) => tc.memberId === employee.id && tc.completedAt !== null,
+            (tc) =>
+              tc.memberId === employee.id &&
+              tc.completedAt !== null &&
+              tc.videoId !== HIPAA_TRAINING_ID,
           ).length
         : 0;
 
+      const hipaaCompleted =
+        hasHipaaFramework &&
+        trainingCompletions.some(
+          (tc) =>
+            tc.memberId === employee.id &&
+            tc.videoId === HIPAA_TRAINING_ID &&
+            tc.completedAt !== null,
+        )
+          ? 1
+          : 0;
+
       taskCompletionMap[employee.id] = {
-        completed: policiesCompleted + trainingsCompleted,
+        completed: policiesCompleted + trainingsCompleted + hipaaCompleted,
         total: totalTasks,
+        policies: { completed: policiesCompleted, total: totalPolicies },
+        training: { completed: trainingsCompleted, total: totalTrainingVideos },
+        ...(hasHipaaFramework && {
+          hipaa: { completed: hipaaCompleted, total: 1 },
+        }),
       };
     }
   }

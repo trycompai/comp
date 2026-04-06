@@ -329,7 +329,7 @@ export function EmployeeCompletionChart({
 }
 
 function TaskBarChart({ stat }: { stat: EmployeeTaskStats }) {
-  const totalCompleted = stat.policiesCompleted + stat.trainingsCompleted;
+  const totalCompleted = stat.policiesCompleted + stat.trainingsCompleted + (stat.hipaaCompleted ? 1 : 0);
   const totalIncomplete = stat.totalTasks - totalCompleted;
   const barHeight = 12;
 

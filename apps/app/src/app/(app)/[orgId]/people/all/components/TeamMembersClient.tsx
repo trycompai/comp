@@ -39,7 +39,7 @@ import { apiClient } from '@/lib/api-client';
 import { buildDisplayItems, filterDisplayItems } from './filter-members';
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
-import type { MemberWithUser, TeamMembersData } from './TeamMembers';
+import type { MemberWithUser, TaskCompletion, TeamMembersData } from './TeamMembers';
 
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
@@ -52,7 +52,7 @@ interface TeamMembersClientProps {
   isAuditor: boolean;
   isCurrentUserOwner: boolean;
   employeeSyncData: EmployeeSyncConnectionsData;
-  taskCompletionMap: Record<string, { completed: number; total: number }>;
+  taskCompletionMap: Record<string, TaskCompletion>;
   memberIdsWithDeviceAgent: string[];
 }
 
