@@ -85,10 +85,10 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
  */
 // All 4 card center positions in the 2x2 grid
 const CARD_CENTERS = [
-  { left: 25, top: 22 }, // 0: top-left (Certifications)
-  { left: 75, top: 22 }, // 1: top-right (Links)
-  { left: 75, top: 68 }, // 2: bottom-right (Assessment)
-  { left: 25, top: 68 }, // 3: bottom-left (News)
+  { left: 25, top: 27 }, // 0: top-left (Certifications)
+  { left: 75, top: 27 }, // 1: top-right (Links)
+  { left: 75, top: 73 }, // 2: bottom-right (Assessment)
+  { left: 25, top: 73 }, // 3: bottom-left (News)
 ];
 
 function buildScanPath(pendingIndices: number[]) {
