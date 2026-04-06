@@ -6,7 +6,6 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import axios, { AxiosInstance } from 'axios';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -25,6 +24,7 @@ import {
   ComplianceResourceUrlResponseDto,
   UploadComplianceResourceDto,
 } from './dto/compliance-resource.dto';
+import * as dns from 'node:dns';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
 import {
   DeleteTrustDocumentDto,
@@ -61,25 +61,54 @@ interface VercelDomainConfigResponse {
 @Injectable()
 export class TrustPortalService {
   private readonly logger = new Logger(TrustPortalService.name);
-  private readonly vercelApi: AxiosInstance;
+  private readonly vercelBaseUrl = 'https://api.vercel.com';
+  private readonly vercelToken: string;
   private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024;
   private readonly SIGNED_URL_EXPIRY_SECONDS = 900;
 
   constructor() {
-    const bearerToken = process.env.VERCEL_ACCESS_TOKEN;
-
-    if (!bearerToken) {
+    this.vercelToken = process.env.VERCEL_ACCESS_TOKEN || '';
+    if (!this.vercelToken) {
       this.logger.warn('VERCEL_ACCESS_TOKEN is not set');
     }
+  }
 
-    // Initialize axios instance for Vercel API
-    this.vercelApi = axios.create({
-      baseURL: 'https://api.vercel.com',
+  private async vercelFetch<T = unknown>({
+    method,
+    path,
+    params,
+    body,
+  }: {
+    method: 'GET' | 'POST' | 'DELETE';
+    path: string;
+    params?: Record<string, string>;
+    body?: unknown;
+  }): Promise<{ data: T; status: number }> {
+    const url = new URL(path, this.vercelBaseUrl);
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        url.searchParams.set(k, v);
+      }
+    }
+    const resp = await fetch(url.toString(), {
+      method,
       headers: {
-        Authorization: `Bearer ${bearerToken || ''}`,
+        Authorization: `Bearer ${this.vercelToken}`,
         'Content-Type': 'application/json',
       },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
+    if (!resp.ok) {
+      const errorBody = await resp.json().catch(() => ({}));
+      const err = new Error(
+        errorBody?.error?.message || `Vercel API ${method} ${path} failed (${resp.status})`,
+      ) as Error & { status: number; responseData: unknown };
+      err.status = resp.status;
+      err.responseData = errorBody;
+      throw err;
+    }
+    const data = (await resp.json()) as T;
+    return { data, status: resp.status };
   }
 
   private static readonly FRAMEWORK_CONFIG: Record<
@@ -181,29 +210,24 @@ export class TrustPortalService {
 
       // Get domain information including verification status
       // Vercel API endpoint: GET /v9/projects/{projectId}/domains/{domain}
+      const teamId = process.env.VERCEL_TEAM_ID!;
       const [domainResponse, configResponse] = await Promise.all([
-        this.vercelApi.get<VercelDomainResponse>(
-          `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}`,
-          {
-            params: {
-              teamId: process.env.VERCEL_TEAM_ID,
-            },
-          },
-        ),
+        this.vercelFetch<VercelDomainResponse>({
+          method: 'GET',
+          path: `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}`,
+          params: { teamId },
+        }),
         // Get domain config to retrieve the actual CNAME target
-        // Vercel API endpoint: GET /v6/domains/{domain}/config
-        this.vercelApi
-          .get<VercelDomainConfigResponse>(`/v6/domains/${TrustPortalService.safeDomainPath(domain)}/config`, {
-            params: {
-              teamId: process.env.VERCEL_TEAM_ID,
-            },
-          })
-          .catch((err) => {
-            this.logger.warn(
-              `Failed to get domain config for ${domain}: ${err.message}`,
-            );
-            return null;
-          }),
+        this.vercelFetch<VercelDomainConfigResponse>({
+          method: 'GET',
+          path: `/v6/domains/${TrustPortalService.safeDomainPath(domain)}/config`,
+          params: { teamId },
+        }).catch((err) => {
+          this.logger.warn(
+            `Failed to get domain config for ${domain}: ${err instanceof Error ? err.message : err}`,
+          );
+          return null;
+        }),
       ]);
 
       const domainInfo = domainResponse.data;
@@ -236,11 +260,9 @@ export class TrustPortalService {
         error instanceof Error ? error.stack : error,
       );
 
-      // Handle axios errors with more detail
-      if (axios.isAxiosError(error)) {
-        const statusCode = error.response?.status;
-        const message = error.response?.data?.error?.message || error.message;
-        this.logger.error(`Vercel API error (${statusCode}): ${message}`);
+      if (error instanceof Error && 'status' in error) {
+        const statusCode = (error as Error & { status: number }).status;
+        this.logger.error(`Vercel API error (${statusCode}): ${error.message}`);
       }
 
       throw new InternalServerErrorException(
@@ -755,10 +777,11 @@ export class TrustPortalService {
       // Remove old domain from Vercel if switching to a different one
       if (currentTrust?.domain && currentTrust.domain !== domain) {
         try {
-          await this.vercelApi.delete(
-            `/v9/projects/${projectId}/domains/${TrustPortalService.safeDomainPath(currentTrust.domain)}`,
-            { params: { teamId } },
-          );
+          await this.vercelFetch({
+            method: 'DELETE',
+            path: `/v9/projects/${projectId}/domains/${TrustPortalService.safeDomainPath(currentTrust.domain)}`,
+            params: { teamId },
+          });
         } catch (error) {
           this.logger.warn(
             `Failed to remove old domain ${currentTrust.domain} from Vercel: ${error}`,
@@ -767,13 +790,15 @@ export class TrustPortalService {
       }
 
       // Check if domain already exists on the Vercel project
-      const existingDomainsResp = await this.vercelApi.get(
-        `/v9/projects/${projectId}/domains`,
-        { params: { teamId } },
-      );
+      const existingDomainsResp = await this.vercelFetch<{
+        domains: Array<{ name: string }>;
+      }>({
+        method: 'GET',
+        path: `/v9/projects/${projectId}/domains`,
+        params: { teamId },
+      });
 
-      const existingDomains: Array<{ name: string }> =
-        existingDomainsResp.data?.domains ?? [];
+      const existingDomains = existingDomainsResp.data?.domains ?? [];
 
       const alreadyOnProject = existingDomains.some((d) => d.name === domain);
 
@@ -792,10 +817,11 @@ export class TrustPortalService {
 
         // Domain already on Vercel for this org — fetch current status
         // instead of deleting and re-adding (which regenerates verification tokens)
-        const statusResp = await this.vercelApi.get(
-          `/v9/projects/${projectId}/domains/${TrustPortalService.safeDomainPath(domain)}`,
-          { params: { teamId } },
-        );
+        const statusResp = await this.vercelFetch<VercelDomainResponse>({
+          method: 'GET',
+          path: `/v9/projects/${projectId}/domains/${TrustPortalService.safeDomainPath(domain)}`,
+          params: { teamId },
+        });
 
         const statusData = statusResp.data;
         const isVercelDomain = statusData.verified === false;
@@ -827,11 +853,12 @@ export class TrustPortalService {
 
       this.logger.log(`Adding domain to Vercel project: ${domain}`);
 
-      const addResp = await this.vercelApi.post(
-        `/v9/projects/${projectId}/domains`,
-        { name: domain },
-        { params: { teamId } },
-      );
+      const addResp = await this.vercelFetch<VercelDomainResponse>({
+        method: 'POST',
+        path: `/v9/projects/${projectId}/domains`,
+        params: { teamId },
+        body: { name: domain },
+      });
 
       const addData = addResp.data;
       const isVercelDomain = addData.verified === false;
@@ -861,8 +888,9 @@ export class TrustPortalService {
       };
     } catch (error) {
       // Handle Vercel 409 conflict — domain already exists on the project
-      if (axios.isAxiosError(error) && error.response?.status === 409) {
-        const errorData = error.response.data?.error;
+      const vercelError = error as Error & { status?: number; responseData?: { error?: { code?: string; projectId?: string; message?: string; domain?: VercelDomainResponse } } };
+      if (vercelError.status === 409) {
+        const errorData = vercelError.responseData?.error;
 
         if (
           errorData?.code === 'domain_already_in_use' &&
@@ -913,15 +941,8 @@ export class TrustPortalService {
       }
 
       // Extract meaningful error message
-      let errorMessage = 'Failed to update custom domain';
-      if (axios.isAxiosError(error)) {
-        errorMessage =
-          error.response?.data?.error?.message ||
-          error.message ||
-          errorMessage;
-      } else if (error instanceof Error) {
-        errorMessage = error.message || errorMessage;
-      }
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to update custom domain';
 
       this.logger.error(`Custom domain error for ${domain}:`, error);
       throw new BadRequestException(errorMessage);
@@ -965,38 +986,17 @@ export class TrustPortalService {
 
     const rootDomain = domain.split('.').slice(-2).join('.');
 
-    const [cnameResp, txtResp, vercelTxtResp] = await Promise.all([
-      axios
-        .get(`https://networkcalc.com/api/dns/lookup/${TrustPortalService.safeDomainPath(domain)}`)
-        .catch(() => null),
-      axios
-        .get(
-          `https://networkcalc.com/api/dns/lookup/${TrustPortalService.safeDomainPath(rootDomain)}?type=TXT`,
-        )
-        .catch(() => null),
-      axios
-        .get(
-          `https://networkcalc.com/api/dns/lookup/_vercel.${TrustPortalService.safeDomainPath(rootDomain)}?type=TXT`,
-        )
-        .catch(() => null),
+    const dnsPromises = dns.promises;
+    const resolveCname = (host: string): Promise<string[]> =>
+      dnsPromises.resolve(host, 'CNAME').catch(() => []);
+    const resolveTxt = (host: string): Promise<string[][]> =>
+      dnsPromises.resolve(host, 'TXT').catch(() => []);
+
+    const [cnameRecords, txtRecords, vercelTxtRecords] = await Promise.all([
+      resolveCname(domain),
+      resolveTxt(rootDomain),
+      resolveTxt(`_vercel.${rootDomain}`),
     ]);
-
-    if (
-      !cnameResp ||
-      cnameResp.status !== 200 ||
-      cnameResp.data?.status !== 'OK' ||
-      !txtResp ||
-      txtResp.status !== 200 ||
-      txtResp.data?.status !== 'OK'
-    ) {
-      throw new BadRequestException(
-        'DNS record verification failed, check the records are valid or try again later.',
-      );
-    }
-
-    const cnameRecords = cnameResp.data?.records?.CNAME;
-    const txtRecords = txtResp.data?.records?.TXT;
-    const vercelTxtRecords = vercelTxtResp?.data?.records?.TXT;
 
     // Fetch fresh verification state from Vercel instead of relying on
     // potentially stale DB values (tokens change if domain was re-added).
@@ -1005,10 +1005,11 @@ export class TrustPortalService {
 
     if (process.env.TRUST_PORTAL_PROJECT_ID && process.env.VERCEL_TEAM_ID) {
       try {
-        const vercelStatusResp = await this.vercelApi.get(
-          `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}`,
-          { params: { teamId: process.env.VERCEL_TEAM_ID } },
-        );
+        const vercelStatusResp = await this.vercelFetch<VercelDomainResponse>({
+          method: 'GET',
+          path: `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}`,
+          params: { teamId: process.env.VERCEL_TEAM_ID },
+        });
         const vercelData = vercelStatusResp.data;
         liveIsVercelDomain = vercelData.verified === false;
         liveVercelVerification =
@@ -1038,53 +1039,33 @@ export class TrustPortalService {
     const expectedTxtValue = `compai-domain-verification=${organizationId}`;
     const expectedVercelTxtValue = liveVercelVerification;
 
-    // Check CNAME
-    let isCnameVerified = false;
-    if (cnameRecords) {
-      isCnameVerified = cnameRecords.some(
-        (r: { address: string }) =>
-          TrustPortalService.VERCEL_DNS_CNAME_PATTERN.test(r.address),
+    // Node's resolve(host, 'TXT') returns string[][] — each inner array is one TXT record
+    const txtRecordMatches = (records: string[][], expected: string | null) =>
+      expected != null &&
+      records.some((segments) => segments.some((s) => s === expected));
+
+    // Check CNAME — Node DNS resolve returns string[] of CNAME targets
+    let isCnameVerified = cnameRecords.some((address) =>
+      TrustPortalService.VERCEL_DNS_CNAME_PATTERN.test(address),
+    );
+    if (!isCnameVerified) {
+      const fallback = cnameRecords.find((address) =>
+        TrustPortalService.VERCEL_DNS_FALLBACK_PATTERN.test(address),
       );
-      if (!isCnameVerified) {
-        const fallback = cnameRecords.find(
-          (r: { address: string }) =>
-            TrustPortalService.VERCEL_DNS_FALLBACK_PATTERN.test(r.address),
-        );
-        if (fallback) {
-          this.logger.warn(
-            `CNAME matched fallback pattern: ${fallback.address}`,
-          );
-          isCnameVerified = true;
-        }
+      if (fallback) {
+        this.logger.warn(`CNAME matched fallback pattern: ${fallback}`);
+        isCnameVerified = true;
       }
     }
 
     // Check TXT
-    let isTxtVerified = false;
-    if (txtRecords) {
-      isTxtVerified = txtRecords.some((record: any) => {
-        if (typeof record === 'string') return record === expectedTxtValue;
-        if (record?.value) return record.value === expectedTxtValue;
-        if (Array.isArray(record?.txt))
-          return record.txt.some((t: string) => t === expectedTxtValue);
-        return false;
-      });
-    }
+    const isTxtVerified = txtRecordMatches(txtRecords, expectedTxtValue);
 
     // Check Vercel TXT
-    let isVercelTxtVerified = false;
-    if (vercelTxtRecords) {
-      isVercelTxtVerified = vercelTxtRecords.some((record: any) => {
-        if (typeof record === 'string')
-          return record === expectedVercelTxtValue;
-        if (record?.value) return record.value === expectedVercelTxtValue;
-        if (Array.isArray(record?.txt))
-          return record.txt.some(
-            (t: string) => t === expectedVercelTxtValue,
-          );
-        return false;
-      });
-    }
+    const isVercelTxtVerified = txtRecordMatches(
+      vercelTxtRecords,
+      expectedVercelTxtValue,
+    );
 
     const requiresVercelTxt = liveIsVercelDomain;
     const isVerified =
@@ -1107,11 +1088,12 @@ export class TrustPortalService {
     let vercelVerified = false;
     if (process.env.TRUST_PORTAL_PROJECT_ID && process.env.VERCEL_TEAM_ID) {
       try {
-        const verifyResp = await this.vercelApi.post(
-          `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}/verify`,
-          {},
-          { params: { teamId: process.env.VERCEL_TEAM_ID } },
-        );
+        const verifyResp = await this.vercelFetch<{ verified: boolean }>({
+          method: 'POST',
+          path: `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}/verify`,
+          params: { teamId: process.env.VERCEL_TEAM_ID },
+          body: {},
+        });
         vercelVerified = verifyResp.data?.verified === true;
       } catch (error) {
         this.logger.warn(
