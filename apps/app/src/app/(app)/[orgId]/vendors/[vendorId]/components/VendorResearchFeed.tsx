@@ -95,7 +95,9 @@ function ScanningGlass({
     { left: 75, top: 68 }, // bottom-right
     { left: 25, top: 68 }, // bottom-left
   ];
-  const rx = 2.5; // horizontal radius (tighter — cards are wide)
+  // The grid container is ~2x wider than tall, so equal % values
+  // produce an oval. Use a smaller horizontal % to compensate.
+  const rx = 1.8; // horizontal radius (less % because container is wide)
   const ry = 3.5; // vertical radius
 
   // Build keyframes: for each card → arrive, circle (4 points), then travel to next
