@@ -113,12 +113,16 @@ function ScanningGlass({
     tops.push(`${c.top}%`);
     lefts.push(`${c.left}%`);
     times.push(t);
-    // Circle: top → right → bottom → left → center
-    tops.push(`${c.top - r}%`);  lefts.push(`${c.left}%`);     times.push(t + circleTime * 0.2);
-    tops.push(`${c.top}%`);      lefts.push(`${c.left + r}%`);  times.push(t + circleTime * 0.4);
-    tops.push(`${c.top + r}%`);  lefts.push(`${c.left}%`);      times.push(t + circleTime * 0.6);
-    tops.push(`${c.top}%`);      lefts.push(`${c.left - r}%`);  times.push(t + circleTime * 0.8);
-    tops.push(`${c.top}%`);      lefts.push(`${c.left}%`);      times.push(t + circleTime);
+    // Circle: 8 points around the center for a smooth curve
+    // Linear interpolation between 4 cardinal points makes a diamond/cross.
+    // 8 points (every 45°) approximates a circle much better.
+    const steps = 8;
+    for (let s = 1; s <= steps; s++) {
+      const angle = (s / steps) * Math.PI * 2;
+      tops.push(`${c.top - r * Math.cos(angle)}%`);
+      lefts.push(`${c.left + r * Math.sin(angle)}%`);
+      times.push(t + circleTime * (s / steps));
+    }
     t += circleTime + travelTime;
   }
   // Return to first card for seamless loop
