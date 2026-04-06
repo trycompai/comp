@@ -11,6 +11,7 @@ export type ResearchMessage = {
   text: string;
   type: MessageType;
   timestamp: number;
+  url?: string;
 };
 
 interface VendorResearchFeedProps {
@@ -33,7 +34,7 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
   for (const msg of messages) {
     if (msg.type !== 'found') continue;
     const text = msg.text;
-    const url = (msg as { url?: string }).url;
+    const url = msg.url;
 
     if (text === 'Security assessment complete') {
       if (!seen.has('__assessment__')) {

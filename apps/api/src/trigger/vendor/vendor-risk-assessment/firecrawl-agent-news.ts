@@ -80,7 +80,7 @@ Search the company's blog, newsroom, press releases, and reputable tech news sou
       maxCredits: 2500,
       timeout: 360,
       pollInterval: 5,
-      model: 'spark-1-pro',
+      ...({ model: 'spark-1-pro' } as Record<string, unknown>),
       schema: newsResponseSchema,
     });
   } catch (error) {

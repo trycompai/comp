@@ -1132,6 +1132,9 @@ export const vendorRiskAssessmentTask: Task<
       // Core returned null (API key missing, invalid URL, etc.)
       pushMessage('Could not complete research for this vendor', 'error');
       metadata.set('phase', 'failed');
+      throw new Error(
+        `Core research returned null for ${payload.vendorName} — vendor will not be marked as assessed`,
+      );
     }
 
     // Mark vendor as assessed and flip verify task

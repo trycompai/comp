@@ -50,7 +50,7 @@ Focus on the official website ${vendorWebsite} and its trust/security/compliance
       maxCredits: 2500,
       timeout: 360,
       pollInterval: 5,
-      model: 'spark-1-pro',
+      ...({ model: 'spark-1-pro' } as Record<string, unknown>), // SDK types lag behind API — model is supported but not typed yet
       schema: {
         type: 'object',
         properties: {

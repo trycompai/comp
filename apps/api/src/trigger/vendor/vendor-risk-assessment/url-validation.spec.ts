@@ -104,10 +104,10 @@ describe('validateVendorUrl', () => {
     );
   });
 
-  it('returns null for URLs from wrong domain', () => {
+  it('accepts URLs from any domain (domain filtering removed — trusts AI agent)', () => {
     expect(
       validateVendorUrl('https://x.com/privacy', 'wix.com', 'privacy'),
-    ).toBe(null);
+    ).toBe('https://x.com/privacy');
   });
 
   it('returns null for empty/null input', () => {

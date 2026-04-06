@@ -182,7 +182,6 @@
         "@browserbasehq/stagehand": "^3.0.5",
         "@calcom/atoms": "^1.0.102-framer",
         "@calcom/embed-react": "^1.5.3",
-        "@chenglou/pretext": "^0.0.4",
         "@date-fns/tz": "^1.2.0",
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/modifiers": "^9.0.0",
@@ -1061,8 +1060,6 @@
     "@carbon/icons-react": ["@carbon/icons-react@11.72.0", "", { "dependencies": { "@carbon/icon-helpers": "^10.70.0", "@ibm/telemetry-js": "^1.5.0", "prop-types": "^15.8.1" }, "peerDependencies": { "react": ">=16" } }, "sha512-FMNEFzYwvEd3PwlI0DKmr9V6aj54XbyjM6jQYxgWCHHmp4WhirqIQ99js09WG10SiUv55Uy5VHqE8jWiu3EnRg=="],
 
     "@cfworker/json-schema": ["@cfworker/json-schema@4.1.1", "", {}, "sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og=="],
-
-    "@chenglou/pretext": ["@chenglou/pretext@0.0.4", "", {}, "sha512-FnPAFMid1/p1j2V2gRPUVBarGUIb2PhkkC9YNnTOfPtTDgHKh8siO8PP9pCxpFfYlcodWPJpE1UbSHGQqt8pQQ=="],
 
     "@chevrotain/cst-dts-gen": ["@chevrotain/cst-dts-gen@11.0.3", "", { "dependencies": { "@chevrotain/gast": "11.0.3", "@chevrotain/types": "11.0.3", "lodash-es": "4.17.21" } }, "sha512-BvIKpRLeS/8UbfxXxgC33xOumsacaeCKAjAeLyOn7Pcp95HiRbrpl14S+9vaZLolnbssPIUuiUd8IvgkRyt6NQ=="],
 
