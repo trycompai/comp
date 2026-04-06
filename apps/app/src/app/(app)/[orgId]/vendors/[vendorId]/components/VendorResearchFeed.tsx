@@ -88,8 +88,44 @@ function ScanningGlass({
 }: {
   onCardChange: (index: number) => void;
 }) {
-  const tops  = ['22%', '22%', '68%', '68%', '22%'];
-  const lefts = ['25%', '75%', '75%', '25%', '25%'];
+  // Card centers
+  const cards = [
+    { left: 25, top: 22 }, // top-left
+    { left: 75, top: 22 }, // top-right
+    { left: 75, top: 68 }, // bottom-right
+    { left: 25, top: 68 }, // bottom-left
+  ];
+  const r = 4; // circle radius in %
+
+  // Build keyframes: for each card → arrive, circle (4 points), then travel to next
+  const tops: string[] = [];
+  const lefts: string[] = [];
+  const times: number[] = [];
+
+  const travelTime = 0.08; // fraction of total for each card-to-card move
+  const circleTime = 0.17; // fraction of total for the circle at each card
+  // 4 cards × (circle + travel) = 4 × 0.25 = 1.0
+  let t = 0;
+
+  for (let i = 0; i < 4; i++) {
+    const c = cards[i]!;
+    // Arrive at center
+    tops.push(`${c.top}%`);
+    lefts.push(`${c.left}%`);
+    times.push(t);
+    // Circle: top → right → bottom → left → center
+    tops.push(`${c.top - r}%`);  lefts.push(`${c.left}%`);     times.push(t + circleTime * 0.2);
+    tops.push(`${c.top}%`);      lefts.push(`${c.left + r}%`);  times.push(t + circleTime * 0.4);
+    tops.push(`${c.top + r}%`);  lefts.push(`${c.left}%`);      times.push(t + circleTime * 0.6);
+    tops.push(`${c.top}%`);      lefts.push(`${c.left - r}%`);  times.push(t + circleTime * 0.8);
+    tops.push(`${c.top}%`);      lefts.push(`${c.left}%`);      times.push(t + circleTime);
+    t += circleTime + travelTime;
+  }
+  // Return to first card for seamless loop
+  tops.push(`${cards[0]!.top}%`);
+  lefts.push(`${cards[0]!.left}%`);
+  times.push(1);
+
   const lastCardRef = useRef(-1);
 
   return (
@@ -97,11 +133,10 @@ function ScanningGlass({
       className="pointer-events-none absolute z-10 -translate-x-[18px] -translate-y-[18px]"
       animate={{ top: tops, left: lefts }}
       transition={{
-        duration: 8,
+        duration: 10,
         repeat: Number.POSITIVE_INFINITY,
         ease: 'linear',
-        // Horizontal moves (wider) get ~35% time, vertical moves (shorter) get ~15%
-        times: [0, 0.35, 0.5, 0.85, 1],
+        times,
       }}
       onUpdate={(latest) => {
         // Derive which card the glass is over from its actual position
