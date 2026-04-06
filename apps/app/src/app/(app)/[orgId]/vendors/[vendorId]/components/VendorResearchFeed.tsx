@@ -349,7 +349,7 @@ export function VendorResearchFeed({
     <div className="rounded-xl border border-border overflow-hidden bg-card shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
-        <div className="space-y-1.5">
+        <div className="space-y-0.5">
           <Text size="sm" weight="semibold">
             {isActive
               ? `Researching ${vendorName ?? 'vendor'} security posture`
