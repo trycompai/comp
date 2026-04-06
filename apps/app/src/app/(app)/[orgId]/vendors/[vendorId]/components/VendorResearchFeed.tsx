@@ -97,10 +97,11 @@ function ScanningGlass({
       className="pointer-events-none absolute z-10 -translate-x-[15px] -translate-y-[15px]"
       animate={{ top: tops, left: lefts }}
       transition={{
-        duration: 6,
+        duration: 8,
         repeat: Number.POSITIVE_INFINITY,
         ease: 'linear',
-        times: [0, 0.25, 0.5, 0.75, 1],
+        // Horizontal moves (wider) get ~35% time, vertical moves (shorter) get ~15%
+        times: [0, 0.35, 0.5, 0.85, 1],
       }}
       onUpdate={(latest) => {
         // Derive which card the glass is over from its actual position
