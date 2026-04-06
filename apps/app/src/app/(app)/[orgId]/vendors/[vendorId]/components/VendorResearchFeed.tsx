@@ -3,7 +3,7 @@
 import { Text } from '@trycompai/design-system';
 import { Checkmark } from '@trycompai/design-system/icons';
 import { motion } from 'motion/react';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useRef, useCallback } from 'react';
 
 export type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
 
@@ -83,23 +83,14 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
  * CSS magnifying glass that floats over the card grid, scanning each card.
  * Positioned absolute over the grid — the parent must be relative.
  */
-/** Returns the index (0-3) of the card currently being scanned. Cycles every 1.5s matching the 6s animation. */
-function useActiveCardIndex(isActive: boolean): number {
-  const [index, setIndex] = useState(0);
-  useEffect(() => {
-    if (!isActive) return;
-    const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % 4);
-    }, 1500); // 6s / 4 cards = 1.5s per card
-    return () => clearInterval(interval);
-  }, [isActive]);
-  return isActive ? index : -1;
-}
-
-function ScanningGlass() {
-  // Card centers in a 2x2 grid, seamless loop (last = first)
+function ScanningGlass({
+  onCardChange,
+}: {
+  onCardChange: (index: number) => void;
+}) {
   const tops  = ['25%', '25%', '75%', '75%', '25%'];
   const lefts = ['25%', '75%', '75%', '25%', '25%'];
+  const lastCardRef = useRef(-1);
 
   return (
     <motion.div
@@ -110,6 +101,18 @@ function ScanningGlass() {
         repeat: Number.POSITIVE_INFINITY,
         ease: 'linear',
         times: [0, 0.25, 0.5, 0.75, 1],
+      }}
+      onUpdate={(latest) => {
+        // Derive which card the glass is over from its actual position
+        const top = Number.parseFloat(String(latest.top));
+        const left = Number.parseFloat(String(latest.left));
+        const row = top < 50 ? 0 : 1;
+        const col = left < 50 ? 0 : 1;
+        const card = row * 2 + col; // 0=TL, 1=TR, 2=BL, 3=BR
+        if (card !== lastCardRef.current) {
+          lastCardRef.current = card;
+          onCardChange(card);
+        }
       }}
     >
       <svg
@@ -248,7 +251,10 @@ export function VendorResearchFeed({
   vendorName,
 }: VendorResearchFeedProps) {
   const findings = useMemo(() => parseFindings(messages), [messages]);
-  const activeCard = useActiveCardIndex(isActive);
+  const [activeCard, setActiveCard] = useState(-1);
+  const handleCardChange = useCallback((index: number) => {
+    setActiveCard(index);
+  }, []);
 
   const certs = findings.filter((f) => f.kind === 'cert');
   const links = findings.filter((f) => f.kind === 'link');
@@ -285,7 +291,7 @@ export function VendorResearchFeed({
 
       {/* Category cards grid — with scanning glass overlay */}
       <div className="px-5 pb-5 grid grid-cols-2 gap-3 relative">
-        {isActive && <ScanningGlass />}
+        {isActive && <ScanningGlass onCardChange={handleCardChange} />}
         <CategoryCard
           label="Certifications"
           items={certs}
