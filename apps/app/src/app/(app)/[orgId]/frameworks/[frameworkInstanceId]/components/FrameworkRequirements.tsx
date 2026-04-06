@@ -165,10 +165,10 @@ export function FrameworkRequirements({
                   style={{ cursor: 'pointer' }}
                 >
                   <TableCell>
-                    <span className="line-clamp-2 max-w-[300px]">{item.name}</span>
+                    <span className="line-clamp-2">{item.name}</span>
                   </TableCell>
                   <TableCell>
-                    <div className="line-clamp-2 max-w-[300px]">
+                    <div className="line-clamp-2">
                       <Text size="sm" variant="muted">
                         {item.description}
                       </Text>
