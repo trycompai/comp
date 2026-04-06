@@ -84,8 +84,29 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
  * Positioned absolute over the grid — the parent must be relative.
  */
 function ScanningGlass() {
+  // Keyframe positions: top-left → top-right → bottom-right → bottom-left
+  // Using Motion for reliable animation since CSS @keyframes get purged by Tailwind v4
+  const positions = [
+    { top: '8%', left: '8%' },
+    { top: '8%', left: '52%' },
+    { top: '55%', left: '52%' },
+    { top: '55%', left: '8%' },
+  ];
+
   return (
-    <div className="pointer-events-none absolute inset-0 z-10 animate-[scan-cards_6s_ease-in-out_infinite]">
+    <motion.div
+      className="pointer-events-none absolute z-10"
+      animate={{
+        top: positions.map((p) => p.top),
+        left: positions.map((p) => p.left),
+      }}
+      transition={{
+        duration: 6,
+        repeat: Number.POSITIVE_INFINITY,
+        ease: 'easeInOut',
+        times: [0, 0.25, 0.5, 0.75],
+      }}
+    >
       <svg
         width="36"
         height="36"
@@ -117,7 +138,7 @@ function ScanningGlass() {
           strokeLinecap="round"
         />
       </svg>
-    </div>
+    </motion.div>
   );
 }
 
