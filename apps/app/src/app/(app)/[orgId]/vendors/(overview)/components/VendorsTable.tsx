@@ -93,6 +93,7 @@ function VendorNameCell({ vendor }: { vendor: VendorRow }) {
   const status = onboardingStatus[vendor.id];
   const isPending = vendor.isPending || status === 'pending' || status === 'processing';
   const isAssessing = vendor.isAssessing || status === 'assessing';
+  const isResearching = vendor.status === 'in_progress';
   const isResolved = vendor.status === 'assessed';
 
   if ((isPending || isAssessing) && !isResolved) {
@@ -104,7 +105,20 @@ function VendorNameCell({ vendor }: { vendor: VendorRow }) {
     );
   }
 
-  return <Text>{vendor.name}</Text>;
+  return (
+    <div className="flex items-center gap-2">
+      <Text>{vendor.name}</Text>
+      {isResearching && (
+        <span className="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
+          </span>
+          Researching
+        </span>
+      )}
+    </div>
+  );
 }
 
 function VendorStatusCell({ vendor }: { vendor: VendorRow }) {
@@ -131,6 +145,17 @@ function VendorStatusCell({ vendor }: { vendor: VendorRow }) {
         <Spinner />
         <Text variant="muted" size="sm">
           Assessing...
+        </Text>
+      </HStack>
+    );
+  }
+
+  if (vendor.status === 'in_progress') {
+    return (
+      <HStack gap="2" align="center">
+        <Spinner />
+        <Text variant="muted" size="sm">
+          Researching...
         </Text>
       </HStack>
     );
