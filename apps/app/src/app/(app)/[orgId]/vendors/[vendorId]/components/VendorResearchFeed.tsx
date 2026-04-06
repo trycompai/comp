@@ -348,17 +348,17 @@ export function VendorResearchFeed({
   return (
     <div className="rounded-xl border border-border overflow-hidden bg-card shadow-lg">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-4 pb-1">
-        <div>
+      <div className="flex items-center justify-between px-5 pt-4 pb-3">
+        <div className="space-y-1.5">
           <Text size="sm" weight="semibold">
             {isActive
               ? `Researching ${vendorName ?? 'vendor'} security posture`
               : 'Research complete'}
           </Text>
           {isActive && (
-            <p className="text-xs text-muted-foreground mt-1">
+            <Text size="xs" variant="secondary">
               This may take 1–3 minutes depending on the vendor. You can leave this page — we'll notify you when it's done.
-            </p>
+            </Text>
           )}
         </div>
         <div className="flex items-center gap-3">
