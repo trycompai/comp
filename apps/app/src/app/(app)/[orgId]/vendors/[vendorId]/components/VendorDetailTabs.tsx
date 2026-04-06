@@ -266,12 +266,12 @@ export function VendorDetailTabs({
     try {
       const result = await triggerAssessment(vendorId);
       toast.success('Assessment regeneration triggered.');
-      refreshVendor();
       if (result.runId && result.publicAccessToken) {
-        handleAssessmentTriggered(result.runId, result.publicAccessToken);
         setIsRegenerating(true);
         setActiveTab('risk-assessment');
+        handleAssessmentTriggered(result.runId, result.publicAccessToken);
       }
+      refreshVendor();
     } catch {
       toast.error('Failed to trigger risk assessment regeneration');
     } finally {
@@ -297,10 +297,12 @@ export function VendorDetailTabs({
 
   // Determine which phase to show in the risk assessment tab
   // Show feed when:
-  //   1. We have a live realtime run and are waiting for core data, OR
-  //   2. The vendor is in_progress in DB (page was refreshed during research)
+  //   1. User just clicked regenerate (immediate, no waiting for realtime), OR
+  //   2. We have a live realtime run and are waiting for core data, OR
+  //   3. The vendor is in_progress in DB (page was refreshed during research)
   const showResearchFeed =
-    (isRealtimeRunActive && researchMetadata && (!riskAssessmentData || (isRegenerating && !researchMetadata.coreReady))) ||
+    (isRegenerating && !researchMetadata?.coreReady) ||
+    (isRealtimeRunActive && researchMetadata && !riskAssessmentData) ||
     (isVendorInProgress && !isRealtimeRunActive);
   const showNewsPlaceholder = isRealtimeRunActive && riskAssessmentData && !isRegenerating && !hasNews && researchMetadata && !researchMetadata.newsReady;
 
