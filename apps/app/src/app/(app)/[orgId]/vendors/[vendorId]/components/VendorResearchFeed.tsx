@@ -3,7 +3,7 @@
 import { Text } from '@trycompai/design-system';
 import { Checkmark } from '@trycompai/design-system/icons';
 import { motion } from 'motion/react';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 export type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
 
@@ -83,12 +83,21 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
  * CSS magnifying glass that floats over the card grid, scanning each card.
  * Positioned absolute over the grid — the parent must be relative.
  */
+/** Returns the index (0-3) of the card currently being scanned. Cycles every 1.5s matching the 6s animation. */
+function useActiveCardIndex(isActive: boolean): number {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (!isActive) return;
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % 4);
+    }, 1500); // 6s / 4 cards = 1.5s per card
+    return () => clearInterval(interval);
+  }, [isActive]);
+  return isActive ? index : -1;
+}
+
 function ScanningGlass() {
-  // Positions target the center of each card in the 2x2 grid.
-  // The -15px translate offsets the SVG so the lens center (not top-left corner)
-  // aligns with the card center. Last position = first for seamless loop.
-  // 5 keyframes, equal spacing (0, 0.25, 0.5, 0.75, 1.0)
-  // Last = first for seamless loop
+  // Card centers in a 2x2 grid, seamless loop (last = first)
   const tops  = ['25%', '25%', '75%', '75%', '25%'];
   const lefts = ['25%', '75%', '75%', '25%', '25%'];
 
@@ -143,21 +152,25 @@ function CategoryCard({
   items,
   isActive,
   color,
+  highlighted,
 }: {
   label: string;
   items: Finding[];
   isActive: boolean;
   color: 'success' | 'primary';
+  highlighted: boolean;
 }) {
   const done = items.length > 0;
 
   return (
     <motion.div
       layout
-      className={`rounded-lg border p-4 transition-colors duration-500 ${
+      className={`rounded-lg border p-4 transition-all duration-500 ${
         done
           ? 'border-border bg-card shadow-sm'
-          : 'border-dashed border-border/60 bg-muted/30'
+          : highlighted
+            ? 'border-primary/30 bg-muted/40 shadow-md ring-1 ring-primary/10'
+            : 'border-dashed border-border/60 bg-muted/30'
       }`}
     >
       {/* Header */}
@@ -235,6 +248,7 @@ export function VendorResearchFeed({
   vendorName,
 }: VendorResearchFeedProps) {
   const findings = useMemo(() => parseFindings(messages), [messages]);
+  const activeCard = useActiveCardIndex(isActive);
 
   const certs = findings.filter((f) => f.kind === 'cert');
   const links = findings.filter((f) => f.kind === 'link');
@@ -277,24 +291,28 @@ export function VendorResearchFeed({
           items={certs}
           isActive={isActive}
           color="success"
+          highlighted={activeCard === 0}
         />
         <CategoryCard
           label="Links"
           items={links}
           isActive={isActive}
           color="primary"
+          highlighted={activeCard === 1}
         />
         <CategoryCard
           label="Security Assessment"
           items={assessments}
           isActive={isActive}
           color="success"
+          highlighted={activeCard === 2}
         />
         <CategoryCard
           label="Recent News"
           items={news}
           isActive={isActive}
           color="success"
+          highlighted={activeCard === 3}
         />
       </div>
     </div>
