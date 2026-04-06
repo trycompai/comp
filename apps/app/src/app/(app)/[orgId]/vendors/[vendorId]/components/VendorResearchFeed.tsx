@@ -95,10 +95,7 @@ function ScanningGlass({
     { left: 75, top: 68 }, // bottom-right
     { left: 25, top: 68 }, // bottom-left
   ];
-  // The grid container is ~2x wider than tall, so equal % values
-  // produce an oval. Use a smaller horizontal % to compensate.
-  const rx = 1.8; // horizontal radius (less % because container is wide)
-  const ry = 3.5; // vertical radius
+  const circleRadiusPx = 20; // fixed pixel radius — always a perfect circle
 
   // Build keyframes: for each card → arrive, circle (4 points), then travel to next
   const tops: string[] = [];
@@ -122,8 +119,10 @@ function ScanningGlass({
     const steps = 16;
     for (let s = 1; s <= steps; s++) {
       const angle = (s / steps) * Math.PI * 2;
-      tops.push(`${c.top - ry * Math.cos(angle)}%`);
-      lefts.push(`${c.left + rx * Math.sin(angle)}%`);
+      const dx = Math.round(circleRadiusPx * Math.sin(angle));
+      const dy = Math.round(-circleRadiusPx * Math.cos(angle));
+      tops.push(`calc(${c.top}% + ${dy}px)`);
+      lefts.push(`calc(${c.left}% + ${dx}px)`);
       times.push(t + circleTime * (s / steps));
     }
     t += circleTime + travelTime;
