@@ -160,7 +160,7 @@ function ScanningGlass({
   return (
     <motion.div
       key={pendingIndices.join(',')} // remount when pending cards change to restart animation
-      className="pointer-events-none absolute z-10 -translate-x-[18px] -translate-y-[18px]"
+      className="pointer-events-none absolute z-10 -translate-x-[18px] -translate-y-[24px]"
       animate={{ top: tops, left: lefts }}
       transition={{
         duration,
