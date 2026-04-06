@@ -85,10 +85,10 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
  */
 // All 4 card center positions in the 2x2 grid
 const CARD_CENTERS = [
-  { left: 25, top: 24 }, // 0: top-left (Certifications)
-  { left: 75, top: 24 }, // 1: top-right (Links)
-  { left: 75, top: 70 }, // 2: bottom-right (Assessment)
-  { left: 25, top: 70 }, // 3: bottom-left (News)
+  { left: 25, top: 25 }, // 0: top-left (Certifications)
+  { left: 75, top: 25 }, // 1: top-right (Links)
+  { left: 75, top: 75 }, // 2: bottom-right (Assessment)
+  { left: 25, top: 75 }, // 3: bottom-left (News)
 ];
 
 function buildScanPath(pendingIndices: number[]) {
@@ -160,7 +160,7 @@ function ScanningGlass({
   return (
     <motion.div
       key={pendingIndices.join(',')} // remount when pending cards change to restart animation
-      className="pointer-events-none absolute z-10 -translate-x-[18px] -translate-y-[24px]"
+      className="pointer-events-none absolute z-10 -translate-x-[18px] -translate-y-[20px]"
       animate={{ top: tops, left: lefts }}
       transition={{
         duration,
