@@ -117,7 +117,7 @@ function ScanningGlass({
     // Circle: 8 points around the center for a smooth curve
     // Linear interpolation between 4 cardinal points makes a diamond/cross.
     // 8 points (every 45°) approximates a circle much better.
-    const steps = 8;
+    const steps = 16;
     for (let s = 1; s <= steps; s++) {
       const angle = (s / steps) * Math.PI * 2;
       tops.push(`${c.top - ry * Math.cos(angle)}%`);
