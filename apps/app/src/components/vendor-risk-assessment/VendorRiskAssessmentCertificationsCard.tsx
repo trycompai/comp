@@ -11,7 +11,7 @@ function CertificationRow({ cert }: { cert: VendorRiskAssessmentCertification })
     cert.status === 'verified' ? (
       <div className="text-primary shrink-0"><CheckmarkFilled size={16} /></div>
     ) : cert.status === 'expired' ? (
-      <div className="text-red-600 dark:text-red-400 shrink-0"><CloseOutline size={16} /></div>
+      <div className="text-destructive shrink-0"><CloseOutline size={16} /></div>
     ) : cert.status === 'not_certified' ? (
       <div className="text-muted-foreground shrink-0"><CloseOutline size={16} /></div>
     ) : (
