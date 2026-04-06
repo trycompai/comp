@@ -307,12 +307,12 @@ export function VendorDetailTabs({
   return (
     <>
       {!isViewingTask && (isRegenerating || isVendorInProgress) && (
-        <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1">
-          <span className="relative flex h-2 w-2">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="relative flex h-1.5 w-1.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
           </span>
-          <span className="text-xs font-medium text-primary">Researching vendor</span>
+          Researching vendor
         </div>
       )}
 
