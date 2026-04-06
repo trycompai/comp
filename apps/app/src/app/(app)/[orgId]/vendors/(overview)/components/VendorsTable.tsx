@@ -150,17 +150,6 @@ function VendorStatusCell({ vendor }: { vendor: VendorRow }) {
     );
   }
 
-  if (vendor.status === 'in_progress') {
-    return (
-      <HStack gap="2" align="center">
-        <Spinner />
-        <Text variant="muted" size="sm">
-          Researching...
-        </Text>
-      </HStack>
-    );
-  }
-
   return <VendorStatus status={vendor.status} />;
 }
 
