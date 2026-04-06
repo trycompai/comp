@@ -49,37 +49,77 @@ Focus on their official website ${vendorWebsite} (especially trust/security/comp
       maxCredits: 2500,
       timeout: 360,
       pollInterval: 5,
+      model: 'spark-1-pro',
       schema: {
         type: 'object',
         properties: {
-          risk_level: { type: 'string' },
-          security_assessment: { type: 'string' },
-          last_researched_at: { type: 'string' },
+          risk_level: {
+            type: 'string',
+            description: 'Overall vendor risk level: critical, high, medium, low, or very_low',
+          },
+          security_assessment: {
+            type: 'string',
+            description: 'A detailed paragraph summarizing the vendor security posture, including strengths, weaknesses, and key findings',
+          },
+          last_researched_at: {
+            type: 'string',
+            description: 'ISO 8601 date of when this research was conducted',
+          },
           certifications: {
             type: 'array',
+            description: 'All security and compliance certifications found on the vendor website',
             items: {
               type: 'object',
               properties: {
-                type: { type: 'string' },
+                type: {
+                  type: 'string',
+                  description: 'Certification name, e.g. SOC 2 Type II, ISO 27001, FedRAMP, HIPAA, PCI DSS, GDPR, ISO 42001, ISO 27017, ISO 27018, TISAX, CSA STAR, C5, etc.',
+                },
                 status: {
                   type: 'string',
                   enum: ['verified', 'expired', 'not_certified', 'unknown'],
+                  description: 'Whether the certification is currently active/verified, expired, not certified, or unknown',
                 },
-                issued_at: { type: 'string' },
-                expires_at: { type: 'string' },
-                url: { type: 'string' },
+                issued_at: {
+                  type: 'string',
+                  description: 'ISO 8601 date when the certification was issued, if mentioned',
+                },
+                expires_at: {
+                  type: 'string',
+                  description: 'ISO 8601 date when the certification expires, if mentioned',
+                },
+                url: {
+                  type: 'string',
+                  description: 'Direct URL to the certification report or trust page on the vendor domain',
+                },
               },
               required: ['type'],
             },
           },
           links: {
             type: 'object',
+            description: 'Direct URLs to key legal and security pages on the vendor domain',
             properties: {
-              privacy_policy_url: { type: 'string' },
-              terms_of_service_url: { type: 'string' },
-              trust_center_url: { type: 'string' },
-              security_page_url: { type: 'string' },
-              soc2_report_url: { type: 'string' },
+              privacy_policy_url: {
+                type: 'string',
+                description: 'Direct URL to the privacy policy page',
+              },
+              terms_of_service_url: {
+                type: 'string',
+                description: 'Direct URL to the terms of service page',
+              },
+              trust_center_url: {
+                type: 'string',
+                description: 'Direct URL to the trust center, security portal, or compliance page',
+              },
+              security_page_url: {
+                type: 'string',
+                description: 'Direct URL to the security overview or security practices page',
+              },
+              soc2_report_url: {
+                type: 'string',
+                description: 'Direct URL to request or download the SOC 2 report',
+              },
             },
           },
         },
