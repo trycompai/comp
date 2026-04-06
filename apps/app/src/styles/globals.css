@@ -123,6 +123,42 @@ body {
   }
 }
 
+@keyframes scan-cards {
+  0%,
+  100% {
+    top: 8%;
+    left: 8%;
+  }
+  20% {
+    top: 8%;
+    left: 8%;
+  }
+  25% {
+    top: 8%;
+    left: 52%;
+  }
+  45% {
+    top: 8%;
+    left: 52%;
+  }
+  50% {
+    top: 55%;
+    left: 52%;
+  }
+  70% {
+    top: 55%;
+    left: 52%;
+  }
+  75% {
+    top: 55%;
+    left: 8%;
+  }
+  95% {
+    top: 55%;
+    left: 8%;
+  }
+}
+
 @keyframes radar-sweep {
   from {
     transform: rotate(0deg);

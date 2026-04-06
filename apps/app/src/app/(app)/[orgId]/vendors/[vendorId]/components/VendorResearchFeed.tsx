@@ -2,8 +2,8 @@
 
 import { Text } from '@trycompai/design-system';
 import { Checkmark } from '@trycompai/design-system/icons';
-import { motion, AnimatePresence } from 'motion/react';
-import { useMemo, useState, useEffect } from 'react';
+import { motion } from 'motion/react';
+import { useMemo } from 'react';
 
 export type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
 
@@ -79,58 +79,44 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
   return findings;
 }
 
-const AGENT_STATES = [
-  { icon: '🔍', label: 'Searching website' },
-  { icon: '📄', label: 'Reading pages' },
-  { icon: '🔎', label: 'Analyzing content' },
-  { icon: '🛡️', label: 'Checking security' },
-  { icon: '📋', label: 'Reviewing compliance' },
-  { icon: '🔗', label: 'Following links' },
-] as const;
-
-function ResearchAgent() {
-  const [stateIndex, setStateIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStateIndex((prev) => (prev + 1) % AGENT_STATES.length);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, []);
-
-  const state = AGENT_STATES[stateIndex]!;
-
+/**
+ * CSS magnifying glass that floats over the card grid, scanning each card.
+ * Positioned absolute over the grid — the parent must be relative.
+ */
+function ScanningGlass() {
   return (
-    <div className="inline-flex items-center gap-2.5 bg-muted/40 border border-border/50 rounded-full pl-2 pr-3.5 py-1.5">
-      {/* Animated agent icon */}
-      <div className="relative w-7 h-7 flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping [animation-duration:2s]" />
-        <AnimatePresence mode="wait">
-          <motion.span
-            key={stateIndex}
-            initial={{ scale: 0.5, opacity: 0, rotate: -20 }}
-            animate={{ scale: 1, opacity: 1, rotate: 0 }}
-            exit={{ scale: 0.5, opacity: 0, rotate: 20 }}
-            transition={{ duration: 0.3 }}
-            className="relative text-base"
-          >
-            {state.icon}
-          </motion.span>
-        </AnimatePresence>
-      </div>
-      {/* Rotating label */}
-      <AnimatePresence mode="wait">
-        <motion.span
-          key={stateIndex}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.25 }}
-          className="text-xs text-muted-foreground"
-        >
-          {state.label}
-        </motion.span>
-      </AnimatePresence>
+    <div className="pointer-events-none absolute inset-0 z-10 animate-[scan-cards_6s_ease-in-out_infinite]">
+      <svg
+        width="36"
+        height="36"
+        viewBox="0 0 36 36"
+        fill="none"
+        className="drop-shadow-md"
+      >
+        {/* Glow behind lens */}
+        <circle cx="15" cy="15" r="14" className="fill-primary/10" />
+        {/* Lens */}
+        <circle
+          cx="15"
+          cy="15"
+          r="10"
+          className="stroke-primary"
+          strokeWidth="2"
+          fill="none"
+        />
+        {/* Inner highlight */}
+        <circle cx="15" cy="15" r="6" className="fill-primary/[0.06]" />
+        {/* Handle */}
+        <line
+          x1="23"
+          y1="23"
+          x2="33"
+          y2="33"
+          className="stroke-primary"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+      </svg>
     </div>
   );
 }
@@ -239,16 +225,6 @@ export function VendorResearchFeed({
   const news = findings.filter((f) => f.kind === 'news');
   const totalFindings = findings.length;
 
-  // Current status from last searching/analyzing message
-  const statusText = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i]!;
-      if (msg.type === 'searching' || msg.type === 'analyzing') {
-        return msg.text;
-      }
-    }
-    return isActive ? 'Initializing research...' : null;
-  }, [messages, isActive]);
 
   return (
     <div className="rounded-xl border border-border overflow-hidden bg-card shadow-lg">
@@ -276,15 +252,9 @@ export function VendorResearchFeed({
         </div>
       </div>
 
-      {/* Animated AI research agent */}
-      {isActive && (
-        <div className="px-5 pb-3">
-          <ResearchAgent />
-        </div>
-      )}
-
-      {/* Category cards grid */}
-      <div className="px-5 pb-5 grid grid-cols-2 gap-3">
+      {/* Category cards grid — with scanning glass overlay */}
+      <div className="px-5 pb-5 grid grid-cols-2 gap-3 relative">
+        {isActive && <ScanningGlass />}
         <CategoryCard
           label="Certifications"
           items={certs}
