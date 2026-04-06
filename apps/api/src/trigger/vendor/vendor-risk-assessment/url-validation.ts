@@ -75,13 +75,14 @@ export function extractVendorDomain(
 }
 
 /**
- * Validates and filters a URL, ensuring it belongs to the vendor domain.
- * Returns null (with a warning log) if the URL is from a different domain.
+ * Validates a URL, ensuring it's a well-formed HTTP(S) URL.
+ * No longer filters by domain — the Firecrawl agent is trusted to return
+ * relevant URLs (vendors use custom trust portals on arbitrary domains).
  */
 export function validateVendorUrl(
   url: string | null | undefined,
-  vendorDomain: string,
-  label: string,
+  _vendorDomain: string,
+  _label: string,
 ): string | null {
   if (!url) return null;
   const trimmed = url.trim();
@@ -96,18 +97,7 @@ export function validateVendorUrl(
   try {
     const u = new URL(candidate);
     if (!['http:', 'https:'].includes(u.protocol)) return null;
-    const normalized = u.toString();
-
-    if (!isUrlFromVendorDomain(normalized, vendorDomain)) {
-      logger.warn('Filtered out URL from wrong domain', {
-        vendorDomain,
-        label,
-        url: normalized,
-      });
-      return null;
-    }
-
-    return normalized;
+    return u.toString();
   } catch {
     return null;
   }
