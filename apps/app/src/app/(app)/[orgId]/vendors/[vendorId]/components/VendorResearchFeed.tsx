@@ -88,7 +88,12 @@ function buildScanPath(
   const lefts: string[] = [];
   const times: number[] = [];
 
-  const pending = pendingIndices.filter((i) => centers[i]);
+  // Grid indices: 0=TL, 1=TR, 2=BL, 3=BR
+  // Clockwise visual order: TL(0) → TR(1) → BR(3) → BL(2)
+  const clockwiseOrder = [0, 1, 3, 2];
+  const pending = clockwiseOrder.filter(
+    (i) => pendingIndices.includes(i) && centers[i],
+  );
   if (pending.length === 0) return { tops, lefts, times };
 
   const n = pending.length;
