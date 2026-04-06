@@ -357,7 +357,7 @@ export function VendorResearchFeed({
           </Text>
           {isActive && (
             <Text size="xs" variant="secondary">
-              This may take 1-3 minutes depending on the vendor. You can leave this page, we'll notify you when it's done.
+              This may take 1-10 minutes depending on the vendor. You can leave this page, we'll notify you when it's done.
             </Text>
           )}
         </div>
