@@ -356,7 +356,7 @@ export function VendorResearchFeed({
               : 'Research complete'}
           </Text>
           {isActive && (
-            <Text size="xs" variant="secondary">
+            <Text size="xs" variant="muted">
               This may take 1-10 minutes depending on the vendor. You can leave this page, we'll notify you when it's done.
             </Text>
           )}
