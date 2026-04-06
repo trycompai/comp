@@ -1,20 +1,54 @@
 import { logger } from '@trigger.dev/sdk';
 import { getDomain } from 'tldts';
 
+// Well-known trust portal domains that vendors use to host their security pages
+const TRUSTED_PORTAL_DOMAINS = [
+  'trust.page',       // SafeBase
+  'vanta.com',        // Vanta trust centers
+  'drata.com',        // Drata trust centers
+  'safebase.io',      // SafeBase
+  'securityscorecard.com',
+  'whistic.com',
+  'conveyor.com',
+  'trustcloud.ai',
+  'scrut.io',
+  'tugboatlogic.com',
+  'laika.com',
+];
+
 /**
- * Checks whether a URL belongs to the given vendor domain (including subdomains).
- * For example, if vendorDomain is "wix.com", accepts "wix.com", "www.wix.com",
- * "trust.wix.com", but rejects "x.com" or "notwix.com".
+ * Checks whether a URL belongs to or is related to the given vendor domain.
+ * Accepts:
+ * - Exact domain match: github.com
+ * - Subdomains: trust.github.com, security.github.com
+ * - Third-party trust portals with vendor name in subdomain: ghec.github.trust.page
+ * - Known trust portal domains with vendor name in the path or subdomain
  */
 export function isUrlFromVendorDomain(
   url: string,
   vendorDomain: string,
 ): boolean {
   try {
-    const hostname = new URL(url).hostname.toLowerCase();
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
     const domain = vendorDomain.toLowerCase();
-    // Exact match or subdomain match (e.g., trust.wix.com for wix.com)
-    return hostname === domain || hostname.endsWith(`.${domain}`);
+    const vendorName = domain.split('.')[0]!; // "github" from "github.com"
+
+    // Direct match: github.com or *.github.com
+    if (hostname === domain || hostname.endsWith(`.${domain}`)) {
+      return true;
+    }
+
+    // Third-party trust portal with vendor name in hostname
+    // e.g., ghec.github.trust.page, github.safebase.io
+    if (hostname.includes(vendorName)) {
+      const isKnownPortal = TRUSTED_PORTAL_DOMAINS.some(
+        (portal) => hostname === portal || hostname.endsWith(`.${portal}`),
+      );
+      if (isKnownPortal) return true;
+    }
+
+    return false;
   } catch {
     return false;
   }
