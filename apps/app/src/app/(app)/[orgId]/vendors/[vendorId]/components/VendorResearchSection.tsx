@@ -63,11 +63,13 @@ export function VendorResearchBadges({ riskAssessmentData }: VendorResearchProps
 
   if (certifications.length === 0) return null;
 
+  const withIcons = certifications.filter((cert) => getCertificationIcon(cert));
+  const withoutIcons = certifications.length - withIcons.length;
+
   return (
     <div className="flex items-center gap-2">
-      {certifications.map((cert, index) => {
-        const IconComponent = getCertificationIcon(cert);
-        if (!IconComponent) return null;
+      {withIcons.map((cert, index) => {
+        const IconComponent = getCertificationIcon(cert)!;
 
         const iconContent = (
           <div
@@ -99,6 +101,11 @@ export function VendorResearchBadges({ riskAssessmentData }: VendorResearchProps
 
         return <div key={`${cert.type}-${index}`}>{iconContent}</div>;
       })}
+      {withoutIcons > 0 && (
+        <span className="text-xs text-muted-foreground">
+          +{withoutIcons} more
+        </span>
+      )}
     </div>
   );
 }
