@@ -64,13 +64,10 @@ export default function AdminIntegrationsPage() {
   });
 
   const filteredIntegrations = integrations?.filter((i) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      i.name.toLowerCase().includes(query) ||
-      i.description.toLowerCase().includes(query) ||
-      i.category.toLowerCase().includes(query)
-    );
+    if (!searchQuery.trim()) return true;
+    const terms = searchQuery.toLowerCase().trim().split(' ').filter(Boolean);
+    const searchText = `${i.name} ${i.description} ${i.category}`.toLowerCase();
+    return terms.every((term) => searchText.includes(term));
   });
 
   const oauthIntegrations = filteredIntegrations?.filter((i) => i.authType === 'oauth2') || [];

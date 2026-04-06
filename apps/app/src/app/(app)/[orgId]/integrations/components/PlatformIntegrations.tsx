@@ -249,11 +249,11 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
         if (item.type === 'platform') {
           const searchText =
             `${item.provider.name} ${item.provider.description} ${item.provider.category}`.toLowerCase();
-          return terms.some((term) => searchText.includes(term));
+          return terms.every((term) => searchText.includes(term));
         }
         const searchText =
           `${item.integration.name} ${item.integration.description} ${item.integration.category} ${item.integration.examplePrompts.join(' ')}`.toLowerCase();
-        return terms.some((term) => searchText.includes(term));
+        return terms.every((term) => searchText.includes(term));
       });
     }
 
