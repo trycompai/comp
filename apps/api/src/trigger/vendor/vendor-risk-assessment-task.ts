@@ -791,8 +791,8 @@ export const vendorRiskAssessmentTask: Task<
     try {
     // Helper to append a progress message to run metadata
     const messages: ResearchMessage[] = [];
-    const pushMessage = (text: string, type: ResearchMessage['type']) => {
-      const msg: ResearchMessage = { text, type, timestamp: Date.now() };
+    const pushMessage = (text: string, type: ResearchMessage['type'], url?: string) => {
+      const msg: ResearchMessage = { text, type, timestamp: Date.now(), ...url ? { url } : {} };
       messages.push(msg);
       metadata.set('messages', messages);
     };
@@ -854,7 +854,7 @@ export const vendorRiskAssessmentTask: Task<
             await sleep(300);
             for (const cert of result.certifications) {
               if (cert.status === 'verified') {
-                pushMessage(`Found ${cert.type}`, 'found');
+                pushMessage(`Found ${cert.type}`, 'found', cert.url ?? undefined);
                 await sleep(250);
               }
             }
@@ -864,7 +864,7 @@ export const vendorRiskAssessmentTask: Task<
             pushMessage('Extracting security and legal links...', 'analyzing');
             await sleep(300);
             for (const link of result.links) {
-              pushMessage(`Found ${link.label}`, 'found');
+              pushMessage(`Found ${link.label}`, 'found', link.url);
               await sleep(200);
             }
           }
@@ -902,7 +902,7 @@ export const vendorRiskAssessmentTask: Task<
           pushMessage('Processing recent news...', 'analyzing');
           await sleep(200);
           for (const item of result) {
-            pushMessage(`Found: ${item.title}`, 'found');
+            pushMessage(`Found: ${item.title}`, 'found', item.url ?? undefined);
             await sleep(150);
           }
         } else {

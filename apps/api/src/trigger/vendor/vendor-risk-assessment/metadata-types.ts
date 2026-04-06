@@ -4,6 +4,7 @@ export type ResearchMessage = {
   text: string;
   type: ResearchMessageType;
   timestamp: number;
+  url?: string;
 };
 
 export type ResearchPhase =

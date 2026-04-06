@@ -23,6 +23,7 @@ type Finding = {
   label: string;
   kind: 'cert' | 'link' | 'assessment' | 'news';
   id: string;
+  url?: string;
 };
 
 function parseFindings(messages: ResearchMessage[]): Finding[] {
@@ -32,6 +33,7 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
   for (const msg of messages) {
     if (msg.type !== 'found') continue;
     const text = msg.text;
+    const url = (msg as { url?: string }).url;
 
     if (text === 'Security assessment complete') {
       if (!seen.has('__assessment__')) {
@@ -50,7 +52,7 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
       const id = `news-${title}`;
       if (!seen.has(id)) {
         seen.add(id);
-        findings.push({ label: title, kind: 'news', id });
+        findings.push({ label: title, kind: 'news', id, url });
       }
       continue;
     }
@@ -72,7 +74,7 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
       const isLink = linkKeywords.some((kw) =>
         name.toLowerCase().includes(kw),
       );
-      findings.push({ label: name, kind: isLink ? 'link' : 'cert', id });
+      findings.push({ label: name, kind: isLink ? 'link' : 'cert', id, url });
     }
   }
 
@@ -307,7 +309,8 @@ function CategoryCard({
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, duration: 0.25 }}
-              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-success/[0.06] text-card-foreground"
+              className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-success/[0.06] text-card-foreground ${item.url ? 'cursor-pointer hover:bg-success/[0.12] transition-colors' : ''}`}
+              onClick={item.url ? () => window.open(item.url, '_blank', 'noopener,noreferrer') : undefined}
             >
               <Checkmark size={10} className="text-success shrink-0" />
               <span className="truncate max-w-[200px]">{item.label}</span>
@@ -322,9 +325,21 @@ function CategoryCard({
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, duration: 0.25 }}
-              className="text-xs text-primary underline-offset-4 hover:underline truncate cursor-default"
             >
-              {item.label}
+              {item.url ? (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary underline-offset-4 hover:underline truncate block"
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <span className="text-xs text-muted-foreground truncate block">
+                  {item.label}
+                </span>
+              )}
             </motion.div>
           ))}
         </div>
