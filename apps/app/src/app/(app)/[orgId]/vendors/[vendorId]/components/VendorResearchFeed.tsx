@@ -87,7 +87,9 @@ function ScanningGlass() {
   // Positions target the center of each card in the 2x2 grid.
   // The -15px translate offsets the SVG so the lens center (not top-left corner)
   // aligns with the card center. Last position = first for seamless loop.
-  const tops = ['25%', '25%', '75%', '75%', '25%'];
+  // 5 keyframes, equal spacing (0, 0.25, 0.5, 0.75, 1.0)
+  // Last = first for seamless loop
+  const tops  = ['25%', '25%', '75%', '75%', '25%'];
   const lefts = ['25%', '75%', '75%', '25%', '25%'];
 
   return (
@@ -95,10 +97,10 @@ function ScanningGlass() {
       className="pointer-events-none absolute z-10 -translate-x-[15px] -translate-y-[15px]"
       animate={{ top: tops, left: lefts }}
       transition={{
-        duration: 5,
+        duration: 6,
         repeat: Number.POSITIVE_INFINITY,
         ease: 'linear',
-        times: [0, 0.2, 0.4, 0.6, 1],
+        times: [0, 0.25, 0.5, 0.75, 1],
       }}
     >
       <svg
