@@ -299,7 +299,7 @@ function CategoryCard({
         )}
       </div>
 
-      {done ? (
+      {done && color === 'success' ? (
         <div className="flex flex-wrap gap-1.5">
           {items.map((item, i) => (
             <motion.span
@@ -307,20 +307,25 @@ function CategoryCard({
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, duration: 0.25 }}
-              className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ${
-                color === 'success'
-                  ? 'bg-success/[0.06] text-card-foreground'
-                  : 'bg-primary/[0.06] text-card-foreground'
-              }`}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-success/[0.06] text-card-foreground"
             >
-              {color === 'success' && (
-                <Checkmark size={10} className="text-success shrink-0" />
-              )}
-              {color === 'primary' && (
-                <span className="text-primary text-[10px] shrink-0">↗</span>
-              )}
+              <Checkmark size={10} className="text-success shrink-0" />
               <span className="truncate max-w-[200px]">{item.label}</span>
             </motion.span>
+          ))}
+        </div>
+      ) : done ? (
+        <div className="space-y-1">
+          {items.map((item, i) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05, duration: 0.25 }}
+              className="text-xs text-muted-foreground truncate"
+            >
+              {item.label}
+            </motion.div>
           ))}
         </div>
       ) : isActive ? (
