@@ -102,21 +102,23 @@ function ScanningGlass({
   const lefts: string[] = [];
   const times: number[] = [];
 
-  const travelTime = 0.12; // fraction of total for each card-to-card move
-  const circleTime = 0.13; // fraction of total for the circle at each card
-  // 4 cards × (circle + travel) = 4 × 0.25 = 1.0
+  const settleTime = 0.02; // brief pause at center before/after circle
+  const circleTime = 0.11; // the circular scan
+  const travelTime = 0.12; // move to next card
+  // Per card: settle + circle + settle + travel = 0.25, × 4 = 1.0
   let t = 0;
 
+  const steps = 16;
   for (let i = 0; i < 4; i++) {
     const c = cards[i]!;
-    // Arrive at center
+
+    // 1. Arrive at center (settle)
     tops.push(`${c.top}%`);
     lefts.push(`${c.left}%`);
     times.push(t);
-    // Circle: 8 points around the center for a smooth curve
-    // Linear interpolation between 4 cardinal points makes a diamond/cross.
-    // 8 points (every 45°) approximates a circle much better.
-    const steps = 16;
+    t += settleTime;
+
+    // 2. Circle around center (16 points, full 360°)
     for (let s = 1; s <= steps; s++) {
       const angle = (s / steps) * Math.PI * 2;
       const dx = Math.round(circleRadiusPx * Math.sin(angle));
@@ -125,9 +127,19 @@ function ScanningGlass({
       lefts.push(`calc(${c.left}% + ${dx}px)`);
       times.push(t + circleTime * (s / steps));
     }
-    t += circleTime + travelTime;
+    t += circleTime;
+
+    // 3. Return to center (settle before traveling)
+    tops.push(`${c.top}%`);
+    lefts.push(`${c.left}%`);
+    times.push(t);
+    t += settleTime;
+
+    // 4. Travel to next card happens implicitly (next iteration starts at next card center)
+    t += travelTime;
   }
-  // Return to first card for seamless loop
+
+  // Close the loop — return to first card center
   tops.push(`${cards[0]!.top}%`);
   lefts.push(`${cards[0]!.left}%`);
   times.push(1);
@@ -145,12 +157,18 @@ function ScanningGlass({
         times,
       }}
       onUpdate={(latest) => {
-        // Derive which card the glass is over from its actual position
-        const top = Number.parseFloat(String(latest.top));
-        const left = Number.parseFloat(String(latest.left));
+        // Extract the percentage part from values like "22%" or "calc(22% + -20px)"
+        const extractPct = (v: unknown): number => {
+          const s = String(v);
+          const match = s.match(/([\d.]+)%/);
+          return match ? Number.parseFloat(match[1]!) : Number.NaN;
+        };
+        const top = extractPct(latest.top);
+        const left = extractPct(latest.left);
+        if (Number.isNaN(top) || Number.isNaN(left)) return;
         const row = top < 50 ? 0 : 1;
         const col = left < 50 ? 0 : 1;
-        const card = row * 2 + col; // 0=TL, 1=TR, 2=BL, 3=BR
+        const card = row * 2 + col;
         if (card !== lastCardRef.current) {
           lastCardRef.current = card;
           onCardChange(card);
