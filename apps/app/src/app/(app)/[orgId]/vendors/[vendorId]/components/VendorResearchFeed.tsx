@@ -315,14 +315,14 @@ function CategoryCard({
           ))}
         </div>
       ) : done ? (
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {items.map((item, i) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, duration: 0.25 }}
-              className="text-xs text-muted-foreground truncate"
+              className="text-xs text-primary underline-offset-4 hover:underline truncate cursor-default"
             >
               {item.label}
             </motion.div>
