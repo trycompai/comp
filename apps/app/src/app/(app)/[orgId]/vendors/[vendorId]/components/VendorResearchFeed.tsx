@@ -91,12 +91,6 @@ const CARD_CENTERS = [
   { left: 25, top: 68 }, // 3: bottom-left (News)
 ];
 
-/**
- * One continuous smooth curve — the glass travels between cards while
- * simultaneously doing small loops. No separate phases, no velocity
- * discontinuities. The base position eases between card centers while
- * a sinusoidal overlay adds one circular wobble per card.
- */
 function buildScanPath(pendingIndices: number[]) {
   const tops: string[] = [];
   const lefts: string[] = [];
@@ -105,37 +99,38 @@ function buildScanPath(pendingIndices: number[]) {
   if (pendingIndices.length === 0) return { tops, lefts, times };
 
   const n = pendingIndices.length;
-  const loopRadiusPx = 18;
-  const totalSteps = n * 30;
+  const circleRadiusPx = 18;
+  const circleFraction = n === 1 ? 0.85 : 0.7 / n;
+  const travelFraction = n === 1 ? 0.15 : 0.3 / n;
+  // 32 points for a smooth circle
+  const steps = 32;
+  let t = 0;
 
-  for (let s = 0; s <= totalSteps; s++) {
-    const t = s / totalSteps;
+  for (const idx of pendingIndices) {
+    const c = CARD_CENTERS[idx]!;
 
-    // Smoothly interpolate between card centers
-    const cardProgress = t * n;
-    const segIndex = Math.min(Math.floor(cardProgress), n - 1);
-    const nextIndex = (segIndex + 1) % n;
-    const frac = cardProgress - segIndex;
-
-    const curr = CARD_CENTERS[pendingIndices[segIndex]!]!;
-    const next = CARD_CENTERS[pendingIndices[nextIndex]!]!;
-
-    // S-curve easing so the glass lingers near centers, moves fast between
-    const easedFrac =
-      frac < 0.5 ? 2 * frac * frac : 1 - 2 * (1 - frac) * (1 - frac);
-
-    const baseLeft = curr.left + (next.left - curr.left) * easedFrac;
-    const baseTop = curr.top + (next.top - curr.top) * easedFrac;
-
-    // Continuous circular overlay — one full loop per card visit
-    const loopAngle = t * n * Math.PI * 2;
-    const dx = Math.round(loopRadiusPx * Math.sin(loopAngle));
-    const dy = Math.round(-loopRadiusPx * Math.cos(loopAngle));
-
-    tops.push(`calc(${baseTop.toFixed(2)}% + ${dy}px)`);
-    lefts.push(`calc(${baseLeft.toFixed(2)}% + ${dx}px)`);
+    // Arrive at center
+    tops.push(`${c.top}%`);
+    lefts.push(`${c.left}%`);
     times.push(t);
+
+    // Full circle at constant radius (no spiral ramp — just a clean circle)
+    for (let s = 1; s <= steps; s++) {
+      const angle = (s / steps) * Math.PI * 2;
+      const dx = Math.round(circleRadiusPx * Math.sin(angle));
+      const dy = Math.round(-circleRadiusPx * Math.cos(angle));
+      tops.push(`calc(${c.top}% + ${dy}px)`);
+      lefts.push(`calc(${c.left}% + ${dx}px)`);
+      times.push(t + circleFraction * (s / steps));
+    }
+    t += circleFraction + travelFraction;
   }
+
+  // Close loop
+  const first = CARD_CENTERS[pendingIndices[0]!]!;
+  tops.push(`${first.top}%`);
+  lefts.push(`${first.left}%`);
+  times.push(1);
 
   return { tops, lefts, times };
 }
@@ -167,7 +162,7 @@ function ScanningGlass({
       transition={{
         duration,
         repeat: Number.POSITIVE_INFINITY,
-        ease: 'linear', // easing is baked into the path via S-curve interpolation
+        ease: 'easeInOut',
         times,
       }}
       onUpdate={(latest) => {
