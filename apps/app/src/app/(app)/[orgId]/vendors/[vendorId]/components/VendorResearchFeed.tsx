@@ -3,7 +3,7 @@
 import { Text } from '@trycompai/design-system';
 import { Checkmark } from '@trycompai/design-system/icons';
 import { motion } from 'motion/react';
-import { useMemo, useState, useRef, useCallback } from 'react';
+import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 
 export type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
 
@@ -79,60 +79,43 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
   return findings;
 }
 
-/**
- * CSS magnifying glass that floats over the card grid, scanning each card.
- * Positioned absolute over the grid — the parent must be relative.
- */
-// All 4 card center positions in the 2x2 grid
-const CARD_CENTERS = [
-  { left: 25, top: 18 }, // 0: top-left (Certifications)
-  { left: 75, top: 18 }, // 1: top-right (Links)
-  { left: 75, top: 68 }, // 2: bottom-right (Assessment)
-  { left: 25, top: 68 }, // 3: bottom-left (News)
-];
-
-function buildScanPath(pendingIndices: number[]) {
+/** Build scan path using measured pixel positions relative to grid. */
+function buildScanPath(
+  pendingIndices: number[],
+  centers: Array<{ x: number; y: number }>,
+) {
   const tops: string[] = [];
   const lefts: string[] = [];
   const times: number[] = [];
 
-  if (pendingIndices.length === 0) return { tops, lefts, times };
+  const pending = pendingIndices.filter((i) => centers[i]);
+  if (pending.length === 0) return { tops, lefts, times };
 
-  const n = pendingIndices.length;
+  const n = pending.length;
   const circleRadiusPx = 25;
   const circleFraction = n === 1 ? 0.85 : 0.7 / n;
   const travelFraction = n === 1 ? 0.15 : 0.3 / n;
-  // 32 points for a smooth circle
   const steps = 32;
   let t = 0;
 
-  for (const idx of pendingIndices) {
-    const c = CARD_CENTERS[idx]!;
-
-    // Spiral out from center → full circle → spiral back to center
-    // Radius ramps 0→1→0 via sin(progress * π) so path starts and ends at center
+  for (const idx of pending) {
+    const c = centers[idx]!;
     for (let s = 0; s <= steps; s++) {
       const progress = s / steps;
       const angle = progress * Math.PI * 2;
-      const ramp = Math.sin(progress * Math.PI); // 0 → 1 → 0
+      const ramp = Math.sin(progress * Math.PI);
       const dx = Math.round(circleRadiusPx * ramp * Math.sin(angle));
       const dy = Math.round(-circleRadiusPx * ramp * Math.cos(angle));
-      if (dx === 0 && dy === 0) {
-        tops.push(`${c.top}%`);
-        lefts.push(`${c.left}%`);
-      } else {
-        tops.push(`calc(${c.top}% + ${dy}px)`);
-        lefts.push(`calc(${c.left}% + ${dx}px)`);
-      }
+      tops.push(`${c.y + dy}px`);
+      lefts.push(`${c.x + dx}px`);
       times.push(t + circleFraction * progress);
     }
     t += circleFraction + travelFraction;
   }
 
-  // Close loop
-  const first = CARD_CENTERS[pendingIndices[0]!]!;
-  tops.push(`${first.top}%`);
-  lefts.push(`${first.left}%`);
+  const first = centers[pending[0]!]!;
+  tops.push(`${first.y}px`);
+  lefts.push(`${first.x}px`);
   times.push(1);
 
   return { tops, lefts, times };
@@ -141,26 +124,55 @@ function buildScanPath(pendingIndices: number[]) {
 function ScanningGlass({
   onCardChange,
   pendingIndices,
+  gridRef,
+  cardRefs,
 }: {
   onCardChange: (index: number) => void;
   pendingIndices: number[];
+  gridRef: React.RefObject<HTMLDivElement | null>;
+  cardRefs: React.RefObject<Array<HTMLDivElement | null>>;
 }) {
-  const { tops, lefts, times } = useMemo(
-    () => buildScanPath(pendingIndices),
-    [pendingIndices],
-  );
-
+  const [centers, setCenters] = useState<Array<{ x: number; y: number }>>([]);
   const lastCardRef = useRef(-1);
 
-  if (tops.length === 0) return null;
+  // Measure card centers relative to grid
+  useEffect(() => {
+    const measure = () => {
+      const grid = gridRef.current;
+      const cards = cardRefs.current;
+      if (!grid || !cards) return;
+      const gridRect = grid.getBoundingClientRect();
+      setCenters(
+        cards.map((card) => {
+          if (!card) return { x: 0, y: 0 };
+          const r = card.getBoundingClientRect();
+          return {
+            x: r.left - gridRect.left + r.width / 2,
+            y: r.top - gridRect.top + r.height / 2,
+          };
+        }),
+      );
+    };
+    measure();
+    const obs = new ResizeObserver(measure);
+    if (gridRef.current) obs.observe(gridRef.current);
+    cardRefs.current?.forEach((c) => c && obs.observe(c));
+    return () => obs.disconnect();
+  }, [gridRef, cardRefs, pendingIndices]);
 
-  // Duration scales with number of pending cards
+  const { tops, lefts, times } = useMemo(
+    () => buildScanPath(pendingIndices, centers),
+    [pendingIndices, centers],
+  );
+
+  if (tops.length === 0 || centers.length === 0) return null;
+
   const duration = pendingIndices.length === 1 ? 4 : pendingIndices.length * 3;
 
   return (
     <motion.div
-      key={pendingIndices.join(',')} // remount when pending cards change to restart animation
-      className="pointer-events-none absolute z-10 -translate-x-[18px] -translate-y-[20px]"
+      key={`${pendingIndices.join(',')}-${centers.map((c) => `${Math.round(c.x)},${Math.round(c.y)}`).join('|')}`}
+      className="pointer-events-none absolute z-10 -translate-x-[18px] -translate-y-[18px]"
       animate={{ top: tops, left: lefts }}
       transition={{
         duration,
@@ -169,20 +181,24 @@ function ScanningGlass({
         times,
       }}
       onUpdate={(latest) => {
-        const extractPct = (v: unknown): number => {
-          const s = String(v);
-          const match = s.match(/([\d.]+)%/);
-          return match ? Number.parseFloat(match[1]!) : Number.NaN;
-        };
-        const top = extractPct(latest.top);
-        const left = extractPct(latest.left);
-        if (Number.isNaN(top) || Number.isNaN(left)) return;
-        const row = top < 50 ? 0 : 1;
-        const col = left < 50 ? 0 : 1;
-        const card = row * 2 + col;
-        if (card !== lastCardRef.current) {
-          lastCardRef.current = card;
-          onCardChange(card);
+        const val = (v: unknown) => Number.parseFloat(String(v));
+        const top = val(latest.top);
+        const left = val(latest.left);
+        if (Number.isNaN(top) || Number.isNaN(left) || centers.length === 0)
+          return;
+        let closest = -1;
+        let minDist = Number.POSITIVE_INFINITY;
+        for (let i = 0; i < centers.length; i++) {
+          const c = centers[i]!;
+          const dist = (top - c.y) ** 2 + (left - c.x) ** 2;
+          if (dist < minDist) {
+            minDist = dist;
+            closest = i;
+          }
+        }
+        if (closest !== lastCardRef.current) {
+          lastCardRef.current = closest;
+          onCardChange(closest);
         }
       }}
     >
@@ -193,9 +209,7 @@ function ScanningGlass({
         fill="none"
         className="drop-shadow-md"
       >
-        {/* Glow behind lens */}
         <circle cx="15" cy="15" r="14" className="fill-primary/10" />
-        {/* Lens */}
         <circle
           cx="15"
           cy="15"
@@ -204,9 +218,7 @@ function ScanningGlass({
           strokeWidth="2"
           fill="none"
         />
-        {/* Inner highlight */}
         <circle cx="15" cy="15" r="6" className="fill-primary/[0.06]" />
-        {/* Handle */}
         <line
           x1="23"
           y1="23"
@@ -227,17 +239,20 @@ function CategoryCard({
   isActive,
   color,
   highlighted,
+  cardRef,
 }: {
   label: string;
   items: Finding[];
   isActive: boolean;
   color: 'success' | 'primary';
   highlighted: boolean;
+  cardRef: (el: HTMLDivElement | null) => void;
 }) {
   const done = items.length > 0;
 
   return (
     <motion.div
+      ref={cardRef}
       layout
       className={`rounded-lg border p-4 transition-all duration-500 ${
         done
@@ -247,7 +262,6 @@ function CategoryCard({
             : 'border-dashed border-border/60 bg-muted/30'
       }`}
     >
-      {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {done ? (
@@ -280,7 +294,6 @@ function CategoryCard({
         )}
       </div>
 
-      {/* Items */}
       {done ? (
         <div className="flex flex-wrap gap-1.5">
           {items.map((item, i) => (
@@ -333,8 +346,6 @@ export function VendorResearchFeed({
   const news = findings.filter((f) => f.kind === 'news');
   const totalFindings = findings.length;
 
-  // Which card indices are still pending (no findings yet)?
-  // 0=Certifications, 1=Links, 2=Assessment, 3=News
   const pendingIndices = useMemo(() => {
     const indices: number[] = [];
     if (certs.length === 0) indices.push(0);
@@ -344,6 +355,15 @@ export function VendorResearchFeed({
     return indices;
   }, [certs.length, links.length, assessments.length, news.length]);
 
+  // Refs for measuring card positions dynamically
+  const gridRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<Array<HTMLDivElement | null>>([null, null, null, null]);
+  const setCardRef = useCallback(
+    (index: number) => (el: HTMLDivElement | null) => {
+      cardRefs.current[index] = el;
+    },
+    [],
+  );
 
   return (
     <div className="rounded-xl border border-border overflow-hidden bg-card shadow-lg">
@@ -371,11 +391,13 @@ export function VendorResearchFeed({
       </div>
 
       {/* Category cards grid — with scanning glass overlay */}
-      <div className="px-5 pb-5 grid grid-cols-2 gap-3 relative">
+      <div ref={gridRef} className="px-5 pb-5 grid grid-cols-2 gap-3 relative">
         {isActive && pendingIndices.length > 0 && (
           <ScanningGlass
             onCardChange={handleCardChange}
             pendingIndices={pendingIndices}
+            gridRef={gridRef}
+            cardRefs={cardRefs}
           />
         )}
         <CategoryCard
@@ -384,6 +406,7 @@ export function VendorResearchFeed({
           isActive={isActive}
           color="success"
           highlighted={activeCard === 0}
+          cardRef={setCardRef(0)}
         />
         <CategoryCard
           label="Links"
@@ -391,6 +414,7 @@ export function VendorResearchFeed({
           isActive={isActive}
           color="primary"
           highlighted={activeCard === 1}
+          cardRef={setCardRef(1)}
         />
         <CategoryCard
           label="Security Assessment"
@@ -398,6 +422,7 @@ export function VendorResearchFeed({
           isActive={isActive}
           color="success"
           highlighted={activeCard === 2}
+          cardRef={setCardRef(2)}
         />
         <CategoryCard
           label="Recent News"
@@ -405,6 +430,7 @@ export function VendorResearchFeed({
           isActive={isActive}
           color="success"
           highlighted={activeCard === 3}
+          cardRef={setCardRef(3)}
         />
       </div>
     </div>
