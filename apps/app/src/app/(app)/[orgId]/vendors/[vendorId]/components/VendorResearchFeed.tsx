@@ -102,41 +102,35 @@ function ScanningGlass({
   const lefts: string[] = [];
   const times: number[] = [];
 
-  const settleTime = 0.02; // brief pause at center before/after circle
-  const circleTime = 0.11; // the circular scan
-  const travelTime = 0.12; // move to next card
-  // Per card: settle + circle + settle + travel = 0.25, × 4 = 1.0
+  const circleTime = 0.14; // fraction of total for the loop at each card
+  const travelTime = 0.11; // fraction of total for card-to-card move
+  // Per card: circle + travel = 0.25, × 4 = 1.0
   let t = 0;
 
-  const steps = 16;
+  // The loop path spirals out from center, circles, and spirals back.
+  // radius ramps: 0 → full → 0 using sin(progress * π) so the path
+  // starts and ends exactly at center with no jumps.
+  const steps = 20;
   for (let i = 0; i < 4; i++) {
     const c = cards[i]!;
 
-    // 1. Arrive at center (settle)
-    tops.push(`${c.top}%`);
-    lefts.push(`${c.left}%`);
-    times.push(t);
-    t += settleTime;
+    for (let s = 0; s <= steps; s++) {
+      const progress = s / steps;
+      const angle = progress * Math.PI * 2;
+      const ramp = Math.sin(progress * Math.PI); // 0 → 1 → 0
+      const dx = Math.round(circleRadiusPx * ramp * Math.sin(angle));
+      const dy = Math.round(-circleRadiusPx * ramp * Math.cos(angle));
 
-    // 2. Circle around center (16 points, full 360°)
-    for (let s = 1; s <= steps; s++) {
-      const angle = (s / steps) * Math.PI * 2;
-      const dx = Math.round(circleRadiusPx * Math.sin(angle));
-      const dy = Math.round(-circleRadiusPx * Math.cos(angle));
-      tops.push(`calc(${c.top}% + ${dy}px)`);
-      lefts.push(`calc(${c.left}% + ${dx}px)`);
-      times.push(t + circleTime * (s / steps));
+      if (dx === 0 && dy === 0) {
+        tops.push(`${c.top}%`);
+        lefts.push(`${c.left}%`);
+      } else {
+        tops.push(`calc(${c.top}% + ${dy}px)`);
+        lefts.push(`calc(${c.left}% + ${dx}px)`);
+      }
+      times.push(t + circleTime * progress);
     }
-    t += circleTime;
-
-    // 3. Return to center (settle before traveling)
-    tops.push(`${c.top}%`);
-    lefts.push(`${c.left}%`);
-    times.push(t);
-    t += settleTime;
-
-    // 4. Travel to next card happens implicitly (next iteration starts at next card center)
-    t += travelTime;
+    t += circleTime + travelTime;
   }
 
   // Close the loop — return to first card center
