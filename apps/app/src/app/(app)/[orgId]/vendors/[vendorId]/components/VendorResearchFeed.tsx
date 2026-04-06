@@ -414,7 +414,7 @@ export function VendorResearchFeed({
           cardRef={setCardRef(0)}
         />
         <CategoryCard
-          label="Links"
+          label="Security Links"
           items={links}
           isActive={isActive}
           color="primary"

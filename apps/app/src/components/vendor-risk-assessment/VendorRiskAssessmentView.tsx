@@ -89,7 +89,7 @@ export function VendorRiskAssessmentView({ source }: { source: VendorRiskAssessm
           <Card>
             <CardHeader>
               <CardTitle>
-                <div className="text-sm font-semibold">Links</div>
+                <div className="text-sm font-semibold">Security Links</div>
               </CardTitle>
             </CardHeader>
             <CardContent>
