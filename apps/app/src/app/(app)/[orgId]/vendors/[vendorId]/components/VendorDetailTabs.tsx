@@ -392,7 +392,7 @@ export function VendorDetailTabs({
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
             </span>
-            <span className="text-xs font-medium text-primary">AI research in progress</span>
+            <span className="text-xs font-medium text-primary">Researching vendor</span>
           </div>
         )}
       </Stack>
