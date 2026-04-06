@@ -99,7 +99,7 @@ function buildScanPath(pendingIndices: number[]) {
   if (pendingIndices.length === 0) return { tops, lefts, times };
 
   const n = pendingIndices.length;
-  const circleRadiusPx = 18;
+  const circleRadiusPx = 30;
   const circleFraction = n === 1 ? 0.85 : 0.7 / n;
   const travelFraction = n === 1 ? 0.15 : 0.3 / n;
   // 32 points for a smooth circle
