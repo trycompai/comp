@@ -433,7 +433,7 @@ export function VendorResearchFeed({
           label="Recent News"
           items={news}
           isActive={isActive}
-          color="success"
+          color="primary"
           highlighted={activeCard === 3}
           cardRef={setCardRef(3)}
         />
