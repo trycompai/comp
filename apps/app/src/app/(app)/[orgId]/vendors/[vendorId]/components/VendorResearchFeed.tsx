@@ -95,7 +95,8 @@ function ScanningGlass({
     { left: 75, top: 68 }, // bottom-right
     { left: 25, top: 68 }, // bottom-left
   ];
-  const r = 4; // circle radius in %
+  const rx = 2.5; // horizontal radius (tighter — cards are wide)
+  const ry = 3.5; // vertical radius
 
   // Build keyframes: for each card → arrive, circle (4 points), then travel to next
   const tops: string[] = [];
@@ -119,8 +120,8 @@ function ScanningGlass({
     const steps = 8;
     for (let s = 1; s <= steps; s++) {
       const angle = (s / steps) * Math.PI * 2;
-      tops.push(`${c.top - r * Math.cos(angle)}%`);
-      lefts.push(`${c.left + r * Math.sin(angle)}%`);
+      tops.push(`${c.top - ry * Math.cos(angle)}%`);
+      lefts.push(`${c.left + rx * Math.sin(angle)}%`);
       times.push(t + circleTime * (s / steps));
     }
     t += circleTime + travelTime;
