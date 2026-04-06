@@ -15,6 +15,7 @@ function VendorNameCell({ row, orgId }: { row: Row<VendorRow>; orgId: string }) 
   const status = onboardingStatus[vendorId];
   const isPending = row.original.isPending || status === 'pending' || status === 'processing';
   const isAssessing = row.original.isAssessing || status === 'assessing';
+  const isResearching = row.original.status === 'in_progress';
   const isResolved = row.original.status === 'assessed';
 
   if ((isPending || isAssessing) && !isResolved) {
@@ -25,7 +26,20 @@ function VendorNameCell({ row, orgId }: { row: Row<VendorRow>; orgId: string }) 
       </div>
     );
   }
-  return <Link href={`/${orgId}/vendors/${row.original.id}`}>{row.original.name}</Link>;
+  return (
+    <div className="flex items-center gap-2">
+      <Link href={`/${orgId}/vendors/${row.original.id}`}>{row.original.name}</Link>
+      {isResearching && (
+        <span className="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
+          </span>
+          Researching
+        </span>
+      )}
+    </div>
+  );
 }
 
 function VendorStatusCell({ row }: { row: Row<VendorRow> }) {
@@ -49,6 +63,14 @@ function VendorStatusCell({ row }: { row: Row<VendorRow> }) {
       <div className="flex items-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
         <span className="text-muted-foreground text-sm">Assessing...</span>
+      </div>
+    );
+  }
+  if (row.original.status === 'in_progress') {
+    return (
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <span className="text-primary text-sm">Researching...</span>
       </div>
     );
   }
