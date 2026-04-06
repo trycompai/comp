@@ -85,10 +85,10 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
  */
 // All 4 card center positions in the 2x2 grid
 const CARD_CENTERS = [
-  { left: 25, top: 27 }, // 0: top-left (Certifications)
-  { left: 75, top: 27 }, // 1: top-right (Links)
-  { left: 75, top: 73 }, // 2: bottom-right (Assessment)
-  { left: 25, top: 73 }, // 3: bottom-left (News)
+  { left: 25, top: 24 }, // 0: top-left (Certifications)
+  { left: 75, top: 24 }, // 1: top-right (Links)
+  { left: 75, top: 70 }, // 2: bottom-right (Assessment)
+  { left: 25, top: 70 }, // 3: bottom-left (News)
 ];
 
 function buildScanPath(pendingIndices: number[]) {
@@ -99,7 +99,7 @@ function buildScanPath(pendingIndices: number[]) {
   if (pendingIndices.length === 0) return { tops, lefts, times };
 
   const n = pendingIndices.length;
-  const circleRadiusPx = 30;
+  const circleRadiusPx = 25;
   const circleFraction = n === 1 ? 0.85 : 0.7 / n;
   const travelFraction = n === 1 ? 0.15 : 0.3 / n;
   // 32 points for a smooth circle
