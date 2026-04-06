@@ -22,23 +22,24 @@ export async function firecrawlResearchCore(params: {
 
   const prompt = `Complete cyber security research on the vendor "${vendorName}" with website ${vendorWebsite}.
 
-CRITICAL: Only return URLs that belong to the domain "${vendorDomain}" or its subdomains (e.g., trust.${vendorDomain}, security.${vendorDomain}). Do NOT return URLs from any other domain. If you cannot find a page on ${vendorDomain}, return an empty string for that field rather than a URL from another website.
-
 Extract the following information:
-1. **Certifications**: Find any security certifications they have (SOC 2 Type I, SOC 2 Type II, ISO 27001 etc). For each certification found, determine:
-   - The type of certification
-   - Whether it's verified/current, expired, or not certified
+
+1. **Certifications**: Find all security and compliance certifications. For each one found, determine:
+   - The type of certification (SOC 2 Type I, SOC 2 Type II, ISO 27001, ISO 27017, ISO 27018, ISO 27701, ISO 42001, FedRAMP, HIPAA, PCI DSS, GDPR, TISAX, CSA STAR, C5, SOC 1, SOC 3, etc.)
+   - Whether it's currently active/verified, expired, or not certified
    - Any issue or expiry dates mentioned
-   - Link to the compliance/trust page or report if available (must be on ${vendorDomain})
+   - Direct link to the certification report or trust page
 
-2. **Legal & Security Documents**: Find the direct URLs on ${vendorDomain} to:
-   - Privacy Policy page (usually at /privacy, /privacy-policy, or linked in the footer)
-   - Terms of Service page (usually at /terms, /tos, /terms-of-service, or linked in the footer)
-   - Trust Center or Security page (typically could be at /trust, /security or trust.${vendorDomain} or security.${vendorDomain})
+2. **Security & Legal Links**: Find the direct URLs to these pages. IMPORTANT: Many vendors host their trust portal on a third-party platform (e.g., SafeBase at trust.page, Vanta, Drata, Whistic). Prefer the actual trust portal where customers can request security reports over documentation pages that just describe compliance processes.
+   - **Trust Center / Security Portal**: The page where customers can review security posture and request compliance reports. This is NOT the docs page about security — it's the dedicated trust portal. Look for links labeled "Trust Center", "Security", "Trust Portal" in the site navigation or footer. It may be hosted on a subdomain (trust.${vendorDomain}, security.${vendorDomain}) or a third-party domain (e.g., ${vendorName.toLowerCase()}.trust.page, ${vendorName.toLowerCase()}.safebase.io).
+   - **Privacy Policy**: Usually at /privacy or /privacy-policy
+   - **Terms of Service**: Usually at /terms or /tos
+   - **Security Overview**: A page describing security practices (this CAN be a docs page)
+   - **SOC 2 Report**: Direct link to request or download the SOC 2 report
 
-3. **Summary**: Provide an overall assessment of the vendor's security posture.
+3. **Summary**: Provide an overall assessment of the vendor's security posture based on your findings.
 
-Focus on their official website ${vendorWebsite} (especially trust/security/compliance pages).`;
+Focus on the official website ${vendorWebsite} and its trust/security/compliance pages.`;
 
   let agentResponse;
   try {
@@ -110,7 +111,7 @@ Focus on their official website ${vendorWebsite} (especially trust/security/comp
               },
               trust_center_url: {
                 type: 'string',
-                description: 'Direct URL to the trust center, security portal, or compliance page',
+                description: 'Direct URL to the trust portal where customers can review security posture and request reports. Prefer the dedicated trust portal (often on trust.page, safebase.io, vanta.com, or a trust. subdomain) over documentation pages.',
               },
               security_page_url: {
                 type: 'string',
