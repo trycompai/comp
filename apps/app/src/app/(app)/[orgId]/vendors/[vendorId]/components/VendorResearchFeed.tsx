@@ -83,44 +83,36 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
  * CSS magnifying glass that floats over the card grid, scanning each card.
  * Positioned absolute over the grid — the parent must be relative.
  */
-function ScanningGlass({
-  onCardChange,
-}: {
-  onCardChange: (index: number) => void;
-}) {
-  // Card centers
-  const cards = [
-    { left: 25, top: 22 }, // top-left
-    { left: 75, top: 22 }, // top-right
-    { left: 75, top: 68 }, // bottom-right
-    { left: 25, top: 68 }, // bottom-left
-  ];
-  const circleRadiusPx = 20; // fixed pixel radius — always a perfect circle
+// All 4 card center positions in the 2x2 grid
+const CARD_CENTERS = [
+  { left: 25, top: 22 }, // 0: top-left (Certifications)
+  { left: 75, top: 22 }, // 1: top-right (Links)
+  { left: 75, top: 68 }, // 2: bottom-right (Assessment)
+  { left: 25, top: 68 }, // 3: bottom-left (News)
+];
 
-  // Build keyframes: for each card → arrive, circle (4 points), then travel to next
+function buildScanPath(pendingIndices: number[]) {
+  const circleRadiusPx = 20;
+  const steps = 20;
   const tops: string[] = [];
   const lefts: string[] = [];
   const times: number[] = [];
 
-  const circleTime = 0.14; // fraction of total for the loop at each card
-  const travelTime = 0.11; // fraction of total for card-to-card move
-  // Per card: circle + travel = 0.25, × 4 = 1.0
+  if (pendingIndices.length === 0) return { tops, lefts, times };
+
+  const n = pendingIndices.length;
+  const circleFraction = n === 1 ? 0.85 : 0.7 / n;
+  const travelFraction = n === 1 ? 0.15 : 0.3 / n;
   let t = 0;
 
-  // The loop path spirals out from center, circles, and spirals back.
-  // radius ramps: 0 → full → 0 using sin(progress * π) so the path
-  // starts and ends exactly at center with no jumps.
-  const steps = 20;
-  for (let i = 0; i < 4; i++) {
-    const c = cards[i]!;
-
+  for (const idx of pendingIndices) {
+    const c = CARD_CENTERS[idx]!;
     for (let s = 0; s <= steps; s++) {
       const progress = s / steps;
       const angle = progress * Math.PI * 2;
-      const ramp = Math.sin(progress * Math.PI); // 0 → 1 → 0
+      const ramp = Math.sin(progress * Math.PI);
       const dx = Math.round(circleRadiusPx * ramp * Math.sin(angle));
       const dy = Math.round(-circleRadiusPx * ramp * Math.cos(angle));
-
       if (dx === 0 && dy === 0) {
         tops.push(`${c.top}%`);
         lefts.push(`${c.left}%`);
@@ -128,30 +120,51 @@ function ScanningGlass({
         tops.push(`calc(${c.top}% + ${dy}px)`);
         lefts.push(`calc(${c.left}% + ${dx}px)`);
       }
-      times.push(t + circleTime * progress);
+      times.push(t + circleFraction * progress);
     }
-    t += circleTime + travelTime;
+    t += circleFraction + travelFraction;
   }
 
-  // Close the loop — return to first card center
-  tops.push(`${cards[0]!.top}%`);
-  lefts.push(`${cards[0]!.left}%`);
+  // Close loop back to first pending card
+  const first = CARD_CENTERS[pendingIndices[0]!]!;
+  tops.push(`${first.top}%`);
+  lefts.push(`${first.left}%`);
   times.push(1);
+
+  return { tops, lefts, times };
+}
+
+function ScanningGlass({
+  onCardChange,
+  pendingIndices,
+}: {
+  onCardChange: (index: number) => void;
+  pendingIndices: number[];
+}) {
+  const { tops, lefts, times } = useMemo(
+    () => buildScanPath(pendingIndices),
+    [pendingIndices],
+  );
 
   const lastCardRef = useRef(-1);
 
+  if (tops.length === 0) return null;
+
+  // Duration scales with number of pending cards
+  const duration = pendingIndices.length === 1 ? 4 : pendingIndices.length * 3;
+
   return (
     <motion.div
+      key={pendingIndices.join(',')} // remount when pending cards change to restart animation
       className="pointer-events-none absolute z-10 -translate-x-[18px] -translate-y-[18px]"
       animate={{ top: tops, left: lefts }}
       transition={{
-        duration: 10,
+        duration,
         repeat: Number.POSITIVE_INFINITY,
         ease: 'easeInOut',
         times,
       }}
       onUpdate={(latest) => {
-        // Extract the percentage part from values like "22%" or "calc(22% + -20px)"
         const extractPct = (v: unknown): number => {
           const s = String(v);
           const match = s.match(/([\d.]+)%/);
@@ -316,6 +329,17 @@ export function VendorResearchFeed({
   const news = findings.filter((f) => f.kind === 'news');
   const totalFindings = findings.length;
 
+  // Which card indices are still pending (no findings yet)?
+  // 0=Certifications, 1=Links, 2=Assessment, 3=News
+  const pendingIndices = useMemo(() => {
+    const indices: number[] = [];
+    if (certs.length === 0) indices.push(0);
+    if (links.length === 0) indices.push(1);
+    if (assessments.length === 0) indices.push(2);
+    if (news.length === 0) indices.push(3);
+    return indices;
+  }, [certs.length, links.length, assessments.length, news.length]);
+
 
   return (
     <div className="rounded-xl border border-border overflow-hidden bg-card shadow-lg">
@@ -345,7 +369,12 @@ export function VendorResearchFeed({
 
       {/* Category cards grid — with scanning glass overlay */}
       <div className="px-5 pb-5 grid grid-cols-2 gap-3 relative">
-        {isActive && <ScanningGlass onCardChange={handleCardChange} />}
+        {isActive && pendingIndices.length > 0 && (
+          <ScanningGlass
+            onCardChange={handleCardChange}
+            pendingIndices={pendingIndices}
+          />
+        )}
         <CategoryCard
           label="Certifications"
           items={certs}
