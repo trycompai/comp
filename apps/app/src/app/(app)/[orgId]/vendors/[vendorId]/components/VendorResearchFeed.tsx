@@ -102,8 +102,8 @@ function ScanningGlass({
   const lefts: string[] = [];
   const times: number[] = [];
 
-  const travelTime = 0.08; // fraction of total for each card-to-card move
-  const circleTime = 0.17; // fraction of total for the circle at each card
+  const travelTime = 0.12; // fraction of total for each card-to-card move
+  const circleTime = 0.13; // fraction of total for the circle at each card
   // 4 cards × (circle + travel) = 4 × 0.25 = 1.0
   let t = 0;
 
@@ -141,7 +141,7 @@ function ScanningGlass({
       transition={{
         duration: 10,
         repeat: Number.POSITIVE_INFINITY,
-        ease: 'linear',
+        ease: 'easeInOut',
         times,
       }}
       onUpdate={(latest) => {
