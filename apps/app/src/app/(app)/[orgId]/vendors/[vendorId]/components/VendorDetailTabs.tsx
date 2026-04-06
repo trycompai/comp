@@ -292,9 +292,16 @@ export function VendorDetailTabs({
     return (parsed?.news?.length ?? 0) > 0;
   }, [riskAssessmentData]);
 
+  // Is the vendor currently being researched? (survives page refresh via DB status)
+  const isVendorInProgress = resolvedVendor.status === 'in_progress';
+
   // Determine which phase to show in the risk assessment tab
-  // Show feed when: run is active AND (no data yet OR user just clicked regenerate and core hasn't arrived)
-  const showResearchFeed = isRealtimeRunActive && researchMetadata && (!riskAssessmentData || (isRegenerating && !researchMetadata.coreReady));
+  // Show feed when:
+  //   1. We have a live realtime run and are waiting for core data, OR
+  //   2. The vendor is in_progress in DB (page was refreshed during research)
+  const showResearchFeed =
+    (isRealtimeRunActive && researchMetadata && (!riskAssessmentData || (isRegenerating && !researchMetadata.coreReady))) ||
+    (isVendorInProgress && !isRealtimeRunActive);
   const showNewsPlaceholder = isRealtimeRunActive && riskAssessmentData && !isRegenerating && !hasNews && researchMetadata && !researchMetadata.newsReady;
 
   return (
@@ -337,7 +344,7 @@ export function VendorDetailTabs({
               {isViewingTask ? (selectedTaskTitle || 'Task') : resolvedVendor.name}
             </h1>
           )}
-          {!isViewingTask && !isRegenerating && (
+          {!isViewingTask && !isRegenerating && !isVendorInProgress && (
             <VendorResearchBadges riskAssessmentData={resolvedVendor.riskAssessmentData} />
           )}
         </div>
@@ -376,7 +383,7 @@ export function VendorDetailTabs({
               </Text>
             )
           )}
-        {!isViewingTask && !isRegenerating && (
+        {!isViewingTask && !isRegenerating && !isVendorInProgress && (
           <VendorResearchLinks riskAssessmentData={resolvedVendor.riskAssessmentData} />
         )}
       </Stack>
@@ -418,8 +425,8 @@ export function VendorDetailTabs({
                       transition={{ duration: 0.3, ease: 'easeInOut' }}
                     >
                       <VendorResearchFeed
-                        messages={researchMetadata.messages}
-                        isActive={isRealtimeRunActive}
+                        messages={researchMetadata?.messages ?? []}
+                        isActive={isRealtimeRunActive || isVendorInProgress}
                         vendorName={resolvedVendor.name}
                       />
                     </motion.div>
