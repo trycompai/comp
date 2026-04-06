@@ -88,7 +88,7 @@ function ScanningGlass({
 }: {
   onCardChange: (index: number) => void;
 }) {
-  const tops  = ['28%', '28%', '72%', '72%', '28%'];
+  const tops  = ['22%', '22%', '68%', '68%', '22%'];
   const lefts = ['25%', '75%', '75%', '25%', '25%'];
   const lastCardRef = useRef(-1);
 
