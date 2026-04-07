@@ -251,6 +251,14 @@ export function CompanySubmissionWizard({
 
   const validateRequiredMatrixCells = () => {
     for (const field of matrixFields) {
+      // Skip matrix validation when a companion file has been uploaded
+      // (e.g. RBAC matrix allows uploading a spreadsheet instead of filling rows)
+      const companionFileKey = `${field.key.replace('Rows', '')}File`;
+      const companionFile = getValues(companionFileKey as never);
+      if (companionFile && typeof companionFile === 'object' && 'fileKey' in companionFile) {
+        continue;
+      }
+
       const rows = normalizeMatrixRows(getValues(field.key as never));
       const rowValues = rows.length > 0 ? rows : [createEmptyMatrixRow(field.columns)];
 
@@ -672,6 +680,15 @@ export function CompanySubmissionWizard({
                                           if (trimmed === '.svg') return ['image/svg+xml', []];
                                           if (trimmed === '.vsdx')
                                             return ['application/vnd.visio', []];
+                                          if (trimmed === '.csv') return ['text/csv', []];
+                                          if (trimmed === '.xlsx') {
+                                            return [
+                                              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                              [],
+                                            ];
+                                          }
+                                          if (trimmed === '.xls')
+                                            return ['application/vnd.ms-excel', []];
                                           return null;
                                         })
                                         .filter(
@@ -830,6 +847,15 @@ export function CompanySubmissionWizard({
                                     if (trimmed === '.txt') return ['text/plain', []];
                                     if (trimmed === '.svg') return ['image/svg+xml', []];
                                     if (trimmed === '.vsdx') return ['application/vnd.visio', []];
+                                    if (trimmed === '.csv') return ['text/csv', []];
+                                    if (trimmed === '.xlsx') {
+                                      return [
+                                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                        [],
+                                      ];
+                                    }
+                                    if (trimmed === '.xls')
+                                      return ['application/vnd.ms-excel', []];
                                     return null;
                                   })
                                   .filter((entry): entry is [string, string[]] => entry !== null),
