@@ -14,6 +14,7 @@ export function AdminSidebar({ orgId }: AdminSidebarProps) {
   const items = [
     { id: 'organizations', label: 'Organizations', path: `/${orgId}/admin/organizations` },
     { id: 'integrations', label: 'Integrations', path: `/${orgId}/admin/integrations` },
+    { id: 'timeline-templates', label: 'Timeline Templates', path: `/${orgId}/admin/timeline-templates` },
   ];
 
   const isPathActive = (path: string) => pathname.startsWith(path);

@@ -9,6 +9,7 @@ interface AdminTimelinePhaseTemplate {
   description: string | null;
   durationWeeks: number;
   orderIndex: number;
+  completionType: 'AUTO_TASKS' | 'AUTO_UPLOAD' | 'MANUAL';
 }
 
 interface AdminTimelineTemplate {
@@ -17,6 +18,7 @@ interface AdminTimelineTemplate {
   name: string;
   description: string | null;
   isDefault: boolean;
+  cycleNumber: number;
   createdAt: string;
   updatedAt: string;
   phases: AdminTimelinePhaseTemplate[];
