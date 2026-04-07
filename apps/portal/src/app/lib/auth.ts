@@ -117,12 +117,43 @@ async function getSession(options: { headers: ReadonlyHeaders | Headers }): Prom
 }
 
 /**
+ * Set the active organization for the current session.
+ * Calls the API's better-auth organization endpoint so both
+ * server and client session state stay in sync.
+ */
+async function setActiveOrganization(options: {
+  headers: ReadonlyHeaders | Headers;
+  body: { organizationId: string };
+}): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/organization/set-active`, {
+      method: 'POST',
+      headers: {
+        ...headersToObject(options.headers),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ organizationId: options.body.organizationId }),
+      cache: 'no-store',
+    });
+
+    if (!response.ok && IS_DEVELOPMENT) {
+      console.error('[auth] Failed to set active organization:', response.status);
+    }
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to set active organization:', error);
+    }
+  }
+}
+
+/**
  * Auth object matching the interface used throughout the portal.
  * All methods call the NestJS API — no local better-auth instance.
  */
 export const auth = {
   api: {
     getSession,
+    setActiveOrganization,
   },
 };
 
