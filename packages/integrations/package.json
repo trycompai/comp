@@ -7,8 +7,6 @@
     "@aws-sdk/client-sts": "^3.0.0",
     "@azure/identity": "^4.10.0",
     "@trycompai/app": "workspace:*",
-    "@slack/bolt": "^3.22.0",
-    "@slack/web-api": "^7.8.0",
     "ai": "^5.0.0",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^2.6.7",
