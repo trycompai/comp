@@ -40,6 +40,7 @@ export type PolicyContext = {
 
 export type VendorData = {
   vendor_name: string;
+  source_vendor_names?: string[];
   vendor_website: string;
   vendor_description: string;
   category: VendorCategory;
@@ -266,6 +267,7 @@ export async function extractVendorsFromContext(
             type: 'object',
             properties: {
               vendor_name: { type: 'string' },
+              source_vendor_names: { type: 'array', items: { type: 'string' } },
               vendor_website: { type: 'string' },
               vendor_description: { type: 'string' },
               category: { type: 'string', enum: Object.values(VendorCategory) },
@@ -292,7 +294,7 @@ export async function extractVendorsFromContext(
       additionalProperties: false,
     }),
     system:
-      'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact. IMPORTANT: Always use the parent company name, not the product name (e.g. "Anthropic" not "Claude", "OpenAI" not "ChatGPT", "Alphabet" is acceptable as "Google", "Meta" is acceptable as "Meta").',
+      'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact. IMPORTANT: Always use the parent company name, not the product name (e.g. "Anthropic" not "Claude", "OpenAI" not "ChatGPT", "Alphabet" is acceptable as "Google", "Meta" is acceptable as "Meta"). If the answers mention product names, include them in source_vendor_names for that vendor.',
     prompt: questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n'),
   });
 
@@ -300,15 +302,31 @@ export async function extractVendorsFromContext(
 
   // Merge custom vendor URLs - user-provided URLs take precedence
   for (const vendor of vendors) {
-    const customUrl = customVendorUrls.get(vendor.vendor_name.toLowerCase());
+    let customUrl = customVendorUrls.get(vendor.vendor_name.toLowerCase());
+    if (!customUrl && vendor.source_vendor_names) {
+      for (const sourceName of vendor.source_vendor_names) {
+        customUrl = customVendorUrls.get(sourceName.toLowerCase());
+        if (customUrl) {
+          break;
+        }
+      }
+    }
     if (customUrl) {
       logger.info(`Using custom URL for vendor ${vendor.vendor_name}: ${customUrl}`);
       vendor.vendor_website = customUrl;
     }
   }
 
-  // Track which vendors were extracted by AI
-  const extractedVendorNames = new Set(vendors.map((v) => v.vendor_name.toLowerCase()));
+  // Track which vendors were extracted by AI (including product aliases)
+  const extractedVendorNames = new Set<string>();
+  for (const vendor of vendors) {
+    extractedVendorNames.add(vendor.vendor_name.toLowerCase());
+    if (vendor.source_vendor_names) {
+      for (const sourceName of vendor.source_vendor_names) {
+        extractedVendorNames.add(sourceName.toLowerCase());
+      }
+    }
+  }
 
   // Ensure ALL vendors from the software field are added (not just custom ones)
   // This catches any vendors the AI failed to extract

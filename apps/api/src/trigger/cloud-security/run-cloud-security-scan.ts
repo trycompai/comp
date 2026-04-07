@@ -20,18 +20,17 @@ export const runCloudSecurityScan = task({
     const { connectionId, organizationId, providerSlug, connectionName } =
       payload;
 
-    await tags.add([`org:${organizationId}`]);
-
-    logger.info(
-      `Starting cloud security scan for connection: ${connectionName}`,
-      {
-        connectionId,
-        provider: providerSlug,
-        organizationId,
-      },
-    );
-
     try {
+      await tags.add([`org:${organizationId}`]);
+
+      logger.info(
+        `Starting cloud security scan for connection: ${connectionName}`,
+        {
+          connectionId,
+          provider: providerSlug,
+          organizationId,
+        },
+      );
       // Verify connection is still active
       const connection = await db.integrationConnection.findUnique({
         where: { id: connectionId },
