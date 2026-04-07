@@ -38,7 +38,7 @@
     "@radix-ui/react-use-is-hydrated": "^0.1.0",
     "@floating-ui/dom": "^1.6.0",
     "@tailwindcss/typography": "^0.5.16",
-    "@tiptap/extension-bold": "3.22.1",
+    "@tiptap/extension-bold": "3.22.2",
     "@tiptap/extension-code-block-lowlight": "3.22.1",
     "@tiptap/extension-highlight": "3.22.1",
     "@tiptap/extension-image": "3.22.1",
