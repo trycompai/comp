@@ -22,13 +22,13 @@ export interface DefaultPhaseTemplate {
 
 export interface DefaultTimelineTemplate {
   frameworkName: string; // Used to match against FrameworkEditorFramework.name
-  name: string; // Display name, e.g. "SOC 2 Type 2 — Year 1"
+  name: string; // Display name, e.g. "SOC 2 Type 2 - Year 1"
   cycleNumber: number;
   phases: DefaultPhaseTemplate[];
 }
 
 export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
-  // SOC 2 Type 1 — quick point-in-time snapshot (cycle 1)
+  // SOC 2 Type 1 - quick point-in-time snapshot (cycle 1)
   {
     frameworkName: 'SOC 2',
     name: 'SOC 2 Type 1',
@@ -59,10 +59,10 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     ],
   },
 
-  // SOC 2 Type 2 — Year 1 (cycle 2)
+  // SOC 2 Type 2 - Year 1 (cycle 2)
   {
     frameworkName: 'SOC 2',
-    name: 'SOC 2 Type 2 — Year 1',
+    name: 'SOC 2 Type 2 - Year 1',
     cycleNumber: 2,
     phases: [
       {
@@ -100,10 +100,10 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     ],
   },
 
-  // SOC 2 Type 2 — Year 2+ (cycle 3+)
+  // SOC 2 Type 2 - Year 2+ (cycle 3+)
   {
     frameworkName: 'SOC 2',
-    name: 'SOC 2 Type 2 — Year 2+',
+    name: 'SOC 2 Type 2 - Year 2+',
     cycleNumber: 3,
     phases: [
       {
@@ -140,7 +140,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     ],
   },
 
-  // SOC 2 v.1 (legacy separate framework — same as Type 1)
+  // SOC 2 v.1 (legacy separate framework - same as Type 1)
   {
     frameworkName: 'SOC 2 v.1',
     name: 'SOC 2 Type 1',
