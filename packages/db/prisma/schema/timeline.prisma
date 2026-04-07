@@ -1,0 +1,96 @@
+enum TimelineStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum TimelinePhaseStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum PhaseCompletionType {
+  AUTO_TASKS
+  AUTO_UPLOAD
+  MANUAL
+}
+
+model TimelineTemplate {
+  id          String   @id @default(dbgenerated("generate_prefixed_cuid('tml'::text)"))
+  frameworkId String
+  name        String
+  cycleNumber Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  framework FrameworkEditorFramework @relation(fields: [frameworkId], references: [id])
+  phases    TimelinePhaseTemplate[]
+  instances TimelineInstance[]
+
+  @@unique([frameworkId, cycleNumber])
+}
+
+model TimelinePhaseTemplate {
+  id                   String              @id @default(dbgenerated("generate_prefixed_cuid('tpt'::text)"))
+  templateId           String
+  name                 String
+  description          String?
+  orderIndex           Int
+  defaultDurationWeeks Int
+  completionType       PhaseCompletionType @default(MANUAL)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  template TimelineTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  phases   TimelinePhase[]
+}
+
+model TimelineInstance {
+  id                 String         @id @default(dbgenerated("generate_prefixed_cuid('tli'::text)"))
+  organizationId     String
+  frameworkInstanceId String
+  templateId         String
+  cycleNumber        Int
+  status             TimelineStatus @default(DRAFT)
+  startDate          DateTime?
+  pausedAt           DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  frameworkInstance FrameworkInstance @relation(fields: [frameworkInstanceId], references: [id], onDelete: Cascade)
+  template         TimelineTemplate @relation(fields: [templateId], references: [id])
+  phases           TimelinePhase[]
+
+  @@unique([frameworkInstanceId, cycleNumber])
+}
+
+model TimelinePhase {
+  id               String              @id @default(dbgenerated("generate_prefixed_cuid('tlp'::text)"))
+  instanceId       String
+  phaseTemplateId  String?
+  name             String
+  description      String?
+  orderIndex       Int
+  status           TimelinePhaseStatus @default(PENDING)
+  startDate        DateTime?
+  endDate          DateTime?
+  durationWeeks    Int
+  completionType   PhaseCompletionType @default(MANUAL)
+  datesPinned      Boolean             @default(false)
+  completedAt      DateTime?
+  completedById    String?
+  readyForReview   Boolean             @default(false)
+  readyForReviewAt DateTime?
+  documentUrl      String?
+  documentName     String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  instance      TimelineInstance       @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  phaseTemplate TimelinePhaseTemplate? @relation(fields: [phaseTemplateId], references: [id])
+  completedBy   User?                  @relation(fields: [completedById], references: [id])
+}

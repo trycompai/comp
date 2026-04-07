@@ -22,6 +22,7 @@ model FrameworkEditorFramework {
   frameworkInstances FrameworkInstance[]
   soaConfigurations  SOAFrameworkConfiguration[] // Multiple SOA config versions per framework
   soaDocuments       SOADocument[] // SOA documents from organizations
+  timelineTemplates  TimelineTemplate[]
 
   // Dates
   createdAt DateTime @default(now())
