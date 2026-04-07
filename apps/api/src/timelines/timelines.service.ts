@@ -35,7 +35,10 @@ export class TimelinesService {
     const instance = await db.timelineInstance.findUnique({
       where: { id, organizationId },
       include: {
-        phases: { orderBy: { orderIndex: 'asc' } },
+        phases: {
+          orderBy: { orderIndex: 'asc' },
+          include: { completedBy: { select: { id: true, name: true, email: true } } },
+        },
         frameworkInstance: { include: { framework: true } },
         template: {
           include: { phases: { orderBy: { orderIndex: 'asc' } } },
