@@ -17,16 +17,16 @@ interface TimelinePhaseBarProps {
 
 const statusStyles = {
   COMPLETED: {
-    bg: 'bg-green-800',
-    text: 'text-green-200',
+    bg: 'bg-primary',
+    text: 'text-primary-foreground',
   },
   IN_PROGRESS: {
-    bg: 'bg-blue-700',
-    text: 'text-blue-200 font-semibold',
+    bg: 'bg-primary/60',
+    text: 'text-primary-foreground font-semibold',
   },
   PENDING: {
-    bg: 'bg-zinc-900',
-    text: 'text-zinc-600',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
   },
 } as const;
 
@@ -74,7 +74,7 @@ export function TimelinePhaseBar({
             {phase.status === 'COMPLETED' && (
               <Checkmark
                 size={12}
-                className="absolute right-1 top-1 text-green-200"
+                className="absolute right-1 top-1 text-primary-foreground"
               />
             )}
           </div>

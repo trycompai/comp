@@ -112,10 +112,10 @@ function PhaseCard({
   };
 
   const borderClass = isCompleted
-    ? 'border-green-800 bg-green-950/30'
+    ? 'border-primary/30 bg-primary/5'
     : isActive
-      ? 'border-blue-800 bg-blue-950/30'
-      : 'border-zinc-800 bg-zinc-950/30 opacity-60';
+      ? 'border-primary/50 bg-primary/10'
+      : 'border-border bg-muted/30 opacity-70';
 
   return (
     <div
@@ -139,7 +139,7 @@ function PhaseCard({
           )}
           <PhaseMetadata phase={phase} />
           {(markedReady || phase.readyForReview) && (
-            <div className="mt-2 flex items-center gap-2 rounded-md bg-green-950/50 px-3 py-1.5 text-xs text-green-400">
+            <div className="mt-2 flex items-center gap-2 rounded-md bg-primary/10 px-3 py-1.5 text-xs text-primary">
               <CheckmarkFilled size={14} />
               <span>Marked ready for review</span>
             </div>
@@ -164,17 +164,17 @@ function PhaseCard({
 
 function StatusIcon({ status }: { status: TimelinePhase['status'] }) {
   if (status === 'COMPLETED') {
-    return <CheckmarkFilled size={20} className="text-green-500" />;
+    return <CheckmarkFilled size={20} className="text-primary" />;
   }
   if (status === 'IN_PROGRESS') {
     return (
       <div className="relative flex h-5 w-5 items-center justify-center">
-        <div className="absolute h-3 w-3 animate-ping rounded-full bg-blue-500 opacity-30" />
-        <CircleFilled size={20} className="text-blue-500" />
+        <div className="absolute h-3 w-3 animate-ping rounded-full bg-primary opacity-30" />
+        <CircleFilled size={20} className="text-primary" />
       </div>
     );
   }
-  return <CircleDash size={20} className="text-zinc-600" />;
+  return <CircleDash size={20} className="text-muted-foreground" />;
 }
 
 function StatusBadge({ status }: { status: TimelinePhase['status'] }) {
@@ -215,7 +215,7 @@ function PhaseMetadata({ phase }: { phase: TimelinePhase }) {
             <span>Due {formatDate(phase.endDate)}</span>
           )}
           {getTimeRemaining(phase.endDate) && (
-            <span className="font-medium text-blue-400">
+            <span className="font-medium text-primary">
               {getTimeRemaining(phase.endDate)}
             </span>
           )}

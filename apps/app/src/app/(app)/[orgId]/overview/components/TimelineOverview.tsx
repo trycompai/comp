@@ -1,6 +1,5 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { Checkmark } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -17,19 +16,19 @@ const STATUS_BADGE: Record<
 > = {
   DRAFT: {
     label: 'Draft',
-    className: 'bg-zinc-800 text-zinc-400',
+    className: 'bg-muted text-muted-foreground',
   },
   ACTIVE: {
     label: 'Active',
-    className: 'bg-green-900 text-green-400',
+    className: 'bg-primary/15 text-primary',
   },
   PAUSED: {
     label: 'Paused',
-    className: 'bg-yellow-900 text-yellow-400',
+    className: 'bg-destructive/15 text-destructive',
   },
   COMPLETED: {
     label: 'Completed',
-    className: 'bg-green-900 text-green-400',
+    className: 'bg-primary/15 text-primary',
   },
 };
 
@@ -50,6 +49,21 @@ function estimatedEndDate(timeline: Timeline): string | null {
   return lastPhase?.endDate ?? null;
 }
 
+function getNextCycleDate(timeline: Timeline): string | null {
+  if (timeline.status !== 'COMPLETED' || !timeline.completedAt) return null;
+  const completedAt = new Date(timeline.completedAt);
+  const frameworkName =
+    timeline.frameworkInstance?.framework.name ?? '';
+  const isSoc2Type2 =
+    /SOC 2/i.test(frameworkName) &&
+    !/v\.1/i.test(frameworkName) &&
+    !/Type 1/i.test(frameworkName);
+  const monthsToAdd = isSoc2Type2 ? 6 : 12;
+  const nextDate = new Date(completedAt);
+  nextDate.setMonth(nextDate.getMonth() + monthsToAdd);
+  return formatDate(nextDate);
+}
+
 export function TimelineOverview({ initialData }: TimelineOverviewProps) {
   const { timelines } = useTimelines({ initialData });
   const { orgId } = useParams<{ orgId: string }>();
@@ -57,23 +71,21 @@ export function TimelineOverview({ initialData }: TimelineOverviewProps) {
   if (timelines.length === 0) return null;
 
   return (
-    <Card className="border">
-      <CardHeader className="pb-2">
-        <CardTitle>Compliance Timeline</CardTitle>
+    <div className="flex flex-col gap-4">
+      <div>
+        <h3 className="text-lg font-semibold">Compliance Timeline</h3>
         <p className="text-sm text-muted-foreground">
           Track your progress toward audit readiness
         </p>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {timelines.map((timeline) => (
-          <TimelineCard
-            key={timeline.id}
-            timeline={timeline}
-            orgId={orgId}
-          />
-        ))}
-      </CardContent>
-    </Card>
+      </div>
+      {timelines.map((timeline) => (
+        <TimelineCard
+          key={timeline.id}
+          timeline={timeline}
+          orgId={orgId}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -90,6 +102,7 @@ function TimelineCard({
   const frameworkName =
     timeline.frameworkInstance?.framework.name ?? 'Unknown Framework';
   const endDate = estimatedEndDate(timeline);
+  const nextCycle = getNextCycleDate(timeline);
 
   return (
     <Link
@@ -132,6 +145,9 @@ function TimelineCard({
                 ? `Completed ${formatDate(timeline.completedAt)}`
                 : `Est. completion ${formatDate(endDate)}`}
             </span>
+            {isCompleted && nextCycle && (
+              <span>Next cycle: {nextCycle}</span>
+            )}
           </>
         )}
       </div>
