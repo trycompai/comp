@@ -1,8 +1,16 @@
 import { recalculatePhaseDates } from './timelines-date.helper';
 
+interface TestPhase {
+  orderIndex: number;
+  durationWeeks: number;
+  datesPinned: boolean;
+  startDate: Date | null;
+  endDate: Date | null;
+}
+
 describe('recalculatePhaseDates', () => {
   it('calculates sequential dates from start date', () => {
-    const phases = [
+    const phases: TestPhase[] = [
       {
         orderIndex: 0,
         durationWeeks: 8,
@@ -37,7 +45,7 @@ describe('recalculatePhaseDates', () => {
   });
 
   it('skips pinned phases but uses their endDate for the next phase', () => {
-    const phases = [
+    const phases: TestPhase[] = [
       {
         orderIndex: 0,
         durationWeeks: 8,
@@ -73,7 +81,7 @@ describe('recalculatePhaseDates', () => {
   });
 
   it('handles single phase', () => {
-    const phases = [
+    const phases: TestPhase[] = [
       {
         orderIndex: 0,
         durationWeeks: 8,
@@ -90,7 +98,7 @@ describe('recalculatePhaseDates', () => {
   });
 
   it('sorts phases by orderIndex regardless of input order', () => {
-    const phases = [
+    const phases: TestPhase[] = [
       {
         orderIndex: 2,
         durationWeeks: 2,
