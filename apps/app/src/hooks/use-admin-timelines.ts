@@ -37,7 +37,7 @@ interface AdminOrgTimeline {
   id: string;
   organizationId: string;
   frameworkInstanceId: string;
-  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  status: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
   startDate: string;
   estimatedEndDate: string;
   completedAt: string | null;

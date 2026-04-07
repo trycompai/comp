@@ -31,8 +31,9 @@ const STATUS_BADGE: Record<
   AdminOrgTimeline['status'],
   { label: string; variant: 'default' | 'outline' | 'destructive' }
 > = {
-  NOT_STARTED: { label: 'Draft', variant: 'outline' },
-  IN_PROGRESS: { label: 'Active', variant: 'default' },
+  DRAFT: { label: 'Draft', variant: 'outline' },
+  ACTIVE: { label: 'Active', variant: 'default' },
+  PAUSED: { label: 'Paused', variant: 'destructive' },
   COMPLETED: { label: 'Completed', variant: 'default' },
 };
 
@@ -205,7 +206,7 @@ function TimelineActions({
   onResume: () => void;
   onMutate: () => void;
 }) {
-  if (status === 'NOT_STARTED') {
+  if (status === 'DRAFT') {
     return (
       <TimelineActivateForm
         orgId={orgId}
@@ -215,7 +216,7 @@ function TimelineActions({
     );
   }
 
-  if (status === 'IN_PROGRESS') {
+  if (status === 'ACTIVE') {
     return (
       <Button
         size="sm"
@@ -229,20 +230,19 @@ function TimelineActions({
     );
   }
 
-  if (status === 'COMPLETED') {
-    return null;
-  }
-
-  // Fallback -- shouldn't happen, but just in case
-  return (
-    <Button
-      size="sm"
-      variant="outline"
-      iconLeft={<Play size={14} />}
-      loading={loading}
-      onClick={onResume}
+  if (status === 'PAUSED') {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        iconLeft={<Play size={14} />}
+        loading={loading}
+        onClick={onResume}
     >
       Resume
     </Button>
   );
+
+  // COMPLETED — no actions
+  return null;
 }
