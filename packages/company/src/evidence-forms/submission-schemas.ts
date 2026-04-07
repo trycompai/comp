@@ -58,10 +58,25 @@ const rbacMatrixRowSchema = z.object({
   lastReviewed: requiredTrimmed('Last reviewed'),
 });
 
+const emptyMatrixRowsToUndefined = (value: unknown): unknown => {
+  if (!Array.isArray(value)) return value;
+
+  const nonEmptyRows = value.filter((row) => {
+    if (!row || typeof row !== 'object') return true;
+
+    return Object.values(row).some((cell) => {
+      if (typeof cell === 'string') return cell.trim().length > 0;
+      return Boolean(cell);
+    });
+  });
+
+  return nonEmptyRows.length > 0 ? nonEmptyRows : undefined;
+};
+
 const rbacMatrixDataSchema = z
   .object({
     submissionDate: required('Submission date'),
-    matrixRows: z.array(rbacMatrixRowSchema).optional(),
+    matrixRows: z.preprocess(emptyMatrixRowsToUndefined, z.array(rbacMatrixRowSchema).optional()),
     matrixFile: evidenceFormFileSchema.optional(),
   })
   .refine((data) => (data.matrixRows && data.matrixRows.length > 0) || data.matrixFile, {

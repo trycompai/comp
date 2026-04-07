@@ -618,6 +618,78 @@ export function CompanySubmissionWizard({
                     )}
                   />
                 ))}
+                {matrixFields.map((field) => {
+                  const rows = normalizeMatrixRows(watch(field.key as never));
+                  const rowValues = rows.length > 0 ? rows : [createEmptyMatrixRow(field.columns)];
+                  const matrixError = errors[field.key as keyof typeof errors];
+                  return (
+                    <Field key={field.key}>
+                      <FieldLabel>{field.label}</FieldLabel>
+                      {field.description && (
+                        <Text size="sm" variant="muted">
+                          {field.description}
+                        </Text>
+                      )}
+                      <div className="space-y-3">
+                        {rowValues.map((row, rowIndex) => (
+                          <div
+                            key={`${field.key}-${rowIndex}`}
+                            className="rounded-md border border-border p-3"
+                          >
+                            <div className="mb-3 flex items-center justify-between">
+                              <Text size="sm" weight="medium">
+                                Row {rowIndex + 1}
+                              </Text>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => removeMatrixRow(field, rowIndex)}
+                                disabled={rowValues.length <= 1}
+                              >
+                                Remove row
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                              {field.columns.map((column) => (
+                                <Field key={`${field.key}-${rowIndex}-${column.key}`}>
+                                  <FieldLabel htmlFor={`${field.key}-${rowIndex}-${column.key}`}>
+                                    {column.label}
+                                  </FieldLabel>
+                                  {column.description && (
+                                    <Text size="sm" variant="muted">
+                                      {column.description}
+                                    </Text>
+                                  )}
+                                  <Input
+                                    id={`${field.key}-${rowIndex}-${column.key}`}
+                                    value={row[column.key] ?? ''}
+                                    onChange={(event) =>
+                                      updateMatrixCell(
+                                        field,
+                                        rowIndex,
+                                        column.key,
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder={column.placeholder}
+                                  />
+                                </Field>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => addMatrixRow(field)}
+                        >
+                          {field.addRowLabel ?? 'Add row'}
+                        </Button>
+                      </div>
+                      <FieldError errors={[matrixError as never]} />
+                    </Field>
+                  );
+                })}
                 {extendedFields.map((field) => (
                   <Controller
                     key={field.key}
@@ -726,78 +798,6 @@ export function CompanySubmissionWizard({
                     )}
                   />
                 ))}
-                {matrixFields.map((field) => {
-                  const rows = normalizeMatrixRows(watch(field.key as never));
-                  const rowValues = rows.length > 0 ? rows : [createEmptyMatrixRow(field.columns)];
-                  const matrixError = errors[field.key as keyof typeof errors];
-                  return (
-                    <Field key={field.key}>
-                      <FieldLabel>{field.label}</FieldLabel>
-                      {field.description && (
-                        <Text size="sm" variant="muted">
-                          {field.description}
-                        </Text>
-                      )}
-                      <div className="space-y-3">
-                        {rowValues.map((row, rowIndex) => (
-                          <div
-                            key={`${field.key}-${rowIndex}`}
-                            className="rounded-md border border-border p-3"
-                          >
-                            <div className="mb-3 flex items-center justify-between">
-                              <Text size="sm" weight="medium">
-                                Row {rowIndex + 1}
-                              </Text>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => removeMatrixRow(field, rowIndex)}
-                                disabled={rowValues.length <= 1}
-                              >
-                                Remove row
-                              </Button>
-                            </div>
-                            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                              {field.columns.map((column) => (
-                                <Field key={`${field.key}-${rowIndex}-${column.key}`}>
-                                  <FieldLabel htmlFor={`${field.key}-${rowIndex}-${column.key}`}>
-                                    {column.label}
-                                  </FieldLabel>
-                                  {column.description && (
-                                    <Text size="sm" variant="muted">
-                                      {column.description}
-                                    </Text>
-                                  )}
-                                  <Input
-                                    id={`${field.key}-${rowIndex}-${column.key}`}
-                                    value={row[column.key] ?? ''}
-                                    onChange={(event) =>
-                                      updateMatrixCell(
-                                        field,
-                                        rowIndex,
-                                        column.key,
-                                        event.target.value,
-                                      )
-                                    }
-                                    placeholder={column.placeholder}
-                                  />
-                                </Field>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() => addMatrixRow(field)}
-                        >
-                          {field.addRowLabel ?? 'Add row'}
-                        </Button>
-                      </div>
-                      <FieldError errors={[matrixError as never]} />
-                    </Field>
-                  );
-                })}
               </>
             )}
           </FieldGroup>
