@@ -28,11 +28,42 @@ export interface DefaultTimelineTemplate {
 }
 
 export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
-  // SOC 2 Type 2 — Year 1
+  // SOC 2 Type 1 — quick point-in-time snapshot (cycle 1)
+  {
+    frameworkName: 'SOC 2',
+    name: 'SOC 2 Type 1',
+    cycleNumber: 1,
+    phases: [
+      {
+        name: 'Evidence Gathering',
+        description:
+          'Complete all platform tasks. This is a point-in-time snapshot assessment.',
+        orderIndex: 0,
+        defaultDurationWeeks: 8,
+        completionType: PhaseCompletionType.AUTO_TASKS,
+      },
+      {
+        name: 'Auditor Review',
+        description: 'Auditor reviews your account.',
+        orderIndex: 1,
+        defaultDurationWeeks: 2,
+        completionType: PhaseCompletionType.MANUAL,
+      },
+      {
+        name: 'Final Report',
+        description: 'Final report delivered.',
+        orderIndex: 2,
+        defaultDurationWeeks: 1,
+        completionType: PhaseCompletionType.AUTO_UPLOAD,
+      },
+    ],
+  },
+
+  // SOC 2 Type 2 — Year 1 (cycle 2)
   {
     frameworkName: 'SOC 2',
     name: 'SOC 2 Type 2 — Year 1',
-    cycleNumber: 1,
+    cycleNumber: 2,
     phases: [
       {
         name: 'Evidence Gathering',
@@ -69,11 +100,11 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     ],
   },
 
-  // SOC 2 Type 2 — Year 2+
+  // SOC 2 Type 2 — Year 2+ (cycle 3+)
   {
     frameworkName: 'SOC 2',
     name: 'SOC 2 Type 2 — Year 2+',
-    cycleNumber: 2,
+    cycleNumber: 3,
     phases: [
       {
         name: 'Evidence Gathering',
@@ -109,7 +140,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     ],
   },
 
-  // SOC 2 Type 1
+  // SOC 2 v.1 (legacy separate framework — same as Type 1)
   {
     frameworkName: 'SOC 2 v.1',
     name: 'SOC 2 Type 1',

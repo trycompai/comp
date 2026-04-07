@@ -15,6 +15,7 @@ interface Phase {
 interface TimelinePhaseBarProps {
   phases: Phase[];
   height?: number;
+  showDates?: boolean;
 }
 
 function getRoundedClass(index: number, total: number) {
@@ -34,74 +35,104 @@ function getProgressPercent(phase: Phase): number {
   return Math.round(((now - start) / (end - start)) * 100);
 }
 
+function formatShortDate(date: string | null | undefined): string {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 export function TimelinePhaseBar({
   phases,
   height = 36,
+  showDates = false,
 }: TimelinePhaseBarProps) {
   const sorted = [...phases].sort((a, b) => a.orderIndex - b.orderIndex);
 
   if (sorted.length === 0) return null;
 
+  const hasDates = showDates && sorted.some((p) => p.startDate || p.endDate);
+
   return (
-    <div className="flex w-full gap-[3px]" style={{ height }}>
-      {sorted.map((phase, index) => {
-        const rounded = getRoundedClass(index, sorted.length);
+    <div>
+      <div className="flex w-full gap-[3px]" style={{ height }}>
+        {sorted.map((phase, index) => {
+          const rounded = getRoundedClass(index, sorted.length);
 
-        if (phase.status === 'COMPLETED') {
-          return (
-            <div
-              key={phase.id}
-              className={`relative flex items-center justify-center overflow-hidden bg-primary ${rounded}`}
-              style={{ flex: phase.durationWeeks }}
-            >
-              <span className="truncate px-2 text-[11px] text-primary-foreground">
-                {phase.name}
-              </span>
-              <Checkmark
-                size={12}
-                className="absolute right-1 top-1 text-primary-foreground/70"
-              />
-            </div>
-          );
-        }
+          if (phase.status === 'COMPLETED') {
+            return (
+              <div
+                key={phase.id}
+                className={`relative flex items-center justify-center overflow-hidden bg-primary ${rounded}`}
+                style={{ flex: phase.durationWeeks }}
+              >
+                <span className="truncate px-2 text-[11px] text-primary-foreground">
+                  {phase.name}
+                </span>
+                <Checkmark
+                  size={12}
+                  className="absolute right-1 top-1 text-primary-foreground/70"
+                />
+              </div>
+            );
+          }
 
-        if (phase.status === 'IN_PROGRESS') {
-          const progress = getProgressPercent(phase);
+          if (phase.status === 'IN_PROGRESS') {
+            const progress = getProgressPercent(phase);
+            return (
+              <div
+                key={phase.id}
+                className={`relative flex items-center justify-center overflow-hidden bg-muted ${rounded}`}
+                style={{ flex: phase.durationWeeks }}
+              >
+                <div
+                  className="absolute inset-y-0 left-0 bg-primary/50"
+                  style={{ width: `${progress}%` }}
+                />
+                <div
+                  className="absolute inset-y-0 w-[3px] bg-primary animate-pulse"
+                  style={{ left: `${progress}%` }}
+                />
+                <span className="relative z-10 truncate px-2 text-[11px] font-semibold text-foreground">
+                  {phase.name}
+                </span>
+              </div>
+            );
+          }
+
           return (
             <div
               key={phase.id}
               className={`relative flex items-center justify-center overflow-hidden bg-muted ${rounded}`}
               style={{ flex: phase.durationWeeks }}
             >
-              {/* Filled portion */}
-              <div
-                className="absolute inset-y-0 left-0 bg-primary/50"
-                style={{ width: `${progress}%` }}
-              />
-              {/* Pulsing edge marker */}
-              <div
-                className="absolute inset-y-0 w-[3px] bg-primary animate-pulse"
-                style={{ left: `${progress}%` }}
-              />
-              <span className="relative z-10 truncate px-2 text-[11px] font-semibold text-foreground">
+              <span className="truncate px-2 text-[11px] text-muted-foreground">
                 {phase.name}
               </span>
             </div>
           );
-        }
+        })}
+      </div>
 
-        return (
-          <div
-            key={phase.id}
-            className={`relative flex items-center justify-center overflow-hidden bg-muted ${rounded}`}
-            style={{ flex: phase.durationWeeks }}
-          >
-            <span className="truncate px-2 text-[11px] text-muted-foreground">
-              {phase.name}
-            </span>
-          </div>
-        );
-      })}
+      {/* Date markers below the bar */}
+      {hasDates && (
+        <div className="flex w-full gap-[3px] mt-1">
+          {sorted.map((phase, index) => {
+            const isLast = index === sorted.length - 1;
+            return (
+              <div
+                key={`date-${phase.id}`}
+                className="flex justify-between text-[10px] text-muted-foreground"
+                style={{ flex: phase.durationWeeks }}
+              >
+                <span>{formatShortDate(phase.startDate)}</span>
+                {isLast && <span>{formatShortDate(phase.endDate)}</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

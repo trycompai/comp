@@ -94,7 +94,7 @@ export function FrameworkTimeline({
           )}
         </div>
       </div>
-      <TimelinePhaseBar phases={sortedPhases} />
+      <TimelinePhaseBar phases={sortedPhases} showDates />
       <div className="flex flex-col gap-3">
         {sortedPhases.map((phase) => (
           <PhaseCard

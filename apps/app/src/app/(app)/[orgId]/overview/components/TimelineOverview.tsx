@@ -114,13 +114,8 @@ function TimelineCard({
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-medium truncate">
-            {frameworkName}
+            {timeline.template?.name ?? frameworkName}
           </span>
-          {timeline.cycleNumber > 1 && (
-            <span className="text-xs text-muted-foreground shrink-0">
-              Cycle {timeline.cycleNumber}
-            </span>
-          )}
         </div>
         <span
           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${badge.className}`}
@@ -131,7 +126,7 @@ function TimelineCard({
       </div>
 
       <div className="mt-3">
-        <TimelinePhaseBar phases={timeline.phases} />
+        <TimelinePhaseBar phases={timeline.phases} showDates />
       </div>
 
       <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">

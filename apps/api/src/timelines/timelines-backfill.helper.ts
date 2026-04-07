@@ -229,6 +229,14 @@ async function applyBackfillState(
 // Main backfill function
 // ---------------------------------------------------------------------------
 
+/**
+ * Frameworks that need multiple timelines per instance (e.g., SOC 2 has Type 1 + Type 2).
+ * Maps framework name → array of cycle numbers to create.
+ */
+const MULTI_TIMELINE_FRAMEWORKS: Record<string, number[]> = {
+  'SOC 2': [1, 2], // cycle 1 = Type 1, cycle 2 = Type 2 Year 1
+};
+
 export async function backfillTimeline({
   organizationId,
   frameworkInstance,
@@ -241,15 +249,50 @@ export async function backfillTimeline({
   };
 }): Promise<void> {
   const { framework } = frameworkInstance;
+  const cyclesToCreate = MULTI_TIMELINE_FRAMEWORKS[framework.name] ?? [1];
+
+  for (const cycleNumber of cyclesToCreate) {
+    try {
+      await backfillSingleTimeline({
+        organizationId,
+        frameworkInstance,
+        cycleNumber,
+      });
+    } catch {
+      // Non-blocking per-cycle — continue with others
+    }
+  }
+}
+
+async function backfillSingleTimeline({
+  organizationId,
+  frameworkInstance,
+  cycleNumber,
+}: {
+  organizationId: string;
+  frameworkInstance: {
+    id: string;
+    frameworkId: string;
+    framework: { id: string; name: string };
+  };
+  cycleNumber: number;
+}): Promise<void> {
+  const { framework } = frameworkInstance;
+
+  // Check if this specific cycle already exists
+  const existing = await db.timelineInstance.findFirst({
+    where: { frameworkInstanceId: frameworkInstance.id, cycleNumber },
+  });
+  if (existing) return;
 
   // Step 1: Resolve and create DRAFT instance from template
-  const template = await resolveTemplate(frameworkInstance.frameworkId, framework.name, 1);
+  const template = await resolveTemplate(frameworkInstance.frameworkId, framework.name, cycleNumber);
   if (!template) return;
 
   const instance = await createInstanceFromTemplate({
     organizationId,
     frameworkInstanceId: frameworkInstance.id,
-    cycleNumber: 1,
+    cycleNumber,
     template,
   });
 
