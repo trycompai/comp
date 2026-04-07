@@ -58,9 +58,42 @@ export function FrameworkTimeline({
     (a, b) => a.orderIndex - b.orderIndex,
   );
 
+  const currentPhase = sortedPhases.find((p) => p.status === 'IN_PROGRESS');
+  const currentPhaseIndex = currentPhase
+    ? sortedPhases.indexOf(currentPhase) + 1
+    : timeline.status === 'COMPLETED'
+      ? sortedPhases.length
+      : 0;
+  const lastPhase = sortedPhases[sortedPhases.length - 1];
+  const estCompletion = lastPhase?.endDate
+    ? formatDate(lastPhase.endDate)
+    : null;
+
   return (
     <div className="flex flex-col gap-4">
-      <Heading level="2">Compliance Timeline</Heading>
+      <div className="flex items-baseline justify-between">
+        <Heading level="2">Compliance Timeline</Heading>
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          {currentPhaseIndex > 0 && (
+            <span>
+              Phase {currentPhaseIndex} of {sortedPhases.length}
+              {currentPhase && (
+                <span className="ml-1 font-medium text-foreground">
+                  · {currentPhase.name}
+                </span>
+              )}
+            </span>
+          )}
+          {estCompletion && timeline.status !== 'COMPLETED' && (
+            <span>· Est. completion {estCompletion}</span>
+          )}
+          {timeline.status === 'COMPLETED' && timeline.completedAt && (
+            <span className="text-primary">
+              Completed {formatDate(timeline.completedAt)}
+            </span>
+          )}
+        </div>
+      </div>
       <TimelinePhaseBar phases={sortedPhases} />
       <div className="flex flex-col gap-3">
         {sortedPhases.map((phase) => (
