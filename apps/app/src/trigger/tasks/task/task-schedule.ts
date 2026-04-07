@@ -235,11 +235,11 @@ export const taskSchedule = schedules.task({
             : ('todo' as const);
 
           // Check if user is unsubscribed
-          const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'taskAssignments', recipient.task.organizationId);
+          const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'taskReminders', recipient.task.organizationId);
 
           if (isUnsubscribed) {
             logger.info(
-              `Skipping notification: user ${recipient.email} is unsubscribed from task assignments`,
+              `Skipping notification: user ${recipient.email} is unsubscribed from task reminders`,
             );
             return;
           }
