@@ -1,0 +1,167 @@
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { db, PhaseCompletionType } from '@db';
+import { TimelinesLifecycleService } from './timelines-lifecycle.service';
+
+@Injectable()
+export class TimelinesPhasesService {
+  constructor(
+    private readonly lifecycle: TimelinesLifecycleService,
+  ) {}
+
+  async updatePhase(
+    instanceId: string,
+    phaseId: string,
+    organizationId: string,
+    data: {
+      name?: string;
+      description?: string;
+      startDate?: Date;
+      endDate?: Date;
+      durationWeeks?: number;
+      documentUrl?: string;
+      documentName?: string;
+    },
+  ) {
+    const instance = await db.timelineInstance.findUnique({
+      where: { id: instanceId, organizationId },
+      include: { phases: { orderBy: { orderIndex: 'asc' } } },
+    });
+
+    if (!instance) {
+      throw new NotFoundException('Timeline instance not found');
+    }
+
+    const phase = instance.phases.find((p) => p.id === phaseId);
+    if (!phase) {
+      throw new NotFoundException('Phase not found');
+    }
+
+    // Pin dates when manually set
+    const datesPinned =
+      data.startDate !== undefined || data.endDate !== undefined
+        ? true
+        : undefined;
+
+    const updated = await db.timelinePhase.update({
+      where: { id: phaseId },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
+        ...(data.startDate !== undefined && { startDate: data.startDate }),
+        ...(data.endDate !== undefined && { endDate: data.endDate }),
+        ...(data.durationWeeks !== undefined && {
+          durationWeeks: data.durationWeeks,
+        }),
+        ...(data.documentUrl !== undefined && {
+          documentUrl: data.documentUrl,
+        }),
+        ...(data.documentName !== undefined && {
+          documentName: data.documentName,
+        }),
+        ...(datesPinned !== undefined && { datesPinned }),
+      },
+    });
+
+    // Auto-complete if documentUrl is set on an AUTO_UPLOAD phase
+    if (
+      data.documentUrl &&
+      updated.completionType === PhaseCompletionType.AUTO_UPLOAD &&
+      updated.status !== 'COMPLETED'
+    ) {
+      return this.lifecycle.completePhase(
+        instanceId,
+        phaseId,
+        organizationId,
+      );
+    }
+
+    return updated;
+  }
+
+  async addPhase(
+    instanceId: string,
+    organizationId: string,
+    data: {
+      name: string;
+      description?: string;
+      orderIndex: number;
+      durationWeeks: number;
+      completionType?: PhaseCompletionType;
+    },
+  ) {
+    const instance = await db.timelineInstance.findUnique({
+      where: { id: instanceId, organizationId },
+    });
+
+    if (!instance) {
+      throw new NotFoundException('Timeline instance not found');
+    }
+
+    return db.$transaction(async (tx) => {
+      // Shift existing phases at or after the new orderIndex
+      await tx.timelinePhase.updateMany({
+        where: {
+          instanceId,
+          orderIndex: { gte: data.orderIndex },
+        },
+        data: { orderIndex: { increment: 1 } },
+      });
+
+      return tx.timelinePhase.create({
+        data: {
+          instanceId,
+          name: data.name,
+          description: data.description,
+          orderIndex: data.orderIndex,
+          durationWeeks: data.durationWeeks,
+          completionType: data.completionType ?? PhaseCompletionType.MANUAL,
+        },
+      });
+    });
+  }
+
+  async removePhase(
+    instanceId: string,
+    phaseId: string,
+    organizationId: string,
+  ) {
+    const instance = await db.timelineInstance.findUnique({
+      where: { id: instanceId, organizationId },
+      include: { phases: { orderBy: { orderIndex: 'asc' } } },
+    });
+
+    if (!instance) {
+      throw new NotFoundException('Timeline instance not found');
+    }
+
+    const phase = instance.phases.find((p) => p.id === phaseId);
+    if (!phase) {
+      throw new NotFoundException('Phase not found');
+    }
+
+    return db.$transaction(async (tx) => {
+      await tx.timelinePhase.delete({ where: { id: phaseId } });
+
+      // Re-index remaining phases
+      const remaining = instance.phases
+        .filter((p) => p.id !== phaseId)
+        .sort((a, b) => a.orderIndex - b.orderIndex);
+
+      for (let i = 0; i < remaining.length; i++) {
+        if (remaining[i].orderIndex !== i) {
+          await tx.timelinePhase.update({
+            where: { id: remaining[i].id },
+            data: { orderIndex: i },
+          });
+        }
+      }
+
+      return { success: true };
+    });
+  }
+}

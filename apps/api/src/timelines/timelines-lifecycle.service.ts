@@ -1,0 +1,215 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { db, TimelineStatus, TimelinePhaseStatus } from '@db';
+import { recalculatePhaseDates } from './timelines-date.helper';
+
+/** Shared Prisma include for timeline instance queries. */
+const INSTANCE_INCLUDE = {
+  phases: { orderBy: { orderIndex: 'asc' } as const },
+  frameworkInstance: { include: { framework: true } },
+  template: true,
+};
+
+@Injectable()
+export class TimelinesLifecycleService {
+  async activate(id: string, organizationId: string, startDate: Date) {
+    const instance = await db.timelineInstance.findUnique({
+      where: { id, organizationId },
+      include: { phases: { orderBy: { orderIndex: 'asc' } } },
+    });
+
+    if (!instance) {
+      throw new NotFoundException('Timeline instance not found');
+    }
+
+    if (instance.status !== TimelineStatus.DRAFT) {
+      throw new BadRequestException('Only draft timelines can be activated');
+    }
+
+    const recalculated = recalculatePhaseDates(instance.phases, startDate);
+
+    return db.$transaction(async (tx) => {
+      for (const phase of recalculated) {
+        const isFirst = phase.orderIndex === recalculated[0].orderIndex;
+        await tx.timelinePhase.update({
+          where: { id: phase.id },
+          data: {
+            startDate: phase.startDate,
+            endDate: phase.endDate,
+            status: isFirst
+              ? TimelinePhaseStatus.IN_PROGRESS
+              : TimelinePhaseStatus.PENDING,
+          },
+        });
+      }
+
+      return tx.timelineInstance.update({
+        where: { id },
+        data: { startDate, status: TimelineStatus.ACTIVE },
+        include: INSTANCE_INCLUDE,
+      });
+    });
+  }
+
+  async pause(id: string, organizationId: string) {
+    const instance = await db.timelineInstance.findUnique({
+      where: { id, organizationId },
+    });
+
+    if (!instance) {
+      throw new NotFoundException('Timeline instance not found');
+    }
+
+    if (instance.status !== TimelineStatus.ACTIVE) {
+      throw new BadRequestException('Only active timelines can be paused');
+    }
+
+    return db.timelineInstance.update({
+      where: { id },
+      data: { status: TimelineStatus.PAUSED, pausedAt: new Date() },
+      include: INSTANCE_INCLUDE,
+    });
+  }
+
+  async resume(id: string, organizationId: string) {
+    const instance = await db.timelineInstance.findUnique({
+      where: { id, organizationId },
+      include: { phases: { orderBy: { orderIndex: 'asc' } } },
+    });
+
+    if (!instance) {
+      throw new NotFoundException('Timeline instance not found');
+    }
+
+    if (instance.status !== TimelineStatus.PAUSED) {
+      throw new BadRequestException('Only paused timelines can be resumed');
+    }
+
+    const pausedAt = instance.pausedAt;
+    if (!pausedAt) {
+      throw new BadRequestException('Timeline has no pause timestamp');
+    }
+
+    const pauseDurationMs = Date.now() - pausedAt.getTime();
+
+    return db.$transaction(async (tx) => {
+      for (const phase of instance.phases) {
+        if (phase.datesPinned) continue;
+        if (phase.status === TimelinePhaseStatus.COMPLETED) continue;
+        if (!phase.startDate || !phase.endDate) continue;
+
+        await tx.timelinePhase.update({
+          where: { id: phase.id },
+          data: {
+            startDate: new Date(phase.startDate.getTime() + pauseDurationMs),
+            endDate: new Date(phase.endDate.getTime() + pauseDurationMs),
+          },
+        });
+      }
+
+      return tx.timelineInstance.update({
+        where: { id },
+        data: { status: TimelineStatus.ACTIVE, pausedAt: null },
+        include: INSTANCE_INCLUDE,
+      });
+    });
+  }
+
+  async completePhase(
+    instanceId: string,
+    phaseId: string,
+    organizationId: string,
+    userId?: string,
+  ) {
+    const instance = await db.timelineInstance.findUnique({
+      where: { id: instanceId, organizationId },
+      include: { phases: { orderBy: { orderIndex: 'asc' } } },
+    });
+
+    if (!instance) {
+      throw new NotFoundException('Timeline instance not found');
+    }
+
+    const phase = instance.phases.find((p) => p.id === phaseId);
+    if (!phase) {
+      throw new NotFoundException('Phase not found');
+    }
+
+    if (phase.status === TimelinePhaseStatus.COMPLETED) {
+      throw new BadRequestException('Phase is already completed');
+    }
+
+    return db.$transaction(async (tx) => {
+      await tx.timelinePhase.update({
+        where: { id: phaseId },
+        data: {
+          status: TimelinePhaseStatus.COMPLETED,
+          completedAt: new Date(),
+          completedById: userId ?? null,
+        },
+      });
+
+      // Advance next pending phase to IN_PROGRESS
+      const nextPhase = instance.phases.find(
+        (p) =>
+          p.orderIndex > phase.orderIndex &&
+          p.status === TimelinePhaseStatus.PENDING,
+      );
+
+      if (nextPhase) {
+        await tx.timelinePhase.update({
+          where: { id: nextPhase.id },
+          data: { status: TimelinePhaseStatus.IN_PROGRESS },
+        });
+
+        // Recalculate downstream dates
+        if (instance.startDate) {
+          const allPhases = await tx.timelinePhase.findMany({
+            where: { instanceId },
+            orderBy: { orderIndex: 'asc' },
+          });
+
+          const recalculated = recalculatePhaseDates(
+            allPhases,
+            instance.startDate,
+          );
+
+          for (const rp of recalculated) {
+            if (rp.orderIndex <= phase.orderIndex) continue;
+            await tx.timelinePhase.update({
+              where: { id: rp.id },
+              data: { startDate: rp.startDate, endDate: rp.endDate },
+            });
+          }
+        }
+      }
+
+      // Check if all phases are now completed
+      const remainingPending = await tx.timelinePhase.count({
+        where: {
+          instanceId,
+          status: { not: TimelinePhaseStatus.COMPLETED },
+          id: { not: phaseId },
+        },
+      });
+
+      if (remainingPending === 0) {
+        await tx.timelineInstance.update({
+          where: { id: instanceId },
+          data: {
+            status: TimelineStatus.COMPLETED,
+            completedAt: new Date(),
+          },
+        });
+      }
+
+      return tx.timelineInstance.findUnique({
+        where: { id: instanceId },
+        include: INSTANCE_INCLUDE,
+      });
+    });
+  }
+}
