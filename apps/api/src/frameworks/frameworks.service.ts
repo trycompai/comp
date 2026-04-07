@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { db, type EvidenceFormType } from '@db';
@@ -10,9 +11,17 @@ import {
   computeFrameworkComplianceScore,
 } from './frameworks-scores.helper';
 import { upsertOrgFrameworkStructure } from './frameworks-upsert.helper';
+import {
+  checkAutoCompletePhases,
+  createTimelinesForFrameworks,
+} from './frameworks-timeline.helper';
+import { TimelinesService } from '../timelines/timelines.service';
 
 @Injectable()
 export class FrameworksService {
+  private readonly logger = new Logger(FrameworksService.name);
+
+  constructor(private readonly timelinesService: TimelinesService) {}
   async findAll(
     organizationId: string,
     options?: { includeControls?: boolean; includeScores?: boolean },
@@ -178,6 +187,15 @@ export class FrameworksService {
       getOverviewScores(organizationId),
       userId ? getCurrentMember(organizationId, userId) : Promise.resolve(null),
     ]);
+
+    // Fire-and-forget: auto-complete timeline phases when tasks hit 100%
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('Auto-complete phase check failed', err);
+    });
+
     return { ...scores, currentMember };
   }
 
@@ -206,10 +224,17 @@ export class FrameworksService {
         tx,
       });
 
-      return { success: true, frameworksAdded: finalIds.length };
+      return { success: true, frameworksAdded: finalIds.length, finalIds };
     });
 
-    return result;
+    // Auto-create timeline instances from templates for newly added frameworks
+    await createTimelinesForFrameworks({
+      organizationId,
+      frameworkEditorIds: result.finalIds,
+      timelinesService: this.timelinesService,
+    });
+
+    return { success: result.success, frameworksAdded: result.frameworksAdded };
   }
 
   async findRequirement(
