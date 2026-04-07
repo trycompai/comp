@@ -195,8 +195,8 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         completionType: PhaseCompletionType.MANUAL,
       },
       {
-        name: 'Certification',
-        description: 'Certification/report delivered.',
+        name: 'Attestation',
+        description: 'Attestation report delivered.',
         orderIndex: 2,
         defaultDurationWeeks: 1,
         completionType: PhaseCompletionType.AUTO_UPLOAD,
@@ -227,8 +227,8 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         completionType: PhaseCompletionType.MANUAL,
       },
       {
-        name: 'Certification',
-        description: 'Certification/report delivered.',
+        name: 'Attestation',
+        description: 'Attestation report delivered.',
         orderIndex: 2,
         defaultDurationWeeks: 1,
         completionType: PhaseCompletionType.AUTO_UPLOAD,
