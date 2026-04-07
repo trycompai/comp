@@ -1,0 +1,133 @@
+'use client';
+
+import { apiClient } from '@/lib/api-client';
+import useSWR from 'swr';
+
+interface AdminTimelinePhaseTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  durationWeeks: number;
+  orderIndex: number;
+}
+
+interface AdminTimelineTemplate {
+  id: string;
+  frameworkId: string;
+  name: string;
+  description: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+  phases: AdminTimelinePhaseTemplate[];
+  framework?: {
+    id: string;
+    name: string;
+  };
+}
+
+interface AdminTimelineTemplatesApiResponse {
+  data: AdminTimelineTemplate[];
+  count: number;
+}
+
+interface AdminOrgTimeline {
+  id: string;
+  organizationId: string;
+  frameworkInstanceId: string;
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  startDate: string;
+  estimatedEndDate: string;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  phases: {
+    id: string;
+    name: string;
+    description: string | null;
+    status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+    durationWeeks: number;
+    orderIndex: number;
+    startDate: string | null;
+    endDate: string | null;
+    completedAt: string | null;
+  }[];
+  frameworkInstance?: {
+    id: string;
+    framework: {
+      id: string;
+      name: string;
+    };
+  };
+}
+
+interface AdminOrgTimelinesApiResponse {
+  data: AdminOrgTimeline[];
+  count: number;
+}
+
+export const adminTimelineTemplatesKey = () =>
+  ['/v1/admin/timeline-templates'] as const;
+
+export const adminOrgTimelinesKey = (orgId: string) =>
+  ['/v1/admin/organizations', orgId, 'timelines'] as const;
+
+export function useAdminTimelineTemplates() {
+  const { data, error, isLoading, mutate } = useSWR(
+    adminTimelineTemplatesKey(),
+    async () => {
+      const response =
+        await apiClient.get<AdminTimelineTemplatesApiResponse>(
+          '/v1/admin/timeline-templates',
+        );
+      if (response.error) throw new Error(response.error);
+      if (!response.data?.data) return [];
+      return response.data.data;
+    },
+    {
+      revalidateOnFocus: false,
+    },
+  );
+
+  const templates = Array.isArray(data) ? data : [];
+
+  return {
+    templates,
+    isLoading: isLoading && !data,
+    error,
+    mutate,
+  };
+}
+
+export function useAdminOrgTimelines(orgId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    orgId ? adminOrgTimelinesKey(orgId) : null,
+    async () => {
+      const response =
+        await apiClient.get<AdminOrgTimelinesApiResponse>(
+          `/v1/admin/organizations/${orgId}/timelines`,
+        );
+      if (response.error) throw new Error(response.error);
+      if (!response.data?.data) return [];
+      return response.data.data;
+    },
+    {
+      revalidateOnFocus: false,
+    },
+  );
+
+  const timelines = Array.isArray(data) ? data : [];
+
+  return {
+    timelines,
+    isLoading: isLoading && !data,
+    error,
+    mutate,
+  };
+}
+
+export type {
+  AdminTimelineTemplate,
+  AdminTimelinePhaseTemplate,
+  AdminOrgTimeline,
+};
