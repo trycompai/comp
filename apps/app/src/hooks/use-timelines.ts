@@ -13,6 +13,9 @@ interface TimelinePhase {
   startDate: string | null;
   endDate: string | null;
   completedAt: string | null;
+  completionType: 'AUTO_TASKS' | 'AUTO_UPLOAD' | 'MANUAL';
+  readyForReview: boolean;
+  readyForReviewAt: string | null;
 }
 
 interface Timeline {
