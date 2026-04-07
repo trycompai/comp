@@ -63,6 +63,37 @@ function createEmptyMatrixRow(columns: ReadonlyArray<MatrixColumnDefinition>): M
   return Object.fromEntries(columns.map((column) => [column.key, '']));
 }
 
+function buildFileAcceptMap(accept?: string): Record<string, string[]> {
+  if (!accept) {
+    return { 'application/pdf': [], 'image/*': [], 'text/*': [] };
+  }
+
+  return Object.fromEntries(
+    accept
+      .split(',')
+      .map((ext): [string, string[]] | null => {
+        const trimmed = ext.trim().toLowerCase();
+        if (trimmed === '.pdf') return ['application/pdf', []];
+        if (trimmed === '.doc') return ['application/msword', []];
+        if (trimmed === '.docx') {
+          return ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', []];
+        }
+        if (trimmed === '.png') return ['image/png', []];
+        if (trimmed === '.jpg' || trimmed === '.jpeg') return ['image/jpeg', []];
+        if (trimmed === '.txt') return ['text/plain', []];
+        if (trimmed === '.svg') return ['image/svg+xml', []];
+        if (trimmed === '.vsdx') return ['application/vnd.visio', []];
+        if (trimmed === '.csv') return ['text/csv', []];
+        if (trimmed === '.xlsx') {
+          return ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', []];
+        }
+        if (trimmed === '.xls') return ['application/vnd.ms-excel', []];
+        return null;
+      })
+      .filter((entry): entry is [string, string[]] => entry !== null),
+  );
+}
+
 export function CompanySubmissionWizard({
   organizationId,
   formType,
@@ -251,6 +282,15 @@ export function CompanySubmissionWizard({
 
   const validateRequiredMatrixCells = () => {
     for (const field of matrixFields) {
+      if (field.key === 'matrixRows') {
+        const matrixFileValue = getValues('matrixFile' as never);
+        const hasMatrixFile =
+          typeof matrixFileValue === 'object' &&
+          matrixFileValue !== null &&
+          'fileName' in matrixFileValue;
+        if (hasMatrixFile) continue;
+      }
+
       const rows = normalizeMatrixRows(getValues(field.key as never));
       const rowValues = rows.length > 0 ? rows : [createEmptyMatrixRow(field.columns)];
 
@@ -649,46 +689,7 @@ export function CompanySubmissionWizard({
                             <FileUploader
                               maxFileCount={1}
                               maxSize={100 * 1024 * 1024}
-                              accept={
-                                field.accept
-                                  ? Object.fromEntries(
-                                      field.accept
-                                        .split(',')
-                                        .map((ext): [string, string[]] | null => {
-                                          const trimmed = ext.trim().toLowerCase();
-                                          if (trimmed === '.pdf') return ['application/pdf', []];
-                                          if (trimmed === '.doc') return ['application/msword', []];
-                                          if (trimmed === '.docx') {
-                                            return [
-                                              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                              [],
-                                            ];
-                                          }
-                                          if (trimmed === '.png') return ['image/png', []];
-                                          if (trimmed === '.jpg' || trimmed === '.jpeg') {
-                                            return ['image/jpeg', []];
-                                          }
-                                          if (trimmed === '.txt') return ['text/plain', []];
-                                          if (trimmed === '.svg') return ['image/svg+xml', []];
-                                          if (trimmed === '.vsdx')
-                                            return ['application/vnd.visio', []];
-                                          if (trimmed === '.csv') return ['text/csv', []];
-                                          if (trimmed === '.xlsx') {
-                                            return [
-                                              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                              [],
-                                            ];
-                                          }
-                                          if (trimmed === '.xls')
-                                            return ['application/vnd.ms-excel', []];
-                                          return null;
-                                        })
-                                        .filter(
-                                          (entry): entry is [string, string[]] => entry !== null,
-                                        ),
-                                    )
-                                  : { 'application/pdf': [], 'image/*': [], 'text/*': [] }
-                              }
+                              accept={buildFileAcceptMap(field.accept)}
                               disabled={uploadingField === field.key}
                               onUpload={async (files) => {
                                 const file = files[0];
@@ -817,34 +818,7 @@ export function CompanySubmissionWizard({
                       <FileUploader
                         maxFileCount={1}
                         maxSize={100 * 1024 * 1024}
-                        accept={
-                          field.accept
-                            ? Object.fromEntries(
-                                field.accept
-                                  .split(',')
-                                  .map((ext): [string, string[]] | null => {
-                                    const trimmed = ext.trim().toLowerCase();
-                                    if (trimmed === '.pdf') return ['application/pdf', []];
-                                    if (trimmed === '.doc') return ['application/msword', []];
-                                    if (trimmed === '.docx') {
-                                      return [
-                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                        [],
-                                      ];
-                                    }
-                                    if (trimmed === '.png') return ['image/png', []];
-                                    if (trimmed === '.jpg' || trimmed === '.jpeg') {
-                                      return ['image/jpeg', []];
-                                    }
-                                    if (trimmed === '.txt') return ['text/plain', []];
-                                    if (trimmed === '.svg') return ['image/svg+xml', []];
-                                    if (trimmed === '.vsdx') return ['application/vnd.visio', []];
-                                    return null;
-                                  })
-                                  .filter((entry): entry is [string, string[]] => entry !== null),
-                              )
-                            : { 'application/pdf': [], 'image/*': [], 'text/*': [] }
-                        }
+                        accept={buildFileAcceptMap(field.accept)}
                         disabled={uploadingField === field.key}
                         onUpload={async (files) => {
                           const file = files[0];

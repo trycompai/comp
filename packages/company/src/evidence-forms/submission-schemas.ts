@@ -58,10 +58,54 @@ const rbacMatrixRowSchema = z.object({
   lastReviewed: requiredTrimmed('Last reviewed'),
 });
 
-const rbacMatrixDataSchema = z.object({
-  submissionDate: required('Submission date'),
-  matrixRows: z.array(rbacMatrixRowSchema).min(1, 'At least one RBAC entry is required'),
+const optionalRbacMatrixRowSchema = z.object({
+  system: z.string().trim().optional(),
+  roleName: z.string().trim().optional(),
+  permissionsScope: z.string().trim().optional(),
+  approvedBy: z.string().trim().optional(),
+  lastReviewed: z.string().trim().optional(),
 });
+
+const rbacMatrixDataSchema = z
+  .object({
+    submissionDate: required('Submission date'),
+    matrixRows: z.array(optionalRbacMatrixRowSchema).optional(),
+    matrixFile: evidenceFormFileSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.matrixFile) return;
+
+    const rows = data.matrixRows ?? [];
+    const nonEmptyRows = rows.filter((row) =>
+      Object.values(row).some((value) => typeof value === 'string' && value.trim().length > 0),
+    );
+
+    if (nonEmptyRows.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'At least one RBAC entry is required',
+        path: ['matrixRows'],
+      });
+      return;
+    }
+
+    rows.forEach((row, rowIndex) => {
+      const hasAnyValue = Object.values(row).some(
+        (value) => typeof value === 'string' && value.trim().length > 0,
+      );
+      if (!hasAnyValue) return;
+
+      const parsedRow = rbacMatrixRowSchema.safeParse(row);
+      if (parsedRow.success) return;
+
+      parsedRow.error.issues.forEach((issue) => {
+        ctx.addIssue({
+          ...issue,
+          path: ['matrixRows', rowIndex, ...issue.path],
+        });
+      });
+    });
+  });
 
 const infrastructureInventoryRowSchema = z.object({
   assetId: requiredTrimmed('Asset ID'),
