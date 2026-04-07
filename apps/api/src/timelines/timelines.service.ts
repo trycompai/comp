@@ -21,6 +21,9 @@ export class TimelinesService {
   // ---------------------------------------------------------------------------
 
   async findAllForOrganization(organizationId: string) {
+    // Ensure timelines exist for all framework instances in this org
+    await this.ensureTimelinesExist(organizationId);
+
     return db.timelineInstance.findMany({
       where: { organizationId },
       include: {
@@ -29,6 +32,38 @@ export class TimelinesService {
         template: true,
       },
     });
+  }
+
+  /**
+   * Auto-create DRAFT timelines for any framework instances that don't have one yet.
+   * This handles existing orgs that had frameworks before the timeline feature shipped.
+   */
+  private async ensureTimelinesExist(organizationId: string) {
+    const frameworkInstances = await db.frameworkInstance.findMany({
+      where: { organizationId },
+      include: { framework: true, timelineInstances: { select: { id: true } } },
+    });
+
+    for (const fi of frameworkInstances) {
+      if (fi.timelineInstances.length > 0) continue;
+      try {
+        const template = await resolveTemplate(
+          fi.frameworkId,
+          fi.framework.name,
+          1,
+        );
+        if (template) {
+          await createInstanceFromTemplate({
+            organizationId,
+            frameworkInstanceId: fi.id,
+            cycleNumber: 1,
+            template,
+          });
+        }
+      } catch {
+        // Non-blocking — don't fail the list if one timeline can't be created
+      }
+    }
   }
 
   async findOne(id: string, organizationId: string) {
