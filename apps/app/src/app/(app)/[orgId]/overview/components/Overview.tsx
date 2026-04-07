@@ -2,9 +2,11 @@
 
 import { Finding, FrameworkEditorFramework, Policy, Task } from '@db';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
+import type { Timeline } from '@/hooks/use-timelines';
 import { ComplianceOverview } from './ComplianceOverview';
 import { FindingsOverview } from './FindingsOverview';
 import { FrameworksOverview } from './FrameworksOverview';
+import { TimelineOverview } from './TimelineOverview';
 import { ToDoOverview } from './ToDoOverview';
 import { FrameworkInstanceWithComplianceScore } from './types';
 
@@ -56,6 +58,7 @@ export interface OverviewProps {
   currentMember: { id: string; role: string } | null;
   onboardingTriggerJobId: string | null;
   findings: FindingWithTarget[];
+  timelines: Timeline[];
 }
 
 export const Overview = ({
@@ -70,6 +73,7 @@ export const Overview = ({
   currentMember,
   onboardingTriggerJobId,
   findings,
+  timelines,
 }: OverviewProps) => {
   const overallComplianceScore = calculateOverallComplianceScore({
     publishedPolicies: publishedPoliciesScore.publishedPolicies,
@@ -83,8 +87,10 @@ export const Overview = ({
   });
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      <ComplianceOverview
+    <div className="flex flex-col gap-6">
+      <TimelineOverview initialData={timelines} />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <ComplianceOverview
         organizationId={organizationId}
         overallComplianceScore={overallComplianceScore}
         totalPolicies={publishedPoliciesScore.totalPolicies}
@@ -118,6 +124,7 @@ export const Overview = ({
         onboardingTriggerJobId={onboardingTriggerJobId}
       />
       <FindingsOverview findings={findings} organizationId={organizationId} />
+      </div>
     </div>
   );
 };

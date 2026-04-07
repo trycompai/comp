@@ -19,9 +19,11 @@ interface Timeline {
   id: string;
   organizationId: string;
   frameworkInstanceId: string;
-  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
-  startDate: string;
-  estimatedEndDate: string;
+  templateId: string;
+  cycleNumber: number;
+  status: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
+  startDate: string | null;
+  pausedAt: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -32,6 +34,11 @@ interface Timeline {
       id: string;
       name: string;
     };
+  };
+  template?: {
+    id: string;
+    name: string;
+    cycleNumber: number;
   };
 }
 

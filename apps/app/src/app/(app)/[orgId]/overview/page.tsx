@@ -3,6 +3,7 @@ import type { FrameworkEditorFramework, Policy, Task } from '@db';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { Overview, type FindingWithTarget } from './components/Overview';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
+import type { Timeline } from '@/hooks/use-timelines';
 
 export async function generateMetadata() {
   return { title: 'Overview' };
@@ -33,15 +34,17 @@ interface ScoresResponse {
 export default async function OverviewPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId: organizationId } = await params;
 
-  const [scoresRes, frameworksRes, availableRes] = await Promise.all([
+  const [scoresRes, frameworksRes, availableRes, timelinesRes] = await Promise.all([
     serverApi.get<ScoresResponse>('/v1/frameworks/scores'),
     serverApi.get<{ data: FrameworkWithScore[] }>('/v1/frameworks?includeControls=true&includeScores=true'),
     serverApi.get<{ data: FrameworkEditorFramework[] }>('/v1/frameworks/available'),
+    serverApi.get<{ data: Timeline[]; count: number }>('/v1/timelines'),
   ]);
 
   const scores = scoresRes.data;
   const frameworksData = frameworksRes.data?.data ?? [];
   const allFrameworks = availableRes.data?.data ?? [];
+  const timelines = timelinesRes.data?.data ?? [];
 
   const frameworksWithControls = frameworksData.map(
     ({ complianceScore: _score, ...fw }: FrameworkWithScore) => fw,
@@ -82,6 +85,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ orgId
         currentMember={scores?.currentMember ?? null}
         onboardingTriggerJobId={scores?.onboardingTriggerJobId ?? null}
         findings={scores?.findings ?? []}
+        timelines={timelines}
       />
     </PageLayout>
   );
