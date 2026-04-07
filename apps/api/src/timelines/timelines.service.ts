@@ -4,11 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db, TimelinePhaseStatus } from '@db';
+import { TimelinesLifecycleService } from './timelines-lifecycle.service';
+import { backfillTimeline } from './timelines-backfill.helper';
 import {
   resolveTemplate,
   createInstanceFromTemplate,
 } from './timelines-template-resolver';
-import { TimelinesLifecycleService } from './timelines-lifecycle.service';
 
 @Injectable()
 export class TimelinesService {
@@ -35,8 +36,9 @@ export class TimelinesService {
   }
 
   /**
-   * Auto-create DRAFT timelines for any framework instances that don't have one yet.
-   * This handles existing orgs that had frameworks before the timeline feature shipped.
+   * Auto-create timelines for any framework instances that don't have one yet.
+   * Uses smart backfill: infers timeline state from Trust status, compliance
+   * scores, and task completion data for existing orgs.
    */
   private async ensureTimelinesExist(organizationId: string) {
     const frameworkInstances = await db.frameworkInstance.findMany({
@@ -47,19 +49,10 @@ export class TimelinesService {
     for (const fi of frameworkInstances) {
       if (fi.timelineInstances.length > 0) continue;
       try {
-        const template = await resolveTemplate(
-          fi.frameworkId,
-          fi.framework.name,
-          1,
-        );
-        if (template) {
-          await createInstanceFromTemplate({
-            organizationId,
-            frameworkInstanceId: fi.id,
-            cycleNumber: 1,
-            template,
-          });
-        }
+        await backfillTimeline({
+          organizationId,
+          frameworkInstance: fi,
+        });
       } catch {
         // Non-blocking — don't fail the list if one timeline can't be created
       }
