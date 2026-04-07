@@ -1,4 +1,4 @@
-import { logger, metadata, task } from '@trigger.dev/sdk';
+import { logger, metadata, tags, task } from '@trigger.dev/sdk';
 import { db } from '@db';
 import { deleteManualAnswerTask } from './delete-manual-answer';
 
@@ -17,6 +17,8 @@ export const deleteAllManualAnswersOrchestratorTask = task({
     organizationId: string;
     manualAnswerIds?: string[]; // Optional: IDs passed directly to avoid race condition
   }) => {
+    await tags.add([`org:${payload.organizationId}`]);
+
     logger.info('Starting delete all manual answers from vector DB', {
       organizationId: payload.organizationId,
       manualAnswerIdsProvided: !!payload.manualAnswerIds,

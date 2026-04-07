@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { logger, task } from '@trigger.dev/sdk';
+import { logger, tags, task } from '@trigger.dev/sdk';
 
 /**
  * Trigger task that runs a cloud security scan for a single connection.
@@ -19,6 +19,8 @@ export const runCloudSecurityScan = task({
   }) => {
     const { connectionId, organizationId, providerSlug, connectionName } =
       payload;
+
+    await tags.add([`org:${organizationId}`]);
 
     logger.info(
       `Starting cloud security scan for connection: ${connectionName}`,

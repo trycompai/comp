@@ -292,7 +292,7 @@ export async function extractVendorsFromContext(
       additionalProperties: false,
     }),
     system:
-      'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact.',
+      'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact. IMPORTANT: Always use the parent company name, not the product name (e.g. "Anthropic" not "Claude", "OpenAI" not "ChatGPT", "Alphabet" is acceptable as "Google", "Meta" is acceptable as "Meta").',
     prompt: questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n'),
   });
 

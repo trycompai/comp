@@ -1,7 +1,7 @@
 import { extractS3KeyFromUrl } from '@/app/s3';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { db } from '@db';
-import { logger, task } from '@trigger.dev/sdk';
+import { logger, tags, task } from '@trigger.dev/sdk';
 
 // Import shared utilities
 import {
@@ -252,6 +252,8 @@ export const parseQuestionnaireTask = task({
     s3Key?: string;
   }) => {
     const taskStartTime = Date.now();
+
+    await tags.add([`org:${payload.organizationId}`]);
 
     logger.info('Starting parse questionnaire task', {
       inputType: payload.inputType,

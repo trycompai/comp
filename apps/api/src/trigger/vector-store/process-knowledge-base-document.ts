@@ -1,4 +1,4 @@
-import { logger, task } from '@trigger.dev/sdk';
+import { logger, tags, task } from '@trigger.dev/sdk';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { db } from '@db';
 import { batchUpsertEmbeddings } from '@/vector-store/lib/core/upsert-embedding';
@@ -86,6 +86,8 @@ export const processKnowledgeBaseDocumentTask = task({
   },
   maxDuration: 1000 * 60 * 30, // 30 minutes for large files
   run: async (payload: { documentId: string; organizationId: string }) => {
+    await tags.add([`org:${payload.organizationId}`]);
+
     logger.info('Processing Knowledge Base document', {
       documentId: payload.documentId,
       organizationId: payload.organizationId,

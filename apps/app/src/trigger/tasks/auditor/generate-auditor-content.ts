@@ -1,7 +1,7 @@
 import { getOrganizationContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { openai } from '@ai-sdk/openai';
 import { db } from '@db/server';
-import { logger, metadata, schemaTask } from '@trigger.dev/sdk';
+import { logger, metadata, schemaTask, tags } from '@trigger.dev/sdk';
 import { generateText } from 'ai';
 import { z } from 'zod';
 
@@ -299,6 +299,7 @@ export const generateAuditorContentTask = schemaTask({
   },
   run: async (payload) => {
     const { organizationId } = payload;
+    await tags.add([`org:${organizationId}`]);
 
     logger.info(`Starting auditor content generation for org ${organizationId}`);
 

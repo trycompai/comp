@@ -1,6 +1,6 @@
 import { trainingVideos } from '@/lib/data/training-videos';
 import { db } from '@db/server';
-import { logger, task } from '@trigger.dev/sdk';
+import { logger, tags, task } from '@trigger.dev/sdk';
 
 export const backfillTrainingVideosForOrg = task({
   id: 'backfill-training-videos-for-org',
@@ -9,6 +9,7 @@ export const backfillTrainingVideosForOrg = task({
   },
   run: async (payload: { organizationId: string }) => {
     logger.info(`Starting training video backfill for organization ${payload.organizationId}`);
+    await tags.add([`org:${payload.organizationId}`]);
 
     try {
       // Get all members for this organization

@@ -1,4 +1,4 @@
-import { logger, task } from '@trigger.dev/sdk';
+import { logger, tags, task } from '@trigger.dev/sdk';
 import { findEmbeddingsForSource } from '@/vector-store/lib/core/find-existing-embeddings';
 import { vectorIndex } from '@/vector-store/lib/core/client';
 import { db } from '@db';
@@ -12,6 +12,8 @@ export const deleteKnowledgeBaseDocumentTask = task({
     maxAttempts: 3,
   },
   run: async (payload: { documentId: string; organizationId: string }) => {
+    await tags.add([`org:${payload.organizationId}`]);
+
     logger.info('Deleting Knowledge Base document from vector DB', {
       documentId: payload.documentId,
       organizationId: payload.organizationId,

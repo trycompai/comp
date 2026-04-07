@@ -1,4 +1,4 @@
-import { logger, task } from '@trigger.dev/sdk';
+import { logger, tags, task } from '@trigger.dev/sdk';
 import { deleteManualAnswerFromVector } from '@/vector-store/lib/sync/sync-manual-answer';
 
 /**
@@ -11,6 +11,8 @@ export const deleteManualAnswerTask = task({
     maxAttempts: 3,
   },
   run: async (payload: { manualAnswerId: string; organizationId: string }) => {
+    await tags.add([`org:${payload.organizationId}`]);
+
     logger.info('Deleting manual answer from vector DB', {
       manualAnswerId: payload.manualAnswerId,
       organizationId: payload.organizationId,

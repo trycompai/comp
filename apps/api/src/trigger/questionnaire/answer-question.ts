@@ -1,5 +1,5 @@
 import { syncOrganizationEmbeddings } from '@/vector-store/lib';
-import { logger, metadata, task } from '@trigger.dev/sdk';
+import { logger, metadata, tags, task } from '@trigger.dev/sdk';
 import { generateAnswerWithRAG } from './answer-question-helpers';
 
 export interface AnswerQuestionPayload {
@@ -177,6 +177,8 @@ export const answerQuestionTask = task({
     questionIndex: number;
     totalQuestions: number;
   }) => {
+    await tags.add([`org:${payload.organizationId}`]);
+
     return await answerQuestion(payload);
   },
 });

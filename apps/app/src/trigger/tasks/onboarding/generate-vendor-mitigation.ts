@@ -1,5 +1,5 @@
 import { VendorStatus, db } from '@db/server';
-import { logger, metadata, queue, task } from '@trigger.dev/sdk';
+import { logger, metadata, queue, tags, task } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
   createVendorRiskComment,
@@ -27,6 +27,7 @@ export const generateVendorMitigation = task({
     policies: PolicyContext[];
   }) => {
     const { organizationId, vendorId, authorId, policies } = payload;
+    await tags.add([`org:${organizationId}`]);
     logger.info(`Generating vendor mitigation for vendor ${vendorId} in org ${organizationId}`);
 
     const vendor = await db.vendor.findFirst({ where: { id: vendorId, organizationId } });
@@ -85,6 +86,7 @@ export const generateVendorMitigationsForOrg = task({
   queue: vendorMitigationFanoutQueue,
   run: async (payload: { organizationId: string }) => {
     const { organizationId } = payload;
+    await tags.add([`org:${organizationId}`]);
     logger.info(`Fan-out vendor mitigations for org ${organizationId}`);
 
     const [vendors, policyRows, author] = await Promise.all([
