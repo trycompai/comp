@@ -241,7 +241,8 @@ function TimelineActions({
     >
       Resume
     </Button>
-  );
+    );
+  }
 
   // COMPLETED — no actions
   return null;
