@@ -4,24 +4,14 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import type { AdminOrgTimeline } from '@/hooks/use-admin-timelines';
-import {
-  Badge,
-  Button,
-  Section,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Text,
-} from '@trycompai/design-system';
+import { Badge, Button, Section } from '@trycompai/design-system';
 import {
   Checkmark,
   CircleDash,
   InProgress,
   Pause,
   Play,
+  Edit,
 } from '@trycompai/design-system/icons';
 import { TimelinePhaseBar } from '@/app/(app)/[orgId]/overview/components/TimelinePhaseBar';
 import { TimelineActivateForm } from './TimelineActivateForm';
@@ -44,12 +34,6 @@ function formatDate(date: string | null): string {
     day: 'numeric',
     year: 'numeric',
   });
-}
-
-function PhaseStatusIcon({ status }: { status: string }) {
-  if (status === 'COMPLETED') return <Checkmark size={16} className="text-green-500" />;
-  if (status === 'IN_PROGRESS') return <InProgress size={16} className="text-blue-500" />;
-  return <CircleDash size={16} className="text-zinc-500" />;
 }
 
 interface TimelineCardProps {
@@ -115,65 +99,20 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
       }
     >
       <div className="pb-3">
-        <TimelinePhaseBar phases={sortedPhases} />
+        <TimelinePhaseBar phases={sortedPhases} showDates />
       </div>
 
-      <div className="flex items-center gap-4 pb-3 text-xs text-muted-foreground">
-        <span>Start: {formatDate(timeline.startDate)}</span>
-        <span>Est. end: {formatDate(timeline.estimatedEndDate)}</span>
-        {timeline.completedAt && (
-          <span>Completed: {formatDate(timeline.completedAt)}</span>
-        )}
+      {/* Phase cards stack */}
+      <div className="flex flex-col gap-2">
+        {sortedPhases.map((phase) => (
+          <PhaseRow
+            key={phase.id}
+            phase={phase}
+            editable={timeline.status !== 'COMPLETED'}
+            onEdit={() => setEditingPhaseId(phase.id)}
+          />
+        ))}
       </div>
-
-      <Table variant="bordered">
-        <TableHeader>
-          <TableRow>
-            <TableHead />
-            <TableHead>Phase</TableHead>
-            <TableHead>Duration</TableHead>
-            <TableHead>Dates</TableHead>
-            <TableHead>Status</TableHead>
-            {timeline.status !== 'COMPLETED' && <TableHead>Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedPhases.map((phase) => (
-            <TableRow key={phase.id}>
-              <TableCell>
-                <PhaseStatusIcon status={phase.status} />
-              </TableCell>
-              <TableCell>
-                <Text size="sm" weight="medium">{phase.name}</Text>
-              </TableCell>
-              <TableCell>
-                <Text size="sm">{phase.durationWeeks}w</Text>
-              </TableCell>
-              <TableCell>
-                <Text size="xs" variant="muted">
-                  {formatDate(phase.startDate)} - {formatDate(phase.endDate)}
-                </Text>
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline">
-                  {phase.status.replace('_', ' ')}
-                </Badge>
-              </TableCell>
-              {timeline.status !== 'COMPLETED' && (
-                <TableCell>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setEditingPhaseId(phase.id)}
-                  >
-                    Edit
-                  </Button>
-                </TableCell>
-              )}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
 
       {editingPhaseId && (
         <TimelinePhaseEditor
@@ -187,6 +126,58 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
       )}
     </Section>
   );
+}
+
+function PhaseRow({
+  phase,
+  editable,
+  onEdit,
+}: {
+  phase: AdminOrgTimeline['phases'][number];
+  editable: boolean;
+  onEdit: () => void;
+}) {
+  const isCompleted = phase.status === 'COMPLETED';
+  const isActive = phase.status === 'IN_PROGRESS';
+
+  const borderClass = isCompleted
+    ? 'border-primary/30 bg-primary/5'
+    : isActive
+      ? 'border-primary/40 bg-primary/10'
+      : 'border-border bg-muted/20';
+
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${borderClass}`}
+    >
+      <div className="shrink-0">
+        <PhaseStatusIcon status={phase.status} />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className="text-sm font-medium">{phase.name}</span>
+        <span className="text-xs text-muted-foreground">
+          {phase.durationWeeks}w · {formatDate(phase.startDate)} - {formatDate(phase.endDate)}
+        </span>
+      </div>
+      <Badge variant="outline" className="shrink-0 text-[10px]">
+        {phase.status.replace('_', ' ')}
+      </Badge>
+      {editable && (
+        <button
+          onClick={onEdit}
+          className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <Edit size={14} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PhaseStatusIcon({ status }: { status: string }) {
+  if (status === 'COMPLETED') return <Checkmark size={16} className="text-primary" />;
+  if (status === 'IN_PROGRESS') return <InProgress size={16} className="text-primary" />;
+  return <CircleDash size={16} className="text-muted-foreground" />;
 }
 
 function TimelineActions({
@@ -238,12 +229,11 @@ function TimelineActions({
         iconLeft={<Play size={14} />}
         loading={loading}
         onClick={onResume}
-    >
-      Resume
-    </Button>
+      >
+        Resume
+      </Button>
     );
   }
 
-  // COMPLETED — no actions
   return null;
 }
