@@ -12,7 +12,7 @@ import {
   ValidationPipe,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { VendorCategory, VendorStatus } from '@db';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
@@ -26,6 +26,7 @@ interface UpdateVendorBody {
   category?: string;
 }
 
+@ApiExcludeController()
 @ApiTags('Admin - Vendors')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)

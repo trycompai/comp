@@ -12,7 +12,7 @@ import {
   ValidationPipe,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import {
   TaskStatus,
@@ -36,6 +36,7 @@ interface UpdateTaskBody {
   frequency?: string | null;
 }
 
+@ApiExcludeController()
 @ApiTags('Admin - Tasks')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)

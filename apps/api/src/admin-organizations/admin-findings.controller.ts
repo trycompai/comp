@@ -13,7 +13,7 @@ import {
   ValidationPipe,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { FindingStatus } from '@db';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
@@ -23,6 +23,7 @@ import { UpdateFindingDto } from '../findings/dto/update-finding.dto';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
 import type { AdminRequest } from './platform-admin-auth-context';
 
+@ApiExcludeController()
 @ApiTags('Admin - Findings')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)

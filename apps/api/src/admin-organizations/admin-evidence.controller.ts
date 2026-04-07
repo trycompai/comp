@@ -8,7 +8,7 @@ import {
   UseInterceptors,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { EvidenceFormsService } from '../evidence-forms/evidence-forms.service';
@@ -18,6 +18,7 @@ import {
   buildPlatformAdminAuthContext,
 } from './platform-admin-auth-context';
 
+@ApiExcludeController()
 @ApiTags('Admin - Evidence')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)

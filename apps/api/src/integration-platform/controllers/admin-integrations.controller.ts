@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   Req,
 } from '@nestjs/common';
+import { ApiExcludeController } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { PlatformCredentialRepository } from '../repositories/platform-credential.repository';
@@ -27,6 +28,7 @@ interface SavePlatformCredentialDto {
   customSettings?: Record<string, unknown>;
 }
 
+@ApiExcludeController()
 @Controller({ path: 'admin/integrations', version: '1' })
 @UseGuards(PlatformAdminGuard)
 @UseInterceptors(PlatformAuditLogInterceptor)

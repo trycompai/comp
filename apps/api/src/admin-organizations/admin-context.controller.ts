@@ -11,7 +11,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { ContextService } from '../context/context.service';
@@ -19,6 +19,7 @@ import { CreateContextDto } from '../context/dto/create-context.dto';
 import { UpdateContextDto } from '../context/dto/update-context.dto';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
 
+@ApiExcludeController()
 @ApiTags('Admin - Context')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)
