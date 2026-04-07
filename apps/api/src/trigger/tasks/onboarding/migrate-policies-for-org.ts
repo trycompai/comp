@@ -1,5 +1,5 @@
 import { db, PolicyStatus, type Prisma } from '@db';
-import { logger, schemaTask } from '@trigger.dev/sdk';
+import { logger, schemaTask, tags } from '@trigger.dev/sdk';
 import { z } from 'zod';
 
 const POLICY_BATCH_SIZE = 50;
@@ -10,6 +10,8 @@ export const migratePoliciesForOrg = schemaTask({
     organizationId: z.string(),
   }),
   run: async ({ organizationId }) => {
+    await tags.add([`org:${organizationId}`]);
+
     // Find policies without any versions
     const policiesWithoutVersions = await db.policy.findMany({
       where: {

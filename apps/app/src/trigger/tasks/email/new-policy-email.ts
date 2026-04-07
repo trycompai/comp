@@ -1,7 +1,7 @@
 import { db } from '@db/server';
 import { PolicyNotificationEmail } from '@trycompai/email';
 import { isUserUnsubscribed } from '@trycompai/email/lib/check-unsubscribe';
-import { logger, queue, task } from '@trigger.dev/sdk';
+import { logger, queue, tags, task } from '@trigger.dev/sdk';
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
 
 const policyEmailQueue = queue({
@@ -26,6 +26,7 @@ export const sendNewPolicyEmail = task({
       email: payload.email,
       policyName: payload.policyName,
     });
+    await tags.add([`org:${payload.organizationId}`]);
 
     try {
       const unsubscribed = await isUserUnsubscribed(db, payload.email, 'policyNotifications', payload.organizationId);

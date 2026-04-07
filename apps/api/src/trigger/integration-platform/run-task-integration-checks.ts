@@ -1,6 +1,6 @@
 import { getManifest, runAllChecks } from '@trycompai/integration-platform';
 import { db } from '@db';
-import { logger, task } from '@trigger.dev/sdk';
+import { logger, tags, task } from '@trigger.dev/sdk';
 import { triggerEmail } from '../../email/trigger-email';
 import { TaskStatusChangedEmail } from '../../email/templates/task-status-changed';
 import { isUserUnsubscribed } from '@trycompai/email';
@@ -184,6 +184,8 @@ export const runTaskIntegrationChecks = task({
       organizationId,
       checkIds,
     } = payload;
+
+    await tags.add([`org:${organizationId}`]);
 
     logger.info(`Running integration checks for task "${taskTitle}"`, {
       taskId,

@@ -1,4 +1,4 @@
-import { logger, metadata, queue, schemaTask } from '@trigger.dev/sdk';
+import { logger, metadata, queue, schemaTask, tags } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { processPolicyUpdate } from './update-policy-helpers';
 
@@ -29,6 +29,8 @@ export const updatePolicy = schemaTask({
     memberId: z.string().optional(),
   }),
   run: async (params) => {
+    await tags.add([`org:${params.organizationId}`]);
+
     try {
       logger.info(`Starting policy update for policy ${params.policyId}`);
 

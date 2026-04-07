@@ -1,11 +1,12 @@
 import { db } from '@db/server';
-import { logger, task } from '@trigger.dev/sdk';
+import { logger, tags, task } from '@trigger.dev/sdk';
 import { sendIntegrationResults } from './integration-results';
 
 export const runIntegrationTests = task({
   id: 'run-integration-tests',
   run: async (payload: { organizationId: string; integrationId?: string }) => {
     const { organizationId, integrationId } = payload;
+    await tags.add([`org:${organizationId}`]);
 
     logger.info(
       integrationId

@@ -1,4 +1,4 @@
-import { logger, metadata, task } from '@trigger.dev/sdk';
+import { logger, metadata, tags, task } from '@trigger.dev/sdk';
 import { processKnowledgeBaseDocumentTask } from './process-knowledge-base-document';
 
 const BATCH_SIZE = 10; // Process 10 documents at a time
@@ -14,6 +14,8 @@ export const processKnowledgeBaseDocumentsOrchestratorTask = task({
   },
   maxDuration: 60 * 60, // 1 hour (in seconds) for large document batches
   run: async (payload: { documentIds: string[]; organizationId: string }) => {
+    await tags.add([`org:${payload.organizationId}`]);
+
     logger.info('Starting Knowledge Base documents processing orchestrator', {
       organizationId: payload.organizationId,
       documentCount: payload.documentIds.length,

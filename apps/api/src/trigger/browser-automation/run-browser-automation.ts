@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { logger, task } from '@trigger.dev/sdk';
+import { logger, tags, task } from '@trigger.dev/sdk';
 import { BrowserbaseService } from '../../browserbase/browserbase.service';
 import { triggerEmail } from '../../email/trigger-email';
 import { TaskStatusChangedEmail } from '../../email/templates/task-status-changed';
@@ -186,6 +186,8 @@ export const runBrowserAutomation = task({
     taskId: string;
   }) => {
     const { automationId, automationName, organizationId, taskId } = payload;
+
+    await tags.add([`org:${organizationId}`]);
 
     logger.info(`Running browser automation "${automationName}"`, {
       automationId,

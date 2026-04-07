@@ -1,5 +1,5 @@
 import { RiskStatus, db } from '@db/server';
-import { logger, metadata, queue, task } from '@trigger.dev/sdk';
+import { logger, metadata, queue, tags, task } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
   createRiskMitigationComment,
@@ -24,6 +24,7 @@ export const generateRiskMitigation = task({
     policies: PolicyContext[];
   }) => {
     const { organizationId, riskId, authorId, policies } = payload;
+    await tags.add([`org:${organizationId}`]);
     logger.info(`Generating risk mitigation for risk ${riskId} in org ${organizationId}`);
 
     const risk = await db.risk.findFirst({ where: { id: riskId, organizationId } });
@@ -85,6 +86,7 @@ export const generateRiskMitigationsForOrg = task({
   queue: riskMitigationFanoutQueue,
   run: async (payload: { organizationId: string }) => {
     const { organizationId } = payload;
+    await tags.add([`org:${organizationId}`]);
     logger.info(`Fan-out risk mitigations for org ${organizationId}`);
 
     const [risks, policyRows, author] = await Promise.all([

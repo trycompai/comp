@@ -58,10 +58,53 @@ const rbacMatrixRowSchema = z.object({
   lastReviewed: requiredTrimmed('Last reviewed'),
 });
 
-const rbacMatrixDataSchema = z.object({
-  submissionDate: required('Submission date'),
-  matrixRows: z.array(rbacMatrixRowSchema).min(1, 'At least one RBAC entry is required'),
+// Lenient row schema — accepts empty strings so the default empty row
+// doesn't block Zod parsing before the superRefine can check for a file.
+const rbacMatrixRowSchemaLenient = z.object({
+  system: z.string().default(''),
+  roleName: z.string().default(''),
+  permissionsScope: z.string().default(''),
+  approvedBy: z.string().default(''),
+  lastReviewed: z.string().default(''),
 });
+
+const rbacMatrixDataSchema = z
+  .object({
+    submissionDate: required('Submission date'),
+    matrixRows: z.array(rbacMatrixRowSchemaLenient).optional(),
+    matrixFile: evidenceFormFileSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.matrixFile) return;
+
+    const rows = data.matrixRows ?? [];
+    const isRowEmpty = (row: Record<string, string>) =>
+      Object.values(row).every((v) => v.trim().length === 0);
+
+    const hasFilledRow = rows.some((row) => !isRowEmpty(row));
+    if (!hasFilledRow) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Enter at least one RBAC row or upload a spreadsheet',
+        path: ['matrixRows'],
+      });
+      return;
+    }
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || isRowEmpty(row)) continue;
+      const result = rbacMatrixRowSchema.safeParse(row);
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          ctx.addIssue({
+            ...issue,
+            path: ['matrixRows', i, ...issue.path],
+          });
+        }
+      }
+    }
+  });
 
 const infrastructureInventoryRowSchema = z.object({
   assetId: requiredTrimmed('Asset ID'),

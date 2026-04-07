@@ -1,5 +1,5 @@
 import { db } from '@db/server';
-import { logger, metadata, queue, task, tasks } from '@trigger.dev/sdk';
+import { logger, metadata, queue, tags, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
 import { generateAuditorContentTask } from '../auditor/generate-auditor-content';
 import { generateRiskMitigationsForOrg } from './generate-risk-mitigation';
@@ -23,6 +23,7 @@ export const onboardOrganization = task({
   },
   run: async (payload: { organizationId: string }) => {
     logger.info(`Start onboarding organization ${payload.organizationId}`);
+    await tags.add([`org:${payload.organizationId}`]);
 
     // Initialize metadata for real-time tracking
     metadata.set('currentStep', 'Researching Vendors...');

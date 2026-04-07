@@ -1,5 +1,5 @@
 import { db } from '@db/server';
-import { logger, queue, task } from '@trigger.dev/sdk';
+import { logger, queue, tags, task } from '@trigger.dev/sdk';
 import { getOrganizationContext, triggerPolicyUpdates } from './onboard-organization-helpers';
 
 // v4 queues must be declared in advance
@@ -16,6 +16,7 @@ export const generateFullPolicies = task({
   },
   run: async (payload: { organizationId: string }) => {
     logger.info(`Starting full policy generation for organization ${payload.organizationId}`);
+    await tags.add([`org:${payload.organizationId}`]);
 
     try {
       // Get organization context

@@ -265,7 +265,8 @@ export async function extractVendorsFromContext(
           items: {
             type: 'object',
             properties: {
-              vendor_name: { type: 'string' },
+              vendor_name: { type: 'string', description: 'The official company name (e.g. "Anthropic", not "Claude")' },
+              original_name: { type: 'string', description: 'The name as it appeared in the user input (e.g. "Claude")' },
               vendor_website: { type: 'string' },
               vendor_description: { type: 'string' },
               category: { type: 'string', enum: Object.values(VendorCategory) },
@@ -276,6 +277,7 @@ export async function extractVendorsFromContext(
             },
             required: [
               'vendor_name',
+              'original_name',
               'vendor_website',
               'vendor_description',
               'category',
@@ -292,23 +294,34 @@ export async function extractVendorsFromContext(
       additionalProperties: false,
     }),
     system:
-      'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact.',
+      'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact. IMPORTANT: For vendor_name, always use the parent company name, not the product name (e.g. "Anthropic" not "Claude", "OpenAI" not "ChatGPT"). Set original_name to the name as it appeared in the user input.',
     prompt: questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n'),
   });
 
-  const vendors = (object as { vendors: VendorData[] }).vendors;
+  const rawVendors = (object as { vendors: (VendorData & { original_name?: string })[] }).vendors;
 
-  // Merge custom vendor URLs - user-provided URLs take precedence
-  for (const vendor of vendors) {
-    const customUrl = customVendorUrls.get(vendor.vendor_name.toLowerCase());
+  // Strip original_name from the vendor data and build the final list
+  const vendors: VendorData[] = [];
+  const extractedVendorNames = new Set<string>();
+
+  for (const { original_name, ...vendor } of rawVendors) {
+    vendors.push(vendor);
+
+    // Track both the canonical name and the original user input name
+    extractedVendorNames.add(vendor.vendor_name.toLowerCase());
+    if (original_name) {
+      extractedVendorNames.add(original_name.toLowerCase());
+    }
+
+    // Merge custom vendor URLs - check both canonical and original names
+    const customUrl =
+      customVendorUrls.get(vendor.vendor_name.toLowerCase()) ??
+      (original_name ? customVendorUrls.get(original_name.toLowerCase()) : undefined);
     if (customUrl) {
       logger.info(`Using custom URL for vendor ${vendor.vendor_name}: ${customUrl}`);
       vendor.vendor_website = customUrl;
     }
   }
-
-  // Track which vendors were extracted by AI
-  const extractedVendorNames = new Set(vendors.map((v) => v.vendor_name.toLowerCase()));
 
   // Ensure ALL vendors from the software field are added (not just custom ones)
   // This catches any vendors the AI failed to extract

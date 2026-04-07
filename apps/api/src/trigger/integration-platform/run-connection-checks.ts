@@ -1,6 +1,6 @@
 import { getManifest, runAllChecks } from '@trycompai/integration-platform';
 import { db } from '@db';
-import { logger, task } from '@trigger.dev/sdk';
+import { logger, tags, task } from '@trigger.dev/sdk';
 
 /**
  * Trigger task that runs all checks for a connection.
@@ -21,6 +21,8 @@ export const runConnectionChecks = task({
     providerSlug: string;
   }) => {
     const { connectionId, organizationId, providerSlug } = payload;
+
+    await tags.add([`org:${organizationId}`]);
 
     logger.info(`Auto-running checks for connection ${connectionId}`, {
       provider: providerSlug,

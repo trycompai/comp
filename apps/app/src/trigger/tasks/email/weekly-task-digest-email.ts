@@ -1,5 +1,5 @@
 import { db } from '@db/server';
-import { logger, queue, task } from '@trigger.dev/sdk';
+import { logger, queue, tags, task } from '@trigger.dev/sdk';
 import WeeklyTaskDigestEmail from '@trycompai/email/emails/reminders/weekly-task-digest';
 import { isUserUnsubscribed } from '@trycompai/email/lib/check-unsubscribe';
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
@@ -34,6 +34,7 @@ export const sendWeeklyTaskDigestEmailTask = task({
       organizationName: payload.organizationName,
       taskCount: payload.tasks.length,
     });
+    await tags.add([`org:${payload.organizationId}`]);
 
     try {
       const unsubscribed = await isUserUnsubscribed(db, payload.email, 'weeklyTaskDigest', payload.organizationId);

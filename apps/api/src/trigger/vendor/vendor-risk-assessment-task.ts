@@ -10,7 +10,7 @@ import {
 import { openai } from '@ai-sdk/openai';
 import type { Prisma } from '@db';
 import type { Task } from '@trigger.dev/sdk';
-import { logger, metadata, queue, schemaTask } from '@trigger.dev/sdk';
+import { logger, metadata, queue, schemaTask, tags } from '@trigger.dev/sdk';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 
@@ -478,6 +478,8 @@ export const vendorRiskAssessmentTask: Task<
   },
   maxDuration: 1000 * 60 * 10,
   run: async (payload) => {
+    await tags.add([`org:${payload.organizationId}`]);
+
     const vendor = await db.vendor.findFirst({
       where: {
         id: payload.vendorId,
