@@ -41,7 +41,8 @@ export class AdminOrgTimelinesController {
 
   @Get(':orgId/timelines')
   async findAll(@Param('orgId') orgId: string) {
-    return this.timelinesService.findAllForOrganization(orgId);
+    const data = await this.timelinesService.findAllForOrganization(orgId);
+    return { data, count: data.length };
   }
 
   @Post(':orgId/timelines/:id/activate')

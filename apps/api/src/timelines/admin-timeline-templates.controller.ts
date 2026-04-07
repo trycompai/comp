@@ -40,7 +40,8 @@ export class AdminTimelineTemplatesController {
 
   @Get()
   async findAll() {
-    return this.templatesService.findAll();
+    const data = await this.templatesService.findAll();
+    return { data, count: data.length };
   }
 
   @Get(':id')
