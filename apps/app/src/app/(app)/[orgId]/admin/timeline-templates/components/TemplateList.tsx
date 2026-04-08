@@ -45,14 +45,14 @@ export function TemplateList() {
   };
 
   const totalDurationWeeks = (template: AdminTimelineTemplate) =>
-    template.phases.reduce((sum, p) => sum + p.durationWeeks, 0);
+    template.phases.reduce((sum, p) => sum + p.defaultDurationWeeks, 0);
 
   const phasesForBar = (template: AdminTimelineTemplate) =>
     template.phases.map((p) => ({
       id: p.id,
       name: p.name,
       status: 'PENDING' as const,
-      durationWeeks: p.durationWeeks,
+      durationWeeks: p.defaultDurationWeeks,
       orderIndex: p.orderIndex,
     }));
 

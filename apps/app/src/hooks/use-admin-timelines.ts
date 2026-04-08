@@ -7,7 +7,7 @@ interface AdminTimelinePhaseTemplate {
   id: string;
   name: string;
   description: string | null;
-  durationWeeks: number;
+  defaultDurationWeeks: number;
   orderIndex: number;
   completionType: 'AUTO_TASKS' | 'AUTO_UPLOAD' | 'MANUAL';
 }

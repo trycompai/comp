@@ -33,7 +33,7 @@ export function getDefaults(
         name: p.name,
         description: p.description ?? '',
         orderIndex: p.orderIndex,
-        defaultDurationWeeks: p.durationWeeks,
+        defaultDurationWeeks: p.defaultDurationWeeks,
         completionType: p.completionType ?? 'MANUAL',
       })),
   };
