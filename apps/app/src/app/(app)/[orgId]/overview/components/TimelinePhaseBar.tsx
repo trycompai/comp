@@ -90,7 +90,7 @@ export function TimelinePhaseBar({
     <div>
       {/* Group label row with bracket lines — hidden on mobile */}
       {hasGroups && (
-        <div className="hidden lg:flex w-full gap-[3px] mb-0.5">
+        <div className="hidden lg:flex w-full gap-px mb-0.5">
           {groups.map((group, idx) => (
             <div
               key={`group-${idx}`}
@@ -119,7 +119,7 @@ export function TimelinePhaseBar({
       {/* Phase bar — Desktop: horizontal. Mobile: vertical stack */}
 
       {/* Desktop version */}
-      <div className="hidden lg:flex w-full gap-[3px]" style={{ height }}>
+      <div className="hidden lg:flex w-full gap-px" style={{ height }}>
         {groups.map((group, gIdx) => {
           const isFirstGroup = gIdx === 0;
           const isLastGroup = gIdx === groups.length - 1;
@@ -150,7 +150,7 @@ export function TimelinePhaseBar({
       </div>
 
       {/* Mobile version — compact bars, one row per group, no per-phase dates */}
-      <div className="flex flex-col gap-[3px] lg:hidden">
+      <div className="flex flex-col gap-px lg:hidden">
         {groups.map((group, gIdx) => {
           if (group.phases.length === 1) {
             return (
@@ -180,7 +180,7 @@ export function TimelinePhaseBar({
 
       {/* Date markers — hidden on mobile */}
       {hasDates && (
-        <div className="hidden lg:flex w-full gap-[3px] mt-1">
+        <div className="hidden lg:flex w-full gap-px mt-1">
           {groups.map((group, gIdx) => {
             const first = group.phases[0];
             const last = group.phases[group.phases.length - 1];
