@@ -25,7 +25,7 @@ export interface DefaultPhaseTemplate {
 
 export interface DefaultTimelineTemplate {
   frameworkName: string; // Used to match against FrameworkEditorFramework.name
-  name: string; // Display name, e.g. "SOC 2 Type 2 - Year 1"
+  name: string; // Display name, e.g. "SOC 2 Type 2"
   cycleNumber: number;
   phases: DefaultPhaseTemplate[];
 }
@@ -62,10 +62,10 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     ],
   },
 
-  // SOC 2 Type 2 - Year 1 (cycle 2)
+  // SOC 2 Type 2 (cycle 2)
   {
     frameworkName: 'SOC 2',
-    name: 'SOC 2 Type 2 - Year 1',
+    name: 'SOC 2 Type 2',
     cycleNumber: 2,
     phases: [
       {
