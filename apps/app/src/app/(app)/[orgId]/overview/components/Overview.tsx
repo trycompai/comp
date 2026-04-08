@@ -9,7 +9,6 @@ import { ComplianceOverview } from './ComplianceOverview';
 import { FindingsOverview } from './FindingsOverview';
 import { FrameworksOverview } from './FrameworksOverview';
 import { TimelineOverview } from './TimelineOverview';
-import { TimelineTeaser } from './TimelineTeaser';
 import { ToDoOverview } from './ToDoOverview';
 import { FrameworkInstanceWithComplianceScore } from './types';
 
@@ -91,8 +90,6 @@ export const Overview = ({
     totalMembers: peopleScore.totalMembers,
   });
 
-  const handleSwitchToTimeline = () => setActiveTab('timeline');
-
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
       <TabsList variant="underline">
@@ -102,7 +99,6 @@ export const Overview = ({
 
       <TabsContent value="overview">
         <div className="flex flex-col gap-6 pt-4">
-          <TimelineTeaser timelines={timelines} onSwitchTab={handleSwitchToTimeline} />
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <ComplianceOverview
               organizationId={organizationId}
