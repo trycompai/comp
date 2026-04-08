@@ -114,15 +114,6 @@ export function TimelineOverview({ initialData }: TimelineOverviewProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h3 className="text-lg font-semibold">Compliance Timeline</h3>
-        <p className="text-sm text-muted-foreground">
-          Track your progress toward audit readiness
-        </p>
-        <div className="mt-1">
-          <TimelineSummary timelines={timelines} />
-        </div>
-      </div>
       {timelines.map((timeline) => (
         <TimelineCard
           key={timeline.id}
