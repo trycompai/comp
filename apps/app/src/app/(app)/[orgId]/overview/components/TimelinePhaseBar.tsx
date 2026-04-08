@@ -190,7 +190,9 @@ export function TimelinePhaseBar({
                   className={`relative z-10 flex items-center justify-center ${pIdx < group.phases.length - 1 ? 'border-r border-background/30' : ''}`}
                   style={{ flex: phase.durationWeeks }}
                 >
-                  <span className="truncate px-1 text-[11px] font-medium text-foreground">{phase.name}</span>
+                  <span className="truncate px-1 text-[11px] font-medium text-foreground">
+                    {phase.name}{phase.completionPercent !== undefined ? ` ${phase.completionPercent}%` : ''}
+                  </span>
                 </div>
               ))}
             </div>
@@ -235,7 +237,7 @@ export function TimelinePhaseBar({
                   style={{ flex: phase.durationWeeks }}
                 >
                   <span className={`truncate px-1 text-[11px] ${mAllComplete ? 'text-primary-foreground' : 'font-medium text-foreground'}`}>
-                    {phase.name}
+                    {phase.name}{phase.completionPercent !== undefined ? ` ${phase.completionPercent}%` : ''}
                   </span>
                 </div>
               ))}
