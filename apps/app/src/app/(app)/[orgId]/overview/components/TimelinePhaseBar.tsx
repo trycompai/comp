@@ -240,8 +240,8 @@ function PhaseSegment({
             -45deg,
             var(--muted),
             var(--muted) 4px,
-            color-mix(in oklch, var(--primary) 20%, transparent) 4px,
-            color-mix(in oklch, var(--primary) 20%, transparent) 8px
+            color-mix(in oklch, var(--primary) 10%, transparent) 4px,
+            color-mix(in oklch, var(--primary) 10%, transparent) 8px
           )`,
         }}
       >
