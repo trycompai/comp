@@ -85,16 +85,29 @@ export function TimelinePhaseBar({
 
   return (
     <div>
-      {/* Group label row above the bar */}
+      {/* Group label row above the bar with bracket lines */}
       {hasGroups && (
-        <div className="flex w-full gap-[3px] mb-1">
+        <div className="flex w-full gap-[3px] mb-0.5">
           {groupSpans.map((span, idx) => (
             <div
               key={`group-${idx}`}
-              className="text-center truncate text-[10px] text-muted-foreground"
+              className="flex flex-col items-center"
               style={{ flex: span.totalWeeks }}
             >
-              {span.label ?? ''}
+              {span.label ? (
+                <>
+                  <span className="truncate text-[10px] text-muted-foreground px-1">
+                    {span.label}
+                  </span>
+                  <div className="flex w-full items-center mt-0.5">
+                    <div className="h-[6px] w-px bg-muted-foreground/40" />
+                    <div className="flex-1 h-px bg-muted-foreground/40" />
+                    <div className="h-[6px] w-px bg-muted-foreground/40" />
+                  </div>
+                </>
+              ) : (
+                <div className="h-[18px]" />
+              )}
             </div>
           ))}
         </div>
