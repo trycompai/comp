@@ -8,6 +8,7 @@ import {
 import {
   db,
   EvidenceFormType as DbEvidenceFormType,
+  FindingScope,
   FindingStatus,
   FindingType,
 } from '@db';
@@ -176,6 +177,22 @@ export class FindingsService {
   }
 
   /**
+   * Get all findings for a People-area scope (directory, devices tab, etc.)
+   */
+  async findByScope(organizationId: string, scope: FindingScope) {
+    const findings = await db.finding.findMany({
+      where: { organizationId, scope },
+      include: this.findingInclude,
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    this.logger.log(
+      `Retrieved ${findings.length} findings for scope ${scope} in org ${organizationId}`,
+    );
+    return findings.map((finding) => this.normalizeFindingFormTypes(finding));
+  }
+
+  /**
    * Get all findings for an organization
    */
   async findByOrganizationId(organizationId: string, status?: FindingStatus) {
@@ -225,19 +242,21 @@ export class FindingsService {
     const hasTaskTarget = Boolean(createDto.taskId);
     const hasSubmissionTarget = Boolean(createDto.evidenceSubmissionId);
     const hasFormTypeTarget = Boolean(createDto.evidenceFormType);
+    const hasScopeTarget = Boolean(createDto.scope);
     const targetCount =
       (hasTaskTarget ? 1 : 0) +
       (hasSubmissionTarget ? 1 : 0) +
-      (hasFormTypeTarget ? 1 : 0);
+      (hasFormTypeTarget ? 1 : 0) +
+      (hasScopeTarget ? 1 : 0);
 
     if (targetCount === 0) {
       throw new BadRequestException(
-        'One of taskId, evidenceSubmissionId, or evidenceFormType is required',
+        'One of taskId, evidenceSubmissionId, evidenceFormType, or scope is required',
       );
     }
     if (targetCount > 1) {
       throw new BadRequestException(
-        'Provide only one target: taskId, evidenceSubmissionId, or evidenceFormType',
+        'Provide only one target: taskId, evidenceSubmissionId, evidenceFormType, or scope',
       );
     }
 
@@ -308,6 +327,7 @@ export class FindingsService {
         evidenceFormType: createDto.evidenceFormType
           ? toDbEvidenceFormType(createDto.evidenceFormType)
           : null,
+        scope: createDto.scope ?? null,
         type: createDto.type,
         content: createDto.content,
         templateId: createDto.templateId,
@@ -328,6 +348,7 @@ export class FindingsService {
       taskTitle: task?.title,
       evidenceSubmissionId: evidenceSubmission?.id,
       evidenceSubmissionFormType: resolvedFormType,
+      findingScope: createDto.scope,
       content: createDto.content,
       type: createDto.type ?? FindingType.soc2,
     });
@@ -356,7 +377,9 @@ export class FindingsService {
       ? `task ${task.id}`
       : createDto.evidenceFormType
         ? `evidence form type ${createDto.evidenceFormType}`
-        : `evidence submission ${evidenceSubmission?.id}`;
+        : createDto.scope
+          ? `scope ${createDto.scope}`
+          : `evidence submission ${evidenceSubmission?.id}`;
     this.logger.log(`Created finding ${finding.id} for ${target}`);
     return this.normalizeFindingFormTypes(finding);
   }

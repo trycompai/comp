@@ -22,7 +22,7 @@ import {
   ApiTags,
   ApiSecurity,
 } from '@nestjs/swagger';
-import { FindingStatus } from '@db';
+import { FindingScope, FindingStatus } from '@db';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -68,6 +68,12 @@ export class FindingsController {
     example: 'access-request',
     enum: evidenceFormTypeSchema.options,
   })
+  @ApiQuery({
+    name: 'scope',
+    required: false,
+    description: 'People-area scope (e.g. people directory)',
+    enum: FindingScope,
+  })
   @ApiResponse({
     status: 200,
     description: 'List of findings',
@@ -84,19 +90,20 @@ export class FindingsController {
     @Query('taskId') taskId: string,
     @Query('evidenceSubmissionId') evidenceSubmissionId: string,
     @Query('evidenceFormType') evidenceFormType: string,
+    @Query('scope') scope: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const targets = [taskId, evidenceSubmissionId, evidenceFormType].filter(
+    const targets = [taskId, evidenceSubmissionId, evidenceFormType, scope].filter(
       Boolean,
     );
     if (targets.length === 0) {
       throw new BadRequestException(
-        'One of taskId, evidenceSubmissionId, or evidenceFormType query parameter is required',
+        'One of taskId, evidenceSubmissionId, evidenceFormType, or scope query parameter is required',
       );
     }
     if (targets.length > 1) {
       throw new BadRequestException(
-        'Provide only one target: taskId, evidenceSubmissionId, or evidenceFormType',
+        'Provide only one target: taskId, evidenceSubmissionId, evidenceFormType, or scope',
       );
     }
 
@@ -106,6 +113,18 @@ export class FindingsController {
     if (parsedEvidenceFormType && !parsedEvidenceFormType.success) {
       throw new BadRequestException(
         `Invalid evidenceFormType value. Must be one of: ${evidenceFormTypeSchema.options.join(', ')}`,
+      );
+    }
+
+    if (scope) {
+      if (!Object.values(FindingScope).includes(scope as FindingScope)) {
+        throw new BadRequestException(
+          `Invalid scope value. Must be one of: ${Object.values(FindingScope).join(', ')}`,
+        );
+      }
+      return await this.findingsService.findByScope(
+        authContext.organizationId,
+        scope as FindingScope,
       );
     }
 
