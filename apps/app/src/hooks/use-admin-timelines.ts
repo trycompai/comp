@@ -7,6 +7,7 @@ interface AdminTimelinePhaseTemplate {
   id: string;
   name: string;
   description: string | null;
+  groupLabel?: string | null;
   defaultDurationWeeks: number;
   orderIndex: number;
   completionType: 'AUTO_TASKS' | 'AUTO_UPLOAD' | 'MANUAL';
@@ -47,6 +48,7 @@ interface AdminOrgTimeline {
     id: string;
     name: string;
     description: string | null;
+    groupLabel?: string | null;
     status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
     durationWeeks: number;
     orderIndex: number;

@@ -37,6 +37,7 @@ model TimelinePhaseTemplate {
   templateId           String
   name                 String
   description          String?
+  groupLabel           String?
   orderIndex           Int
   defaultDurationWeeks Int
   completionType       PhaseCompletionType @default(MANUAL)
@@ -74,6 +75,7 @@ model TimelinePhase {
   phaseTemplateId  String?
   name             String
   description      String?
+  groupLabel       String?
   orderIndex       Int
   status           TimelinePhaseStatus @default(PENDING)
   startDate        DateTime?

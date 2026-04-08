@@ -62,6 +62,7 @@ export async function upsertDefaultTemplate(
             templateId: template.id,
             name: phase.name,
             description: phase.description,
+            groupLabel: phase.groupLabel,
             orderIndex: phase.orderIndex,
             defaultDurationWeeks: phase.defaultDurationWeeks,
             completionType: phase.completionType,
@@ -115,6 +116,7 @@ export async function createInstanceFromTemplate({
       id: string;
       name: string;
       description: string | null;
+      groupLabel: string | null;
       orderIndex: number;
       defaultDurationWeeks: number;
       completionType: PhaseCompletionType;
@@ -139,6 +141,7 @@ export async function createInstanceFromTemplate({
           phaseTemplateId: phase.id,
           name: phase.name,
           description: phase.description,
+          groupLabel: phase.groupLabel,
           orderIndex: phase.orderIndex,
           durationWeeks: phase.defaultDurationWeeks,
           completionType: phase.completionType,

@@ -7,6 +7,7 @@ interface TimelinePhase {
   id: string;
   name: string;
   description: string | null;
+  groupLabel?: string | null;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
   durationWeeks: number;
   orderIndex: number;

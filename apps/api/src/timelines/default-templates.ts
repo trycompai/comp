@@ -15,6 +15,7 @@ export type PhaseCompletionType =
 export interface DefaultPhaseTemplate {
   name: string;
   description: string;
+  groupLabel?: string;
   orderIndex: number;
   defaultDurationWeeks: number;
   completionType: PhaseCompletionType;
@@ -66,26 +67,43 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     cycleNumber: 2,
     phases: [
       {
-        name: 'Evidence Gathering',
+        name: 'Review & Publish Policies',
         description:
-          'Complete all platform tasks and employee requirements.',
+          'Review and publish all required compliance policies.',
+        groupLabel: 'Preparing for Audit',
         orderIndex: 0,
-        defaultDurationWeeks: 8,
+        defaultDurationWeeks: 3,
         completionType: PhaseCompletionType.AUTO_TASKS,
       },
       {
-        name: 'Audit Review',
-        description:
-          'Auditor reviews evidence. Penetration test is arranged during this phase.',
+        name: 'Gather Evidence',
+        description: 'Complete all evidence collection tasks.',
+        groupLabel: 'Preparing for Audit',
         orderIndex: 1,
+        defaultDurationWeeks: 4,
+        completionType: PhaseCompletionType.AUTO_TASKS,
+      },
+      {
+        name: 'Employee Compliance',
+        description:
+          'Ensure all employees complete security training and acknowledgements.',
+        groupLabel: 'Preparing for Audit',
+        orderIndex: 2,
+        defaultDurationWeeks: 2,
+        completionType: PhaseCompletionType.AUTO_TASKS,
+      },
+      {
+        name: 'Observation Period + Pentest',
+        description:
+          'Observation period to prove sustained compliance. Penetration test is arranged during this phase.',
+        orderIndex: 3,
         defaultDurationWeeks: 4,
         completionType: PhaseCompletionType.MANUAL,
       },
       {
         name: 'Draft Report',
-        description:
-          'Auditor delivers draft report for review. Request any changes before the final version.',
-        orderIndex: 2,
+        description: 'Auditor delivers draft report for review.',
+        orderIndex: 4,
         defaultDurationWeeks: 2,
         completionType: PhaseCompletionType.MANUAL,
       },
@@ -93,7 +111,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         name: 'Final Report',
         description:
           'Final report delivered. Your SOC 2 Type 2 certification is complete.',
-        orderIndex: 3,
+        orderIndex: 5,
         defaultDurationWeeks: 2,
         completionType: PhaseCompletionType.AUTO_UPLOAD,
       },
@@ -107,25 +125,43 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     cycleNumber: 3,
     phases: [
       {
-        name: 'Evidence Gathering',
+        name: 'Review & Publish Policies',
         description:
-          'Complete all platform tasks and employee requirements.',
+          'Review and publish all required compliance policies.',
+        groupLabel: 'Preparing for Audit',
         orderIndex: 0,
-        defaultDurationWeeks: 8,
+        defaultDurationWeeks: 3,
         completionType: PhaseCompletionType.AUTO_TASKS,
       },
       {
-        name: 'Observation Period',
-        description:
-          '6-month observation period to prove sustained compliance.',
+        name: 'Gather Evidence',
+        description: 'Complete all evidence collection tasks.',
+        groupLabel: 'Preparing for Audit',
         orderIndex: 1,
+        defaultDurationWeeks: 4,
+        completionType: PhaseCompletionType.AUTO_TASKS,
+      },
+      {
+        name: 'Employee Compliance',
+        description:
+          'Ensure all employees complete security training and acknowledgements.',
+        groupLabel: 'Preparing for Audit',
+        orderIndex: 2,
+        defaultDurationWeeks: 2,
+        completionType: PhaseCompletionType.AUTO_TASKS,
+      },
+      {
+        name: 'Observation Period + Pentest',
+        description:
+          'Observation period to prove sustained compliance. Penetration test is arranged during this phase.',
+        orderIndex: 3,
         defaultDurationWeeks: 18,
         completionType: PhaseCompletionType.MANUAL,
       },
       {
         name: 'Draft Report',
         description: 'Auditor delivers draft report for review.',
-        orderIndex: 2,
+        orderIndex: 4,
         defaultDurationWeeks: 2,
         completionType: PhaseCompletionType.MANUAL,
       },
@@ -133,7 +169,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         name: 'Final Report',
         description:
           'Final report delivered. Your SOC 2 Type 2 renewal is complete.',
-        orderIndex: 3,
+        orderIndex: 5,
         defaultDurationWeeks: 2,
         completionType: PhaseCompletionType.AUTO_UPLOAD,
       },

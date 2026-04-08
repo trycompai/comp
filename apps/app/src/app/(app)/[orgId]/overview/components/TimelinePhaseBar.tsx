@@ -5,6 +5,7 @@ import { Checkmark } from '@trycompai/design-system/icons';
 interface Phase {
   id: string;
   name: string;
+  groupLabel?: string | null;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
   durationWeeks: number;
   orderIndex: number;
@@ -43,6 +44,30 @@ function formatShortDate(date: string | null | undefined): string {
   });
 }
 
+interface GroupSpan {
+  label: string | null;
+  totalWeeks: number;
+}
+
+function buildGroupSpans(sorted: Phase[]): GroupSpan[] {
+  const spans: GroupSpan[] = [];
+  let i = 0;
+
+  while (i < sorted.length) {
+    const label = sorted[i].groupLabel ?? null;
+    let totalWeeks = 0;
+
+    while (i < sorted.length && (sorted[i].groupLabel ?? null) === label) {
+      totalWeeks += sorted[i].durationWeeks;
+      i++;
+    }
+
+    spans.push({ label, totalWeeks });
+  }
+
+  return spans;
+}
+
 export function TimelinePhaseBar({
   phases,
   height = 36,
@@ -53,9 +78,28 @@ export function TimelinePhaseBar({
   if (sorted.length === 0) return null;
 
   const hasDates = showDates && sorted.some((p) => p.startDate || p.endDate);
+  const hasGroups = sorted.some((p) => p.groupLabel);
+
+  // Build group spans for the label row
+  const groupSpans = hasGroups ? buildGroupSpans(sorted) : [];
 
   return (
     <div>
+      {/* Group label row above the bar */}
+      {hasGroups && (
+        <div className="flex w-full gap-[3px] mb-1">
+          {groupSpans.map((span, idx) => (
+            <div
+              key={`group-${idx}`}
+              className="text-center truncate text-[10px] text-muted-foreground"
+              style={{ flex: span.totalWeeks }}
+            >
+              {span.label ?? ''}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="flex w-full gap-[3px]" style={{ height }}>
         {sorted.map((phase, index) => {
           const rounded = getRoundedClass(index, sorted.length);
