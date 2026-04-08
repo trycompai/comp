@@ -233,8 +233,17 @@ function PhaseSegment({
     const progress = getProgressPercent(phase);
     return (
       <div
-        className={`relative flex items-center justify-center overflow-hidden bg-muted ${className}`}
-        style={flexStyle}
+        className={`relative flex items-center justify-center overflow-hidden ${className}`}
+        style={{
+          ...flexStyle,
+          background: `repeating-linear-gradient(
+            -45deg,
+            hsl(var(--muted)),
+            hsl(var(--muted)) 4px,
+            hsl(var(--muted-foreground) / 0.08) 4px,
+            hsl(var(--muted-foreground) / 0.08) 8px
+          )`,
+        }}
       >
         <div className="absolute inset-y-0 left-0 bg-primary/50" style={{ width: `${progress}%` }} />
         <div className="absolute inset-y-0 w-[3px] bg-primary animate-pulse" style={{ left: `${progress}%` }} />
