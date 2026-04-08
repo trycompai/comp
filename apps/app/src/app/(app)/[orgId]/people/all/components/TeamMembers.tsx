@@ -28,12 +28,20 @@ export interface TeamMembersProps {
   canManageMembers: boolean;
   canInviteUsers: boolean;
   isAuditor: boolean;
+  isPlatformAdmin: boolean;
   isCurrentUserOwner: boolean;
   organizationId: string;
 }
 
 export async function TeamMembers(props: TeamMembersProps) {
-  const { canManageMembers, canInviteUsers, isAuditor, isCurrentUserOwner, organizationId } = props;
+  const {
+    canManageMembers,
+    canInviteUsers,
+    isAuditor,
+    isPlatformAdmin,
+    isCurrentUserOwner,
+    organizationId,
+  } = props;
 
   if (!organizationId) {
     return null;
@@ -153,6 +161,7 @@ export async function TeamMembers(props: TeamMembersProps) {
       canManageMembers={canManageMembers}
       canInviteUsers={canInviteUsers}
       isAuditor={isAuditor}
+      isPlatformAdmin={isPlatformAdmin}
       isCurrentUserOwner={isCurrentUserOwner}
       employeeSyncData={employeeSyncData}
       taskCompletionMap={taskCompletionMap}

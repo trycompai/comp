@@ -41,6 +41,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   const isAuditor = currentUserRoles.includes('auditor');
   const canInviteUsers = canManageMembers || isAuditor;
   const isCurrentUserOwner = currentUserRoles.includes('owner');
+  const isPlatformAdmin = session.user.role === 'admin';
 
   // Fetch members with user info (used for both employee check and org chart)
   const membersWithUsers = await db.member.findMany({
@@ -162,6 +163,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           canManageMembers={canManageMembers}
           canInviteUsers={canInviteUsers}
           isAuditor={isAuditor}
+          isPlatformAdmin={isPlatformAdmin}
           isCurrentUserOwner={isCurrentUserOwner}
           organizationId={orgId}
         />

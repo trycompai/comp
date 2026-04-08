@@ -3,7 +3,7 @@
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
 import type { EvidenceFormType } from '@trycompai/company';
-import type { FindingStatus, FindingType } from '@db';
+import type { FindingStatus, FindingType, FindingScope } from '@db';
 import { useCallback } from 'react';
 
 // Types for findings
@@ -18,6 +18,7 @@ export interface Finding {
   taskId: string | null;
   evidenceSubmissionId: string | null;
   evidenceFormType: EvidenceFormType | null;
+  scope?: FindingScope | null;
   templateId: string | null;
   createdById: string;
   organizationId: string;
@@ -61,6 +62,7 @@ interface CreateFindingData {
   taskId?: string;
   evidenceSubmissionId?: string;
   evidenceFormType?: EvidenceFormType;
+  scope?: FindingScope;
   type?: FindingType;
   templateId?: string;
   content: string;
@@ -144,6 +146,18 @@ export function useFormTypeFindings(
   options: UseFindingsOptions = {},
 ) {
   const endpoint = evidenceFormType ? `/v1/findings?evidenceFormType=${evidenceFormType}` : null;
+
+  return useApiSWR<Finding[]>(endpoint, {
+    ...options,
+    refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
+  });
+}
+
+/**
+ * Hook to fetch findings for a People-area scope (directory, devices, etc.)
+ */
+export function useScopeFindings(scope: FindingScope | null, options: UseFindingsOptions = {}) {
+  const endpoint = scope ? `/v1/findings?scope=${encodeURIComponent(scope)}` : null;
 
   return useApiSWR<Finding[]>(endpoint, {
     ...options,
