@@ -139,20 +139,33 @@ export function TimelinePhaseBar({
         })}
       </div>
 
-      {/* Mobile version — vertical stack */}
+      {/* Mobile version — groups stay in one row, ungrouped phases get their own row */}
       <div className="flex flex-col gap-1 lg:hidden">
-        {sorted.map((phase) => (
-          <div
-            key={`m-${phase.id}`}
-            className="flex items-center gap-2"
-          >
-            <PhaseSegment
-              phase={phase}
-              className="rounded-md flex-1"
-              style={{ height: 28 }}
-            />
-          </div>
-        ))}
+        {groups.map((group, gIdx) => {
+          if (group.phases.length === 1) {
+            return (
+              <PhaseSegment
+                key={`m-${group.phases[0].id}`}
+                phase={group.phases[0]}
+                className="rounded-md"
+                style={{ height: 28 }}
+              />
+            );
+          }
+
+          return (
+            <div key={`m-group-${gIdx}`} className="flex overflow-hidden rounded-md" style={{ height: 28 }}>
+              {group.phases.map((phase, pIdx) => (
+                <PhaseSegment
+                  key={`m-${phase.id}`}
+                  phase={phase}
+                  className={pIdx < group.phases.length - 1 ? 'border-r border-background/50' : ''}
+                  inGroup
+                />
+              ))}
+            </div>
+          );
+        })}
       </div>
 
       {/* Date markers — hidden on mobile */}
