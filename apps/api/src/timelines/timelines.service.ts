@@ -235,17 +235,30 @@ export class TimelinesService {
   }
 
   async recreateAllForOrganization(organizationId: string) {
-    // Delete all existing timelines for this org
+    // Delete all existing timeline instances for this org
     const existing = await db.timelineInstance.findMany({
       where: { organizationId },
-      select: { id: true },
+      select: { id: true, templateId: true },
     });
+    const templateIds = [...new Set(existing.map((e) => e.templateId))];
+
     for (const inst of existing) {
       await db.timelinePhase.deleteMany({ where: { instanceId: inst.id } });
     }
     await db.timelineInstance.deleteMany({ where: { organizationId } });
 
-    // Re-run backfill
+    // Also delete the DB templates so they get re-seeded from latest code defaults
+    for (const templateId of templateIds) {
+      const stillReferenced = await db.timelineInstance.count({
+        where: { templateId },
+      });
+      if (stillReferenced === 0) {
+        await db.timelinePhaseTemplate.deleteMany({ where: { templateId } });
+        await db.timelineTemplate.delete({ where: { id: templateId } }).catch(() => {});
+      }
+    }
+
+    // Re-run backfill — will re-create templates from code defaults
     await this.ensureTimelinesExist(organizationId);
 
     return this.findAllForOrganization(organizationId);
