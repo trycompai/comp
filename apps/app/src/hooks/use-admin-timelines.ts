@@ -63,6 +63,10 @@ interface AdminOrgTimeline {
       name: string;
     };
   };
+  template?: {
+    id: string;
+    name: string;
+  };
 }
 
 interface AdminOrgTimelinesApiResponse {

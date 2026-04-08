@@ -51,6 +51,29 @@ function formatDate(date: string | null): string {
   });
 }
 
+type PhaseEntry =
+  | { type: 'ungrouped'; phase: AdminOrgTimeline['phases'][number] }
+  | { type: 'group'; label: string; phases: AdminOrgTimeline['phases'] };
+
+function buildPhaseEntries(phases: AdminOrgTimeline['phases']): PhaseEntry[] {
+  const entries: PhaseEntry[] = [];
+  const seen = new Set<string>();
+  for (const phase of phases) {
+    if (!phase.groupLabel) {
+      entries.push({ type: 'ungrouped', phase });
+      continue;
+    }
+    if (seen.has(phase.groupLabel)) continue;
+    seen.add(phase.groupLabel);
+    entries.push({
+      type: 'group',
+      label: phase.groupLabel,
+      phases: phases.filter((p) => p.groupLabel === phase.groupLabel),
+    });
+  }
+  return entries;
+}
+
 interface TimelineCardProps {
   timeline: AdminOrgTimeline;
   orgId: string;
@@ -62,7 +85,9 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
   const badge = STATUS_BADGE[timeline.status];
   const frameworkName =
-    timeline.frameworkInstance?.framework.name ?? 'Unknown Framework';
+    timeline.template?.name ??
+    timeline.frameworkInstance?.framework.name ??
+    'Unknown Framework';
   const sortedPhases = [...timeline.phases].sort(
     (a, b) => a.orderIndex - b.orderIndex,
   );
@@ -116,14 +141,35 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
       </div>
 
       <div className="flex flex-col gap-2">
-        {sortedPhases.map((phase) => (
-          <PhaseRow
-            key={phase.id}
-            phase={phase}
-            editable={timeline.status !== 'COMPLETED'}
-            onEdit={() => setEditingPhaseId(phase.id)}
-          />
-        ))}
+        {buildPhaseEntries(sortedPhases).map((entry) => {
+          if (entry.type === 'group') {
+            return (
+              <div key={`group-${entry.label}`} className="flex gap-2">
+                <div className="w-1 shrink-0 rounded-full bg-primary" />
+                <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground px-1">{entry.label}</span>
+                  {entry.phases.map((phase) => (
+                    <PhaseRow
+                      key={phase.id}
+                      phase={phase}
+                      editable={timeline.status !== 'COMPLETED'}
+                      onEdit={() => setEditingPhaseId(phase.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          }
+          const phase = entry.phase;
+          return (
+            <PhaseRow
+              key={phase.id}
+              phase={phase}
+              editable={timeline.status !== 'COMPLETED'}
+              onEdit={() => setEditingPhaseId(phase.id)}
+            />
+          );
+        })}
       </div>
 
       {editingPhaseId && (
