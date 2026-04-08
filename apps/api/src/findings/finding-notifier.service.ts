@@ -101,8 +101,8 @@ function getDocumentContextTitle(
   return 'Document submission';
 }
 
-/** Matches People page tab URL hashes (see PeoplePageTabs). */
-function scopeHashFragment(scope: FindingScope): string {
+/** Matches People page `?tab=` query (see PeoplePageTabs). */
+function scopePeopleTabParam(scope: FindingScope): string {
   switch (scope) {
     case FindingScope.people:
       return 'people';
@@ -176,7 +176,7 @@ function buildFindingDeepLink(params: {
     return `${base}/${organizationId}/tasks/${taskId}`;
   }
   if (findingScope) {
-    return `${base}/${organizationId}/people#${scopeHashFragment(findingScope)}`;
+    return `${base}/${organizationId}/people?tab=${scopePeopleTabParam(findingScope)}`;
   }
   if (evidenceSubmissionId && evidenceSubmissionFormType) {
     return `${base}/${organizationId}/documents/${evidenceSubmissionFormType}/submissions/${evidenceSubmissionId}`;

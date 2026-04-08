@@ -205,7 +205,7 @@ describe('FindingNotifierService', () => {
       );
     });
 
-    it('builds People page URLs with hash for scope-based findings', async () => {
+    it('builds People page URLs with tab query for scope-based findings', async () => {
       await service.notifyFindingCreated({
         organizationId: 'org_123',
         findingId: 'fdg_scope',
@@ -222,7 +222,7 @@ describe('FindingNotifierService', () => {
       expect(novuTriggerMock).toHaveBeenCalledWith(
         expect.objectContaining({
           payload: expect.objectContaining({
-            findingUrl: 'https://app.trycomp.ai/org_123/people#devices',
+            findingUrl: 'https://app.trycomp.ai/org_123/people?tab=devices',
           }),
         }),
       );
@@ -243,7 +243,7 @@ describe('FindingNotifierService', () => {
       expect(novuTriggerMock).toHaveBeenCalledWith(
         expect.objectContaining({
           payload: expect.objectContaining({
-            findingUrl: 'https://app.trycomp.ai/org_123/people#people',
+            findingUrl: 'https://app.trycomp.ai/org_123/people?tab=people',
           }),
         }),
       );
