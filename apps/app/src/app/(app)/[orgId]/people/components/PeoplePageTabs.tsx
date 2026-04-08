@@ -45,14 +45,6 @@ function hashForTab(tab: string): string {
   }
 }
 
-/**
- * Deep link to expand/highlight a finding (PeopleFindingsList, FindingsList).
- * Must not be rewritten by tab hash normalization.
- */
-function isFindingDeepLinkHash(hash: string): boolean {
-  return hash.replace(/^#/, '').toLowerCase().startsWith('finding-');
-}
-
 /** URL hash → tab value; falls back to `people` when missing or unavailable */
 function tabFromHash(
   hash: string,
@@ -60,9 +52,6 @@ function tabFromHash(
   showRoleMapping: boolean,
 ): string {
   const raw = hash.replace(/^#/, '').toLowerCase();
-  if (raw.startsWith('finding-')) {
-    return 'people';
-  }
   if (!raw || raw === 'people') {
     return 'people';
   }
@@ -104,9 +93,6 @@ export function PeoplePageTabs({
   const syncFromLocation = useCallback(() => {
     const tab = tabFromHash(window.location.hash, showEmployeeTasks, showRoleMapping);
     setActiveTab(tab);
-    if (isFindingDeepLinkHash(window.location.hash)) {
-      return;
-    }
     const expectedHash = hashForTab(tab);
     const currentRaw = window.location.hash.replace(/^#/, '');
     if (currentRaw !== '' && currentRaw !== expectedHash) {

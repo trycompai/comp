@@ -49,19 +49,14 @@ export function PeopleFindingsList({
   const { hasPermission } = usePermissions();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
-  const [targetFindingId, setTargetFindingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const hash = window.location.hash;
-    if (hash.startsWith('#finding-')) {
-      const findingId = hash.replace('#finding-', '');
-      setTargetFindingId(findingId);
-      setShowAll(true);
-
+    if (hash) {
       const timer = setTimeout(() => {
-        setTargetFindingId(null);
+        // Clean up the URL hash
         window.history.replaceState(null, '', window.location.pathname);
       }, 2500);
 
@@ -199,7 +194,6 @@ export function PeopleFindingsList({
                 key={finding.id}
                 finding={finding}
                 isExpanded={expandedId === finding.id}
-                isTarget={targetFindingId === finding.id}
                 canChangeStatus={canChangeStatus}
                 canSetRestrictedStatus={canSetRestrictedStatus}
                 canSetReadyForReview={isPlatformAdmin || !isAuditor}
