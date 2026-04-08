@@ -94,6 +94,7 @@ export class TimelinesTemplatesService {
     data: {
       name: string;
       description?: string;
+      groupLabel?: string;
       orderIndex: number;
       defaultDurationWeeks: number;
       completionType?: PhaseCompletionType;
@@ -121,6 +122,7 @@ export class TimelinesTemplatesService {
           templateId,
           name: data.name,
           description: data.description,
+          groupLabel: data.groupLabel,
           orderIndex: data.orderIndex,
           defaultDurationWeeks: data.defaultDurationWeeks,
           completionType: data.completionType ?? PhaseCompletionType.MANUAL,
@@ -135,6 +137,7 @@ export class TimelinesTemplatesService {
     data: {
       name?: string;
       description?: string;
+      groupLabel?: string;
       orderIndex?: number;
       defaultDurationWeeks?: number;
       completionType?: PhaseCompletionType;

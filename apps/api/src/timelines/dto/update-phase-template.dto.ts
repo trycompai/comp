@@ -21,6 +21,11 @@ export class UpdatePhaseTemplateDto {
   @IsString()
   description?: string;
 
+  @ApiPropertyOptional({ description: 'Group label for sub-phase grouping' })
+  @IsOptional()
+  @IsString()
+  groupLabel?: string;
+
   @ApiPropertyOptional({
     description: 'Position in the phase sequence (0-based)',
     minimum: 0,
