@@ -28,8 +28,10 @@ interface TimelineTabProps {
 export function TimelineTab({ orgId }: TimelineTabProps) {
   const { timelines, isLoading, mutate } = useAdminOrgTimelines(orgId);
   const [recreating, setRecreating] = useState(false);
+  const [recreateOpen, setRecreateOpen] = useState(false);
 
   const handleRecreate = async () => {
+    setRecreateOpen(false);
     setRecreating(true);
     const res = await api.post(
       `/v1/admin/organizations/${orgId}/timelines/recreate`,
@@ -57,7 +59,7 @@ export function TimelineTab({ orgId }: TimelineTabProps) {
         <Text size="sm" variant="muted">
           {timelines.length} timeline{timelines.length !== 1 ? 's' : ''}
         </Text>
-        <AlertDialog>
+        <AlertDialog open={recreateOpen} onOpenChange={setRecreateOpen}>
           <AlertDialogTrigger asChild>
             <Button
               size="sm"
