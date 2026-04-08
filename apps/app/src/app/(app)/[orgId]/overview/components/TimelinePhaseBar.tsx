@@ -150,58 +150,37 @@ export function TimelinePhaseBar({
         })}
       </div>
 
-      {/* Mobile version — groups stay in one row, ungrouped phases get their own row */}
-      <div className="flex flex-col gap-1.5 lg:hidden">
-        {groups.map((group, gIdx) => {
-          const first = group.phases[0];
-          const last = group.phases[group.phases.length - 1];
-
-          if (group.phases.length === 1) {
-            return (
-              <div key={`m-${first.id}`}>
-                <PhaseSegment
-                  phase={first}
-                  className="rounded-md"
-                  style={{ height: 28 }}
-                />
-                {showDates && first.startDate && (
-                  <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5 px-0.5">
-                    <span>{formatShortDate(first.startDate)}</span>
-                    <span>{formatShortDate(first.endDate)}</span>
-                  </div>
-                )}
+      {/* Mobile version — vertical step list */}
+      <div className="flex flex-col lg:hidden">
+        {groups.map((group, gIdx) => (
+          <div key={`m-group-${gIdx}`}>
+            {group.label && (
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5 mt-1 first:mt-0">
+                {group.label}
               </div>
-            );
-          }
-
-          return (
-            <div key={`m-group-${gIdx}`}>
-              {group.label && (
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <div className="h-px flex-1 bg-muted-foreground/30" />
-                  <span className="text-[10px] text-muted-foreground shrink-0">{group.label}</span>
-                  <div className="h-px flex-1 bg-muted-foreground/30" />
+            )}
+            {group.phases.map((phase) => {
+              const isCompleted = phase.status === 'COMPLETED';
+              const isActive = phase.status === 'IN_PROGRESS';
+              return (
+                <div
+                  key={`m-${phase.id}`}
+                  className={`flex items-center gap-2 py-1.5 text-sm ${isActive ? 'text-foreground font-medium' : isCompleted ? 'text-primary' : 'text-muted-foreground'}`}
+                >
+                  <span className="w-4 shrink-0 text-center text-xs">
+                    {isCompleted ? '✓' : isActive ? '●' : '○'}
+                  </span>
+                  <span className="flex-1 truncate">{phase.name}</span>
+                  {showDates && phase.startDate && (
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                      {formatShortDate(phase.startDate)} — {formatShortDate(phase.endDate)}
+                    </span>
+                  )}
                 </div>
-              )}
-              <div className="flex overflow-hidden rounded-md" style={{ height: 28 }}>
-                {group.phases.map((phase, pIdx) => (
-                  <PhaseSegment
-                    key={`m-${phase.id}`}
-                    phase={phase}
-                    className={pIdx < group.phases.length - 1 ? 'border-r border-background/50' : ''}
-                    inGroup
-                  />
-                ))}
-              </div>
-              {showDates && first.startDate && (
-                <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5 px-0.5">
-                  <span>{formatShortDate(first.startDate)}</span>
-                  <span>{formatShortDate(last.endDate)}</span>
-                </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       {/* Date markers — hidden on mobile */}
