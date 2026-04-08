@@ -367,6 +367,7 @@ export class FindingsService {
       evidenceSubmissionId: evidenceSubmission?.id,
       evidenceSubmissionFormType: resolvedFormType,
       evidenceSubmissionSubmittedById: evidenceSubmission?.submittedById,
+      findingScope: createDto.scope ?? null,
       findingContent: createDto.content,
       findingType: createDto.type ?? FindingType.soc2,
       actorUserId: userId,
@@ -539,6 +540,7 @@ export class FindingsService {
           finding.evidenceFormType ?? finding.evidenceSubmission?.formType,
         evidenceSubmissionSubmittedById:
           finding.evidenceSubmission?.submittedById,
+        findingScope: finding.scope ?? null,
         findingContent: updatedFinding.content,
         findingType: updatedFinding.type,
         actorUserId: userId,

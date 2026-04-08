@@ -1,4 +1,4 @@
-import { db, FindingStatus, FindingType } from '@db';
+import { db, FindingScope, FindingStatus, FindingType } from '@db';
 import { Injectable, Logger } from '@nestjs/common';
 import { isUserUnsubscribed } from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
@@ -37,6 +37,7 @@ interface NotificationParams {
   evidenceSubmissionId?: string;
   evidenceSubmissionFormType?: string;
   evidenceSubmissionSubmittedById?: string | null;
+  findingScope?: FindingScope | null;
   findingContent: string;
   findingType: FindingType;
   actorUserId: string;
@@ -100,6 +101,92 @@ function getDocumentContextTitle(
   return 'Document submission';
 }
 
+/** Matches People page tab URL hashes (see PeoplePageTabs). */
+function scopeHashFragment(scope: FindingScope): string {
+  switch (scope) {
+    case FindingScope.people:
+      return 'people';
+    case FindingScope.people_tasks:
+      return 'tasks';
+    case FindingScope.people_devices:
+      return 'devices';
+    case FindingScope.people_chart:
+      return 'chart';
+    default:
+      return 'people';
+  }
+}
+
+function scopeContextTitle(scope: FindingScope): string {
+  switch (scope) {
+    case FindingScope.people:
+      return 'People';
+    case FindingScope.people_tasks:
+      return 'People: Tasks';
+    case FindingScope.people_devices:
+      return 'People: Devices';
+    case FindingScope.people_chart:
+      return 'People: Chart';
+    default:
+      return 'People';
+  }
+}
+
+function resolveFindingContextTitle(params: {
+  taskTitle?: string;
+  evidenceSubmissionFormType?: string;
+  evidenceSubmissionId?: string;
+  findingScope?: FindingScope | null;
+}): string {
+  const {
+    taskTitle,
+    evidenceSubmissionFormType,
+    evidenceSubmissionId,
+    findingScope,
+  } = params;
+  if (taskTitle) {
+    return taskTitle;
+  }
+  if (findingScope) {
+    return scopeContextTitle(findingScope);
+  }
+  return getDocumentContextTitle(
+    evidenceSubmissionFormType,
+    evidenceSubmissionId,
+  );
+}
+
+function buildFindingDeepLink(params: {
+  organizationId: string;
+  taskId?: string;
+  evidenceSubmissionId?: string;
+  evidenceSubmissionFormType?: string;
+  findingScope?: FindingScope | null;
+}): string {
+  const base = getAppUrl();
+  const {
+    organizationId,
+    taskId,
+    evidenceSubmissionId,
+    evidenceSubmissionFormType,
+    findingScope,
+  } = params;
+
+  if (evidenceSubmissionId && evidenceSubmissionFormType) {
+    return `${base}/${organizationId}/documents/${evidenceSubmissionFormType}/submissions/${evidenceSubmissionId}`;
+  }
+  if (evidenceSubmissionFormType) {
+    return `${base}/${organizationId}/documents/${evidenceSubmissionFormType}`;
+  }
+  if (taskId) {
+    return `${base}/${organizationId}/tasks/${taskId}`;
+  }
+  if (findingScope) {
+    return `${base}/${organizationId}/people#${scopeHashFragment(findingScope)}`;
+  }
+  return `${base}/${organizationId}/overview`;
+}
+
 // ============================================================================
 // Service
 // ============================================================================
@@ -129,6 +216,7 @@ export class FindingNotifierService {
       findingType,
       actorUserId,
       actorName,
+      findingScope,
     } = params;
 
     const recipients = taskId
@@ -145,10 +233,17 @@ export class FindingNotifierService {
       return;
     }
 
-    const contextTitle =
-      taskTitle ??
-      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
-    const contextLabel = taskId ? 'task' : 'document submission';
+    const contextTitle = resolveFindingContextTitle({
+      taskTitle,
+      evidenceSubmissionFormType,
+      evidenceSubmissionId,
+      findingScope,
+    });
+    const contextLabel = taskId
+      ? 'task'
+      : findingScope
+        ? 'People area'
+        : 'document submission';
 
     await this.sendNotifications({
       ...params,
@@ -175,6 +270,7 @@ export class FindingNotifierService {
       actorUserId,
       actorName,
       findingCreatorMemberId,
+      findingScope,
     } = params;
 
     this.logger.log(
@@ -197,9 +293,12 @@ export class FindingNotifierService {
       `[notifyReadyForReview] Finding ${findingId}: Sending to ${recipients.length} recipient(s): ${recipients.map((r) => r.email).join(', ')}`,
     );
 
-    const contextTitle =
-      taskTitle ??
-      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
+    const contextTitle = resolveFindingContextTitle({
+      taskTitle,
+      evidenceSubmissionFormType,
+      evidenceSubmissionId,
+      findingScope,
+    });
 
     await this.sendNotifications({
       ...params,
@@ -226,6 +325,7 @@ export class FindingNotifierService {
       evidenceSubmissionSubmittedById,
       actorUserId,
       actorName,
+      findingScope,
     } = params;
 
     const recipients = taskId
@@ -242,9 +342,12 @@ export class FindingNotifierService {
       return;
     }
 
-    const contextTitle =
-      taskTitle ??
-      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
+    const contextTitle = resolveFindingContextTitle({
+      taskTitle,
+      evidenceSubmissionFormType,
+      evidenceSubmissionId,
+      findingScope,
+    });
 
     await this.sendNotifications({
       ...params,
@@ -271,6 +374,7 @@ export class FindingNotifierService {
       evidenceSubmissionSubmittedById,
       actorUserId,
       actorName,
+      findingScope,
     } = params;
 
     const recipients = taskId
@@ -287,9 +391,12 @@ export class FindingNotifierService {
       return;
     }
 
-    const contextTitle =
-      taskTitle ??
-      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
+    const contextTitle = resolveFindingContextTitle({
+      taskTitle,
+      evidenceSubmissionFormType,
+      evidenceSubmissionId,
+      findingScope,
+    });
 
     await this.sendNotifications({
       ...params,
@@ -328,6 +435,7 @@ export class FindingNotifierService {
       heading,
       message,
       newStatus,
+      findingScope,
     } = params;
 
     // Fetch organization name
@@ -337,15 +445,19 @@ export class FindingNotifierService {
     });
     const organizationName = organization?.name ?? 'your organization';
 
-    const contextTitle =
-      taskTitle ??
-      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
-    const findingUrl =
-      evidenceSubmissionId && evidenceSubmissionFormType
-        ? `${getAppUrl()}/${organizationId}/documents/${evidenceSubmissionFormType}/submissions/${evidenceSubmissionId}`
-        : evidenceSubmissionFormType
-          ? `${getAppUrl()}/${organizationId}/documents/${evidenceSubmissionFormType}`
-          : `${getAppUrl()}/${organizationId}/tasks/${taskId}`;
+    const contextTitle = resolveFindingContextTitle({
+      taskTitle,
+      evidenceSubmissionFormType,
+      evidenceSubmissionId,
+      findingScope,
+    });
+    const findingUrl = buildFindingDeepLink({
+      organizationId,
+      taskId,
+      evidenceSubmissionId,
+      evidenceSubmissionFormType,
+      findingScope,
+    });
     const typeLabel = TYPE_LABELS[findingType];
     const statusLabel = newStatus ? STATUS_LABELS[newStatus] : undefined;
 
