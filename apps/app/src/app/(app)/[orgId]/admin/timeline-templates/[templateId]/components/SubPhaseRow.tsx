@@ -8,6 +8,15 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import type { AdminTimelinePhaseTemplate } from '@/hooks/use-admin-timelines';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
   Button,
   Input,
   Select,
@@ -58,6 +67,7 @@ export function SubPhaseRow({
 }: SubPhaseRowProps) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const {
     register,
@@ -179,14 +189,38 @@ export function SubPhaseRow({
         loading={saving}
         disabled={!isDirty}
       />
-      <Button
-        type="button"
-        size="sm"
-        variant="ghost"
-        iconLeft={<TrashCan size={14} />}
-        loading={deleting}
-        onClick={handleDelete}
-      />
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogTrigger
+          render={
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              iconLeft={<TrashCan size={14} />}
+              loading={deleting}
+            />
+          }
+        />
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete sub-phase?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this sub-phase from the template.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDeleteOpen(false);
+                handleDelete();
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }
