@@ -3,10 +3,12 @@ import { auth } from '@/utils/auth';
 import { s3Client, BUCKET_NAME } from '@/app/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { FindingScope } from '@db';
 import { db } from '@db/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { PeopleFindings } from './all/components/PeopleFindings';
 import { TeamMembers } from './all/components/TeamMembers';
 import { getEmployeeSyncConnections } from './all/data/queries';
 import { PeoplePageTabs } from './components/PeoplePageTabs';
@@ -187,6 +189,12 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           {/* Fleet devices (legacy) — shown exactly as main branch */}
           <DeviceComplianceChart devices={filteredFleetDevices} />
           <EmployeeDevicesList devices={filteredFleetDevices} isCurrentUserOwner={isCurrentUserOwner} />
+          <PeopleFindings
+            scope={FindingScope.people_devices}
+            isAuditor={isAuditor}
+            isPlatformAdmin={isPlatformAdmin}
+            isAdminOrOwner={canManageMembers}
+          />
         </div>
       }
       orgChartContent={
