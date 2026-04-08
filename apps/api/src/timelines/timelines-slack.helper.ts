@@ -53,8 +53,8 @@ export function notifyReadyForReview({
     [
       section(`:bell:  *Ready for Review*`),
       section(
-        `*<${link}|${orgName}>* marked *${phaseName}* as ready\n` +
-        `_${frameworkName}_`,
+        `*<${link}|${orgName}>*  (\`${orgId}\`)\n` +
+        `Marked *${phaseName}* as ready  ·  _${frameworkName}_`,
       ),
       context(':arrow_right:  Customer is waiting for CX to begin the next phase'),
       divider(),
@@ -88,8 +88,8 @@ export function notifyPhaseCompleted({
     [
       section(`:white_check_mark:  *Phase Completed*`),
       section(
-        `*<${link}|${orgName}>*  ·  _${frameworkName}_\n` +
-        `Phase: *${phaseName}*`,
+        `*<${link}|${orgName}>*  (\`${orgId}\`)\n` +
+        `Phase: *${phaseName}*  ·  _${frameworkName}_`,
       ),
       context(typeLabel),
       divider(),
@@ -112,7 +112,7 @@ export function notifyTimelineCompleted({
     [
       section(`:tada:  *Timeline Completed*`),
       section(
-        `*<${link}|${orgName}>* has completed all phases for *${frameworkName}*`,
+        `*<${link}|${orgName}>*  (\`${orgId}\`) has completed all phases for *${frameworkName}*`,
       ),
       context(':checkered_flag:  Ready for final report delivery'),
       divider(),
