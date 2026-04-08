@@ -46,18 +46,29 @@ function buildPhaseGroups(sorted: Phase[]): PhaseGroup[] {
 
   while (i < sorted.length) {
     const label = sorted[i].groupLabel ?? null;
-    const phases: Phase[] = [];
 
-    while (i < sorted.length && (sorted[i].groupLabel ?? null) === label) {
-      phases.push(sorted[i]);
+    if (label) {
+      // Named group — collect consecutive phases with same label
+      const phases: Phase[] = [];
+      while (i < sorted.length && (sorted[i].groupLabel ?? null) === label) {
+        phases.push(sorted[i]);
+        i++;
+      }
+      groups.push({
+        label,
+        phases,
+        totalWeeks: phases.reduce((sum, p) => sum + p.durationWeeks, 0),
+      });
+    } else {
+      // No group — each phase is its own group
+      const phase = sorted[i];
+      groups.push({
+        label: null,
+        phases: [phase],
+        totalWeeks: phase.durationWeeks,
+      });
       i++;
     }
-
-    groups.push({
-      label,
-      phases,
-      totalWeeks: phases.reduce((sum, p) => sum + p.durationWeeks, 0),
-    });
   }
 
   return groups;
