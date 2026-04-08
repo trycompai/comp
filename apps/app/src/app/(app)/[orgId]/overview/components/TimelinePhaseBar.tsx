@@ -1,6 +1,5 @@
 'use client';
 
-import { Checkmark } from '@trycompai/design-system/icons';
 
 interface Phase {
   id: string;
@@ -225,7 +224,7 @@ function PhaseSegment({
         <span className="truncate px-2 text-[11px] text-primary-foreground">
           {phase.name}
         </span>
-        <Checkmark size={12} className="absolute right-1 top-1 text-primary-foreground/70" />
+
       </div>
     );
   }
