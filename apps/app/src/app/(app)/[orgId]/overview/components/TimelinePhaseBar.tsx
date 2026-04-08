@@ -10,6 +10,7 @@ interface Phase {
   orderIndex: number;
   startDate?: string | null;
   endDate?: string | null;
+  completionPercent?: number;
 }
 
 interface TimelinePhaseBarProps {
@@ -230,7 +231,7 @@ function PhaseSegment({
   }
 
   if (phase.status === 'IN_PROGRESS') {
-    const progress = getProgressPercent(phase);
+    const progress = phase.completionPercent ?? getProgressPercent(phase);
     return (
       <div
         className={`relative flex items-center justify-center overflow-hidden ${className}`}
@@ -248,7 +249,7 @@ function PhaseSegment({
         <div className="absolute inset-y-0 left-0 bg-primary/50" style={{ width: `${progress}%` }} />
         <div className="absolute inset-y-0 w-[3px] bg-primary animate-pulse" style={{ left: `${progress}%` }} />
         <span className="relative z-10 truncate px-2 text-[11px] font-semibold text-foreground">
-          {phase.name}
+          {phase.name}{phase.completionPercent !== undefined ? ` (${phase.completionPercent}%)` : ''}
         </span>
       </div>
     );

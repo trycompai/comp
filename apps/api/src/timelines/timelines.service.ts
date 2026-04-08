@@ -10,6 +10,7 @@ import {
   resolveTemplate,
   createInstanceFromTemplate,
 } from './timelines-template-resolver';
+import { getOverviewScores } from '../frameworks/frameworks-scores.helper';
 
 @Injectable()
 export class TimelinesService {
@@ -22,10 +23,9 @@ export class TimelinesService {
   // ---------------------------------------------------------------------------
 
   async findAllForOrganization(organizationId: string) {
-    // Ensure timelines exist for all framework instances in this org
     await this.ensureTimelinesExist(organizationId);
 
-    return db.timelineInstance.findMany({
+    const timelines = await db.timelineInstance.findMany({
       where: { organizationId },
       include: {
         phases: { orderBy: { orderIndex: 'asc' } },
@@ -33,6 +33,51 @@ export class TimelinesService {
         template: true,
       },
     });
+
+    // Compute live completion percentages for AUTO_* phases
+    const scores = await getOverviewScores(organizationId).catch(() => null);
+    if (!scores) return timelines;
+
+    const policyPct = scores.policies.total > 0
+      ? Math.round((scores.policies.published / scores.policies.total) * 100)
+      : 0;
+    const taskPct = scores.tasks.total > 0
+      ? Math.round((scores.tasks.done / scores.tasks.total) * 100)
+      : 0;
+    const peoplePct = scores.people.total > 0
+      ? Math.round((scores.people.completed / scores.people.total) * 100)
+      : 0;
+
+    const pctMap: Record<string, number> = {
+      AUTO_POLICIES: policyPct,
+      AUTO_TASKS: taskPct,
+      AUTO_PEOPLE: peoplePct,
+    };
+
+    // Revert completed AUTO_* phases that dropped below 100%, and enrich with live %
+    for (const timeline of timelines) {
+      if (timeline.status !== 'ACTIVE') continue;
+
+      for (const phase of timeline.phases) {
+        const livePct = pctMap[phase.completionType];
+        if (livePct === undefined) continue;
+
+        // Attach live percentage (cast to add dynamic property)
+        (phase as any).completionPercent = livePct;
+
+        // Revert if completed but metric dropped
+        if (phase.status === 'COMPLETED' && livePct < 100) {
+          await db.timelinePhase.update({
+            where: { id: phase.id },
+            data: { status: 'IN_PROGRESS', completedAt: null, completedById: null },
+          });
+          (phase as any).status = 'IN_PROGRESS';
+          (phase as any).completedAt = null;
+        }
+      }
+    }
+
+    return timelines;
   }
 
   /**
