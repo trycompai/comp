@@ -6,6 +6,7 @@ import {
   TimelineStatus,
 } from '@db';
 import { TimelinesService } from '../timelines/timelines.service';
+import { getOverviewScores } from './frameworks-scores.helper';
 
 const logger = new Logger('FrameworksTimelineHelper');
 
@@ -133,8 +134,8 @@ export async function checkAutoCompletePhases({
 
   if (allControlIds.length === 0) return;
 
-  // Fetch tasks, policies, and people data in parallel
-  const [tasks, policies, members] = await Promise.all([
+  // Fetch tasks and overview scores in parallel
+  const [tasks, scores] = await Promise.all([
     db.task.findMany({
       where: {
         organizationId,
@@ -142,20 +143,8 @@ export async function checkAutoCompletePhases({
       },
       include: { controls: { select: { id: true } } },
     }),
-    db.policy.findMany({
-      where: { organizationId },
-      select: { id: true, status: true },
-    }),
-    db.member.findMany({
-      where: { organizationId, isActive: true, deactivated: false },
-      select: { id: true, department: true },
-    }),
+    getOverviewScores(organizationId),
   ]);
-
-  // People completion: check employee training via evidence submissions
-  const employeeFormCount = await db.evidenceSubmission.count({
-    where: { organizationId, formType: 'employee' },
-  });
 
   for (const phase of phases) {
     const fiId = phase.instance.frameworkInstanceId;
@@ -173,11 +162,11 @@ export async function checkAutoCompletePhases({
         (t) => t.status === 'done' || t.status === 'not_relevant',
       );
     } else if (phase.completionType === PhaseCompletionType.AUTO_POLICIES) {
-      if (policies.length === 0) continue;
-      shouldComplete = policies.every((p) => p.status === 'published');
+      const { totalPolicies, publishedPolicies } = scores.policies;
+      shouldComplete = totalPolicies > 0 && publishedPolicies >= totalPolicies;
     } else if (phase.completionType === PhaseCompletionType.AUTO_PEOPLE) {
-      if (members.length === 0) continue;
-      shouldComplete = employeeFormCount >= members.length;
+      const { total, completed } = scores.people;
+      shouldComplete = total > 0 && completed >= total;
     }
 
     if (!shouldComplete) continue;
