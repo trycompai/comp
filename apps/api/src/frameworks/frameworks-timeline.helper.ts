@@ -162,8 +162,8 @@ export async function checkAutoCompletePhases({
         (t) => t.status === 'done' || t.status === 'not_relevant',
       );
     } else if (phase.completionType === PhaseCompletionType.AUTO_POLICIES) {
-      const { totalPolicies, publishedPolicies } = scores.policies;
-      shouldComplete = totalPolicies > 0 && publishedPolicies >= totalPolicies;
+      const { total, published } = scores.policies;
+      shouldComplete = total > 0 && published >= total;
     } else if (phase.completionType === PhaseCompletionType.AUTO_PEOPLE) {
       const { total, completed } = scores.people;
       shouldComplete = total > 0 && completed >= total;
