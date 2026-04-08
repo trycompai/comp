@@ -362,4 +362,17 @@ export const monitoringIntegrations: Integration[] = [
     ],
     setupHint: 'Requires Better Uptime API token',
   },
+  {
+    id: 'openstatus',
+    name: 'openstatus',
+    domain: 'openstatus.dev',
+    description: 'Uptime monitoring and status page',
+    category: 'Monitoring',
+    examplePrompts: [
+      'Get openstatus monitor status',
+      'Check recent incidents from openstatus',
+      'Verify status page uptime metrics',
+    ],
+    setupHint: 'Requires openstatus API token',
+  },
 ];
