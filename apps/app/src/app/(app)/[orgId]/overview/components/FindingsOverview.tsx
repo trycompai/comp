@@ -55,7 +55,7 @@ function findingHref(finding: FindingWithTask, organizationId: string): string {
     return `/${organizationId}/documents/${finding.evidenceSubmission.formType}?tab=findings`;
   }
   if (finding.scope) {
-    const peopleHash =
+    const peopleTab =
       finding.scope === FindingScope.people
         ? 'people'
         : finding.scope === FindingScope.people_tasks
@@ -65,7 +65,7 @@ function findingHref(finding: FindingWithTask, organizationId: string): string {
             : finding.scope === FindingScope.people_chart
               ? 'chart'
               : 'people';
-    return `/${organizationId}/people#${peopleHash}`;
+    return `/${organizationId}/people?tab=${peopleTab}`;
   }
   return `/${organizationId}/overview`;
 }
