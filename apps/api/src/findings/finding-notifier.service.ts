@@ -172,17 +172,17 @@ function buildFindingDeepLink(params: {
     findingScope,
   } = params;
 
-  if (evidenceSubmissionId && evidenceSubmissionFormType) {
-    return `${base}/${organizationId}/documents/${evidenceSubmissionFormType}/submissions/${evidenceSubmissionId}`;
-  }
-  if (evidenceSubmissionFormType) {
-    return `${base}/${organizationId}/documents/${evidenceSubmissionFormType}`;
-  }
   if (taskId) {
     return `${base}/${organizationId}/tasks/${taskId}`;
   }
   if (findingScope) {
     return `${base}/${organizationId}/people#${scopeHashFragment(findingScope)}`;
+  }
+  if (evidenceSubmissionId && evidenceSubmissionFormType) {
+    return `${base}/${organizationId}/documents/${evidenceSubmissionFormType}/submissions/${evidenceSubmissionId}`;
+  }
+  if (evidenceSubmissionFormType) {
+    return `${base}/${organizationId}/documents/${evidenceSubmissionFormType}`;
   }
   return `${base}/${organizationId}/overview`;
 }

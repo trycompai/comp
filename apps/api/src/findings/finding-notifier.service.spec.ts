@@ -227,5 +227,26 @@ describe('FindingNotifierService', () => {
         }),
       );
     });
+
+    it('aligns title and URL by preferring People scope over document fields when both are set', async () => {
+      await service.notifyFindingCreated({
+        organizationId: 'org_123',
+        findingId: 'fdg_mixed',
+        findingScope: FindingScope.people,
+        evidenceSubmissionFormType: 'meeting',
+        findingContent: 'Ambiguous finding',
+        findingType: FindingType.soc2,
+        actorUserId: 'usr_actor',
+        actorName: 'Actor',
+      });
+
+      expect(novuTriggerMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            findingUrl: 'https://app.trycomp.ai/org_123/people#people',
+          }),
+        }),
+      );
+    });
   });
 });
