@@ -101,7 +101,12 @@ export function TimelinePhaseBar({
               {group.label ? (
                 <>
                   <span className="truncate text-[10px] text-muted-foreground px-1">
-                    {group.label}
+                    {group.label}{(() => {
+                      const pcts = group.phases.map((p) => p.completionPercent).filter((p): p is number => p !== undefined);
+                      if (pcts.length === 0) return '';
+                      const avg = Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length);
+                      return ` (${avg}%)`;
+                    })()}
                   </span>
                   <div className="flex w-full items-center mt-0.5">
                     <div className="h-[6px] w-px bg-muted-foreground/40" />
@@ -131,19 +136,62 @@ export function TimelinePhaseBar({
             return <PhaseSegment key={phase.id} phase={phase} className={rounded} />;
           }
 
+          // Compute group-level average completion
+          const pcts = group.phases.map((p) => p.completionPercent).filter((p): p is number => p !== undefined);
+          const groupPct = pcts.length > 0 ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null;
+          const allComplete = group.phases.every((p) => p.status === 'COMPLETED' && (p.completionPercent === undefined || p.completionPercent >= 100));
+
+          const groupRounded = `${isFirstGroup ? 'rounded-l-md' : ''} ${isLastGroup ? 'rounded-r-md' : ''}`;
+
+          if (allComplete) {
+            return (
+              <div
+                key={`group-bar-${gIdx}`}
+                className={`flex overflow-hidden bg-primary ${groupRounded}`}
+                style={{ flex: group.totalWeeks, height }}
+              >
+                {group.phases.map((phase, pIdx) => (
+                  <div
+                    key={phase.id}
+                    className={`flex items-center justify-center ${pIdx < group.phases.length - 1 ? 'border-r border-primary-foreground/20' : ''}`}
+                    style={{ flex: phase.durationWeeks }}
+                  >
+                    <span className="truncate px-1 text-[11px] text-primary-foreground">{phase.name}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
           return (
             <div
               key={`group-bar-${gIdx}`}
-              className={`flex overflow-hidden ${isFirstGroup ? 'rounded-l-md' : ''} ${isLastGroup ? 'rounded-r-md' : ''}`}
-              style={{ flex: group.totalWeeks }}
+              className={`relative flex overflow-hidden ${groupRounded}`}
+              style={{
+                flex: group.totalWeeks,
+                height,
+                background: `repeating-linear-gradient(
+                  -45deg,
+                  var(--muted),
+                  var(--muted) 4px,
+                  color-mix(in oklch, var(--primary) 10%, transparent) 4px,
+                  color-mix(in oklch, var(--primary) 10%, transparent) 8px
+                )`,
+              }}
             >
+              {/* Single cohesive fill for the whole group */}
+              {groupPct !== null && (
+                <div className="absolute inset-y-0 left-0 bg-primary/50" style={{ width: `${groupPct}%` }} />
+              )}
+              {/* Sub-phase name dividers */}
               {group.phases.map((phase, pIdx) => (
-                <PhaseSegment
+                <div
                   key={phase.id}
-                  phase={phase}
-                  className={pIdx < group.phases.length - 1 ? 'border-r border-background/50' : ''}
-                  inGroup
-                />
+                  className={`relative z-10 flex items-center justify-center ${pIdx < group.phases.length - 1 ? 'border-r border-background/30' : ''}`}
+                  style={{ flex: phase.durationWeeks }}
+                >
+                  <span className="truncate px-1 text-[11px] font-medium text-foreground">{phase.name}</span>
+                </div>
               ))}
             </div>
           );
@@ -164,15 +212,32 @@ export function TimelinePhaseBar({
             );
           }
 
+          const mPcts = group.phases.map((p) => p.completionPercent).filter((p): p is number => p !== undefined);
+          const mGroupPct = mPcts.length > 0 ? Math.round(mPcts.reduce((a, b) => a + b, 0) / mPcts.length) : null;
+          const mAllComplete = group.phases.every((p) => p.status === 'COMPLETED' && (p.completionPercent === undefined || p.completionPercent >= 100));
+
           return (
-            <div key={`m-group-${gIdx}`} className="flex overflow-hidden rounded-md" style={{ height: 28 }}>
+            <div
+              key={`m-group-${gIdx}`}
+              className={`relative flex overflow-hidden rounded-md ${mAllComplete ? 'bg-primary' : ''}`}
+              style={mAllComplete ? { height: 28 } : {
+                height: 28,
+                background: `repeating-linear-gradient(-45deg, var(--muted), var(--muted) 4px, color-mix(in oklch, var(--primary) 10%, transparent) 4px, color-mix(in oklch, var(--primary) 10%, transparent) 8px)`,
+              }}
+            >
+              {!mAllComplete && mGroupPct !== null && (
+                <div className="absolute inset-y-0 left-0 bg-primary/50" style={{ width: `${mGroupPct}%` }} />
+              )}
               {group.phases.map((phase, pIdx) => (
-                <PhaseSegment
+                <div
                   key={`m-${phase.id}`}
-                  phase={phase}
-                  className={pIdx < group.phases.length - 1 ? 'border-r border-background/50' : ''}
-                  inGroup
-                />
+                  className={`relative z-10 flex items-center justify-center ${pIdx < group.phases.length - 1 ? 'border-r border-background/30' : ''}`}
+                  style={{ flex: phase.durationWeeks }}
+                >
+                  <span className={`truncate px-1 text-[11px] ${mAllComplete ? 'text-primary-foreground' : 'font-medium text-foreground'}`}>
+                    {phase.name}
+                  </span>
+                </div>
               ))}
             </div>
           );
