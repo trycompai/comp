@@ -151,29 +151,54 @@ export function TimelinePhaseBar({
       </div>
 
       {/* Mobile version — groups stay in one row, ungrouped phases get their own row */}
-      <div className="flex flex-col gap-1 lg:hidden">
+      <div className="flex flex-col gap-1.5 lg:hidden">
         {groups.map((group, gIdx) => {
+          const first = group.phases[0];
+          const last = group.phases[group.phases.length - 1];
+
           if (group.phases.length === 1) {
             return (
-              <PhaseSegment
-                key={`m-${group.phases[0].id}`}
-                phase={group.phases[0]}
-                className="rounded-md"
-                style={{ height: 28 }}
-              />
+              <div key={`m-${first.id}`}>
+                <PhaseSegment
+                  phase={first}
+                  className="rounded-md"
+                  style={{ height: 28 }}
+                />
+                {showDates && first.startDate && (
+                  <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5 px-0.5">
+                    <span>{formatShortDate(first.startDate)}</span>
+                    <span>{formatShortDate(first.endDate)}</span>
+                  </div>
+                )}
+              </div>
             );
           }
 
           return (
-            <div key={`m-group-${gIdx}`} className="flex overflow-hidden rounded-md" style={{ height: 28 }}>
-              {group.phases.map((phase, pIdx) => (
-                <PhaseSegment
-                  key={`m-${phase.id}`}
-                  phase={phase}
-                  className={pIdx < group.phases.length - 1 ? 'border-r border-background/50' : ''}
-                  inGroup
-                />
-              ))}
+            <div key={`m-group-${gIdx}`}>
+              {group.label && (
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <div className="h-px flex-1 bg-muted-foreground/30" />
+                  <span className="text-[10px] text-muted-foreground shrink-0">{group.label}</span>
+                  <div className="h-px flex-1 bg-muted-foreground/30" />
+                </div>
+              )}
+              <div className="flex overflow-hidden rounded-md" style={{ height: 28 }}>
+                {group.phases.map((phase, pIdx) => (
+                  <PhaseSegment
+                    key={`m-${phase.id}`}
+                    phase={phase}
+                    className={pIdx < group.phases.length - 1 ? 'border-r border-background/50' : ''}
+                    inGroup
+                  />
+                ))}
+              </div>
+              {showDates && first.startDate && (
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5 px-0.5">
+                  <span>{formatShortDate(first.startDate)}</span>
+                  <span>{formatShortDate(last.endDate)}</span>
+                </div>
+              )}
             </div>
           );
         })}
