@@ -149,19 +149,21 @@ export function TimelinePhaseBar({
         })}
       </div>
 
-      {/* Date markers */}
+      {/* Date markers — grouped phases show one start/end for the group */}
       {hasDates && (
         <div className="flex w-full gap-[3px] mt-1">
-          {sorted.map((phase, index) => {
-            const isLast = index === sorted.length - 1;
+          {groups.map((group, gIdx) => {
+            const first = group.phases[0];
+            const last = group.phases[group.phases.length - 1];
+            const isLastGroup = gIdx === groups.length - 1;
             return (
               <div
-                key={`date-${phase.id}`}
+                key={`date-group-${gIdx}`}
                 className="flex justify-between text-[10px] text-muted-foreground"
-                style={{ flex: phase.durationWeeks }}
+                style={{ flex: group.totalWeeks }}
               >
-                <span>{formatShortDate(phase.startDate)}</span>
-                {isLast && <span>{formatShortDate(phase.endDate)}</span>}
+                <span>{formatShortDate(first.startDate)}</span>
+                {isLastGroup && <span>{formatShortDate(last.endDate)}</span>}
               </div>
             );
           })}
