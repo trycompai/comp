@@ -154,14 +154,23 @@ export class TimelinesLifecycleService {
         },
       });
 
-      // Advance next pending phase to IN_PROGRESS
-      const nextPhase = instance.phases.find(
-        (p) =>
-          p.orderIndex > phase.orderIndex &&
-          p.status === TimelinePhaseStatus.PENDING,
+      // Advance next pending phase to IN_PROGRESS — but only if all prior phases are completed
+      const freshPhases = await tx.timelinePhase.findMany({
+        where: { instanceId },
+        orderBy: { orderIndex: 'asc' },
+      });
+
+      const nextPhase = freshPhases.find(
+        (p) => p.status === TimelinePhaseStatus.PENDING,
       );
 
-      if (nextPhase) {
+      const allPriorCompleted = nextPhase
+        ? freshPhases
+            .filter((p) => p.orderIndex < nextPhase.orderIndex)
+            .every((p) => p.status === TimelinePhaseStatus.COMPLETED)
+        : false;
+
+      if (nextPhase && allPriorCompleted) {
         await tx.timelinePhase.update({
           where: { id: nextPhase.id },
           data: { status: TimelinePhaseStatus.IN_PROGRESS },
