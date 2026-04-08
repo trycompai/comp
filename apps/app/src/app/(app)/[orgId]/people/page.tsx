@@ -168,7 +168,15 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           organizationId={orgId}
         />
       }
-      employeeTasksContent={showEmployeeTasks ? <EmployeesOverview /> : null}
+      employeeTasksContent={
+        showEmployeeTasks ? (
+          <EmployeesOverview
+            isAuditor={isAuditor}
+            isPlatformAdmin={isPlatformAdmin}
+            isAdminOrOwner={canManageMembers}
+          />
+        ) : null
+      }
       devicesContent={
         <div className="space-y-6">
           {/* Device Agent devices (new system) */}
