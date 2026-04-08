@@ -165,23 +165,14 @@ function TimelineCard({
         <TimelinePhaseBar phases={timeline.phases} showDates />
       </div>
 
-      <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-        {isDraft ? (
-          <span>Awaiting start date</span>
-        ) : (
-          <>
-            <span>Started {formatDate(timeline.startDate)}</span>
-            <span>
-              {isCompleted
-                ? `Completed ${formatDate(timeline.completedAt)}`
-                : `Est. completion ${formatDate(endDate)}`}
-            </span>
-            {isCompleted && nextCycle && (
-              <span>Next cycle: {nextCycle}</span>
-            )}
-          </>
-        )}
-      </div>
+      {(isDraft || (isCompleted && nextCycle)) && (
+        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+          {isDraft && <span>Awaiting start date</span>}
+          {isCompleted && nextCycle && (
+            <span>Next cycle: {nextCycle}</span>
+          )}
+        </div>
+      )}
     </Link>
   );
 }
