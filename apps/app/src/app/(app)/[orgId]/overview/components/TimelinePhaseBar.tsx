@@ -181,7 +181,10 @@ export function TimelinePhaseBar({
             >
               {/* Single cohesive fill for the whole group */}
               {groupPct !== null && (
-                <div className="absolute inset-y-0 left-0 bg-primary/50" style={{ width: `${groupPct}%` }} />
+                <>
+                  <div className="absolute inset-y-0 left-0 bg-primary/50" style={{ width: `${groupPct}%` }} />
+                  <div className="absolute inset-y-0 w-[3px] bg-primary animate-pulse" style={{ left: `${groupPct}%` }} />
+                </>
               )}
               {/* Sub-phase name dividers */}
               {group.phases.map((phase, pIdx) => (
