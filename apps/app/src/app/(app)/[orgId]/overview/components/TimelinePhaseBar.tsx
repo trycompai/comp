@@ -78,9 +78,9 @@ export function TimelinePhaseBar({
 
   return (
     <div>
-      {/* Group label row with bracket lines */}
+      {/* Group label row with bracket lines — hidden on mobile */}
       {hasGroups && (
-        <div className="flex w-full gap-[3px] mb-0.5">
+        <div className="hidden md:flex w-full gap-[3px] mb-0.5">
           {groups.map((group, idx) => (
             <div
               key={`group-${idx}`}
@@ -107,34 +107,35 @@ export function TimelinePhaseBar({
       )}
 
       {/* Phase bar — grouped phases are cohesive blocks */}
-      <div className="flex w-full gap-[3px]" style={{ height }}>
+      {/* Desktop: single row. Mobile: each group wraps to its own row */}
+      <div className="flex w-full flex-wrap gap-y-1.5 gap-x-[3px] md:flex-nowrap" style={{ minHeight: height }}>
         {groups.map((group, gIdx) => {
           const isFirstGroup = gIdx === 0;
           const isLastGroup = gIdx === groups.length - 1;
 
           if (group.phases.length === 1) {
-            // Single phase — render directly with group-level rounding
             const phase = group.phases[0];
-            const roundedL = isFirstGroup ? 'rounded-l-md' : '';
-            const roundedR = isLastGroup ? 'rounded-r-md' : '';
+            // Desktop: proportional. Mobile: full width
+            const roundedL = isFirstGroup ? 'md:rounded-l-md' : '';
+            const roundedR = isLastGroup ? 'md:rounded-r-md' : '';
             return (
               <PhaseSegment
                 key={phase.id}
                 phase={phase}
-                className={`${roundedL} ${roundedR}`}
+                className={`basis-full md:basis-auto rounded-md md:rounded-none ${roundedL} ${roundedR}`}
+                style={{ flex: `${group.totalWeeks} ${group.totalWeeks} 0%`, height }}
               />
             );
           }
 
-          // Multi-phase group — render as cohesive block with no internal gaps
-          const roundedL = isFirstGroup ? 'rounded-l-md' : '';
-          const roundedR = isLastGroup ? 'rounded-r-md' : '';
+          const roundedL = isFirstGroup ? 'md:rounded-l-md' : '';
+          const roundedR = isLastGroup ? 'md:rounded-r-md' : '';
 
           return (
             <div
               key={`group-bar-${gIdx}`}
-              className={`flex overflow-hidden ${roundedL} ${roundedR}`}
-              style={{ flex: group.totalWeeks }}
+              className={`flex basis-full overflow-hidden rounded-md md:basis-auto md:rounded-none ${roundedL} ${roundedR}`}
+              style={{ flex: `${group.totalWeeks} ${group.totalWeeks} 0%`, height }}
             >
               {group.phases.map((phase, pIdx) => (
                 <PhaseSegment
@@ -149,9 +150,9 @@ export function TimelinePhaseBar({
         })}
       </div>
 
-      {/* Date markers — grouped phases show one start/end for the group */}
+      {/* Date markers — hidden on mobile */}
       {hasDates && (
-        <div className="flex w-full gap-[3px] mt-1">
+        <div className="hidden md:flex w-full gap-[3px] mt-1">
           {groups.map((group, gIdx) => {
             const first = group.phases[0];
             const last = group.phases[group.phases.length - 1];
@@ -177,16 +178,20 @@ function PhaseSegment({
   phase,
   className = '',
   inGroup = false,
+  style,
 }: {
   phase: Phase;
   className?: string;
   inGroup?: boolean;
+  style?: React.CSSProperties;
 }) {
+  const flexStyle = style ?? { flex: phase.durationWeeks };
+
   if (phase.status === 'COMPLETED') {
     return (
       <div
         className={`relative flex items-center justify-center overflow-hidden bg-primary ${className}`}
-        style={{ flex: phase.durationWeeks }}
+        style={flexStyle}
       >
         <span className="truncate px-2 text-[11px] text-primary-foreground">
           {phase.name}
@@ -201,7 +206,7 @@ function PhaseSegment({
     return (
       <div
         className={`relative flex items-center justify-center overflow-hidden bg-muted ${className}`}
-        style={{ flex: phase.durationWeeks }}
+        style={flexStyle}
       >
         <div className="absolute inset-y-0 left-0 bg-primary/50" style={{ width: `${progress}%` }} />
         <div className="absolute inset-y-0 w-[3px] bg-primary animate-pulse" style={{ left: `${progress}%` }} />
@@ -215,7 +220,7 @@ function PhaseSegment({
   return (
     <div
       className={`relative flex items-center justify-center overflow-hidden bg-muted ${className}`}
-      style={{ flex: phase.durationWeeks }}
+      style={flexStyle}
     >
       <span className="truncate px-2 text-[11px] text-muted-foreground">
         {phase.name}
