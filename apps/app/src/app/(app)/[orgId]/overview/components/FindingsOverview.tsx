@@ -55,7 +55,17 @@ function findingHref(finding: FindingWithTask, organizationId: string): string {
     return `/${organizationId}/documents/${finding.evidenceSubmission.formType}?tab=findings`;
   }
   if (finding.scope) {
-    return `/${organizationId}/people#people-findings`;
+    const peopleHash =
+      finding.scope === FindingScope.people
+        ? 'people'
+        : finding.scope === FindingScope.people_tasks
+          ? 'tasks'
+          : finding.scope === FindingScope.people_devices
+            ? 'devices'
+            : finding.scope === FindingScope.people_chart
+              ? 'chart'
+              : 'people';
+    return `/${organizationId}/people#${peopleHash}`;
   }
   return `/${organizationId}/overview`;
 }
