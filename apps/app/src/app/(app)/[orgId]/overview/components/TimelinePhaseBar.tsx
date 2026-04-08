@@ -238,10 +238,10 @@ function PhaseSegment({
           ...flexStyle,
           background: `repeating-linear-gradient(
             -45deg,
-            hsl(var(--muted)),
-            hsl(var(--muted)) 4px,
-            hsl(var(--primary) / 0.15) 4px,
-            hsl(var(--primary) / 0.15) 8px
+            var(--muted),
+            var(--muted) 4px,
+            color-mix(in oklch, var(--primary) 20%, transparent) 4px,
+            color-mix(in oklch, var(--primary) 20%, transparent) 8px
           )`,
         }}
       >
