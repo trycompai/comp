@@ -15,7 +15,7 @@ import {
   WarningAlt,
   WarningAltFilled,
 } from '@trycompai/design-system/icons';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateFindingButton } from '../../../tasks/[taskId]/components/findings/CreateFindingButton';
 import { FindingItem } from '../../../tasks/[taskId]/components/findings/FindingItem';
@@ -49,28 +49,6 @@ export function PeopleFindingsList({
   const { hasPermission } = usePermissions();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
-  const [targetFindingId, setTargetFindingId] = useState<string | null>(null);
-
-  // Deep link: #finding-{id}. Do not clear other hashes (#tasks, #devices, …) — those are tab state.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const hash = window.location.hash;
-    const match = hash.match(/^#finding-(.+)$/i);
-    if (!match) return;
-
-    const findingId = match[1];
-    setTargetFindingId(findingId);
-    setShowAll(true);
-
-    const timer = setTimeout(() => {
-      setTargetFindingId(null);
-      const { pathname, search } = window.location;
-      window.history.replaceState(null, '', `${pathname}${search}`);
-    }, 2500);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   const rawFindings = data?.data || [];
 
@@ -202,7 +180,6 @@ export function PeopleFindingsList({
                 key={finding.id}
                 finding={finding}
                 isExpanded={expandedId === finding.id}
-                isTarget={targetFindingId === finding.id}
                 canChangeStatus={canChangeStatus}
                 canSetRestrictedStatus={canSetRestrictedStatus}
                 canSetReadyForReview={isPlatformAdmin || !isAuditor}
