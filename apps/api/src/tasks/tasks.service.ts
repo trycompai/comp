@@ -9,6 +9,8 @@ import { filterDescriptionByFrameworks } from './description-framework-filter';
 import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
+import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
+import { TimelinesService } from '../timelines/timelines.service';
 
 function computeNextTaskReviewDate(frequency: TaskFrequency | null | undefined): Date {
   const now = new Date();
@@ -30,7 +32,10 @@ function computeNextTaskReviewDate(frequency: TaskFrequency | null | undefined):
 
 @Injectable()
 export class TasksService {
-  constructor(private readonly taskNotifierService: TaskNotifierService) {}
+  constructor(
+    private readonly taskNotifierService: TaskNotifierService,
+    private readonly timelinesService: TimelinesService,
+  ) {}
 
   /**
    * Resolve a user actor for API-key authenticated requests.
@@ -397,6 +402,14 @@ export class TasksService {
           );
         });
 
+      // Check timeline auto-completion when tasks are marked done
+      if (status === TaskStatus.done) {
+        checkAutoCompletePhases({
+          organizationId,
+          timelinesService: this.timelinesService,
+        }).catch(() => {});
+      }
+
       return { updatedCount: result.count };
     } catch (error) {
       console.error('Error updating task statuses:', error);
@@ -673,6 +686,14 @@ export class TasksService {
           .catch((error) => {
             console.error('Failed to send status change notifications:', error);
           });
+
+        // Check timeline auto-completion when task is marked done
+        if (updateData.status === TaskStatus.done) {
+          checkAutoCompletePhases({
+            organizationId,
+            timelinesService: this.timelinesService,
+          }).catch(() => {});
+        }
       }
 
       // Write audit logs and send notifications for assignee changes
