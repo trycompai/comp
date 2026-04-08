@@ -73,6 +73,9 @@ interface AdminOrgTimelinesApiResponse {
 export const adminTimelineTemplatesKey = () =>
   ['/v1/admin/timeline-templates'] as const;
 
+export const adminTimelineTemplateKey = (id: string) =>
+  ['/v1/admin/timeline-templates', id] as const;
+
 export const adminOrgTimelinesKey = (orgId: string) =>
   ['/v1/admin/organizations', orgId, 'timelines'] as const;
 
@@ -97,6 +100,30 @@ export function useAdminTimelineTemplates() {
 
   return {
     templates,
+    isLoading: isLoading && !data,
+    error,
+    mutate,
+  };
+}
+
+export function useAdminTimelineTemplate(templateId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    templateId ? adminTimelineTemplateKey(templateId) : null,
+    async () => {
+      const response = await apiClient.get<AdminTimelineTemplate>(
+        `/v1/admin/timeline-templates/${templateId}`,
+      );
+      if (response.error) throw new Error(response.error);
+      if (!response.data) return null;
+      return response.data;
+    },
+    {
+      revalidateOnFocus: false,
+    },
+  );
+
+  return {
+    template: data ?? null,
     isLoading: isLoading && !data,
     error,
     mutate,

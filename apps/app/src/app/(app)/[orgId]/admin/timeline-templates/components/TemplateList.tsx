@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { api } from '@/lib/api-client';
 import {
   useAdminTimelineTemplates,
   type AdminTimelineTemplate,
@@ -21,27 +24,16 @@ import {
 } from '@trycompai/design-system';
 import { Add, Edit } from '@trycompai/design-system/icons';
 import { TimelinePhaseBar } from '@/app/(app)/[orgId]/overview/components/TimelinePhaseBar';
-import { TemplateEditor } from './TemplateEditor';
+import { NewTemplateDialog } from './NewTemplateDialog';
 
 export function TemplateList() {
-  const { templates, isLoading, mutate } = useAdminTimelineTemplates();
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] =
-    useState<AdminTimelineTemplate | null>(null);
+  const { templates, isLoading } = useAdminTimelineTemplates();
+  const { orgId } = useParams<{ orgId: string }>();
+  const router = useRouter();
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleEdit = (template: AdminTimelineTemplate) => {
-    setSelectedTemplate(template);
-    setEditorOpen(true);
-  };
-
-  const handleCreate = () => {
-    setSelectedTemplate(null);
-    setEditorOpen(true);
-  };
-
-  const handleClose = () => {
-    setEditorOpen(false);
-    setSelectedTemplate(null);
+    router.push(`/${orgId}/admin/timeline-templates/${template.id}`);
   };
 
   const totalDurationWeeks = (template: AdminTimelineTemplate) =>
@@ -72,7 +64,11 @@ export function TemplateList() {
         <PageHeader
           title="Timeline Templates"
           actions={
-            <Button size="sm" iconLeft={<Add size={16} />} onClick={handleCreate}>
+            <Button
+              size="sm"
+              iconLeft={<Add size={16} />}
+              onClick={() => setDialogOpen(true)}
+            >
               New Template
             </Button>
           }
@@ -146,11 +142,9 @@ export function TemplateList() {
         )}
       </Section>
 
-      <TemplateEditor
-        open={editorOpen}
-        onClose={handleClose}
-        template={selectedTemplate}
-        onMutate={mutate}
+      <NewTemplateDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
       />
     </PageLayout>
   );
