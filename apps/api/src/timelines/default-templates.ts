@@ -5,6 +5,8 @@
  */
 export const PhaseCompletionType = {
   AUTO_TASKS: 'AUTO_TASKS',
+  AUTO_POLICIES: 'AUTO_POLICIES',
+  AUTO_PEOPLE: 'AUTO_PEOPLE',
   AUTO_UPLOAD: 'AUTO_UPLOAD',
   MANUAL: 'MANUAL',
 } as const;
@@ -73,7 +75,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         groupLabel: 'Preparing for Audit',
         orderIndex: 0,
         defaultDurationWeeks: 3,
-        completionType: PhaseCompletionType.AUTO_TASKS,
+        completionType: PhaseCompletionType.AUTO_POLICIES,
       },
       {
         name: 'Gather Evidence',
@@ -90,7 +92,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         groupLabel: 'Preparing for Audit',
         orderIndex: 2,
         defaultDurationWeeks: 2,
-        completionType: PhaseCompletionType.AUTO_TASKS,
+        completionType: PhaseCompletionType.AUTO_PEOPLE,
       },
       {
         name: 'Observation Period + Pentest',
@@ -131,7 +133,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         groupLabel: 'Preparing for Audit',
         orderIndex: 0,
         defaultDurationWeeks: 3,
-        completionType: PhaseCompletionType.AUTO_TASKS,
+        completionType: PhaseCompletionType.AUTO_POLICIES,
       },
       {
         name: 'Gather Evidence',
@@ -148,7 +150,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         groupLabel: 'Preparing for Audit',
         orderIndex: 2,
         defaultDurationWeeks: 2,
-        completionType: PhaseCompletionType.AUTO_TASKS,
+        completionType: PhaseCompletionType.AUTO_PEOPLE,
       },
       {
         name: 'Observation Period + Pentest',

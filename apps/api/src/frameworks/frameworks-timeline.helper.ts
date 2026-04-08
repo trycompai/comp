@@ -59,9 +59,15 @@ export async function checkAutoCompletePhases({
   organizationId: string;
   timelinesService: TimelinesService;
 }) {
+  const autoTypes = [
+    PhaseCompletionType.AUTO_TASKS,
+    PhaseCompletionType.AUTO_POLICIES,
+    PhaseCompletionType.AUTO_PEOPLE,
+  ];
+
   const phases = await db.timelinePhase.findMany({
     where: {
-      completionType: PhaseCompletionType.AUTO_TASKS,
+      completionType: { in: autoTypes },
       status: TimelinePhaseStatus.IN_PROGRESS,
       instance: {
         organizationId,
@@ -127,32 +133,54 @@ export async function checkAutoCompletePhases({
 
   if (allControlIds.length === 0) return;
 
-  const tasks = await db.task.findMany({
-    where: {
-      organizationId,
-      controls: { some: { id: { in: allControlIds } } },
-    },
-    include: { controls: { select: { id: true } } },
+  // Fetch tasks, policies, and people data in parallel
+  const [tasks, policies, members] = await Promise.all([
+    db.task.findMany({
+      where: {
+        organizationId,
+        controls: { some: { id: { in: allControlIds } } },
+      },
+      include: { controls: { select: { id: true } } },
+    }),
+    db.policy.findMany({
+      where: { organizationId },
+      select: { id: true, status: true },
+    }),
+    db.member.findMany({
+      where: { organizationId, isActive: true, deactivated: false },
+      select: { id: true, department: true },
+    }),
+  ]);
+
+  // People completion: check employee training via evidence submissions
+  const employeeFormCount = await db.evidenceSubmission.count({
+    where: { organizationId, formType: 'employee' },
   });
 
-  // Check each framework instance for 100% task completion
   for (const phase of phases) {
     const fiId = phase.instance.frameworkInstanceId;
     const controls = frameworkControlsMap.get(fiId);
-    if (!controls || controls.length === 0) continue;
+    let shouldComplete = false;
 
-    const controlIds = controls.map((c) => c.id);
-    const fiTasks = tasks.filter((t) =>
-      t.controls.some((c) => controlIds.includes(c.id)),
-    );
+    if (phase.completionType === PhaseCompletionType.AUTO_TASKS) {
+      if (!controls || controls.length === 0) continue;
+      const controlIds = controls.map((c) => c.id);
+      const fiTasks = tasks.filter((t) =>
+        t.controls.some((c) => controlIds.includes(c.id)),
+      );
+      if (fiTasks.length === 0) continue;
+      shouldComplete = fiTasks.every(
+        (t) => t.status === 'done' || t.status === 'not_relevant',
+      );
+    } else if (phase.completionType === PhaseCompletionType.AUTO_POLICIES) {
+      if (policies.length === 0) continue;
+      shouldComplete = policies.every((p) => p.status === 'published');
+    } else if (phase.completionType === PhaseCompletionType.AUTO_PEOPLE) {
+      if (members.length === 0) continue;
+      shouldComplete = employeeFormCount >= members.length;
+    }
 
-    if (fiTasks.length === 0) continue;
-
-    const allDone = fiTasks.every(
-      (t) => t.status === 'done' || t.status === 'not_relevant',
-    );
-
-    if (!allDone) continue;
+    if (!shouldComplete) continue;
 
     try {
       await timelinesService.completePhase(
