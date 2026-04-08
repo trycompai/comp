@@ -221,7 +221,9 @@ export class TimelinesLifecycleService {
     // Fire-and-forget Slack notifications
     const orgName = txResult.result?.organization?.name ?? organizationId;
     const frameworkName =
-      txResult.result?.frameworkInstance?.framework?.name ?? 'Unknown';
+      txResult.result?.template?.name ??
+      txResult.result?.frameworkInstance?.framework?.name ??
+      'Unknown';
 
     notifyPhaseCompleted({
       orgName,
