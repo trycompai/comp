@@ -69,7 +69,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     cycleNumber: 2,
     phases: [
       {
-        name: 'Review & Publish Policies',
+        name: 'Policies',
         description:
           'Review and publish all required compliance policies.',
         groupLabel: 'Preparing for Audit',
@@ -78,7 +78,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         completionType: PhaseCompletionType.AUTO_POLICIES,
       },
       {
-        name: 'Gather Evidence',
+        name: 'Evidence',
         description: 'Complete all evidence collection tasks.',
         groupLabel: 'Preparing for Audit',
         orderIndex: 1,
@@ -86,7 +86,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         completionType: PhaseCompletionType.AUTO_TASKS,
       },
       {
-        name: 'Employee Compliance',
+        name: 'People',
         description:
           'Ensure all employees complete security training and acknowledgements.',
         groupLabel: 'Preparing for Audit',
@@ -127,7 +127,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     cycleNumber: 3,
     phases: [
       {
-        name: 'Review & Publish Policies',
+        name: 'Policies',
         description:
           'Review and publish all required compliance policies.',
         groupLabel: 'Preparing for Audit',
@@ -136,7 +136,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         completionType: PhaseCompletionType.AUTO_POLICIES,
       },
       {
-        name: 'Gather Evidence',
+        name: 'Evidence',
         description: 'Complete all evidence collection tasks.',
         groupLabel: 'Preparing for Audit',
         orderIndex: 1,
@@ -144,7 +144,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         completionType: PhaseCompletionType.AUTO_TASKS,
       },
       {
-        name: 'Employee Compliance',
+        name: 'People',
         description:
           'Ensure all employees complete security training and acknowledgements.',
         groupLabel: 'Preparing for Audit',
