@@ -201,6 +201,9 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
         <OrgChartContent
           chartData={orgChartData as any}
           members={membersWithUsers}
+          isAuditor={isAuditor}
+          isPlatformAdmin={isPlatformAdmin}
+          isAdminOrOwner={canManageMembers}
         />
       }
       showRoleMapping={false}
