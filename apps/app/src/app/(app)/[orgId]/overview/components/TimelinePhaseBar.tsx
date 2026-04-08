@@ -19,13 +19,6 @@ interface TimelinePhaseBarProps {
   showDates?: boolean;
 }
 
-function getRoundedClass(index: number, total: number) {
-  if (total === 1) return 'rounded-md';
-  if (index === 0) return 'rounded-l-md';
-  if (index === total - 1) return 'rounded-r-md';
-  return '';
-}
-
 function getProgressPercent(phase: Phase): number {
   if (!phase.startDate || !phase.endDate) return 50;
   const start = new Date(phase.startDate).getTime();
@@ -38,34 +31,36 @@ function getProgressPercent(phase: Phase): number {
 
 function formatShortDate(date: string | null | undefined): string {
   if (!date) return '';
-  return new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-interface GroupSpan {
+interface PhaseGroup {
   label: string | null;
+  phases: Phase[];
   totalWeeks: number;
 }
 
-function buildGroupSpans(sorted: Phase[]): GroupSpan[] {
-  const spans: GroupSpan[] = [];
+function buildPhaseGroups(sorted: Phase[]): PhaseGroup[] {
+  const groups: PhaseGroup[] = [];
   let i = 0;
 
   while (i < sorted.length) {
     const label = sorted[i].groupLabel ?? null;
-    let totalWeeks = 0;
+    const phases: Phase[] = [];
 
     while (i < sorted.length && (sorted[i].groupLabel ?? null) === label) {
-      totalWeeks += sorted[i].durationWeeks;
+      phases.push(sorted[i]);
       i++;
     }
 
-    spans.push({ label, totalWeeks });
+    groups.push({
+      label,
+      phases,
+      totalWeeks: phases.reduce((sum, p) => sum + p.durationWeeks, 0),
+    });
   }
 
-  return spans;
+  return groups;
 }
 
 export function TimelinePhaseBar({
@@ -78,26 +73,24 @@ export function TimelinePhaseBar({
   if (sorted.length === 0) return null;
 
   const hasDates = showDates && sorted.some((p) => p.startDate || p.endDate);
-  const hasGroups = sorted.some((p) => p.groupLabel);
-
-  // Build group spans for the label row
-  const groupSpans = hasGroups ? buildGroupSpans(sorted) : [];
+  const groups = buildPhaseGroups(sorted);
+  const hasGroups = groups.some((g) => g.label);
 
   return (
     <div>
-      {/* Group label row above the bar with bracket lines */}
+      {/* Group label row with bracket lines */}
       {hasGroups && (
         <div className="flex w-full gap-[3px] mb-0.5">
-          {groupSpans.map((span, idx) => (
+          {groups.map((group, idx) => (
             <div
               key={`group-${idx}`}
               className="flex flex-col items-center"
-              style={{ flex: span.totalWeeks }}
+              style={{ flex: group.totalWeeks }}
             >
-              {span.label ? (
+              {group.label ? (
                 <>
                   <span className="truncate text-[10px] text-muted-foreground px-1">
-                    {span.label}
+                    {group.label}
                   </span>
                   <div className="flex w-full items-center mt-0.5">
                     <div className="h-[6px] w-px bg-muted-foreground/40" />
@@ -113,66 +106,50 @@ export function TimelinePhaseBar({
         </div>
       )}
 
+      {/* Phase bar — grouped phases are cohesive blocks */}
       <div className="flex w-full gap-[3px]" style={{ height }}>
-        {sorted.map((phase, index) => {
-          const rounded = getRoundedClass(index, sorted.length);
+        {groups.map((group, gIdx) => {
+          const isFirstGroup = gIdx === 0;
+          const isLastGroup = gIdx === groups.length - 1;
 
-          if (phase.status === 'COMPLETED') {
+          if (group.phases.length === 1) {
+            // Single phase — render directly with group-level rounding
+            const phase = group.phases[0];
+            const roundedL = isFirstGroup ? 'rounded-l-md' : '';
+            const roundedR = isLastGroup ? 'rounded-r-md' : '';
             return (
-              <div
+              <PhaseSegment
                 key={phase.id}
-                className={`relative flex items-center justify-center overflow-hidden bg-primary ${rounded}`}
-                style={{ flex: phase.durationWeeks }}
-              >
-                <span className="truncate px-2 text-[11px] text-primary-foreground">
-                  {phase.name}
-                </span>
-                <Checkmark
-                  size={12}
-                  className="absolute right-1 top-1 text-primary-foreground/70"
-                />
-              </div>
+                phase={phase}
+                className={`${roundedL} ${roundedR}`}
+              />
             );
           }
 
-          if (phase.status === 'IN_PROGRESS') {
-            const progress = getProgressPercent(phase);
-            return (
-              <div
-                key={phase.id}
-                className={`relative flex items-center justify-center overflow-hidden bg-muted ${rounded}`}
-                style={{ flex: phase.durationWeeks }}
-              >
-                <div
-                  className="absolute inset-y-0 left-0 bg-primary/50"
-                  style={{ width: `${progress}%` }}
-                />
-                <div
-                  className="absolute inset-y-0 w-[3px] bg-primary animate-pulse"
-                  style={{ left: `${progress}%` }}
-                />
-                <span className="relative z-10 truncate px-2 text-[11px] font-semibold text-foreground">
-                  {phase.name}
-                </span>
-              </div>
-            );
-          }
+          // Multi-phase group — render as cohesive block with no internal gaps
+          const roundedL = isFirstGroup ? 'rounded-l-md' : '';
+          const roundedR = isLastGroup ? 'rounded-r-md' : '';
 
           return (
             <div
-              key={phase.id}
-              className={`relative flex items-center justify-center overflow-hidden bg-muted ${rounded}`}
-              style={{ flex: phase.durationWeeks }}
+              key={`group-bar-${gIdx}`}
+              className={`flex overflow-hidden ${roundedL} ${roundedR}`}
+              style={{ flex: group.totalWeeks }}
             >
-              <span className="truncate px-2 text-[11px] text-muted-foreground">
-                {phase.name}
-              </span>
+              {group.phases.map((phase, pIdx) => (
+                <PhaseSegment
+                  key={phase.id}
+                  phase={phase}
+                  className={pIdx < group.phases.length - 1 ? 'border-r border-background/50' : ''}
+                  inGroup
+                />
+              ))}
             </div>
           );
         })}
       </div>
 
-      {/* Date markers below the bar */}
+      {/* Date markers */}
       {hasDates && (
         <div className="flex w-full gap-[3px] mt-1">
           {sorted.map((phase, index) => {
@@ -190,6 +167,57 @@ export function TimelinePhaseBar({
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function PhaseSegment({
+  phase,
+  className = '',
+  inGroup = false,
+}: {
+  phase: Phase;
+  className?: string;
+  inGroup?: boolean;
+}) {
+  if (phase.status === 'COMPLETED') {
+    return (
+      <div
+        className={`relative flex items-center justify-center overflow-hidden bg-primary ${className}`}
+        style={{ flex: phase.durationWeeks }}
+      >
+        <span className="truncate px-2 text-[11px] text-primary-foreground">
+          {phase.name}
+        </span>
+        <Checkmark size={12} className="absolute right-1 top-1 text-primary-foreground/70" />
+      </div>
+    );
+  }
+
+  if (phase.status === 'IN_PROGRESS') {
+    const progress = getProgressPercent(phase);
+    return (
+      <div
+        className={`relative flex items-center justify-center overflow-hidden bg-muted ${className}`}
+        style={{ flex: phase.durationWeeks }}
+      >
+        <div className="absolute inset-y-0 left-0 bg-primary/50" style={{ width: `${progress}%` }} />
+        <div className="absolute inset-y-0 w-[3px] bg-primary animate-pulse" style={{ left: `${progress}%` }} />
+        <span className="relative z-10 truncate px-2 text-[11px] font-semibold text-foreground">
+          {phase.name}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`relative flex items-center justify-center overflow-hidden bg-muted ${className}`}
+      style={{ flex: phase.durationWeeks }}
+    >
+      <span className="truncate px-2 text-[11px] text-muted-foreground">
+        {phase.name}
+      </span>
     </div>
   );
 }
