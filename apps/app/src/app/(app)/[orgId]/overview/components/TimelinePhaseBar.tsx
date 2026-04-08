@@ -163,27 +163,28 @@ export function TimelinePhaseBar({
             );
           }
 
+          const hasActivePhase = group.phases.some((p) => p.status === 'IN_PROGRESS');
+          const groupStripeBg = hasActivePhase
+            ? `repeating-linear-gradient(-45deg, var(--muted), var(--muted) 4px, color-mix(in oklch, var(--primary) 10%, transparent) 4px, color-mix(in oklch, var(--primary) 10%, transparent) 8px)`
+            : undefined;
+
           return (
             <div
               key={`group-bar-${gIdx}`}
-              className={`relative flex overflow-hidden ${groupRounded}`}
+              className={`relative flex overflow-hidden ${hasActivePhase ? '' : 'bg-muted'} ${groupRounded}`}
               style={{
                 flex: group.totalWeeks,
                 height,
-                background: `repeating-linear-gradient(
-                  -45deg,
-                  var(--muted),
-                  var(--muted) 4px,
-                  color-mix(in oklch, var(--primary) 10%, transparent) 4px,
-                  color-mix(in oklch, var(--primary) 10%, transparent) 8px
-                )`,
+                ...(groupStripeBg ? { background: groupStripeBg } : {}),
               }}
             >
               {/* Single cohesive fill for the whole group */}
               {groupPct !== null && (
                 <>
                   <div className="absolute inset-y-0 left-0 bg-primary/50" style={{ width: `${groupPct}%` }} />
-                  <div className="absolute inset-y-0 w-[3px] bg-primary animate-pulse" style={{ left: `${groupPct}%` }} />
+                  {hasActivePhase && (
+                    <div className="absolute inset-y-0 w-[3px] bg-primary animate-pulse" style={{ left: `${groupPct}%` }} />
+                  )}
                 </>
               )}
               {/* Sub-phase name dividers */}
@@ -306,19 +307,13 @@ function PhaseSegment({
   // Has live percentage — show fill + percentage (for any AUTO_* phase in a group)
   if (hasLivePct) {
     const isActive = phase.status === 'IN_PROGRESS';
+    const stripeBg = isActive
+      ? `repeating-linear-gradient(-45deg, var(--muted), var(--muted) 4px, color-mix(in oklch, var(--primary) 10%, transparent) 4px, color-mix(in oklch, var(--primary) 10%, transparent) 8px)`
+      : undefined;
     return (
       <div
-        className={`relative flex items-center justify-center overflow-hidden ${className}`}
-        style={{
-          ...flexStyle,
-          background: `repeating-linear-gradient(
-            -45deg,
-            var(--muted),
-            var(--muted) 4px,
-            color-mix(in oklch, var(--primary) 10%, transparent) 4px,
-            color-mix(in oklch, var(--primary) 10%, transparent) 8px
-          )`,
-        }}
+        className={`relative flex items-center justify-center overflow-hidden ${isActive ? '' : 'bg-muted'} ${className}`}
+        style={{ ...flexStyle, ...(stripeBg ? { background: stripeBg } : {}) }}
       >
         <div className="absolute inset-y-0 left-0 bg-primary/50" style={{ width: `${pct}%` }} />
         {isActive && (
