@@ -144,7 +144,7 @@ export class TimelinesLifecycleService {
       throw new BadRequestException('Phase is already completed');
     }
 
-    return db.$transaction(async (tx) => {
+    const txResult = await db.$transaction(async (tx) => {
       await tx.timelinePhase.update({
         where: { id: phaseId },
         data: {
