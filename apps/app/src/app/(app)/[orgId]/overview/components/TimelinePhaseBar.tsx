@@ -80,7 +80,7 @@ export function TimelinePhaseBar({
     <div>
       {/* Group label row with bracket lines — hidden on mobile */}
       {hasGroups && (
-        <div className="hidden md:flex w-full gap-[3px] mb-0.5">
+        <div className="hidden lg:flex w-full gap-[3px] mb-0.5">
           {groups.map((group, idx) => (
             <div
               key={`group-${idx}`}
@@ -106,36 +106,25 @@ export function TimelinePhaseBar({
         </div>
       )}
 
-      {/* Phase bar — grouped phases are cohesive blocks */}
-      {/* Desktop: single row. Mobile: each group wraps to its own row */}
-      <div className="flex w-full flex-wrap gap-y-1.5 gap-x-[3px] md:flex-nowrap" style={{ minHeight: height }}>
+      {/* Phase bar — Desktop: horizontal. Mobile: vertical stack */}
+
+      {/* Desktop version */}
+      <div className="hidden lg:flex w-full gap-[3px]" style={{ height }}>
         {groups.map((group, gIdx) => {
           const isFirstGroup = gIdx === 0;
           const isLastGroup = gIdx === groups.length - 1;
 
           if (group.phases.length === 1) {
             const phase = group.phases[0];
-            // Desktop: proportional. Mobile: full width
-            const roundedL = isFirstGroup ? 'md:rounded-l-md' : '';
-            const roundedR = isLastGroup ? 'md:rounded-r-md' : '';
-            return (
-              <PhaseSegment
-                key={phase.id}
-                phase={phase}
-                className={`basis-full md:basis-auto rounded-md md:rounded-none ${roundedL} ${roundedR}`}
-                style={{ flex: `${group.totalWeeks} ${group.totalWeeks} 0%`, height }}
-              />
-            );
+            const rounded = `${isFirstGroup ? 'rounded-l-md' : ''} ${isLastGroup ? 'rounded-r-md' : ''}`;
+            return <PhaseSegment key={phase.id} phase={phase} className={rounded} />;
           }
-
-          const roundedL = isFirstGroup ? 'md:rounded-l-md' : '';
-          const roundedR = isLastGroup ? 'md:rounded-r-md' : '';
 
           return (
             <div
               key={`group-bar-${gIdx}`}
-              className={`flex basis-full overflow-hidden rounded-md md:basis-auto md:rounded-none ${roundedL} ${roundedR}`}
-              style={{ flex: `${group.totalWeeks} ${group.totalWeeks} 0%`, height }}
+              className={`flex overflow-hidden ${isFirstGroup ? 'rounded-l-md' : ''} ${isLastGroup ? 'rounded-r-md' : ''}`}
+              style={{ flex: group.totalWeeks }}
             >
               {group.phases.map((phase, pIdx) => (
                 <PhaseSegment
@@ -150,9 +139,25 @@ export function TimelinePhaseBar({
         })}
       </div>
 
+      {/* Mobile version — vertical stack */}
+      <div className="flex flex-col gap-1 lg:hidden">
+        {sorted.map((phase) => (
+          <div
+            key={`m-${phase.id}`}
+            className="flex items-center gap-2"
+          >
+            <PhaseSegment
+              phase={phase}
+              className="rounded-md flex-1"
+              style={{ height: 28 }}
+            />
+          </div>
+        ))}
+      </div>
+
       {/* Date markers — hidden on mobile */}
       {hasDates && (
-        <div className="hidden md:flex w-full gap-[3px] mt-1">
+        <div className="hidden lg:flex w-full gap-[3px] mt-1">
           {groups.map((group, gIdx) => {
             const first = group.phases[0];
             const last = group.phases[group.phases.length - 1];
