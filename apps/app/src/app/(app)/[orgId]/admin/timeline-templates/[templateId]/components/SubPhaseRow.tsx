@@ -14,6 +14,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
+  Text,
 } from '@trycompai/design-system';
 import {
   ArrowDown,
@@ -139,15 +140,13 @@ export function SubPhaseRow({
         />
       </div>
 
-      <div className="w-24 shrink-0 relative">
+      <div className="flex w-24 shrink-0 items-center gap-1">
         <Input
           type="number"
           min={1}
           {...register('defaultDurationWeeks', { valueAsNumber: true })}
-          placeholder="0"
-          className="pr-8"
         />
-        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">wk</span>
+        <Text size="xs" variant="muted">wk</Text>
       </div>
 
       <div className="w-36 shrink-0">
