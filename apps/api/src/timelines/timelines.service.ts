@@ -54,7 +54,9 @@ export class TimelinesService {
       AUTO_PEOPLE: peoplePct,
     };
 
-    // Revert completed AUTO_* phases that dropped below 100%, and enrich with live %
+    // Sync AUTO_* phase statuses with live metrics
+    let needsRefetch = false;
+
     for (const timeline of timelines) {
       if (timeline.status !== 'ACTIVE') continue;
 
@@ -62,7 +64,6 @@ export class TimelinesService {
         const livePct = pctMap[phase.completionType];
         if (livePct === undefined) continue;
 
-        // Attach live percentage (cast to add dynamic property)
         (phase as any).completionPercent = livePct;
 
         // Revert if completed but metric dropped
@@ -71,10 +72,46 @@ export class TimelinesService {
             where: { id: phase.id },
             data: { status: 'IN_PROGRESS', completedAt: null, completedById: null },
           });
-          (phase as any).status = 'IN_PROGRESS';
-          (phase as any).completedAt = null;
+          needsRefetch = true;
+        }
+
+        // Complete if in-progress and metric hit 100%
+        if (phase.status === 'IN_PROGRESS' && livePct >= 100) {
+          try {
+            await this.completePhase(
+              timeline.id,
+              phase.id,
+              timeline.organizationId,
+            );
+            needsRefetch = true;
+          } catch {
+            // Phase might not be completable (e.g., prior phases not done)
+          }
         }
       }
+    }
+
+    // Re-fetch if any statuses changed
+    if (needsRefetch) {
+      const updated = await db.timelineInstance.findMany({
+        where: { organizationId },
+        include: {
+          phases: { orderBy: { orderIndex: 'asc' } },
+          frameworkInstance: { include: { framework: true } },
+          template: true,
+        },
+      });
+      // Re-enrich with live percentages
+      for (const timeline of updated) {
+        if (timeline.status !== 'ACTIVE') continue;
+        for (const phase of timeline.phases) {
+          const livePct = pctMap[phase.completionType];
+          if (livePct !== undefined) {
+            (phase as any).completionPercent = livePct;
+          }
+        }
+      }
+      return updated;
     }
 
     return timelines;
