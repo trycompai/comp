@@ -203,7 +203,8 @@ export class FindingNotifierService {
 
   /**
    * Notify when a new finding is created.
-   * Recipients: All org members (filtered by notification matrix)
+   * Recipients: task-linked → assignee pool; People scope → owners/admins;
+   * document-linked → submitter + admins (see getSubmissionSubmitterAndAdmins).
    */
   async notifyFindingCreated(params: NotificationParams): Promise<void> {
     const {
@@ -219,14 +220,14 @@ export class FindingNotifierService {
       findingScope,
     } = params;
 
-    const recipients = taskId
-      ? await this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId)
-      : await this.getSubmissionSubmitterAndAdmins(
-          organizationId,
-          evidenceSubmissionId,
-          evidenceSubmissionSubmittedById,
-          actorUserId,
-        );
+    const recipients = await this.resolveFindingNotificationRecipients({
+      organizationId,
+      taskId,
+      findingScope,
+      evidenceSubmissionId,
+      evidenceSubmissionSubmittedById,
+      actorUserId,
+    });
 
     if (recipients.length === 0) {
       this.logger.log('No recipients for finding created notification');
@@ -313,7 +314,8 @@ export class FindingNotifierService {
 
   /**
    * Notify when status changes to Needs Revision.
-   * Recipients: All org members (filtered by notification matrix)
+   * Recipients: task-linked → assignee pool; People scope → owners/admins;
+   * document-linked → submitter + admins.
    */
   async notifyNeedsRevision(params: NotificationParams): Promise<void> {
     const {
@@ -328,14 +330,14 @@ export class FindingNotifierService {
       findingScope,
     } = params;
 
-    const recipients = taskId
-      ? await this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId)
-      : await this.getSubmissionSubmitterAndAdmins(
-          organizationId,
-          evidenceSubmissionId,
-          evidenceSubmissionSubmittedById,
-          actorUserId,
-        );
+    const recipients = await this.resolveFindingNotificationRecipients({
+      organizationId,
+      taskId,
+      findingScope,
+      evidenceSubmissionId,
+      evidenceSubmissionSubmittedById,
+      actorUserId,
+    });
 
     if (recipients.length === 0) {
       this.logger.log('No recipients for needs revision notification');
@@ -362,7 +364,8 @@ export class FindingNotifierService {
 
   /**
    * Notify when finding is closed.
-   * Recipients: All org members (filtered by notification matrix)
+   * Recipients: task-linked → assignee pool; People scope → owners/admins;
+   * document-linked → submitter + admins.
    */
   async notifyFindingClosed(params: NotificationParams): Promise<void> {
     const {
@@ -377,14 +380,14 @@ export class FindingNotifierService {
       findingScope,
     } = params;
 
-    const recipients = taskId
-      ? await this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId)
-      : await this.getSubmissionSubmitterAndAdmins(
-          organizationId,
-          evidenceSubmissionId,
-          evidenceSubmissionSubmittedById,
-          actorUserId,
-        );
+    const recipients = await this.resolveFindingNotificationRecipients({
+      organizationId,
+      taskId,
+      findingScope,
+      evidenceSubmissionId,
+      evidenceSubmissionSubmittedById,
+      actorUserId,
+    });
 
     if (recipients.length === 0) {
       this.logger.log('No recipients for finding closed notification');
@@ -700,6 +703,95 @@ export class FindingNotifierService {
   // ==========================================================================
   // Private Methods - Recipient Resolution
   // ==========================================================================
+
+  /**
+   * Task findings → task notification pool; People scope → owners/admins only;
+   * otherwise document flow (submitter + admins).
+   */
+  private async resolveFindingNotificationRecipients(args: {
+    organizationId: string;
+    taskId?: string;
+    findingScope?: FindingScope | null;
+    evidenceSubmissionId?: string;
+    evidenceSubmissionSubmittedById?: string | null;
+    actorUserId: string;
+  }): Promise<Recipient[]> {
+    const {
+      organizationId,
+      taskId,
+      findingScope,
+      evidenceSubmissionId,
+      evidenceSubmissionSubmittedById,
+      actorUserId,
+    } = args;
+
+    if (taskId) {
+      return this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId);
+    }
+    if (findingScope) {
+      return this.getOrganizationOwnersAndAdmins(organizationId, actorUserId);
+    }
+    return this.getSubmissionSubmitterAndAdmins(
+      organizationId,
+      evidenceSubmissionId,
+      evidenceSubmissionSubmittedById,
+      actorUserId,
+    );
+  }
+
+  /**
+   * Recipients for People-area (scope) findings: organization owners and admins.
+   * Excludes the actor. Notification matrix (unsubscribe) still applies per recipient.
+   */
+  private async getOrganizationOwnersAndAdmins(
+    organizationId: string,
+    excludeUserId: string,
+  ): Promise<Recipient[]> {
+    try {
+      const allMembers = await db.member.findMany({
+        where: {
+          organizationId,
+          deactivated: false,
+        },
+        select: {
+          role: true,
+          user: { select: { id: true, email: true, name: true } },
+        },
+      });
+
+      const members = allMembers.filter(
+        (member) =>
+          member.role.includes('admin') || member.role.includes('owner'),
+      );
+
+      const recipients: Recipient[] = [];
+      const addedUserIds = new Set<string>();
+
+      for (const member of members) {
+        const user = member.user;
+        if (
+          user.id !== excludeUserId &&
+          user.email &&
+          !addedUserIds.has(user.id)
+        ) {
+          recipients.push({
+            userId: user.id,
+            email: user.email,
+            name: user.name || user.email,
+          });
+          addedUserIds.add(user.id);
+        }
+      }
+
+      return recipients;
+    } catch (error) {
+      this.logger.error(
+        'Failed to get organization owners and admins for scope finding:',
+        error instanceof Error ? error.message : 'Unknown error',
+      );
+      return [];
+    }
+  }
 
   /**
    * Get all organization members as potential recipients.

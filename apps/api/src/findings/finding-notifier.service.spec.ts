@@ -216,6 +216,9 @@ describe('FindingNotifierService', () => {
         actorName: 'Actor',
       });
 
+      expect(mockedDb.task.findUnique).not.toHaveBeenCalled();
+      expect(mockedDb.evidenceSubmission.findUnique).not.toHaveBeenCalled();
+
       expect(novuTriggerMock).toHaveBeenCalledWith(
         expect.objectContaining({
           payload: expect.objectContaining({
