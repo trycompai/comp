@@ -161,6 +161,20 @@ export function PhaseGroupCard({
             </div>
 
             <div className="flex flex-col gap-2">
+              {/* Column labels */}
+              <div className="flex items-center gap-2 px-3">
+                <div className="w-16 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <Text size="xs" variant="muted">Name</Text>
+                </div>
+                <div className="w-24 shrink-0">
+                  <Text size="xs" variant="muted">Duration (wk)</Text>
+                </div>
+                <div className="w-36 shrink-0">
+                  <Text size="xs" variant="muted">Completion</Text>
+                </div>
+                <div className="w-16 shrink-0" />
+              </div>
               {sorted.map((phase, idx) => (
                 <SubPhaseRow
                   key={phase.id}

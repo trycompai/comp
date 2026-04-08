@@ -140,13 +140,12 @@ export function SubPhaseRow({
         />
       </div>
 
-      <div className="flex w-24 shrink-0 items-center gap-1">
+      <div className="w-24 shrink-0">
         <Input
           type="number"
           min={1}
           {...register('defaultDurationWeeks', { valueAsNumber: true })}
         />
-        <Text size="xs" variant="muted">wk</Text>
       </div>
 
       <div className="w-36 shrink-0">
