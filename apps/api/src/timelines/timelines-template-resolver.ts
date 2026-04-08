@@ -36,6 +36,7 @@ export async function findTemplateForCycle(
 export async function upsertDefaultTemplate(
   frameworkId: string,
   defaultTemplate: DefaultTimelineTemplate,
+  { forceRefresh = false }: { forceRefresh?: boolean } = {},
 ) {
   return db.$transaction(async (tx) => {
     const template = await tx.timelineTemplate.upsert({
@@ -45,7 +46,7 @@ export async function upsertDefaultTemplate(
           cycleNumber: defaultTemplate.cycleNumber,
         },
       },
-      update: {},
+      update: { name: defaultTemplate.name },
       create: {
         frameworkId,
         name: defaultTemplate.name,
@@ -54,8 +55,16 @@ export async function upsertDefaultTemplate(
       include: { phases: { orderBy: { orderIndex: 'asc' } } },
     });
 
-    // Only seed phases if the template was just created (has no phases)
-    if (template.phases.length === 0) {
+    const shouldSeedPhases = template.phases.length === 0 || forceRefresh;
+
+    if (shouldSeedPhases) {
+      // Clear existing phases if refreshing
+      if (template.phases.length > 0) {
+        await tx.timelinePhaseTemplate.deleteMany({
+          where: { templateId: template.id },
+        });
+      }
+
       for (const phase of defaultTemplate.phases) {
         await tx.timelinePhaseTemplate.create({
           data: {
@@ -88,14 +97,20 @@ export async function resolveTemplate(
   frameworkId: string,
   frameworkName: string,
   cycleNumber: number,
+  { forceRefresh = false }: { forceRefresh?: boolean } = {},
 ) {
-  const dbTemplate = await findTemplateForCycle(frameworkId, cycleNumber);
-  if (dbTemplate) return dbTemplate;
+  if (!forceRefresh) {
+    const dbTemplate = await findTemplateForCycle(frameworkId, cycleNumber);
+    if (dbTemplate) return dbTemplate;
+  }
 
   const codeDefault = getDefaultTemplateForCycle(frameworkName, cycleNumber);
-  if (!codeDefault) return null;
+  if (!codeDefault) {
+    // No code default — fall back to DB even if forceRefresh
+    return findTemplateForCycle(frameworkId, cycleNumber);
+  }
 
-  return upsertDefaultTemplate(frameworkId, codeDefault);
+  return upsertDefaultTemplate(frameworkId, codeDefault, { forceRefresh });
 }
 
 /**

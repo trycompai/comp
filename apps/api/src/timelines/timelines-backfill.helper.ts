@@ -240,6 +240,7 @@ const MULTI_TIMELINE_FRAMEWORKS: Record<string, number[]> = {
 export async function backfillTimeline({
   organizationId,
   frameworkInstance,
+  forceRefresh = false,
 }: {
   organizationId: string;
   frameworkInstance: {
@@ -247,6 +248,7 @@ export async function backfillTimeline({
     frameworkId: string;
     framework: { id: string; name: string };
   };
+  forceRefresh?: boolean;
 }): Promise<void> {
   const { framework } = frameworkInstance;
   const cyclesToCreate = MULTI_TIMELINE_FRAMEWORKS[framework.name] ?? [1];
@@ -257,6 +259,7 @@ export async function backfillTimeline({
         organizationId,
         frameworkInstance,
         cycleNumber,
+        forceRefresh,
       });
     } catch {
       // Non-blocking per-cycle — continue with others
@@ -268,6 +271,7 @@ async function backfillSingleTimeline({
   organizationId,
   frameworkInstance,
   cycleNumber,
+  forceRefresh = false,
 }: {
   organizationId: string;
   frameworkInstance: {
@@ -276,6 +280,7 @@ async function backfillSingleTimeline({
     framework: { id: string; name: string };
   };
   cycleNumber: number;
+  forceRefresh?: boolean;
 }): Promise<void> {
   const { framework } = frameworkInstance;
 
@@ -286,7 +291,7 @@ async function backfillSingleTimeline({
   if (existing) return;
 
   // Step 1: Resolve and create DRAFT instance from template
-  const template = await resolveTemplate(frameworkInstance.frameworkId, framework.name, cycleNumber);
+  const template = await resolveTemplate(frameworkInstance.frameworkId, framework.name, cycleNumber, { forceRefresh });
   if (!template) return;
 
   const instance = await createInstanceFromTemplate({
