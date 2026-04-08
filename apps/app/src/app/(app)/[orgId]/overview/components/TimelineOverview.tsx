@@ -64,6 +64,48 @@ function getNextCycleDate(timeline: Timeline): string | null {
   return formatDate(nextDate);
 }
 
+function getNextMilestone(timelines: Timeline[]): string | null {
+  for (const timeline of timelines) {
+    if (timeline.status !== 'ACTIVE') continue;
+    const inProgress = [...timeline.phases]
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .find((p) => p.status === 'IN_PROGRESS');
+    if (!inProgress?.endDate) continue;
+    const frameworkName =
+      timeline.template?.name ??
+      timeline.frameworkInstance?.framework.name ??
+      'Unknown';
+    const dateStr = formatDate(inProgress.endDate);
+    return `${frameworkName} ${inProgress.name} due ${dateStr}`;
+  }
+  return null;
+}
+
+function TimelineSummary({ timelines }: { timelines: Timeline[] }) {
+  const active = timelines.filter((t) => t.status === 'ACTIVE').length;
+  const completed = timelines.filter((t) => t.status === 'COMPLETED').length;
+  const nextMilestone = getNextMilestone(timelines);
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+      <span>
+        <span className="font-medium text-foreground">{active}</span> active
+      </span>
+      <span>
+        <span className="font-medium text-foreground">{completed}</span> completed
+      </span>
+      {nextMilestone && (
+        <>
+          <span className="text-border">|</span>
+          <span>
+            Next milestone: <span className="text-foreground">{nextMilestone}</span>
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function TimelineOverview({ initialData }: TimelineOverviewProps) {
   const { timelines } = useTimelines({ initialData });
   const { orgId } = useParams<{ orgId: string }>();
@@ -77,6 +119,9 @@ export function TimelineOverview({ initialData }: TimelineOverviewProps) {
         <p className="text-sm text-muted-foreground">
           Track your progress toward audit readiness
         </p>
+        <div className="mt-1">
+          <TimelineSummary timelines={timelines} />
+        </div>
       </div>
       {timelines.map((timeline) => (
         <TimelineCard

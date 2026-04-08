@@ -1,12 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { Finding, FrameworkEditorFramework, Policy, Task } from '@db';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import type { Timeline } from '@/hooks/use-timelines';
 import { ComplianceOverview } from './ComplianceOverview';
 import { FindingsOverview } from './FindingsOverview';
 import { FrameworksOverview } from './FrameworksOverview';
 import { TimelineOverview } from './TimelineOverview';
+import { TimelineTeaser } from './TimelineTeaser';
 import { ToDoOverview } from './ToDoOverview';
 import { FrameworkInstanceWithComplianceScore } from './types';
 
@@ -75,6 +78,8 @@ export const Overview = ({
   findings,
   timelines,
 }: OverviewProps) => {
+  const [activeTab, setActiveTab] = useState('overview');
+
   const overallComplianceScore = calculateOverallComplianceScore({
     publishedPolicies: publishedPoliciesScore.publishedPolicies,
     totalPolicies: publishedPoliciesScore.totalPolicies,
@@ -86,46 +91,63 @@ export const Overview = ({
     totalMembers: peopleScore.totalMembers,
   });
 
+  const handleSwitchToTimeline = () => setActiveTab('timeline');
+
   return (
-    <div className="flex flex-col gap-6">
-      <TimelineOverview initialData={timelines} />
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <ComplianceOverview
-        organizationId={organizationId}
-        overallComplianceScore={overallComplianceScore}
-        totalPolicies={publishedPoliciesScore.totalPolicies}
-        publishedPolicies={publishedPoliciesScore.publishedPolicies}
-        totalTasks={doneTasksScore.totalTasks}
-        doneTasks={doneTasksScore.doneTasks}
-        totalDocuments={documentsScore.totalDocuments}
-        completedDocuments={documentsScore.completedDocuments}
-        totalMembers={peopleScore.totalMembers}
-        completedMembers={peopleScore.completedMembers}
-      />
-      <FrameworksOverview
-        frameworksWithControls={frameworksWithControls}
-        frameworksWithCompliance={frameworksWithCompliance}
-        overallComplianceScore={overallComplianceScore}
-        allFrameworks={allFrameworks}
-        organizationId={organizationId}
-      />
-      <ToDoOverview
-        totalPolicies={publishedPoliciesScore.totalPolicies}
-        totalTasks={doneTasksScore.totalTasks}
-        remainingPolicies={
-          publishedPoliciesScore.totalPolicies - publishedPoliciesScore.publishedPolicies
-        }
-        remainingTasks={doneTasksScore.totalTasks - doneTasksScore.doneTasks}
-        unpublishedPolicies={publishedPoliciesScore.unpublishedPolicies}
-        incompleteTasks={doneTasksScore.incompleteTasks}
-        policiesInReview={publishedPoliciesScore.policiesInReview}
-        organizationId={organizationId}
-        currentMember={currentMember}
-        onboardingTriggerJobId={onboardingTriggerJobId}
-      />
-      <FindingsOverview findings={findings} organizationId={organizationId} />
-      </div>
-    </div>
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <TabsList variant="underline">
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="timeline">Timeline</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="overview">
+        <div className="flex flex-col gap-6 pt-4">
+          <TimelineTeaser timelines={timelines} onSwitchTab={handleSwitchToTimeline} />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <ComplianceOverview
+              organizationId={organizationId}
+              overallComplianceScore={overallComplianceScore}
+              totalPolicies={publishedPoliciesScore.totalPolicies}
+              publishedPolicies={publishedPoliciesScore.publishedPolicies}
+              totalTasks={doneTasksScore.totalTasks}
+              doneTasks={doneTasksScore.doneTasks}
+              totalDocuments={documentsScore.totalDocuments}
+              completedDocuments={documentsScore.completedDocuments}
+              totalMembers={peopleScore.totalMembers}
+              completedMembers={peopleScore.completedMembers}
+            />
+            <FrameworksOverview
+              frameworksWithControls={frameworksWithControls}
+              frameworksWithCompliance={frameworksWithCompliance}
+              overallComplianceScore={overallComplianceScore}
+              allFrameworks={allFrameworks}
+              organizationId={organizationId}
+            />
+            <ToDoOverview
+              totalPolicies={publishedPoliciesScore.totalPolicies}
+              totalTasks={doneTasksScore.totalTasks}
+              remainingPolicies={
+                publishedPoliciesScore.totalPolicies - publishedPoliciesScore.publishedPolicies
+              }
+              remainingTasks={doneTasksScore.totalTasks - doneTasksScore.doneTasks}
+              unpublishedPolicies={publishedPoliciesScore.unpublishedPolicies}
+              incompleteTasks={doneTasksScore.incompleteTasks}
+              policiesInReview={publishedPoliciesScore.policiesInReview}
+              organizationId={organizationId}
+              currentMember={currentMember}
+              onboardingTriggerJobId={onboardingTriggerJobId}
+            />
+            <FindingsOverview findings={findings} organizationId={organizationId} />
+          </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="timeline">
+        <div className="pt-4">
+          <TimelineOverview initialData={timelines} />
+        </div>
+      </TabsContent>
+    </Tabs>
   );
 };
 
