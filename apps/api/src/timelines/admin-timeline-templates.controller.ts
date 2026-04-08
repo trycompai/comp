@@ -78,6 +78,7 @@ export class AdminTimelineTemplatesController {
     return this.templatesService.addPhase(templateId, {
       name: dto.name,
       description: dto.description,
+      groupLabel: dto.groupLabel,
       orderIndex: dto.orderIndex,
       defaultDurationWeeks: dto.defaultDurationWeeks,
       completionType: dto.completionType as
@@ -97,6 +98,7 @@ export class AdminTimelineTemplatesController {
     return this.templatesService.updatePhase(templateId, phaseId, {
       name: dto.name,
       description: dto.description,
+      groupLabel: dto.groupLabel,
       orderIndex: dto.orderIndex,
       defaultDurationWeeks: dto.defaultDurationWeeks,
       completionType: dto.completionType as
