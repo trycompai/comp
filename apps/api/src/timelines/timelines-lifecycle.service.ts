@@ -5,11 +5,13 @@ import {
 } from '@nestjs/common';
 import { db, TimelineStatus, TimelinePhaseStatus } from '@db';
 import { recalculatePhaseDates } from './timelines-date.helper';
+import { notifyPhaseCompleted, notifyTimelineCompleted } from './timelines-slack.helper';
 
 /** Shared Prisma include for timeline instance queries. */
 const INSTANCE_INCLUDE = {
   phases: { orderBy: { orderIndex: 'asc' } as const },
   frameworkInstance: { include: { framework: true } },
+  organization: { select: { id: true, name: true } },
   template: true,
 };
 
@@ -196,7 +198,9 @@ export class TimelinesLifecycleService {
         },
       });
 
-      if (remainingPending === 0) {
+      const allCompleted = remainingPending === 0;
+
+      if (allCompleted) {
         await tx.timelineInstance.update({
           where: { id: instanceId },
           data: {
@@ -206,10 +210,30 @@ export class TimelinesLifecycleService {
         });
       }
 
-      return tx.timelineInstance.findUnique({
+      const result = await tx.timelineInstance.findUnique({
         where: { id: instanceId },
         include: INSTANCE_INCLUDE,
       });
+
+      return { result, allCompleted, phaseName: phase.name, completionType: phase.completionType };
     });
+
+    // Fire-and-forget Slack notifications
+    const orgName = txResult.result?.organization?.name ?? organizationId;
+    const frameworkName =
+      txResult.result?.frameworkInstance?.framework?.name ?? 'Unknown';
+
+    notifyPhaseCompleted({
+      orgName,
+      frameworkName,
+      phaseName: txResult.phaseName,
+      completionType: txResult.completionType,
+    });
+
+    if (txResult.allCompleted) {
+      notifyTimelineCompleted({ orgName, frameworkName });
+    }
+
+    return txResult.result;
   }
 }
