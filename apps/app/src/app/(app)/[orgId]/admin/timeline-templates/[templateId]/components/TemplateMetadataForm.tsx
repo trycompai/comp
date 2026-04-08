@@ -102,10 +102,14 @@ export function TemplateMetadataForm({
           <Controller
             control={control}
             name="frameworkId"
-            render={({ field }) => (
+            render={({ field }) => {
+              const selectedName = frameworks.find((fw) => fw.id === field.value)?.name
+                ?? template.framework?.name
+                ?? field.value;
+              return (
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a framework" />
+                  <SelectValue placeholder="Select a framework">{selectedName}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {frameworks.map((fw) => (
@@ -115,7 +119,8 @@ export function TemplateMetadataForm({
                   ))}
                 </SelectContent>
               </Select>
-            )}
+              );
+            }}
           />
           {errors.frameworkId && (
             <Text size="xs" variant="destructive">{errors.frameworkId.message}</Text>
