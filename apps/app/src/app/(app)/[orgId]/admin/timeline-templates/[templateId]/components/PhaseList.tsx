@@ -5,8 +5,9 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import type { AdminTimelinePhaseTemplate } from '@/hooks/use-admin-timelines';
 import { Button, Section, Text } from '@trycompai/design-system';
-import { Add } from '@trycompai/design-system/icons';
+import { Add, GroupObjects } from '@trycompai/design-system/icons';
 import { PhaseCard } from './PhaseCard';
+import { PhaseGroupCard } from './PhaseGroupCard';
 
 const GROUP_COLORS = [
   'var(--primary)',
@@ -32,6 +33,33 @@ function getGroupColorMap(
   return map;
 }
 
+type PhaseListEntry =
+  | { type: 'ungrouped'; phase: AdminTimelinePhaseTemplate }
+  | { type: 'group'; label: string; phases: AdminTimelinePhaseTemplate[] };
+
+function buildPhaseEntries(
+  phases: AdminTimelinePhaseTemplate[],
+): PhaseListEntry[] {
+  const sorted = [...phases].sort((a, b) => a.orderIndex - b.orderIndex);
+  const entries: PhaseListEntry[] = [];
+  const seenGroups = new Set<string>();
+
+  for (const phase of sorted) {
+    if (!phase.groupLabel) {
+      entries.push({ type: 'ungrouped', phase });
+      continue;
+    }
+    if (seenGroups.has(phase.groupLabel)) continue;
+    seenGroups.add(phase.groupLabel);
+    const groupPhases = sorted.filter(
+      (p) => p.groupLabel === phase.groupLabel,
+    );
+    entries.push({ type: 'group', label: phase.groupLabel, phases: groupPhases });
+  }
+
+  return entries;
+}
+
 interface PhaseListProps {
   phases: AdminTimelinePhaseTemplate[];
   templateId: string;
@@ -39,12 +67,15 @@ interface PhaseListProps {
 }
 
 export function PhaseList({ phases, templateId, onMutate }: PhaseListProps) {
-  const [adding, setAdding] = useState(false);
+  const [addingPhase, setAddingPhase] = useState(false);
+  const [addingGroup, setAddingGroup] = useState(false);
+
   const sorted = [...phases].sort((a, b) => a.orderIndex - b.orderIndex);
   const groupColors = getGroupColorMap(sorted);
+  const entries = buildPhaseEntries(phases);
 
   const handleAddPhase = async () => {
-    setAdding(true);
+    setAddingPhase(true);
     const res = await api.post(
       `/v1/admin/timeline-templates/${templateId}/phases`,
       {
@@ -54,7 +85,7 @@ export function PhaseList({ phases, templateId, onMutate }: PhaseListProps) {
         completionType: 'MANUAL',
       },
     );
-    setAdding(false);
+    setAddingPhase(false);
     if (res.error) {
       toast.error(res.error);
       return;
@@ -63,37 +94,66 @@ export function PhaseList({ phases, templateId, onMutate }: PhaseListProps) {
     onMutate();
   };
 
-  const handleMove = async (
-    phaseId: string,
-    direction: 'up' | 'down',
+  const handleAddGroup = async () => {
+    setAddingGroup(true);
+    const res = await api.post(
+      `/v1/admin/timeline-templates/${templateId}/phases`,
+      {
+        name: 'New Sub-phase',
+        orderIndex: sorted.length,
+        defaultDurationWeeks: 2,
+        completionType: 'MANUAL',
+        groupLabel: 'New Group',
+      },
+    );
+    setAddingGroup(false);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    toast.success('Group created');
+    onMutate();
+  };
+
+  const handleSwapPhases = async (
+    phaseIdA: string,
+    orderA: number,
+    phaseIdB: string,
+    orderB: number,
   ) => {
-    const currentIndex = sorted.findIndex((p) => p.id === phaseId);
-    if (currentIndex < 0) return;
-
-    const targetIndex =
-      direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= sorted.length) return;
-
-    const currentPhase = sorted[currentIndex];
-    const targetPhase = sorted[targetIndex];
-
-    // Swap order indices
     const [resA, resB] = await Promise.all([
       api.patch(
-        `/v1/admin/timeline-templates/${templateId}/phases/${currentPhase.id}`,
-        { orderIndex: targetPhase.orderIndex },
+        `/v1/admin/timeline-templates/${templateId}/phases/${phaseIdA}`,
+        { orderIndex: orderA },
       ),
       api.patch(
-        `/v1/admin/timeline-templates/${templateId}/phases/${targetPhase.id}`,
-        { orderIndex: currentPhase.orderIndex },
+        `/v1/admin/timeline-templates/${templateId}/phases/${phaseIdB}`,
+        { orderIndex: orderB },
       ),
     ]);
-
     if (resA.error || resB.error) {
       toast.error('Failed to reorder phases');
       return;
     }
     onMutate();
+  };
+
+  const handleMoveUngrouped = async (
+    phaseId: string,
+    direction: 'up' | 'down',
+  ) => {
+    const currentIndex = sorted.findIndex((p) => p.id === phaseId);
+    if (currentIndex < 0) return;
+    const targetIndex =
+      direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= sorted.length) return;
+
+    await handleSwapPhases(
+      sorted[currentIndex].id,
+      sorted[targetIndex].orderIndex,
+      sorted[targetIndex].id,
+      sorted[currentIndex].orderIndex,
+    );
   };
 
   return (
@@ -102,15 +162,26 @@ export function PhaseList({ phases, templateId, onMutate }: PhaseListProps) {
         <Text size="sm" weight="semibold">
           Phases ({sorted.length})
         </Text>
-        <Button
-          size="sm"
-          variant="outline"
-          iconLeft={<Add size={16} />}
-          loading={adding}
-          onClick={handleAddPhase}
-        >
-          Add Phase
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            iconLeft={<GroupObjects size={16} />}
+            loading={addingGroup}
+            onClick={handleAddGroup}
+          >
+            Add Group
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            iconLeft={<Add size={16} />}
+            loading={addingPhase}
+            onClick={handleAddPhase}
+          >
+            Add Phase
+          </Button>
+        </div>
       </div>
 
       {sorted.length === 0 ? (
@@ -119,20 +190,36 @@ export function PhaseList({ phases, templateId, onMutate }: PhaseListProps) {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {sorted.map((phase, idx) => (
-            <PhaseCard
-              key={phase.id}
-              phase={phase}
-              templateId={templateId}
-              index={idx}
-              totalPhases={sorted.length}
-              groupColor={
-                phase.groupLabel ? (groupColors[phase.groupLabel] ?? null) : null
-              }
-              onMutate={onMutate}
-              onMove={(dir) => handleMove(phase.id, dir)}
-            />
-          ))}
+          {entries.map((entry) => {
+            if (entry.type === 'group') {
+              return (
+                <PhaseGroupCard
+                  key={`group-${entry.label}`}
+                  groupLabel={entry.label}
+                  phases={entry.phases}
+                  templateId={templateId}
+                  groupColor={groupColors[entry.label] ?? GROUP_COLORS[0]}
+                  onMutate={onMutate}
+                  onSwapPhases={handleSwapPhases}
+                />
+              );
+            }
+            const idx = sorted.findIndex(
+              (p) => p.id === entry.phase.id,
+            );
+            return (
+              <PhaseCard
+                key={entry.phase.id}
+                phase={entry.phase}
+                templateId={templateId}
+                index={idx}
+                totalPhases={sorted.length}
+                groupColor={null}
+                onMutate={onMutate}
+                onMove={(dir) => handleMoveUngrouped(entry.phase.id, dir)}
+              />
+            );
+          })}
         </div>
       )}
     </Section>
