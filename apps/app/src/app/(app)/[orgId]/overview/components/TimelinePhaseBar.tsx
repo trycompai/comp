@@ -215,8 +215,12 @@ function PhaseSegment({
   style?: React.CSSProperties;
 }) {
   const flexStyle = style ?? { flex: phase.durationWeeks };
+  const hasLivePct = phase.completionPercent !== undefined;
+  const pct = phase.completionPercent ?? 0;
+  const isFullyComplete = phase.status === 'COMPLETED' && (!hasLivePct || pct >= 100);
 
-  if (phase.status === 'COMPLETED') {
+  // Fully complete (solid primary)
+  if (isFullyComplete) {
     return (
       <div
         className={`relative flex items-center justify-center overflow-hidden bg-primary ${className}`}
@@ -225,13 +229,41 @@ function PhaseSegment({
         <span className="truncate px-2 text-[11px] text-primary-foreground">
           {phase.name}
         </span>
-
       </div>
     );
   }
 
+  // Has live percentage — show fill + percentage (for any AUTO_* phase in a group)
+  if (hasLivePct) {
+    const isActive = phase.status === 'IN_PROGRESS';
+    return (
+      <div
+        className={`relative flex items-center justify-center overflow-hidden ${className}`}
+        style={{
+          ...flexStyle,
+          background: `repeating-linear-gradient(
+            -45deg,
+            var(--muted),
+            var(--muted) 4px,
+            color-mix(in oklch, var(--primary) 10%, transparent) 4px,
+            color-mix(in oklch, var(--primary) 10%, transparent) 8px
+          )`,
+        }}
+      >
+        <div className="absolute inset-y-0 left-0 bg-primary/50" style={{ width: `${pct}%` }} />
+        {isActive && (
+          <div className="absolute inset-y-0 w-[3px] bg-primary animate-pulse" style={{ left: `${pct}%` }} />
+        )}
+        <span className="relative z-10 truncate px-2 text-[11px] font-semibold text-foreground">
+          {phase.name} ({pct}%)
+        </span>
+      </div>
+    );
+  }
+
+  // IN_PROGRESS without live pct (MANUAL phases) — time-based progress
   if (phase.status === 'IN_PROGRESS') {
-    const progress = phase.completionPercent ?? getProgressPercent(phase);
+    const progress = getProgressPercent(phase);
     return (
       <div
         className={`relative flex items-center justify-center overflow-hidden ${className}`}
@@ -249,12 +281,13 @@ function PhaseSegment({
         <div className="absolute inset-y-0 left-0 bg-primary/50" style={{ width: `${progress}%` }} />
         <div className="absolute inset-y-0 w-[3px] bg-primary animate-pulse" style={{ left: `${progress}%` }} />
         <span className="relative z-10 truncate px-2 text-[11px] font-semibold text-foreground">
-          {phase.name}{phase.completionPercent !== undefined ? ` (${phase.completionPercent}%)` : ''}
+          {phase.name}
         </span>
       </div>
     );
   }
 
+  // PENDING (no data)
   return (
     <div
       className={`relative flex items-center justify-center overflow-hidden bg-muted ${className}`}
