@@ -150,37 +150,33 @@ export function TimelinePhaseBar({
         })}
       </div>
 
-      {/* Mobile version — vertical step list */}
-      <div className="flex flex-col lg:hidden">
-        {groups.map((group, gIdx) => (
-          <div key={`m-group-${gIdx}`}>
-            {group.label && (
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5 mt-1 first:mt-0">
-                {group.label}
-              </div>
-            )}
-            {group.phases.map((phase) => {
-              const isCompleted = phase.status === 'COMPLETED';
-              const isActive = phase.status === 'IN_PROGRESS';
-              return (
-                <div
+      {/* Mobile version — compact bars, one row per group, no per-phase dates */}
+      <div className="flex flex-col gap-[3px] lg:hidden">
+        {groups.map((group, gIdx) => {
+          if (group.phases.length === 1) {
+            return (
+              <PhaseSegment
+                key={`m-${group.phases[0].id}`}
+                phase={group.phases[0]}
+                className="rounded-md"
+                style={{ height: 28 }}
+              />
+            );
+          }
+
+          return (
+            <div key={`m-group-${gIdx}`} className="flex overflow-hidden rounded-md" style={{ height: 28 }}>
+              {group.phases.map((phase, pIdx) => (
+                <PhaseSegment
                   key={`m-${phase.id}`}
-                  className={`flex items-center gap-2 py-1.5 text-sm ${isActive ? 'text-foreground font-medium' : isCompleted ? 'text-primary' : 'text-muted-foreground'}`}
-                >
-                  <span className="w-4 shrink-0 text-center text-xs">
-                    {isCompleted ? '✓' : isActive ? '●' : '○'}
-                  </span>
-                  <span className="flex-1 truncate">{phase.name}</span>
-                  {showDates && phase.startDate && (
-                    <span className="shrink-0 text-[11px] text-muted-foreground">
-                      {formatShortDate(phase.startDate)} — {formatShortDate(phase.endDate)}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+                  phase={phase}
+                  className={pIdx < group.phases.length - 1 ? 'border-r border-background/50' : ''}
+                  inGroup
+                />
+              ))}
+            </div>
+          );
+        })}
       </div>
 
       {/* Date markers — hidden on mobile */}
