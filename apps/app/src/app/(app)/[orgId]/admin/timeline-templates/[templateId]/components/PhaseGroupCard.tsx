@@ -19,6 +19,7 @@ interface PhaseGroupCardProps {
   phases: AdminTimelinePhaseTemplate[];
   templateId: string;
   groupColor: string;
+  phaseNumber: number;
   onMutate: () => void;
   onSwapPhases: (
     phaseIdA: string,
@@ -33,6 +34,7 @@ export function PhaseGroupCard({
   phases,
   templateId,
   groupColor,
+  phaseNumber,
   onMutate,
   onSwapPhases,
 }: PhaseGroupCardProps) {
@@ -119,8 +121,25 @@ export function PhaseGroupCard({
       <div className="flex-1">
         <Card>
           <CardContent>
-            <div className="flex items-center justify-between gap-3 pb-3">
-              <div className="flex flex-1 items-center gap-2">
+            <div className="flex flex-col gap-2 pb-3">
+              <div className="flex items-center justify-between gap-3">
+                <Text size="xs" variant="muted">Phase {phaseNumber}</Text>
+                <div className="flex items-center gap-3">
+                  <Text size="xs" variant="muted">
+                    {totalDuration}w total
+                  </Text>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    iconLeft={<Add size={14} />}
+                    loading={adding}
+                    onClick={handleAddSubPhase}
+                  >
+                    Add Sub-phase
+                  </Button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
                 <div className="max-w-xs">
                   <Input
                     value={editingLabel}
@@ -138,20 +157,6 @@ export function PhaseGroupCard({
                     Rename
                   </Button>
                 )}
-              </div>
-              <div className="flex items-center gap-3">
-                <Text size="xs" variant="muted">
-                  {totalDuration}w total
-                </Text>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  iconLeft={<Add size={14} />}
-                  loading={adding}
-                  onClick={handleAddSubPhase}
-                >
-                  Add Sub-phase
-                </Button>
               </div>
             </div>
 

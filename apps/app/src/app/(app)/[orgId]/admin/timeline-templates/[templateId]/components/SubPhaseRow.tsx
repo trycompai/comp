@@ -139,13 +139,15 @@ export function SubPhaseRow({
         />
       </div>
 
-      <div className="w-20 shrink-0">
+      <div className="w-24 shrink-0 relative">
         <Input
           type="number"
           min={1}
           {...register('defaultDurationWeeks', { valueAsNumber: true })}
-          placeholder="Weeks"
+          placeholder="0"
+          className="pr-8"
         />
+        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">wk</span>
       </div>
 
       <div className="w-36 shrink-0">

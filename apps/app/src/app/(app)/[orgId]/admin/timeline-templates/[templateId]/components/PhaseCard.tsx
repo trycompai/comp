@@ -50,6 +50,7 @@ interface PhaseCardProps {
   index: number;
   totalPhases: number;
   groupColor: string | null;
+  phaseNumber: number;
   onMutate: () => void;
   onMove: (direction: 'up' | 'down') => void;
 }
@@ -60,6 +61,7 @@ export function PhaseCard({
   index,
   totalPhases,
   groupColor,
+  phaseNumber,
   onMutate,
   onMove,
 }: PhaseCardProps) {
@@ -136,7 +138,7 @@ export function PhaseCard({
               <div className="flex-1">
                 <div className="flex items-center gap-2 pb-3">
                   <Text size="xs" variant="muted">
-                    Phase {index + 1}
+                    Phase {phaseNumber}
                   </Text>
                   <div className="flex items-center gap-0.5">
                     <Button
@@ -228,16 +230,6 @@ export function PhaseCard({
                     </Select>
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <Label htmlFor={`phase-${phase.id}-group`}>
-                      Group Label
-                    </Label>
-                    <Input
-                      id={`phase-${phase.id}-group`}
-                      {...register('groupLabel')}
-                      placeholder="e.g. Preparing for Audit"
-                    />
-                  </div>
                 </div>
               </div>
 

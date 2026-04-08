@@ -160,7 +160,7 @@ export function PhaseList({ phases, templateId, onMutate }: PhaseListProps) {
     <Section>
       <div className="flex items-center justify-between pb-4">
         <Text size="sm" weight="semibold">
-          Phases ({sorted.length})
+          Phases ({entries.length})
         </Text>
         <div className="flex items-center gap-2">
           <Button
@@ -190,7 +190,8 @@ export function PhaseList({ phases, templateId, onMutate }: PhaseListProps) {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {entries.map((entry) => {
+          {entries.map((entry, entryIdx) => {
+            const phaseNumber = entryIdx + 1;
             if (entry.type === 'group') {
               return (
                 <PhaseGroupCard
@@ -199,22 +200,21 @@ export function PhaseList({ phases, templateId, onMutate }: PhaseListProps) {
                   phases={entry.phases}
                   templateId={templateId}
                   groupColor={groupColors[entry.label] ?? GROUP_COLORS[0]}
+                  phaseNumber={phaseNumber}
                   onMutate={onMutate}
                   onSwapPhases={handleSwapPhases}
                 />
               );
             }
-            const idx = sorted.findIndex(
-              (p) => p.id === entry.phase.id,
-            );
             return (
               <PhaseCard
                 key={entry.phase.id}
                 phase={entry.phase}
                 templateId={templateId}
-                index={idx}
-                totalPhases={sorted.length}
+                index={entryIdx}
+                totalPhases={entries.length}
                 groupColor={null}
+                phaseNumber={phaseNumber}
                 onMutate={onMutate}
                 onMove={(dir) => handleMoveUngrouped(entry.phase.id, dir)}
               />
