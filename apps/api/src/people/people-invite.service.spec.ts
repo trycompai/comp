@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PeopleInviteService } from './people-invite.service';
+import { TimelinesService } from '../timelines/timelines.service';
 
 jest.mock('@db', () => ({
   db: {
@@ -42,9 +43,14 @@ const mockTriggerEmail = triggerEmail as jest.Mock;
 describe('PeopleInviteService', () => {
   let service: PeopleInviteService;
 
+  const mockTimelinesService = {};
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PeopleInviteService],
+      providers: [
+        PeopleInviteService,
+        { provide: TimelinesService, useValue: mockTimelinesService },
+      ],
     }).compile();
 
     service = module.get<PeopleInviteService>(PeopleInviteService);

@@ -507,6 +507,12 @@ export class TasksService {
         );
       }
 
+      // Check timeline auto-completion after bulk task deletion (total task count changed)
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch(() => {});
+
       return { deletedCount: result.count };
     } catch (error) {
       console.error('Error deleting tasks:', error);
@@ -824,6 +830,12 @@ export class TasksService {
         },
       });
 
+      // Check timeline auto-completion after task creation (total task count changed)
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch(() => {});
+
       return {
         id: task.id,
         title: task.title,
@@ -907,6 +919,12 @@ export class TasksService {
     await db.task.delete({
       where: { id: taskId },
     });
+
+    // Check timeline auto-completion after task deletion (total task count changed)
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch(() => {});
   }
 
   /**
@@ -1166,6 +1184,12 @@ export class TasksService {
 
       return updated;
     });
+
+    // Check timeline auto-completion when task is approved (status changed to done)
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch(() => {});
 
     return updatedTask;
   }
