@@ -24,7 +24,6 @@ import { UpdatePhaseTemplateDto } from './dto/update-phase-template.dto';
 @ApiExcludeController()
 @Controller({ path: 'admin/timeline-templates', version: '1' })
 @UseGuards(PlatformAdminGuard)
-@UseInterceptors(AdminAuditLogInterceptor)
 @Throttle({ default: { ttl: 60000, limit: 30 } })
 @UsePipes(
   new ValidationPipe({
