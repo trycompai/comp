@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-
 import { toast } from 'sonner';
 
 import { useApi } from '@/hooks/use-api';
