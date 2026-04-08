@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -12,6 +12,11 @@ import {
   Button,
   Input,
   Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Sheet,
   SheetBody,
   SheetContent,
@@ -23,11 +28,16 @@ import {
 
 const newTemplateSchema = z.object({
   name: z.string().min(1, 'Template name is required'),
-  frameworkId: z.string().min(1, 'Framework ID is required'),
+  frameworkId: z.string().min(1, 'Please select a framework'),
   cycleNumber: z.number().min(1, 'Cycle must be at least 1'),
 });
 
 type NewTemplateFormValues = z.infer<typeof newTemplateSchema>;
+
+interface Framework {
+  id: string;
+  name: string;
+}
 
 interface NewTemplateDialogProps {
   open: boolean;
@@ -39,11 +49,22 @@ export function NewTemplateDialog({ open, onClose }: NewTemplateDialogProps) {
   const router = useRouter();
   const { mutate } = useAdminTimelineTemplates();
   const [saving, setSaving] = useState(false);
+  const [frameworks, setFrameworks] = useState<Framework[]>([]);
+
+  useEffect(() => {
+    if (!open) return;
+    api
+      .get<{ data: Framework[] }>('/v1/frameworks/available')
+      .then((res) => {
+        if (res.data?.data) setFrameworks(res.data.data);
+      });
+  }, [open]);
 
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<NewTemplateFormValues>({
     resolver: zodResolver(newTemplateSchema),
@@ -54,11 +75,7 @@ export function NewTemplateDialog({ open, onClose }: NewTemplateDialogProps) {
     setSaving(true);
     const res = await api.post<{ id: string }>(
       '/v1/admin/timeline-templates',
-      {
-        name: values.name,
-        frameworkId: values.frameworkId,
-        cycleNumber: values.cycleNumber,
-      },
+      values,
     );
     setSaving(false);
 
@@ -97,7 +114,7 @@ export function NewTemplateDialog({ open, onClose }: NewTemplateDialogProps) {
                 <Input
                   id="new-name"
                   {...register('name')}
-                  placeholder="e.g. SOC 2 Initial Audit"
+                  placeholder="e.g. SOC 2 Type 2"
                 />
                 {errors.name && (
                   <Text size="xs" variant="destructive">
@@ -107,11 +124,24 @@ export function NewTemplateDialog({ open, onClose }: NewTemplateDialogProps) {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="new-frameworkId">Framework ID</Label>
-                <Input
-                  id="new-frameworkId"
-                  {...register('frameworkId')}
-                  placeholder="Framework ID"
+                <Label>Framework</Label>
+                <Controller
+                  control={control}
+                  name="frameworkId"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a framework" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {frameworks.map((fw) => (
+                          <SelectItem key={fw.id} value={fw.id}>
+                            {fw.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
                 {errors.frameworkId && (
                   <Text size="xs" variant="destructive">

@@ -50,7 +50,7 @@ export class TimelinesTemplatesService {
     });
   }
 
-  async update(id: string, data: { name?: string; cycleNumber?: number }) {
+  async update(id: string, data: { name?: string; frameworkId?: string; cycleNumber?: number }) {
     const template = await db.timelineTemplate.findUnique({
       where: { id },
     });
