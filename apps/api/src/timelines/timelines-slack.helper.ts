@@ -3,6 +3,11 @@ import { Logger } from '@nestjs/common';
 const logger = new Logger('TimelinesSlack');
 
 const WEBHOOK_URL = process.env.SLACK_CX_WEBHOOK_URL;
+const APP_URL = process.env.APP_URL ?? 'https://app.trycomp.ai';
+
+function adminTimelineUrl(orgId: string) {
+  return `${APP_URL}/${orgId}/admin/organizations/${orgId}`;
+}
 
 async function sendSlack(blocks: unknown[], fallbackText: string) {
   if (!WEBHOOK_URL) return;
@@ -33,19 +38,22 @@ function divider() {
 }
 
 export function notifyReadyForReview({
+  orgId,
   orgName,
   frameworkName,
   phaseName,
 }: {
+  orgId: string;
   orgName: string;
   frameworkName: string;
   phaseName: string;
 }) {
+  const link = adminTimelineUrl(orgId);
   sendSlack(
     [
       section(`:bell:  *Ready for Review*`),
       section(
-        `*${orgName}* marked *${phaseName}* as ready\n` +
+        `*<${link}|${orgName}>* marked *${phaseName}* as ready\n` +
         `_${frameworkName}_`,
       ),
       context(':arrow_right:  Customer is waiting for CX to begin the next phase'),
@@ -56,11 +64,13 @@ export function notifyReadyForReview({
 }
 
 export function notifyPhaseCompleted({
+  orgId,
   orgName,
   frameworkName,
   phaseName,
   completionType,
 }: {
+  orgId: string;
   orgName: string;
   frameworkName: string;
   phaseName: string;
@@ -73,11 +83,12 @@ export function notifyPhaseCompleted({
     completionType === 'AUTO_UPLOAD' ? ':paperclip:  Document uploaded' :
     ':pencil:  Manually completed';
 
+  const link = adminTimelineUrl(orgId);
   sendSlack(
     [
       section(`:white_check_mark:  *Phase Completed*`),
       section(
-        `*${orgName}*  ·  _${frameworkName}_\n` +
+        `*<${link}|${orgName}>*  ·  _${frameworkName}_\n` +
         `Phase: *${phaseName}*`,
       ),
       context(typeLabel),
@@ -88,17 +99,20 @@ export function notifyPhaseCompleted({
 }
 
 export function notifyTimelineCompleted({
+  orgId,
   orgName,
   frameworkName,
 }: {
+  orgId: string;
   orgName: string;
   frameworkName: string;
 }) {
+  const link = adminTimelineUrl(orgId);
   sendSlack(
     [
       section(`:tada:  *Timeline Completed*`),
       section(
-        `*${orgName}* has completed all phases for *${frameworkName}*`,
+        `*<${link}|${orgName}>* has completed all phases for *${frameworkName}*`,
       ),
       context(':checkered_flag:  Ready for final report delivery'),
       divider(),

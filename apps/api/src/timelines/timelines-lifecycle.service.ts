@@ -226,6 +226,7 @@ export class TimelinesLifecycleService {
       'Unknown';
 
     notifyPhaseCompleted({
+      orgId: organizationId,
       orgName,
       frameworkName,
       phaseName: txResult.phaseName,
@@ -233,7 +234,7 @@ export class TimelinesLifecycleService {
     });
 
     if (txResult.allCompleted) {
-      notifyTimelineCompleted({ orgName, frameworkName });
+      notifyTimelineCompleted({ orgId: organizationId, orgName, frameworkName });
     }
 
     return txResult.result;
