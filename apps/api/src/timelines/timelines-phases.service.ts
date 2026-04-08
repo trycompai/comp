@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { db, PhaseCompletionType } from '@db';
 import { TimelinesLifecycleService } from './timelines-lifecycle.service';
+import { recalculatePhaseDates } from './timelines-date.helper';
 
 @Injectable()
 export class TimelinesPhasesService {
@@ -39,33 +40,51 @@ export class TimelinesPhasesService {
       throw new NotFoundException('Phase not found');
     }
 
-    // Pin dates when manually set
-    const datesPinned =
-      data.startDate !== undefined || data.endDate !== undefined
-        ? true
-        : undefined;
+    // Calculate endDate from startDate + durationWeeks
+    const newDuration = data.durationWeeks ?? phase.durationWeeks;
+    const newStartDate = data.startDate ?? phase.startDate;
+    let newEndDate: Date | undefined;
+
+    if (data.startDate || data.durationWeeks) {
+      if (newStartDate) {
+        const end = new Date(newStartDate);
+        end.setUTCDate(end.getUTCDate() + newDuration * 7);
+        newEndDate = end;
+      }
+    }
+
+    const datesPinned = data.startDate !== undefined ? true : undefined;
 
     const updated = await db.timelinePhase.update({
       where: { id: phaseId },
       data: {
         ...(data.name !== undefined && { name: data.name }),
-        ...(data.description !== undefined && {
-          description: data.description,
-        }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.durationWeeks !== undefined && { durationWeeks: data.durationWeeks }),
         ...(data.startDate !== undefined && { startDate: data.startDate }),
-        ...(data.endDate !== undefined && { endDate: data.endDate }),
-        ...(data.durationWeeks !== undefined && {
-          durationWeeks: data.durationWeeks,
-        }),
-        ...(data.documentUrl !== undefined && {
-          documentUrl: data.documentUrl,
-        }),
-        ...(data.documentName !== undefined && {
-          documentName: data.documentName,
-        }),
+        ...(newEndDate !== undefined && { endDate: newEndDate }),
+        ...(data.documentUrl !== undefined && { documentUrl: data.documentUrl }),
+        ...(data.documentName !== undefined && { documentName: data.documentName }),
         ...(datesPinned !== undefined && { datesPinned }),
       },
     });
+
+    // Recalculate downstream phases when dates change
+    if (newEndDate && instance.startDate) {
+      const allPhases = await db.timelinePhase.findMany({
+        where: { instanceId },
+        orderBy: { orderIndex: 'asc' },
+      });
+      const recalculated = recalculatePhaseDates(allPhases, instance.startDate);
+      for (const rp of recalculated) {
+        if (rp.id === phaseId) continue; // already updated
+        if (rp.datesPinned || rp.status === 'COMPLETED') continue;
+        await db.timelinePhase.update({
+          where: { id: rp.id },
+          data: { startDate: rp.startDate, endDate: rp.endDate },
+        });
+      }
+    }
 
     // Auto-complete if documentUrl is set on an AUTO_UPLOAD phase
     if (
@@ -73,11 +92,7 @@ export class TimelinesPhasesService {
       updated.completionType === PhaseCompletionType.AUTO_UPLOAD &&
       updated.status !== 'COMPLETED'
     ) {
-      return this.lifecycle.completePhase(
-        instanceId,
-        phaseId,
-        organizationId,
-      );
+      return this.lifecycle.completePhase(instanceId, phaseId, organizationId);
     }
 
     return updated;

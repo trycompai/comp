@@ -26,11 +26,9 @@ const phaseUpdateSchema = z.object({
   description: z.string().optional(),
   durationWeeks: z.number().min(1, 'Must be at least 1 week'),
   startDate: z.string().optional(),
-  endDate: z.string().optional(),
 });
 
 type PhaseUpdateValues = z.infer<typeof phaseUpdateSchema>;
-
 type TimelinePhase = AdminOrgTimeline['phases'][number];
 
 interface TimelinePhaseEditorProps {
@@ -45,6 +43,13 @@ interface TimelinePhaseEditorProps {
 function toDateInput(date: string | null): string {
   if (!date) return '';
   return new Date(date).toISOString().split('T')[0];
+}
+
+function addWeeks(dateStr: string, weeks: number): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  d.setUTCDate(d.getUTCDate() + weeks * 7);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export function TimelinePhaseEditor({
@@ -62,6 +67,7 @@ export function TimelinePhaseEditor({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<PhaseUpdateValues>({
     resolver: zodResolver(phaseUpdateSchema),
@@ -71,6 +77,12 @@ export function TimelinePhaseEditor({
   useEffect(() => {
     reset(phaseDefaults(phase));
   }, [phase, reset]);
+
+  const watchedStart = watch('startDate');
+  const watchedDuration = watch('durationWeeks');
+  const calculatedEnd = watchedStart && watchedDuration
+    ? addWeeks(watchedStart, watchedDuration)
+    : null;
 
   const handleSave = async (values: PhaseUpdateValues) => {
     if (!phase) return;
@@ -84,9 +96,6 @@ export function TimelinePhaseEditor({
         startDate: values.startDate
           ? new Date(values.startDate).toISOString()
           : undefined,
-        endDate: values.endDate
-          ? new Date(values.endDate).toISOString()
-          : undefined,
       },
     );
     setSaving(false);
@@ -94,7 +103,7 @@ export function TimelinePhaseEditor({
       toast.error(res.error);
       return;
     }
-    toast.success('Phase updated');
+    toast.success('Phase updated — downstream dates recalculated');
     onMutate();
     onClose();
   };
@@ -128,58 +137,41 @@ export function TimelinePhaseEditor({
             <Stack gap="md">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="phase-name">Name</Label>
-                <Input
-                  id="phase-name"
-                  {...register('name')}
-                />
+                <Input id="phase-name" {...register('name')} />
                 {errors.name && (
-                  <Text size="xs" variant="destructive">
-                    {errors.name.message}
-                  </Text>
+                  <Text size="xs" variant="destructive">{errors.name.message}</Text>
                 )}
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="phase-description">Description</Label>
-                <Input
-                  id="phase-description"
-                  {...register('description')}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="phase-duration">Duration (weeks)</Label>
-                <Input
-                  id="phase-duration"
-                  type="number"
-                  min={1}
-                  {...register('durationWeeks', { valueAsNumber: true })}
-                />
-                {errors.durationWeeks && (
-                  <Text size="xs" variant="destructive">
-                    {errors.durationWeeks.message}
-                  </Text>
-                )}
+                <Input id="phase-description" {...register('description')} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="phase-start">Start Date</Label>
+                  <Label htmlFor="phase-duration">Duration (weeks)</Label>
                   <Input
-                    id="phase-start"
-                    type="date"
-                    {...register('startDate')}
+                    id="phase-duration"
+                    type="number"
+                    min={1}
+                    {...register('durationWeeks', { valueAsNumber: true })}
                   />
+                  {errors.durationWeeks && (
+                    <Text size="xs" variant="destructive">{errors.durationWeeks.message}</Text>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="phase-end">End Date</Label>
-                  <Input
-                    id="phase-end"
-                    type="date"
-                    {...register('endDate')}
-                  />
+                  <Label htmlFor="phase-start">Start Date</Label>
+                  <Input id="phase-start" type="date" {...register('startDate')} />
                 </div>
               </div>
+
+              {calculatedEnd && (
+                <div className="text-sm text-muted-foreground">
+                  Calculated end date: <span className="font-medium text-foreground">{calculatedEnd}</span>
+                </div>
+              )}
 
               <div className="flex items-center gap-2 pt-4">
                 <Button type="submit" loading={saving}>
@@ -206,14 +198,11 @@ export function TimelinePhaseEditor({
 }
 
 function phaseDefaults(phase: TimelinePhase | null): PhaseUpdateValues {
-  if (!phase) {
-    return { name: '', durationWeeks: 2 };
-  }
+  if (!phase) return { name: '', durationWeeks: 2 };
   return {
     name: phase.name,
     description: phase.description ?? '',
     durationWeeks: phase.durationWeeks,
     startDate: toDateInput(phase.startDate),
-    endDate: toDateInput(phase.endDate),
   };
 }
