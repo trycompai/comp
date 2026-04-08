@@ -240,8 +240,8 @@ function PhaseSegment({
             -45deg,
             hsl(var(--muted)),
             hsl(var(--muted)) 4px,
-            hsl(var(--muted-foreground) / 0.08) 4px,
-            hsl(var(--muted-foreground) / 0.08) 8px
+            hsl(var(--primary) / 0.15) 4px,
+            hsl(var(--primary) / 0.15) 8px
           )`,
         }}
       >
