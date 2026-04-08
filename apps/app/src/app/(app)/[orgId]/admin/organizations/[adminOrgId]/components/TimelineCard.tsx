@@ -4,7 +4,20 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import type { AdminOrgTimeline } from '@/hooks/use-admin-timelines';
-import { Badge, Button, Section } from '@trycompai/design-system';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+  Badge,
+  Button,
+  Section,
+} from '@trycompai/design-system';
 import {
   Checkmark,
   CircleDash,
@@ -12,6 +25,8 @@ import {
   Pause,
   Play,
   Edit,
+  Reset,
+  TrashCan,
 } from '@trycompai/design-system/icons';
 import { TimelinePhaseBar } from '@/app/(app)/[orgId]/overview/components/TimelinePhaseBar';
 import { TimelineActivateForm } from './TimelineActivateForm';
@@ -52,31 +67,19 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
     (a, b) => a.orderIndex - b.orderIndex,
   );
 
-  const handlePause = async () => {
+  const runAction = async (
+    method: 'post' | 'delete',
+    path: string,
+    successMsg: string,
+  ) => {
     setActionLoading(true);
-    const res = await api.post(
-      `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/pause`,
-    );
+    const res = await (method === 'delete' ? api.delete(path) : api.post(path));
     setActionLoading(false);
     if (res.error) {
       toast.error(res.error);
       return;
     }
-    toast.success('Timeline paused');
-    onMutate();
-  };
-
-  const handleResume = async () => {
-    setActionLoading(true);
-    const res = await api.post(
-      `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/resume`,
-    );
-    setActionLoading(false);
-    if (res.error) {
-      toast.error(res.error);
-      return;
-    }
-    toast.success('Timeline resumed');
+    toast.success(successMsg);
     onMutate();
   };
 
@@ -91,8 +94,18 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
             orgId={orgId}
             timelineId={timeline.id}
             loading={actionLoading}
-            onPause={handlePause}
-            onResume={handleResume}
+            onPause={() =>
+              runAction('post', `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/pause`, 'Timeline paused')
+            }
+            onResume={() =>
+              runAction('post', `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/resume`, 'Timeline resumed')
+            }
+            onReset={() =>
+              runAction('post', `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/reset`, 'Timeline reset to draft')
+            }
+            onDelete={() =>
+              runAction('delete', `/v1/admin/organizations/${orgId}/timelines/${timeline.id}`, 'Timeline deleted')
+            }
             onMutate={onMutate}
           />
         </div>
@@ -102,7 +115,6 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
         <TimelinePhaseBar phases={sortedPhases} showDates />
       </div>
 
-      {/* Phase cards stack */}
       <div className="flex flex-col gap-2">
         {sortedPhases.map((phase) => (
           <PhaseRow
@@ -139,7 +151,6 @@ function PhaseRow({
 }) {
   const isCompleted = phase.status === 'COMPLETED';
   const isActive = phase.status === 'IN_PROGRESS';
-
   const borderClass = isCompleted
     ? 'border-primary/30 bg-primary/5'
     : isActive
@@ -147,9 +158,7 @@ function PhaseRow({
       : 'border-border bg-muted/20';
 
   return (
-    <div
-      className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${borderClass}`}
-    >
+    <div className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${borderClass}`}>
       <div className="shrink-0">
         <PhaseStatusIcon status={phase.status} />
       </div>
@@ -180,6 +189,44 @@ function PhaseStatusIcon({ status }: { status: string }) {
   return <CircleDash size={16} className="text-muted-foreground" />;
 }
 
+function ConfirmButton({
+  title,
+  description,
+  onConfirm,
+  loading,
+  variant = 'outline',
+  icon,
+  children,
+}: {
+  title: string;
+  description: string;
+  onConfirm: () => void;
+  loading: boolean;
+  variant?: 'outline' | 'destructive';
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button size="sm" variant={variant} iconLeft={icon} loading={loading}>
+          {children}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>Confirm</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 function TimelineActions({
   status,
   orgId,
@@ -187,6 +234,8 @@ function TimelineActions({
   loading,
   onPause,
   onResume,
+  onReset,
+  onDelete,
   onMutate,
 }: {
   status: AdminOrgTimeline['status'];
@@ -195,43 +244,90 @@ function TimelineActions({
   loading: boolean;
   onPause: () => void;
   onResume: () => void;
+  onReset: () => void;
+  onDelete: () => void;
   onMutate: () => void;
 }) {
   if (status === 'DRAFT') {
     return (
-      <TimelineActivateForm
-        orgId={orgId}
-        timelineId={timelineId}
-        onMutate={onMutate}
-      />
+      <div className="flex items-center gap-2">
+        <TimelineActivateForm orgId={orgId} timelineId={timelineId} onMutate={onMutate} />
+        <ConfirmButton
+          title="Delete Timeline"
+          description="This will permanently delete this timeline and all its phases. This cannot be undone."
+          onConfirm={onDelete}
+          loading={loading}
+          variant="destructive"
+          icon={<TrashCan size={14} />}
+        >
+          Delete
+        </ConfirmButton>
+      </div>
     );
   }
 
   if (status === 'ACTIVE') {
     return (
-      <Button
-        size="sm"
-        variant="outline"
-        iconLeft={<Pause size={14} />}
-        loading={loading}
-        onClick={onPause}
-      >
-        Pause
-      </Button>
+      <div className="flex items-center gap-2">
+        <ConfirmButton
+          title="Pause Timeline"
+          description="Pausing will stop auto-completion checks. You can resume later and dates will be adjusted."
+          onConfirm={onPause}
+          loading={loading}
+          icon={<Pause size={14} />}
+        >
+          Pause
+        </ConfirmButton>
+        <ConfirmButton
+          title="Reset Timeline"
+          description="This will reset all phases to pending and the timeline back to draft. All progress will be lost."
+          onConfirm={onReset}
+          loading={loading}
+          icon={<Reset size={14} />}
+        >
+          Reset
+        </ConfirmButton>
+      </div>
     );
   }
 
   if (status === 'PAUSED') {
     return (
-      <Button
-        size="sm"
-        variant="outline"
-        iconLeft={<Play size={14} />}
+      <div className="flex items-center gap-2">
+        <ConfirmButton
+          title="Resume Timeline"
+          description="Resuming will adjust dates forward based on the pause duration."
+          onConfirm={onResume}
+          loading={loading}
+          icon={<Play size={14} />}
+        >
+          Resume
+        </ConfirmButton>
+        <ConfirmButton
+          title="Reset Timeline"
+          description="This will reset all phases to pending and the timeline back to draft. All progress will be lost."
+          onConfirm={onReset}
+          loading={loading}
+          icon={<Reset size={14} />}
+        >
+          Reset
+        </ConfirmButton>
+      </div>
+    );
+  }
+
+  if (status === 'COMPLETED') {
+    return (
+      <ConfirmButton
+        title="Delete Timeline"
+        description="This will permanently delete this completed timeline. This cannot be undone."
+        onConfirm={onDelete}
         loading={loading}
-        onClick={onResume}
+        variant="destructive"
+        icon={<TrashCan size={14} />}
       >
-        Resume
-      </Button>
+        Delete
+      </ConfirmButton>
     );
   }
 

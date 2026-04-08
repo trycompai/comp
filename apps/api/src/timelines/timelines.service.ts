@@ -191,4 +191,63 @@ export class TimelinesService {
       userId,
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Admin — delete, reset, recreate
+  // ---------------------------------------------------------------------------
+
+  async deleteInstance(id: string, organizationId: string) {
+    const instance = await db.timelineInstance.findFirst({
+      where: { id, organizationId },
+    });
+    if (!instance) {
+      throw new NotFoundException('Timeline instance not found');
+    }
+    await db.timelinePhase.deleteMany({ where: { instanceId: id } });
+    await db.timelineInstance.delete({ where: { id } });
+    return { deleted: true };
+  }
+
+  async resetInstance(id: string, organizationId: string) {
+    const instance = await this.findOne(id, organizationId);
+    await db.$transaction(async (tx) => {
+      for (const phase of instance.phases) {
+        await tx.timelinePhase.update({
+          where: { id: phase.id },
+          data: {
+            status: 'PENDING',
+            startDate: null,
+            endDate: null,
+            completedAt: null,
+            completedById: null,
+            readyForReview: false,
+            readyForReviewAt: null,
+            datesPinned: false,
+          },
+        });
+      }
+      await tx.timelineInstance.update({
+        where: { id },
+        data: { status: 'DRAFT', startDate: null, pausedAt: null, completedAt: null },
+      });
+    });
+    return this.findOne(id, organizationId);
+  }
+
+  async recreateAllForOrganization(organizationId: string) {
+    // Delete all existing timelines for this org
+    const existing = await db.timelineInstance.findMany({
+      where: { organizationId },
+      select: { id: true },
+    });
+    for (const inst of existing) {
+      await db.timelinePhase.deleteMany({ where: { instanceId: inst.id } });
+    }
+    await db.timelineInstance.deleteMany({ where: { organizationId } });
+
+    // Re-run backfill
+    await this.ensureTimelinesExist(organizationId);
+
+    return this.findAllForOrganization(organizationId);
+  }
 }

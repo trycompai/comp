@@ -126,4 +126,25 @@ export class AdminOrgTimelinesController {
   ) {
     return this.timelinesService.completePhase(id, phaseId, orgId);
   }
+
+  @Post(':orgId/timelines/:id/reset')
+  async resetTimeline(
+    @Param('orgId') orgId: string,
+    @Param('id') id: string,
+  ) {
+    return this.timelinesService.resetInstance(id, orgId);
+  }
+
+  @Delete(':orgId/timelines/:id')
+  async deleteTimeline(
+    @Param('orgId') orgId: string,
+    @Param('id') id: string,
+  ) {
+    return this.timelinesService.deleteInstance(id, orgId);
+  }
+
+  @Post(':orgId/timelines/recreate')
+  async recreateTimelines(@Param('orgId') orgId: string) {
+    return this.timelinesService.recreateAllForOrganization(orgId);
+  }
 }
