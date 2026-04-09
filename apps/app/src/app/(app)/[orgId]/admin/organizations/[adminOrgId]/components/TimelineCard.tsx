@@ -296,6 +296,7 @@ function TimelineActions({
   onResume,
   onReset,
   onDelete,
+  onStartNextCycle,
   onMutate,
 }: {
   status: AdminOrgTimeline['status'];
