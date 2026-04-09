@@ -127,6 +127,14 @@ export class AdminOrgTimelinesController {
     return this.timelinesService.completePhase(id, phaseId, orgId);
   }
 
+  @Post(':orgId/timelines/:id/next-cycle')
+  async startNextCycle(
+    @Param('orgId') orgId: string,
+    @Param('id') id: string,
+  ) {
+    return this.timelinesService.startNextCycle(id, orgId);
+  }
+
   @Post(':orgId/timelines/:id/reset')
   async resetTimeline(
     @Param('orgId') orgId: string,

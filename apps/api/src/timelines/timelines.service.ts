@@ -275,8 +275,36 @@ export class TimelinesService {
   }
 
   // ---------------------------------------------------------------------------
-  // Admin — delete, reset, recreate
+  // Admin — next cycle, delete, reset, recreate
   // ---------------------------------------------------------------------------
+
+  async startNextCycle(id: string, organizationId: string) {
+    const current = await this.findOne(id, organizationId);
+
+    if (current.status !== 'COMPLETED') {
+      throw new BadRequestException('Timeline must be completed to start the next cycle');
+    }
+
+    const nextCycleNumber = current.cycleNumber + 1;
+
+    // Check if next cycle already exists
+    const existing = await db.timelineInstance.findFirst({
+      where: {
+        frameworkInstanceId: current.frameworkInstanceId,
+        cycleNumber: nextCycleNumber,
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException(`Cycle ${nextCycleNumber} already exists for this framework`);
+    }
+
+    return this.createFromTemplate({
+      organizationId,
+      frameworkInstanceId: current.frameworkInstanceId,
+      cycleNumber: nextCycleNumber,
+    });
+  }
 
   async deleteInstance(id: string, organizationId: string) {
     const instance = await db.timelineInstance.findFirst({

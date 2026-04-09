@@ -131,6 +131,9 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
             onDelete={() =>
               runAction('delete', `/v1/admin/organizations/${orgId}/timelines/${timeline.id}`, 'Timeline deleted')
             }
+            onStartNextCycle={() =>
+              runAction('post', `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/next-cycle`, 'Next cycle created as draft')
+            }
             onMutate={onMutate}
           />
         </div>
@@ -301,6 +304,7 @@ function TimelineActions({
   onResume: () => void;
   onReset: () => void;
   onDelete: () => void;
+  onStartNextCycle: () => void;
   onMutate: () => void;
 }) {
   if (status === 'DRAFT') {
@@ -373,16 +377,27 @@ function TimelineActions({
 
   if (status === 'COMPLETED') {
     return (
-      <ConfirmButton
-        title="Delete Timeline"
-        description="This will permanently delete this completed timeline. This cannot be undone."
-        onConfirm={onDelete}
-        loading={loading}
-        variant="destructive"
-        icon={<TrashCan size={14} />}
-      >
-        Delete
-      </ConfirmButton>
+      <div className="flex items-center gap-2">
+        <ConfirmButton
+          title="Start Next Cycle"
+          description="This will create a new timeline for the next audit cycle using the appropriate template. The new timeline will start as a draft."
+          onConfirm={onStartNextCycle}
+          loading={loading}
+          icon={<Play size={14} />}
+        >
+          Start Next Cycle
+        </ConfirmButton>
+        <ConfirmButton
+          title="Delete Timeline"
+          description="This will permanently delete this completed timeline. This cannot be undone."
+          onConfirm={onDelete}
+          loading={loading}
+          variant="destructive"
+          icon={<TrashCan size={14} />}
+        >
+          Delete
+        </ConfirmButton>
+      </div>
     );
   }
 
