@@ -60,16 +60,18 @@ export function TimelineTab({ orgId }: TimelineTabProps) {
           {timelines.length} timeline{timelines.length !== 1 ? 's' : ''}
         </Text>
         <AlertDialog open={recreateOpen} onOpenChange={setRecreateOpen}>
-          <AlertDialogTrigger asChild>
-            <Button
-              size="sm"
-              variant="outline"
-              iconLeft={<Reset size={14} />}
-              loading={recreating}
-            >
-              Recreate All
-            </Button>
-          </AlertDialogTrigger>
+          <AlertDialogTrigger
+            render={
+              <Button
+                size="sm"
+                variant="outline"
+                iconLeft={<Reset size={14} />}
+                loading={recreating}
+              >
+                Recreate All
+              </Button>
+            }
+          />
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Recreate All Timelines</AlertDialogTitle>

@@ -259,11 +259,13 @@ function ConfirmButton({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>
-        <Button size="sm" variant={variant} iconLeft={icon} loading={loading}>
-          {children}
-        </Button>
-      </AlertDialogTrigger>
+      <AlertDialogTrigger
+        render={
+          <Button size="sm" variant={variant} iconLeft={icon} loading={loading}>
+            {children}
+          </Button>
+        }
+      />
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
