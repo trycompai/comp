@@ -598,6 +598,7 @@ export class TrustPortalService {
 
     // Map framework boolean fields (frontend sends camelCase, DB uses snake_case)
     const boolFieldMap: Record<string, string> = {
+      soc2: 'soc2',
       soc2type1: 'soc2type1',
       soc2type2: 'soc2type2',
       iso27001: 'iso27001',
