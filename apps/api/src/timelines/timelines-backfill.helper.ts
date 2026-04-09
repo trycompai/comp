@@ -165,11 +165,12 @@ function assignActivePhases(
   // Evidence gathering done -- walk forward through phases
   let foundCurrent = false;
   return recalculated.map((p, idx) => {
-    // First phase (Evidence Gathering) is always completed
+    // First phase is always completed
     if (idx === 0) {
+      const endDate = p.endDate < now ? p.endDate : now;
       return {
         id: p.id, status: TimelinePhaseStatus.COMPLETED,
-        startDate: p.startDate, endDate: p.endDate, completedAt: p.endDate,
+        startDate: p.startDate, endDate, completedAt: endDate,
       };
     }
     if (foundCurrent) {
