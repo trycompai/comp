@@ -117,13 +117,14 @@ function FrameworkTimelines({
   group: FrameworkGroup;
   orgId: string;
 }) {
-  const hasPast = group.pastCycles.length > 0;
+  // Year = how many cycles exist for this framework type (past + current)
+  const year = group.pastCycles.length + 1;
 
   return (
     <TimelineCard
       timeline={group.current}
       orgId={orgId}
-      cycleLabel={hasPast ? `Year ${group.current.cycleNumber}` : undefined}
+      cycleLabel={`Year ${year}`}
     />
   );
 }
