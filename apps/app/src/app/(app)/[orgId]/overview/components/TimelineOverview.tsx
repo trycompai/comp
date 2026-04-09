@@ -183,7 +183,7 @@ function FrameworkTimelines({
           <button
             type="button"
             onClick={() => setShowHistory(!showHistory)}
-            className="flex w-full items-center justify-center rounded-b-lg border border-t-0 bg-muted/30 py-1.5 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+            className="flex w-full items-center justify-center rounded-b-lg border border-t-0 bg-muted/30 py-1 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground"
           >
             {showHistory ? 'Hide previous' : `Show ${group.pastCycles.length} previous cycle${group.pastCycles.length > 1 ? 's' : ''}`}
           </button>
