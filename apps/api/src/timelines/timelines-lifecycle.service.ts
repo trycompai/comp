@@ -147,9 +147,8 @@ export class TimelinesLifecycleService {
     const txResult = await db.$transaction(async (tx) => {
       const now = new Date();
 
-      // Set endDate to actual completion time if finishing early
-      const endDateUpdate =
-        phase.endDate && now < phase.endDate ? { endDate: now } : {};
+      // Always set endDate to now if completing before planned end
+      const shouldUpdateEnd = !phase.endDate || now.getTime() < new Date(phase.endDate).getTime();
 
       await tx.timelinePhase.update({
         where: { id: phaseId },
@@ -157,7 +156,7 @@ export class TimelinesLifecycleService {
           status: TimelinePhaseStatus.COMPLETED,
           completedAt: now,
           completedById: userId ?? null,
-          ...endDateUpdate,
+          ...(shouldUpdateEnd ? { endDate: now } : {}),
         },
       });
 
