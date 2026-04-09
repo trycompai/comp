@@ -175,7 +175,7 @@ function FrameworkTimelines({
   return (
     <div>
       {/* Current/active timeline with stacked card effect */}
-      <TimelineCard timeline={group.current} orgId={orgId} />
+      <TimelineCard timeline={group.current} orgId={orgId} className={hasPast ? 'rounded-b-none' : ''} />
 
       {/* Previous cycles lip + expandable history */}
       {hasPast && (
@@ -205,9 +205,11 @@ function FrameworkTimelines({
 function TimelineCard({
   timeline,
   orgId,
+  className = '',
 }: {
   timeline: Timeline;
   orgId: string;
+  className?: string;
 }) {
   const isDraft = timeline.status === 'DRAFT';
   const isCompleted = timeline.status === 'COMPLETED';
@@ -222,7 +224,7 @@ function TimelineCard({
       href={`/${orgId}/frameworks/${timeline.frameworkInstanceId}`}
       className={`block rounded-lg border p-4 transition-colors hover:bg-muted/50 ${
         isDraft ? 'opacity-60' : ''
-      }`}
+      } ${className}`}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
