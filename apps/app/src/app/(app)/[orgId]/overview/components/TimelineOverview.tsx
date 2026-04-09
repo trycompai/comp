@@ -174,35 +174,31 @@ function TimelineCard({
 
   return (
     <Link href={`/${orgId}/frameworks/${timeline.frameworkInstanceId}`}>
-      <Card className={`transition-colors hover:bg-muted/50 ${isDraft ? 'opacity-60' : ''} ${roundedBottom ? '' : 'rounded-b-none'}`}>
-        <CardContent>
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <Text size="sm" weight="medium">
-                {timeline.template?.name ?? frameworkName}
-              </Text>
-            </div>
-            <Badge variant={STATUS_VARIANT[timeline.status]}>
-              {isCompleted && <Checkmark size={12} />}
-              {STATUS_LABEL[timeline.status]}
-            </Badge>
+      <Card className={`p-5 transition-colors hover:bg-muted/30 ${isDraft ? 'opacity-60' : ''} ${roundedBottom ? '' : 'rounded-b-none'}`}>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="min-w-0">
+            <Text size="base" weight="semibold">
+              {timeline.template?.name ?? frameworkName}
+            </Text>
           </div>
+          <Badge variant={STATUS_VARIANT[timeline.status]}>
+            {isCompleted && <Checkmark size={12} />}
+            {STATUS_LABEL[timeline.status]}
+          </Badge>
+        </div>
 
+        <TimelinePhaseBar phases={timeline.phases} showDates />
+
+        {isDraft && (
           <div className="mt-3">
-            <TimelinePhaseBar phases={timeline.phases} showDates />
+            <Text size="xs" variant="muted">Awaiting start date</Text>
           </div>
-
-          {isDraft && (
-            <div className="mt-2">
-              <Text size="xs" variant="muted">Awaiting start date</Text>
-            </div>
-          )}
-          {isCompleted && nextCycle && (
-            <div className="mt-2">
-              <Text size="xs" variant="muted">Next cycle: {nextCycle}</Text>
-            </div>
-          )}
-        </CardContent>
+        )}
+        {isCompleted && nextCycle && (
+          <div className="mt-3">
+            <Text size="xs" variant="muted">Next cycle: {nextCycle}</Text>
+          </div>
+        )}
       </Card>
     </Link>
   );
