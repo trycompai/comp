@@ -1,3 +1,16 @@
+# [3.19.0](https://github.com/trycompai/comp/compare/v3.18.0...v3.19.0) (2026-04-09)
+
+
+### Bug Fixes
+
+* **integrations:** address cursor bugbot findings on per-task disconnect PR ([7795398](https://github.com/trycompai/comp/commit/77953985be7daf16859dd08d04f696c1dd1d85b2))
+* **trust:** fix issue where users couldn't disable soc2 from trust portal ([0f36c59](https://github.com/trycompai/comp/commit/0f36c59ff55373ec11580c9b4479b9ba9b23fba8))
+
+
+### Features
+
+* **integrations:** disconnect individual checks per task without tearing down the whole connection ([4a8331d](https://github.com/trycompai/comp/commit/4a8331d968dc230fcf449843bf5f8bb2f48c8545))
+
 # [3.18.0](https://github.com/trycompai/comp/compare/v3.17.0...v3.18.0) (2026-04-07)
 
 

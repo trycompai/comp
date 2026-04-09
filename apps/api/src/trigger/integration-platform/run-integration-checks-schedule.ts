@@ -2,6 +2,7 @@ import { getManifest } from '@trycompai/integration-platform';
 import { db } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runTaskIntegrationChecks } from './run-task-integration-checks';
+import { parseDisabledTaskChecks } from '../../integration-platform/utils/disabled-task-checks';
 
 /**
  * Daily scheduled task (orchestrator) that finds all tasks with integration checks
@@ -74,10 +75,21 @@ export const integrationChecksSchedule = schedules.task({
         },
       });
 
+      // Per-task disabled checks are stored on the connection's metadata so
+      // users can disconnect individual checks from individual tasks without
+      // tearing down the whole integration. Resolve once per connection.
+      const disabledByTask = parseDisabledTaskChecks(connection.metadata);
+
       for (const t of tasks) {
-        // Find which checks apply to this task
+        const disabledForThisTask = new Set(disabledByTask[t.id] ?? []);
+
+        // Find which checks apply to this task, minus any the user disabled
         const checksForTask = manifest.checks
-          .filter((c) => c.taskMapping === t.taskTemplateId)
+          .filter(
+            (c) =>
+              c.taskMapping === t.taskTemplateId &&
+              !disabledForThisTask.has(c.id),
+          )
           .map((c) => c.id);
 
         if (checksForTask.length > 0) {
