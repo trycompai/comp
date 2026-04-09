@@ -173,17 +173,17 @@ function FrameworkTimelines({
   const hasPast = group.pastCycles.length > 0;
 
   return (
-    <div className="relative">
-      {/* Stacked card effect behind the main card */}
-      {hasPast && !showHistory && (
-        <>
-          <div className="absolute inset-x-2 -bottom-1 h-2 rounded-b-lg border border-t-0 bg-muted/50" />
-          <div className="absolute inset-x-4 -bottom-2 h-2 rounded-b-lg border border-t-0 bg-muted/30" />
-        </>
-      )}
-
-      {/* Current/active timeline */}
-      <TimelineCard timeline={group.current} orgId={orgId} />
+    <div>
+      {/* Current/active timeline with stacked card effect */}
+      <div className={hasPast && !showHistory ? 'relative mb-2' : ''}>
+        {hasPast && !showHistory && (
+          <>
+            <div className="absolute inset-x-1 bottom-0 -z-10 h-full translate-y-1 rounded-lg border bg-muted/40" />
+            <div className="absolute inset-x-2 bottom-0 -z-20 h-full translate-y-2 rounded-lg border bg-muted/20" />
+          </>
+        )}
+        <TimelineCard timeline={group.current} orgId={orgId} />
+      </div>
 
       {/* Past cycles toggle */}
       {hasPast && (
