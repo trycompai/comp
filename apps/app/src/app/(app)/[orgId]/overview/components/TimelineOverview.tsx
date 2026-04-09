@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Checkmark } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -106,21 +107,105 @@ function TimelineSummary({ timelines }: { timelines: Timeline[] }) {
   );
 }
 
+interface FrameworkGroup {
+  key: string;
+  name: string;
+  current: Timeline;
+  pastCycles: Timeline[];
+}
+
+function groupByFramework(timelines: Timeline[]): FrameworkGroup[] {
+  const map = new Map<string, Timeline[]>();
+
+  for (const t of timelines) {
+    // Group by template name (e.g., "SOC 2 Type 2") so Type 1 and Type 2 stay separate
+    const key = t.template?.name ?? t.frameworkInstanceId;
+    const list = map.get(key) ?? [];
+    list.push(t);
+    map.set(key, list);
+  }
+
+  const groups: FrameworkGroup[] = [];
+  for (const [key, list] of map) {
+    // Active/Draft first, then by cycle number descending
+    const sorted = [...list].sort((a, b) => {
+      const order = { ACTIVE: 0, PAUSED: 1, DRAFT: 2, COMPLETED: 3 };
+      const diff = (order[a.status] ?? 9) - (order[b.status] ?? 9);
+      if (diff !== 0) return diff;
+      return b.cycleNumber - a.cycleNumber;
+    });
+
+    const current = sorted[0];
+    const pastCycles = sorted.slice(1);
+    const name = current.template?.name ?? current.frameworkInstance?.framework.name ?? key;
+
+    groups.push({ key, name, current, pastCycles });
+  }
+
+  return groups;
+}
+
 export function TimelineOverview({ initialData }: TimelineOverviewProps) {
   const { timelines } = useTimelines({ initialData });
   const { orgId } = useParams<{ orgId: string }>();
 
   if (timelines.length === 0) return null;
 
+  const groups = groupByFramework(timelines);
+
   return (
     <div className="flex flex-col gap-4">
-      {timelines.map((timeline) => (
-        <TimelineCard
-          key={timeline.id}
-          timeline={timeline}
-          orgId={orgId}
-        />
+      {groups.map((group) => (
+        <FrameworkTimelines key={group.key} group={group} orgId={orgId} />
       ))}
+    </div>
+  );
+}
+
+function FrameworkTimelines({
+  group,
+  orgId,
+}: {
+  group: FrameworkGroup;
+  orgId: string;
+}) {
+  const [showHistory, setShowHistory] = useState(false);
+  const hasPast = group.pastCycles.length > 0;
+
+  return (
+    <div className="relative">
+      {/* Stacked card effect behind the main card */}
+      {hasPast && !showHistory && (
+        <>
+          <div className="absolute inset-x-2 -bottom-1 h-2 rounded-b-lg border border-t-0 bg-muted/50" />
+          <div className="absolute inset-x-4 -bottom-2 h-2 rounded-b-lg border border-t-0 bg-muted/30" />
+        </>
+      )}
+
+      {/* Current/active timeline */}
+      <TimelineCard timeline={group.current} orgId={orgId} />
+
+      {/* Past cycles toggle */}
+      {hasPast && (
+        <button
+          type="button"
+          onClick={() => setShowHistory(!showHistory)}
+          className="mt-1 flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          {showHistory ? 'Hide' : `${group.pastCycles.length} previous cycle${group.pastCycles.length > 1 ? 's' : ''}`}
+        </button>
+      )}
+
+      {/* Expanded past cycles */}
+      {showHistory && (
+        <div className="mt-2 flex flex-col gap-2">
+          {group.pastCycles.map((t) => (
+            <div key={t.id} className="opacity-60">
+              <TimelineCard timeline={t} orgId={orgId} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
