@@ -175,40 +175,28 @@ function FrameworkTimelines({
   return (
     <div>
       {/* Current/active timeline with stacked card effect */}
-      <div className={hasPast && !showHistory ? 'pb-3' : ''}>
-        <div className="relative">
-          {hasPast && !showHistory && (
-            <>
-              <div className="absolute -bottom-1.5 left-1 right-1 h-3 rounded-b-lg border border-t-0 border-border bg-background" />
-              <div className="absolute -bottom-3 left-2 right-2 h-3 rounded-b-lg border border-t-0 border-border bg-background" />
-            </>
-          )}
-          <div className="relative z-10">
-            <TimelineCard timeline={group.current} orgId={orgId} />
-          </div>
-        </div>
-      </div>
+      <TimelineCard timeline={group.current} orgId={orgId} />
 
-      {/* Past cycles toggle */}
+      {/* Previous cycles lip + expandable history */}
       {hasPast && (
-        <button
-          type="button"
-          onClick={() => setShowHistory(!showHistory)}
-          className="mt-1 flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
-        >
-          {showHistory ? 'Hide' : `${group.pastCycles.length} previous cycle${group.pastCycles.length > 1 ? 's' : ''}`}
-        </button>
-      )}
-
-      {/* Expanded past cycles */}
-      {showHistory && (
-        <div className="mt-2 flex flex-col gap-2">
-          {group.pastCycles.map((t) => (
-            <div key={t.id} className="opacity-60">
-              <TimelineCard timeline={t} orgId={orgId} />
+        <>
+          <button
+            type="button"
+            onClick={() => setShowHistory(!showHistory)}
+            className="flex w-full items-center justify-center rounded-b-lg border border-t-0 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          >
+            {showHistory ? 'Hide previous' : `Show ${group.pastCycles.length} previous cycle${group.pastCycles.length > 1 ? 's' : ''}`}
+          </button>
+          {showHistory && (
+            <div className="mt-2 flex flex-col gap-2">
+              {group.pastCycles.map((t) => (
+                <div key={t.id} className="opacity-60">
+                  <TimelineCard timeline={t} orgId={orgId} />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
