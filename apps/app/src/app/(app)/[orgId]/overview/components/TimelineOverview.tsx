@@ -1,10 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import {
   Badge,
   Card,
-  CardContent,
   Stack,
   Text,
 } from '@trycompai/design-system';
@@ -119,52 +117,25 @@ function FrameworkTimelines({
   group: FrameworkGroup;
   orgId: string;
 }) {
-  const [showHistory, setShowHistory] = useState(false);
   const hasPast = group.pastCycles.length > 0;
 
   return (
-    <div>
-      <TimelineCard
-        timeline={group.current}
-        orgId={orgId}
-        roundedBottom={!hasPast}
-      />
-
-      {hasPast && (
-        <>
-          <button
-            type="button"
-            onClick={() => setShowHistory(!showHistory)}
-            className="flex w-full items-center justify-center rounded-b-lg border border-t-0 py-1 text-[11px] text-muted-foreground hover:bg-muted/30 hover:text-foreground"
-          >
-            {showHistory
-              ? 'Hide previous'
-              : `Show ${group.pastCycles.length} previous cycle${group.pastCycles.length > 1 ? 's' : ''}`}
-          </button>
-          {showHistory && (
-            <Stack gap="sm">
-              <div className="mt-2" />
-              {group.pastCycles.map((t) => (
-                <div key={t.id} className="opacity-60">
-                  <TimelineCard timeline={t} orgId={orgId} />
-                </div>
-              ))}
-            </Stack>
-          )}
-        </>
-      )}
-    </div>
+    <TimelineCard
+      timeline={group.current}
+      orgId={orgId}
+      cycleLabel={hasPast ? `Year ${group.current.cycleNumber}` : undefined}
+    />
   );
 }
 
 function TimelineCard({
   timeline,
   orgId,
-  roundedBottom = true,
+  cycleLabel,
 }: {
   timeline: Timeline;
   orgId: string;
-  roundedBottom?: boolean;
+  cycleLabel?: string;
 }) {
   const isDraft = timeline.status === 'DRAFT';
   const isCompleted = timeline.status === 'COMPLETED';
@@ -174,12 +145,17 @@ function TimelineCard({
 
   return (
     <Link href={`/${orgId}/frameworks/${timeline.frameworkInstanceId}`}>
-      <Card className={`p-5 transition-colors hover:bg-muted/30 ${isDraft ? 'opacity-60' : ''} ${roundedBottom ? '' : 'rounded-b-none'}`}>
+      <Card className={`p-5 transition-colors hover:bg-muted/30 ${isDraft ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <Text size="base" weight="semibold">
               {timeline.template?.name ?? frameworkName}
             </Text>
+            {cycleLabel && (
+              <div>
+                <Badge variant="outline">{cycleLabel}</Badge>
+              </div>
+            )}
           </div>
           <Badge variant={STATUS_VARIANT[timeline.status]}>
             {isCompleted && <Checkmark size={12} />}
