@@ -1,10 +1,11 @@
-import { logger, queue, schemaTask } from '@trigger.dev/sdk';
+import { logger, queue, schemaTask, wait } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { resend } from '../../email/resend';
+import { getUnsubscribeUrl } from '@trycompai/email/lib/unsubscribe';
 
 const emailQueue = queue({
   name: 'send-email',
-  concurrencyLimit: 30,
+  concurrencyLimit: 10,
 });
 
 export const sendEmailTask = schemaTask({
@@ -51,12 +52,20 @@ export const sendEmailTask = schemaTask({
     }
 
     try {
+      // Build List-Unsubscribe headers for Gmail/RFC 8058 compliance
+      const unsubscribeUrl = getUnsubscribeUrl(toAddress);
+      const headers: Record<string, string> = {
+        'List-Unsubscribe': `<${unsubscribeUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      };
+
       const { data, error } = await resend.emails.send({
         from: fromAddress,
         to: toAddress,
         cc: params.cc,
         subject: params.subject,
         html: params.html,
+        headers,
         scheduledAt: params.scheduledAt,
         attachments: params.attachments?.map((att) => ({
           filename: att.filename,
@@ -75,6 +84,9 @@ export const sendEmailTask = schemaTask({
       }
 
       logger.info('Email sent', { to: params.to, id: data?.id });
+
+      // Throttle: wait 1s between sends to avoid email spikes
+      await wait.for({ seconds: 1 });
 
       return { id: data?.id };
     } catch (error) {
