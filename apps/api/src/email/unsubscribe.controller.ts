@@ -61,6 +61,7 @@ export class UnsubscribeController {
           unassignedItemsNotifications: false,
           taskMentions: false,
           taskAssignments: false,
+          findingNotifications: false,
         },
       },
     });
