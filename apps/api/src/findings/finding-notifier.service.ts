@@ -101,22 +101,6 @@ function getDocumentContextTitle(
   return 'Document submission';
 }
 
-/** Matches People page `?tab=` query (see PeoplePageTabs). */
-function scopePeopleTabParam(scope: FindingScope): string {
-  switch (scope) {
-    case FindingScope.people:
-      return 'people';
-    case FindingScope.people_tasks:
-      return 'tasks';
-    case FindingScope.people_devices:
-      return 'devices';
-    case FindingScope.people_chart:
-      return 'chart';
-    default:
-      return 'people';
-  }
-}
-
 function scopeContextTitle(scope: FindingScope): string {
   switch (scope) {
     case FindingScope.people:
@@ -176,7 +160,7 @@ function buildFindingDeepLink(params: {
     return `${base}/${organizationId}/tasks/${taskId}`;
   }
   if (findingScope) {
-    return `${base}/${organizationId}/people?tab=${scopePeopleTabParam(findingScope)}`;
+    return `${base}/${organizationId}/people?tab=findings`;
   }
   if (evidenceSubmissionId && evidenceSubmissionFormType) {
     return `${base}/${organizationId}/documents/${evidenceSubmissionFormType}/submissions/${evidenceSubmissionId}`;
