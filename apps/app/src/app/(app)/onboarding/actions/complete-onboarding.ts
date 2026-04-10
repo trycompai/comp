@@ -1,6 +1,7 @@
 'use server';
 
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
+import { resolveFrameworkIds } from '@/actions/organization/lib/resolve-framework-ids';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { steps } from '@/app/(app)/setup/lib/constants';
 import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
@@ -247,51 +248,3 @@ export const completeOnboarding = authActionClientWithoutOrg
     }
   });
 
-/**
- * Resolves framework IDs for an organization by:
- * 1. Checking for a raw frameworkIds context entry (JSON array, saved by newer code)
- * 2. Falling back to reverse-looking framework names from the onboarding context
- */
-async function resolveFrameworkIds(organizationId: string): Promise<string[]> {
-  const rawIdsContext = await db.context.findFirst({
-    where: {
-      organizationId,
-      question: 'frameworkIds',
-      tags: { has: 'onboarding' },
-    },
-  });
-
-  if (rawIdsContext?.answer) {
-    try {
-      const ids = JSON.parse(rawIdsContext.answer);
-      if (Array.isArray(ids) && ids.length > 0) {
-        return ids;
-      }
-    } catch {
-      // Fall through to name-based lookup
-    }
-  }
-
-  const frameworkContext = await db.context.findFirst({
-    where: {
-      organizationId,
-      question: 'Which compliance frameworks do you need?',
-      tags: { has: 'onboarding' },
-    },
-  });
-
-  if (!frameworkContext?.answer) {
-    return [];
-  }
-
-  const frameworkNames = frameworkContext.answer.split(',').map((name) => name.trim());
-
-  const frameworks = await db.frameworkEditorFramework.findMany({
-    where: {
-      name: { in: frameworkNames, mode: 'insensitive' },
-    },
-    select: { id: true },
-  });
-
-  return frameworks.map((f) => f.id);
-}
