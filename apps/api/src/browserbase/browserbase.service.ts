@@ -15,6 +15,10 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 const BROWSER_WIDTH = 1440;
 const BROWSER_HEIGHT = 900;
 
+/** Stagehand v3 requires 'provider/model' format. */
+const STAGEHAND_MODEL = 'anthropic/claude-sonnet-4-6';
+const STAGEHAND_CUA_MODEL = 'anthropic/claude-sonnet-4-6';
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const PENDING_CONTEXT_ID = '__PENDING__';
@@ -205,7 +209,7 @@ export class BrowserbaseService {
       projectId: this.getProjectId(),
       browserbaseSessionID: sessionId,
       model: {
-        modelName: 'claude-3-7-sonnet-latest',
+        modelName: STAGEHAND_MODEL,
         apiKey: process.env.ANTHROPIC_API_KEY,
       },
       verbose: 1,
@@ -784,7 +788,7 @@ export class BrowserbaseService {
         .agent({
           cua: true,
           model: {
-            modelName: 'anthropic/claude-3-7-sonnet-latest',
+            modelName: STAGEHAND_CUA_MODEL,
             apiKey: process.env.ANTHROPIC_API_KEY,
           },
         })

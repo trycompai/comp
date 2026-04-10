@@ -130,6 +130,8 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         onRun={execution.runAutomation}
         onCreateClick={isManualTask ? undefined : () => setDialogState({ open: true, mode: 'create' })}
         onEditClick={(automation) => setDialogState({ open: true, mode: 'edit', automation })}
+        onDelete={automations.deleteAutomation}
+        onToggleEnabled={automations.toggleAutomation}
       />
       <BrowserAutomationConfigDialog
         isOpen={dialogState.open}
