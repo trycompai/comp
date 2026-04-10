@@ -24,16 +24,19 @@ export interface TaskCompletion {
   hipaa?: { completed: number; total: number };
 }
 
+export type DeviceStatus = 'compliant' | 'non-compliant' | 'not-installed';
+
 export interface TeamMembersProps {
   canManageMembers: boolean;
   canInviteUsers: boolean;
   isAuditor: boolean;
   isCurrentUserOwner: boolean;
   organizationId: string;
+  deviceStatusMap: Record<string, DeviceStatus>;
 }
 
 export async function TeamMembers(props: TeamMembersProps) {
-  const { canManageMembers, canInviteUsers, isAuditor, isCurrentUserOwner, organizationId } = props;
+  const { canManageMembers, canInviteUsers, isAuditor, isCurrentUserOwner, organizationId, deviceStatusMap } = props;
 
   if (!organizationId) {
     return null;
@@ -63,19 +66,6 @@ export async function TeamMembers(props: TeamMembersProps) {
   const taskCompletionMap: Record<string, TaskCompletion> = {};
 
   const employeeMembers = await filterComplianceMembers(members, organizationId);
-
-  // Build a set of member IDs that have device-agent devices
-  const memberIds = members.map((m) => m.id);
-  const devicesForMembers = await db.device.findMany({
-    where: {
-      organizationId,
-      memberId: { in: memberIds },
-    },
-    select: { memberId: true },
-  });
-  const memberIdsWithDeviceAgent = [
-    ...new Set(devicesForMembers.map((d) => d.memberId)),
-  ];
 
   if (employeeMembers.length > 0) {
     const [org, hipaaInstance] = await Promise.all([
@@ -156,7 +146,7 @@ export async function TeamMembers(props: TeamMembersProps) {
       isCurrentUserOwner={isCurrentUserOwner}
       employeeSyncData={employeeSyncData}
       taskCompletionMap={taskCompletionMap}
-      memberIdsWithDeviceAgent={memberIdsWithDeviceAgent}
+      deviceStatusMap={deviceStatusMap}
     />
   );
 }

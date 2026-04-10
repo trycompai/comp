@@ -53,7 +53,7 @@ interface TeamMembersClientProps {
   isCurrentUserOwner: boolean;
   employeeSyncData: EmployeeSyncConnectionsData;
   taskCompletionMap: Record<string, TaskCompletion>;
-  memberIdsWithDeviceAgent: string[];
+  deviceStatusMap: Record<string, 'compliant' | 'non-compliant' | 'not-installed'>;
 }
 
 export function TeamMembersClient({
@@ -65,7 +65,7 @@ export function TeamMembersClient({
   isCurrentUserOwner,
   employeeSyncData,
   taskCompletionMap,
-  memberIdsWithDeviceAgent,
+  deviceStatusMap,
 }: TeamMembersClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -470,9 +470,7 @@ export function TeamMembersClient({
                   isCurrentUserOwner={isCurrentUserOwner}
                   customRoles={customRoles}
                   taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}
-                  hasDeviceAgentDevice={memberIdsWithDeviceAgent.includes(
-                    (item as MemberWithUser).id,
-                  )}
+                  deviceStatus={deviceStatusMap[(item as MemberWithUser).id] ?? 'not-installed'}
                 />
               ) : (
                 <PendingInvitationRow
