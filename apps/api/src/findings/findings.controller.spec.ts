@@ -62,11 +62,15 @@ describe('FindingsController', () => {
 
   const findingsServiceMock: Pick<
     FindingsService,
-    'findByTaskId' | 'findByEvidenceFormType' | 'findByEvidenceSubmissionId'
+    | 'findByTaskId'
+    | 'findByEvidenceFormType'
+    | 'findByEvidenceSubmissionId'
+    | 'findWithScopeDefined'
   > = {
     findByTaskId: jest.fn(),
     findByEvidenceFormType: jest.fn(),
     findByEvidenceSubmissionId: jest.fn(),
+    findWithScopeDefined: jest.fn(),
   };
 
   const controller = new FindingsController(
@@ -84,6 +88,8 @@ describe('FindingsController', () => {
           '',
           '',
           'not-a-valid-form-type',
+          '',
+          undefined,
           authContext,
         ),
       ).rejects.toThrow(BadRequestException);
@@ -93,17 +99,27 @@ describe('FindingsController', () => {
           '',
           '',
           'not-a-valid-form-type',
+          '',
+          undefined,
           authContext,
         ),
       ).rejects.toThrow('Invalid evidenceFormType value. Must be one of:');
     });
 
     it('routes valid evidenceFormType through findByEvidenceFormType', async () => {
-      await controller.getFindingsByTask('', '', 'meeting', authContext);
+      await controller.getFindingsByTask('', '', 'meeting', '', undefined, authContext);
 
       expect(findingsServiceMock.findByEvidenceFormType).toHaveBeenCalledWith(
         authContext.organizationId,
         'meeting',
+      );
+    });
+
+    it('routes hasScope=true through findWithScopeDefined', async () => {
+      await controller.getFindingsByTask('', '', '', '', 'true', authContext);
+
+      expect(findingsServiceMock.findWithScopeDefined).toHaveBeenCalledWith(
+        authContext.organizationId,
       );
     });
   });
