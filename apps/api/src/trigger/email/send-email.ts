@@ -53,7 +53,7 @@ export const sendEmailTask = schemaTask({
 
     try {
       // Build List-Unsubscribe headers for Gmail/RFC 8058 compliance
-      const unsubscribeUrl = getUnsubscribeUrl(toAddress);
+      const unsubscribeUrl = getUnsubscribeUrl(params.to);
       const headers: Record<string, string> = {
         'List-Unsubscribe': `<${unsubscribeUrl}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
