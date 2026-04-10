@@ -187,8 +187,9 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
     // If already set by device-agent, skip (agent takes priority)
     if (agentComplianceByMember.has(host.member_id)) continue;
     const isCompliant = host.policies.every((p) => p.response === 'pass');
-    // If multiple fleet devices for same member, non-compliant if ANY device fails
-    if (!isCompliant || !deviceStatusMap[host.member_id]) {
+    // If multiple fleet devices for same member, non-compliant if ANY device fails.
+    // Once non-compliant, a later compliant device cannot upgrade it back.
+    if (deviceStatusMap[host.member_id] !== 'non-compliant') {
       deviceStatusMap[host.member_id] = isCompliant ? 'compliant' : 'non-compliant';
     }
   }

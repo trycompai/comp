@@ -321,7 +321,7 @@ export function MemberRow({
                   </DropdownMenuItem>
                 )}
                 {!isDeactivated &&
-                  (member.fleetDmLabelId || deviceStatus !== 'not-installed') &&
+                  (member.fleetDmLabelId || (deviceStatus && deviceStatus !== 'not-installed')) &&
                   isCurrentUserOwner && (
                     <DropdownMenuItem
                       onSelect={() => {
