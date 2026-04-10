@@ -116,56 +116,55 @@ export class AdminOrganizationsService {
     if (hasAccess !== undefined) where.hasAccess = hasAccess;
     if (onboarded !== undefined) where.onboardingCompleted = onboarded;
 
-    const [organizations, total] = await Promise.all([
-      db.organization.findMany({
-        where,
-        select: {
-          id: true,
-          name: true,
-          createdAt: true,
-          hasAccess: true,
-          onboardingCompleted: true,
-          _count: { select: { members: true } },
-          members: {
-            select: {
-              role: true,
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  sessions: {
-                    orderBy: { updatedAt: 'desc' as const },
-                    take: 1,
-                    select: { updatedAt: true },
-                  },
-                },
+    const organizations = await db.organization.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        hasAccess: true,
+        onboardingCompleted: true,
+        _count: { select: { members: true } },
+        members: {
+          select: {
+            role: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
               },
             },
           },
-          auditLog: {
-            orderBy: { timestamp: 'desc' as const },
-            take: 1,
-            select: { timestamp: true },
-          },
         },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
+        auditLog: {
+          orderBy: { timestamp: 'desc' as const },
+          take: 1,
+          select: { timestamp: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    });
+
+    const [total, ...orgSessions] = await Promise.all([
       db.organization.count({ where }),
+      ...organizations.map((org) =>
+        db.session.findFirst({
+          where: { activeOrganizationId: org.id },
+          orderBy: { updatedAt: 'desc' },
+          select: { updatedAt: true },
+        }),
+      ),
     ]);
 
     // Post-process to find last activity per org
-    const data = organizations.map((org) => {
-      let lastSession: Date | null = null;
+    const data = organizations.map((org, index) => {
+      const lastSession = orgSessions[index]?.updatedAt ?? null;
       let owner: { id: string; name: string; email: string } | null = null;
 
       for (const member of org.members) {
-        const sess = member.user?.sessions?.[0]?.updatedAt;
-        if (sess && (!lastSession || sess > lastSession)) {
-          lastSession = sess;
-        }
         if (member.role?.includes('owner') && !owner) {
           owner = { id: member.user.id, name: member.user.name, email: member.user.email };
         }
