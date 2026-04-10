@@ -25,7 +25,6 @@ export function OrgChartContent({
   chartData,
   members,
 }: OrgChartContentProps) {
-
   // No chart exists yet - show empty state
   if (!chartData) {
     return <OrgChartEmptyState members={members} />;
