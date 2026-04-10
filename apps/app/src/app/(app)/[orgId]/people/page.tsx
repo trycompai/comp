@@ -165,20 +165,11 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           canManageMembers={canManageMembers}
           canInviteUsers={canInviteUsers}
           isAuditor={isAuditor}
-          isPlatformAdmin={isPlatformAdmin}
           isCurrentUserOwner={isCurrentUserOwner}
           organizationId={orgId}
         />
       }
-      employeeTasksContent={
-        showEmployeeTasks ? (
-          <EmployeesOverview
-            isAuditor={isAuditor}
-            isPlatformAdmin={isPlatformAdmin}
-            isAdminOrOwner={canManageMembers}
-          />
-        ) : null
-      }
+      employeeTasksContent={showEmployeeTasks ? <EmployeesOverview /> : null}
       devicesContent={
         <div className="space-y-6">
           {/* Device Agent devices (new system) */}
@@ -189,18 +180,17 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           {/* Fleet devices (legacy) — shown exactly as main branch */}
           <DeviceComplianceChart devices={filteredFleetDevices} />
           <EmployeeDevicesList devices={filteredFleetDevices} isCurrentUserOwner={isCurrentUserOwner} />
-          <PeopleFindings
-            scope={FindingScope.people_devices}
-            isAuditor={isAuditor}
-            isPlatformAdmin={isPlatformAdmin}
-            isAdminOrOwner={canManageMembers}
-          />
         </div>
       }
       orgChartContent={
         <OrgChartContent
           chartData={orgChartData as any}
           members={membersWithUsers}
+        />
+      }
+      findingsContent={
+        <PeopleFindings
+          scope={FindingScope.people_devices}
           isAuditor={isAuditor}
           isPlatformAdmin={isPlatformAdmin}
           isAdminOrOwner={canManageMembers}

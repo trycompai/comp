@@ -43,7 +43,6 @@ import type { MemberWithUser, TaskCompletion, TeamMembersData } from './TeamMemb
 
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
-import { PeopleFindings } from './PeopleFindings';
 
 interface TeamMembersClientProps {
   data: TeamMembersData;
@@ -51,7 +50,6 @@ interface TeamMembersClientProps {
   canManageMembers: boolean;
   canInviteUsers: boolean;
   isAuditor: boolean;
-  isPlatformAdmin: boolean;
   isCurrentUserOwner: boolean;
   employeeSyncData: EmployeeSyncConnectionsData;
   taskCompletionMap: Record<string, TaskCompletion>;
@@ -64,7 +62,6 @@ export function TeamMembersClient({
   canManageMembers,
   canInviteUsers,
   isAuditor,
-  isPlatformAdmin,
   isCurrentUserOwner,
   employeeSyncData,
   taskCompletionMap,
@@ -489,12 +486,6 @@ export function TeamMembersClient({
           </TableBody>
         </Table>
       )}
-
-      <PeopleFindings
-        isAuditor={isAuditor}
-        isPlatformAdmin={isPlatformAdmin}
-        isAdminOrOwner={canManageMembers}
-      />
     </Stack>
   );
 }
