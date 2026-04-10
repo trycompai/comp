@@ -95,7 +95,7 @@ export function MemberRow({
   isCurrentUserOwner,
   customRoles = [],
   taskCompletion,
-  deviceStatus = 'not-installed',
+  deviceStatus,
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -233,7 +233,7 @@ export function MemberRow({
 
         {/* DEVICE */}
         <TableCell>
-          {isPlatformAdmin || isDeactivated ? (
+          {isPlatformAdmin || isDeactivated || !deviceStatus ? (
             <Text size="sm" variant="muted">
               —
             </Text>

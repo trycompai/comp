@@ -157,12 +157,21 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
 
   // Build unified device status map from the SAME data both tabs use.
   // This ensures the member list and compliance chart agree on compliance.
+  // Only members with compliance obligations are checked (uses RBAC obligations,
+  // not hardcoded role names). Members without compliance obligations (e.g.
+  // auditor-only) are omitted and will show "—" in the DEVICE column.
   const deviceStatusMap: Record<string, 'compliant' | 'non-compliant' | 'not-installed'> = {};
+  const complianceMemberIds = new Set(employees.map((m) => m.id));
+
+  // Default all compliance members to "not-installed" — device data below overrides
+  for (const id of complianceMemberIds) {
+    deviceStatusMap[id] = 'not-installed';
+  }
 
   // Device-agent devices: compliant only if ALL of a member's devices pass
   const agentComplianceByMember = new Map<string, boolean>();
   for (const d of agentDevices) {
-    if (!d.memberId) continue;
+    if (!d.memberId || !complianceMemberIds.has(d.memberId)) continue;
     const prev = agentComplianceByMember.get(d.memberId);
     agentComplianceByMember.set(d.memberId, (prev ?? true) && d.isCompliant);
   }
@@ -173,7 +182,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   // Fleet-only devices: use the same merged policy data the chart uses
   // (Fleet API automated checks + DB manual overrides, already combined by getFleetHosts)
   for (const host of filteredFleetDevices) {
-    if (!host.member_id) continue;
+    if (!host.member_id || !complianceMemberIds.has(host.member_id)) continue;
     // If already set by device-agent, skip (agent takes priority)
     if (agentComplianceByMember.has(host.member_id)) continue;
     const isCompliant = host.policies.every((p) => p.response === 'pass');
