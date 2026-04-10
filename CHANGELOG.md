@@ -1,3 +1,26 @@
+# [3.20.0](https://github.com/trycompai/comp/compare/v3.19.0...v3.20.0) (2026-04-10)
+
+
+### Bug Fixes
+
+* add deactivated:false to members.some activity check ([16adc03](https://github.com/trycompai/comp/commit/16adc0395aad57f5ad46f1bbdd250e91fa43e7e9))
+* also exclude orgs without access or onboarding from weekly digest ([044fb51](https://github.com/trycompai/comp/commit/044fb512c6940e2b832bc7b5b230afc7148abb7b))
+* **app:** prevent duplicate org creation during setup onboarding ([bd93c1c](https://github.com/trycompai/comp/commit/bd93c1c44a4eeebf133bbba59c23756d00e92926))
+* **browser-automation:** fix Stagehand v3 model format and add delete/toggle controls ([bc05e63](https://github.com/trycompai/comp/commit/bc05e631624ab2aa311c9f5193db27cc90ce78ae))
+* **browser-automation:** hide next-run timer when all automations are paused ([5f700cc](https://github.com/trycompai/comp/commit/5f700cc366b8cec1f1ed3f8940d5dc17563667de))
+* **browser-automation:** use claude-sonnet-4-6 for Stagehand models ([eb012b0](https://github.com/trycompai/comp/commit/eb012b060c3d26ee86c829cfc931d3008cb72f7f))
+* correct Prisma relation name policies -> policy in _count ([4023cf1](https://github.com/trycompai/comp/commit/4023cf19cabc417e7bcc9ff10380b10fb5a7fd19))
+* filter deactivated members from activity query and clamp inactiveDays ([59fc10b](https://github.com/trycompai/comp/commit/59fc10be5b5d58d75a92533e7274221b4d92b71d))
+* handle NaN from parseInt for inactiveDays parameter ([a454aba](https://github.com/trycompai/comp/commit/a454abae4c653b3fcf3f0da8d7faf8e0427ee071))
+* suppress weekly digest emails for inactive orgs ([df38287](https://github.com/trycompai/comp/commit/df382877142d911044e9df60236e7ec164714e9f))
+* use nullish coalescing for inactiveDays parameter ([d0fb120](https://github.com/trycompai/comp/commit/d0fb12043b86183da9258375f3b0fccdb775573d))
+
+
+### Features
+
+* add admin org activity endpoint with session + audit log data ([6c6f633](https://github.com/trycompai/comp/commit/6c6f63368d168adf0cc8a175c82af62691650655))
+* add task, policy, and audit log counts to activity endpoint ([8b8270b](https://github.com/trycompai/comp/commit/8b8270b44e69af7366a7643560aba110d80290fc))
+
 # [3.19.0](https://github.com/trycompai/comp/compare/v3.18.0...v3.19.0) (2026-04-09)
 
 

@@ -55,6 +55,8 @@ const defaultProps = {
   onRun: vi.fn(),
   onCreateClick: vi.fn(),
   onEditClick: vi.fn(),
+  onDelete: vi.fn(),
+  onToggleEnabled: vi.fn(),
 };
 
 describe('BrowserAutomationsList permission gating', () => {
