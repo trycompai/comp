@@ -46,6 +46,38 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       // Check if self-hosted
       const isSelfHosted = env.NEXT_PUBLIC_SELF_HOSTED === 'true';
 
+      // Idempotency: if the user already has a recently created org with the
+      // same name that hasn't completed onboarding, reuse it instead of
+      // creating a duplicate (protects against retry/refresh during redirect).
+      const existingOrg = await db.organization.findFirst({
+        where: {
+          name: parsedInput.organizationName,
+          onboardingCompleted: false,
+          members: {
+            some: {
+              userId: session.user.id,
+              role: 'owner',
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (existingOrg) {
+        // Ensure this org is set as the active one
+        await auth.api.setActiveOrganization({
+          headers: await headers(),
+          body: {
+            organizationId: existingOrg.id,
+          },
+        });
+
+        return {
+          success: true,
+          organizationId: existingOrg.id,
+        };
+      }
+
       // Resolve framework IDs to display names (e.g. "SOC 2", "ISO 27001")
       const frameworks = await db.frameworkEditorFramework.findMany({
         where: { id: { in: parsedInput.frameworkIds } },

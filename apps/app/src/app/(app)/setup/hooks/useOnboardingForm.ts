@@ -146,6 +146,9 @@ export function useOnboardingForm({
   });
 
   const handleCreateOrganizationAction = (currentAnswers: Partial<CompanyDetails>) => {
+    // Guard against duplicate submissions (retry/double-click)
+    if (isOnboarding || isFinalizing) return;
+
     // Only pass the first 3 fields to the minimal action
     createOrganizationAction.execute({
       frameworkIds: currentAnswers.frameworkIds || [],
