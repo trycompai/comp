@@ -134,12 +134,21 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
               role: 'owner',
             },
           },
-          // Only save the context for frameworkIds (we need this for later)
+          // Save framework context: display names for AI prompts + raw IDs for recovery
           context: {
-            create: {
-              question: 'Which compliance frameworks do you need?',
-              answer: frameworkNames || parsedInput.frameworkIds.join(', '),
-              tags: ['onboarding'],
+            createMany: {
+              data: [
+                {
+                  question: 'Which compliance frameworks do you need?',
+                  answer: frameworkNames || parsedInput.frameworkIds.join(', '),
+                  tags: ['onboarding'],
+                },
+                {
+                  question: 'frameworkIds',
+                  answer: JSON.stringify(parsedInput.frameworkIds),
+                  tags: ['onboarding'],
+                },
+              ],
             },
           },
         },

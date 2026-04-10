@@ -1,5 +1,6 @@
 'use server';
 
+import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { steps } from '@/app/(app)/setup/lib/constants';
 import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
@@ -155,6 +156,43 @@ export const completeOnboarding = authActionClientWithoutOrg
         data: { onboardingCompleted: true },
       });
 
+      // Ensure framework structure exists before triggering the onboard job.
+      // If createOrganizationMinimal partially failed (org created but
+      // initializeOrganization didn't run), recover by initializing now.
+      const existingFrameworks = await db.frameworkInstance.findFirst({
+        where: { organizationId: parsedInput.organizationId },
+      });
+
+      if (!existingFrameworks) {
+        console.warn(
+          `[complete-onboarding] No framework instances found for org ${parsedInput.organizationId}, running initializeOrganization as recovery`,
+        );
+
+        const frameworkIds = await resolveFrameworkIds(parsedInput.organizationId);
+
+        if (frameworkIds.length > 0) {
+          await initializeOrganization({
+            frameworkIds,
+            organizationId: parsedInput.organizationId,
+          });
+        } else {
+          console.error(
+            `[complete-onboarding] Could not resolve framework IDs for org ${parsedInput.organizationId}`,
+          );
+        }
+      }
+
+      // Ensure onboarding record exists (may be missing if createOrganizationMinimal
+      // failed before creating it).
+      await db.onboarding.upsert({
+        where: { organizationId: parsedInput.organizationId },
+        create: {
+          organizationId: parsedInput.organizationId,
+          triggerJobCompleted: false,
+        },
+        update: {},
+      });
+
       // Now trigger the jobs that were skipped during minimal creation
       const handle = await tasks.trigger<typeof onboardOrganizationTask>('onboard-organization', {
         organizationId: parsedInput.organizationId,
@@ -208,3 +246,52 @@ export const completeOnboarding = authActionClientWithoutOrg
       };
     }
   });
+
+/**
+ * Resolves framework IDs for an organization by:
+ * 1. Checking for a raw frameworkIds context entry (JSON array, saved by newer code)
+ * 2. Falling back to reverse-looking framework names from the onboarding context
+ */
+async function resolveFrameworkIds(organizationId: string): Promise<string[]> {
+  const rawIdsContext = await db.context.findFirst({
+    where: {
+      organizationId,
+      question: 'frameworkIds',
+      tags: { has: 'onboarding' },
+    },
+  });
+
+  if (rawIdsContext?.answer) {
+    try {
+      const ids = JSON.parse(rawIdsContext.answer);
+      if (Array.isArray(ids) && ids.length > 0) {
+        return ids;
+      }
+    } catch {
+      // Fall through to name-based lookup
+    }
+  }
+
+  const frameworkContext = await db.context.findFirst({
+    where: {
+      organizationId,
+      question: 'Which compliance frameworks do you need?',
+      tags: { has: 'onboarding' },
+    },
+  });
+
+  if (!frameworkContext?.answer) {
+    return [];
+  }
+
+  const frameworkNames = frameworkContext.answer.split(',').map((name) => name.trim());
+
+  const frameworks = await db.frameworkEditorFramework.findMany({
+    where: {
+      name: { in: frameworkNames, mode: 'insensitive' },
+    },
+    select: { id: true },
+  });
+
+  return frameworks.map((f) => f.id);
+}
