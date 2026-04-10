@@ -1,3 +1,10 @@
+## [3.20.1](https://github.com/trycompai/comp/compare/v3.20.0...v3.20.1) (2026-04-10)
+
+
+### Bug Fixes
+
+* **app:** check FleetDM device compliance alongside new device agent in people tab ([2036702](https://github.com/trycompai/comp/commit/20367022a6ce143765c8349c133ea56da9c22ae9))
+
 # [3.20.0](https://github.com/trycompai/comp/compare/v3.19.0...v3.20.0) (2026-04-10)
 
 
