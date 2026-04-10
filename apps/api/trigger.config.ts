@@ -1,4 +1,3 @@
-import { syncVercelEnvVars } from '@trigger.dev/build/extensions/core';
 import { defineConfig } from '@trigger.dev/sdk';
 import { prismaExtension } from './customPrismaExtension';
 import { emailExtension } from './emailExtension';
@@ -17,7 +16,6 @@ export default defineConfig({
       }),
       integrationPlatformExtension(),
       emailExtension(),
-      syncVercelEnvVars(),
     ],
   },
   retries: {
