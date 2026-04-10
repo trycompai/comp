@@ -169,14 +169,21 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
       employeeTasksContent={showEmployeeTasks ? <EmployeesOverview /> : null}
       devicesContent={
         <div className="space-y-6">
+          {/* Unified compliance chart covering both device-agent and fleet devices */}
+          <DeviceComplianceChart
+            fleetDevices={filteredFleetDevices}
+            agentDevices={agentDevices}
+          />
+
           {/* Device Agent devices (new system) */}
           {agentDevices.length > 0 && (
             <DeviceAgentDevicesList devices={agentDevices} />
           )}
 
-          {/* Fleet devices (legacy) — shown exactly as main branch */}
-          <DeviceComplianceChart devices={filteredFleetDevices} />
-          <EmployeeDevicesList devices={filteredFleetDevices} isCurrentUserOwner={isCurrentUserOwner} />
+          {/* Fleet devices (legacy) — only for members without the newer device agent */}
+          {filteredFleetDevices.length > 0 && (
+            <EmployeeDevicesList devices={filteredFleetDevices} isCurrentUserOwner={isCurrentUserOwner} />
+          )}
         </div>
       }
       orgChartContent={

@@ -51,7 +51,7 @@ interface MemberRowProps {
   isCurrentUserOwner: boolean;
   customRoles?: CustomRoleOption[];
   taskCompletion?: TaskCompletion;
-  hasDeviceAgentDevice?: boolean;
+  deviceStatus?: 'compliant' | 'non-compliant' | 'not-installed';
 }
 
 function getInitials(name?: string | null, email?: string | null): string {
@@ -95,7 +95,7 @@ export function MemberRow({
   isCurrentUserOwner,
   customRoles = [],
   taskCompletion,
-  hasDeviceAgentDevice,
+  deviceStatus = 'not-installed',
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -231,7 +231,7 @@ export function MemberRow({
           </div>
         </TableCell>
 
-        {/* AGENT */}
+        {/* DEVICE */}
         <TableCell>
           {isPlatformAdmin || isDeactivated ? (
             <Text size="sm" variant="muted">
@@ -241,11 +241,25 @@ export function MemberRow({
             <div className="flex items-center gap-2">
               <span
                 className={`inline-block h-2 w-2 rounded-full ${
-                  hasDeviceAgentDevice ? 'bg-green-500' : 'bg-red-400'
+                  deviceStatus === 'compliant'
+                    ? 'bg-green-500'
+                    : deviceStatus === 'non-compliant'
+                      ? 'bg-yellow-500'
+                      : 'bg-red-400'
                 }`}
               />
-              <span className={`text-sm ${hasDeviceAgentDevice ? 'text-foreground' : 'text-muted-foreground'}`}>
-                {hasDeviceAgentDevice ? 'Installed' : 'Not Installed'}
+              <span
+                className={`text-sm ${
+                  deviceStatus === 'not-installed'
+                    ? 'text-muted-foreground'
+                    : 'text-foreground'
+                }`}
+              >
+                {deviceStatus === 'compliant'
+                  ? 'Compliant'
+                  : deviceStatus === 'non-compliant'
+                    ? 'Non-Compliant'
+                    : 'Not Installed'}
               </span>
             </div>
           )}
@@ -307,7 +321,7 @@ export function MemberRow({
                   </DropdownMenuItem>
                 )}
                 {!isDeactivated &&
-                  (member.fleetDmLabelId || hasDeviceAgentDevice) &&
+                  (member.fleetDmLabelId || deviceStatus !== 'not-installed') &&
                   isCurrentUserOwner && (
                     <DropdownMenuItem
                       onSelect={() => {

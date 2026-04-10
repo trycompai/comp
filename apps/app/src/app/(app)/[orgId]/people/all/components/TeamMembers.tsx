@@ -64,18 +64,56 @@ export async function TeamMembers(props: TeamMembersProps) {
 
   const employeeMembers = await filterComplianceMembers(members, organizationId);
 
-  // Build a set of member IDs that have device-agent devices
+  // Build device status map: compliant / non-compliant / not-installed.
+  // Device-agent takes priority — if a member has both, the newer agent wins.
   const memberIds = members.map((m) => m.id);
   const devicesForMembers = await db.device.findMany({
     where: {
       organizationId,
       memberId: { in: memberIds },
     },
-    select: { memberId: true },
+    select: { memberId: true, isCompliant: true },
   });
-  const memberIdsWithDeviceAgent = [
-    ...new Set(devicesForMembers.map((d) => d.memberId)),
-  ];
+
+  const deviceStatusMap: Record<string, 'compliant' | 'non-compliant' | 'not-installed'> = {};
+
+  // Group device-agent results by member — compliant only if ALL devices pass
+  const complianceByMember = new Map<string, boolean>();
+  for (const d of devicesForMembers) {
+    const prev = complianceByMember.get(d.memberId);
+    complianceByMember.set(d.memberId, (prev ?? true) && d.isCompliant);
+  }
+  for (const [memberId, allCompliant] of complianceByMember) {
+    deviceStatusMap[memberId] = allCompliant ? 'compliant' : 'non-compliant';
+  }
+
+  // Fleet-only members: have fleetDmLabelId but no device-agent device
+  const fleetOnlyMembers = members.filter(
+    (m) => m.fleetDmLabelId && !complianceByMember.has(m.id),
+  );
+  if (fleetOnlyMembers.length > 0) {
+    const fleetUserIds = fleetOnlyMembers.map((m) => m.userId);
+    const policyResults = await db.fleetPolicyResult.findMany({
+      where: { organizationId, userId: { in: fleetUserIds } },
+      select: { userId: true, fleetPolicyResponse: true },
+    });
+
+    // Group by userId — compliant only if every policy passes
+    const fleetComplianceByUser = new Map<string, boolean>();
+    for (const r of policyResults) {
+      const prev = fleetComplianceByUser.get(r.userId);
+      fleetComplianceByUser.set(
+        r.userId,
+        (prev ?? true) && r.fleetPolicyResponse === 'pass',
+      );
+    }
+
+    for (const m of fleetOnlyMembers) {
+      const allPass = fleetComplianceByUser.get(m.userId);
+      // If we have policy results, use them; if fleet is configured but no results yet, non-compliant
+      deviceStatusMap[m.id] = allPass === true ? 'compliant' : 'non-compliant';
+    }
+  }
 
   if (employeeMembers.length > 0) {
     const [org, hipaaInstance] = await Promise.all([
@@ -156,7 +194,7 @@ export async function TeamMembers(props: TeamMembersProps) {
       isCurrentUserOwner={isCurrentUserOwner}
       employeeSyncData={employeeSyncData}
       taskCompletionMap={taskCompletionMap}
-      memberIdsWithDeviceAgent={memberIdsWithDeviceAgent}
+      deviceStatusMap={deviceStatusMap}
     />
   );
 }

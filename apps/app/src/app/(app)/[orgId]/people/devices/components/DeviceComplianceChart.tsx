@@ -9,10 +9,11 @@ import {
 } from '@trycompai/ui/chart';
 import * as React from 'react';
 import { Cell, Label, Pie, PieChart } from 'recharts';
-import type { Host } from '../types';
+import type { DeviceWithChecks, Host } from '../types';
 
 interface DeviceComplianceChartProps {
-  devices: Host[];
+  fleetDevices: Host[];
+  agentDevices: DeviceWithChecks[];
 }
 
 const CHART_COLORS = {
@@ -20,15 +21,27 @@ const CHART_COLORS = {
   nonCompliant: 'hsl(var(--chart-destructive))',
 };
 
-export function DeviceComplianceChart({ devices }: DeviceComplianceChartProps) {
+export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComplianceChartProps) {
+  const devices = [...(agentDevices ?? []), ...(fleetDevices ?? [])];
+
   const { pieDisplayData, legendDisplayData } = React.useMemo(() => {
-    if (!devices || devices.length === 0) {
+    if (devices.length === 0) {
       return { pieDisplayData: [], legendDisplayData: [] };
     }
     let compliantCount = 0;
     let nonCompliantCount = 0;
 
-    for (const device of devices) {
+    // Count device-agent devices
+    for (const device of agentDevices ?? []) {
+      if (device.isCompliant) {
+        compliantCount++;
+      } else {
+        nonCompliantCount++;
+      }
+    }
+
+    // Count fleet devices
+    for (const device of fleetDevices ?? []) {
       const isCompliant = device.policies.every((policy) => policy.response === 'pass');
       if (isCompliant) {
         compliantCount++;
@@ -36,6 +49,7 @@ export function DeviceComplianceChart({ devices }: DeviceComplianceChartProps) {
         nonCompliantCount++;
       }
     }
+
     const allItems = [
       {
         name: 'Compliant',
@@ -52,11 +66,9 @@ export function DeviceComplianceChart({ devices }: DeviceComplianceChartProps) {
       pieDisplayData: allItems.filter((item) => item.value > 0),
       legendDisplayData: allItems,
     };
-  }, [devices]);
+  }, [agentDevices, fleetDevices]);
 
-  const totalDevices = React.useMemo(() => {
-    return devices?.length || 0;
-  }, [devices]);
+  const totalDevices = devices.length;
 
   const chartConfig = {
     devices: {
