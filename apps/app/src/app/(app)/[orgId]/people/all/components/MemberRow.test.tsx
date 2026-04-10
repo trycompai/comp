@@ -32,7 +32,7 @@ vi.mock('./RemoveMemberAlert', () => ({
 
 import { MemberRow } from './MemberRow';
 
-const baseMember: MemberWithUser = {
+const baseMember = {
   id: 'mem_1',
   userId: 'usr_1',
   organizationId: 'org_123',
@@ -56,7 +56,7 @@ const baseMember: MemberWithUser = {
     banReason: null,
     banExpires: null,
   },
-} as MemberWithUser;
+} as unknown as MemberWithUser;
 
 const noop = vi.fn();
 
