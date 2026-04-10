@@ -64,6 +64,35 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       });
 
       if (existingOrg) {
+        // Ensure post-creation steps are completed in case the original
+        // request failed partway through (after DB insert but before
+        // onboarding record or framework initialization).
+        const existingOnboarding = await db.onboarding.findUnique({
+          where: { organizationId: existingOrg.id },
+        });
+
+        if (!existingOnboarding) {
+          await db.onboarding.create({
+            data: {
+              organizationId: existingOrg.id,
+              triggerJobCompleted: false,
+            },
+          });
+        }
+
+        if (parsedInput.frameworkIds && parsedInput.frameworkIds.length > 0) {
+          const existingFrameworks = await db.frameworkInstance.findFirst({
+            where: { organizationId: existingOrg.id },
+          });
+
+          if (!existingFrameworks) {
+            await initializeOrganization({
+              frameworkIds: parsedInput.frameworkIds,
+              organizationId: existingOrg.id,
+            });
+          }
+        }
+
         // Ensure this org is set as the active one
         await auth.api.setActiveOrganization({
           headers: await headers(),
