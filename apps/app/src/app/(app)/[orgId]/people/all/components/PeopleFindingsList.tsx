@@ -158,7 +158,7 @@ export function PeopleFindingsList({
             )}
 
             {canCreateFinding && (
-              <CreateFindingButton scope={scope} onSuccess={() => mutate()} />
+              <CreateFindingButton showScope={true} onSuccess={() => mutate()} />
             )}
           </div>
         </div>

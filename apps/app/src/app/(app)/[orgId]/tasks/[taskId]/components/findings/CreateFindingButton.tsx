@@ -1,7 +1,6 @@
 'use client';
 
 import type { EvidenceFormType } from '@trycompai/company';
-import type { FindingScope } from '@db';
 import { Button } from '@trycompai/design-system';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -11,7 +10,7 @@ interface CreateFindingButtonProps {
   taskId?: string;
   evidenceSubmissionId?: string;
   evidenceFormType?: EvidenceFormType;
-  scope?: FindingScope;
+  showScope?: boolean;
   onSuccess?: () => void;
 }
 
@@ -19,7 +18,7 @@ export function CreateFindingButton({
   taskId,
   evidenceSubmissionId,
   evidenceFormType,
-  scope,
+  showScope = false,
   onSuccess,
 }: CreateFindingButtonProps) {
   const [open, setOpen] = useState(false);
@@ -33,7 +32,7 @@ export function CreateFindingButton({
         taskId={taskId}
         evidenceSubmissionId={evidenceSubmissionId}
         evidenceFormType={evidenceFormType}
-        scope={scope}
+        showScope={showScope}
         open={open}
         onOpenChange={setOpen}
         onSuccess={onSuccess}

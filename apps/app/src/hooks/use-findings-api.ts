@@ -3,7 +3,7 @@
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
 import type { EvidenceFormType } from '@trycompai/company';
-import type { FindingStatus, FindingType, FindingScope } from '@db';
+import { FindingScope, FindingType, type FindingStatus } from '@db';
 import { useCallback } from 'react';
 
 // Types for findings
@@ -415,4 +415,12 @@ export const FINDING_STATUS_CONFIG: Record<
 export const FINDING_TYPE_LABELS: Record<FindingType, string> = {
   soc2: 'SOC 2',
   iso27001: 'ISO 27001',
+};
+
+/** Labels for People-area finding scopes (see FindingsOverview). */
+export const FINDING_SCOPE_LABELS: Record<FindingScope, string> = {
+  [FindingScope.people]: 'People',
+  [FindingScope.people_tasks]: 'People: Tasks',
+  [FindingScope.people_devices]: 'People: Devices',
+  [FindingScope.people_chart]: 'People: Chart',
 };
