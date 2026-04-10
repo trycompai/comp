@@ -20,8 +20,11 @@ export class UnsubscribeController {
     @Query('token') queryToken?: string,
     @Body() body?: { email?: string; token?: string },
   ) {
-    const email = queryEmail || body?.email;
-    const token = queryToken || body?.token;
+    // Coerce to string - query params can be arrays if repeated
+    const rawEmail = queryEmail || body?.email;
+    const rawToken = queryToken || body?.token;
+    const email = typeof rawEmail === 'string' ? rawEmail : undefined;
+    const token = typeof rawToken === 'string' ? rawToken : undefined;
 
     if (!email || !token) {
       throw new BadRequestException('Email and token are required');
