@@ -155,6 +155,34 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
     (host) => !host.member_id || !memberIdsWithAgent.has(host.member_id),
   );
 
+  // Build unified device status map from the SAME data both tabs use.
+  // This ensures the member list and compliance chart agree on compliance.
+  const deviceStatusMap: Record<string, 'compliant' | 'non-compliant' | 'not-installed'> = {};
+
+  // Device-agent devices: compliant only if ALL of a member's devices pass
+  const agentComplianceByMember = new Map<string, boolean>();
+  for (const d of agentDevices) {
+    if (!d.memberId) continue;
+    const prev = agentComplianceByMember.get(d.memberId);
+    agentComplianceByMember.set(d.memberId, (prev ?? true) && d.isCompliant);
+  }
+  for (const [memberId, allCompliant] of agentComplianceByMember) {
+    deviceStatusMap[memberId] = allCompliant ? 'compliant' : 'non-compliant';
+  }
+
+  // Fleet-only devices: use the same merged policy data the chart uses
+  // (Fleet API automated checks + DB manual overrides, already combined by getFleetHosts)
+  for (const host of filteredFleetDevices) {
+    if (!host.member_id) continue;
+    // If already set by device-agent, skip (agent takes priority)
+    if (agentComplianceByMember.has(host.member_id)) continue;
+    const isCompliant = host.policies.every((p) => p.response === 'pass');
+    // If multiple fleet devices for same member, non-compliant if ANY device fails
+    if (!isCompliant || !deviceStatusMap[host.member_id]) {
+      deviceStatusMap[host.member_id] = isCompliant ? 'compliant' : 'non-compliant';
+    }
+  }
+
   return (
     <PeoplePageTabs
       peopleContent={
@@ -164,19 +192,27 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           isAuditor={isAuditor}
           isCurrentUserOwner={isCurrentUserOwner}
           organizationId={orgId}
+          deviceStatusMap={deviceStatusMap}
         />
       }
       employeeTasksContent={showEmployeeTasks ? <EmployeesOverview /> : null}
       devicesContent={
         <div className="space-y-6">
+          {/* Unified compliance chart covering both device-agent and fleet devices */}
+          <DeviceComplianceChart
+            fleetDevices={filteredFleetDevices}
+            agentDevices={agentDevices}
+          />
+
           {/* Device Agent devices (new system) */}
           {agentDevices.length > 0 && (
             <DeviceAgentDevicesList devices={agentDevices} />
           )}
 
-          {/* Fleet devices (legacy) — shown exactly as main branch */}
-          <DeviceComplianceChart devices={filteredFleetDevices} />
-          <EmployeeDevicesList devices={filteredFleetDevices} isCurrentUserOwner={isCurrentUserOwner} />
+          {/* Fleet devices (legacy) — only for members without the newer device agent */}
+          {filteredFleetDevices.length > 0 && (
+            <EmployeeDevicesList devices={filteredFleetDevices} isCurrentUserOwner={isCurrentUserOwner} />
+          )}
         </div>
       }
       orgChartContent={

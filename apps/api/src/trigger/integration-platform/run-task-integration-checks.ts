@@ -4,6 +4,7 @@ import { logger, tags, task } from '@trigger.dev/sdk';
 import { triggerEmail } from '../../email/trigger-email';
 import { TaskStatusChangedEmail } from '../../email/templates/task-status-changed';
 import { isUserUnsubscribed } from '@trycompai/email';
+import { parseDisabledTaskChecks } from '../../integration-platform/utils/disabled-task-checks';
 
 /**
  * Send email notifications for task status change
@@ -294,6 +295,26 @@ export const runTaskIntegrationChecks = task({
         string | number | boolean | string[] | undefined
       >) || {};
 
+    // Defensive per-task disable filter: the orchestrator already removes
+    // disabled checks, but a user may disconnect a check between batching and
+    // execution. Re-resolve the disabled set from the just-fetched connection
+    // metadata and skip anything that's now disabled. The rest of the flow
+    // (lastSyncAt update, task status evaluation, return payload) runs as
+    // before — just over the filtered list instead of the original one.
+    const disabledForThisTask = new Set(
+      parseDisabledTaskChecks(connection.metadata)[taskId] ?? [],
+    );
+    const effectiveCheckIds = checkIds.filter(
+      (id) => !disabledForThisTask.has(id),
+    );
+    if (effectiveCheckIds.length < checkIds.length) {
+      logger.info(
+        `Skipping ${
+          checkIds.length - effectiveCheckIds.length
+        } disabled check(s) for task ${taskId}`,
+      );
+    }
+
     // Track overall results across all checks for this task
     let totalFindings = 0;
     let totalPassing = 0;
@@ -301,7 +322,7 @@ export const runTaskIntegrationChecks = task({
 
     // Run only the checks that apply to this task
     try {
-      for (const checkId of checkIds) {
+      for (const checkId of effectiveCheckIds) {
         const result = await runAllChecks({
           manifest,
           accessToken: credentials.access_token ?? undefined,
@@ -467,7 +488,7 @@ export const runTaskIntegrationChecks = task({
       return {
         success: true,
         taskId,
-        checksRun: checkIds.length,
+        checksRun: effectiveCheckIds.length,
         totalPassing,
         totalFindings,
         taskStatus:

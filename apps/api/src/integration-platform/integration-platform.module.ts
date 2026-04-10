@@ -17,6 +17,7 @@ import { AutoCheckRunnerService } from './services/auto-check-runner.service';
 import { ConnectionAuthTeardownService } from './services/connection-auth-teardown.service';
 import { OAuthTokenRevocationService } from './services/oauth-token-revocation.service';
 import { DynamicManifestLoaderService } from './services/dynamic-manifest-loader.service';
+import { TaskIntegrationChecksService } from './services/task-integration-checks.service';
 import { ProviderRepository } from './repositories/provider.repository';
 import { ConnectionRepository } from './repositories/connection.repository';
 import { CredentialRepository } from './repositories/credential.repository';
@@ -52,6 +53,7 @@ import { GenericEmployeeSyncService } from './services/generic-employee-sync.ser
     OAuthTokenRevocationService,
     ConnectionAuthTeardownService,
     DynamicManifestLoaderService,
+    TaskIntegrationChecksService,
     IntegrationSyncLoggerService,
     GenericEmployeeSyncService,
     // Repositories

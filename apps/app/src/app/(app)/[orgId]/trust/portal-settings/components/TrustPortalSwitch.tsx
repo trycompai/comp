@@ -668,9 +668,11 @@ export function TrustPortalSwitch({
                   }}
                   onToggle={async (checked) => {
                     try {
-                      await updateFrameworkSettings({
-                        soc2type2: checked,
-                      });
+                      await updateFrameworkSettings(
+                        checked
+                          ? { soc2type2: true }
+                          : { soc2: false, soc2type2: false },
+                      );
                       toast.success('SOC 2 Type 2 status updated');
                     } catch (error) {
                       toast.error('Failed to update SOC 2 Type 2 status');
