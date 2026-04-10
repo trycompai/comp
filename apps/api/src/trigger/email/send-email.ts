@@ -52,11 +52,10 @@ export const sendEmailTask = schemaTask({
     }
 
     try {
-      // Build List-Unsubscribe headers for Gmail/RFC 8058 compliance
+      // Build List-Unsubscribe header (mailto + URL for broadest client support)
       const unsubscribeUrl = getUnsubscribeUrl(params.to);
       const headers: Record<string, string> = {
-        'List-Unsubscribe': `<${unsubscribeUrl}>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        'List-Unsubscribe': `<${unsubscribeUrl}>, <mailto:unsubscribe@mail.trycomp.ai?subject=Unsubscribe&body=${encodeURIComponent(params.to)}>`,
       };
 
       const { data, error } = await resend.emails.send({
