@@ -1,7 +1,7 @@
 import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { resend } from '../../email/resend';
-import { getUnsubscribeUrl, generateUnsubscribeToken } from '@trycompai/email/lib/unsubscribe';
+import { generateUnsubscribeToken } from '@trycompai/email/lib/unsubscribe';
 
 const emailQueue = queue({
   name: 'send-email',
