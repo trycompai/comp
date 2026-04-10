@@ -1,4 +1,4 @@
-import { logger, queue, schemaTask, wait } from '@trigger.dev/sdk';
+import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { resend } from '../../email/resend';
 import { getUnsubscribeUrl } from '@trycompai/email/lib/unsubscribe';
@@ -85,8 +85,8 @@ export const sendEmailTask = schemaTask({
 
       logger.info('Email sent', { to: params.to, id: data?.id });
 
-      // Throttle: wait 1s between sends to avoid email spikes
-      await wait.for({ seconds: 1 });
+      // Throttle: hold the concurrency slot for 1s to space out sends
+      await new Promise((r) => setTimeout(r, 1000));
 
       return { id: data?.id };
     } catch (error) {
