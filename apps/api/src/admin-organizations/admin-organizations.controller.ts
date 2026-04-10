@@ -42,6 +42,29 @@ export class AdminOrganizationsController {
     });
   }
 
+  @Get('activity')
+  @ApiOperation({ summary: 'Organization activity report - shows last session per org (platform admin)' })
+  @ApiQuery({ name: 'inactiveDays', required: false, description: 'Filter orgs with no session in N days (default: 90)' })
+  @ApiQuery({ name: 'hasAccess', required: false, description: 'Filter by hasAccess (true/false)' })
+  @ApiQuery({ name: 'onboarded', required: false, description: 'Filter by onboardingCompleted (true/false)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  async activity(
+    @Query('inactiveDays') inactiveDays?: string,
+    @Query('hasAccess') hasAccess?: string,
+    @Query('onboarded') onboarded?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.getOrgActivity({
+      inactiveDays: Math.max(0, Number.isFinite(parseInt(inactiveDays ?? '90', 10)) ? parseInt(inactiveDays ?? '90', 10) : 90),
+      hasAccess: hasAccess === 'true' ? true : hasAccess === 'false' ? false : undefined,
+      onboarded: onboarded === 'true' ? true : onboarded === 'false' ? false : undefined,
+      page: Math.max(1, parseInt(page || '1', 10) || 1),
+      limit: Math.min(100, Math.max(1, parseInt(limit || '50', 10) || 50)),
+    });
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get organization details (platform admin)' })
   async get(@Param('id') id: string) {
