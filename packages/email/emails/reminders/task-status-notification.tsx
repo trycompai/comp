@@ -2,7 +2,6 @@ import {
   Body,
   Button,
   Container,
-  Font,
   Heading,
   Html,
   Link,
@@ -42,31 +41,7 @@ export const TaskStatusNotificationEmail = ({
   return (
     <Html>
       <Tailwind>
-        <head>
-          <Font
-            fontFamily="Geist"
-            fallbackFontFamily="Helvetica"
-            webFont={{
-              url: 'https://app.trycomp.ai/fonts/geist/geist-sans-latin-400-normal.woff2',
-              format: 'woff2',
-            }}
-            fontWeight={400}
-            fontStyle="normal"
-          />
-
-          <Font
-            fontFamily="Geist"
-            fallbackFontFamily="Helvetica"
-            webFont={{
-              url: 'https://app.trycomp.ai/fonts/geist/geist-sans-latin-500-normal.woff2',
-              format: 'woff2',
-            }}
-            fontWeight={500}
-            fontStyle="normal"
-          />
-        </head>
-
-        <Preview>
+<Preview>
           Task &quot;{taskName}&quot; {statusLabel} - {organizationName}
         </Preview>
 
