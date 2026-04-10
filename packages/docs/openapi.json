@@ -20349,6 +20349,65 @@
         ]
       }
     },
+    "/v1/admin/organizations/activity": {
+      "get": {
+        "operationId": "AdminOrganizationsController_activity_v1",
+        "parameters": [
+          {
+            "name": "inactiveDays",
+            "required": false,
+            "in": "query",
+            "description": "Filter orgs with no session in N days (default: 90)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hasAccess",
+            "required": false,
+            "in": "query",
+            "description": "Filter by hasAccess (true/false)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onboarded",
+            "required": false,
+            "in": "query",
+            "description": "Filter by onboardingCompleted (true/false)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Organization activity report - shows last session per org (platform admin)",
+        "tags": [
+          "Admin - Organizations"
+        ]
+      }
+    },
     "/v1/admin/organizations/{id}": {
       "get": {
         "operationId": "AdminOrganizationsController_get_v1",
