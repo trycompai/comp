@@ -154,12 +154,10 @@ export function useFormTypeFindings(
 }
 
 /**
- * Hook to fetch findings for a People-area scope (directory, devices, etc.)
+ * Org findings that have a People-area scope set (any non-null scope). Uses `GET /v1/findings?hasScope=true`.
  */
-export function useScopeFindings(scope: FindingScope | null, options: UseFindingsOptions = {}) {
-  const endpoint = scope ? `/v1/findings?scope=${encodeURIComponent(scope)}` : null;
-
-  return useApiSWR<Finding[]>(endpoint, {
+export function useScopeFindings(options: UseFindingsOptions = {}) {
+  return useApiSWR<Finding[]>('/v1/findings?hasScope=true', {
     ...options,
     refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
   });
@@ -420,7 +418,7 @@ export const FINDING_TYPE_LABELS: Record<FindingType, string> = {
 /** Labels for People-area finding scopes (see FindingsOverview). */
 export const FINDING_SCOPE_LABELS: Record<FindingScope, string> = {
   [FindingScope.people]: 'People',
-  [FindingScope.people_tasks]: 'People: Tasks',
-  [FindingScope.people_devices]: 'People: Devices',
-  [FindingScope.people_chart]: 'People: Chart',
+  [FindingScope.people_tasks]: 'Tasks',
+  [FindingScope.people_devices]: 'Devices',
+  [FindingScope.people_chart]: 'Chart',
 };

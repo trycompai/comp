@@ -75,7 +75,6 @@ vi.mock('../../../tasks/[taskId]/components/findings/FindingItem', () => ({
 import { PeopleFindingsList } from './PeopleFindingsList';
 
 const defaultProps = {
-  scope: 'people' as const,
   isAuditor: false,
   isPlatformAdmin: false,
   isAdminOrOwner: false,

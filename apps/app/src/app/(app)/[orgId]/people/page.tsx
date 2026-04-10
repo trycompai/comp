@@ -3,7 +3,6 @@ import { auth } from '@/utils/auth';
 import { s3Client, BUCKET_NAME } from '@/app/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { FindingScope } from '@db';
 import { db } from '@db/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
@@ -190,7 +189,6 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
       }
       findingsContent={
         <PeopleFindings
-          scope={FindingScope.people_devices}
           isAuditor={isAuditor}
           isPlatformAdmin={isPlatformAdmin}
           isAdminOrOwner={canManageMembers}

@@ -27,6 +27,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ChevronDown, ChevronUp, MoreVertical, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FindingHistorySheet } from './FindingHistorySheet';
+import { FindingScopeBadge } from './FindingScopeBadge';
 import { FindingStatusBadge } from './FindingStatusBadge';
 
 // Character threshold for showing "Read more" - approximate 2 lines
@@ -199,6 +200,7 @@ export function FindingItem({
               {FINDING_TYPE_LABELS[finding.type as FindingType]}
             </Badge>
             <FindingStatusBadge status={finding.status as FindingStatus} />
+            {finding.scope != null && <FindingScopeBadge scope={finding.scope} />}
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             {formatDistanceToNow(new Date(finding.createdAt), { addSuffix: true })}

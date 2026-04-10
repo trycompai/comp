@@ -7,7 +7,6 @@ import {
 } from '@/hooks/use-findings-api';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@trycompai/design-system';
-import type { FindingScope } from '@db';
 import { FindingStatus } from '@db';
 import {
   ChevronDown,
@@ -23,7 +22,6 @@ import { FindingItem } from '../../../tasks/[taskId]/components/findings/Finding
 const INITIAL_DISPLAY_COUNT = 5;
 
 interface PeopleFindingsListProps {
-  scope: FindingScope;
   isAuditor: boolean;
   isPlatformAdmin: boolean;
   isAdminOrOwner: boolean;
@@ -38,13 +36,12 @@ const STATUS_ORDER: Record<FindingStatus, number> = {
 };
 
 export function PeopleFindingsList({
-  scope,
   isAuditor,
   isPlatformAdmin,
   isAdminOrOwner,
   onViewHistory,
 }: PeopleFindingsListProps) {
-  const { data, isLoading, error, mutate } = useScopeFindings(scope);
+  const { data, isLoading, error, mutate } = useScopeFindings();
   const { updateFinding, deleteFinding } = useFindingActions();
   const { hasPermission } = usePermissions();
   const [expandedId, setExpandedId] = useState<string | null>(null);

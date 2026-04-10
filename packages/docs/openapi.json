@@ -13839,6 +13839,15 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "name": "hasScope",
+            "required": false,
+            "in": "query",
+            "description": "When true, return all findings in the organization that have a scope value set",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -16447,6 +16456,62 @@
     "/v1/integrations/tasks/{taskId}/run-check": {
       "post": {
         "operationId": "TaskIntegrationsController_runCheckForTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/{taskId}/checks/disconnect": {
+      "post": {
+        "operationId": "TaskIntegrationsController_disconnectCheckFromTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/{taskId}/checks/reconnect": {
+      "post": {
+        "operationId": "TaskIntegrationsController_reconnectCheckToTask_v1",
         "parameters": [
           {
             "name": "taskId",
