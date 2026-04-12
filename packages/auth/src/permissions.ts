@@ -43,6 +43,8 @@ export const statement = {
   trust: ['read', 'update'], // Trust center access
   // Security product resources
   pentest: ['create', 'read', 'delete'],
+  // Workflow automation
+  workflow: ['create', 'read', 'update', 'delete'],
   // Training management
   training: ['read', 'update'],
   // Portal self-service
@@ -80,6 +82,8 @@ export const owner = ac.newRole({
   trust: ['read', 'update'],
   // Security product
   pentest: ['create', 'read', 'delete'],
+  // Workflow automation
+  workflow: ['create', 'read', 'update', 'delete'],
   // Training management
   training: ['read', 'update'],
   // Portal self-service
@@ -115,6 +119,8 @@ export const admin = ac.newRole({
   trust: ['read', 'update'],
   // Security product
   pentest: ['create', 'read', 'delete'],
+  // Workflow automation
+  workflow: ['create', 'read', 'update', 'delete'],
   // Training management
   training: ['read', 'update'],
   // Portal self-service
@@ -146,6 +152,8 @@ export const auditor = ac.newRole({
   trust: ['read'],
   // Security product (read-only for auditors)
   pentest: ['read'],
+  // Workflow automation (read-only for auditors)
+  workflow: ['read'],
 });
 
 /**

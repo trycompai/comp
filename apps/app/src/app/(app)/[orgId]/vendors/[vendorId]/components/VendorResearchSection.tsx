@@ -12,7 +12,6 @@ import { parseVendorRiskAssessmentDescription } from '@/components/vendor-risk-a
 import type { VendorRiskAssessmentCertification } from '@/components/vendor-risk-assessment/vendor-risk-assessment-types';
 import { cn } from '@/lib/utils';
 import type { Prisma } from '@db';
-import { Button } from '@trycompai/design-system';
 import { Launch } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useMemo } from 'react';
@@ -101,11 +100,6 @@ export function VendorResearchBadges({ riskAssessmentData }: VendorResearchProps
 
         return <div key={`${cert.type}-${index}`}>{iconContent}</div>;
       })}
-      {withoutIcons > 0 && (
-        <span className="text-xs text-muted-foreground">
-          +{withoutIcons} more
-        </span>
-      )}
     </div>
   );
 }
@@ -116,23 +110,18 @@ export function VendorResearchLinks({ riskAssessmentData }: VendorResearchProps)
   if (links.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+    <div className="flex flex-wrap items-center gap-2">
       {links.map((link, index) => (
-        <Button
+        <Link
           key={`${link.url}-${link.label}-${index}`}
-          variant="link"
-          size="sm"
-          render={
-            <Link
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-            />
-          }
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           {link.label}
-          <Launch className="size-3" />
-        </Button>
+          <Launch size={10} />
+        </Link>
       ))}
     </div>
   );

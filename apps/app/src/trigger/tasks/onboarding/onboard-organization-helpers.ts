@@ -203,15 +203,25 @@ function parseAllSelectedVendors(
   const customVendors: CustomVendorEntry[] = [];
   const urlMap = new Map<string, string>();
 
-  // Find the software answer (contains ALL selected vendor names as comma-separated)
-  const softwareEntry = questionsAndAnswers.find(
-    (qa) => qa.question === 'What software do you use?',
-  );
+  // Collect vendor names from software, authentication, and infrastructure answers
+  const vendorQuestions = [
+    'What software do you use?',
+    'How do your team members sign in to work tools?',
+    'Where do you host your applications and data?',
+  ];
 
-  if (softwareEntry && softwareEntry.answer) {
-    // Parse comma-separated vendor names
-    const names = softwareEntry.answer.split(',').map((n) => n.trim()).filter(Boolean);
-    allVendorNames.push(...names);
+  for (const question of vendorQuestions) {
+    const entry = questionsAndAnswers.find((qa) => qa.question === question);
+    if (entry?.answer) {
+      const names = entry.answer.split(',').map((n) => n.trim()).filter(Boolean);
+      for (const name of names) {
+        // Skip generic non-vendor answers
+        if (['Email/Password', 'Other'].includes(name)) continue;
+        if (!allVendorNames.some((n) => n.toLowerCase() === name.toLowerCase())) {
+          allVendorNames.push(name);
+        }
+      }
+    }
   }
 
   // Find the custom vendors context entry (contains URLs for custom vendors)
@@ -294,7 +304,7 @@ export async function extractVendorsFromContext(
       additionalProperties: false,
     }),
     system:
-      'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact. IMPORTANT: For vendor_name, always use the parent company name, not the product name (e.g. "Anthropic" not "Claude", "OpenAI" not "ChatGPT"). Set original_name to the name as it appeared in the user input.',
+      'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact. IMPORTANT: For vendor_name, use the product/service name that users know, NOT the parent corporation (e.g. "GitHub" not "Microsoft Corporation", "AWS" not "Amazon.com Inc", "Slack" not "Salesforce", "Vercel" not "Vercel Inc"). Set original_name to the name as it appeared in the user input. IMPORTANT: Always include the vendor_website with the full URL (e.g. "https://github.com" for GitHub, "https://aws.amazon.com" for AWS, "https://workspace.google.com" for Google Workspace). Never leave vendor_website empty for well-known vendors.',
     prompt: questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n'),
   });
 
@@ -323,22 +333,69 @@ export async function extractVendorsFromContext(
     }
   }
 
+  // Well-known vendor descriptions
+  const wellKnownVendorDescriptions: Record<string, string> = {
+    'aws': 'Cloud computing platform providing infrastructure, storage, compute, and managed services.',
+    'google cloud': 'Cloud computing platform offering compute, storage, machine learning, and data analytics services.',
+    'microsoft azure': 'Cloud computing platform providing virtual machines, databases, AI, and enterprise services.',
+    'google workspace': 'Productivity and collaboration suite including Gmail, Drive, Docs, and Meet.',
+    'microsoft 365': 'Productivity suite including Outlook, Teams, Word, Excel, and SharePoint.',
+    'okta': 'Identity and access management platform providing SSO, MFA, and lifecycle management.',
+    'auth0': 'Authentication and authorization platform for applications.',
+    'heroku': 'Cloud platform as a service for deploying and scaling web applications.',
+    'vercel': 'Frontend cloud platform for deploying and hosting web applications.',
+    'rippling': 'HR, IT, and finance platform for managing employees, payroll, and devices.',
+    'slack': 'Business messaging and collaboration platform.',
+    'github': 'Code hosting and collaboration platform for version control and software development.',
+    'gitlab': 'DevOps platform providing source code management, CI/CD, and security scanning.',
+    'jira': 'Project management and issue tracking platform for software development teams.',
+    'notion': 'All-in-one workspace for notes, docs, project management, and wikis.',
+    'linear': 'Issue tracking and project management tool for software teams.',
+    'datadog': 'Cloud monitoring and security platform for infrastructure and applications.',
+    'pagerduty': 'Incident management platform for real-time operations and on-call scheduling.',
+    'jumpcloud': 'Cloud directory platform providing identity, access, and device management.',
+  };
+
+  // Well-known vendor websites for common onboarding selections
+  const wellKnownVendorUrls: Record<string, string> = {
+    'aws': 'https://aws.amazon.com',
+    'google cloud': 'https://cloud.google.com',
+    'microsoft azure': 'https://azure.microsoft.com',
+    'google workspace': 'https://workspace.google.com',
+    'microsoft 365': 'https://microsoft.com',
+    'okta': 'https://okta.com',
+    'auth0': 'https://auth0.com',
+    'heroku': 'https://heroku.com',
+    'vercel': 'https://vercel.com',
+    'rippling': 'https://rippling.com',
+    'slack': 'https://slack.com',
+    'github': 'https://github.com',
+    'gitlab': 'https://gitlab.com',
+    'jira': 'https://atlassian.com',
+    'notion': 'https://notion.so',
+    'linear': 'https://linear.app',
+    'datadog': 'https://datadoghq.com',
+    'pagerduty': 'https://pagerduty.com',
+    'jumpcloud': 'https://jumpcloud.com',
+  };
+
   // Ensure ALL vendors from the software field are added (not just custom ones)
   // This catches any vendors the AI failed to extract
   for (const vendorName of allVendorNames) {
     if (!extractedVendorNames.has(vendorName.toLowerCase())) {
       const isCustom = customVendorNameSet.has(vendorName.toLowerCase());
       const customUrl = customVendorUrls.get(vendorName.toLowerCase());
-      
+      const wellKnownUrl = wellKnownVendorUrls[vendorName.toLowerCase()];
+
       logger.info(`Adding vendor not extracted by AI: ${vendorName} (custom: ${isCustom})`);
-      
+
       // Create a vendor entry with default risk values
       vendors.push({
         vendor_name: vendorName,
-        vendor_website: customUrl || '',
-        vendor_description: isCustom 
+        vendor_website: customUrl || wellKnownUrl || '',
+        vendor_description: isCustom
           ? `Custom vendor added during onboarding`
-          : `Vendor selected during onboarding`,
+          : wellKnownVendorDescriptions[vendorName.toLowerCase()] || `${vendorName} — vendor selected during onboarding.`,
         category: VendorCategory.other,
         inherent_probability: Likelihood.possible,
         inherent_impact: Impact.moderate,
@@ -388,6 +445,7 @@ Please perform a comprehensive vendor risk assessment for this vendor using the 
       entityType: CommentEntityType.vendor,
       authorId,
       organizationId,
+      isSystemGenerated: true,
     },
   });
 
@@ -700,6 +758,7 @@ export async function createRiskMitigationComment(
       entityType: CommentEntityType.risk,
       authorId,
       organizationId,
+      isSystemGenerated: true,
     },
   });
 

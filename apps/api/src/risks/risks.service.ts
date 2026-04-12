@@ -3,6 +3,7 @@ import { db, Prisma } from '@db';
 import { CreateRiskDto } from './dto/create-risk.dto';
 import { GetRisksQueryDto } from './dto/get-risks-query.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
+import { validateNotPlatformAdmin } from '../utils/platform-admin-check';
 
 export interface PaginatedRisksResult {
   data: Prisma.RiskGetPayload<{
@@ -24,16 +25,6 @@ export interface PaginatedRisksResult {
 @Injectable()
 export class RisksService {
   private readonly logger = new Logger(RisksService.name);
-
-  private async validateAssigneeNotPlatformAdmin(assigneeId: string, organizationId: string) {
-    const member = await db.member.findFirst({
-      where: { id: assigneeId, organizationId },
-      include: { user: { select: { role: true } } },
-    });
-    if (member?.user.role === 'admin') {
-      throw new BadRequestException('Cannot assign a platform admin as assignee');
-    }
-  }
 
   async findAllByOrganization(
     organizationId: string,
@@ -141,7 +132,7 @@ export class RisksService {
   async create(organizationId: string, createRiskDto: CreateRiskDto) {
     try {
       if (createRiskDto.assigneeId) {
-        await this.validateAssigneeNotPlatformAdmin(createRiskDto.assigneeId, organizationId);
+        await validateNotPlatformAdmin({ memberId: createRiskDto.assigneeId, organizationId });
       }
       const risk = await db.risk.create({
         data: {
@@ -173,7 +164,7 @@ export class RisksService {
       await this.findById(id, organizationId);
 
       if (updateRiskDto.assigneeId) {
-        await this.validateAssigneeNotPlatformAdmin(updateRiskDto.assigneeId, organizationId);
+        await validateNotPlatformAdmin({ memberId: updateRiskDto.assigneeId, organizationId });
       }
 
       const updatedRisk = await db.risk.update({

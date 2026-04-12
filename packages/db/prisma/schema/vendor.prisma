@@ -27,6 +27,9 @@ model Vendor {
   contacts       VendorContact[]
   tasks          Task[]
 
+  integrationConnections IntegrationConnection[]
+  checkConfigs           VendorCheckConfig[]
+
   @@index([organizationId])
   @@index([assigneeId])
   @@index([category])
@@ -60,4 +63,21 @@ enum VendorStatus {
   not_assessed
   in_progress
   assessed
+}
+
+model VendorCheckConfig {
+  id             String                @id @default(dbgenerated("generate_prefixed_cuid('vcc'::text)"))
+  vendorId       String
+  vendor         Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  connectionId   String
+  connection     IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  checkId        String
+  enabled        Boolean               @default(true)
+  disabledReason String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@unique([vendorId, connectionId, checkId])
+  @@index([vendorId])
+  @@index([connectionId])
 }

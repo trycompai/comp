@@ -174,6 +174,7 @@ export class CommentsService {
           return {
             id: comment.id,
             content: comment.content,
+            isSystemGenerated: comment.isSystemGenerated,
             author: {
               id: comment.author.user.id,
               name: comment.author.user.name,

@@ -19,8 +19,9 @@ export const runConnectionChecks = task({
     connectionId: string;
     organizationId: string;
     providerSlug: string;
+    skipCheckIds?: string[];
   }) => {
-    const { connectionId, organizationId, providerSlug } = payload;
+    const { connectionId, organizationId, providerSlug, skipCheckIds } = payload;
 
     await tags.add([`org:${organizationId}`]);
 
@@ -150,24 +151,21 @@ export const runConnectionChecks = task({
         string | number | boolean | string[] | undefined
       >) || {};
 
-    // Create a check run record
-    const checkRun = await db.integrationCheckRun.create({
-      data: {
-        connectionId,
-        checkId: 'all',
-        checkName: 'All Checks (Auto)',
-        status: 'running',
-        startedAt: new Date(),
-      },
-    });
+    // Filter out disabled checks if skipCheckIds provided
+    const skipSet = new Set(skipCheckIds ?? []);
+    const filteredManifest = skipSet.size > 0
+      ? { ...manifest, checks: (manifest.checks ?? []).filter((c) => !skipSet.has(c.id)) }
+      : manifest;
 
-    let totalFindings = 0;
-    let totalPassing = 0;
+    if (!filteredManifest.checks || filteredManifest.checks.length === 0) {
+      logger.info('All checks are disabled for this connection');
+      return { success: true, reason: 'All checks disabled', checkRunIds: [] };
+    }
 
     try {
-      // Run all checks
+      // Run enabled checks
       const result = await runAllChecks({
-        manifest,
+        manifest: filteredManifest,
         accessToken: credentials.access_token ?? undefined,
         credentials,
         variables,
@@ -180,56 +178,73 @@ export const runConnectionChecks = task({
         },
       });
 
-      totalFindings = result.totalFindings;
-      totalPassing = result.totalPassing;
-
       logger.info(
-        `Checks completed: ${totalFindings} findings, ${totalPassing} passing`,
+        `Checks completed: ${result.totalFindings} findings, ${result.totalPassing} passing across ${result.results.length} checks`,
       );
 
-      // Store results
-      const resultsToStore = result.results.flatMap((checkResult) => [
-        ...checkResult.result.findings.map((finding) => ({
-          checkRunId: checkRun.id,
-          passed: false,
-          title: finding.title,
-          description: finding.description || '',
-          resourceType: finding.resourceType,
-          resourceId: finding.resourceId,
-          severity: finding.severity,
-          remediation: finding.remediation,
-          evidence: JSON.parse(JSON.stringify(finding.evidence || {})),
-        })),
-        ...checkResult.result.passingResults.map((passing) => ({
-          checkRunId: checkRun.id,
-          passed: true,
-          title: passing.title,
-          description: passing.description || '',
-          resourceType: passing.resourceType,
-          resourceId: passing.resourceId,
-          severity: 'info' as const,
-          remediation: undefined,
-          evidence: JSON.parse(JSON.stringify(passing.evidence || {})),
-        })),
-      ]);
+      // Store one IntegrationCheckRun per check with its own results
+      const checkRunIds: string[] = [];
+      for (const checkResult of result.results) {
+        const findings = checkResult.result.findings;
+        const passing = checkResult.result.passingResults;
+        const startTime = Date.now();
 
-      if (resultsToStore.length > 0) {
-        await db.integrationCheckResult.createMany({ data: resultsToStore });
+        const checkRun = await db.integrationCheckRun.create({
+          data: {
+            connectionId,
+            checkId: checkResult.checkId,
+            checkName: checkResult.checkName,
+            status: checkResult.status === 'error' ? 'failed' : checkResult.status === 'failed' ? 'failed' : 'success',
+            startedAt: new Date(startTime - checkResult.durationMs),
+            completedAt: new Date(),
+            durationMs: checkResult.durationMs,
+            totalChecked: findings.length + passing.length,
+            passedCount: passing.length,
+            failedCount: findings.length,
+            errorMessage: checkResult.error ?? null,
+            logs: checkResult.result.logs.length > 0
+              ? (checkResult.result.logs.map((l) => ({
+                  level: l.level,
+                  message: l.message,
+                  ...(l.data ? { data: l.data } : {}),
+                  timestamp: l.timestamp.toISOString(),
+                })) as unknown as import('@db').Prisma.InputJsonValue)
+              : undefined,
+          },
+        });
+
+        checkRunIds.push(checkRun.id);
+
+        // Store individual results under this check run
+        const resultsToStore = [
+          ...findings.map((finding) => ({
+            checkRunId: checkRun.id,
+            passed: false,
+            title: finding.title,
+            description: finding.description || '',
+            resourceType: finding.resourceType,
+            resourceId: finding.resourceId,
+            severity: finding.severity,
+            remediation: finding.remediation,
+            evidence: JSON.parse(JSON.stringify(finding.evidence || {})),
+          })),
+          ...passing.map((p) => ({
+            checkRunId: checkRun.id,
+            passed: true,
+            title: p.title,
+            description: p.description || '',
+            resourceType: p.resourceType,
+            resourceId: p.resourceId,
+            severity: 'info' as const,
+            remediation: undefined,
+            evidence: JSON.parse(JSON.stringify(p.evidence || {})),
+          })),
+        ];
+
+        if (resultsToStore.length > 0) {
+          await db.integrationCheckResult.createMany({ data: resultsToStore });
+        }
       }
-
-      // Update check run status
-      const startTime = checkRun.startedAt?.getTime() ?? Date.now();
-      await db.integrationCheckRun.update({
-        where: { id: checkRun.id },
-        data: {
-          status: totalFindings > 0 ? 'failed' : 'success',
-          completedAt: new Date(),
-          durationMs: Date.now() - startTime,
-          totalChecked: result.results.length,
-          passedCount: totalPassing,
-          failedCount: totalFindings,
-        },
-      });
 
       // Update connection's lastSyncAt
       await db.integrationConnection.update({
@@ -239,25 +254,13 @@ export const runConnectionChecks = task({
 
       return {
         success: true,
-        checkRunId: checkRun.id,
-        totalPassing,
-        totalFindings,
+        checkRunIds,
+        totalPassing: result.totalPassing,
+        totalFindings: result.totalFindings,
       };
     } catch (error) {
       logger.error('Check execution failed', {
         error: error instanceof Error ? error.message : String(error),
-      });
-
-      // Mark check run as failed
-      const errorStartTime = checkRun.startedAt?.getTime() ?? Date.now();
-      await db.integrationCheckRun.update({
-        where: { id: checkRun.id },
-        data: {
-          status: 'failed',
-          completedAt: new Date(),
-          durationMs: Date.now() - errorStartTime,
-          errorMessage: error instanceof Error ? error.message : String(error),
-        },
       });
 
       return {

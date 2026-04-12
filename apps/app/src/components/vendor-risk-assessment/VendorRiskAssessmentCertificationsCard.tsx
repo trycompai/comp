@@ -56,10 +56,12 @@ export function VendorRiskAssessmentCertificationsCard({
   certifications,
   verifiedCount,
   previewCount = 4,
+  flat = false,
 }: {
   certifications: VendorRiskAssessmentCertification[];
   verifiedCount: number;
   previewCount?: number;
+  flat?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -72,6 +74,51 @@ export function VendorRiskAssessmentCertificationsCard({
 
   const preview = useMemo(() => filteredCerts.slice(0, previewCount), [filteredCerts, previewCount]);
   const rest = useMemo(() => filteredCerts.slice(previewCount), [filteredCerts, previewCount]);
+
+  const content = filteredCerts.length === 0 ? (
+    <p className="text-sm text-muted-foreground italic">No certifications found.</p>
+  ) : (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <div className="space-y-3">
+        {preview.map((cert, index) => (
+          <CertificationRow key={`${cert.type}-${cert.status}-${index}`} cert={cert} />
+        ))}
+
+        {rest.length > 0 ? (
+          <CollapsibleContent className="space-y-3">
+            {rest.map((cert, index) => (
+              <CertificationRow
+                key={`${cert.type}-${cert.status}-${previewCount + index}`}
+                cert={cert}
+              />
+            ))}
+          </CollapsibleContent>
+        ) : null}
+      </div>
+
+      {rest.length > 0 ? (
+        <div className="pt-1">
+          <CollapsibleTrigger
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {open ? (
+              <>
+                <span>Show less</span>
+                <ChevronUp size={12} />
+              </>
+            ) : (
+              <>
+                <span>Show {rest.length} more</span>
+                <ChevronDown size={12} />
+              </>
+            )}
+          </CollapsibleTrigger>
+        </div>
+      ) : null}
+    </Collapsible>
+  );
+
+  if (flat) return <>{content}</>;
 
   return (
     <Card>
@@ -89,48 +136,7 @@ export function VendorRiskAssessmentCertificationsCard({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {filteredCerts.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">No certifications found.</p>
-        ) : (
-          <Collapsible open={open} onOpenChange={setOpen}>
-            <div className="space-y-3">
-              {preview.map((cert, index) => (
-                <CertificationRow key={`${cert.type}-${cert.status}-${index}`} cert={cert} />
-              ))}
-
-              {rest.length > 0 ? (
-                <CollapsibleContent className="space-y-3">
-                  {rest.map((cert, index) => (
-                    <CertificationRow
-                      key={`${cert.type}-${cert.status}-${previewCount + index}`}
-                      cert={cert}
-                    />
-                  ))}
-                </CollapsibleContent>
-              ) : null}
-            </div>
-
-            {rest.length > 0 ? (
-              <div className="pt-1">
-                <CollapsibleTrigger
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {open ? (
-                    <>
-                      <span>Show less</span>
-                      <ChevronUp size={14} />
-                    </>
-                  ) : (
-                    <>
-                      <span>Show {rest.length} more</span>
-                      <ChevronDown size={14} />
-                    </>
-                  )}
-                </CollapsibleTrigger>
-              </div>
-            ) : null}
-          </Collapsible>
-        )}
+        {content}
       </CardContent>
     </Card>
   );

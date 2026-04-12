@@ -15,14 +15,6 @@ import type {
 import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { usePathname } from 'next/navigation';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@trycompai/ui/dialog';
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { Comments } from '../comments/Comments';
@@ -33,6 +25,12 @@ import { StatusIndicator, type StatusType } from '@/components/status-indicator'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS } from './task-item-utils';
 import {
   Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   Grid,
   HStack,
   Label,
@@ -40,6 +38,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
+  Spinner,
   Stack,
   Tabs,
   TabsContent,
@@ -47,7 +46,6 @@ import {
   TabsTrigger,
   Text,
 } from '@trycompai/design-system';
-import { Loader2 } from 'lucide-react';
 
 /** Extract plain text from a description that may be TipTap JSON or plain text */
 function getDescriptionText(description: string | null): string {
@@ -381,18 +379,16 @@ export function TaskItemFocusView({
       </Tabs>
 
       {/* Delete dialog */}
-      <Dialog open={isDeleteOpen} onOpenChange={(open) => !open && setIsDeleteOpen(false)}>
-        <DialogContent className="sm:max-w-[420px]">
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Task</DialogTitle>
             <DialogDescription>Are you sure? This cannot be undone.</DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleting}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-              {isDeleting ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Deleting…</>
-              ) : 'Delete'}
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting} loading={isDeleting}>
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

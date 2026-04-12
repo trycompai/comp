@@ -1,10 +1,8 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Button, HStack, Stack, Text } from '@trycompai/design-system';
+import { Badge, Button, HStack, Spinner, Stack, Text } from '@trycompai/design-system';
 import { Add, Close } from '@trycompai/design-system/icons';
-import { Loader2 } from 'lucide-react';
 
 interface TaskItemsHeaderProps {
   title: string;
@@ -41,12 +39,14 @@ export function TaskItemsHeader({
         <HStack gap="sm" align="center">
           <Text size="lg" weight="semibold">{title}</Text>
           {statsLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <Spinner />
           ) : (
             stats && stats.total > 0 && (
-              <Badge variant="secondary" className="tabular-nums">
-                {stats.total}
-              </Badge>
+              <div className="tabular-nums">
+                <Badge variant="secondary">
+                  {stats.total}
+                </Badge>
+              </div>
             )
           )}
         </HStack>

@@ -8,6 +8,7 @@ export interface CreateProviderDto {
   category: string;
   manifestHash?: string;
   capabilities: string[];
+  vendorMatchDomains?: string[];
   isActive: boolean;
 }
 
@@ -54,6 +55,7 @@ export class ProviderRepository {
         category: data.category,
         manifestHash: data.manifestHash,
         capabilities: data.capabilities,
+        vendorMatchDomains: data.vendorMatchDomains ?? [],
         isActive: data.isActive,
       },
       update: {
@@ -61,6 +63,7 @@ export class ProviderRepository {
         category: data.category,
         manifestHash: data.manifestHash,
         capabilities: data.capabilities,
+        vendorMatchDomains: data.vendorMatchDomains ?? [],
         isActive: data.isActive,
       },
     });

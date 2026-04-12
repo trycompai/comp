@@ -1,0 +1,124 @@
+model Workflow {
+  id             String              @id @default(dbgenerated("generate_prefixed_cuid('wfl'::text)"))
+  name           String
+  description    String?
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  isEnabled      Boolean             @default(false)
+  createdById    String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  versions       WorkflowVersion[]
+  executions     WorkflowExecution[]
+  triggers       WorkflowTrigger[]
+
+  @@index([organizationId])
+}
+
+model WorkflowVersion {
+  id          String                @id @default(dbgenerated("generate_prefixed_cuid('wfv'::text)"))
+  workflowId  String
+  workflow    Workflow               @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  version     Int
+  definition  Json
+  status      WorkflowVersionStatus @default(draft)
+  publishedAt DateTime?
+  publishedBy String?
+  changelog   String?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  executions  WorkflowExecution[]
+
+  @@unique([workflowId, version])
+  @@index([workflowId])
+}
+
+enum WorkflowVersionStatus {
+  draft
+  published
+  archived
+}
+
+model WorkflowTrigger {
+  id         String              @id @default(dbgenerated("generate_prefixed_cuid('wft'::text)"))
+  workflowId String
+  workflow   Workflow             @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  type       WorkflowTriggerType
+  config     Json
+  isEnabled  Boolean             @default(true)
+  externalId String?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@index([workflowId])
+}
+
+enum WorkflowTriggerType {
+  schedule
+  webhook
+  manual
+  event
+}
+
+model WorkflowExecution {
+  id                String                  @id @default(dbgenerated("generate_prefixed_cuid('wfe'::text)"))
+  workflowId        String
+  workflow          Workflow                 @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  versionId         String
+  version           WorkflowVersion         @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  status            WorkflowExecutionStatus @default(pending)
+  triggeredBy       WorkflowTriggerType     @default(manual)
+  triggeredByUserId String?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  durationMs        Int?
+  input             Json?
+  output            Json?
+  error             String?
+  externalRunId     String?
+  stepResults       WorkflowStepResult[]
+  createdAt         DateTime                @default(now())
+
+  @@index([workflowId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum WorkflowExecutionStatus {
+  pending
+  running
+  completed
+  failed
+  cancelled
+  timed_out
+}
+
+model WorkflowStepResult {
+  id             String                @id @default(dbgenerated("generate_prefixed_cuid('wfs'::text)"))
+  executionId    String
+  execution      WorkflowExecution     @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  nodeId         String
+  nodeName       String?
+  nodeType       String
+  sequence       Int                   @default(0)
+  status         WorkflowStepStatus    @default(pending)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  durationMs     Int?
+  input          Json?
+  output         Json?
+  error          String?
+  branchTaken    String?
+  iterationIndex Int?
+  iterationTotal Int?
+
+  @@index([executionId])
+}
+
+enum WorkflowStepStatus {
+  pending
+  running
+  completed
+  failed
+  skipped
+}

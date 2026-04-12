@@ -9,6 +9,7 @@ export interface CreateOAuthStateDto {
   userId: string;
   codeVerifier?: string;
   redirectUrl?: string;
+  vendorId?: string;
   /** Expiration time in minutes (default: 10) */
   expiresInMinutes?: number;
 }
@@ -36,6 +37,7 @@ export class OAuthStateRepository {
         userId: data.userId,
         codeVerifier: data.codeVerifier,
         redirectUrl: data.redirectUrl,
+        vendorId: data.vendorId,
         expiresAt,
       },
     });

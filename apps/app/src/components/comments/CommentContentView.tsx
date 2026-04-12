@@ -25,7 +25,7 @@ export function CommentContentView({
   const { members } = useOrganizationMembers();
   const editorSizeStyles: EditorSizeStyle = useMemo(
     () => ({
-      '--editor-min-height': '20px',
+      '--editor-min-height': '0px',
       '--editor-height': 'auto',
     }),
     [],
@@ -95,7 +95,7 @@ export function CommentContentView({
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: 'prose-sm max-w-none focus:outline-none text-sm [&_p]:m-0 [&_p]:p-0 [&_p]:text-sm [&_p]:leading-normal [&_li]:text-sm [&_li]:leading-normal',
+        class: 'max-w-none focus:outline-none text-sm leading-normal [&_p]:m-0 [&_p]:p-0 [&_p]:text-sm [&_p]:leading-normal [&_li]:m-0 [&_li]:text-sm [&_li]:leading-normal [&_.ProseMirror]:m-0 [&_.ProseMirror]:p-0',
       },
     },
   });
@@ -117,7 +117,7 @@ export function CommentContentView({
   // If it's TipTap JSON, render with EditorContent
   if (parsedContent && editor) {
     return (
-      <div className={className} style={editorSizeStyles}>
+      <div className={`${className ?? ''} [&_.tiptap]:m-0 [&_.tiptap]:p-0 [&_.tiptap_p:last-child]:mb-0`} style={editorSizeStyles}>
         <EditorContent editor={editor} />
       </div>
     );
@@ -127,7 +127,7 @@ export function CommentContentView({
   return (
     <div className={className}>
       {content ? (
-        <div className="text-sm leading-relaxed whitespace-pre-wrap">
+        <div className="text-sm leading-normal whitespace-pre-wrap">
           {content.split(/(https?:\/\/[^\s]+|www\.[^\s]+)/gi).map((part, index) => {
             if (/^(https?:\/\/[^\s]+|www\.[^\s]+)/i.test(part)) {
               const href = /^https?:\/\//i.test(part) ? part : `https://${part}`;

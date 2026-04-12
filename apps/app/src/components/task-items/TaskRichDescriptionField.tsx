@@ -7,11 +7,9 @@ import { createMentionExtension, type MentionUser } from '@trycompai/ui/editor';
 import { FileAttachment } from '@trycompai/ui/editor/extensions/file-attachment';
 import { useDebouncedCallback } from 'use-debounce';
 import { defaultExtensions } from '@trycompai/ui/editor/extensions';
-import { Textarea } from '@trycompai/ui/textarea';
 import { toast } from 'sonner';
 import { Attachment } from '@trycompai/design-system/icons';
-import { Loader2 } from 'lucide-react';
-import { Button } from '@trycompai/ui/button';
+import { Spinner } from '@trycompai/design-system';
 import { useAttachments } from '@/hooks/use-attachments';
 
 interface TaskRichDescriptionFieldProps {
@@ -585,10 +583,8 @@ export function TaskRichDescriptionField({
     <div className="border border-border rounded-md bg-background overflow-hidden relative [&_.ProseMirror_p.is-empty::before]:text-muted-foreground/50">
       <EditorContent editor={editor} className="min-h-[150px] max-h-[300px]" />
       <div className="flex items-center justify-end px-3 py-1.5 relative z-10">
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="icon"
           onClick={(e) => {
             if (disabled || isUploading) return;
             e.stopPropagation();
@@ -602,15 +598,15 @@ export function TaskRichDescriptionField({
             e.stopPropagation();
           }}
           disabled={disabled || isUploading}
-          className="h-7 w-7 pointer-events-auto"
+          className="h-7 w-7 pointer-events-auto inline-flex items-center justify-center rounded-md hover:bg-accent/50"
           title={isUploading ? 'Uploading...' : 'Attach file'}
         >
           {isUploading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Spinner />
           ) : (
             <Attachment className="h-4 w-4" />
           )}
-        </Button>
+        </button>
         <input
           ref={fileInputRef}
           type="file"

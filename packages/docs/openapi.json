@@ -4712,6 +4712,328 @@
         ]
       }
     },
+    "/v1/vendors/{vendorId}/integrations": {
+      "get": {
+        "operationId": "VendorIntegrationsController_listIntegrations_v1",
+        "parameters": [
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List connected and available integrations for vendor",
+        "tags": [
+          "Vendor Integrations"
+        ]
+      }
+    },
+    "/v1/vendors/{vendorId}/integrations/connect": {
+      "post": {
+        "operationId": "VendorIntegrationsController_connectIntegration_v1",
+        "parameters": [
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Link a connection to this vendor",
+        "tags": [
+          "Vendor Integrations"
+        ]
+      }
+    },
+    "/v1/vendors/{vendorId}/integrations/disconnect": {
+      "post": {
+        "operationId": "VendorIntegrationsController_disconnectIntegration_v1",
+        "parameters": [
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Unlink a connection from this vendor",
+        "tags": [
+          "Vendor Integrations"
+        ]
+      }
+    },
+    "/v1/vendors/{vendorId}/integrations/checks/{checkId}": {
+      "patch": {
+        "operationId": "VendorIntegrationsController_updateCheck_v1",
+        "parameters": [
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Enable or disable a check for this vendor",
+        "tags": [
+          "Vendor Integrations"
+        ]
+      }
+    },
+    "/v1/vendors/{vendorId}/integrations/checks/run": {
+      "post": {
+        "operationId": "VendorIntegrationsController_runChecks_v1",
+        "parameters": [
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Run all enabled checks for this vendor",
+        "tags": [
+          "Vendor Integrations"
+        ]
+      }
+    },
+    "/v1/vendors/{vendorId}/integrations/checks/{checkId}/detail": {
+      "get": {
+        "operationId": "VendorIntegrationsController_getCheckDetail_v1",
+        "parameters": [
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get latest results for a specific check",
+        "tags": [
+          "Vendor Integrations"
+        ]
+      }
+    },
+    "/v1/vendors/{vendorId}/integrations/checks/{checkId}/remediation": {
+      "post": {
+        "operationId": "VendorIntegrationsController_getCheckRemediation_v1",
+        "parameters": [
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Stream AI remediation for a failed check",
+        "tags": [
+          "Vendor Integrations"
+        ]
+      }
+    },
+    "/v1/vendors/{vendorId}/integrations/checks/results": {
+      "get": {
+        "operationId": "VendorIntegrationsController_getCheckResults_v1",
+        "parameters": [
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get check results for this vendor",
+        "tags": [
+          "Vendor Integrations"
+        ]
+      }
+    },
+    "/v1/vendors/{vendorId}/integrations/checks/history": {
+      "get": {
+        "operationId": "VendorIntegrationsController_getCheckHistory_v1",
+        "parameters": [
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get check run history for this vendor",
+        "tags": [
+          "Vendor Integrations"
+        ]
+      }
+    },
+    "/v1/vendors/{vendorId}/integrations/checks/summary": {
+      "get": {
+        "operationId": "VendorIntegrationsController_getCheckSummary_v1",
+        "parameters": [
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get compact pass/fail summary for this vendor",
+        "tags": [
+          "Vendor Integrations"
+        ]
+      }
+    },
     "/v1/internal/vendors/risk-assessment/trigger-batch": {
       "post": {
         "operationId": "InternalVendorAutomationController_triggerVendorRiskAssessmentBatch_v1",
@@ -16457,6 +16779,62 @@
         ]
       }
     },
+    "/v1/integrations/tasks/{taskId}/checks/disconnect": {
+      "post": {
+        "operationId": "TaskIntegrationsController_disconnectCheckFromTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/{taskId}/checks/reconnect": {
+      "post": {
+        "operationId": "TaskIntegrationsController_reconnectCheckToTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
     "/v1/integrations/tasks/{taskId}/runs": {
       "get": {
         "operationId": "TaskIntegrationsController_getTaskCheckRuns_v1",
@@ -19638,6 +20016,38 @@
         ]
       }
     },
+    "/v1/email/unsubscribe": {
+      "post": {
+        "operationId": "UnsubscribeController_unsubscribe_v1",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "One-click unsubscribe (RFC 8058)",
+        "tags": [
+          "Email - Unsubscribe"
+        ]
+      }
+    },
     "/v1/secrets": {
       "get": {
         "operationId": "SecretsController_listSecrets_v1",
@@ -20264,6 +20674,65 @@
           }
         },
         "summary": "List all organizations (platform admin)",
+        "tags": [
+          "Admin - Organizations"
+        ]
+      }
+    },
+    "/v1/admin/organizations/activity": {
+      "get": {
+        "operationId": "AdminOrganizationsController_activity_v1",
+        "parameters": [
+          {
+            "name": "inactiveDays",
+            "required": false,
+            "in": "query",
+            "description": "Filter orgs with no session in N days (default: 90)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hasAccess",
+            "required": false,
+            "in": "query",
+            "description": "Filter by hasAccess (true/false)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onboarded",
+            "required": false,
+            "in": "query",
+            "description": "Filter by onboardingCompleted (true/false)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Organization activity report - shows last session per org (platform admin)",
         "tags": [
           "Admin - Organizations"
         ]

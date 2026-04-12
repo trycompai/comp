@@ -56,7 +56,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
   const orgId = pathname?.split('/')[1] || '';
   const [mounted, setMounted] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(`onboarding-dismissed-${organizationId}`) === 'true';
+  });
   const [isPoliciesExpanded, setIsPoliciesExpanded] = useState(false);
   const [isVendorsExpanded, setIsVendorsExpanded] = useState(false);
   const [isRisksExpanded, setIsRisksExpanded] = useState(false);
@@ -73,6 +76,11 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     }
     void router.push(`/onboarding/${organizationId}?retry=1`);
   }, [organizationId, router]);
+
+  const dismissTracker = useCallback(() => {
+    setIsDismissed(true);
+    localStorage.setItem(`onboarding-dismissed-${organizationId}`, 'true');
+  }, [organizationId]);
 
   useEffect(() => {
     setMounted(true);
@@ -302,8 +310,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     return null;
   }
 
-  // Dismiss completed card
-  if (run?.status === 'COMPLETED' && isDismissed) {
+  if (isDismissed) {
     return null;
   }
 
@@ -318,7 +325,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="fixed bottom-4 right-4 z-50 min-w-[400px] max-w-[calc(100vw-2rem)]"
+          className="fixed bottom-4 right-4 left-4 sm:left-auto z-50 sm:min-w-[400px] max-w-[calc(100vw-2rem)]"
         >
           <Card className="shadow-2xl border">
             <CardContent className="p-4">
@@ -348,7 +355,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 <div className="flex items-center gap-2 shrink-0">
                   {isCompleted && (
                     <button
-                      onClick={() => setIsDismissed(true)}
+                      onClick={() => dismissTracker()}
                       className="text-muted-foreground hover:text-foreground transition-colors"
                       aria-label="Close"
                     >
@@ -356,13 +363,22 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                     </button>
                   )}
                   {!isCompleted && (
-                    <button
-                      onClick={() => setIsMinimized(false)}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Expand"
-                    >
-                      <ChevronsUp className="h-5 w-5" />
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setIsMinimized(false)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Expand"
+                      >
+                        <ChevronsUp className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => dismissTracker()}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Dismiss"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -424,13 +440,22 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                   Setting up your organization
                 </p>
               </div>
-              <button
-                onClick={() => setIsMinimized(true)}
-                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                aria-label="Minimize"
-              >
-                <ChevronsDown className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => setIsMinimized(true)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Minimize"
+                >
+                  <ChevronsDown className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => dismissTracker()}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Dismiss"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             {/* Step progress - scrollable */}
@@ -940,9 +965,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
       transition={{ duration: 0.2 }}
-      className="fixed bottom-4 right-4 z-50 min-w-[400px] w-96 max-w-[calc(100vw-2rem)]"
+      className="fixed bottom-4 right-4 left-4 sm:left-auto z-50 sm:min-w-[400px] sm:w-96 max-w-[calc(100vw-2rem)]"
     >
-      <Card className="shadow-2xl border h-[600px] flex flex-col overflow-hidden">
+      <Card className="shadow-2xl border h-[calc(100vh-6rem)] sm:h-[600px] max-h-[600px] flex flex-col overflow-hidden">
         <CardContent className="p-5 flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             {renderStatusContent()}

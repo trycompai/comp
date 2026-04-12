@@ -17,6 +17,9 @@ model IntegrationProvider {
     /// Whether provider is active
     isActive     Boolean @default(true)
 
+    /// Domains for auto-matching vendors (e.g., ["github.com"])
+    vendorMatchDomains String[] @default([])
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
@@ -65,19 +68,25 @@ model IntegrationConnection {
     /// Error message if status is error
     errorMessage String?
 
+    /// Optional vendor this connection is linked to
+    vendorId String?
+    vendor   Vendor? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    credentialVersions IntegrationCredentialVersion[]
-    runs               IntegrationRun[]
-    findings           IntegrationPlatformFinding[]
-    checkRuns          IntegrationCheckRun[]
-    syncLogs           IntegrationSyncLog[]
+    credentialVersions   IntegrationCredentialVersion[]
+    runs                 IntegrationRun[]
+    findings             IntegrationPlatformFinding[]
+    checkRuns            IntegrationCheckRun[]
+    syncLogs             IntegrationSyncLog[]
+    vendorCheckConfigs   VendorCheckConfig[]
 
     @@index([organizationId])
     @@index([providerId])
     @@index([providerId, organizationId])
     @@index([status])
+    @@index([vendorId])
 }
 
 enum IntegrationConnectionStatus {
@@ -246,6 +255,9 @@ model IntegrationOAuthState {
 
     /// Redirect URL after OAuth completes
     redirectUrl String?
+
+    /// Optional vendor to link the resulting connection to
+    vendorId String?
 
     /// Expiration timestamp
     expiresAt DateTime

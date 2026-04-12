@@ -1,7 +1,7 @@
 'use client';
 
 import { Impact, Likelihood } from '@db';
-import { Button, HStack, Section } from '@trycompai/design-system';
+import { Button, Section } from '@trycompai/design-system';
 import { useEffect, useState } from 'react';
 
 const LIKELIHOOD_SCORES: Record<Likelihood, number> = {
@@ -20,14 +20,15 @@ const IMPACT_SCORES: Record<Impact, number> = {
   severe: 5,
 };
 
-const VISUAL_LIKELIHOOD_ORDER: Likelihood[] = [
+const LIKELIHOOD_ORDER: Likelihood[] = [
   Likelihood.very_likely,
   Likelihood.likely,
   Likelihood.possible,
   Likelihood.unlikely,
   Likelihood.very_unlikely,
 ];
-const VISUAL_IMPACT_ORDER: Impact[] = [
+
+const IMPACT_ORDER: Impact[] = [
   Impact.insignificant,
   Impact.minor,
   Impact.moderate,
@@ -35,41 +36,24 @@ const VISUAL_IMPACT_ORDER: Impact[] = [
   Impact.severe,
 ];
 
-interface RiskCell {
-  probability: string;
-  impact: string;
-  level: 'very-low' | 'low' | 'medium' | 'high' | 'very-high';
-  value?: number;
-}
+type RiskLevel = 'very-low' | 'low' | 'medium' | 'high' | 'very-high';
 
-const getRiskColor = (level: string, readOnly?: boolean) => {
-  switch (level) {
-    case 'very-low':
-      return `bg-emerald-500/20 border-emerald-500/30${readOnly ? '' : ' hover:bg-emerald-500/30'}`;
-    case 'low':
-      return `bg-green-500/20 border-green-500/30${readOnly ? '' : ' hover:bg-green-500/30'}`;
-    case 'medium':
-      return `bg-yellow-500/20 border-yellow-500/30${readOnly ? '' : ' hover:bg-yellow-500/30'}`;
-    case 'high':
-      return `bg-orange-500/20 border-orange-500/30${readOnly ? '' : ' hover:bg-orange-500/30'}`;
-    case 'very-high':
-      return `bg-red-500/20 border-red-500/30${readOnly ? '' : ' hover:bg-red-500/30'}`;
-    default:
-      return 'bg-slate-500/20 border-slate-500/30';
-  }
+const RISK_CELL_CLASSES: Record<RiskLevel, { bg: string; bgActive: string; hover: string; dot: string }> = {
+  'very-low': { bg: 'bg-primary/70', bgActive: 'bg-primary', hover: 'hover:bg-primary/85', dot: 'bg-primary' },
+  'low': { bg: 'bg-primary/50', bgActive: 'bg-primary/80', hover: 'hover:bg-primary/65', dot: 'bg-primary' },
+  'medium': { bg: 'bg-orange-500/70', bgActive: 'bg-orange-500', hover: 'hover:bg-orange-500/85', dot: 'bg-orange-500' },
+  'high': { bg: 'bg-red-500/70', bgActive: 'bg-red-500', hover: 'hover:bg-red-500/85', dot: 'bg-red-500' },
+  'very-high': { bg: 'bg-red-600/80', bgActive: 'bg-red-600', hover: 'hover:bg-red-600/90', dot: 'bg-red-600' },
 };
 
-const probabilityLevels = ['Very Likely', 'Likely', 'Possible', 'Unlikely', 'Very Unlikely'];
-const probabilityNumbers = ['5', '4', '3', '2', '1'];
-const probabilityLabels = [
-  'Very Likely (5)',
-  'Likely (4)',
-  'Possible (3)',
-  'Unlikely (2)',
-  'Very Unlikely (1)',
-];
-const impactLevels = ['Insignificant', 'Minor', 'Moderate', 'Major', 'Severe'];
-const impactNumbers = ['1', '2', '3', '4', '5'];
+function getRiskLevel(likelihoodScore: number, impactScore: number): RiskLevel {
+  const score = likelihoodScore * impactScore;
+  if (score > 16) return 'very-high';
+  if (score > 9) return 'high';
+  if (score > 4) return 'medium';
+  if (score > 1) return 'low';
+  return 'very-low';
+}
 
 interface RiskMatrixChartProps {
   title: string;
@@ -77,7 +61,11 @@ interface RiskMatrixChartProps {
   riskId: string;
   activeLikelihood: Likelihood;
   activeImpact: Impact;
-  saveAction: (data: { id: string; probability: Likelihood; impact: Impact }) => Promise<any>;
+  saveAction: (data: {
+    id: string;
+    probability: Likelihood;
+    impact: Impact;
+  }) => Promise<unknown>;
   readOnly?: boolean;
 }
 
@@ -90,58 +78,34 @@ export function RiskMatrixChart({
   saveAction,
   readOnly,
 }: RiskMatrixChartProps) {
-  const [initialLikelihood, setInitialLikelihood] = useState<Likelihood>(initialLikelihoodProp);
-  const [initialImpact, setInitialImpact] = useState<Impact>(initialImpactProp);
-  const [activeLikelihood, setActiveLikelihood] = useState<Likelihood>(initialLikelihoodProp);
-  const [activeImpact, setActiveImpact] = useState<Impact>(initialImpactProp);
+  const [initialLikelihood, setInitialLikelihood] =
+    useState(initialLikelihoodProp);
+  const [initialImpact, setInitialImpact] = useState(initialImpactProp);
+  const [activeLikelihood, setActiveLikelihood] =
+    useState(initialLikelihoodProp);
+  const [activeImpact, setActiveImpact] = useState(initialImpactProp);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setInitialLikelihood(initialLikelihoodProp);
     setActiveLikelihood(initialLikelihoodProp);
   }, [initialLikelihoodProp]);
+
   useEffect(() => {
     setInitialImpact(initialImpactProp);
     setActiveImpact(initialImpactProp);
   }, [initialImpactProp]);
 
-  const activeProbability = probabilityLevels[VISUAL_LIKELIHOOD_ORDER.indexOf(activeLikelihood)];
-  const activeImpactLevel = impactLevels[VISUAL_IMPACT_ORDER.indexOf(activeImpact)];
+  const activeRow = LIKELIHOOD_ORDER.indexOf(activeLikelihood);
+  const activeCol = IMPACT_ORDER.indexOf(activeImpact);
+  const hasChanges =
+    activeLikelihood !== initialLikelihood || activeImpact !== initialImpact;
 
-  // Create risk data
-  const riskData: RiskCell[] = probabilityLevels.flatMap((probability) =>
-    impactLevels.map((impact) => {
-      const likelihoodScore =
-        LIKELIHOOD_SCORES[VISUAL_LIKELIHOOD_ORDER[probabilityLevels.indexOf(probability)]];
-      const impactScore = IMPACT_SCORES[VISUAL_IMPACT_ORDER[impactLevels.indexOf(impact)]];
-      const score = likelihoodScore * impactScore;
-
-      let level: RiskCell['level'] = 'very-low';
-      if (score > 16) level = 'very-high';
-      else if (score > 9) level = 'high';
-      else if (score > 4) level = 'medium';
-      else if (score > 1) level = 'low';
-
-      return {
-        probability,
-        impact,
-        level,
-        value: probability === activeProbability && impact === activeImpactLevel ? 1 : undefined,
-      };
-    }),
-  );
-
-  const handleCellClick = (probability: string, impact: string) => {
+  const handleCellClick = (row: number, col: number) => {
     if (readOnly) return;
-    const likelihoodIdx = probabilityLevels.indexOf(probability);
-    const impactIdx = impactLevels.indexOf(impact);
-    const newLikelihood = VISUAL_LIKELIHOOD_ORDER[likelihoodIdx];
-    const newImpact = VISUAL_IMPACT_ORDER[impactIdx];
-    setActiveLikelihood(newLikelihood);
-    setActiveImpact(newImpact);
+    setActiveLikelihood(LIKELIHOOD_ORDER[row]);
+    setActiveImpact(IMPACT_ORDER[col]);
   };
-
-  const hasChanges = activeLikelihood !== initialLikelihood || activeImpact !== initialImpact;
 
   const handleSave = async () => {
     setLoading(true);
@@ -153,7 +117,8 @@ export function RiskMatrixChart({
       });
       setInitialLikelihood(activeLikelihood);
       setInitialImpact(activeImpact);
-    } catch (e) {
+    } catch {
+      // handled by caller
     } finally {
       setLoading(false);
     }
@@ -165,69 +130,99 @@ export function RiskMatrixChart({
       description={description}
       actions={
         !readOnly && hasChanges ? (
-          <Button onClick={handleSave} disabled={loading} loading={loading} size="sm">
+          <Button
+            onClick={handleSave}
+            disabled={loading}
+            loading={loading}
+            size="sm"
+          >
             Save
           </Button>
         ) : undefined
       }
     >
-        <div className="flex gap-0">
-          <div className="flex-1">
-            <div className="mb-2 flex justify-center">
-              <span className="text-xs font-medium text-muted-foreground">Impact</span>
-            </div>
-            <div className="grid rounded-lg" style={{ gridTemplateColumns: '2rem repeat(5, 1fr)' }}>
-              {probabilityLevels.map((probability, rowIdx) => (
-                <div key={probability} className="contents">
-                  <div
-                    className="flex items-center justify-start"
-                    title={probabilityLabels[rowIdx]}
-                  >
-                    <span className="text-xs text-muted-foreground">{probabilityNumbers[rowIdx]}</span>
-                  </div>
-                  {impactLevels.map((impact, colIdx) => {
-                    const cell = riskData.find(
-                      (item) => item.probability === probability && item.impact === impact,
-                    );
-                    let rounding = '';
-                    if (rowIdx === 0 && colIdx === 0) rounding = 'rounded-tl-lg';
-                    if (rowIdx === 0 && colIdx === impactLevels.length - 1)
-                      rounding = 'rounded-tr-lg';
-                    if (rowIdx === probabilityLevels.length - 1 && colIdx === 0)
-                      rounding = 'rounded-bl-lg';
-                    if (
-                      rowIdx === probabilityLevels.length - 1 &&
-                      colIdx === impactLevels.length - 1
-                    )
-                      rounding = 'rounded-br-lg';
-                    return (
-                      <div
-                        key={`${probability}-${impact}`}
-                        className={`relative h-12 ${readOnly ? '' : 'cursor-pointer'} border transition-all duration-200 ${getRiskColor(cell?.level || 'very-low', readOnly)} flex items-center justify-center ${rounding} `}
-                        onClick={() => handleCellClick(probability, impact)}
-                      >
-                        {cell?.value && (
-                          <div className="h-3 w-3 animate-pulse rounded-full bg-white shadow-lg" />
-                        )}
-                      </div>
-                    );
-                  })}
+      <div
+        className="grid gap-x-3"
+        style={{ gridTemplateColumns: 'auto 1fr', gridTemplateRows: 'auto auto auto' }}
+      >
+        <div
+          className="flex items-center justify-center"
+          style={{ writingMode: 'vertical-rl', gridRow: 1, gridColumn: 1 }}
+        >
+          <span className="rotate-180 text-[11px] font-medium tracking-wide text-muted-foreground uppercase select-none">
+            Likelihood
+          </span>
+        </div>
+
+        <div style={{ gridRow: 1, gridColumn: 2 }}>
+          <div
+            className="grid gap-[3px] bg-background rounded-lg"
+            style={{ gridTemplateColumns: '1.5rem repeat(5, 1fr)' }}
+          >
+            {LIKELIHOOD_ORDER.map((_, rowIdx) => (
+              <div key={rowIdx} className="contents">
+                <div className="flex items-center justify-center">
+                  <span className="text-[11px] tabular-nums text-muted-foreground select-none">
+                    {5 - rowIdx}
+                  </span>
                 </div>
-              ))}
-            </div>
-            <div className="grid mt-2" style={{ gridTemplateColumns: '2rem repeat(5, 1fr)' }}>
-              <div />
-              {impactLevels.map((impact) => (
-                <div key={impact} className="flex justify-center">
-                  <span className="text-center text-xs text-muted-foreground leading-tight">{impact}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center justify-center ml-2" style={{ writingMode: 'vertical-rl' }}>
-            <span className="text-xs font-medium text-muted-foreground">Likelihood</span>
+                {IMPACT_ORDER.map((_, colIdx) => {
+                  const level = getRiskLevel(
+                    LIKELIHOOD_SCORES[LIKELIHOOD_ORDER[rowIdx]],
+                    IMPACT_SCORES[IMPACT_ORDER[colIdx]],
+                  );
+                  const classes = RISK_CELL_CLASSES[level];
+                  const isActive =
+                    rowIdx === activeRow && colIdx === activeCol;
+
+                  let rounding = '';
+                  if (rowIdx === 0 && colIdx === 0) rounding = 'rounded-tl-lg';
+                  if (rowIdx === 0 && colIdx === 4) rounding = 'rounded-tr-lg';
+                  if (rowIdx === 4 && colIdx === 0) rounding = 'rounded-bl-lg';
+                  if (rowIdx === 4 && colIdx === 4) rounding = 'rounded-br-lg';
+
+                  return (
+                    <div
+                      key={colIdx}
+                      className={`relative h-10 flex items-center justify-center transition-colors duration-150 ${rounding} ${isActive ? classes.bgActive : classes.bg} ${!readOnly && !isActive ? classes.hover : ''} ${readOnly ? '' : 'cursor-pointer'}`}
+                      onClick={() => handleCellClick(rowIdx, colIdx)}
+                    >
+                      {isActive && (
+                        <div
+                          className={`h-3 w-3 rounded-full border-2 border-background shadow-sm ${classes.dot}`}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
+
+        <div
+          className="grid mt-1.5"
+          style={{ gridRow: 2, gridColumn: 2, gridTemplateColumns: '1.5rem repeat(5, 1fr)' }}
+        >
+          <div />
+          {[1, 2, 3, 4, 5].map((n) => (
+            <div key={n} className="flex justify-center">
+              <span className="text-[11px] tabular-nums text-muted-foreground">
+                {n}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div
+          className="flex justify-center mt-1.5"
+          style={{ gridRow: 3, gridColumn: 2 }}
+        >
+          <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase select-none">
+            Impact
+          </span>
+        </div>
+      </div>
     </Section>
   );
 }

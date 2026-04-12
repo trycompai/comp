@@ -27,10 +27,10 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
+  Spinner,
   Text,
 } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
-import { Loader2 } from 'lucide-react';
 
 
 interface TaskItemsProps {
@@ -231,7 +231,7 @@ export const TaskItems = ({
 
         {isInitialLoad ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <Spinner />
           </div>
         ) : (
           <>

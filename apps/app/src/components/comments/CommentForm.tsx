@@ -2,18 +2,21 @@
 
 import { useComments, useCommentWithAttachments } from '@/hooks/use-comments-api';
 import { useMentionableMembers } from '@/hooks/use-mentionable-members';
-import { Button } from '@trycompai/ui/button';
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+  Kbd,
+  KbdGroup,
+  Spinner,
+} from '@trycompai/design-system';
+import { Attachment, Close, Document } from '@trycompai/design-system/icons';
 import type { CommentEntityType } from '@db';
 import type { JSONContent } from '@tiptap/react';
-import { Camera, FileIcon, Loader2, Paperclip, X } from 'lucide-react';
 import { useParams, usePathname } from 'next/navigation';
 import type React from 'react';
 import { useCallback, useRef, useState } from 'react';
@@ -149,6 +152,17 @@ export function CommentForm({ entityId, entityType, mentionResource, organizatio
     return hasContentInNode(content);
   }, []);
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isSubmitting && !isSelectingMention) {
+        e.preventDefault();
+        handleCommentSubmit();
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [newComment, pendingFiles, isSubmitting, isSelectingMention],
+  );
+
   const handleCommentSubmit = async () => {
     if (!hasContent(newComment) && pendingFiles.length === 0) return;
 
@@ -176,7 +190,7 @@ export function CommentForm({ entityId, entityType, mentionResource, organizatio
   };
 
   return (
-    <div className="rounded-lg border border-border bg-muted/10">
+    <div className="rounded-lg border border-border bg-muted/10" onKeyDown={handleKeyDown}>
       <div className="flex items-start gap-3">
         <input
           type="file"
@@ -204,7 +218,7 @@ export function CommentForm({ entityId, entityType, mentionResource, organizatio
                     key={`${file.name}-${index}`}
                     className="inline-flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-md text-sm group"
                   >
-                    <FileIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <Document size={14} className="text-muted-foreground flex-shrink-0" />
                     <span className="truncate max-w-[150px]" title={file.name}>
                       {file.name}
                     </span>
@@ -214,7 +228,7 @@ export function CommentForm({ entityId, entityType, mentionResource, organizatio
                       className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
                       aria-label={`Remove ${file.name}`}
                     >
-                      <X className="h-3 w-3" />
+                      <Close size={12} />
                     </button>
                   </div>
                 ))}
@@ -225,38 +239,35 @@ export function CommentForm({ entityId, entityType, mentionResource, organizatio
           <div className="flex items-center justify-between px-3 pb-3">
             <Button
               variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-foreground h-8 w-8"
+              size="icon-sm"
               onClick={triggerFileInput}
               disabled={isSubmitting}
               aria-label="Add attachment"
             >
-              <Paperclip className="h-4 w-4" />
+              <Attachment />
             </Button>
 
             <Button
-              size="sm"
+              variant="outline"
               onClick={handleCommentSubmit}
               disabled={isSubmitting || (!hasContent(newComment) && pendingFiles.length === 0)}
-              aria-label="Submit comment"
-              className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90"
+              loading={isSubmitting}
             >
-              {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Comment'}
+              Comment
+              <KbdGroup>
+                <Kbd>⌘</Kbd>
+                <Kbd>↵</Kbd>
+              </KbdGroup>
             </Button>
           </div>
         </div>
       </div>
 
       <Dialog open={showReminderDialog} onOpenChange={(open) => !open && handleReminderClose()}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent>
           <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-primary/10 p-2">
-                <Camera className="h-5 w-5 text-primary" />
-              </div>
-              <DialogTitle>Screenshot Requirements</DialogTitle>
-            </div>
-            <DialogDescription className="pt-2">
+            <DialogTitle>Screenshot Requirements</DialogTitle>
+            <DialogDescription>
               Ensure your organisation name is clearly visible within the screenshot.
             </DialogDescription>
           </DialogHeader>

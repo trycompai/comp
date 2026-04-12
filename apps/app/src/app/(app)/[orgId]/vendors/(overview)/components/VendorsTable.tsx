@@ -39,7 +39,7 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { OverflowMenuVertical, Search, TrashCan } from '@trycompai/design-system/icons';
+import { CheckmarkFilled, ErrorFilled, OverflowMenuVertical, Search, TrashCan } from '@trycompai/design-system/icons';
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, UserIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -151,6 +151,34 @@ function VendorStatusCell({ vendor }: { vendor: VendorRow }) {
   }
 
   return <VendorStatus status={vendor.status} />;
+}
+
+function VendorChecksCell({ vendor }: { vendor: VendorRow }) {
+  const summary = vendor.checksSummary;
+  if (!summary) {
+    return (
+      <Text size="sm" variant="muted">
+        —
+      </Text>
+    );
+  }
+
+  return (
+    <HStack gap="sm" align="center">
+      {summary.passing > 0 && (
+        <Badge variant="default">
+          <CheckmarkFilled size={12} />
+          {summary.passing} passing
+        </Badge>
+      )}
+      {summary.failing > 0 && (
+        <Badge variant="destructive">
+          <ErrorFilled size={12} />
+          {summary.failing} failing
+        </Badge>
+      )}
+    </HStack>
+  );
 }
 
 export function VendorsTable({
@@ -528,6 +556,7 @@ export function VendorsTable({
                   </button>
                 </TableHead>
                 <TableHead>STATUS</TableHead>
+                <TableHead>CHECKS</TableHead>
                 <TableHead>CATEGORY</TableHead>
                 <TableHead>OWNER</TableHead>
                 {hasPermission('vendor', 'delete') && <TableHead>ACTIONS</TableHead>}
@@ -548,6 +577,9 @@ export function VendorsTable({
                     </TableCell>
                     <TableCell>
                       <VendorStatusCell vendor={vendor} />
+                    </TableCell>
+                    <TableCell>
+                      <VendorChecksCell vendor={vendor} />
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">

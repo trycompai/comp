@@ -20,6 +20,7 @@ import type { GetTaskItemQueryDto } from './dto/get-task-item-query.dto';
 import { TaskItemAssignmentNotifierService } from './task-item-assignment-notifier.service';
 import { TaskItemMentionNotifierService } from './task-item-mention-notifier.service';
 import { extractMentionedUserIds } from './utils/extract-mentions';
+import { validateNotPlatformAdmin } from '../utils/platform-admin-check';
 
 @Injectable()
 export class TaskManagementService {
@@ -266,13 +267,12 @@ export class TaskManagementService {
       }
 
       if (createTaskItemDto.assigneeId) {
-        const assigneeMember = await db.member.findFirst({
-          where: { id: createTaskItemDto.assigneeId, organizationId },
-          include: { user: { select: { role: true } } },
+        await validateNotPlatformAdmin({
+          memberId: createTaskItemDto.assigneeId,
+          organizationId,
+          currentUserId: authContext.userId,
+          action: 'assignee',
         });
-        if (assigneeMember?.user.role === 'admin') {
-          throw new BadRequestException('Cannot assign a platform admin as assignee');
-        }
       }
 
       const taskItem = await db.taskItem.create({
@@ -481,13 +481,12 @@ export class TaskManagementService {
       }
       if (updateTaskItemDto.assigneeId !== undefined) {
         if (updateTaskItemDto.assigneeId) {
-          const assigneeMember = await db.member.findFirst({
-            where: { id: updateTaskItemDto.assigneeId, organizationId },
-            include: { user: { select: { role: true } } },
+          await validateNotPlatformAdmin({
+            memberId: updateTaskItemDto.assigneeId,
+            organizationId,
+            currentUserId: authContext.userId,
+            action: 'assignee',
           });
-          if (assigneeMember?.user.role === 'admin') {
-            throw new BadRequestException('Cannot assign a platform admin as assignee');
-          }
         }
         updateData.assigneeId = updateTaskItemDto.assigneeId;
       }

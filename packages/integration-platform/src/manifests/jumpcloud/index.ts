@@ -49,6 +49,8 @@ export const manifest: IntegrationManifest = {
     },
   ],
 
+  vendorMatchDomains: ['jumpcloud.com'],
+
   // Supports both checks and sync capabilities
   capabilities: ['checks', 'sync'],
 

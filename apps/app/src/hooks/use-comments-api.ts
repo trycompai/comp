@@ -15,6 +15,7 @@ export function parseApiDate(dateString: string): Date {
 export interface Comment {
   id: string;
   content: string;
+  isSystemGenerated?: boolean;
   author: {
     id: string;
     name: string;

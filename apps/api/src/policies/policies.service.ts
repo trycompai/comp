@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db, Frequency, PolicyStatus, Prisma } from '@db';
+import { validateNotPlatformAdmin } from '../utils/platform-admin-check';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
@@ -238,13 +239,11 @@ export class PoliciesService {
   async create(organizationId: string, createData: CreatePolicyDto) {
     try {
       if (createData.assigneeId) {
-        const assignee = await db.member.findFirst({
-          where: { id: createData.assigneeId, organizationId },
-          include: { user: { select: { role: true } } },
+        await validateNotPlatformAdmin({
+          memberId: createData.assigneeId,
+          organizationId,
+          action: 'assignee',
         });
-        if (assignee?.user.role === 'admin') {
-          throw new BadRequestException('Cannot assign a platform admin as assignee');
-        }
       }
       const contentValue = createData.content as Prisma.InputJsonValue[];
 
@@ -987,16 +986,11 @@ export class PoliciesService {
       );
     }
 
-    // Cannot assign a platform admin as approver
-    const approverUser = await db.user.findUnique({
-      where: { id: approver.userId },
-      select: { role: true },
+    await validateNotPlatformAdmin({
+      memberId: approver.id,
+      organizationId,
+      action: 'approver',
     });
-    if (approverUser?.role === 'admin') {
-      throw new BadRequestException(
-        'Cannot assign a platform admin as approver',
-      );
-    }
 
     await db.policy.update({
       where: { id: policyId },

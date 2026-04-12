@@ -9,6 +9,10 @@ export default defineConfig({
   logLevel: 'log',
   maxDuration: 300, // 5 minutes
   build: {
+    external: [
+      'exceljs',
+      'mammoth',
+    ],
     extensions: [
       prismaExtension({
         version: '7.6.0',

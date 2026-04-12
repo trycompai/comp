@@ -52,6 +52,8 @@ Enter the Client ID, Secret, and the integration slug (from \`vercel.com/integra
 
   baseUrl: 'https://api.vercel.com',
 
+  vendorMatchDomains: ['vercel.com'],
+
   capabilities: ['checks'],
 
   checks: [monitoringAlertingCheck, appAvailabilityCheck],

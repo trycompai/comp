@@ -24,6 +24,8 @@ export const awsManifest: IntegrationManifest = {
 
   baseUrl: '',
 
+  vendorMatchDomains: ['aws.amazon.com', 'amazonaws.com'],
+
   capabilities: ['checks'],
   checks: [],
 };

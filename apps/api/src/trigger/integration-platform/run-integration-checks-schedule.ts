@@ -2,6 +2,7 @@ import { getManifest } from '@trycompai/integration-platform';
 import { db } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runTaskIntegrationChecks } from './run-task-integration-checks';
+import { runConnectionChecks } from './run-connection-checks';
 import { parseDisabledTaskChecks } from '../../integration-platform/utils/disabled-task-checks';
 
 /**
@@ -105,46 +106,132 @@ export const integrationChecksSchedule = schedules.task({
       }
     }
 
-    if (tasksToRun.length === 0) {
-      logger.info('No tasks with mapped integration checks found');
-      return { success: true, tasksTriggered: 0 };
+    // --- Pass 2: Vendor-linked connection checks ---
+    // Find active connections linked to vendors and run their enabled checks.
+    const vendorLinkedConnections = activeConnections.filter(
+      (c) => c.vendorId != null,
+    );
+
+    const vendorChecksToRun: Array<{
+      connectionId: string;
+      providerSlug: string;
+      organizationId: string;
+      checkIds: string[];
+    }> = [];
+
+    if (vendorLinkedConnections.length > 0) {
+      // Batch-load vendor check configs for all vendor-linked connections
+      const vendorConnectionIds = vendorLinkedConnections.map((c) => c.id);
+      const disabledConfigs = await db.vendorCheckConfig.findMany({
+        where: {
+          connectionId: { in: vendorConnectionIds },
+          enabled: false,
+        },
+        select: { connectionId: true, checkId: true },
+      });
+
+      const disabledByConnection = new Map<string, Set<string>>();
+      for (const cfg of disabledConfigs) {
+        if (!disabledByConnection.has(cfg.connectionId)) {
+          disabledByConnection.set(cfg.connectionId, new Set());
+        }
+        disabledByConnection.get(cfg.connectionId)!.add(cfg.checkId);
+      }
+
+      for (const connection of vendorLinkedConnections) {
+        const manifest = getManifest(connection.provider.slug);
+        if (!manifest?.checks || manifest.checks.length === 0) continue;
+
+        const disabled = disabledByConnection.get(connection.id) ?? new Set();
+        const enabledCheckIds = manifest.checks
+          .filter((c) => !disabled.has(c.id))
+          .map((c) => c.id);
+
+        if (enabledCheckIds.length > 0) {
+          vendorChecksToRun.push({
+            connectionId: connection.id,
+            providerSlug: connection.provider.slug,
+            organizationId: connection.organizationId,
+            checkIds: enabledCheckIds,
+          });
+        }
+      }
+
+      logger.info(
+        `Found ${vendorChecksToRun.length} vendor-linked connections with checks to run`,
+      );
+    }
+
+    const totalChecks = tasksToRun.length + vendorChecksToRun.length;
+    if (totalChecks === 0) {
+      logger.info('No tasks or vendor connections with integration checks found');
+      return { success: true, tasksTriggered: 0, vendorChecksTriggered: 0 };
     }
 
     logger.info(
-      `Found ${tasksToRun.length} tasks with integration checks to run`,
+      `Found ${tasksToRun.length} task checks and ${vendorChecksToRun.length} vendor checks to run`,
     );
 
-    // Trigger in batches of 500
+    // Trigger task checks in batches of 500
     const BATCH_SIZE = 500;
-    const triggerPayloads = tasksToRun.map((t) => ({ payload: t }));
-    let totalTriggered = 0;
+    let totalTasksTriggered = 0;
+    let totalVendorChecksTriggered = 0;
 
     try {
-      for (let i = 0; i < triggerPayloads.length; i += BATCH_SIZE) {
-        const batch = triggerPayloads.slice(i, i + BATCH_SIZE);
-        await runTaskIntegrationChecks.batchTrigger(batch);
-        totalTriggered += batch.length;
+      // Trigger task-based checks
+      if (tasksToRun.length > 0) {
+        const taskPayloads = tasksToRun.map((t) => ({ payload: t }));
+        for (let i = 0; i < taskPayloads.length; i += BATCH_SIZE) {
+          const batch = taskPayloads.slice(i, i + BATCH_SIZE);
+          await runTaskIntegrationChecks.batchTrigger(batch);
+          totalTasksTriggered += batch.length;
 
-        logger.info(
-          `Triggered batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} tasks`,
-        );
+          logger.info(
+            `Triggered task batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} tasks`,
+          );
+        }
       }
 
-      logger.info(`Triggered ${totalTriggered} task integration check runs`);
+      // Trigger vendor-linked checks (reuse the same connection checks task)
+      if (vendorChecksToRun.length > 0) {
+        const vendorPayloads = vendorChecksToRun.map((v) => ({
+          payload: {
+            connectionId: v.connectionId,
+            providerSlug: v.providerSlug,
+            organizationId: v.organizationId,
+          },
+        }));
+        for (let i = 0; i < vendorPayloads.length; i += BATCH_SIZE) {
+          const batch = vendorPayloads.slice(i, i + BATCH_SIZE);
+          await runConnectionChecks.batchTrigger(batch);
+          totalVendorChecksTriggered += batch.length;
+
+          logger.info(
+            `Triggered vendor batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} connections`,
+          );
+        }
+      }
+
+      logger.info(
+        `Triggered ${totalTasksTriggered} task checks + ${totalVendorChecksTriggered} vendor checks`,
+      );
 
       return {
         success: true,
-        tasksTriggered: totalTriggered,
+        tasksTriggered: totalTasksTriggered,
+        vendorChecksTriggered: totalVendorChecksTriggered,
       };
     } catch (error) {
-      logger.error('Failed to trigger task integration checks', {
+      logger.error('Failed to trigger integration checks', {
         error: error instanceof Error ? error.message : String(error),
-        triggeredBeforeError: totalTriggered,
+        tasksTriggeredBeforeError: totalTasksTriggered,
+        vendorChecksTriggeredBeforeError: totalVendorChecksTriggered,
       });
 
       return {
         success: false,
-        tasksTriggered: totalTriggered,
+        tasksTriggered: totalTasksTriggered,
+        vendorChecksTriggered: totalVendorChecksTriggered,
         error: error instanceof Error ? error.message : String(error),
       };
     }

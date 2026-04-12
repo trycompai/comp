@@ -30,36 +30,34 @@ export const STATUS_TYPES = [
 
 export type StatusType = (typeof STATUS_TYPES)[number];
 
-// Updated STATUS_COLORS mapping using Tailwind classes
+// STATUS_COLORS using design system tokens
 export const STATUS_COLORS: Record<StatusType, string> = {
-  // General / Positive - Green
+  // Positive - Primary
   published: 'bg-primary',
-  open: 'bg-blue-500',
   completed: 'bg-primary',
   done: 'bg-primary',
-
-  // Completed/Done - Blue
   closed: 'bg-primary',
 
-  // Neutral - Gray
-  archived: 'bg-gray-500 dark:bg-gray-400',
-  todo: 'bg-gray-500 dark:bg-gray-400',
+  // Active - Info
+  open: 'bg-info',
 
-  // In Progress - Yellow
-  draft: 'bg-yellow-500 dark:bg-yellow-400',
-  pending: 'bg-yellow-500 dark:bg-yellow-400',
-  in_progress: 'bg-yellow-500 dark:bg-yellow-400',
+  // Neutral - Muted
+  archived: 'bg-muted-foreground',
+  todo: 'bg-muted-foreground',
 
-  // In Review - Orange
-  in_review: 'bg-orange-500 dark:bg-orange-400',
+  // In Progress - Warning
+  draft: 'bg-warning',
+  pending: 'bg-warning',
+  in_progress: 'bg-warning',
 
-  // Warning/Error - Red
-  needs_review: 'bg-red-600 dark:bg-red-400',
-  not_started: 'bg-red-600 dark:bg-red-400',
-  not_relevant: 'bg-red-600 dark:bg-red-400',
+  // In Review - Warning/Destructive mix
+  in_review: 'bg-warning',
 
-  // Failed - Red
-  failed: 'bg-red-600 dark:bg-red-400',
+  // Error - Destructive
+  needs_review: 'bg-destructive',
+  not_started: 'bg-destructive',
+  not_relevant: 'bg-destructive',
+  failed: 'bg-destructive',
 } as const;
 
 // Updated status translation mapping
@@ -109,7 +107,7 @@ export function StatusIndicator({ status, className, withLabel = true }: StatusI
   if (!status) {
     return (
       <div className={cn('flex items-center gap-2', className)}>
-        <div className="size-2.5 bg-gray-400 dark:bg-gray-500 rounded-none" />
+        <div className="size-2.5 bg-gray-400 dark:bg-gray-500 rounded-full" />
         {withLabel ? '-' : null}
       </div>
     );
@@ -121,7 +119,7 @@ export function StatusIndicator({ status, className, withLabel = true }: StatusI
 
   return (
     <div className={cn('flex items-center gap-2 text-sm', className)}>
-      <div className={cn('size-2.5 rounded-none', colorClass)} />
+      <div className={cn('size-2.5 rounded-full', colorClass)} />
       {withLabel && label ? label : null}
     </div>
   );

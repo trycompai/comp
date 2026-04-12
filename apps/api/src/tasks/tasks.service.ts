@@ -9,6 +9,7 @@ import { filterDescriptionByFrameworks } from './description-framework-filter';
 import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
+import { validateNotPlatformAdmin } from '../utils/platform-admin-check';
 
 function computeNextTaskReviewDate(frequency: TaskFrequency | null | undefined): Date {
   const now = new Date();
@@ -418,13 +419,12 @@ export class TasksService {
   ): Promise<{ updatedCount: number }> {
     try {
       if (assigneeId) {
-        const assigneeMember = await db.member.findFirst({
-          where: { id: assigneeId, organizationId },
-          include: { user: { select: { role: true } } },
+        await validateNotPlatformAdmin({
+          memberId: assigneeId,
+          organizationId,
+          currentUserId: changedByUserId,
+          action: 'assignee',
         });
-        if (assigneeMember?.user.role === 'admin') {
-          throw new BadRequestException('Cannot assign a platform admin as assignee');
-        }
       }
 
       const result = await db.task.updateMany({
@@ -582,13 +582,12 @@ export class TasksService {
       }
       if (updateData.assigneeId !== undefined) {
         if (updateData.assigneeId !== null) {
-          const assigneeMember = await db.member.findFirst({
-            where: { id: updateData.assigneeId, organizationId },
-            include: { user: { select: { role: true } } },
+          await validateNotPlatformAdmin({
+            memberId: updateData.assigneeId,
+            organizationId,
+            currentUserId: changedByUserId,
+            action: 'assignee',
           });
-          if (assigneeMember?.user.role === 'admin') {
-            throw new BadRequestException('Cannot assign a platform admin as assignee');
-          }
         }
         dataToUpdate.assigneeId =
           updateData.assigneeId === null ? null : updateData.assigneeId;
@@ -923,9 +922,12 @@ export class TasksService {
       throw new BadRequestException('Approver not found or is deactivated');
     }
 
-    if (approver.user.role === 'admin') {
-      throw new BadRequestException('Cannot assign a platform admin as approver');
-    }
+    await validateNotPlatformAdmin({
+      memberId: approverId,
+      organizationId,
+      currentUserId: userId,
+      action: 'approver',
+    });
 
     const currentMember = await db.member.findFirst({
       where: { userId, organizationId, deactivated: false },
@@ -1000,9 +1002,12 @@ export class TasksService {
       throw new BadRequestException('Approver not found or is deactivated');
     }
 
-    if (approver.user.role === 'admin') {
-      throw new BadRequestException('Cannot assign a platform admin as approver');
-    }
+    await validateNotPlatformAdmin({
+      memberId: approverId,
+      organizationId,
+      currentUserId: userId,
+      action: 'approver',
+    });
 
     const tasks = await db.task.findMany({
       where: {

@@ -2,16 +2,17 @@
 
 import { useOptimisticTaskItems } from '@/hooks/use-task-items';
 import { useAssignableMembers } from '@/hooks/use-organization-members';
-import { Button } from '@trycompai/ui/button';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
 import {
+  Button,
+  Input,
+  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
+  Spinner,
+} from '@trycompai/design-system';
 import type {
   TaskItemEntityType,
   TaskItemFilters,
@@ -20,7 +21,6 @@ import type {
   TaskItemSortOrder,
   TaskItemStatus,
 } from '@/hooks/use-task-items';
-import { Loader2 } from 'lucide-react';
 import { useState, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { SelectAssignee } from '@/components/SelectAssignee';
@@ -237,7 +237,7 @@ export function TaskSmartForm({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="task-title" className="text-sm font-medium">
+        <Label htmlFor="task-title">
           Title <span className="text-destructive">*</span>
         </Label>
         <Input
@@ -247,12 +247,11 @@ export function TaskSmartForm({
           onChange={(e) => setTitle(e.target.value)}
           disabled={isSubmitting}
           onKeyDown={handleKeyDown}
-          className="bg-background"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="task-description" className="text-sm font-medium">
+        <Label htmlFor="task-description">
           Description
         </Label>
         <TaskRichDescriptionField
@@ -269,15 +268,15 @@ export function TaskSmartForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="task-status" className="text-sm font-medium">
+          <Label htmlFor="task-status">
             Status
           </Label>
           <Select
             value={status}
             onValueChange={(value) => setStatus(value as TaskItemStatus)}
           >
-            <SelectTrigger id="task-status" className="bg-background">
-              <SelectValue />
+            <SelectTrigger id="task-status">
+              <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map((option) => (
@@ -290,15 +289,15 @@ export function TaskSmartForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="task-priority" className="text-sm font-medium">
+          <Label htmlFor="task-priority">
             Priority
           </Label>
           <Select
             value={priority}
             onValueChange={(value) => setPriority(value as TaskItemPriority)}
           >
-            <SelectTrigger id="task-priority" className="bg-background">
-              <SelectValue />
+            <SelectTrigger id="task-priority">
+              <SelectValue placeholder="Select priority" />
             </SelectTrigger>
             <SelectContent>
               {PRIORITY_OPTIONS.map((option) => (
@@ -330,7 +329,6 @@ export function TaskSmartForm({
             variant="outline"
             onClick={onCancel}
             disabled={isSubmitting || isUploading}
-            className="h-8 px-3"
           >
             Cancel
           </Button>
@@ -339,16 +337,9 @@ export function TaskSmartForm({
           size="sm"
           onClick={handleSubmit}
           disabled={isSubmitting || isUploading || !title.trim() || (mode === 'create' && !canCreate)}
-          className="h-8 px-3"
+          loading={isSubmitting}
         >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-              {mode === 'create' ? 'Creating...' : 'Updating...'}
-            </>
-          ) : (
-            mode === 'create' ? 'Create Task' : 'Update Task'
-          )}
+          {mode === 'create' ? 'Create Task' : 'Update Task'}
         </Button>
       </div>
     </div>

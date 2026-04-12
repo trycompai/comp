@@ -116,6 +116,15 @@ export interface GitHubTreeEntry {
  * Dependabot alert response
  * Returned by /repos/{owner}/{repo}/dependabot/alerts
  */
+export interface GitHubOrgMember {
+  login: string;
+  id: number;
+  avatar_url: string;
+  html_url: string;
+  type: string;
+  site_admin: boolean;
+}
+
 export interface GitHubDependabotAlert {
   number: number;
   state: 'open' | 'dismissed' | 'fixed';

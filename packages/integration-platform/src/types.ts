@@ -807,6 +807,9 @@ export interface IntegrationManifest {
   /** Whether multiple connections per org are allowed */
   supportsMultipleConnections?: boolean;
 
+  /** Domains for auto-matching vendors (e.g., ["github.com"]) */
+  vendorMatchDomains?: string[];
+
   /** Whether this integration is active/available */
   isActive: boolean;
 }

@@ -21,6 +21,7 @@ export interface UpdateConnectionDto {
   metadata?: object;
   variables?: object;
   errorMessage?: string | null;
+  vendorId?: string | null;
 }
 
 @Injectable()

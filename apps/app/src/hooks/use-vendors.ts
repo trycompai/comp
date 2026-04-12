@@ -25,6 +25,13 @@ export interface VendorAssignee {
   };
 }
 
+export interface VendorChecksSummary {
+  total: number;
+  passing: number;
+  failing: number;
+  lastRunAt: string | null;
+}
+
 export interface Vendor {
   id: string;
   name: string;
@@ -40,6 +47,7 @@ export interface Vendor {
   organizationId: string;
   assigneeId: string | null;
   assignee?: VendorAssignee | null;
+  checksSummary?: VendorChecksSummary | null;
   createdAt: string;
   updatedAt: string;
 }

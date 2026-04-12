@@ -240,7 +240,6 @@ export function RiskPageClient({
           <Stack gap="lg">
             <TabsList variant="underline">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="risk-matrix">Risk Matrix</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
               <TabsTrigger value="comments">Comments</TabsTrigger>
               <TabsTrigger value="activity">Activity</TabsTrigger>
@@ -248,13 +247,13 @@ export function RiskPageClient({
             </TabsList>
 
             <TabsContent value="overview">
-              <RiskOverview risk={risk} assignees={assignees} />
-            </TabsContent>
-
-            <TabsContent value="risk-matrix">
               <Stack gap="lg">
-                <InherentRiskChart risk={risk} />
-                <ResidualRiskChart risk={risk} />
+                <RiskOverview risk={risk} assignees={assignees} />
+                <div className="border-t border-border" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <InherentRiskChart risk={risk} />
+                  <ResidualRiskChart risk={risk} />
+                </div>
               </Stack>
             </TabsContent>
 

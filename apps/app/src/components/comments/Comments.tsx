@@ -2,7 +2,7 @@
 
 import { useComments } from '@/hooks/use-comments-api';
 import type { CommentEntityType } from '@db';
-import { Stack, Text } from '@trycompai/design-system';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle, Stack, Text } from '@trycompai/design-system';
 import { useParams } from 'next/navigation';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
@@ -10,6 +10,7 @@ import { CommentList } from './CommentList';
 export type CommentWithAuthor = {
   id: string;
   content: string;
+  isSystemGenerated?: boolean;
   author: {
     id: string;
     name: string;
@@ -79,10 +80,6 @@ export const Comments = ({
 
   return (
     <Stack gap="md">
-      {!readOnly && (
-        <CommentForm entityId={entityId} entityType={entityType} mentionResource={mentionResource} organizationId={resolvedOrgId} />
-      )}
-
       {commentsLoading && (
         <Stack gap="sm">
           {[1, 2].map((i) => (
@@ -112,16 +109,21 @@ export const Comments = ({
         </Text>
       )}
 
-      {readOnly && !commentsLoading && !commentsError && comments.length === 0 && (
-        <div className="py-8 text-center">
-          <Text size="sm" variant="muted">
-            No comments yet.
-          </Text>
-        </div>
+      {!commentsLoading && !commentsError && comments.length === 0 && (
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>No comments yet</EmptyTitle>
+            <EmptyDescription>Be the first to leave a comment.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       )}
 
       {!commentsLoading && !commentsError && comments.length > 0 && (
         <CommentList comments={comments} refreshComments={refreshComments} readOnly={readOnly} entityType={mentionResource ?? entityType} />
+      )}
+
+      {!readOnly && (
+        <CommentForm entityId={entityId} entityType={entityType} mentionResource={mentionResource} organizationId={resolvedOrgId} />
       )}
     </Stack>
   );

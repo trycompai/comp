@@ -362,6 +362,7 @@ export class ConnectionsController {
       name: manifest.name,
       category: manifest.category,
       capabilities: manifest.capabilities,
+      vendorMatchDomains: manifest.vendorMatchDomains,
       isActive: manifest.isActive,
     });
 

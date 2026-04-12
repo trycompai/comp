@@ -1,6 +1,6 @@
 'use client';
 
-import { Skeleton } from '@trycompai/ui/skeleton';
+import { Skeleton } from '@trycompai/design-system';
 import { Time, Locked } from '@trycompai/design-system/icons';
 
 /**
@@ -23,7 +23,7 @@ export function VerifyRiskAssessmentTaskItemSkeletonRow() {
 
           {/* ID placeholder */}
           <div className="w-14 shrink-0">
-            <Skeleton className="h-3 w-12" />
+            <div className="h-3 w-12"><Skeleton /></div>
           </div>
 
           {/* Status indicator */}
@@ -40,12 +40,12 @@ export function VerifyRiskAssessmentTaskItemSkeletonRow() {
 
           {/* Assignee placeholder */}
           <div className="shrink-0 w-[180px]">
-            <Skeleton className="h-6 w-full" />
+            <div className="h-6 w-full"><Skeleton /></div>
           </div>
 
           {/* Date placeholder */}
           <div className="w-16 shrink-0 text-right">
-            <Skeleton className="h-4 w-14 ml-auto" />
+            <div className="h-4 w-14 ml-auto"><Skeleton /></div>
           </div>
 
           <div className="h-6 w-6 shrink-0" />

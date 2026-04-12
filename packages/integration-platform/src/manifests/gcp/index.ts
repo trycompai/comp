@@ -59,6 +59,8 @@ This is industry standard - all GCP security monitoring tools use the same scope
     'Content-Type': 'application/json',
   },
 
+  vendorMatchDomains: ['cloud.google.com', 'google.cloud'],
+
   capabilities: ['checks'],
 
   // Integration-level variables (used by cloud security scanning)

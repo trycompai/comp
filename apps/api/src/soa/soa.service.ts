@@ -7,6 +7,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { db } from '@db';
+import { validateNotPlatformAdmin } from '../utils/platform-admin-check';
 import { SaveSOAAnswerDto } from './dto/save-soa-answer.dto';
 import { CreateSOADocumentDto } from './dto/create-soa-document.dto';
 import { EnsureSOASetupDto } from './dto/ensure-soa-setup.dto';
@@ -391,14 +392,11 @@ export class SOAService {
       throw new NotFoundException('Approver not found in organization');
     }
 
-    // Cannot assign a platform admin as approver
-    const approverUser = await db.user.findUnique({
-      where: { id: approverMember.userId },
-      select: { role: true },
+    await validateNotPlatformAdmin({
+      memberId: approverMember.id,
+      organizationId: dto.organizationId,
+      action: 'approver',
     });
-    if (approverUser?.role === 'admin') {
-      throw new BadRequestException('Cannot assign a platform admin as approver');
-    }
 
     const isOwnerOrAdmin =
       approverMember.role.includes('owner') ||

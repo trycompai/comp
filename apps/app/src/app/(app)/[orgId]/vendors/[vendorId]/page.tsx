@@ -1,5 +1,4 @@
 import { serverApi } from '@/lib/api-server';
-import { PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { VendorDetailTabs } from './components/VendorDetailTabs';
@@ -64,15 +63,13 @@ export default async function VendorPage({ params, searchParams }: PageProps) {
   const isViewingTask = Boolean(taskItemId);
 
   return (
-    <PageLayout>
-      <VendorDetailTabs
-        vendorId={vendorId}
-        orgId={orgId}
-        vendor={vendor as any}
-        assignees={assignees as any}
-        isViewingTask={isViewingTask}
-      />
-    </PageLayout>
+    <VendorDetailTabs
+      vendorId={vendorId}
+      orgId={orgId}
+      vendor={vendor as any}
+      assignees={assignees as any}
+      isViewingTask={isViewingTask}
+    />
   );
 }
 

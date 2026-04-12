@@ -13,7 +13,7 @@ export function CommentList({
   entityType: string;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="divide-y divide-border">
       {comments.map((comment) => (
         <CommentItem key={comment.id} comment={comment} refreshComments={refreshComments} readOnly={readOnly} entityType={entityType} />
       ))}

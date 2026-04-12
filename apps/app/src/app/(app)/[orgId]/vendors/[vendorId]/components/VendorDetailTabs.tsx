@@ -13,7 +13,9 @@ import { useTaskItems, useTaskItemActions } from '@/hooks/use-task-items';
 import { useVendor, useVendorActions, type VendorResponse } from '@/hooks/use-vendors';
 import { usePermissions } from '@/hooks/use-permissions';
 import { SecondaryFields } from './secondary-fields/secondary-fields';
-import { VendorResearchBadges, VendorResearchLinks } from './VendorResearchSection';
+import { VendorResearchBadges } from './VendorResearchSection';
+import { VendorConnectButton } from './VendorConnectButton';
+import { VendorTasksAndChecks } from './VendorTasksAndChecks';
 import { VendorResearchFeed } from './VendorResearchFeed';
 import { VendorInherentRiskChart } from './VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './VendorResidualRiskChart';
@@ -23,9 +25,11 @@ import type { Prisma } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { AnimatePresence, motion } from 'motion/react';
 import {
-  Breadcrumb,
   Button,
   HStack,
+  PageHeader,
+  PageLayout,
+  Section,
   Stack,
   Tabs,
   TabsContent,
@@ -199,31 +203,23 @@ export function VendorDetailTabs({
 
   // Title editing
   const startEditingTitle = () => {
-    if (isViewingTask) {
-      if (!canUpdateTask) return;
-      setTitleValue(selectedTaskTitle || '');
-    } else {
-      if (!canUpdate) return;
-      setTitleValue(resolvedVendor.name);
-    }
+    if (!canUpdate) return;
+    setTitleValue(resolvedVendor.name);
     setIsEditingTitle(true);
   };
 
   const saveTitleEdit = async () => {
-    const current = isViewingTask ? (selectedTaskTitle || '') : resolvedVendor.name;
-    if (!titleValue.trim() || titleValue === current) { setIsEditingTitle(false); return; }
-    try {
-      if (isViewingTask && taskItemId) {
-        await updateTaskItem(taskItemId, { title: titleValue.trim() });
-        refreshTaskItems();
-      } else {
-        await updateVendor(vendorId, { name: titleValue.trim() });
-        refreshVendor();
-      }
-      toast.success('Title updated');
+    if (!titleValue.trim() || titleValue === resolvedVendor.name) {
       setIsEditingTitle(false);
+      return;
+    }
+    try {
+      await updateVendor(vendorId, { name: titleValue.trim() });
+      toast.success('Name updated');
+      setIsEditingTitle(false);
+      refreshVendor();
     } catch {
-      toast.error('Failed to update title');
+      toast.error('Failed to update name');
     }
   };
 
@@ -306,27 +302,35 @@ export function VendorDetailTabs({
     (isVendorInProgress && !isRealtimeRunActive);
   const showNewsPlaceholder = isRealtimeRunActive && riskAssessmentData && !isRegenerating && !hasNews && researchMetadata && !researchMetadata.newsReady;
 
-  return (
-    <>
-      <Breadcrumb
-        items={
-          isViewingTask && taskItemId
-            ? [
-                { label: 'Vendors', href: `/${orgId}/vendors`, props: { render: <Link href={`/${orgId}/vendors`} /> } },
-                { label: resolvedVendor.name, href: `/${orgId}/vendors/${vendorId}`, props: { render: <Link href={`/${orgId}/vendors/${vendorId}`} /> } },
-                { label: 'Tasks', href: `/${orgId}/vendors/${vendorId}?tab=tasks`, props: { render: <Link href={`/${orgId}/vendors/${vendorId}?tab=tasks`} /> } },
-                { label: selectedTaskTitle || 'Task', isCurrent: true },
-              ]
-            : [
-                { label: 'Vendors', href: `/${orgId}/vendors`, props: { render: <Link href={`/${orgId}/vendors`} /> } },
-                { label: resolvedVendor.name, isCurrent: true },
-              ]
-        }
-      />
+  const displayTitle = isViewingTask ? (selectedTaskTitle || 'Task') : resolvedVendor.name;
 
-      <Stack gap="xs">
-        <div className="flex items-center gap-3 self-start">
-          {isEditingTitle ? (
+  const breadcrumbItems = isViewingTask && taskItemId
+    ? [
+        { label: 'Vendors', href: `/${orgId}/vendors`, props: { render: <Link href={`/${orgId}/vendors`} /> } },
+        { label: resolvedVendor.name, href: `/${orgId}/vendors/${vendorId}`, props: { render: <Link href={`/${orgId}/vendors/${vendorId}`} /> } },
+        { label: 'Tasks', href: `/${orgId}/vendors/${vendorId}?tab=tasks`, props: { render: <Link href={`/${orgId}/vendors/${vendorId}?tab=tasks`} /> } },
+        { label: selectedTaskTitle || 'Task', isCurrent: true },
+      ]
+    : [
+        { label: 'Vendors', href: `/${orgId}/vendors`, props: { render: <Link href={`/${orgId}/vendors`} /> } },
+        { label: resolvedVendor.name, isCurrent: true },
+      ];
+
+  return (
+    <PageLayout
+      gap="md"
+      header={
+        <div onClick={!isViewingTask && canUpdate && !isEditingTitle ? startEditingTitle : undefined} style={!isViewingTask && canUpdate && !isEditingTitle ? { cursor: 'pointer' } : undefined}>
+          <PageHeader
+            title={isEditingTitle ? ' ' : displayTitle}
+            breadcrumbs={breadcrumbItems}
+            actions={!isViewingTask && !isRegenerating && !isVendorInProgress ? (
+              <div onClick={(e) => e.stopPropagation()}>
+                <VendorResearchBadges riskAssessmentData={resolvedVendor.riskAssessmentData} />
+              </div>
+            ) : undefined}
+          />
+          {isEditingTitle && (
             <input
               value={titleValue}
               onChange={(e) => setTitleValue(e.target.value)}
@@ -335,22 +339,50 @@ export function VendorDetailTabs({
                 if (e.key === 'Enter') saveTitleEdit();
                 if (e.key === 'Escape') setIsEditingTitle(false);
               }}
-              className="text-2xl font-semibold tracking-tight bg-transparent border-b border-primary outline-none flex-1"
+              className="text-4xl font-bold tracking-tight bg-transparent border-b border-primary outline-none w-full -mt-9"
+              autoFocus
+            />
+          )}
+        </div>
+      }
+    >
+      {!isViewingTask && (
+        <Stack gap="xs">
+          {isEditingDescription ? (
+            <textarea
+              value={descriptionValue}
+              onChange={(e) => {
+                setDescriptionValue(e.target.value);
+                const el = e.target;
+                el.style.height = 'auto';
+                el.style.height = `${el.scrollHeight}px`;
+              }}
+              onFocus={(e) => {
+                const el = e.target;
+                el.style.height = 'auto';
+                el.style.height = `${el.scrollHeight}px`;
+              }}
+              onBlur={saveDescriptionEdit}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setIsEditingDescription(false);
+              }}
+              className="text-sm text-muted-foreground bg-transparent border-b border-primary outline-none resize-none overflow-hidden w-full"
+              rows={1}
               autoFocus
             />
           ) : (
-            <h1
-              onClick={(isViewingTask ? canUpdateTask : canUpdate) ? startEditingTitle : undefined}
-              className={`text-2xl font-semibold tracking-tight ${(isViewingTask ? canUpdateTask : canUpdate) ? 'cursor-pointer rounded px-1 -mx-1 hover:bg-muted/50 transition-colors' : ''}`}
+            <Text
+              size="sm"
+              variant="muted"
+              as="p"
+              onClick={startEditingDescription}
+              style={canUpdate ? { cursor: 'pointer' } : undefined}
             >
-              {isViewingTask ? (selectedTaskTitle || 'Task') : resolvedVendor.name}
-            </h1>
+              {resolvedVendor.description || (canUpdate ? 'Add a description...' : '')}
+            </Text>
           )}
-          {!isViewingTask && !isRegenerating && !isVendorInProgress && (
-            <VendorResearchBadges riskAssessmentData={resolvedVendor.riskAssessmentData} />
-          )}
-          {!isViewingTask && (isRegenerating || isVendorInProgress) && (
-            <div className="inline-flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5">
+          {(isRegenerating || isVendorInProgress) && (
+            <div className="inline-flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 self-start">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
@@ -358,46 +390,8 @@ export function VendorDetailTabs({
               <span className="text-[11px] font-medium text-primary">Researching</span>
             </div>
           )}
-        </div>
-          {!isViewingTask && (
-            isEditingDescription ? (
-              <textarea
-                value={descriptionValue}
-                onChange={(e) => {
-                  setDescriptionValue(e.target.value);
-                  const el = e.target;
-                  el.style.height = 'auto';
-                  el.style.height = `${el.scrollHeight}px`;
-                }}
-                onFocus={(e) => {
-                  const el = e.target;
-                  el.style.height = 'auto';
-                  el.style.height = `${el.scrollHeight}px`;
-                }}
-                onBlur={saveDescriptionEdit}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') setIsEditingDescription(false);
-                }}
-                className="text-sm text-muted-foreground bg-transparent border-b border-primary outline-none resize-none overflow-hidden w-full"
-                rows={1}
-                autoFocus
-              />
-            ) : (
-              <Text
-                size="sm"
-                variant="muted"
-                as="p"
-                onClick={startEditingDescription}
-                style={canUpdate ? { cursor: 'pointer' } : undefined}
-              >
-                {resolvedVendor.description || (canUpdate ? 'Add a description...' : '')}
-              </Text>
-            )
-          )}
-        {!isViewingTask && !isRegenerating && !isVendorInProgress && (
-          <VendorResearchLinks riskAssessmentData={resolvedVendor.riskAssessmentData} />
-        )}
-      </Stack>
+        </Stack>
+      )}
 
       {isViewingTask ? (
         <TaskItems entityId={vendorId} entityType="vendor" />
@@ -406,7 +400,6 @@ export function VendorDetailTabs({
           <Stack gap="lg">
             <TabsList variant="underline">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="risk-matrix">Risk Matrix</TabsTrigger>
               <TabsTrigger value="risk-assessment">Risk Assessment</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
               <TabsTrigger value="comments">Comments</TabsTrigger>
@@ -415,13 +408,12 @@ export function VendorDetailTabs({
             </TabsList>
 
             <TabsContent value="overview">
-              <SecondaryFields vendor={resolvedVendor} assignees={assignees} onUpdate={refreshVendor} />
-            </TabsContent>
-
-            <TabsContent value="risk-matrix">
               <Stack gap="lg">
-                <VendorInherentRiskChart vendor={resolvedVendor} />
-                <VendorResidualRiskChart vendor={resolvedVendor} />
+                <Section title="Vendor Details">
+                  <SecondaryFields vendor={resolvedVendor} assignees={assignees} onUpdate={refreshVendor} />
+                </Section>
+                <div className="border-t border-border" />
+                <VendorTasksAndChecks vendorId={vendorId} />
               </Stack>
             </TabsContent>
 
@@ -470,6 +462,11 @@ export function VendorDetailTabs({
                     </div>
                   )}
                 </AnimatePresence>
+                <div className="border-t border-border" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <VendorInherentRiskChart vendor={resolvedVendor} />
+                  <VendorResidualRiskChart vendor={resolvedVendor} />
+                </div>
               </Stack>
             </TabsContent>
 
@@ -533,7 +530,7 @@ export function VendorDetailTabs({
           </Stack>
         </Tabs>
       )}
-    </>
+    </PageLayout>
   );
 }
 

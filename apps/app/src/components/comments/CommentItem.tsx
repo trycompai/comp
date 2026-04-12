@@ -3,14 +3,6 @@
 import { useApi } from '@/hooks/use-api';
 import { useCommentActions } from '@/hooks/use-comments-api';
 import { useMentionableMembers } from '@/hooks/use-mentionable-members';
-import { Button } from '@trycompai/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import type { JSONContent } from '@tiptap/react';
 import {
   AlertDialog,
@@ -24,16 +16,21 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  HStack,
+  Text,
 } from '@trycompai/design-system';
 import {
-  AlertTriangle,
-  FileIcon,
-  FileText,
-  ImageIcon,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-} from 'lucide-react';
+  Document,
+  OverflowMenuVertical,
+  TrashCan,
+  WarningAlt,
+} from '@trycompai/design-system/icons';
+import { Edit } from '@carbon/icons-react';
 import type React from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -52,6 +49,15 @@ function getGravatarUrl(email: string | null | undefined, size = 64): string {
   const emailHash = email.toLowerCase().trim();
   // For now, we'll use the email as a placeholder - ideally this should be MD5 hashed
   return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(emailHash)}&size=${size}`;
+}
+
+function getInitials(name: string | null | undefined): string {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return parts[0][0]?.toUpperCase() ?? '?';
 }
 
 // Helper function to render content with clickable links
@@ -198,68 +204,62 @@ export function CommentItem({ comment, refreshComments, readOnly = false, entity
 
   return (
     <>
-      <div className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card hover:shadow-sm transition-all group">
-        <div className="relative">
-          <Avatar>
-            <AvatarImage
-              src={comment.author.image || getGravatarUrl(comment.author.email)}
-              alt={comment.author.name ?? 'User'}
-            />
-            <AvatarFallback>{comment.author.name?.charAt(0).toUpperCase() ?? '?'}</AvatarFallback>
-          </Avatar>
-          {comment.author.deactivated && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="absolute -bottom-0.5 -right-0.5 rounded-full">
-                    <AlertTriangle className="h-3.5 w-3.5 text-red-500 fill-yellow-400" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>This user is deactivated.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+      <div className="flex items-start gap-3 py-2 group">
+        <div className="relative shrink-0">
+          {comment.isSystemGenerated ? (
+            <Avatar size="sm">
+              <AvatarImage src="/compailogo.jpg" alt="Comp AI" />
+              <AvatarFallback>AI</AvatarFallback>
+            </Avatar>
+          ) : (
+            <>
+              <Avatar size="sm">
+                <AvatarImage
+                  src={comment.author.image || getGravatarUrl(comment.author.email)}
+                  alt={comment.author.name ?? 'User'}
+                />
+                <AvatarFallback>{getInitials(comment.author.name)}</AvatarFallback>
+              </Avatar>
+              {comment.author.deactivated && (
+                <div className="absolute -bottom-0.5 -right-0.5">
+                  <WarningAlt size={12} className="text-destructive" />
+                </div>
+              )}
+            </>
           )}
         </div>
-        <div className="flex-1 items-start space-y-2 text-sm">
-          <div>
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="leading-none font-medium">
-                  {comment.author.name ?? 'Unknown User'}
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  {!isEditing ? formatRelativeTime(comment.createdAt) : 'Editing...'}
-                </span>
-              </div>
-              {!isEditing && !readOnly && (
+        <div className="flex-1 min-w-0 text-sm">
+          <div className="flex items-center justify-between gap-2">
+            <HStack gap="xs" align="center">
+              <Text size="sm" weight="medium">
+                {comment.isSystemGenerated ? 'Comp AI' : (comment.author.name ?? 'Unknown User')}
+              </Text>
+              <Text size="xs" variant="muted">
+                {!isEditing ? formatRelativeTime(comment.createdAt) : 'Editing...'}
+              </Text>
+            </HStack>
+            {!isEditing && !readOnly && (
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label="Comment options"
-                    >
-                      <MoreHorizontal className="h-3.5 w-3.5" />
-                    </Button>
+                  <DropdownMenuTrigger variant="ellipsis">
+                    <OverflowMenuVertical />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={handleEditToggle}>
-                      <Pencil className="mr-2 h-3.5 w-3.5" />
+                    <DropdownMenuItem onClick={handleEditToggle}>
+                      <Edit size={16} />
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                      onSelect={() => setIsDeleteOpen(true)}
+                      variant="destructive"
+                      onClick={() => setIsDeleteOpen(true)}
                     >
-                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      <TrashCan size={16} />
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              )}
+              </div>
+            )}
             </div>
 
             {!isEditing ? (
@@ -302,15 +302,7 @@ export function CommentItem({ comment, refreshComments, readOnly = false, entity
                         className={`inline-flex items-center gap-2 px-2.5 py-1.5 border rounded-md transition-all text-sm ${getFileTypeStyles()}`}
                         title={att.name}
                       >
-                        {isPDF ? (
-                          <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
-                        ) : isImage ? (
-                          <ImageIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
-                        ) : isDoc ? (
-                          <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
-                        ) : (
-                          <FileIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
-                        )}
+                        <Document size={14} className={getFileIconColor()} />
                         <span className="hover:underline max-w-[200px] truncate">{att.name}</span>
                       </button>
                     );
@@ -320,17 +312,16 @@ export function CommentItem({ comment, refreshComments, readOnly = false, entity
             )}
 
             {isEditing && (
-              <div className="flex justify-end gap-2 pt-3">
-                <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+              <HStack justify="end" gap="xs">
+                <Button variant="outline" size="sm" onClick={handleCancelEdit}>
                   Cancel
                 </Button>
                 <Button size="sm" onClick={handleSaveEdit}>
-                  Save Changes
+                  Save
                 </Button>
-              </div>
+              </HStack>
             )}
           </div>
-        </div>
       </div>
       {/* Delete confirmation dialog */}
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

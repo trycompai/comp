@@ -30,6 +30,7 @@ interface StartOAuthDto {
   providerSlug: string;
   userId: string;
   redirectUrl?: string;
+  vendorId?: string;
 }
 
 interface OAuthCallbackQuery {
@@ -88,7 +89,7 @@ export class OAuthController {
     @OrganizationId() organizationId: string,
     @Body() body: StartOAuthDto,
   ): Promise<{ authorizationUrl: string }> {
-    const { providerSlug, userId, redirectUrl } = body;
+    const { providerSlug, userId, redirectUrl, vendorId } = body;
 
     // Get manifest and OAuth config
     const manifest = getManifest(providerSlug);
@@ -135,6 +136,7 @@ export class OAuthController {
       name: manifest.name,
       category: manifest.category,
       capabilities: manifest.capabilities,
+      vendorMatchDomains: manifest.vendorMatchDomains,
       isActive: manifest.isActive,
     });
 
@@ -156,6 +158,7 @@ export class OAuthController {
       userId,
       codeVerifier,
       redirectUrl,
+      vendorId,
     });
 
     // Build authorization URL, replacing any placeholders with additional OAuth settings
@@ -316,6 +319,13 @@ export class OAuthController {
       // Store tokens and mark connection as active
       await this.credentialVaultService.storeOAuthTokens(connection.id, tokens);
       await this.connectionService.activateConnection(connection.id);
+
+      // Link connection to vendor if vendorId was passed through OAuth state
+      if (oauthState.vendorId) {
+        await this.connectionRepository.update(connection.id, {
+          vendorId: oauthState.vendorId,
+        });
+      }
 
       // Provider-specific post-OAuth actions
       if (oauthState.providerSlug === 'rippling') {

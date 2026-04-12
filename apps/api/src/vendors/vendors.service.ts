@@ -6,6 +6,7 @@ import { tasks } from '@trigger.dev/sdk';
 import { Prisma } from '@db';
 import type { TriggerVendorRiskAssessmentVendorDto } from './dto/trigger-vendor-risk-assessment.dto';
 import { resolveTaskCreatorAndAssignee } from '../trigger/vendor/vendor-risk-assessment/assignee';
+import { validateNotPlatformAdmin } from '../utils/platform-admin-check';
 
 const normalizeWebsite = (
   website: string | null | undefined,
@@ -104,10 +105,76 @@ export class VendorsService {
         },
       });
 
+      // Batch-load check summaries for all vendors with connections
+      const vendorIds = vendors.map((v) => v.id);
+      const connections = await db.integrationConnection.findMany({
+        where: { vendorId: { in: vendorIds }, organizationId },
+        select: { id: true, vendorId: true },
+      });
+
+      const connectionsByVendor = new Map<string, string[]>();
+      for (const conn of connections) {
+        if (!conn.vendorId) continue;
+        const ids = connectionsByVendor.get(conn.vendorId) ?? [];
+        ids.push(conn.id);
+        connectionsByVendor.set(conn.vendorId, ids);
+      }
+
+      const allConnectionIds = connections.map((c) => c.id);
+      const latestRuns = allConnectionIds.length > 0
+        ? await db.integrationCheckRun.findMany({
+            where: {
+              connectionId: { in: allConnectionIds },
+              completedAt: { not: null },
+              checkId: { not: 'all' },
+            },
+            orderBy: { createdAt: 'desc' },
+            distinct: ['checkId', 'connectionId'],
+            select: { connectionId: true, checkId: true, failedCount: true, completedAt: true },
+          })
+        : [];
+
+      // Load disabled checks to exclude from summaries
+      const disabledConfigs = allConnectionIds.length > 0
+        ? await db.vendorCheckConfig.findMany({
+            where: { connectionId: { in: allConnectionIds }, enabled: false },
+            select: { connectionId: true, checkId: true },
+          })
+        : [];
+      const disabledSet = new Set(disabledConfigs.map((c) => `${c.connectionId}:${c.checkId}`));
+
+      const vendorsWithChecks = vendors.map((vendor) => {
+        const connIds = connectionsByVendor.get(vendor.id);
+        if (!connIds || connIds.length === 0) {
+          return { ...vendor, checksSummary: null };
+        }
+        const connIdSet = new Set(connIds);
+        const runs = latestRuns.filter(
+          (r) => connIdSet.has(r.connectionId) && !disabledSet.has(`${r.connectionId}:${r.checkId}`),
+        );
+        if (runs.length === 0) {
+          return { ...vendor, checksSummary: null };
+        }
+        let passing = 0;
+        let failing = 0;
+        let lastRunAt: Date | null = null;
+        for (const run of runs) {
+          if (run.failedCount === 0) passing++;
+          else failing++;
+          if (run.completedAt && (!lastRunAt || run.completedAt > lastRunAt)) {
+            lastRunAt = run.completedAt;
+          }
+        }
+        return {
+          ...vendor,
+          checksSummary: { total: runs.length, passing, failing, lastRunAt },
+        };
+      });
+
       this.logger.log(
         `Retrieved ${vendors.length} vendors for organization ${organizationId}`,
       );
-      return vendors;
+      return vendorsWithChecks;
     } catch (error) {
       this.logger.error(
         `Failed to retrieve vendors for organization ${organizationId}:`,
@@ -178,6 +245,33 @@ export class VendorsService {
           null;
       }
 
+      // Fetch integration connections for this vendor
+      const integrationConnections = await db.integrationConnection.findMany({
+        where: { vendorId: id, organizationId },
+        include: { provider: { select: { slug: true, name: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Build compact check summary from latest runs
+      let checksSummary = { total: 0, passing: 0, failing: 0, lastRunAt: null as Date | null };
+      if (integrationConnections.length > 0) {
+        const connectionIds = integrationConnections.map((c) => c.id);
+        const latestRuns = await db.integrationCheckRun.findMany({
+          where: { connectionId: { in: connectionIds } },
+          orderBy: { createdAt: 'desc' },
+          distinct: ['checkId', 'connectionId'],
+          select: { status: true, passedCount: true, failedCount: true, completedAt: true },
+        });
+        for (const run of latestRuns) {
+          checksSummary.total++;
+          if (run.status === 'success' && run.failedCount === 0) checksSummary.passing++;
+          else if (run.failedCount > 0 || run.status === 'failed') checksSummary.failing++;
+          if (run.completedAt && (!checksSummary.lastRunAt || run.completedAt > checksSummary.lastRunAt)) {
+            checksSummary.lastRunAt = run.completedAt;
+          }
+        }
+      }
+
       // Merge GlobalVendors risk assessment data into response
       const vendorWithRiskAssessment = {
         ...vendor,
@@ -185,6 +279,13 @@ export class VendorsService {
         riskAssessmentVersion: globalVendorData?.riskAssessmentVersion ?? null,
         riskAssessmentUpdatedAt:
           globalVendorData?.riskAssessmentUpdatedAt ?? null,
+        integrationConnections: integrationConnections.map((c) => ({
+          id: c.id,
+          providerSlug: c.provider.slug,
+          providerName: c.provider.name,
+          status: c.status,
+        })),
+        checksSummary,
       };
 
       this.logger.log(`Retrieved vendor: ${vendor.name} (${id})`);
@@ -198,14 +299,12 @@ export class VendorsService {
     }
   }
 
-  private async validateAssigneeNotPlatformAdmin(assigneeId: string, organizationId: string) {
-    const member = await db.member.findFirst({
-      where: { id: assigneeId, organizationId },
-      include: { user: { select: { role: true } } },
-    });
-    if (member?.user.role === 'admin') {
-      throw new BadRequestException('Cannot assign a platform admin as assignee');
-    }
+  private async validateAssigneeNotPlatformAdmin(
+    assigneeId: string,
+    organizationId: string,
+    currentUserId?: string,
+  ) {
+    await validateNotPlatformAdmin({ memberId: assigneeId, organizationId, currentUserId });
   }
 
   async create(

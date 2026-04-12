@@ -51,6 +51,8 @@ Note: The user authorizing must be a Google Workspace admin.`,
     'Content-Type': 'application/json',
   },
 
+  vendorMatchDomains: ['workspace.google.com', 'google.com'],
+
   capabilities: ['checks', 'sync'],
 
   variables: [targetOrgUnitsVariable, syncUserFilterModeVariable, syncExcludedEmailsVariable, syncIncludedEmailsVariable],

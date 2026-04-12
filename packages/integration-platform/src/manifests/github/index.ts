@@ -9,6 +9,7 @@ import type { IntegrationManifest } from '../../types';
 import { branchProtectionCheck } from './checks/branch-protection';
 import { dependabotCheck } from './checks/dependabot';
 import { sanitizedInputsCheck } from './checks/sanitized-inputs';
+import { twoFactorAuthCheck } from './checks/two-factor-auth';
 
 export const manifest: IntegrationManifest = {
   id: 'github',
@@ -61,10 +62,12 @@ export const manifest: IntegrationManifest = {
     },
   },
 
+  vendorMatchDomains: ['github.com'],
+
   capabilities: ['checks'],
 
   // Compliance checks that run daily and can auto-complete tasks
-  checks: [branchProtectionCheck, dependabotCheck, sanitizedInputsCheck],
+  checks: [twoFactorAuthCheck, branchProtectionCheck, dependabotCheck, sanitizedInputsCheck],
 
   isActive: true,
 };

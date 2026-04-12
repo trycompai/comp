@@ -27,6 +27,8 @@ export const azureManifest: IntegrationManifest = {
 
   baseUrl: 'https://management.azure.com',
 
+  vendorMatchDomains: ['azure.microsoft.com', 'microsoft.com'],
+
   capabilities: ['checks'],
 
   checks: [],

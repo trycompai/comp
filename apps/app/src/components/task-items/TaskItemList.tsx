@@ -6,7 +6,14 @@ import type {
   TaskItemSortBy,
   TaskItemSortOrder,
 } from '@/hooks/use-task-items';
-import { Text } from '@trycompai/design-system';
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Text,
+} from '@trycompai/design-system';
 
 interface TaskItemListProps {
   taskItems: TaskItem[];
@@ -42,22 +49,34 @@ export function TaskItemList({
   }
 
   return (
-    <div className="divide-y divide-border border-y border-border">
-      {taskItems.map((taskItem) => (
-        <TaskItemItem
-          key={taskItem.id}
-          taskItem={taskItem}
-          entityId={entityId}
-          entityType={entityType}
-          page={page}
-          limit={limit}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          filters={filters}
-          onSelect={() => onSelectTaskItemId?.(taskItem.id)}
-          onStatusOrPriorityChange={onStatusOrPriorityChange}
-        />
-      ))}
-    </div>
+    <Table variant="bordered">
+      <TableHeader>
+        <TableRow>
+          <TableHead>NAME</TableHead>
+          <TableHead>STATUS</TableHead>
+          <TableHead>PRIORITY</TableHead>
+          <TableHead>OWNER</TableHead>
+          <TableHead>CREATED</TableHead>
+          <TableHead>ACTIONS</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {taskItems.map((taskItem) => (
+          <TaskItemItem
+            key={taskItem.id}
+            taskItem={taskItem}
+            entityId={entityId}
+            entityType={entityType}
+            page={page}
+            limit={limit}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            filters={filters}
+            onSelect={() => onSelectTaskItemId?.(taskItem.id)}
+            onStatusOrPriorityChange={onStatusOrPriorityChange}
+          />
+        ))}
+      </TableBody>
+    </Table>
   );
 }

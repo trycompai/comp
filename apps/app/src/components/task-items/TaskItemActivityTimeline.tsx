@@ -1,13 +1,11 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage, Spinner } from '@trycompai/design-system';
 import { CircleFilled } from '@trycompai/design-system/icons';
-import { Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskItem } from '@/hooks/use-task-items';
 import { useTaskItemActivity } from './hooks/use-task-item-activity';
 import { useEffect, useState, useMemo } from 'react';
-import { Button } from '@trycompai/ui/button';
 
 interface TaskItemActivityTimelineProps {
   taskItem: TaskItem;
@@ -44,7 +42,7 @@ export function TaskItemActivityTimeline({ taskItem, onActivityLoaded }: TaskIte
           <h3 className="text-sm font-semibold">Activity</h3>
         </div>
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <Spinner />
         </div>
       </div>
     );
@@ -52,12 +50,12 @@ export function TaskItemActivityTimeline({ taskItem, onActivityLoaded }: TaskIte
 
   const renderActivityItem = (log: any) => (
     <div key={log.id} className="flex items-start gap-3 relative">
-      <Avatar className="h-6 w-6 border border-border relative z-10 bg-background">
+      <Avatar size="sm">
         <AvatarImage
           src={log.user.image || undefined}
           alt={log.user.name || log.user.email}
         />
-        <AvatarFallback className="text-[10px] bg-muted">
+        <AvatarFallback>
           {(log.user.name || log.user.email)?.charAt(0).toUpperCase() ?? '?'}
         </AvatarFallback>
       </Avatar>
@@ -99,14 +97,13 @@ export function TaskItemActivityTimeline({ taskItem, onActivityLoaded }: TaskIte
                 <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center relative z-10">
                   <CircleFilled className="h-2 w-2 text-muted-foreground" />
               </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => setShowAll(true)}
-                  className="h-auto py-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  className="h-auto py-1 px-2 text-xs text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50"
                 >
                   Show {displayedActivity.hiddenCount} more {displayedActivity.hiddenCount === 1 ? 'activity' : 'activities'}
-                </Button>
+                </button>
               </div>
 
               {displayedActivity.lastItems.map(renderActivityItem)}

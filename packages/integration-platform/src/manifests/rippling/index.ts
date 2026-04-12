@@ -57,6 +57,8 @@ export const ripplingManifest: IntegrationManifest = {
     'Content-Type': 'application/json',
   },
 
+  vendorMatchDomains: ['rippling.com'],
+
   // Sync capability - this integration syncs employee data
   capabilities: ['sync'],
 

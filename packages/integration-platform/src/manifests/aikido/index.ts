@@ -53,6 +53,8 @@ Note: You'll need admin access to your Aikido workspace to create OAuth credenti
     },
   },
 
+  vendorMatchDomains: ['aikido.dev'],
+
   capabilities: ['checks'],
 
   // Compliance checks that run daily

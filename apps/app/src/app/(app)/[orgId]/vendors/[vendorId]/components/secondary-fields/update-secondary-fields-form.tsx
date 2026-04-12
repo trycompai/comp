@@ -3,7 +3,7 @@
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { VENDOR_STATUS_TYPES, VendorStatus } from '@/components/vendor-status';
 import { useVendorActions } from '@/hooks/use-vendors';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@trycompai/design-system';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { Input } from '@trycompai/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';

@@ -71,6 +71,9 @@ model Organization {
   // Findings
   findings Finding[]
 
+  // Workflows
+  workflows Workflow[]
+
   // Device Agent
   devices Device[]
 
