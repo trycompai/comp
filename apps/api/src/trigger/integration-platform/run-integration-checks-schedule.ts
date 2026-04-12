@@ -117,6 +117,7 @@ export const integrationChecksSchedule = schedules.task({
       providerSlug: string;
       organizationId: string;
       checkIds: string[];
+      skipCheckIds: string[];
     }> = [];
 
     if (vendorLinkedConnections.length > 0) {
@@ -148,11 +149,13 @@ export const integrationChecksSchedule = schedules.task({
           .map((c) => c.id);
 
         if (enabledCheckIds.length > 0) {
+          const disabledCheckIds = [...disabled];
           vendorChecksToRun.push({
             connectionId: connection.id,
             providerSlug: connection.provider.slug,
             organizationId: connection.organizationId,
             checkIds: enabledCheckIds,
+            skipCheckIds: disabledCheckIds,
           });
         }
       }
@@ -199,6 +202,7 @@ export const integrationChecksSchedule = schedules.task({
             connectionId: v.connectionId,
             providerSlug: v.providerSlug,
             organizationId: v.organizationId,
+            skipCheckIds: v.skipCheckIds,
           },
         }));
         for (let i = 0; i < vendorPayloads.length; i += BATCH_SIZE) {

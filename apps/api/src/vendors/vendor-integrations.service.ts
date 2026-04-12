@@ -2,8 +2,6 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { db } from '@db';
 import { getManifest, getAvailableChecks, getAllManifests } from '@trycompai/integration-platform';
 import { tasks } from '@trigger.dev/sdk';
-import { openai } from '@ai-sdk/openai';
-import { generateText, streamText } from 'ai';
 
 @Injectable()
 export class VendorIntegrationsService {
@@ -112,9 +110,13 @@ export class VendorIntegrationsService {
   }
 
   /** Unlink a connection from a vendor. Removes VendorCheckConfig entries. */
-  async disconnectIntegration(vendorId: string, connectionId: string) {
+  async disconnectIntegration(vendorId: string, organizationId: string, connectionId: string) {
+    // Validate vendor and connection belong to this organization
+    const vendor = await db.vendor.findFirst({ where: { id: vendorId, organizationId } });
+    if (!vendor) throw new NotFoundException(`Vendor ${vendorId} not found`);
+
     await db.integrationConnection.updateMany({
-      where: { id: connectionId, vendorId },
+      where: { id: connectionId, vendorId, organizationId },
       data: { vendorId: null },
     });
     await db.vendorCheckConfig.deleteMany({ where: { vendorId, connectionId } });

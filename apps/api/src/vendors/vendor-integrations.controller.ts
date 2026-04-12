@@ -110,6 +110,7 @@ export class VendorIntegrationsController {
   ) {
     await this.vendorIntegrationsService.disconnectIntegration(
       vendorId,
+      organizationId,
       body.connectionId,
     );
 
