@@ -11,6 +11,7 @@ import {
   type CheckHistoryEntry,
 } from '@/hooks/use-vendor-integrations';
 import { useApi } from '@/hooks/use-api';
+import { formatRelativeTime } from '@/utils/format-relative-time';
 import { VendorConnectButton } from './VendorConnectButton';
 import { usePermissions } from '@/hooks/use-permissions';
 import {
@@ -739,20 +740,6 @@ function CheckLastRunCell({
 }
 
 // --- Helpers ---
-
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 30) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
 
 function formatDayLabel(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');

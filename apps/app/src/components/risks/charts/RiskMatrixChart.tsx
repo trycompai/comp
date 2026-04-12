@@ -39,11 +39,11 @@ const IMPACT_ORDER: Impact[] = [
 type RiskLevel = 'very-low' | 'low' | 'medium' | 'high' | 'very-high';
 
 const RISK_CELL_CLASSES: Record<RiskLevel, { bg: string; bgActive: string; hover: string; dot: string }> = {
-  'very-low': { bg: 'bg-primary/70', bgActive: 'bg-primary', hover: 'hover:bg-primary/85', dot: 'bg-primary' },
-  'low': { bg: 'bg-primary/50', bgActive: 'bg-primary/80', hover: 'hover:bg-primary/65', dot: 'bg-primary' },
-  'medium': { bg: 'bg-orange-500/70', bgActive: 'bg-orange-500', hover: 'hover:bg-orange-500/85', dot: 'bg-orange-500' },
-  'high': { bg: 'bg-red-500/70', bgActive: 'bg-red-500', hover: 'hover:bg-red-500/85', dot: 'bg-red-500' },
-  'very-high': { bg: 'bg-red-600/80', bgActive: 'bg-red-600', hover: 'hover:bg-red-600/90', dot: 'bg-red-600' },
+  'very-low': { bg: 'bg-emerald-500/40', bgActive: 'bg-emerald-500/65', hover: 'hover:bg-emerald-500/50', dot: 'bg-emerald-500' },
+  'low': { bg: 'bg-yellow-400/40', bgActive: 'bg-yellow-400/65', hover: 'hover:bg-yellow-400/50', dot: 'bg-yellow-400' },
+  'medium': { bg: 'bg-amber-500/40', bgActive: 'bg-amber-500/65', hover: 'hover:bg-amber-500/50', dot: 'bg-amber-500' },
+  'high': { bg: 'bg-orange-500/40', bgActive: 'bg-orange-500/65', hover: 'hover:bg-orange-500/50', dot: 'bg-orange-500' },
+  'very-high': { bg: 'bg-red-500/40', bgActive: 'bg-red-500/65', hover: 'hover:bg-red-500/50', dot: 'bg-red-500' },
 };
 
 function getRiskLevel(likelihoodScore: number, impactScore: number): RiskLevel {

@@ -320,27 +320,42 @@ export function VendorDetailTabs({
     <PageLayout
       gap="md"
       header={
-        <div onClick={!isViewingTask && canUpdate && !isEditingTitle ? startEditingTitle : undefined} style={!isViewingTask && canUpdate && !isEditingTitle ? { cursor: 'pointer' } : undefined}>
-          <PageHeader
-            title={isEditingTitle ? ' ' : displayTitle}
-            breadcrumbs={breadcrumbItems}
-            actions={!isViewingTask && !isRegenerating && !isVendorInProgress ? (
-              <div onClick={(e) => e.stopPropagation()}>
+        <div
+          onClick={(e) => {
+            if (!isViewingTask && canUpdate && !isEditingTitle) {
+              const target = e.target as HTMLElement;
+              if (target.tagName === 'H1' || target.closest('h1')) {
+                startEditingTitle();
+              }
+            }
+          }}
+          className={!isViewingTask && canUpdate && !isEditingTitle ? '[&_h1]:cursor-pointer [&_h1:hover]:opacity-70 [&_h1]:transition-opacity' : ''}
+        >
+          {isEditingTitle ? (
+            <>
+              <PageHeader
+                title=""
+                breadcrumbs={breadcrumbItems}
+              />
+              <input
+                value={titleValue}
+                onChange={(e) => setTitleValue(e.target.value)}
+                onBlur={saveTitleEdit}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveTitleEdit();
+                  if (e.key === 'Escape') setIsEditingTitle(false);
+                }}
+                className="text-4xl font-medium tracking-tight text-foreground bg-transparent border-b border-border outline-none w-full"
+                autoFocus
+              />
+            </>
+          ) : (
+            <PageHeader
+              title={displayTitle}
+              breadcrumbs={breadcrumbItems}
+              actions={!isViewingTask && !isRegenerating && !isVendorInProgress ? (
                 <VendorResearchBadges riskAssessmentData={resolvedVendor.riskAssessmentData} />
-              </div>
-            ) : undefined}
-          />
-          {isEditingTitle && (
-            <input
-              value={titleValue}
-              onChange={(e) => setTitleValue(e.target.value)}
-              onBlur={saveTitleEdit}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') saveTitleEdit();
-                if (e.key === 'Escape') setIsEditingTitle(false);
-              }}
-              className="text-4xl font-bold tracking-tight bg-transparent border-b border-primary outline-none w-full -mt-9"
-              autoFocus
+              ) : undefined}
             />
           )}
         </div>

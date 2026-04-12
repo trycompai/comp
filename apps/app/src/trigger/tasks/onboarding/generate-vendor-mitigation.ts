@@ -56,7 +56,7 @@ export const generateVendorMitigation = task({
     await db.vendor.update({
       where: { id: vendor.id, organizationId },
       data: {
-        status: VendorStatus.assessed,
+        status: VendorStatus.in_progress,
         assigneeId,
       },
     });

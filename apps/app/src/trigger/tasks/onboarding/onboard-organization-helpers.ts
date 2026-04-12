@@ -82,7 +82,7 @@ const BASELINE_RISKS: Array<{
       'Intentional misrepresentation or deception by an internal actor (employee, contractor) or by the organization as a whole, for the purpose of achieving an unauthorized or improper gain.',
     category: RiskCategory.governance,
     department: Departments.gov,
-    status: RiskStatus.closed,
+    status: RiskStatus.pending,
   },
 ];
 

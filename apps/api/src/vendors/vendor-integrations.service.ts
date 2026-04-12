@@ -128,10 +128,17 @@ export class VendorIntegrationsService {
   /** Toggle a specific check for a vendor-connection pair. */
   async updateCheckConfig(
     vendorId: string,
+    organizationId: string,
     connectionId: string,
     checkId: string,
     data: { enabled: boolean; disabledReason?: string },
   ) {
+    const vendor = await db.vendor.findFirst({ where: { id: vendorId, organizationId } });
+    if (!vendor) throw new NotFoundException(`Vendor ${vendorId} not found`);
+
+    const connection = await db.integrationConnection.findFirst({ where: { id: connectionId, organizationId } });
+    if (!connection) throw new NotFoundException(`Connection ${connectionId} not found`);
+
     return db.vendorCheckConfig.upsert({
       where: {
         vendorId_connectionId_checkId: { vendorId, connectionId, checkId },

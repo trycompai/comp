@@ -139,6 +139,7 @@ export class VendorIntegrationsController {
   ) {
     const config = await this.vendorIntegrationsService.updateCheckConfig(
       vendorId,
+      organizationId,
       body.connectionId,
       checkId,
       {

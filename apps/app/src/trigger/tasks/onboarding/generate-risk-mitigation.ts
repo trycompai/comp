@@ -46,7 +46,7 @@ export const generateRiskMitigation = task({
     await db.risk.update({
       where: { id: risk.id, organizationId },
       data: {
-        status: RiskStatus.closed,
+        status: RiskStatus.pending,
         assigneeId: authorId,
       },
     });
