@@ -1,0 +1,28 @@
+model RemediationAction {
+    id             String   @id @default(dbgenerated("generate_prefixed_cuid('rma'::text)"))
+    checkResultId  String
+    connectionId   String
+    organizationId String
+    initiatedById  String
+    remediationKey String
+    resourceId     String
+    resourceType   String
+    previousState  Json
+    appliedState   Json
+    status         String   @default("pending")
+    riskLevel      String?
+    acknowledgmentText String?
+    acknowledgedAt DateTime?
+    errorMessage   String?
+    executedAt     DateTime?
+    rolledBackAt   DateTime?
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+
+    checkResult IntegrationCheckResult @relation(fields: [checkResultId], references: [id], onDelete: Cascade)
+    connection  IntegrationConnection  @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+    @@index([connectionId])
+    @@index([organizationId])
+    @@index([checkResultId])
+}

@@ -9,6 +9,7 @@ import type { IntegrationManifest } from '../../types';
 import { branchProtectionCheck } from './checks/branch-protection';
 import { dependabotCheck } from './checks/dependabot';
 import { sanitizedInputsCheck } from './checks/sanitized-inputs';
+import { twoFactorAuthCheck } from './checks/two-factor-auth';
 
 export const manifest: IntegrationManifest = {
   id: 'github',
@@ -63,8 +64,25 @@ export const manifest: IntegrationManifest = {
 
   capabilities: ['checks'],
 
+  services: [
+    {
+      id: 'code-security',
+      name: 'Code Security',
+      description: 'Branch protection and code review policies',
+      enabledByDefault: true,
+      implemented: true,
+    },
+    {
+      id: 'dependency-management',
+      name: 'Dependency Management',
+      description: 'Automated dependency updates and vulnerability scanning',
+      enabledByDefault: true,
+      implemented: true,
+    },
+  ],
+
   // Compliance checks that run daily and can auto-complete tasks
-  checks: [branchProtectionCheck, dependabotCheck, sanitizedInputsCheck],
+  checks: [branchProtectionCheck, dependabotCheck, sanitizedInputsCheck, twoFactorAuthCheck],
 
   isActive: true,
 };

@@ -54,5 +54,10 @@ Enter the Client ID, Secret, and the integration slug (from \`vercel.com/integra
 
   capabilities: ['checks'],
 
+  services: [
+    { id: 'monitoring', name: 'Monitoring & Alerting', description: 'Deployment monitoring and alerting configuration checks', enabledByDefault: true, implemented: true },
+    { id: 'security', name: 'Security Settings', description: 'Project security headers and configuration audit', implemented: false },
+  ],
+
   checks: [monitoringAlertingCheck, appAvailabilityCheck],
 };

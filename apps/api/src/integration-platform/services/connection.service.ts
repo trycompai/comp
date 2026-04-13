@@ -149,7 +149,13 @@ export class ConnectionService {
     await this.getConnection(connectionId); // Verify exists
     await this.connectionAuthTeardownService.teardown({ connectionId });
 
-    await this.connectionRepository.delete(connectionId);
+    // Soft-delete: preserve findings, remediation history, and activity logs
+    // for audit trail and compliance. Only clear credentials and mark as disconnected.
+    await this.connectionRepository.update(connectionId, {
+      status: 'disconnected',
+      activeCredentialVersionId: null,
+      errorMessage: null,
+    });
   }
 
   async updateLastSync(connectionId: string): Promise<IntegrationConnection> {

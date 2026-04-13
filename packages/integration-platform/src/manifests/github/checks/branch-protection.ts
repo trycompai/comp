@@ -58,6 +58,7 @@ export const branchProtectionCheck: IntegrationCheck = {
   id: 'branch_protection',
   name: 'Branch Protection Enabled',
   description: 'Verify that default branches have protection rules configured',
+  service: 'code-security',
   taskMapping: TASK_TEMPLATES.codeChanges,
   defaultSeverity: 'high',
 

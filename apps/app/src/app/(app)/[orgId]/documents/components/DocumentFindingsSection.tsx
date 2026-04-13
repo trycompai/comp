@@ -3,9 +3,21 @@
 import { useFindingActions, useFormTypeFindings, type Finding } from '@/hooks/use-findings-api';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useActiveMember } from '@/utils/auth-client';
-import { Button } from '@trycompai/design-system';
 import { FindingStatus } from '@db';
-import { ChevronDown, ChevronUp, WarningAlt, WarningAltFilled } from '@trycompai/design-system/icons';
+import {
+  Button,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@trycompai/design-system';
+import {
+  ChevronDown,
+  ChevronUp,
+  WarningAlt,
+  WarningAltFilled,
+} from '@trycompai/design-system/icons';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateFindingButton } from '../../tasks/[taskId]/components/findings/CreateFindingButton';
@@ -153,33 +165,38 @@ export function DocumentFindingsSection({
       finding.status === FindingStatus.open || finding.status === FindingStatus.needs_revision,
   ).length;
 
-  if (allIsLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
-      </div>
-    );
-  }
-
   if (allError) {
     return (
-      <div className="flex items-center justify-center py-8 text-destructive">
-        <WarningAlt size={20} className="mr-2" />
-        <span>Failed to load findings</span>
-      </div>
+      <Empty>
+        <EmptyMedia variant="icon">
+          <WarningAlt size={32} />
+        </EmptyMedia>
+        <EmptyHeader>
+          <EmptyTitle>Failed to load findings</EmptyTitle>
+          <EmptyDescription>
+            Something went wrong. Please try refreshing the page.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
-  if (sortedFindings.length === 0) {
+  if (allIsLoading || sortedFindings.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <p className="text-sm">No findings for this document</p>
+      <Empty>
+        <EmptyMedia variant="icon">
+          <WarningAlt size={32} />
+        </EmptyMedia>
+        <EmptyHeader>
+          <EmptyTitle>No findings yet</EmptyTitle>
+          <EmptyDescription>
+            Findings will appear here when an auditor flags issues requiring attention.
+          </EmptyDescription>
+        </EmptyHeader>
         {canCreateFinding && (
-          <div className="mt-3">
-            <CreateFindingButton evidenceFormType={formType} onSuccess={mutateAll} />
-          </div>
+          <CreateFindingButton evidenceFormType={formType} onSuccess={mutateAll} />
         )}
-      </div>
+      </Empty>
     );
   }
 
@@ -216,14 +233,7 @@ export function DocumentFindingsSection({
       </div>
 
       <div className="p-5">
-        {sortedFindings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <WarningAltFilled size={40} className="mb-3 opacity-50" />
-            <p className="text-sm">No findings for this document</p>
-            {canCreateFinding && <p className="text-xs mt-1">Create a finding to flag an issue</p>}
-          </div>
-        ) : (
-          <div className="space-y-2">
+        <div className="space-y-2">
             {visibleFindings.map((finding: Finding) => (
               <FindingItem
                 key={finding.id}
@@ -242,12 +252,7 @@ export function DocumentFindingsSection({
 
             {sortedFindings.length > INITIAL_DISPLAY_COUNT && (
               <div className="mt-2 text-muted-foreground hover:text-foreground">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  width="full"
-                  onClick={() => setShowAll(!showAll)}
-                >
+                <Button variant="ghost" size="sm" width="full" onClick={() => setShowAll(!showAll)}>
                   {showAll ? (
                     <>
                       <ChevronUp size={16} className="mr-1.5" />
@@ -263,7 +268,6 @@ export function DocumentFindingsSection({
               </div>
             )}
           </div>
-        )}
       </div>
     </div>
   );

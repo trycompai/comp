@@ -36,6 +36,9 @@ model DynamicIntegration {
     /// When present and capabilities includes 'sync', enables employee sync
     syncDefinition  Json?
 
+    /// Services metadata (JSON array of { id, name, description, enabledByDefault?, implemented? })
+    services    Json?
+
     /// Whether this dynamic integration is active
     isActive    Boolean @default(true)
 
@@ -70,6 +73,9 @@ model DynamicCheck {
 
     /// Default severity for findings
     defaultSeverity String  @default("medium")
+
+    /// Service ID this check belongs to (groups checks under a service)
+    service         String?
 
     /// Declarative DSL definition (JSON — the step-by-step instructions)
     definition      Json
