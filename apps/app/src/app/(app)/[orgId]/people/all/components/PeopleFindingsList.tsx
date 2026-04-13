@@ -178,7 +178,8 @@ export function PeopleFindingsList({
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-red-50 border border-red-100 dark:bg-red-950/30 dark:border-red-900/50">
                 <div className="w-2 h-2 rounded-full bg-red-500" />
                 <span className="text-xs font-medium text-red-700 dark:text-red-400">
-                  {openFindingsCount} requires action
+                  {openFindingsCount}{' '}
+                  {openFindingsCount === 1 ? 'requires' : 'require'} action
                 </span>
               </div>
             )}
