@@ -72,6 +72,7 @@ export class DynamicCheckRepository {
     variables?: Prisma.InputJsonValue;
     isEnabled?: boolean;
     sortOrder?: number;
+    service?: string;
   }): Promise<DynamicCheck> {
     return db.dynamicCheck.upsert({
       where: {
@@ -91,6 +92,7 @@ export class DynamicCheckRepository {
         variables: data.variables ?? [],
         isEnabled: data.isEnabled ?? true,
         sortOrder: data.sortOrder ?? 0,
+        service: data.service,
       },
       update: {
         name: data.name,
@@ -101,6 +103,7 @@ export class DynamicCheckRepository {
         variables: data.variables ?? [],
         isEnabled: data.isEnabled ?? true,
         sortOrder: data.sortOrder ?? 0,
+        service: data.service,
       },
     });
   }

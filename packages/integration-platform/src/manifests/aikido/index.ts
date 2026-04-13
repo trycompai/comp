@@ -55,6 +55,12 @@ Note: You'll need admin access to your Aikido workspace to create OAuth credenti
 
   capabilities: ['checks'],
 
+  services: [
+    { id: 'vulnerability-scanning', name: 'Vulnerability Scanning', description: 'Code repository and dependency vulnerability scanning', enabledByDefault: true, implemented: true },
+    { id: 'issue-tracking', name: 'Issue Tracking', description: 'Security issue count thresholds and tracking', enabledByDefault: true, implemented: true },
+    { id: 'container-scanning', name: 'Container Scanning', description: 'Container image vulnerability scanning', implemented: false },
+  ],
+
   // Compliance checks that run daily
   checks: [openSecurityIssuesCheck, codeRepositoryScanningCheck, issueCountThresholdCheck],
 

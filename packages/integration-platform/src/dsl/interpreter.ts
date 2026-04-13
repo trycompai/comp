@@ -28,11 +28,13 @@ export function interpretDeclarativeCheck(opts: {
   taskMapping?: string;
   defaultSeverity?: FindingSeverity;
   variables?: IntegrationCheck['variables'];
+  service?: string;
 }): IntegrationCheck {
   return {
     id: opts.id,
     name: opts.name,
     description: opts.description,
+    service: opts.service,
     taskMapping: opts.taskMapping as IntegrationCheck['taskMapping'],
     defaultSeverity: opts.defaultSeverity,
     variables: opts.variables,

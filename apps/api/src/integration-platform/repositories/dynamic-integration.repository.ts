@@ -56,6 +56,7 @@ export class DynamicIntegrationRepository {
     capabilities?: Prisma.InputJsonValue;
     supportsMultipleConnections?: boolean;
     syncDefinition?: Prisma.InputJsonValue;
+    services?: Prisma.InputJsonValue;
   }): Promise<DynamicIntegration> {
     return db.dynamicIntegration.create({
       data: {
@@ -71,6 +72,7 @@ export class DynamicIntegrationRepository {
         capabilities: data.capabilities ?? ['checks'],
         supportsMultipleConnections: data.supportsMultipleConnections ?? false,
         syncDefinition: data.syncDefinition ?? undefined,
+        services: data.services ?? undefined,
       },
     });
   }
@@ -102,6 +104,7 @@ export class DynamicIntegrationRepository {
     capabilities?: Prisma.InputJsonValue;
     supportsMultipleConnections?: boolean;
     syncDefinition?: Prisma.InputJsonValue | null;
+    services?: Prisma.InputJsonValue;
   }): Promise<DynamicIntegration> {
     return db.dynamicIntegration.upsert({
       where: { slug: data.slug },
@@ -118,6 +121,7 @@ export class DynamicIntegrationRepository {
         capabilities: data.capabilities ?? ['checks'],
         supportsMultipleConnections: data.supportsMultipleConnections ?? false,
         syncDefinition: data.syncDefinition ?? undefined,
+        services: data.services ?? undefined,
       },
       update: {
         name: data.name,
@@ -133,6 +137,7 @@ export class DynamicIntegrationRepository {
         syncDefinition: data.syncDefinition === null
           ? Prisma.DbNull
           : (data.syncDefinition ?? undefined),
+        services: data.services ?? undefined,
       },
     });
   }

@@ -76,6 +76,10 @@ export const UserId = createParamDecorator(
     }
 
     if (!userId) {
+      // For service tokens: allow if no user context needed (return a system identifier)
+      if (authType === 'service') {
+        return 'system';
+      }
       throw new Error(
         'User ID not found. Ensure HybridAuthGuard is applied and using session auth.',
       );
