@@ -1,10 +1,11 @@
 import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { resend } from '../../email/resend';
+import { generateUnsubscribeToken } from '@trycompai/email';
 
 const emailQueue = queue({
   name: 'send-email',
-  concurrencyLimit: 30,
+  concurrencyLimit: 10,
 });
 
 export const sendEmailTask = schemaTask({
@@ -51,12 +52,22 @@ export const sendEmailTask = schemaTask({
     }
 
     try {
+      // Build List-Unsubscribe headers for Gmail/RFC 8058 one-click compliance
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.trycomp.ai';
+      const token = generateUnsubscribeToken(params.to);
+      const oneClickUrl = `${apiBaseUrl}/v1/email/unsubscribe?email=${encodeURIComponent(params.to)}&token=${encodeURIComponent(token)}`;
+      const headers: Record<string, string> = {
+        'List-Unsubscribe': `<${oneClickUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      };
+
       const { data, error } = await resend.emails.send({
         from: fromAddress,
         to: toAddress,
         cc: params.cc,
         subject: params.subject,
         html: params.html,
+        headers,
         scheduledAt: params.scheduledAt,
         attachments: params.attachments?.map((att) => ({
           filename: att.filename,
@@ -75,6 +86,9 @@ export const sendEmailTask = schemaTask({
       }
 
       logger.info('Email sent', { to: params.to, id: data?.id });
+
+      // Throttle: hold the concurrency slot for 1s to space out sends
+      await new Promise((r) => setTimeout(r, 1000));
 
       return { id: data?.id };
     } catch (error) {

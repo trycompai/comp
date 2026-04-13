@@ -8,9 +8,8 @@ import {
 } from '@nestjs/common';
 import { allRoles } from '@trycompai/auth';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db, Role } from '@db';
-import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '../app/s3';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 import type { TransferOwnershipResponseDto } from './dto/transfer-ownership.dto';
 

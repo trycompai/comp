@@ -26,6 +26,8 @@ export interface IntegrationProviderResponse {
   docsUrl?: string;
   credentialFields?: CredentialField[];
   setupInstructions?: string;
+  /** CloudShell/CLI setup script */
+  setupScript?: string;
   /** For OAuth providers: whether platform admin has configured credentials */
   oauthConfigured?: boolean;
   /** Tasks that will be auto-satisfied when this integration is connected */
@@ -34,6 +36,14 @@ export interface IntegrationProviderResponse {
   requiredVariables?: string[];
   /** Whether this integration supports multiple connections per organization */
   supportsMultipleConnections?: boolean;
+  /** Services this integration provides (e.g., Security Hub, GuardDuty for AWS) */
+  services?: Array<{
+    id: string;
+    name: string;
+    description: string;
+    enabledByDefault?: boolean;
+    implemented?: boolean;
+  }>;
 }
 
 /**

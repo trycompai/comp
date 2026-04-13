@@ -1,3 +1,90 @@
+# [3.21.0](https://github.com/trycompai/comp/compare/v3.20.2...v3.21.0) (2026-04-10)
+
+
+### Bug Fixes
+
+* **onboarding:** add initialize-organization trigger task and recover… ([#2512](https://github.com/trycompai/comp/issues/2512)) ([082501f](https://github.com/trycompai/comp/commit/082501f4f3f4f2a6de77514a2fb7b98a09d48ba8))
+* **onboarding:** disable Complete button while server action is running ([8e53a10](https://github.com/trycompai/comp/commit/8e53a10fb5375397da1d7bee58b5ab49fd65984b))
+* **onboarding:** don't delete org after session activation succeeds ([a9cb9c5](https://github.com/trycompai/comp/commit/a9cb9c5615b8a1a24894164dc166767f07fadec1))
+* **onboarding:** fix org creation timeout and improve error handling ([726760d](https://github.com/trycompai/comp/commit/726760d7f613259329fefc7d9b6632990ad10fed))
+* **onboarding:** harden cancel action — guard completed orgs, switch before delete ([b1dec0e](https://github.com/trycompai/comp/commit/b1dec0e8a8f55e50a001f47f6832e398ce19f3b3))
+* **onboarding:** hide cancel button while onboarding submission is in-flight ([887dfa9](https://github.com/trycompai/comp/commit/887dfa949c60671d3c54a070fb1401d216b1dc5f))
+* **onboarding:** require fallback org before allowing cancel ([03452e3](https://github.com/trycompai/comp/commit/03452e38467865ed293e38b9ddf4263bc878379e))
+* **onboarding:** rollback active org switch if delete fails ([9b884f0](https://github.com/trycompai/comp/commit/9b884f09f46221b61fa73f4fcc2f921613422302))
+* **onboarding:** sanitize error messages shown to users ([14a35df](https://github.com/trycompai/comp/commit/14a35df42f47b9d3f7bc7841182f14072e5ae95c))
+* use barrel import for email package (Trigger build fix) ([b165a18](https://github.com/trycompai/comp/commit/b165a18c4ce4c23df6497ca28c4c3bd7213db05f))
+
+
+### Features
+
+* add List-Unsubscribe headers and throttle email sends ([#2507](https://github.com/trycompai/comp/issues/2507)) ([80db5d9](https://github.com/trycompai/comp/commit/80db5d98a21251ab3931e0f484a95cdf451b863d))
+* **onboarding:** add cancel button to abandon onboarding and return to previous org ([7d990c2](https://github.com/trycompai/comp/commit/7d990c24d5ab15fa28bcd37fdd047444e226f00a))
+
+## [3.20.2](https://github.com/trycompai/comp/compare/v3.20.1...v3.20.2) (2026-04-10)
+
+
+### Bug Fixes
+
+* respect RBAC roles for device status ([d1d4e69](https://github.com/trycompai/comp/commit/d1d4e6906db1dd919007e092cf123a0dc50efd55))
+
+## [3.20.1](https://github.com/trycompai/comp/compare/v3.20.0...v3.20.1) (2026-04-10)
+
+
+### Bug Fixes
+
+* **app:** check FleetDM device compliance alongside new device agent in people tab ([2036702](https://github.com/trycompai/comp/commit/20367022a6ce143765c8349c133ea56da9c22ae9))
+
+# [3.20.0](https://github.com/trycompai/comp/compare/v3.19.0...v3.20.0) (2026-04-10)
+
+
+### Bug Fixes
+
+* add deactivated:false to members.some activity check ([16adc03](https://github.com/trycompai/comp/commit/16adc0395aad57f5ad46f1bbdd250e91fa43e7e9))
+* also exclude orgs without access or onboarding from weekly digest ([044fb51](https://github.com/trycompai/comp/commit/044fb512c6940e2b832bc7b5b230afc7148abb7b))
+* **app:** prevent duplicate org creation during setup onboarding ([bd93c1c](https://github.com/trycompai/comp/commit/bd93c1c44a4eeebf133bbba59c23756d00e92926))
+* **browser-automation:** fix Stagehand v3 model format and add delete/toggle controls ([bc05e63](https://github.com/trycompai/comp/commit/bc05e631624ab2aa311c9f5193db27cc90ce78ae))
+* **browser-automation:** hide next-run timer when all automations are paused ([5f700cc](https://github.com/trycompai/comp/commit/5f700cc366b8cec1f1ed3f8940d5dc17563667de))
+* **browser-automation:** use claude-sonnet-4-6 for Stagehand models ([eb012b0](https://github.com/trycompai/comp/commit/eb012b060c3d26ee86c829cfc931d3008cb72f7f))
+* correct Prisma relation name policies -> policy in _count ([4023cf1](https://github.com/trycompai/comp/commit/4023cf19cabc417e7bcc9ff10380b10fb5a7fd19))
+* filter deactivated members from activity query and clamp inactiveDays ([59fc10b](https://github.com/trycompai/comp/commit/59fc10be5b5d58d75a92533e7274221b4d92b71d))
+* handle NaN from parseInt for inactiveDays parameter ([a454aba](https://github.com/trycompai/comp/commit/a454abae4c653b3fcf3f0da8d7faf8e0427ee071))
+* suppress weekly digest emails for inactive orgs ([df38287](https://github.com/trycompai/comp/commit/df382877142d911044e9df60236e7ec164714e9f))
+* use nullish coalescing for inactiveDays parameter ([d0fb120](https://github.com/trycompai/comp/commit/d0fb12043b86183da9258375f3b0fccdb775573d))
+
+
+### Features
+
+* add admin org activity endpoint with session + audit log data ([6c6f633](https://github.com/trycompai/comp/commit/6c6f63368d168adf0cc8a175c82af62691650655))
+* add task, policy, and audit log counts to activity endpoint ([8b8270b](https://github.com/trycompai/comp/commit/8b8270b44e69af7366a7643560aba110d80290fc))
+
+# [3.19.0](https://github.com/trycompai/comp/compare/v3.18.0...v3.19.0) (2026-04-09)
+
+
+### Bug Fixes
+
+* **integrations:** address cursor bugbot findings on per-task disconnect PR ([7795398](https://github.com/trycompai/comp/commit/77953985be7daf16859dd08d04f696c1dd1d85b2))
+* **trust:** fix issue where users couldn't disable soc2 from trust portal ([0f36c59](https://github.com/trycompai/comp/commit/0f36c59ff55373ec11580c9b4479b9ba9b23fba8))
+
+
+### Features
+
+* **integrations:** disconnect individual checks per task without tearing down the whole connection ([4a8331d](https://github.com/trycompai/comp/commit/4a8331d968dc230fcf449843bf5f8bb2f48c8545))
+
+# [3.18.0](https://github.com/trycompai/comp/compare/v3.17.0...v3.18.0) (2026-04-07)
+
+
+### Bug Fixes
+
+* **vercel:** fix false positives, silent errors, and missing project cap ([4ed79d0](https://github.com/trycompai/comp/commit/4ed79d0168d1d701cc07189cf9b7e6a5e63ecb5d))
+* **vercel:** handle CANCELED as medium-severity failure, not transitional ([662ad72](https://github.com/trycompai/comp/commit/662ad720b642f44b38c907e81b9b30114a760c5f))
+* **vercel:** remove remaining checkedCount reference in catch block ([265a5e4](https://github.com/trycompai/comp/commit/265a5e42b9c5177567000545f5c1743369366407))
+* **vercel:** treat CANCELED as transitional, remove dead code ([2a8ac25](https://github.com/trycompai/comp/commit/2a8ac25f3e6a72395e9f1b70cdb123a75bd5bbbb))
+
+
+### Features
+
+* **vercel:** add App Availability check for deployment health monitoring ([6ccef97](https://github.com/trycompai/comp/commit/6ccef97cd18aa70fc5479da18d3094f509c56d9f))
+
 # [3.17.0](https://github.com/trycompai/comp/compare/v3.16.2...v3.17.0) (2026-04-07)
 
 

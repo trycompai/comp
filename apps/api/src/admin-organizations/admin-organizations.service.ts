@@ -100,6 +100,119 @@ export class AdminOrganizationsService {
     };
   }
 
+  async getOrgActivity(options: {
+    inactiveDays: number;
+    hasAccess?: boolean;
+    onboarded?: boolean;
+    page: number;
+    limit: number;
+  }) {
+    const { inactiveDays, hasAccess, onboarded, page, limit } = options;
+    const skip = (page - 1) * limit;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - inactiveDays);
+
+    const where: Record<string, unknown> = {};
+    if (hasAccess !== undefined) where.hasAccess = hasAccess;
+    if (onboarded !== undefined) where.onboardingCompleted = onboarded;
+
+    const [organizations, total] = await Promise.all([
+      db.organization.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          createdAt: true,
+          hasAccess: true,
+          onboardingCompleted: true,
+          _count: { select: { members: true, tasks: true, policy: true, auditLog: true } },
+          members: {
+            where: { deactivated: false },
+            select: {
+              role: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  sessions: {
+                    orderBy: { updatedAt: 'desc' as const },
+                    take: 1,
+                    select: { updatedAt: true },
+                  },
+                },
+              },
+            },
+          },
+          auditLog: {
+            orderBy: { timestamp: 'desc' as const },
+            take: 1,
+            select: { timestamp: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      db.organization.count({ where }),
+    ]);
+
+    // Post-process to find last activity per org
+    const data = organizations.map((org) => {
+      let lastSession: Date | null = null;
+      let owner: { id: string; name: string; email: string } | null = null;
+
+      for (const member of org.members) {
+        const sess = member.user?.sessions?.[0]?.updatedAt;
+        if (sess && (!lastSession || sess > lastSession)) {
+          lastSession = sess;
+        }
+        if (member.role?.includes('owner') && !owner) {
+          owner = { id: member.user.id, name: member.user.name, email: member.user.email };
+        }
+      }
+
+      const lastAuditLog = org.auditLog?.[0]?.timestamp ?? null;
+      const lastActivity = [lastSession, lastAuditLog]
+        .filter(Boolean)
+        .sort((a, b) => (b as Date).getTime() - (a as Date).getTime())[0] as Date | undefined;
+
+      const isActive = lastActivity ? lastActivity >= cutoff : false;
+
+      return {
+        id: org.id,
+        name: org.name,
+        createdAt: org.createdAt,
+        hasAccess: org.hasAccess,
+        onboardingCompleted: org.onboardingCompleted,
+        memberCount: org._count.members,
+        taskCount: org._count.tasks,
+        policyCount: org._count.policy,
+        auditLogCount: org._count.auditLog,
+        owner,
+        lastSession: lastSession?.toISOString() ?? null,
+        lastAuditLog: lastAuditLog ? (lastAuditLog as Date).toISOString() : null,
+        lastActivity: lastActivity?.toISOString() ?? null,
+        isActive,
+      };
+    });
+
+    const activeCount = data.filter((d) => d.isActive).length;
+    const inactiveCount = data.filter((d) => !d.isActive).length;
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      summary: {
+        inactiveDays,
+        activeInPage: activeCount,
+        inactiveInPage: inactiveCount,
+      },
+    };
+  }
+
   async getOrganization(id: string) {
     const org = await db.organization.findUnique({
       where: { id },

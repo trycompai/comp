@@ -1,5 +1,6 @@
 import { MinimalHeader } from '@/components/layout/MinimalHeader';
 import { auth } from '@/utils/auth';
+import { db } from '@db/server';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -41,6 +42,15 @@ export default async function SetupWithIdPage({ params, searchParams }: SetupPag
     return redirect(`/invite/${inviteCode}`);
   }
 
+  // Check if user has existing completed orgs (for cancel button)
+  const existingOrgCount = await db.member.count({
+    where: {
+      userId: user.id,
+      deactivated: false,
+      organization: { onboardingCompleted: true, hasAccess: true },
+    },
+  });
+
   return (
     <div className="flex flex-1 min-h-0">
       {/* Form Section - Left Side */}
@@ -51,6 +61,7 @@ export default async function SetupWithIdPage({ params, searchParams }: SetupPag
           setupId={setupId}
           initialData={setupSession.formData}
           currentStep={setupSession.currentStep}
+          hasOtherOrgs={existingOrgCount > 0}
         />
       </div>
 

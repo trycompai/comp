@@ -10,6 +10,7 @@ import { VariablesController } from './controllers/variables.controller';
 import { TaskIntegrationsController } from './controllers/task-integrations.controller';
 import { WebhookController } from './controllers/webhook.controller';
 import { SyncController } from './controllers/sync.controller';
+import { ServicesController } from './controllers/services.controller';
 import { CredentialVaultService } from './services/credential-vault.service';
 import { ConnectionService } from './services/connection.service';
 import { OAuthCredentialsService } from './services/oauth-credentials.service';
@@ -17,6 +18,7 @@ import { AutoCheckRunnerService } from './services/auto-check-runner.service';
 import { ConnectionAuthTeardownService } from './services/connection-auth-teardown.service';
 import { OAuthTokenRevocationService } from './services/oauth-token-revocation.service';
 import { DynamicManifestLoaderService } from './services/dynamic-manifest-loader.service';
+import { TaskIntegrationChecksService } from './services/task-integration-checks.service';
 import { ProviderRepository } from './repositories/provider.repository';
 import { ConnectionRepository } from './repositories/connection.repository';
 import { CredentialRepository } from './repositories/credential.repository';
@@ -42,6 +44,7 @@ import { GenericEmployeeSyncService } from './services/generic-employee-sync.ser
     TaskIntegrationsController,
     WebhookController,
     SyncController,
+    ServicesController,
   ],
   providers: [
     // Services
@@ -52,6 +55,7 @@ import { GenericEmployeeSyncService } from './services/generic-employee-sync.ser
     OAuthTokenRevocationService,
     ConnectionAuthTeardownService,
     DynamicManifestLoaderService,
+    TaskIntegrationChecksService,
     IntegrationSyncLoggerService,
     GenericEmployeeSyncService,
     // Repositories

@@ -7,6 +7,16 @@ import type { TaskIntegrationCheck, StoredCheckRun } from '../hooks/useIntegrati
 import { useIntegrationChecks } from '../hooks/useIntegrationChecks';
 import { cn } from '@/lib/utils';
 import { useActiveOrganization } from '@/utils/auth-client';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@trycompai/ui/alert-dialog';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
 import { addDays, formatDistanceToNow, isBefore, setHours, setMinutes } from 'date-fns';
@@ -21,9 +31,11 @@ import {
   ExternalLink,
   Loader2,
   Play,
+  Plug,
   PlugZap,
   Settings2,
   TrendingUp,
+  Unplug,
   XCircle,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -58,11 +70,21 @@ export function TaskIntegrationChecks({
     error: hookError,
     mutateChecks,
     runCheck,
+    disconnectCheckFromTask,
+    reconnectCheckToTask,
   } = useIntegrationChecks({ taskId, orgId });
 
   const [runningCheck, setRunningCheck] = useState<string | null>(null);
+  const [togglingCheck, setTogglingCheck] = useState<string | null>(null);
   const [expandedCheck, setExpandedCheck] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [disconnectTarget, setDisconnectTarget] = useState<{
+    connectionId: string;
+    checkId: string;
+    checkName: string;
+    integrationName: string;
+  } | null>(null);
+  const [disconnectError, setDisconnectError] = useState<string | null>(null);
 
   // Sync hook-level error into local state
   useEffect(() => {
@@ -138,6 +160,44 @@ export function TaskIntegrationChecks({
     [runCheck, onTaskUpdated],
   );
 
+  const handleConfirmDisconnect = useCallback(async () => {
+    if (!disconnectTarget) return;
+    const { connectionId, checkId, checkName } = disconnectTarget;
+    setTogglingCheck(checkId);
+    setDisconnectError(null);
+    try {
+      await disconnectCheckFromTask(connectionId, checkId);
+      toast.success(`Disconnected "${checkName}" from this task.`);
+      setDisconnectTarget(null);
+    } catch (err) {
+      console.error('Failed to disconnect check:', err);
+      setDisconnectError(
+        err instanceof Error ? err.message : 'Failed to disconnect check',
+      );
+    } finally {
+      setTogglingCheck(null);
+    }
+  }, [disconnectCheckFromTask, disconnectTarget]);
+
+  const handleReconnect = useCallback(
+    async (connectionId: string, checkId: string, checkName: string) => {
+      setTogglingCheck(checkId);
+      setError(null);
+      try {
+        await reconnectCheckToTask(connectionId, checkId);
+        toast.success(`Reconnected "${checkName}" to this task.`);
+      } catch (err) {
+        console.error('Failed to reconnect check:', err);
+        setError(
+          err instanceof Error ? err.message : 'Failed to reconnect check',
+        );
+      } finally {
+        setTogglingCheck(null);
+      }
+    },
+    [reconnectCheckToTask],
+  );
+
   if (loading) {
     return (
       <div className="space-y-5">
@@ -155,7 +215,16 @@ export function TaskIntegrationChecks({
     );
   }
 
-  const connectedChecks = checks.filter((c) => c.isConnected);
+  // Split checks into three groups:
+  //   1. connectedChecks        — active + not disabled for this task
+  //   2. disabledForTaskChecks  — connected but manually disconnected from this task
+  //   3. disconnectedChecks     — no connection at all (suggestions)
+  const connectedChecks = checks.filter(
+    (c) => c.isConnected && !c.isDisabledForTask,
+  );
+  const disabledForTaskChecks = checks.filter(
+    (c) => c.isConnected && c.isDisabledForTask,
+  );
   const disconnectedChecks = checks.filter((c) => !c.isConnected);
 
   // If there are no checks at all for this task, don't render anything
@@ -229,18 +298,11 @@ export function TaskIntegrationChecks({
 
       {/* Card Content */}
       <div className="p-5">
-        {connectedChecks.length === 0 && disconnectedChecks.length === 0 ? (
+        {connectedChecks.length === 0 &&
+        disabledForTaskChecks.length === 0 ? (
           <IntegrationEmptyState
             disconnectedChecks={disconnectedChecks}
-            hasNoMappedChecks={true}
-            orgId={orgId}
-            taskId={taskId}
-            isManualTask={isManualTask}
-          />
-        ) : connectedChecks.length === 0 ? (
-          <IntegrationEmptyState
-            disconnectedChecks={disconnectedChecks}
-            hasNoMappedChecks={false}
+            hasNoMappedChecks={disconnectedChecks.length === 0}
             orgId={orgId}
             taskId={taskId}
             isManualTask={isManualTask}
@@ -504,6 +566,28 @@ export function TaskIntegrationChecks({
                             >
                               <Settings2 className="h-4 w-4" />
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                              title="Disconnect this check from the task"
+                              disabled={togglingCheck === check.checkId}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDisconnectTarget({
+                                  connectionId: check.connectionId!,
+                                  checkId: check.checkId,
+                                  checkName: check.checkName,
+                                  integrationName: check.integrationName,
+                                });
+                              }}
+                            >
+                              {togglingCheck === check.checkId ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Unplug className="h-4 w-4" />
+                              )}
+                            </Button>
                           </>
                         )}
 
@@ -547,6 +631,64 @@ export function TaskIntegrationChecks({
               })}
             </div>
 
+            {/* Checks that are connected but manually disabled for this task */}
+            {disabledForTaskChecks.length > 0 && (
+              <div className="pt-4 border-t border-border/40">
+                <p className="text-xs font-medium text-muted-foreground mb-3">
+                  Disconnected from this task
+                </p>
+                <div className="space-y-1">
+                  {disabledForTaskChecks.map((check) => {
+                    const isToggling = togglingCheck === check.checkId;
+                    return (
+                      <div
+                        key={`disabled-${check.integrationId}-${check.checkId}`}
+                        className="flex flex-row items-center justify-between py-2 px-3 rounded-md bg-muted/30 border border-dashed border-border/60"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Image
+                            src={check.integrationLogoUrl}
+                            alt={check.integrationName}
+                            width={20}
+                            height={20}
+                            className="rounded opacity-50"
+                          />
+                          <div>
+                            <p className="text-sm text-muted-foreground line-through">
+                              {check.checkName}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground/80">
+                              Will not run until reconnected
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 px-3"
+                          disabled={isToggling}
+                          onClick={() =>
+                            handleReconnect(
+                              check.connectionId!,
+                              check.checkId,
+                              check.checkName,
+                            )
+                          }
+                        >
+                          {isToggling ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Plug className="h-3.5 w-3.5" />
+                          )}
+                          <span className="ml-1.5 text-xs">Reconnect</span>
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Disconnected Checks as Suggestions */}
             {disconnectedChecks.length > 0 && (
               <div className="pt-4 border-t border-border/40">
@@ -587,6 +729,60 @@ export function TaskIntegrationChecks({
           </div>
         )}
       </div>
+
+      {/* Confirm disconnect-from-task dialog */}
+      <AlertDialog
+        open={!!disconnectTarget}
+        onOpenChange={(open) => {
+          // Don't let Escape / click-outside close the dialog mid-request —
+          // the in-flight operation still owns the target state.
+          if (!open && togglingCheck === null) {
+            setDisconnectTarget(null);
+            setDisconnectError(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disconnect check from task?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {disconnectTarget ? (
+                <>
+                  <strong>{disconnectTarget.checkName}</strong> from{' '}
+                  <strong>{disconnectTarget.integrationName}</strong> will no
+                  longer run for this task. The integration itself stays
+                  connected and will continue running for other tasks. You can
+                  reconnect it to this task at any time.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {disconnectError && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+              <span>{disconnectError}</span>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={togglingCheck !== null}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                // Radix's AlertDialogAction auto-closes the dialog on click.
+                // Stop that so our async handler controls the close, keeping
+                // the "Disconnecting…" state visible until the request lands
+                // and surfacing any error inside the dialog context.
+                e.preventDefault();
+                void handleConfirmDisconnect();
+              }}
+              disabled={togglingCheck !== null}
+            >
+              {togglingCheck !== null ? 'Disconnecting...' : 'Disconnect'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Configure Integration Dialog - opens after OAuth success or when clicking Configure */}
       {configureConnection && (

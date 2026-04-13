@@ -130,13 +130,15 @@ export function useOnboardingForm({
         // Clear answers after successful creation
         setSavedAnswers({});
       } else {
-        toast.error('Failed to create organization');
+        console.error('Organization creation failed:', data?.error);
+        toast.error('Failed to create organization. Please try again.');
         setIsFinalizing(false);
         setIsOnboarding(false);
       }
     },
-    onError: () => {
-      toast.error('Failed to create organization');
+    onError: ({ error }) => {
+      console.error('Organization creation error:', error.serverError);
+      toast.error('Failed to create organization. Please try again.');
       setIsFinalizing(false);
       setIsOnboarding(false);
     },
@@ -146,6 +148,9 @@ export function useOnboardingForm({
   });
 
   const handleCreateOrganizationAction = (currentAnswers: Partial<CompanyDetails>) => {
+    // Guard against duplicate submissions (retry/double-click)
+    if (isOnboarding || isFinalizing) return;
+
     // Only pass the first 3 fields to the minimal action
     createOrganizationAction.execute({
       frameworkIds: currentAnswers.frameworkIds || [],

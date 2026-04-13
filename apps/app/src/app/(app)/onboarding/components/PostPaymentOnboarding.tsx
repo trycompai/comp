@@ -11,17 +11,20 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Balancer from 'react-wrap-balancer';
 import { usePostPaymentOnboarding } from '../hooks/usePostPaymentOnboarding';
+import { CancelOnboardingButton } from './CancelOnboardingButton';
 
 interface PostPaymentOnboardingProps {
   organization: Organization;
   initialData?: Record<string, any>;
   userEmail?: string;
+  hasOtherOrgs?: boolean;
 }
 
 export function PostPaymentOnboarding({
   organization,
   initialData = {},
   userEmail,
+  hasOtherOrgs = false,
 }: PostPaymentOnboardingProps) {
   const {
     stepIndex,
@@ -239,6 +242,10 @@ export function PostPaymentOnboarding({
             )}
           </AnimatePresence>
         <div className="flex items-center gap-2 justify-end">
+          <CancelOnboardingButton
+            organizationId={organization.id}
+            hasOtherOrgs={hasOtherOrgs && !isOnboarding && !isFinalizing}
+          />
           <AnimatePresence>
             {stepIndex > 0 && (
               <motion.div

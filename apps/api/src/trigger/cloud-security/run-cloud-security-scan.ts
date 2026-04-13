@@ -52,19 +52,30 @@ export const runCloudSecurityScan = task({
         };
       }
 
-      // Call the cloud security scan API endpoint
       const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
+      const headers = {
+        'Content-Type': 'application/json',
+        'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+        'x-organization-id': organizationId,
+      };
 
+      // Auto-detect services before scanning (AWS via Cost Explorer, GCP via Service Usage API)
+      // Azure uses scan-based detection instead, so skip the pre-scan detect call
+      if (providerSlug === 'aws' || providerSlug === 'gcp') {
+        try {
+          await fetch(
+            `${apiUrl}/v1/cloud-security/detect-services/${connectionId}`,
+            { method: 'POST', headers },
+          );
+        } catch {
+          // Non-critical — scan proceeds even if detect fails
+        }
+      }
+
+      // Run the scan
       const response = await fetch(
         `${apiUrl}/v1/cloud-security/scan/${connectionId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
-            'x-organization-id': organizationId,
-          },
-        },
+        { method: 'POST', headers },
       );
 
       if (!response.ok) {
