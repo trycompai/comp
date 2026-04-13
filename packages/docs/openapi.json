@@ -16457,6 +16457,62 @@
         ]
       }
     },
+    "/v1/integrations/tasks/{taskId}/checks/disconnect": {
+      "post": {
+        "operationId": "TaskIntegrationsController_disconnectCheckFromTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/{taskId}/checks/reconnect": {
+      "post": {
+        "operationId": "TaskIntegrationsController_reconnectCheckToTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
     "/v1/integrations/tasks/{taskId}/runs": {
       "get": {
         "operationId": "TaskIntegrationsController_getTaskCheckRuns_v1",
@@ -19638,6 +19694,38 @@
         ]
       }
     },
+    "/v1/email/unsubscribe": {
+      "post": {
+        "operationId": "UnsubscribeController_unsubscribe_v1",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "One-click unsubscribe (RFC 8058)",
+        "tags": [
+          "Email - Unsubscribe"
+        ]
+      }
+    },
     "/v1/secrets": {
       "get": {
         "operationId": "SecretsController_listSecrets_v1",
@@ -20264,6 +20352,65 @@
           }
         },
         "summary": "List all organizations (platform admin)",
+        "tags": [
+          "Admin - Organizations"
+        ]
+      }
+    },
+    "/v1/admin/organizations/activity": {
+      "get": {
+        "operationId": "AdminOrganizationsController_activity_v1",
+        "parameters": [
+          {
+            "name": "inactiveDays",
+            "required": false,
+            "in": "query",
+            "description": "Filter orgs with no session in N days (default: 90)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hasAccess",
+            "required": false,
+            "in": "query",
+            "description": "Filter by hasAccess (true/false)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onboarded",
+            "required": false,
+            "in": "query",
+            "description": "Filter by onboardingCompleted (true/false)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Organization activity report - shows last session per org (platform admin)",
         "tags": [
           "Admin - Organizations"
         ]

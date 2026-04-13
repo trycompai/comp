@@ -16,6 +16,7 @@ import { api } from '@/lib/api-client';
 import { meetingFields } from '@trycompai/company';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  Alert,
   Button,
   Field,
   FieldError,
@@ -548,6 +549,13 @@ export function CompanySubmissionWizard({
                 {textareaFields.length === 0 && (
                   <Text variant="muted">No additional fields required for this step.</Text>
                 )}
+                {textareaFields.some((f) => f.placeholder) && (
+                  <Alert
+                    variant="warning"
+                    title="Reference only"
+                    description="The pre-filled content below is provided as a template. You must review and edit it to reflect your organization's actual information before submitting."
+                  />
+                )}
                 {textareaFields.map((field) => (
                   <Controller
                     key={field.key}
@@ -618,6 +626,13 @@ export function CompanySubmissionWizard({
                     )}
                   />
                 ))}
+                {extendedFields.some((f) => f.type === 'textarea' && f.placeholder) && (
+                  <Alert
+                    variant="warning"
+                    title="Reference only"
+                    description="The pre-filled content below is provided as a template. You must review and edit it to reflect your organization's actual information before submitting."
+                  />
+                )}
                 {extendedFields.map((field) => (
                   <Controller
                     key={field.key}
