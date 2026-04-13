@@ -1,10 +1,24 @@
 import {
   GetObjectCommand,
+  PutObjectCommand,
   S3Client,
   type GetObjectCommandOutput,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl as _getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Logger } from '@nestjs/common';
 import '../config/load-env';
+
+/**
+ * Re-export getSignedUrl with a type workaround for duplicate @smithy/types.
+ * Bun/Docker installs separate @smithy/types copies for @aws-sdk/client-s3
+ * and @aws-sdk/s3-request-presigner even when pinned to the same version.
+ * The runtime types are fully compatible — only the TypeScript class identity differs.
+ */
+export const getSignedUrl = _getSignedUrl as unknown as (
+  client: S3Client,
+  command: GetObjectCommand | PutObjectCommand,
+  options?: { expiresIn?: number },
+) => Promise<string>;
 
 const logger = new Logger('S3');
 

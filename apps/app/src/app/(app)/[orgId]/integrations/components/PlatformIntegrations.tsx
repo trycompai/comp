@@ -620,7 +620,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                                 Connecting...
                               </>
                             ) : (
-                              'Connect'
+                              provider.authType === 'oauth2' ? 'Connect' : 'Set up'
                             )}
                           </Button>
                         ) : null}
