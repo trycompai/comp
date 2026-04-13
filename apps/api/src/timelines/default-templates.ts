@@ -21,12 +21,31 @@ export interface DefaultPhaseTemplate {
   orderIndex: number;
   defaultDurationWeeks: number;
   completionType: PhaseCompletionType;
+  /**
+   * When true, completing this phase should lock timeline automation state.
+   * This is intended for milestones like SOC 2 Observation Period completion.
+   */
+  locksTimelineOnComplete?: boolean;
 }
 
 export interface DefaultTimelineTemplate {
-  frameworkName: string; // Used to match against FrameworkEditorFramework.name
+  frameworkName: string; // Matched against normalized FrameworkEditorFramework.name
   name: string; // Display name, e.g. "SOC 2 Type 2"
   cycleNumber: number;
+  /**
+   * Independent track identifier within a framework.
+   * Example: SOC 2 has separate tracks for Type 1 and Type 2.
+   */
+  trackKey?: string;
+  /**
+   * Stable key to identify this template's semantic meaning.
+   * Enables deterministic transitions across cycles.
+   */
+  templateKey?: string;
+  /**
+   * Stable key for which template should be used on "next cycle".
+   */
+  nextTemplateKey?: string;
   phases: DefaultPhaseTemplate[];
 }
 
@@ -36,6 +55,9 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     frameworkName: 'SOC 2',
     name: 'SOC 2 Type 1',
     cycleNumber: 1,
+    trackKey: 'soc2_type1',
+    templateKey: 'soc2_type1',
+    nextTemplateKey: 'soc2_type1',
     phases: [
       {
         name: 'Policies',
@@ -85,11 +107,14 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     ],
   },
 
-  // SOC 2 Type 2 (cycle 2)
+  // SOC 2 Type 2 (cycle 1 in its own track)
   {
     frameworkName: 'SOC 2',
     name: 'SOC 2 Type 2',
-    cycleNumber: 2,
+    cycleNumber: 1,
+    trackKey: 'soc2_type2',
+    templateKey: 'soc2_type2_year1',
+    nextTemplateKey: 'soc2_type2_renewal',
     phases: [
       {
         name: 'Policies',
@@ -124,6 +149,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         orderIndex: 3,
         defaultDurationWeeks: 4,
         completionType: PhaseCompletionType.MANUAL,
+        locksTimelineOnComplete: true,
       },
       {
         name: 'Auditor Review',
@@ -150,11 +176,14 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     ],
   },
 
-  // SOC 2 Type 2 - Year 2+ (cycle 3+)
+  // SOC 2 Type 2 - Year 2+ (cycle 2+ in the Type 2 track)
   {
     frameworkName: 'SOC 2',
     name: 'SOC 2 Type 2 - Year 2+',
-    cycleNumber: 3,
+    cycleNumber: 2,
+    trackKey: 'soc2_type2',
+    templateKey: 'soc2_type2_renewal',
+    nextTemplateKey: 'soc2_type2_renewal',
     phases: [
       {
         name: 'Policies',
@@ -189,6 +218,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         orderIndex: 3,
         defaultDurationWeeks: 18,
         completionType: PhaseCompletionType.MANUAL,
+        locksTimelineOnComplete: true,
       },
       {
         name: 'Auditor Review',
@@ -220,6 +250,9 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     frameworkName: 'SOC 2 v.1',
     name: 'SOC 2 Type 1',
     cycleNumber: 1,
+    trackKey: 'soc2v1_type1',
+    templateKey: 'soc2v1_type1',
+    nextTemplateKey: 'soc2v1_type1',
     phases: [
       {
         name: 'Evidence Gathering',
@@ -251,6 +284,9 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     frameworkName: 'ISO27001',
     name: 'ISO 27001',
     cycleNumber: 1,
+    trackKey: 'primary',
+    templateKey: 'iso27001_primary',
+    nextTemplateKey: 'iso27001_primary',
     phases: [
       {
         name: 'Evidence Gathering',
@@ -283,6 +319,9 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     frameworkName: 'HIPAA',
     name: 'HIPAA',
     cycleNumber: 1,
+    trackKey: 'primary',
+    templateKey: 'hipaa_primary',
+    nextTemplateKey: 'hipaa_primary',
     phases: [
       {
         name: 'Evidence Gathering & Training',
@@ -315,6 +354,9 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     frameworkName: 'GDPR',
     name: 'GDPR',
     cycleNumber: 1,
+    trackKey: 'primary',
+    templateKey: 'gdpr_primary',
+    nextTemplateKey: 'gdpr_primary',
     phases: [
       {
         name: 'Evidence Gathering & Training',
@@ -344,14 +386,62 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
 ];
 
 /**
+ * Fallback used when a framework has no explicit code-default timeline.
+ * This provides a safe, editable baseline for CX/admin teams.
+ */
+export const GENERIC_DEFAULT_TIMELINE_TEMPLATE: DefaultTimelineTemplate = {
+  frameworkName: '*',
+  name: 'Baseline Compliance Timeline',
+  cycleNumber: 1,
+  trackKey: 'primary',
+  templateKey: 'baseline_primary',
+  nextTemplateKey: 'baseline_primary',
+  phases: [
+    {
+      name: 'Scoping & Planning',
+      description: 'Define scope, owners, and audit goals for this cycle.',
+      orderIndex: 0,
+      defaultDurationWeeks: 2,
+      completionType: PhaseCompletionType.MANUAL,
+    },
+    {
+      name: 'Evidence Collection',
+      description: 'Collect required evidence and complete implementation tasks.',
+      orderIndex: 1,
+      defaultDurationWeeks: 6,
+      completionType: PhaseCompletionType.MANUAL,
+    },
+    {
+      name: 'Internal Review',
+      description: 'Validate readiness and resolve open findings before external review.',
+      orderIndex: 2,
+      defaultDurationWeeks: 2,
+      completionType: PhaseCompletionType.MANUAL,
+    },
+    {
+      name: 'Final Report',
+      description: 'Upload final attestation, report, or certification deliverable.',
+      orderIndex: 3,
+      defaultDurationWeeks: 1,
+      completionType: PhaseCompletionType.AUTO_UPLOAD,
+    },
+  ],
+};
+
+function normalizeFrameworkName(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/**
  * Find matching default templates for a framework by name.
  * Returns all matching templates (could be multiple for different cycle numbers).
  */
 export function getDefaultTemplatesForFramework(
   frameworkName: string,
 ): DefaultTimelineTemplate[] {
+  const normalized = normalizeFrameworkName(frameworkName);
   return DEFAULT_TIMELINE_TEMPLATES.filter(
-    (t) => t.frameworkName.toLowerCase() === frameworkName.toLowerCase(),
+    (t) => normalizeFrameworkName(t.frameworkName) === normalized,
   );
 }
 
@@ -362,8 +452,28 @@ export function getDefaultTemplatesForFramework(
 export function getDefaultTemplateForCycle(
   frameworkName: string,
   cycleNumber: number,
+  options?: { trackKey?: string },
 ): DefaultTimelineTemplate | undefined {
-  const templates = getDefaultTemplatesForFramework(frameworkName);
+  const trackKey = options?.trackKey;
+  const templatesForFramework = getDefaultTemplatesForFramework(frameworkName);
+  const trackScopedTemplates = trackKey
+    ? templatesForFramework.filter((t) => (t.trackKey ?? 'primary') === trackKey)
+    : templatesForFramework;
+  const templates =
+    trackScopedTemplates.length > 0
+      ? trackScopedTemplates
+      : templatesForFramework;
+
+  // Unknown framework: use a generic baseline that admins can customize.
+  if (templates.length === 0) {
+    if (cycleNumber < GENERIC_DEFAULT_TIMELINE_TEMPLATE.cycleNumber) {
+      return undefined;
+    }
+    return {
+      ...GENERIC_DEFAULT_TIMELINE_TEMPLATE,
+      phases: GENERIC_DEFAULT_TIMELINE_TEMPLATE.phases.map((phase) => ({ ...phase })),
+    };
+  }
 
   // Exact match first
   const exact = templates.find((t) => t.cycleNumber === cycleNumber);

@@ -9,10 +9,11 @@ import type { DefaultTimelineTemplate } from './default-templates';
 export async function findTemplateForCycle(
   frameworkId: string,
   cycleNumber: number,
+  trackKey = 'primary',
 ) {
   const exact = await db.timelineTemplate.findUnique({
     where: {
-      frameworkId_cycleNumber: { frameworkId, cycleNumber },
+      frameworkId_trackKey_cycleNumber: { frameworkId, trackKey, cycleNumber },
     },
     include: { phases: { orderBy: { orderIndex: 'asc' } } },
   });
@@ -22,6 +23,7 @@ export async function findTemplateForCycle(
   return db.timelineTemplate.findFirst({
     where: {
       frameworkId,
+      trackKey,
       cycleNumber: { lte: cycleNumber },
     },
     orderBy: { cycleNumber: 'desc' },
@@ -39,18 +41,29 @@ export async function upsertDefaultTemplate(
   { forceRefresh = false }: { forceRefresh?: boolean } = {},
 ) {
   return db.$transaction(async (tx) => {
+    const trackKey = defaultTemplate.trackKey ?? 'primary';
+
     const template = await tx.timelineTemplate.upsert({
       where: {
-        frameworkId_cycleNumber: {
+        frameworkId_trackKey_cycleNumber: {
           frameworkId,
+          trackKey,
           cycleNumber: defaultTemplate.cycleNumber,
         },
       },
-      update: { name: defaultTemplate.name },
+      update: {
+        name: defaultTemplate.name,
+        trackKey,
+        templateKey: defaultTemplate.templateKey ?? null,
+        nextTemplateKey: defaultTemplate.nextTemplateKey ?? null,
+      },
       create: {
         frameworkId,
         name: defaultTemplate.name,
+        trackKey,
         cycleNumber: defaultTemplate.cycleNumber,
+        templateKey: defaultTemplate.templateKey,
+        nextTemplateKey: defaultTemplate.nextTemplateKey,
       },
       include: { phases: { orderBy: { orderIndex: 'asc' } } },
     });
@@ -75,6 +88,7 @@ export async function upsertDefaultTemplate(
             orderIndex: phase.orderIndex,
             defaultDurationWeeks: phase.defaultDurationWeeks,
             completionType: phase.completionType,
+            locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,
           },
         });
       }
@@ -97,17 +111,22 @@ export async function resolveTemplate(
   frameworkId: string,
   frameworkName: string,
   cycleNumber: number,
-  { forceRefresh = false }: { forceRefresh?: boolean } = {},
+  {
+    forceRefresh = false,
+    trackKey = 'primary',
+  }: { forceRefresh?: boolean; trackKey?: string } = {},
 ) {
   if (!forceRefresh) {
-    const dbTemplate = await findTemplateForCycle(frameworkId, cycleNumber);
+    const dbTemplate = await findTemplateForCycle(frameworkId, cycleNumber, trackKey);
     if (dbTemplate) return dbTemplate;
   }
 
-  const codeDefault = getDefaultTemplateForCycle(frameworkName, cycleNumber);
+  const codeDefault = getDefaultTemplateForCycle(frameworkName, cycleNumber, {
+    trackKey,
+  });
   if (!codeDefault) {
     // No code default — fall back to DB even if forceRefresh
-    return findTemplateForCycle(frameworkId, cycleNumber);
+    return findTemplateForCycle(frameworkId, cycleNumber, trackKey);
   }
 
   return upsertDefaultTemplate(frameworkId, codeDefault, { forceRefresh });
@@ -127,6 +146,10 @@ export async function createInstanceFromTemplate({
   cycleNumber: number;
   template: {
     id: string;
+    frameworkId?: string;
+    trackKey?: string;
+    templateKey?: string | null;
+    nextTemplateKey?: string | null;
     phases: Array<{
       id: string;
       name: string;
@@ -135,6 +158,7 @@ export async function createInstanceFromTemplate({
       orderIndex: number;
       defaultDurationWeeks: number;
       completionType: PhaseCompletionType;
+      locksTimelineOnComplete: boolean;
     }>;
   };
 }) {
@@ -144,6 +168,7 @@ export async function createInstanceFromTemplate({
         organizationId,
         frameworkInstanceId,
         templateId: template.id,
+        trackKey: template.trackKey ?? 'primary',
         cycleNumber,
         status: TimelineStatus.DRAFT,
       },
@@ -160,6 +185,7 @@ export async function createInstanceFromTemplate({
           orderIndex: phase.orderIndex,
           durationWeeks: phase.defaultDurationWeeks,
           completionType: phase.completionType,
+          locksTimelineOnComplete: phase.locksTimelineOnComplete,
         },
       });
     }

@@ -24,6 +24,7 @@ export class TimelinesPhasesService {
       durationWeeks?: number;
       documentUrl?: string;
       documentName?: string;
+      locksTimelineOnComplete?: boolean;
     },
   ) {
     const instance = await db.timelineInstance.findUnique({
@@ -66,6 +67,9 @@ export class TimelinesPhasesService {
         ...(data.documentUrl !== undefined && { documentUrl: data.documentUrl }),
         ...(data.documentName !== undefined && { documentName: data.documentName }),
         ...(datesPinned !== undefined && { datesPinned }),
+        ...(data.locksTimelineOnComplete !== undefined && {
+          locksTimelineOnComplete: data.locksTimelineOnComplete,
+        }),
       },
     });
 
@@ -90,6 +94,7 @@ export class TimelinesPhasesService {
     if (
       data.documentUrl &&
       updated.completionType === PhaseCompletionType.AUTO_UPLOAD &&
+      !instance.lockedAt &&
       updated.status !== 'COMPLETED'
     ) {
       return this.lifecycle.completePhase(instanceId, phaseId, organizationId);

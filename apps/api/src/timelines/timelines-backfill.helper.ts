@@ -234,8 +234,15 @@ async function applyBackfillState(
  * Frameworks that need multiple timelines per instance (e.g., SOC 2 has Type 1 + Type 2).
  * Maps framework name → array of cycle numbers to create.
  */
-const MULTI_TIMELINE_FRAMEWORKS: Record<string, number[]> = {
-  'SOC 2': [1, 2], // cycle 1 = Type 1, cycle 2 = Type 2 Year 1
+const MULTI_TIMELINE_FRAMEWORKS: Record<
+  string,
+  Array<{ cycleNumber: number; trackKey: string }>
+> = {
+  // Type 1 and Type 2 are independent tracks with their own cycle 1.
+  'SOC 2': [
+    { cycleNumber: 1, trackKey: 'soc2_type1' },
+    { cycleNumber: 1, trackKey: 'soc2_type2' },
+  ],
 };
 
 export async function backfillTimeline({
@@ -252,14 +259,18 @@ export async function backfillTimeline({
   forceRefresh?: boolean;
 }): Promise<void> {
   const { framework } = frameworkInstance;
-  const cyclesToCreate = MULTI_TIMELINE_FRAMEWORKS[framework.name] ?? [1];
+  const timelinesToCreate =
+    MULTI_TIMELINE_FRAMEWORKS[framework.name] ?? [
+      { cycleNumber: 1, trackKey: 'primary' },
+    ];
 
-  for (const cycleNumber of cyclesToCreate) {
+  for (const timelineToCreate of timelinesToCreate) {
     try {
       await backfillSingleTimeline({
         organizationId,
         frameworkInstance,
-        cycleNumber,
+        cycleNumber: timelineToCreate.cycleNumber,
+        trackKey: timelineToCreate.trackKey,
         forceRefresh,
       });
     } catch {
@@ -272,6 +283,7 @@ async function backfillSingleTimeline({
   organizationId,
   frameworkInstance,
   cycleNumber,
+  trackKey,
   forceRefresh = false,
 }: {
   organizationId: string;
@@ -281,18 +293,28 @@ async function backfillSingleTimeline({
     framework: { id: string; name: string };
   };
   cycleNumber: number;
+  trackKey: string;
   forceRefresh?: boolean;
 }): Promise<void> {
   const { framework } = frameworkInstance;
 
   // Check if this specific cycle already exists
   const existing = await db.timelineInstance.findFirst({
-    where: { frameworkInstanceId: frameworkInstance.id, cycleNumber },
+    where: {
+      frameworkInstanceId: frameworkInstance.id,
+      trackKey,
+      cycleNumber,
+    },
   });
   if (existing) return;
 
   // Step 1: Resolve and create DRAFT instance from template
-  const template = await resolveTemplate(frameworkInstance.frameworkId, framework.name, cycleNumber, { forceRefresh });
+  const template = await resolveTemplate(
+    frameworkInstance.frameworkId,
+    framework.name,
+    cycleNumber,
+    { forceRefresh, trackKey },
+  );
   if (!template) return;
 
   const instance = await createInstanceFromTemplate({

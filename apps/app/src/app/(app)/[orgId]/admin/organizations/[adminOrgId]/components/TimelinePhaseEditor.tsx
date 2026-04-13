@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import type { AdminOrgTimeline } from '@/hooks/use-admin-timelines';
 import {
+  Badge,
   Button,
   Sheet,
   SheetBody,
@@ -17,7 +18,7 @@ import {
   Stack,
   Text,
 } from '@trycompai/design-system';
-import { Checkmark } from '@trycompai/design-system/icons';
+import { Checkmark, Locked } from '@trycompai/design-system/icons';
 import { Input } from '@trycompai/ui/input';
 import { Label } from '@trycompai/ui/label';
 
@@ -26,6 +27,7 @@ const phaseUpdateSchema = z.object({
   description: z.string().optional(),
   durationWeeks: z.number().min(1, 'Must be at least 1 week'),
   startDate: z.string().optional(),
+  locksTimelineOnComplete: z.boolean(),
 });
 
 type PhaseUpdateValues = z.infer<typeof phaseUpdateSchema>;
@@ -80,6 +82,7 @@ export function TimelinePhaseEditor({
 
   const watchedStart = watch('startDate');
   const watchedDuration = watch('durationWeeks');
+  const watchedLock = watch('locksTimelineOnComplete');
   const calculatedEnd = watchedStart && watchedDuration
     ? addWeeks(watchedStart, watchedDuration)
     : null;
@@ -96,6 +99,7 @@ export function TimelinePhaseEditor({
         startDate: values.startDate
           ? new Date(values.startDate).toISOString()
           : undefined,
+        locksTimelineOnComplete: values.locksTimelineOnComplete,
       },
     );
     setSaving(false);
@@ -135,6 +139,30 @@ export function TimelinePhaseEditor({
         <SheetBody>
           <form onSubmit={handleSubmit(handleSave)}>
             <Stack gap="md">
+              <div className="flex items-center justify-between rounded-md border p-2">
+                <Text size="sm" variant="muted">Lock on completion</Text>
+                <Badge variant={watchedLock ? 'default' : 'outline'}>
+                  {watchedLock ? (
+                    <>
+                      <Locked size={12} />
+                      Enabled
+                    </>
+                  ) : 'Disabled'}
+                </Badge>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  id="phase-lock-toggle"
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-input"
+                  {...register('locksTimelineOnComplete')}
+                />
+                <Label htmlFor="phase-lock-toggle">
+                  Lock timeline when this phase completes
+                </Label>
+              </div>
+
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="phase-name">Name</Label>
                 <Input id="phase-name" {...register('name')} />
@@ -198,11 +226,18 @@ export function TimelinePhaseEditor({
 }
 
 function phaseDefaults(phase: TimelinePhase | null): PhaseUpdateValues {
-  if (!phase) return { name: '', durationWeeks: 2 };
+  if (!phase) {
+    return {
+      name: '',
+      durationWeeks: 2,
+      locksTimelineOnComplete: false,
+    };
+  }
   return {
     name: phase.name,
     description: phase.description ?? '',
     durationWeeks: phase.durationWeeks,
     startDate: toDateInput(phase.startDate),
+    locksTimelineOnComplete: phase.locksTimelineOnComplete,
   };
 }

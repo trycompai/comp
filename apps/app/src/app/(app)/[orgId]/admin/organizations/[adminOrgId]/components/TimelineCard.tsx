@@ -17,16 +17,19 @@ import {
   Badge,
   Button,
   Section,
+  Textarea,
 } from '@trycompai/design-system';
 import {
   Checkmark,
   CircleDash,
   InProgress,
+  Locked,
   Pause,
   Play,
   Edit,
   Reset,
   TrashCan,
+  Unlocked,
 } from '@trycompai/design-system/icons';
 import { TimelinePhaseBar } from '@/app/(app)/[orgId]/overview/components/TimelinePhaseBar';
 import { TimelineActivateForm } from './TimelineActivateForm';
@@ -96,9 +99,14 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
     method: 'post' | 'delete',
     path: string,
     successMsg: string,
+    body?: unknown,
   ) => {
     setActionLoading(true);
-    const res = await (method === 'delete' ? api.delete(path) : api.post(path));
+    const res = await (
+      method === 'delete'
+        ? api.delete(path, undefined, body)
+        : api.post(path, body)
+    );
     setActionLoading(false);
     if (res.error) {
       toast.error(res.error);
@@ -114,8 +122,15 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
       actions={
         <div className="flex items-center gap-2">
           <Badge variant={badge.variant}>{badge.label}</Badge>
+          {timeline.lockedAt ? (
+            <Badge variant="outline">
+              <Locked size={12} />
+              Locked
+            </Badge>
+          ) : null}
           <TimelineActions
             status={timeline.status}
+            lockedAt={timeline.lockedAt}
             orgId={orgId}
             timelineId={timeline.id}
             loading={actionLoading}
@@ -133,6 +148,14 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
             }
             onStartNextCycle={() =>
               runAction('post', `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/next-cycle`, 'Next cycle created as draft')
+            }
+            onUnlock={(unlockReason) =>
+              runAction(
+                'post',
+                `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/unlock`,
+                'Timeline unlocked',
+                { unlockReason },
+              )
             }
             onMutate={onMutate}
           />
@@ -217,7 +240,13 @@ function PhaseRow({
           {phase.durationWeeks}w · {formatDate(phase.startDate)} - {formatDate(phase.endDate)}
         </span>
       </div>
-      <Badge variant="outline" className="shrink-0 text-[10px]">
+      {phase.locksTimelineOnComplete ? (
+        <Badge variant="outline">
+          <Locked size={12} />
+          Lock
+        </Badge>
+      ) : null}
+      <Badge variant="outline">
         {phase.status.replace('_', ' ')}
       </Badge>
       {editable && (
@@ -289,6 +318,7 @@ function ConfirmButton({
 
 function TimelineActions({
   status,
+  lockedAt,
   orgId,
   timelineId,
   loading,
@@ -297,9 +327,11 @@ function TimelineActions({
   onReset,
   onDelete,
   onStartNextCycle,
+  onUnlock,
   onMutate,
 }: {
   status: AdminOrgTimeline['status'];
+  lockedAt: string | null;
   orgId: string;
   timelineId: string;
   loading: boolean;
@@ -308,6 +340,7 @@ function TimelineActions({
   onReset: () => void;
   onDelete: () => void;
   onStartNextCycle: () => void;
+  onUnlock: (unlockReason: string) => void;
   onMutate: () => void;
 }) {
   if (status === 'DRAFT') {
@@ -331,6 +364,9 @@ function TimelineActions({
   if (status === 'ACTIVE') {
     return (
       <div className="flex items-center gap-2">
+        {lockedAt ? (
+          <UnlockDialogButton onConfirm={onUnlock} loading={loading} />
+        ) : null}
         <ConfirmButton
           title="Pause Timeline"
           description="Pausing will stop auto-completion checks. You can resume later and dates will be adjusted."
@@ -356,6 +392,9 @@ function TimelineActions({
   if (status === 'PAUSED') {
     return (
       <div className="flex items-center gap-2">
+        {lockedAt ? (
+          <UnlockDialogButton onConfirm={onUnlock} loading={loading} />
+        ) : null}
         <ConfirmButton
           title="Resume Timeline"
           description="Resuming will adjust dates forward based on the pause duration."
@@ -405,4 +444,70 @@ function TimelineActions({
   }
 
   return null;
+}
+
+function UnlockDialogButton({
+  onConfirm,
+  loading,
+}: {
+  onConfirm: (unlockReason: string) => void;
+  loading: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [unlockReason, setUnlockReason] = useState('');
+  const trimmedReason = unlockReason.trim();
+
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) setUnlockReason('');
+      }}
+    >
+      <AlertDialogTrigger
+        render={
+          <Button size="sm" variant="outline" iconLeft={<Unlocked size={14} />} loading={loading}>
+            Unlock
+          </Button>
+        }
+      />
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Unlock Timeline</AlertDialogTitle>
+          <AlertDialogDescription>
+            Unlocking will re-enable automation checks. A reason is required for audit history.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="space-y-2">
+          <label htmlFor="timeline-unlock-reason" className="text-sm font-medium">
+            Unlock reason
+          </label>
+          <Textarea
+            id="timeline-unlock-reason"
+            value={unlockReason}
+            onChange={(event) => setUnlockReason(event.target.value)}
+            placeholder="Explain why this locked timeline is being reopened..."
+            rows={4}
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={loading || trimmedReason.length === 0}
+            onClick={(event) => {
+              if (trimmedReason.length === 0) {
+                event.preventDefault();
+                return;
+              }
+              setOpen(false);
+              onConfirm(trimmedReason);
+            }}
+          >
+            Unlock Timeline
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }

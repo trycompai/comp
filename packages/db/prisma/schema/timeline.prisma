@@ -20,18 +20,22 @@ enum PhaseCompletionType {
 }
 
 model TimelineTemplate {
-  id          String   @id @default(dbgenerated("generate_prefixed_cuid('tml'::text)"))
-  frameworkId String
-  name        String
-  cycleNumber Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(dbgenerated("generate_prefixed_cuid('tml'::text)"))
+  frameworkId     String
+  name            String
+  trackKey        String   @default("primary")
+  cycleNumber     Int
+  templateKey     String?
+  nextTemplateKey String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   framework FrameworkEditorFramework @relation(fields: [frameworkId], references: [id])
   phases    TimelinePhaseTemplate[]
   instances TimelineInstance[]
 
-  @@unique([frameworkId, cycleNumber])
+  @@unique([frameworkId, trackKey, cycleNumber])
+  @@unique([frameworkId, templateKey])
 }
 
 model TimelinePhaseTemplate {
@@ -43,6 +47,7 @@ model TimelinePhaseTemplate {
   orderIndex           Int
   defaultDurationWeeks Int
   completionType       PhaseCompletionType @default(MANUAL)
+  locksTimelineOnComplete Boolean          @default(false)
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
 
@@ -55,10 +60,16 @@ model TimelineInstance {
   organizationId     String
   frameworkInstanceId String
   templateId         String
+  trackKey           String         @default("primary")
   cycleNumber        Int
   status             TimelineStatus @default(DRAFT)
   startDate          DateTime?
   pausedAt           DateTime?
+  lockedAt           DateTime?
+  lockedById         String?
+  unlockedAt         DateTime?
+  unlockedById       String?
+  unlockReason       String?
   completedAt        DateTime?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
@@ -66,9 +77,11 @@ model TimelineInstance {
   organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   frameworkInstance FrameworkInstance @relation(fields: [frameworkInstanceId], references: [id], onDelete: Cascade)
   template         TimelineTemplate @relation(fields: [templateId], references: [id])
+  lockedBy         User?            @relation("TimelineInstanceLockedBy", fields: [lockedById], references: [id])
+  unlockedBy       User?            @relation("TimelineInstanceUnlockedBy", fields: [unlockedById], references: [id])
   phases           TimelinePhase[]
 
-  @@unique([frameworkInstanceId, cycleNumber])
+  @@unique([frameworkInstanceId, trackKey, cycleNumber])
 }
 
 model TimelinePhase {
@@ -84,6 +97,8 @@ model TimelinePhase {
   endDate          DateTime?
   durationWeeks    Int
   completionType   PhaseCompletionType @default(MANUAL)
+  locksTimelineOnComplete Boolean       @default(false)
+  regressedAt       DateTime?
   datesPinned      Boolean             @default(false)
   completedAt      DateTime?
   completedById    String?

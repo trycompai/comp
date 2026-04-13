@@ -49,6 +49,7 @@ const phaseSchema = z.object({
   defaultDurationWeeks: z.number().min(1, 'Min 1 week'),
   completionType: z.string().min(1),
   groupLabel: z.string().optional(),
+  locksTimelineOnComplete: z.boolean().optional(),
 });
 
 type PhaseFormValues = z.infer<typeof phaseSchema>;
@@ -92,6 +93,7 @@ export function PhaseCard({
       defaultDurationWeeks: phase.defaultDurationWeeks,
       completionType: phase.completionType ?? 'MANUAL',
       groupLabel: phase.groupLabel ?? '',
+      locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,
     },
   });
 
@@ -107,6 +109,7 @@ export function PhaseCard({
         defaultDurationWeeks: values.defaultDurationWeeks,
         completionType: values.completionType,
         groupLabel: values.groupLabel || null,
+        locksTimelineOnComplete: values.locksTimelineOnComplete ?? false,
       },
     );
     setSaving(false);
@@ -238,6 +241,18 @@ export function PhaseCard({
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-5">
+                    <input
+                      id={`phase-${phase.id}-lock`}
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-input"
+                      {...register('locksTimelineOnComplete')}
+                    />
+                    <Label htmlFor={`phase-${phase.id}-lock`}>
+                      Lock timeline when this phase completes
+                    </Label>
                   </div>
 
                 </div>

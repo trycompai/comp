@@ -10,7 +10,13 @@ interface AdminTimelinePhaseTemplate {
   groupLabel?: string | null;
   defaultDurationWeeks: number;
   orderIndex: number;
-  completionType: 'AUTO_TASKS' | 'AUTO_UPLOAD' | 'MANUAL';
+  completionType:
+    | 'AUTO_TASKS'
+    | 'AUTO_POLICIES'
+    | 'AUTO_PEOPLE'
+    | 'AUTO_UPLOAD'
+    | 'MANUAL';
+  locksTimelineOnComplete: boolean;
 }
 
 interface AdminTimelineTemplate {
@@ -26,6 +32,7 @@ interface AdminTimelineTemplate {
   framework?: {
     id: string;
     name: string;
+    visible?: boolean;
   };
 }
 
@@ -41,6 +48,11 @@ interface AdminOrgTimeline {
   status: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
   startDate: string;
   estimatedEndDate: string;
+  lockedAt: string | null;
+  lockedById: string | null;
+  unlockedAt: string | null;
+  unlockedById: string | null;
+  unlockReason: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -55,6 +67,8 @@ interface AdminOrgTimeline {
     startDate: string | null;
     endDate: string | null;
     completedAt: string | null;
+    locksTimelineOnComplete: boolean;
+    regressedAt?: string | null;
   }[];
   frameworkInstance?: {
     id: string;

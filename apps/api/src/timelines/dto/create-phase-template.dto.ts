@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsIn,
   Min,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PhaseCompletionType } from '@db';
@@ -51,6 +52,14 @@ export class CreatePhaseTemplateDto {
   @IsOptional()
   @IsIn(COMPLETION_TYPES)
   completionType?: string;
+
+  @ApiPropertyOptional({
+    description: 'If true, completing this phase locks timeline automation state',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  locksTimelineOnComplete?: boolean;
 }
 
 export class AddPhaseToInstanceDto {

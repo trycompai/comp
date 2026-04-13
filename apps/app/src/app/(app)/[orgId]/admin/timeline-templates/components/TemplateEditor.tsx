@@ -27,7 +27,13 @@ import {
   saveExistingTemplate,
 } from './template-actions';
 
-const COMPLETION_TYPES = ['AUTO_TASKS', 'AUTO_UPLOAD', 'MANUAL'] as const;
+const COMPLETION_TYPES = [
+  'AUTO_TASKS',
+  'AUTO_POLICIES',
+  'AUTO_PEOPLE',
+  'AUTO_UPLOAD',
+  'MANUAL',
+] as const;
 
 const phaseSchema = z.object({
   id: z.string().optional(),
@@ -36,6 +42,7 @@ const phaseSchema = z.object({
   orderIndex: z.number().min(0),
   defaultDurationWeeks: z.number().min(1, 'Must be at least 1 week'),
   completionType: z.enum(COMPLETION_TYPES),
+  locksTimelineOnComplete: z.boolean().optional(),
 });
 
 const templateSchema = z.object({
@@ -124,6 +131,7 @@ export function TemplateEditor({
       orderIndex: fields.length,
       defaultDurationWeeks: 2,
       completionType: 'MANUAL',
+      locksTimelineOnComplete: false,
     });
   };
 

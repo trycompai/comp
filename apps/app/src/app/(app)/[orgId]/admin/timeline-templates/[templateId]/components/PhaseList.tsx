@@ -83,6 +83,7 @@ export function PhaseList({ phases, templateId, onMutate }: PhaseListProps) {
         orderIndex: sorted.length,
         defaultDurationWeeks: 2,
         completionType: 'MANUAL',
+        locksTimelineOnComplete: false,
       },
     );
     setAddingPhase(false);
@@ -103,6 +104,7 @@ export function PhaseList({ phases, templateId, onMutate }: PhaseListProps) {
         orderIndex: sorted.length,
         defaultDurationWeeks: 2,
         completionType: 'MANUAL',
+        locksTimelineOnComplete: false,
         groupLabel: 'New Group',
       },
     );

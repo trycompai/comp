@@ -4,15 +4,88 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db, PhaseCompletionType } from '@db';
+import { upsertDefaultTemplate } from './timelines-template-resolver';
+import {
+  GENERIC_DEFAULT_TIMELINE_TEMPLATE,
+  getDefaultTemplatesForFramework,
+} from './default-templates';
 
 @Injectable()
 export class TimelinesTemplatesService {
+  private async ensureCatalogTemplatesExist() {
+    const frameworks = await db.frameworkEditorFramework.findMany({
+      select: { id: true, name: true },
+    });
+
+    for (const framework of frameworks) {
+      const defaults = getDefaultTemplatesForFramework(framework.name);
+
+      if (defaults.length > 0) {
+        for (const template of defaults) {
+          const trackKey = template.trackKey ?? 'primary';
+          const existing = await db.timelineTemplate.findUnique({
+            where: {
+              frameworkId_trackKey_cycleNumber: {
+                frameworkId: framework.id,
+                trackKey,
+                cycleNumber: template.cycleNumber,
+              },
+            },
+            select: { id: true, templateKey: true, nextTemplateKey: true },
+          });
+          if (existing) {
+            if (
+              existing.templateKey !== (template.templateKey ?? null) ||
+              existing.nextTemplateKey !== (template.nextTemplateKey ?? null)
+            ) {
+              await db.timelineTemplate.update({
+                where: { id: existing.id },
+                data: {
+                  templateKey: template.templateKey ?? null,
+                  nextTemplateKey: template.nextTemplateKey ?? null,
+                },
+              });
+            }
+            continue;
+          }
+
+          await upsertDefaultTemplate(framework.id, template);
+        }
+        continue;
+      }
+
+      const existingGeneric = await db.timelineTemplate.findUnique({
+        where: {
+          frameworkId_trackKey_cycleNumber: {
+            frameworkId: framework.id,
+            trackKey: GENERIC_DEFAULT_TIMELINE_TEMPLATE.trackKey ?? 'primary',
+            cycleNumber: GENERIC_DEFAULT_TIMELINE_TEMPLATE.cycleNumber,
+          },
+        },
+        select: { id: true },
+      });
+      if (existingGeneric) continue;
+
+      await upsertDefaultTemplate(framework.id, {
+        ...GENERIC_DEFAULT_TIMELINE_TEMPLATE,
+        frameworkName: framework.name,
+        name: `${framework.name} Timeline`,
+        phases: GENERIC_DEFAULT_TIMELINE_TEMPLATE.phases.map((phase) => ({
+          ...phase,
+        })),
+      });
+    }
+  }
+
   async findAll() {
+    await this.ensureCatalogTemplatesExist();
+
     return db.timelineTemplate.findMany({
       include: {
         phases: { orderBy: { orderIndex: 'asc' } },
         framework: true,
       },
+      orderBy: [{ frameworkId: 'asc' }, { trackKey: 'asc' }, { cycleNumber: 'asc' }],
     });
   }
 
@@ -98,6 +171,7 @@ export class TimelinesTemplatesService {
       orderIndex: number;
       defaultDurationWeeks: number;
       completionType?: PhaseCompletionType;
+      locksTimelineOnComplete?: boolean;
     },
   ) {
     const template = await db.timelineTemplate.findUnique({
@@ -126,6 +200,7 @@ export class TimelinesTemplatesService {
           orderIndex: data.orderIndex,
           defaultDurationWeeks: data.defaultDurationWeeks,
           completionType: data.completionType ?? PhaseCompletionType.MANUAL,
+          locksTimelineOnComplete: data.locksTimelineOnComplete ?? false,
         },
       });
     });
@@ -141,6 +216,7 @@ export class TimelinesTemplatesService {
       orderIndex?: number;
       defaultDurationWeeks?: number;
       completionType?: PhaseCompletionType;
+      locksTimelineOnComplete?: boolean;
     },
   ) {
     const phase = await db.timelinePhaseTemplate.findFirst({

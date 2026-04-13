@@ -29,16 +29,30 @@ export async function createTimelinesForFrameworks({
       organizationId,
       frameworkId: { in: frameworkEditorIds },
     },
-    select: { id: true },
+    select: {
+      id: true,
+      framework: { select: { name: true } },
+    },
   });
 
   for (const instance of instances) {
+    const timelinesToCreate =
+      instance.framework.name === 'SOC 2'
+        ? [
+            { cycleNumber: 1, trackKey: 'soc2_type1' },
+            { cycleNumber: 1, trackKey: 'soc2_type2' },
+          ]
+        : [{ cycleNumber: 1, trackKey: 'primary' }];
+
     try {
-      await timelinesService.createFromTemplate({
-        organizationId,
-        frameworkInstanceId: instance.id,
-        cycleNumber: 1,
-      });
+      for (const timeline of timelinesToCreate) {
+        await timelinesService.createFromTemplate({
+          organizationId,
+          frameworkInstanceId: instance.id,
+          cycleNumber: timeline.cycleNumber,
+          trackKey: timeline.trackKey,
+        });
+      }
     } catch (err) {
       logger.warn(
         `Failed to create timeline for framework instance ${instance.id}`,

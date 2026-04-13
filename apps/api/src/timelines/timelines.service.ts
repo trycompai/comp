@@ -12,6 +12,13 @@ import {
 } from './timelines-template-resolver';
 import { getOverviewScores } from '../frameworks/frameworks-scores.helper';
 
+const AUTO_PHASE_TYPES = new Set([
+  'AUTO_POLICIES',
+  'AUTO_TASKS',
+  'AUTO_PEOPLE',
+]);
+const REGRESSION_GRACE_MS = 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class TimelinesService {
   constructor(
@@ -25,14 +32,32 @@ export class TimelinesService {
   async findAllForOrganization(organizationId: string) {
     await this.ensureTimelinesExist(organizationId);
 
-    const timelines = await db.timelineInstance.findMany({
-      where: { organizationId },
-      include: {
-        phases: { orderBy: { orderIndex: 'asc' } },
-        frameworkInstance: { include: { framework: true } },
-        template: true,
-      },
-    });
+    const fetchTimelines = async () =>
+      db.timelineInstance.findMany({
+        where: { organizationId },
+        include: {
+          phases: { orderBy: { orderIndex: 'asc' } },
+          frameworkInstance: { include: { framework: true } },
+          template: true,
+        },
+      });
+
+    const enrichWithCompletionPercent = (
+      timelines: Awaited<ReturnType<typeof fetchTimelines>>,
+      pctMap: Record<string, number>,
+    ) => {
+      for (const timeline of timelines) {
+        if (timeline.status !== 'ACTIVE') continue;
+        for (const phase of timeline.phases) {
+          const livePct = pctMap[phase.completionType];
+          if (livePct !== undefined) {
+            (phase as any).completionPercent = livePct;
+          }
+        }
+      }
+    };
+
+    let timelines = await fetchTimelines();
 
     // Compute live completion percentages for AUTO_* phases
     const scores = await getOverviewScores(organizationId).catch(() => null);
@@ -54,64 +79,138 @@ export class TimelinesService {
       AUTO_PEOPLE: peoplePct,
     };
 
-    // Sync AUTO_* phase statuses with live metrics
-    let needsRefetch = false;
+    const isTimelineLocked = (timeline: { status: string; lockedAt: Date | null }) =>
+      timeline.status === 'COMPLETED' || !!timeline.lockedAt;
 
-    for (const timeline of timelines) {
-      if (timeline.status !== 'ACTIVE') continue;
+    const reopenFromRegressedPhase = async (
+      timelineId: string,
+      regressedOrderIndex: number,
+    ) => {
+      await db.$transaction(async (tx) => {
+        const freshPhases = await tx.timelinePhase.findMany({
+          where: { instanceId: timelineId },
+          orderBy: { orderIndex: 'asc' },
+        });
 
-      for (const phase of timeline.phases) {
-        const livePct = pctMap[phase.completionType];
-        if (livePct === undefined) continue;
-
-        (phase as any).completionPercent = livePct;
-
-        // Revert if completed but metric dropped
-        if (phase.status === 'COMPLETED' && livePct < 100) {
-          await db.timelinePhase.update({
+        const affected = freshPhases.filter(
+          (p) => p.orderIndex >= regressedOrderIndex,
+        );
+        for (let i = 0; i < affected.length; i++) {
+          const phase = affected[i];
+          await tx.timelinePhase.update({
             where: { id: phase.id },
-            data: { status: 'IN_PROGRESS', completedAt: null, completedById: null },
+            data: {
+              status:
+                i === 0
+                  ? TimelinePhaseStatus.IN_PROGRESS
+                  : TimelinePhaseStatus.PENDING,
+              completedAt: null,
+              completedById: null,
+              readyForReview: false,
+              readyForReviewAt: null,
+              regressedAt: null,
+            },
           });
-          needsRefetch = true;
         }
-
-        // Complete if in-progress and metric hit 100%
-        if (phase.status === 'IN_PROGRESS' && livePct >= 100) {
-          try {
-            await this.completePhase(
-              timeline.id,
-              phase.id,
-              timeline.organizationId,
-            );
-            needsRefetch = true;
-          } catch {
-            // Phase might not be completable (e.g., prior phases not done)
-          }
-        }
-      }
-    }
-
-    // Re-fetch if any statuses changed
-    if (needsRefetch) {
-      const updated = await db.timelineInstance.findMany({
-        where: { organizationId },
-        include: {
-          phases: { orderBy: { orderIndex: 'asc' } },
-          frameworkInstance: { include: { framework: true } },
-          template: true,
-        },
       });
-      // Re-enrich with live percentages
-      for (const timeline of updated) {
-        if (timeline.status !== 'ACTIVE') continue;
+    };
+
+    // Sync AUTO_* phase statuses with live metrics until no further transition occurs.
+    // This ensures consecutive AUTO phases can complete in one request when metrics
+    // are already at 100% (common when starting a renewal cycle).
+    enrichWithCompletionPercent(timelines, pctMap);
+
+    const maxSyncPasses = 20;
+    for (let pass = 0; pass < maxSyncPasses; pass++) {
+      let changed = false;
+
+      for (const timeline of timelines) {
+        if (timeline.status !== 'ACTIVE' && timeline.status !== 'COMPLETED') {
+          continue;
+        }
+
+        const locked = isTimelineLocked(timeline);
+        const canAutoTransition = timeline.status === 'ACTIVE' && !locked;
+
         for (const phase of timeline.phases) {
+          if (!AUTO_PHASE_TYPES.has(phase.completionType)) {
+            continue;
+          }
+
           const livePct = pctMap[phase.completionType];
-          if (livePct !== undefined) {
-            (phase as any).completionPercent = livePct;
+          if (livePct === undefined) continue;
+
+          if (
+            phase.status !== TimelinePhaseStatus.COMPLETED &&
+            phase.regressedAt
+          ) {
+            await db.timelinePhase.update({
+              where: { id: phase.id },
+              data: { regressedAt: null },
+            });
+            changed = true;
+            break;
+          }
+
+          if (phase.status === TimelinePhaseStatus.COMPLETED) {
+            if (livePct < 100) {
+              if (!phase.regressedAt) {
+                await db.timelinePhase.update({
+                  where: { id: phase.id },
+                  data: { regressedAt: new Date() },
+                });
+                changed = true;
+                break;
+              }
+
+              if (canAutoTransition) {
+                const elapsedMs =
+                  Date.now() - new Date(phase.regressedAt).getTime();
+                if (elapsedMs >= REGRESSION_GRACE_MS) {
+                  await reopenFromRegressedPhase(timeline.id, phase.orderIndex);
+                  changed = true;
+                  break;
+                }
+              }
+            } else if (phase.regressedAt) {
+              await db.timelinePhase.update({
+                where: { id: phase.id },
+                data: { regressedAt: null },
+              });
+              changed = true;
+              break;
+            }
+          }
+
+          // Complete if in-progress and metric hit 100%
+          if (
+            canAutoTransition &&
+            phase.status === TimelinePhaseStatus.IN_PROGRESS &&
+            livePct >= 100
+          ) {
+            try {
+              await this.completePhase(
+                timeline.id,
+                phase.id,
+                timeline.organizationId,
+              );
+              changed = true;
+              break;
+            } catch {
+              // Phase might not be completable (e.g., prior phases not done)
+            }
           }
         }
+
+        if (changed) break;
       }
-      return updated;
+
+      if (!changed) {
+        break;
+      }
+
+      timelines = await fetchTimelines();
+      enrichWithCompletionPercent(timelines, pctMap);
     }
 
     return timelines;
@@ -212,10 +311,12 @@ export class TimelinesService {
     organizationId,
     frameworkInstanceId,
     cycleNumber,
+    trackKey = 'primary',
   }: {
     organizationId: string;
     frameworkInstanceId: string;
     cycleNumber: number;
+    trackKey?: string;
   }) {
     const frameworkInstance = await db.frameworkInstance.findUnique({
       where: { id: frameworkInstanceId, organizationId },
@@ -230,6 +331,7 @@ export class TimelinesService {
       frameworkInstance.frameworkId,
       frameworkInstance.framework.name,
       cycleNumber,
+      { trackKey },
     );
 
     if (!template) {
@@ -274,6 +376,15 @@ export class TimelinesService {
     );
   }
 
+  async unlockTimeline(
+    id: string,
+    organizationId: string,
+    unlockedById: string,
+    unlockReason: string,
+  ) {
+    return this.lifecycle.unlock(id, organizationId, unlockedById, unlockReason);
+  }
+
   // ---------------------------------------------------------------------------
   // Admin — next cycle, delete, reset, recreate
   // ---------------------------------------------------------------------------
@@ -286,11 +397,14 @@ export class TimelinesService {
     }
 
     const nextCycleNumber = current.cycleNumber + 1;
+    const currentTrackKey =
+      current.trackKey ?? current.template?.trackKey ?? 'primary';
 
     // Check if next cycle already exists
     const existing = await db.timelineInstance.findFirst({
       where: {
         frameworkInstanceId: current.frameworkInstanceId,
+        trackKey: currentTrackKey,
         cycleNumber: nextCycleNumber,
       },
     });
@@ -299,10 +413,36 @@ export class TimelinesService {
       throw new BadRequestException(`Cycle ${nextCycleNumber} already exists for this framework`);
     }
 
+    // Prefer explicit template progression when configured.
+    const nextTemplateKey = current.template?.nextTemplateKey ?? null;
+    const templateFrameworkId = current.template?.frameworkId ?? null;
+
+    if (nextTemplateKey && templateFrameworkId) {
+      const progressedTemplate = await db.timelineTemplate.findUnique({
+        where: {
+          frameworkId_templateKey: {
+            frameworkId: templateFrameworkId,
+            templateKey: nextTemplateKey,
+          },
+        },
+        include: { phases: { orderBy: { orderIndex: 'asc' } } },
+      });
+
+      if (progressedTemplate) {
+        return createInstanceFromTemplate({
+          organizationId,
+          frameworkInstanceId: current.frameworkInstanceId,
+          cycleNumber: nextCycleNumber,
+          template: progressedTemplate,
+        });
+      }
+    }
+
     return this.createFromTemplate({
       organizationId,
       frameworkInstanceId: current.frameworkInstanceId,
       cycleNumber: nextCycleNumber,
+      trackKey: currentTrackKey,
     });
   }
 
@@ -333,12 +473,23 @@ export class TimelinesService {
             readyForReview: false,
             readyForReviewAt: null,
             datesPinned: false,
+            regressedAt: null,
           },
         });
       }
       await tx.timelineInstance.update({
         where: { id },
-        data: { status: 'DRAFT', startDate: null, pausedAt: null, completedAt: null },
+        data: {
+          status: 'DRAFT',
+          startDate: null,
+          pausedAt: null,
+          lockedAt: null,
+          lockedById: null,
+          unlockedAt: null,
+          unlockedById: null,
+          unlockReason: null,
+          completedAt: null,
+        },
       });
     });
     return this.findOne(id, organizationId);

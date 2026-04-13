@@ -59,4 +59,11 @@ export class UpdatePhaseDto {
   @IsOptional()
   @IsIn(COMPLETION_TYPES)
   completionType?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether completing this phase should lock the timeline',
+  })
+  @IsOptional()
+  @IsBoolean()
+  locksTimelineOnComplete?: boolean;
 }

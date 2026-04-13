@@ -44,6 +44,7 @@ const subPhaseSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   defaultDurationWeeks: z.number().min(1, 'Min 1 week'),
   completionType: z.string().min(1),
+  locksTimelineOnComplete: z.boolean().optional(),
 });
 
 type SubPhaseFormValues = z.infer<typeof subPhaseSchema>;
@@ -81,6 +82,7 @@ export function SubPhaseRow({
       name: phase.name,
       defaultDurationWeeks: phase.defaultDurationWeeks,
       completionType: phase.completionType ?? 'MANUAL',
+      locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,
     },
   });
 
@@ -94,6 +96,7 @@ export function SubPhaseRow({
         name: values.name,
         defaultDurationWeeks: values.defaultDurationWeeks,
         completionType: values.completionType,
+        locksTimelineOnComplete: values.locksTimelineOnComplete ?? false,
       },
     );
     setSaving(false);
@@ -179,6 +182,14 @@ export function SubPhaseRow({
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="w-20 shrink-0 text-center">
+        <input
+          type="checkbox"
+          className="h-4 w-4 rounded border-input"
+          {...register('locksTimelineOnComplete')}
+        />
       </div>
 
       <Button

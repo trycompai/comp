@@ -6,6 +6,8 @@ import {
   Delete,
   Param,
   Body,
+  Req,
+  BadRequestException,
   UseGuards,
   UseInterceptors,
   UsePipes,
@@ -20,6 +22,7 @@ import { TimelinesPhasesService } from './timelines-phases.service';
 import { ActivateTimelineDto } from './dto/activate-timeline.dto';
 import { UpdatePhaseDto } from './dto/update-phase.dto';
 import { AddPhaseToInstanceDto } from './dto/create-phase-template.dto';
+import { UnlockTimelineDto } from './dto/unlock-timeline.dto';
 
 @ApiExcludeController()
 @Controller({ path: 'admin/organizations', version: '1' })
@@ -87,6 +90,7 @@ export class AdminOrgTimelinesController {
       durationWeeks: dto.durationWeeks,
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
       endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+      locksTimelineOnComplete: dto.locksTimelineOnComplete,
     });
   }
 
@@ -103,6 +107,8 @@ export class AdminOrgTimelinesController {
       durationWeeks: dto.durationWeeks,
       completionType: dto.completionType as
         | 'AUTO_TASKS'
+        | 'AUTO_POLICIES'
+        | 'AUTO_PEOPLE'
         | 'AUTO_UPLOAD'
         | 'MANUAL'
         | undefined,
@@ -123,8 +129,9 @@ export class AdminOrgTimelinesController {
     @Param('orgId') orgId: string,
     @Param('id') id: string,
     @Param('phaseId') phaseId: string,
+    @Req() req: { userId?: string },
   ) {
-    return this.timelinesService.completePhase(id, phaseId, orgId);
+    return this.timelinesService.completePhase(id, phaseId, orgId, req.userId);
   }
 
   @Post(':orgId/timelines/:id/next-cycle')
@@ -141,6 +148,25 @@ export class AdminOrgTimelinesController {
     @Param('id') id: string,
   ) {
     return this.timelinesService.resetInstance(id, orgId);
+  }
+
+  @Post(':orgId/timelines/:id/unlock')
+  async unlockTimeline(
+    @Param('orgId') orgId: string,
+    @Param('id') id: string,
+    @Body() dto: UnlockTimelineDto,
+    @Req() req: { userId?: string },
+  ) {
+    if (!req.userId) {
+      throw new BadRequestException('Unable to resolve acting admin user');
+    }
+
+    return this.timelinesService.unlockTimeline(
+      id,
+      orgId,
+      req.userId,
+      dto.unlockReason,
+    );
   }
 
   @Delete(':orgId/timelines/:id')

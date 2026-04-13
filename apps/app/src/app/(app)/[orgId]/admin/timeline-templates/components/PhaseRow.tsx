@@ -9,6 +9,8 @@ import { Label } from '@trycompai/ui/label';
 const COMPLETION_OPTIONS = [
   { value: 'MANUAL', label: 'Manual' },
   { value: 'AUTO_TASKS', label: 'Auto (Tasks)' },
+  { value: 'AUTO_POLICIES', label: 'Auto (Policies)' },
+  { value: 'AUTO_PEOPLE', label: 'Auto (People)' },
   { value: 'AUTO_UPLOAD', label: 'Auto (Upload)' },
 ] as const;
 
@@ -22,7 +24,13 @@ interface PhaseFormValues {
     description?: string;
     orderIndex: number;
     defaultDurationWeeks: number;
-    completionType: 'AUTO_TASKS' | 'AUTO_UPLOAD' | 'MANUAL';
+    completionType:
+      | 'AUTO_TASKS'
+      | 'AUTO_POLICIES'
+      | 'AUTO_PEOPLE'
+      | 'AUTO_UPLOAD'
+      | 'MANUAL';
+    locksTimelineOnComplete?: boolean;
   }[];
 }
 
@@ -109,6 +117,18 @@ export function PhaseRow({ index, register, errors, onRemove }: PhaseRowProps) {
           })}
           value={index}
         />
+
+        <div className="col-span-2 flex items-center gap-2">
+          <input
+            id={`phases.${index}.locksTimelineOnComplete`}
+            type="checkbox"
+            className="h-4 w-4 rounded border-input"
+            {...register(`phases.${index}.locksTimelineOnComplete`)}
+          />
+          <Label htmlFor={`phases.${index}.locksTimelineOnComplete`}>
+            Lock timeline when this phase completes
+          </Label>
+        </div>
       </div>
     </div>
   );

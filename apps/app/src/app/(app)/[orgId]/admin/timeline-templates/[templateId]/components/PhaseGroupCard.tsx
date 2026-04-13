@@ -59,6 +59,7 @@ export function PhaseGroupCard({
         orderIndex: maxOrder + 1,
         defaultDurationWeeks: 1,
         completionType: 'MANUAL',
+        locksTimelineOnComplete: false,
         groupLabel,
       },
     );
@@ -172,6 +173,9 @@ export function PhaseGroupCard({
                 </div>
                 <div className="w-36 shrink-0">
                   <Text size="xs" variant="muted">Completion</Text>
+                </div>
+                <div className="w-20 shrink-0 text-center">
+                  <Text size="xs" variant="muted">Lock</Text>
                 </div>
                 <div className="w-16 shrink-0" />
               </div>

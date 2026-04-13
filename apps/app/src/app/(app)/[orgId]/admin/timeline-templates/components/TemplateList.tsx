@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { api } from '@/lib/api-client';
 import {
   useAdminTimelineTemplates,
   type AdminTimelineTemplate,
@@ -31,6 +29,9 @@ export function TemplateList() {
   const { orgId } = useParams<{ orgId: string }>();
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [visibilityFilter, setVisibilityFilter] = useState<
+    'all' | 'visible' | 'hidden'
+  >('visible');
 
   const handleEdit = (template: AdminTimelineTemplate) => {
     router.push(`/${orgId}/admin/timeline-templates/${template.id}`);
@@ -47,6 +48,18 @@ export function TemplateList() {
       durationWeeks: p.defaultDurationWeeks,
       orderIndex: p.orderIndex,
     }));
+
+  const visibleCount = templates.filter(
+    (template) => template.framework?.visible === true,
+  ).length;
+
+  const filteredTemplates = templates.filter((template) => {
+    if (visibilityFilter === 'all') return true;
+    if (visibilityFilter === 'visible') {
+      return template.framework?.visible === true;
+    }
+    return template.framework?.visible !== true;
+  });
 
   if (isLoading) {
     return (
@@ -76,9 +89,38 @@ export function TemplateList() {
       }
     >
       <Section>
-        {templates.length === 0 ? (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <Text size="sm" variant="muted">
+            Filter:
+          </Text>
+          <Button
+            size="sm"
+            variant={visibilityFilter === 'all' ? 'default' : 'outline'}
+            onClick={() => setVisibilityFilter('all')}
+          >
+            All ({templates.length})
+          </Button>
+          <Button
+            size="sm"
+            variant={visibilityFilter === 'visible' ? 'default' : 'outline'}
+            onClick={() => setVisibilityFilter('visible')}
+          >
+            Visible ({visibleCount})
+          </Button>
+          <Button
+            size="sm"
+            variant={visibilityFilter === 'hidden' ? 'default' : 'outline'}
+            onClick={() => setVisibilityFilter('hidden')}
+          >
+            Hidden ({templates.length - visibleCount})
+          </Button>
+        </div>
+
+        {filteredTemplates.length === 0 ? (
           <div className="rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">
-            No timeline templates yet. Create one to get started.
+            {templates.length === 0
+              ? 'No timeline templates yet. Create one to get started.'
+              : 'No templates match the selected visibility filter.'}
           </div>
         ) : (
           <Table variant="bordered">
@@ -86,6 +128,7 @@ export function TemplateList() {
               <TableRow>
                 <TableHead>Template Name</TableHead>
                 <TableHead>Framework</TableHead>
+                <TableHead>Visibility</TableHead>
                 <TableHead>Cycle</TableHead>
                 <TableHead>Phases</TableHead>
                 <TableHead>Duration</TableHead>
@@ -94,7 +137,7 @@ export function TemplateList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {templates.map((template) => (
+              {filteredTemplates.map((template) => (
                 <TableRow key={template.id}>
                   <TableCell>
                     <Text size="sm" weight="medium">
@@ -105,6 +148,19 @@ export function TemplateList() {
                     <Text size="sm" variant="muted">
                       {template.framework?.name ?? 'Unknown'}
                     </Text>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        template.framework?.visible === true
+                          ? 'default'
+                          : 'outline'
+                      }
+                    >
+                      {template.framework?.visible === true
+                        ? 'Visible'
+                        : 'Hidden'}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">Cycle {template.cycleNumber}</Badge>

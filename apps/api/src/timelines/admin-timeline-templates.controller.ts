@@ -20,6 +20,7 @@ import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { CreatePhaseTemplateDto } from './dto/create-phase-template.dto';
 import { UpdatePhaseTemplateDto } from './dto/update-phase-template.dto';
+import { PhaseCompletionType } from '@db';
 
 @ApiExcludeController()
 @Controller({ path: 'admin/timeline-templates', version: '1' })
@@ -81,11 +82,8 @@ export class AdminTimelineTemplatesController {
       groupLabel: dto.groupLabel,
       orderIndex: dto.orderIndex,
       defaultDurationWeeks: dto.defaultDurationWeeks,
-      completionType: dto.completionType as
-        | 'AUTO_TASKS'
-        | 'AUTO_UPLOAD'
-        | 'MANUAL'
-        | undefined,
+      completionType: dto.completionType as PhaseCompletionType | undefined,
+      locksTimelineOnComplete: dto.locksTimelineOnComplete,
     });
   }
 
@@ -101,11 +99,8 @@ export class AdminTimelineTemplatesController {
       groupLabel: dto.groupLabel,
       orderIndex: dto.orderIndex,
       defaultDurationWeeks: dto.defaultDurationWeeks,
-      completionType: dto.completionType as
-        | 'AUTO_TASKS'
-        | 'AUTO_UPLOAD'
-        | 'MANUAL'
-        | undefined,
+      completionType: dto.completionType as PhaseCompletionType | undefined,
+      locksTimelineOnComplete: dto.locksTimelineOnComplete,
     });
   }
 

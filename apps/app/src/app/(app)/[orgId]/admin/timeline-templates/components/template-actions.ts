@@ -12,7 +12,13 @@ interface TemplateFormValues {
     description?: string;
     orderIndex: number;
     defaultDurationWeeks: number;
-    completionType: 'AUTO_TASKS' | 'AUTO_UPLOAD' | 'MANUAL';
+    completionType:
+      | 'AUTO_TASKS'
+      | 'AUTO_POLICIES'
+      | 'AUTO_PEOPLE'
+      | 'AUTO_UPLOAD'
+      | 'MANUAL';
+    locksTimelineOnComplete?: boolean;
   }[];
 }
 
@@ -35,6 +41,7 @@ export function getDefaults(
         orderIndex: p.orderIndex,
         defaultDurationWeeks: p.defaultDurationWeeks,
         completionType: p.completionType ?? 'MANUAL',
+        locksTimelineOnComplete: p.locksTimelineOnComplete ?? false,
       })),
   };
 }
@@ -57,6 +64,7 @@ export async function createNewTemplate(values: TemplateFormValues) {
         orderIndex: phase.orderIndex,
         defaultDurationWeeks: phase.defaultDurationWeeks,
         completionType: phase.completionType,
+        locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,
       },
     );
     if (phaseRes.error) throw new Error(phaseRes.error);
@@ -99,6 +107,7 @@ export async function saveExistingTemplate(
           orderIndex: phase.orderIndex,
           defaultDurationWeeks: phase.defaultDurationWeeks,
           completionType: phase.completionType,
+          locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,
         },
       );
     } else {
@@ -110,6 +119,7 @@ export async function saveExistingTemplate(
           orderIndex: phase.orderIndex,
           defaultDurationWeeks: phase.defaultDurationWeeks,
           completionType: phase.completionType,
+          locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,
         },
       );
     }

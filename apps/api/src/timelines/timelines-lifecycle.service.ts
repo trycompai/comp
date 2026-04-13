@@ -144,8 +144,23 @@ export class TimelinesLifecycleService {
       throw new BadRequestException('Phase is already completed');
     }
 
+    if (phase.status !== TimelinePhaseStatus.IN_PROGRESS) {
+      throw new BadRequestException('Only in-progress phases can be completed');
+    }
+
+    const hasIncompletePrior = instance.phases
+      .filter((p) => p.orderIndex < phase.orderIndex)
+      .some((p) => p.status !== TimelinePhaseStatus.COMPLETED);
+
+    if (hasIncompletePrior) {
+      throw new BadRequestException(
+        'Cannot complete phase before prior phases are completed',
+      );
+    }
+
     const txResult = await db.$transaction(async (tx) => {
       const now = new Date();
+      let lockApplied = false;
 
       // If completing before planned end, update endDate and pin it
       // so downstream recalculation anchors off the actual completion date
@@ -160,6 +175,20 @@ export class TimelinesLifecycleService {
           ...(finishedEarly ? { endDate: now, datesPinned: true } : {}),
         },
       });
+
+      if (phase.locksTimelineOnComplete && !instance.lockedAt) {
+        await tx.timelineInstance.update({
+          where: { id: instanceId },
+          data: {
+            lockedAt: now,
+            lockedById: userId ?? null,
+            unlockedAt: null,
+            unlockedById: null,
+            unlockReason: null,
+          },
+        });
+        lockApplied = true;
+      }
 
       // Advance next pending phase to IN_PROGRESS — but only if all prior phases are completed
       const freshPhases = await tx.timelinePhase.findMany({
@@ -221,7 +250,16 @@ export class TimelinesLifecycleService {
           where: { id: instanceId },
           data: {
             status: TimelineStatus.COMPLETED,
-            completedAt: new Date(),
+            completedAt: now,
+            ...(!instance.lockedAt && !lockApplied
+              ? {
+                  lockedAt: now,
+                  lockedById: userId ?? null,
+                  unlockedAt: null,
+                  unlockedById: null,
+                  unlockReason: null,
+                }
+              : {}),
           },
         });
       }
@@ -254,5 +292,40 @@ export class TimelinesLifecycleService {
     }
 
     return txResult.result;
+  }
+
+  async unlock(
+    id: string,
+    organizationId: string,
+    unlockedById: string,
+    unlockReason: string,
+  ) {
+    const instance = await db.timelineInstance.findUnique({
+      where: { id, organizationId },
+    });
+
+    if (!instance) {
+      throw new NotFoundException('Timeline instance not found');
+    }
+
+    if (instance.status === TimelineStatus.COMPLETED) {
+      throw new BadRequestException('Completed timelines cannot be unlocked');
+    }
+
+    if (!instance.lockedAt) {
+      throw new BadRequestException('Timeline is not locked');
+    }
+
+    return db.timelineInstance.update({
+      where: { id },
+      data: {
+        lockedAt: null,
+        lockedById: null,
+        unlockedAt: new Date(),
+        unlockedById,
+        unlockReason,
+      },
+      include: INSTANCE_INCLUDE,
+    });
   }
 }

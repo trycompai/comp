@@ -26,6 +26,8 @@ model User {
   evidenceReviews            EvidenceSubmission[] @relation("EvidenceReviewer")
   adminFindings              Finding[]            @relation("AdminFindingCreator")
   timelinePhaseCompletions   TimelinePhase[]
+  lockedTimelineInstances    TimelineInstance[]   @relation("TimelineInstanceLockedBy")
+  unlockedTimelineInstances  TimelineInstance[]   @relation("TimelineInstanceUnlockedBy")
 
   @@unique([email])
 }
