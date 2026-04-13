@@ -165,7 +165,23 @@ export function DocumentFindingsSection({
       finding.status === FindingStatus.open || finding.status === FindingStatus.needs_revision,
   ).length;
 
-  if (allIsLoading || allError || sortedFindings.length === 0) {
+  if (allError) {
+    return (
+      <Empty>
+        <EmptyMedia variant="icon">
+          <WarningAlt size={32} />
+        </EmptyMedia>
+        <EmptyHeader>
+          <EmptyTitle>Failed to load findings</EmptyTitle>
+          <EmptyDescription>
+            Something went wrong. Please try refreshing the page.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
+  }
+
+  if (allIsLoading || sortedFindings.length === 0) {
     return (
       <Empty>
         <EmptyMedia variant="icon">

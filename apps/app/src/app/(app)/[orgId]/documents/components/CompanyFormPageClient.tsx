@@ -426,19 +426,7 @@ export function CompanyFormPageClient({
               </InputGroup>
             </div>
 
-            {isLoading ? (
-              <Empty>
-                <EmptyMedia variant="icon">
-                  <Catalog />
-                </EmptyMedia>
-                <EmptyHeader>
-                  <EmptyTitle>No submissions yet</EmptyTitle>
-                  <EmptyDescription>
-                    Start by creating a new submission, click the New Submission button above.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : !data || data.submissions.length === 0 ? (
+            {!data || data.submissions.length === 0 ? (
               <Empty>
                 <EmptyMedia variant="icon">
                   <Catalog />
