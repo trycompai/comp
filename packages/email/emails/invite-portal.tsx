@@ -23,7 +23,8 @@ export const InvitePortalEmail = ({ email, inviteLink, organizationName }: Props
   return (
     <Html>
       <Tailwind>
-<Preview>You've been invited to the Comp AI Portal</Preview>
+        <head />
+        <Preview>You've been invited to the Comp AI Portal</Preview>
 
         <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container

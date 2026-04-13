@@ -10,7 +10,8 @@ export const WelcomeEmail = ({ name }: Props) => {
   return (
     <Html>
       <Tailwind>
-<Preview>Get started with Comp AI</Preview>
+        <head />
+        <Preview>Get started with Comp AI</Preview>
 
         <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container

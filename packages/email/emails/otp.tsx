@@ -20,7 +20,8 @@ export const OTPVerificationEmail = ({ email, otp }: Props) => {
   return (
     <Html>
       <Tailwind>
-<Preview>One-Time Password for Comp AI</Preview>
+        <head />
+        <Preview>One-Time Password for Comp AI</Preview>
 
         <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container
