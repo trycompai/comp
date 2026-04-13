@@ -1,13 +1,11 @@
 'use client';
 
 import {
-  CredentialField,
   useIntegrationConnections,
   useIntegrationMutations,
   useIntegrationProviders,
 } from '@/hooks/use-integration-platform';
 import { usePermissions } from '@/hooks/use-permissions';
-import { ComboboxDropdown } from '@trycompai/ui/combobox-dropdown';
 import {
   Dialog,
   DialogContent,
@@ -15,23 +13,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@trycompai/ui/dialog';
-import MultipleSelector from '@trycompai/ui/multiple-selector';
 import {
   Button,
-  Input,
   Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Textarea,
 } from '@trycompai/design-system';
-import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Settings, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, Settings, Trash2 } from 'lucide-react';
+import { awsRemediationScript } from '@trycompai/integration-platform';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+
+import { CloudShellSetup, SectionDivider } from './CloudShellSetup';
+import { CredentialInput } from './CredentialInput';
 
 interface ConnectIntegrationDialogProps {
   open: boolean;
@@ -40,6 +34,8 @@ interface ConnectIntegrationDialogProps {
   integrationName: string;
   integrationLogoUrl: string;
   onConnected?: () => void;
+  /** Open directly to the "add new" form, skipping the connection list */
+  initialView?: 'list' | 'form';
 }
 
 interface ExistingConnection {
@@ -54,126 +50,6 @@ interface ExistingConnection {
   isLegacy?: boolean;
 }
 
-function CredentialInput({
-  field,
-  value,
-  onChange,
-}: {
-  field: CredentialField;
-  value: string | string[];
-  onChange: (value: string | string[]) => void;
-}) {
-  const [showPassword, setShowPassword] = useState(false);
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    onChange(e.target.value);
-  const stringValue = typeof value === 'string' ? value : '';
-
-  if (field.type === 'password') {
-    return (
-      <div className="relative">
-        <div className="[&_input]:pr-10">
-          <Input
-            type={showPassword ? 'text' : 'password'}
-            value={stringValue}
-            onChange={handleChange}
-            placeholder={field.placeholder}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowPassword((s) => !s)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-        >
-          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
-      </div>
-    );
-  }
-
-  if (field.type === 'textarea') {
-    return (
-      <Textarea
-        value={stringValue}
-        onChange={handleChange}
-        placeholder={field.placeholder}
-      />
-    );
-  }
-
-  if (field.type === 'select') {
-    return (
-      <Select value={stringValue} onValueChange={(v) => { if (v) onChange(v); }}>
-        <SelectTrigger>
-          <SelectValue placeholder={field.placeholder || 'Select...'} />
-        </SelectTrigger>
-        <SelectContent>
-          {field.options?.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              {opt.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    );
-  }
-
-  if (field.type === 'combobox') {
-    const items =
-      field.options?.map((opt) => ({
-        id: opt.value,
-        label: opt.label,
-      })) || [];
-
-    const selectedItem = stringValue
-      ? (items.find((item) => item.id === stringValue) ?? { id: stringValue, label: stringValue })
-      : undefined;
-
-    return (
-      <ComboboxDropdown
-        items={items}
-        selectedItem={selectedItem}
-        onSelect={(item) => onChange(item.id)}
-        onCreate={(customValue) => onChange(customValue)}
-        placeholder={field.placeholder || 'Select or type...'}
-        searchPlaceholder="Search or type custom value..."
-        renderOnCreate={(customValue) => (
-          <div className="flex items-center gap-2">
-            <span className="text-sm">Use custom value:</span>
-            <span className="font-medium">{customValue}</span>
-          </div>
-        )}
-      />
-    );
-  }
-
-  if (field.type === 'multi-select') {
-    const selectedValues = Array.isArray(value) ? value : [];
-    const options = field.options ?? [];
-
-    return (
-      <MultipleSelector
-        value={selectedValues.map((val) => ({
-          value: val,
-          label: options.find((opt) => opt.value === val)?.label || val,
-        }))}
-        onChange={(selected) => onChange(selected.map((item) => item.value))}
-        defaultOptions={options.map((opt) => ({ value: opt.value, label: opt.label }))}
-        options={options.map((opt) => ({ value: opt.value, label: opt.label }))}
-        placeholder={field.placeholder || 'Select...'}
-        creatable={options.length === 0}
-        emptyIndicator={<p className="text-center text-sm text-muted-foreground">No options</p>}
-      />
-    );
-  }
-
-  const inputType = field.type === 'url' ? 'url' : field.type === 'number' ? 'number' : 'text';
-  const placeholder = field.type === 'url' ? field.placeholder || 'https://...' : field.placeholder;
-
-  return (
-    <Input type={inputType} value={stringValue} onChange={handleChange} placeholder={placeholder} />
-  );
-}
-
 export function ConnectIntegrationDialog({
   open,
   onOpenChange,
@@ -181,6 +57,7 @@ export function ConnectIntegrationDialog({
   integrationName,
   integrationLogoUrl,
   onConnected,
+  initialView,
 }: ConnectIntegrationDialogProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const { hasPermission } = usePermissions();
@@ -252,7 +129,9 @@ export function ConnectIntegrationDialog({
       if (isDataLoading) {
         return;
       }
-      if (supportsMultipleConnections && existingConnections.length > 0) {
+      if (initialView) {
+        setView(initialView);
+      } else if (supportsMultipleConnections && existingConnections.length > 0) {
         setView('list');
       } else if (existingConnections.length === 0) {
         setView('form');
@@ -325,9 +204,27 @@ export function ConnectIntegrationDialog({
   }, [integrationId, startOAuth]);
 
   const handleCredentialConnect = useCallback(async () => {
+    // Auto-fill fields when setupScript is present
+    const finalCredentials = { ...credentials };
+    if (provider?.setupScript) {
+      if (!finalCredentials.externalId) {
+        finalCredentials.externalId = orgId;
+      }
+      if (!finalCredentials.connectionName) {
+        // Extract account ID from Role ARN: arn:aws:iam::123456789012:role/Name
+        const arnMatch = String(finalCredentials.roleArn ?? '').match(/:(\d{12}):/);
+        finalCredentials.connectionName = arnMatch
+          ? `AWS ${arnMatch[1]}`
+          : `AWS Account`;
+      }
+    }
+
     const newErrors: Record<string, string> = {};
     for (const field of allFields) {
-      const value = credentials[field.id];
+      // Skip validation for auto-filled fields
+      if (provider?.setupScript && (field.id === 'externalId' || field.id === 'connectionName')) continue;
+
+      const value = finalCredentials[field.id];
       const isMissing =
         field.type === 'multi-select'
           ? !Array.isArray(value) || value.length === 0
@@ -347,7 +244,7 @@ export function ConnectIntegrationDialog({
     setErrors({});
 
     try {
-      const result = await createConnection(integrationId, credentials);
+      const result = await createConnection(integrationId, finalCredentials);
 
       if (!result.success) {
         toast.error(result.error || 'Failed to create connection');
@@ -650,31 +547,62 @@ export function ConnectIntegrationDialog({
                 Back to connections
               </Button>
             )}
-            {provider?.setupInstructions && (
+            {provider?.setupScript && (
+              <CloudShellSetup script={provider.setupScript} externalId={orgId} />
+            )}
+            {!provider?.setupScript && provider?.setupInstructions && (
               <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md max-h-32 overflow-y-auto overflow-x-hidden">
                 <p className="whitespace-pre-wrap text-xs break-words">{provider.setupInstructions}</p>
               </div>
             )}
-            {provider?.category === 'Cloud' && (
+            {provider?.category === 'Cloud' && !provider?.setupScript && (
               <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
                 This integration will only be used for Cloud Security Tests. Your credentials are encrypted and used exclusively to run read-only security scans.
               </div>
             )}
-            {allFields.map((field) => (
-              <div key={field.id} className="space-y-2">
-                <Label htmlFor={field.id}>
-                  {field.label}
-                  {field.required && <span className="text-destructive ml-1">*</span>}
-                </Label>
-                <CredentialInput
-                  field={field}
-                  value={credentials[field.id] || (field.type === 'multi-select' ? [] : '')}
-                  onChange={(value) => updateCredential(field.id, value)}
-                />
-                {field.helpText && (
-                  <p className="text-xs text-muted-foreground break-words">{field.helpText}</p>
+            {allFields
+              .filter((field) => {
+                if (!provider?.setupScript) return true;
+                if (field.id === 'externalId') return false;
+                if (field.id === 'connectionName') return false;
+                return true;
+              })
+              .map((field) => (
+              <div key={field.id}>
+                {/* Section divider + quick setup before remediationRoleArn */}
+                {field.id === 'remediationRoleArn' && integrationId === 'aws' && (
+                  <>
+                    <SectionDivider label="Auto-Remediation (Optional)" />
+                    <div className="mb-4 mt-4">
+                      <CloudShellSetup
+                        script={awsRemediationScript}
+                        externalId={orgId}
+                        title="Remediation Role Setup"
+                        subtitle="Create a write-access role for auto-fix"
+                        footnote="The remediation role is separate from your audit role — your audit role stays read-only."
+                      />
+                    </div>
+                  </>
                 )}
-                {errors[field.id] && <p className="text-xs text-destructive">{errors[field.id]}</p>}
+                {/* Section divider before regions */}
+                {field.id === 'regions' && integrationId === 'aws' && (
+                  <SectionDivider label="Scan Configuration" />
+                )}
+                <div className="space-y-1.5 mt-4">
+                  <Label htmlFor={field.id}>
+                    {field.label}
+                    {field.required && <span className="text-destructive ml-1">*</span>}
+                  </Label>
+                  <CredentialInput
+                    field={field}
+                    value={credentials[field.id] || (field.type === 'multi-select' ? [] : '')}
+                    onChange={(value) => updateCredential(field.id, value)}
+                  />
+                  {field.helpText && (
+                    <p className="text-[11px] text-muted-foreground/70">{field.helpText}</p>
+                  )}
+                  {errors[field.id] && <p className="text-xs text-destructive">{errors[field.id]}</p>}
+                </div>
               </div>
             ))}
             <Button onClick={handleCredentialConnect} disabled={connecting || !canCreate} width="full" loading={connecting}>
@@ -768,7 +696,7 @@ export function ConnectIntegrationDialog({
           <DialogDescription>{getDialogDescription()}</DialogDescription>
         </DialogHeader>
 
-        <div className="pt-2 max-h-[60vh] overflow-y-auto">
+        <div className="pt-2 max-h-[60vh] min-h-[300px] overflow-y-scroll">
           {isDataLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

@@ -14,11 +14,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiSecurity } from '@nestjs/swagger';
-import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
-import {
-  DescribeHubCommand,
-  SecurityHubClient,
-} from '@aws-sdk/client-securityhub';
+import { db } from '@db';
+import { AssumeRoleCommand, GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -28,6 +25,7 @@ import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { AutoCheckRunnerService } from '../services/auto-check-runner.service';
 import { ProviderRepository } from '../repositories/provider.repository';
+import { ConnectionRepository } from '../repositories/connection.repository';
 import {
   getManifest,
   getAllManifests,
@@ -63,6 +61,7 @@ export class ConnectionsController {
     private readonly oauthCredentialsService: OAuthCredentialsService,
     private readonly autoCheckRunnerService: AutoCheckRunnerService,
     private readonly providerRepository: ProviderRepository,
+    private readonly connectionRepository: ConnectionRepository,
   ) {}
 
   /**
@@ -98,6 +97,9 @@ export class ConnectionsController {
       // Get setup instructions for custom auth
       const setupInstructions =
         m.auth.type === 'custom' ? m.auth.config.setupInstructions : undefined;
+
+      const setupScript =
+        m.auth.type === 'custom' ? m.auth.config.setupScript : undefined;
 
       // For OAuth providers, check if platform credentials are configured
       const oauthConfigured =
@@ -147,10 +149,18 @@ export class ConnectionsController {
         docsUrl: m.docsUrl,
         credentialFields,
         setupInstructions,
+        setupScript,
         oauthConfigured,
         mappedTasks,
         requiredVariables: Array.from(requiredVariables),
         supportsMultipleConnections: m.supportsMultipleConnections ?? false,
+        services: m.services?.map((s) => ({
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          enabledByDefault: s.enabledByDefault ?? true,
+          implemented: s.implemented ?? true,
+        })) ?? [],
       };
     });
   }
@@ -179,6 +189,11 @@ export class ConnectionsController {
     const setupInstructions =
       manifest.auth.type === 'custom'
         ? manifest.auth.config.setupInstructions
+        : undefined;
+
+    const setupScript =
+      manifest.auth.type === 'custom'
+        ? manifest.auth.config.setupScript
         : undefined;
 
     // Get mapped tasks from checks
@@ -225,8 +240,17 @@ export class ConnectionsController {
       docsUrl: manifest.docsUrl,
       credentialFields,
       setupInstructions,
+      setupScript,
       mappedTasks,
       requiredVariables: Array.from(requiredVariables),
+      supportsMultipleConnections: manifest.supportsMultipleConnections ?? false,
+      services: manifest.services?.map((s) => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        enabledByDefault: s.enabledByDefault ?? true,
+        implemented: s.implemented ?? true,
+      })) ?? [],
     };
   }
 
@@ -289,6 +313,38 @@ export class ConnectionsController {
       }
     }
 
+    // Backfill metadata from credentials if missing (for connections created before metadata sync)
+    let metadata = (connection.metadata ?? {}) as Record<string, unknown>;
+    if (providerSlug === 'aws' && !metadata.accountId) {
+      try {
+        const creds = await this.credentialVaultService.getDecryptedCredentials(id);
+        if (creds) {
+          const updates: Record<string, unknown> = {};
+          if (typeof creds.roleArn === 'string') {
+            updates.roleArn = creds.roleArn;
+            const m = (creds.roleArn as string).match(/^arn:aws:iam::(\d{12}):role\/.+$/);
+            if (m) updates.accountId = m[1];
+          }
+          if (typeof creds.remediationRoleArn === 'string') {
+            updates.remediationRoleArn = creds.remediationRoleArn;
+          }
+          if (Array.isArray(creds.regions)) {
+            updates.regions = creds.regions;
+          }
+          if (typeof creds.externalId === 'string') {
+            updates.externalId = creds.externalId;
+          }
+          if (Object.keys(updates).length > 0) {
+            metadata = { ...metadata, ...updates };
+            // Persist so this only runs once
+            await this.connectionRepository.update(id, { metadata });
+          }
+        }
+      } catch {
+        // Non-critical — just use whatever metadata we have
+      }
+    }
+
     return {
       id: connection.id,
       providerId: connection.providerId,
@@ -300,7 +356,7 @@ export class ConnectionsController {
       lastSyncAt: connection.lastSyncAt,
       nextSyncAt: connection.nextSyncAt,
       syncCadence: connection.syncCadence,
-      metadata: connection.metadata,
+      metadata,
       variables: connection.variables,
       errorMessage: connection.errorMessage,
       createdAt: connection.createdAt,
@@ -389,6 +445,9 @@ export class ConnectionsController {
       }
       if (typeof credentials.externalId === 'string') {
         metadata.externalId = credentials.externalId;
+      }
+      if (typeof credentials.remediationRoleArn === 'string' && credentials.remediationRoleArn) {
+        metadata.remediationRoleArn = credentials.remediationRoleArn;
       }
       // Store Azure tenant/subscription IDs in metadata for display and pre-filling
       if (typeof credentials.tenantId === 'string') {
@@ -549,84 +608,35 @@ export class ConnectionsController {
       }
 
       this.logger.log(
-        'Validating AWS: Role assumption successful, checking Security Hub...',
+        'Validating AWS: Role assumption successful, verifying identity...',
       );
 
-      // Step 3: Check Security Hub in each region
+      // Step 3: Verify assumed identity works
       const awsCredentials = {
         accessKeyId: customerCreds.AccessKeyId,
         secretAccessKey: customerCreds.SecretAccessKey,
         sessionToken: customerCreds.SessionToken,
       };
 
-      const regionResults: {
-        region: string;
-        enabled: boolean;
-        error?: string;
-      }[] = [];
-
-      for (const region of regions) {
-        try {
-          const securityHub = new SecurityHubClient({
-            region,
-            credentials: awsCredentials,
-          });
-
-          await securityHub.send(new DescribeHubCommand({}));
-          regionResults.push({ region, enabled: true });
-          this.logger.log(`Security Hub is enabled in ${region}`);
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          if (
-            errorMessage.includes('not subscribed') ||
-            errorMessage.includes('InvalidAccessException')
-          ) {
-            regionResults.push({
-              region,
-              enabled: false,
-              error: 'Security Hub not enabled',
-            });
-            this.logger.warn(`Security Hub not enabled in ${region}`);
-          } else if (errorMessage.includes('AccessDenied')) {
-            regionResults.push({
-              region,
-              enabled: false,
-              error: 'Access denied - check IAM permissions',
-            });
-          } else {
-            regionResults.push({ region, enabled: false, error: errorMessage });
-          }
-        }
-      }
-
-      // Check if ALL regions have Security Hub enabled
-      const failedRegions = regionResults.filter((r) => !r.enabled);
-
-      if (failedRegions.length > 0) {
-        const failedRegionNames = failedRegions.map((r) => r.region).join(', ');
-        const errorMsg =
-          failedRegions.length === 1
-            ? `Security Hub is not enabled in region: ${failedRegionNames}. Please enable Security Hub in this region or remove it from your selection.`
-            : `Security Hub is not enabled in ${failedRegions.length} regions: ${failedRegionNames}. Please enable Security Hub in these regions or remove them from your selection.`;
-
-        return {
-          success: false,
-          message: errorMsg,
-          details: { regions: regionResults },
-        };
-      }
+      const customerSts = new STSClient({
+        region: primaryRegion,
+        credentials: awsCredentials,
+      });
+      const identity = await customerSts.send(new GetCallerIdentityCommand({}));
+      this.logger.log(
+        `Validated AWS identity: ${identity.Arn} (Account: ${identity.Account})`,
+      );
 
       // All validations passed!
       const message =
         regions.length === 1
-          ? `Validated! Security Hub is enabled in ${regions[0]}.`
-          : `Validated! Security Hub is enabled in all ${regions.length} regions.`;
+          ? `Validated! Connected to AWS account ${identity.Account} in ${regions[0]}.`
+          : `Validated! Connected to AWS account ${identity.Account} in ${regions.length} regions.`;
 
       return {
         success: true,
         message,
-        details: { regions: regionResults },
+        details: { account: identity.Account, regions },
       };
     } catch (err) {
       const errorMessage =
@@ -991,6 +1001,72 @@ export class ConnectionsController {
   }
 
   /**
+   * Update enabled services for a connection
+   */
+  @Put(':id/services')
+  @RequirePermission('integration', 'update')
+  async updateConnectionServices(
+    @Param('id') id: string,
+    @Body() body: { services: string[] },
+    @OrganizationId() organizationId: string,
+  ) {
+    if (!Array.isArray(body.services)) {
+      throw new HttpException(
+        'services must be an array of service IDs',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const connection = await this.connectionService.getConnectionForOrg(
+      id,
+      organizationId,
+    );
+
+    const raw = connection.variables;
+    const existingVariables: Record<string, unknown> =
+      raw && typeof raw === 'object' && !Array.isArray(raw)
+        ? (raw as Record<string, unknown>)
+        : {};
+
+    // Get ALL possible services from the manifest
+    const provider = await db.integrationProvider.findUnique({
+      where: { id: connection.providerId },
+      select: { slug: true },
+    });
+    const manifest = provider ? getManifest(provider.slug) : null;
+    const allManifestServices = new Set<string>(
+      manifest?.services?.map((s: { id: string }) => s.id) ?? [],
+    );
+
+    // disabledServices = all manifest services MINUS what user sent as enabled
+    const enabledSet = new Set(body.services);
+    const disabledServices = [...allManifestServices].filter((s) => !enabledSet.has(s));
+
+    // Merge user-enabled services into detectedServices so the GET
+    // logic treats them as "known" services (user intent > auto-detection)
+    const currentDetected = new Set<string>(
+      Array.isArray(existingVariables.detectedServices)
+        ? existingVariables.detectedServices as string[]
+        : [],
+    );
+    for (const id of body.services) {
+      currentDetected.add(id);
+    }
+
+    await this.connectionRepository.update(id, {
+      variables: {
+        ...existingVariables,
+        disabledServices,
+        detectedServices: [...currentDetected],
+        // Clear legacy enabledServices to use new smart logic
+        enabledServices: undefined,
+      },
+    });
+
+    return { success: true, disabledServices };
+  }
+
+  /**
    * Update credentials for a custom auth connection
    */
   @Put(':id/credentials')
@@ -1058,6 +1134,26 @@ export class ConnectionsController {
       id,
       mergedCredentials,
     );
+
+    // Sync non-secret fields to metadata for display (pre-fill settings forms)
+    const metaUpdates: Record<string, unknown> = {};
+    if (typeof mergedCredentials.roleArn === 'string') {
+      metaUpdates.roleArn = mergedCredentials.roleArn;
+      const arnMatch = mergedCredentials.roleArn.match(/^arn:aws:iam::(\d{12}):role\/.+$/);
+      if (arnMatch) metaUpdates.accountId = arnMatch[1];
+    }
+    if (typeof mergedCredentials.remediationRoleArn === 'string') {
+      metaUpdates.remediationRoleArn = mergedCredentials.remediationRoleArn;
+    }
+    if (Array.isArray(mergedCredentials.regions)) {
+      metaUpdates.regions = mergedCredentials.regions;
+    }
+    if (Object.keys(metaUpdates).length > 0) {
+      const existingMeta = (connection.metadata as Record<string, unknown>) ?? {};
+      await this.connectionRepository.update(id, {
+        metadata: { ...existingMeta, ...metaUpdates },
+      });
+    }
 
     // Only activate the connection if it was in error state (don't resume paused connections)
     if (connection.status === 'error') {

@@ -30,6 +30,8 @@ export type {
   // Category type
   IntegrationCategory,
   IntegrationCheck,
+  // Service types
+  IntegrationService,
   // Handler types
   IntegrationCredentials,
   IntegrationFinding,
@@ -129,6 +131,10 @@ export { manifest as githubManifest } from './manifests/github';
 
 // Directory sync email include/exclude terms (Google Workspace, JumpCloud, checks)
 export { matchesSyncFilterTerms, parseSyncFilterTerms } from './sync-filter/email-exclusion-terms';
+
+// AWS credential helpers (used by frontend setup dialogs)
+export { awsRemediationScript } from './manifests/aws/credentials';
+
 
 // API Response types (for frontend and API type sharing)
 export type {

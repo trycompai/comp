@@ -76,6 +76,7 @@ export class DynamicIntegrationsController {
       syncDefinition: validatedSyncDef
         ? (JSON.parse(JSON.stringify(validatedSyncDef)) as Prisma.InputJsonValue)
         : null,
+      services: (def.services as unknown as Prisma.InputJsonValue) ?? undefined,
     });
 
     // Delete checks not in the new definition, then upsert the rest
@@ -99,6 +100,7 @@ export class DynamicIntegrationsController {
         variables: (check.variables ?? []) as unknown as Prisma.InputJsonValue,
         isEnabled: check.isEnabled ?? true,
         sortOrder: check.sortOrder ?? index,
+        service: check.service ?? undefined,
       });
     }
 

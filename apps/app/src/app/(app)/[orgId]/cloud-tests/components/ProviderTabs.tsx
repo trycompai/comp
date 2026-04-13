@@ -1,8 +1,15 @@
+import { useApi } from '@/hooks/use-api';
+import { useConnectionServices } from '@/hooks/use-integration-platform';
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import type { Finding, Provider } from '../types';
+import { ActivitySection } from '@/app/(app)/[orgId]/integrations/[slug]/components/ActivitySection';
+import { RemediationHistorySection } from '@/app/(app)/[orgId]/integrations/[slug]/components/RemediationHistorySection';
+import { CloudTestsSection } from './CloudTestsSection';
 import { ResultsView } from './ResultsView';
+import { ServicesGrid } from './ServicesGrid';
 
 interface ProviderTabsProps {
   providerGroups: Record<string, Provider[]>;
@@ -19,6 +26,7 @@ interface ProviderTabsProps {
   needsConfiguration: (provider: Provider) => boolean;
   canRunScan?: boolean;
   canAddConnection?: boolean;
+  orgId: string;
 }
 
 const formatProviderLabel = (providerType: string): string => {
@@ -35,58 +43,6 @@ const formatProviderLabel = (providerType: string): string => {
     .join(' ');
 };
 
-/**
- * AWS region pattern: matches formats like us-east-1, eu-west-2, ap-southeast-1, etc.
- */
-const AWS_REGION_PATTERN =
-  /^(us|eu|ap|sa|ca|me|af|il)-(north|south|east|west|central|northeast|southeast|northwest|southwest)-\d$/;
-
-const isValidAwsRegion = (value: string): boolean => {
-  return AWS_REGION_PATTERN.test(value);
-};
-
-const extractRegionFromTitle = (title: string | null | undefined): string | null => {
-  if (!title) return null;
-  const match = title.match(/\s\(([-a-z0-9]+)\)\s*$/i);
-  if (!match) return null;
-  const candidate = match[1].toLowerCase();
-  // Only return if it's actually an AWS region, not other suffixes like "nacl", "public", etc.
-  return isValidAwsRegion(candidate) ? candidate : null;
-};
-
-const stripRegionSuffix = (title: string | null | undefined): string | null => {
-  if (!title) return null;
-  // Only strip the suffix if it's a valid AWS region
-  const match = title.match(/\s\(([-a-z0-9]+)\)\s*$/i);
-  if (!match) return title;
-  const candidate = match[1].toLowerCase();
-  // Keep non-region suffixes like "(nacl)", "(public)" as part of the title
-  return isValidAwsRegion(candidate) ? title.replace(/\s\(([-a-z0-9]+)\)\s*$/i, '').trim() : title;
-};
-
-const buildRegionOptions = (
-  connection: Provider,
-  findings: Finding[],
-): Array<{ id: string; label: string }> => {
-  const regionMap = new Map<string, string>();
-
-  if (connection.regions?.length) {
-    for (const region of connection.regions) {
-      regionMap.set(region.toLowerCase(), region);
-    }
-  } else {
-    for (const finding of findings) {
-      const region = extractRegionFromTitle(finding.title);
-      if (region && !regionMap.has(region)) {
-        regionMap.set(region, region);
-      }
-    }
-  }
-
-  return Array.from(regionMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([id, label]) => ({ id, label }));
-};
 
 function ConnectionDetails({ connection }: { connection: Provider }) {
   const details: string[] = [];
@@ -119,6 +75,136 @@ function ConnectionDetails({ connection }: { connection: Provider }) {
   );
 }
 
+/** Cloud provider connection with full tabbed UI (AWS + GCP) */
+function CloudConnectionContent({
+  connection,
+  orgId,
+  onScanComplete,
+}: {
+  connection: Provider;
+  orgId: string;
+  onScanComplete: () => void;
+}) {
+  const api = useApi();
+  const { services, refresh: refreshServices, updateServices } = useConnectionServices(connection.id);
+  const [togglingService, setTogglingService] = useState<string | null>(null);
+  const detectedRef = useRef(false);
+
+  // Auto-detect services on first load (AWS via Cost Explorer, GCP via Service Usage API)
+  useEffect(() => {
+    if (detectedRef.current || !connection.id) return;
+    if (connection.integrationId !== 'aws' && connection.integrationId !== 'gcp') return;
+    detectedRef.current = true;
+
+    api.post(`/v1/cloud-security/detect-services/${connection.id}`, {}).then((resp) => {
+      if (!resp.error) {
+        const data = resp.data as { services?: string[] };
+        if (data?.services?.length) {
+          toast.success(`${data.services.length} services detected`);
+          refreshServices();
+        }
+      }
+    });
+  }, [connection.id, connection.integrationId, api, refreshServices]);
+
+  const handleToggleService = useCallback(
+    async (serviceId: string, enabled: boolean) => {
+      setTogglingService(serviceId);
+      try {
+        await updateServices(serviceId, enabled);
+      } finally {
+        setTogglingService(null);
+      }
+    },
+    [updateServices],
+  );
+
+  // Derive manifest-like services from connection services
+  const manifestServices = services.map((s) => ({
+    id: s.id,
+    name: s.name ?? s.id,
+    description: s.description ?? '',
+    implemented: s.implemented ?? true,
+  }));
+
+  const enabledCount = services.filter((s) => s.enabled).length;
+
+  return (
+    <Tabs defaultValue="findings">
+      <TabsList variant="underline">
+        <TabsTrigger value="findings">Findings</TabsTrigger>
+        <TabsTrigger value="activity">Activity</TabsTrigger>
+        <TabsTrigger value="remediations">Remediations</TabsTrigger>
+        <TabsTrigger value="services">
+          Services{enabledCount > 0 ? ` (${enabledCount})` : ''}
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="findings">
+        <div className="pt-4">
+          <CloudTestsSection
+            providerSlug={connection.integrationId as 'aws' | 'gcp' | 'azure'}
+            connectionId={connection.id}
+            orgId={orgId}
+            lastRunAt={connection.lastRunAt}
+            variables={connection.variables ?? undefined}
+            onScanComplete={onScanComplete}
+          />
+        </div>
+      </TabsContent>
+
+      <TabsContent value="activity">
+        <div className="pt-5">
+          <ActivitySection connectionId={connection.id} />
+        </div>
+      </TabsContent>
+
+      <TabsContent value="remediations">
+        <div className="pt-5">
+          <RemediationHistorySection connectionId={connection.id} />
+        </div>
+      </TabsContent>
+
+      <TabsContent value="services">
+        <div className="pt-4 space-y-4">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold">Scan Configuration</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Toggle which services to include in scans.{connection.integrationId === 'aws' ? ' New services are auto-detected from your AWS usage.' : ''}
+              </p>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border bg-background px-4 py-3">
+              <div>
+                <p className="text-sm font-medium">Daily automated scan</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Runs every day at 5:00 AM UTC{enabledCount > 0 ? ` across ${enabledCount} service${enabledCount !== 1 ? 's' : ''} + security baseline` : ' on security baseline checks'}
+                </p>
+              </div>
+              <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                Active
+              </span>
+            </div>
+          </div>
+          {manifestServices.length > 0 ? (
+            <ServicesGrid
+              services={manifestServices}
+              connectionServices={services}
+              connectionId={connection.id}
+              onToggle={handleToggleService}
+              togglingService={togglingService}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              No services detected yet.{connection.integrationId === 'aws' ? ' Services are auto-detected from your AWS billing data.' : ' Run a scan to detect services.'}
+            </p>
+          )}
+        </div>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
 export function ProviderTabs({
   providerGroups,
   providerTypes,
@@ -134,9 +220,8 @@ export function ProviderTabs({
   needsConfiguration,
   canRunScan,
   canAddConnection,
+  orgId,
 }: ProviderTabsProps) {
-  const [activeRegionTabs, setActiveRegionTabs] = useState<Record<string, string>>({});
-
   return (
     <Tabs value={activeProviderType} onValueChange={onProviderTypeChange}>
       <div className="mb-4">
@@ -208,58 +293,47 @@ export function ProviderTabs({
                 </div>
 
                 {connections.map((connection) => {
-                  const connFindings = findingsByProvider[connection.id] ?? [];
-                  const regionOptions = buildRegionOptions(connection, connFindings);
-                  const showRegionTabs =
-                    connection.integrationId.toLowerCase() === 'aws' && regionOptions.length >= 1;
-                  const activeRegion = activeRegionTabs[connection.id] || 'all';
-                  const filteredFindings =
-                    showRegionTabs && activeRegion !== 'all'
-                      ? connFindings.filter(
-                          (finding) => extractRegionFromTitle(finding.title) === activeRegion,
-                        )
-                      : connFindings;
-                  const displayFindings = filteredFindings.map((finding) => ({
-                    ...finding,
-                    title: stripRegionSuffix(finding.title),
-                  }));
-
                   return (
                     <TabsContent key={connection.id} value={connection.id}>
                       <div className="mt-4">
                         <ConnectionDetails connection={connection} />
 
-                        {showRegionTabs && (
-                          <div className="mb-4">
-                            <Tabs
-                              value={activeRegion}
-                              onValueChange={(value) =>
-                                setActiveRegionTabs((prev) => ({
-                                  ...prev,
-                                  [connection.id]: value,
-                                }))
-                              }
-                            >
-                              <TabsList>
-                                <TabsTrigger value="all">All regions</TabsTrigger>
-                                {regionOptions.map((region) => (
-                                  <TabsTrigger key={region.id} value={region.id}>
-                                    {region.label}
-                                  </TabsTrigger>
-                                ))}
-                              </TabsList>
-                            </Tabs>
-                          </div>
+                        {/* New platform connections get full tabbed UI */}
+                        {!connection.isLegacy ? (
+                          <CloudConnectionContent
+                            connection={connection}
+                            orgId={orgId}
+                            onScanComplete={() => onRunScan(connection.id)}
+                          />
+                        ) : (
+                          <>
+                            {/* Upgrade banner for legacy AWS connections */}
+                            {connection.isLegacy && connection.integrationId === 'aws' && (
+                              <a
+                                href={`/${orgId}/integrations/aws`}
+                                className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/[0.03] px-4 py-3 mb-4 hover:bg-primary/[0.06] transition-colors group"
+                              >
+                                <div className="space-y-0.5">
+                                  <p className="text-sm font-medium">Auto-fix is available</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Upgrade to the new connection to enable one-click fixes, batch remediation, and rollback for all findings.
+                                  </p>
+                                </div>
+                                <span className="text-xs font-medium text-primary shrink-0 ml-4 group-hover:underline">
+                                  Upgrade →
+                                </span>
+                              </a>
+                            )}
+                          <ResultsView
+                            findings={findingsByProvider[connection.id] ?? []}
+                            onRunScan={() => onRunScan(connection.id)}
+                            isScanning={isScanning}
+                            needsConfiguration={needsConfiguration(connection)}
+                            onConfigure={() => onConfigure(connection)}
+                            canRunScan={canRunScan}
+                          />
+                          </>
                         )}
-
-                        <ResultsView
-                          findings={displayFindings}
-                          onRunScan={() => onRunScan(connection.id)}
-                          isScanning={isScanning}
-                          needsConfiguration={needsConfiguration(connection)}
-                          onConfigure={() => onConfigure(connection)}
-                          canRunScan={canRunScan}
-                        />
                       </div>
                     </TabsContent>
                   );

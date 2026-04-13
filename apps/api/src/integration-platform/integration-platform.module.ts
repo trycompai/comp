@@ -10,6 +10,7 @@ import { VariablesController } from './controllers/variables.controller';
 import { TaskIntegrationsController } from './controllers/task-integrations.controller';
 import { WebhookController } from './controllers/webhook.controller';
 import { SyncController } from './controllers/sync.controller';
+import { ServicesController } from './controllers/services.controller';
 import { CredentialVaultService } from './services/credential-vault.service';
 import { ConnectionService } from './services/connection.service';
 import { OAuthCredentialsService } from './services/oauth-credentials.service';
@@ -43,6 +44,7 @@ import { GenericEmployeeSyncService } from './services/generic-employee-sync.ser
     TaskIntegrationsController,
     WebhookController,
     SyncController,
+    ServicesController,
   ],
   providers: [
     // Services

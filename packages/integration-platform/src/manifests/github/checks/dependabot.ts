@@ -26,6 +26,7 @@ export const dependabotCheck: IntegrationCheck = {
   id: 'dependabot_enabled',
   name: 'Dependabot Security Updates Enabled',
   description: 'Verify that Dependabot security updates are enabled on repositories',
+  service: 'dependency-management',
   taskMapping: TASK_TEMPLATES.secureCode,
   defaultSeverity: 'medium',
 

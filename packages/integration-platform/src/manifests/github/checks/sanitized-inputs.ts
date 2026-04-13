@@ -77,6 +77,7 @@ export const sanitizedInputsCheck: IntegrationCheck = {
   name: 'Sanitized Inputs & Code Scanning',
   description:
     'Verifies repositories use Zod/Pydantic for input validation and have GitHub CodeQL scanning enabled. Scans entire repository including monorepo subdirectories.',
+  service: 'code-security',
   taskMapping: TASK_TEMPLATES.sanitizedInputs,
   defaultSeverity: 'medium',
   variables: [targetReposVariable],

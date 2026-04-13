@@ -37,6 +37,9 @@ export interface CloudFinding {
   completedAt: Date | null;
   connectionId: string;
   providerSlug: string;
+  serviceId: string | null;
+  findingKey: string | null;
+  resourceId: string | null;
   integration: { integrationId: string };
 }
 
@@ -234,6 +237,8 @@ export class CloudSecurityQueryService {
         collectedAt: true,
         checkRunId: true,
         passed: true,
+        evidence: true,
+        resourceId: true,
       },
       orderBy: { collectedAt: 'desc' },
     });
@@ -243,6 +248,7 @@ export class CloudSecurityQueryService {
       const slug = checkRun
         ? connectionToSlug[checkRun.connectionId] || 'unknown'
         : 'unknown';
+      const evidence = (result.evidence ?? {}) as Record<string, unknown>;
       return {
         id: result.id,
         title: result.title,
@@ -253,6 +259,9 @@ export class CloudSecurityQueryService {
         completedAt: result.collectedAt,
         connectionId: checkRun?.connectionId ?? '',
         providerSlug: slug,
+        serviceId: (evidence.serviceId as string) ?? null,
+        findingKey: (evidence.findingKey as string) ?? null,
+        resourceId: result.resourceId ?? null,
         integration: { integrationId: slug },
       };
     });
@@ -320,6 +329,9 @@ export class CloudSecurityQueryService {
       completedAt: result.completedAt,
       connectionId: result.integration.id,
       providerSlug: result.integration.integrationId,
+      serviceId: null,
+      findingKey: null,
+      resourceId: null,
       integration: { integrationId: result.integration.integrationId },
     }));
   }

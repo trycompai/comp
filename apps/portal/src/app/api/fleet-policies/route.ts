@@ -4,9 +4,8 @@ import { db } from "@db/server";
 import { validateMemberAndOrg } from "../download-agent/utils";
 import { getFleetInstance } from "@/utils/fleet";
 import { FleetPolicy, Host } from "@/app/(app)/(home)/[orgId]/types";
-import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from "@/utils/s3";
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from "@/utils/s3";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const MDM_POLICY_ID = -9999;
 

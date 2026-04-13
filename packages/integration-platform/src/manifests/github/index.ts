@@ -63,6 +63,23 @@ export const manifest: IntegrationManifest = {
 
   capabilities: ['checks'],
 
+  services: [
+    {
+      id: 'code-security',
+      name: 'Code Security',
+      description: 'Branch protection and code review policies',
+      enabledByDefault: true,
+      implemented: true,
+    },
+    {
+      id: 'dependency-management',
+      name: 'Dependency Management',
+      description: 'Automated dependency updates and vulnerability scanning',
+      enabledByDefault: true,
+      implemented: true,
+    },
+  ],
+
   // Compliance checks that run daily and can auto-complete tasks
   checks: [branchProtectionCheck, dependabotCheck, sanitizedInputsCheck],
 

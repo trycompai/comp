@@ -52,6 +52,11 @@ export const manifest: IntegrationManifest = {
   // Supports both checks and sync capabilities
   capabilities: ['checks', 'sync'],
 
+  services: [
+    { id: 'user-sync', name: 'User Sync', description: 'Sync users from JumpCloud as organization members', enabledByDefault: true, implemented: true },
+    { id: 'mfa-monitoring', name: 'MFA Monitoring', description: 'Monitor multi-factor authentication enrollment status', implemented: false },
+  ],
+
   variables: [syncExcludedUsersVariable],
 
   // Employee sync check

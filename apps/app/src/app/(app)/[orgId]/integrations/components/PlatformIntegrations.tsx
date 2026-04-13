@@ -53,7 +53,6 @@ const EMPLOYEE_SYNC_PROVIDERS = new Set([
   'google-workspace',
   'rippling',
   'jumpcloud',
-  'ramp',
 ]);
 
 // Check if a provider needs variable configuration based on manifest's required variables
@@ -126,7 +125,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
     if (provider.authType === 'oauth2') {
       setConnectingProvider(provider.id);
       try {
-        const redirectUrl = window.location.href;
+        const redirectUrl = `${window.location.origin}/${orgId}/integrations/${provider.id}?success=true`;
         const result = await startOAuth(provider.id, redirectUrl);
         if (result.authorizationUrl) {
           window.location.href = result.authorizationUrl;
@@ -141,9 +140,8 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
       return;
     }
 
-    // For non-OAuth (api_key, basic, custom), open the connect dialog
-    setConnectingProviderInfo(provider);
-    setConnectDialogOpen(true);
+    // For non-OAuth (api_key, basic, custom), navigate to detail page
+    router.push(`/${orgId}/integrations/${provider.id}`);
   };
 
   const handleConnectDialogSuccess = () => {
@@ -457,10 +455,18 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                     connection?.variables as Record<string, unknown> | null,
                   );
 
+                const isComingSoon = provider.authType === 'oauth2' && provider.oauthConfigured === false;
+
                 return (
-                  <Card
+                  <div
                     key={`platform-${provider.id}`}
-                    className={`relative overflow-hidden transition-all flex flex-col ${
+                    role={isComingSoon ? undefined : 'button'}
+                    tabIndex={isComingSoon ? undefined : 0}
+                    onClick={isComingSoon ? undefined : () => router.push(`/${orgId}/integrations/${provider.id}`)}
+                    onKeyDown={isComingSoon ? undefined : (e) => { if (e.key === 'Enter') router.push(`/${orgId}/integrations/${provider.id}`); }}
+                  >
+                  <Card
+                    className={`relative overflow-hidden transition-all flex flex-col h-full ${isComingSoon ? 'opacity-75' : 'cursor-pointer'} ${
                       needsConfiguration
                         ? 'border-warning/30 bg-warning/5'
                         : isConnected
@@ -504,7 +510,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0"
-                            onClick={() => handleOpenManageDialog(connection, provider)}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenManageDialog(connection, provider); }}
                           >
                             <Settings2 className="h-4 w-4" />
                           </Button>
@@ -569,7 +575,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                             size="sm"
                             variant="outline"
                             className="w-full"
-                            onClick={() => handleOpenManageDialog(connection, provider)}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenManageDialog(connection, provider); }}
                           >
                             Configure Variables
                           </Button>
@@ -583,7 +589,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                                 size="sm"
                                 variant="outline"
                                 className="w-full"
-                                onClick={() => handleConnect(provider)}
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleConnect(provider); }}
                                 disabled={isConnecting}
                               >
                                 {isConnecting ? (
@@ -605,7 +611,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                           <Button
                             size="sm"
                             className="w-full"
-                            onClick={() => handleConnect(provider)}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleConnect(provider); }}
                             disabled={isConnecting}
                           >
                             {isConnecting ? (
@@ -621,6 +627,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                       </div>
                     </CardContent>
                   </Card>
+                  </div>
                 );
               }
 
@@ -791,22 +798,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
           />
         ))}
 
-      {/* Connect Dialog (for non-OAuth integrations) */}
-      {connectingProviderInfo && (
-        <ConnectIntegrationDialog
-          open={connectDialogOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              setConnectDialogOpen(false);
-              setConnectingProviderInfo(null);
-            }
-          }}
-          integrationId={connectingProviderInfo.id}
-          integrationName={connectingProviderInfo.name}
-          integrationLogoUrl={connectingProviderInfo.logoUrl}
-          onConnected={handleConnectDialogSuccess}
-        />
-      )}
+      {/* Connect dialog removed — non-OAuth providers navigate to detail page */}
 
       {/* Custom Integration Detail Modal */}
       {selectedCustomIntegration && (
