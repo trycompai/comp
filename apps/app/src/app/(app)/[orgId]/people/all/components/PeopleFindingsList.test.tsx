@@ -42,9 +42,9 @@ const mockMutate = vi.fn();
 vi.mock('@/hooks/use-findings-api', () => ({
   FINDING_SCOPE_LABELS: {
     people: 'People',
-    people_tasks: 'People: Tasks',
-    people_devices: 'People: Devices',
-    people_chart: 'People: Chart',
+    people_tasks: 'Tasks',
+    people_devices: 'Devices',
+    people_chart: 'Chart',
   },
   useScopeFindings: () => ({
     data: { data: mockFindings },
