@@ -470,7 +470,7 @@ export function TeamMembersClient({
                   isCurrentUserOwner={isCurrentUserOwner}
                   customRoles={customRoles}
                   taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}
-                  deviceStatus={deviceStatusMap[(item as MemberWithUser).id] ?? 'not-installed'}
+                  deviceStatus={deviceStatusMap[(item as MemberWithUser).id]}
                 />
               ) : (
                 <PendingInvitationRow

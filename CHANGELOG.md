@@ -1,3 +1,32 @@
+# [3.21.0](https://github.com/trycompai/comp/compare/v3.20.2...v3.21.0) (2026-04-10)
+
+
+### Bug Fixes
+
+* **onboarding:** add initialize-organization trigger task and recover… ([#2512](https://github.com/trycompai/comp/issues/2512)) ([082501f](https://github.com/trycompai/comp/commit/082501f4f3f4f2a6de77514a2fb7b98a09d48ba8))
+* **onboarding:** disable Complete button while server action is running ([8e53a10](https://github.com/trycompai/comp/commit/8e53a10fb5375397da1d7bee58b5ab49fd65984b))
+* **onboarding:** don't delete org after session activation succeeds ([a9cb9c5](https://github.com/trycompai/comp/commit/a9cb9c5615b8a1a24894164dc166767f07fadec1))
+* **onboarding:** fix org creation timeout and improve error handling ([726760d](https://github.com/trycompai/comp/commit/726760d7f613259329fefc7d9b6632990ad10fed))
+* **onboarding:** harden cancel action — guard completed orgs, switch before delete ([b1dec0e](https://github.com/trycompai/comp/commit/b1dec0e8a8f55e50a001f47f6832e398ce19f3b3))
+* **onboarding:** hide cancel button while onboarding submission is in-flight ([887dfa9](https://github.com/trycompai/comp/commit/887dfa949c60671d3c54a070fb1401d216b1dc5f))
+* **onboarding:** require fallback org before allowing cancel ([03452e3](https://github.com/trycompai/comp/commit/03452e38467865ed293e38b9ddf4263bc878379e))
+* **onboarding:** rollback active org switch if delete fails ([9b884f0](https://github.com/trycompai/comp/commit/9b884f09f46221b61fa73f4fcc2f921613422302))
+* **onboarding:** sanitize error messages shown to users ([14a35df](https://github.com/trycompai/comp/commit/14a35df42f47b9d3f7bc7841182f14072e5ae95c))
+* use barrel import for email package (Trigger build fix) ([b165a18](https://github.com/trycompai/comp/commit/b165a18c4ce4c23df6497ca28c4c3bd7213db05f))
+
+
+### Features
+
+* add List-Unsubscribe headers and throttle email sends ([#2507](https://github.com/trycompai/comp/issues/2507)) ([80db5d9](https://github.com/trycompai/comp/commit/80db5d98a21251ab3931e0f484a95cdf451b863d))
+* **onboarding:** add cancel button to abandon onboarding and return to previous org ([7d990c2](https://github.com/trycompai/comp/commit/7d990c24d5ab15fa28bcd37fdd047444e226f00a))
+
+## [3.20.2](https://github.com/trycompai/comp/compare/v3.20.1...v3.20.2) (2026-04-10)
+
+
+### Bug Fixes
+
+* respect RBAC roles for device status ([d1d4e69](https://github.com/trycompai/comp/commit/d1d4e6906db1dd919007e092cf123a0dc50efd55))
+
 ## [3.20.1](https://github.com/trycompai/comp/compare/v3.20.0...v3.20.1) (2026-04-10)
 
 

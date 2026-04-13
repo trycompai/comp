@@ -19,7 +19,12 @@ function createPrismaClient(): PrismaClient {
   // Strip sslmode from the connection string to avoid conflicts with the explicit ssl option
   const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
   const adapter = new PrismaPg({ connectionString: url, ssl });
-  return new PrismaClient({ adapter });
+  return new PrismaClient({
+    adapter,
+    transactionOptions: {
+      timeout: 30000,
+    },
+  });
 }
 
 export const db = globalForPrisma.prisma || createPrismaClient();

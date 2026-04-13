@@ -90,9 +90,11 @@ describe('MemberRow device status', () => {
     expect(screen.getByText('Not Installed').className).toContain('text-muted-foreground');
   });
 
-  it('shows "Not Installed" by default when deviceStatus is omitted', () => {
+  it('shows dash when deviceStatus is omitted (no compliance obligation)', () => {
     renderMemberRow();
-    expect(screen.getByText('Not Installed')).toBeInTheDocument();
+    expect(screen.queryByText('Not Installed')).not.toBeInTheDocument();
+    expect(screen.queryByText('Compliant')).not.toBeInTheDocument();
+    expect(screen.queryByText('Non-Compliant')).not.toBeInTheDocument();
   });
 
   it('shows "Compliant" with green dot when deviceStatus is compliant', () => {
@@ -176,5 +178,59 @@ describe('MemberRow device status', () => {
     const { container: c3 } = renderMemberRow('not-installed');
     const redDot = c3.querySelector('.bg-red-400');
     expect(redDot).toBeInTheDocument();
+  });
+
+  it('does not show device status for member without compliance obligation (e.g. auditor)', () => {
+    const auditorMember = {
+      ...baseMember,
+      role: 'auditor',
+    } as unknown as MemberWithUser;
+
+    render(
+      <table>
+        <tbody>
+          <MemberRow
+            member={auditorMember}
+            onRemove={noop}
+            onRemoveDevice={noop}
+            onUpdateRole={noop}
+            onReactivate={noop}
+            canEdit={false}
+            isCurrentUserOwner={false}
+            // deviceStatus intentionally omitted — auditor won't be in the map
+          />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.queryByText('Not Installed')).not.toBeInTheDocument();
+    expect(screen.queryByText('Compliant')).not.toBeInTheDocument();
+    expect(screen.queryByText('Non-Compliant')).not.toBeInTheDocument();
+  });
+
+  it('still shows device status for member with compliance obligation', () => {
+    const employeeMember = {
+      ...baseMember,
+      role: 'employee',
+    } as unknown as MemberWithUser;
+
+    render(
+      <table>
+        <tbody>
+          <MemberRow
+            member={employeeMember}
+            onRemove={noop}
+            onRemoveDevice={noop}
+            onUpdateRole={noop}
+            onReactivate={noop}
+            canEdit={false}
+            isCurrentUserOwner={false}
+            deviceStatus="compliant"
+          />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.getByText('Compliant')).toBeInTheDocument();
   });
 });

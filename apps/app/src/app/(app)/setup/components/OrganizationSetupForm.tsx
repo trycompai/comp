@@ -13,12 +13,14 @@ interface OrganizationSetupFormProps {
   setupId?: string;
   initialData?: Record<string, any>;
   currentStep?: string;
+  hasOtherOrgs?: boolean;
 }
 
 export function OrganizationSetupForm({
   setupId,
   initialData,
   currentStep,
+  hasOtherOrgs = false,
 }: OrganizationSetupFormProps) {
   const [isLoadingFrameworks, setIsLoadingFrameworks] = useState(false);
   const router = useRouter();
@@ -166,6 +168,7 @@ export function OrganizationSetupForm({
               isOnboarding={isOnboarding}
               isCurrentStepValid={isCurrentStepValid}
               onPrefillAll={handlePrefillAll}
+              hasOtherOrgs={hasOtherOrgs}
             />
           </div>
         </AnimatedWrapper>

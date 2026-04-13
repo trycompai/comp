@@ -113,11 +113,26 @@ export default async function UpgradePage({ params }: PageProps) {
     redirect(`/${orgId}`);
   }
 
+  // Check if user has other completed orgs (for cancel button)
+  const otherOrgCount = await db.member.count({
+    where: {
+      userId: authSession.user.id,
+      organizationId: { not: orgId },
+      deactivated: false,
+      organization: { onboardingCompleted: true, hasAccess: true },
+    },
+  });
+
   return (
     <>
       <UpgradePageTracking />
       <div className="mx-auto px-4 max-w-7xl my-auto min-h-[calc(100vh-10rem)] flex items-center justify-center">
-        <BookingStep company={member.organization.name} orgId={orgId} hasAccess={hasAccess} />
+        <BookingStep
+          company={member.organization.name}
+          orgId={orgId}
+          hasAccess={hasAccess}
+          hasOtherOrgs={otherOrgCount > 0}
+        />
       </div>
     </>
   );
