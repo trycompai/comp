@@ -643,6 +643,7 @@ export class FindingsService {
       evidenceSubmissionId: finding.evidenceSubmission?.id,
       evidenceSubmissionFormType:
         finding.evidenceFormType ?? finding.evidenceSubmission?.formType,
+      findingScope: finding.scope ?? undefined,
       content: finding.content,
     });
 
