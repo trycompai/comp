@@ -20098,6 +20098,38 @@
         ]
       }
     },
+    "/v1/email/unsubscribe": {
+      "post": {
+        "operationId": "UnsubscribeController_unsubscribe_v1",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "One-click unsubscribe (RFC 8058)",
+        "tags": [
+          "Email - Unsubscribe"
+        ]
+      }
+    },
     "/v1/secrets": {
       "get": {
         "operationId": "SecretsController_listSecrets_v1",
