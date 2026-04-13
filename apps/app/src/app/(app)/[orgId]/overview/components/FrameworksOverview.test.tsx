@@ -95,4 +95,29 @@ describe('FrameworksOverview permission gating', () => {
     const badge = screen.getByAltText('PCI DSS Level 1');
     expect(badge).toHaveAttribute('src', '/badges/pci-dss.svg');
   });
+
+  it('renders PCI DSS badge for PCI DSS framework name variants', () => {
+    setMockPermissions({});
+
+    render(
+      <FrameworksOverview
+        {...baseProps}
+        overallComplianceScore={0}
+        frameworksWithControls={[
+          {
+            id: 'fi_pci_variant',
+            controls: [],
+            framework: {
+              id: 'fw_pci_variant',
+              name: 'PCI DSS v4.0 Level 1',
+              description: 'PCI DSS framework variant',
+            },
+          } as any,
+        ]}
+      />,
+    );
+
+    const badge = screen.getByAltText('PCI DSS v4.0 Level 1');
+    expect(badge).toHaveAttribute('src', '/badges/pci-dss.svg');
+  });
 });

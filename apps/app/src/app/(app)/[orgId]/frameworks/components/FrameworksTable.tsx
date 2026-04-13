@@ -41,6 +41,18 @@ const FRAMEWORK_BADGES: Record<string, string> = {
   'ISO 9001': '/badges/iso9001.svg',
 };
 
+function getFrameworkBadge(name: string): string | null {
+  const directMatch = FRAMEWORK_BADGES[name];
+  if (directMatch) return directMatch;
+
+  const normalizedName = name.trim().toLowerCase();
+  if (normalizedName.includes('pci dss')) {
+    return '/badges/pci-dss.svg';
+  }
+
+  return null;
+}
+
 function getFrameworkStatus(complianceScore: number): {
   label: string;
   variant: 'default' | 'secondary' | 'destructive';
@@ -197,7 +209,7 @@ export function FrameworksTable({
               const score = complianceMap[fw.id] ?? 0;
               const roundedScore = Math.round(score);
               const status = getFrameworkStatus(score);
-              const badgeSrc = FRAMEWORK_BADGES[fw.framework.name] ?? null;
+              const badgeSrc = getFrameworkBadge(fw.framework.name);
 
               return (
                 <TableRow
