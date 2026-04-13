@@ -44,7 +44,10 @@ export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
     return '/badges/gdpr.svg';
   }
 
-  if (framework.framework.name === 'PCI DSS') {
+  if (
+    framework.framework.name === 'PCI DSS' ||
+    framework.framework.name === 'PCI DSS Level 1'
+  ) {
     return '/badges/pci-dss.svg';
   }
 

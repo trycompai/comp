@@ -36,6 +36,7 @@ const FRAMEWORK_BADGES: Record<string, string> = {
   'HIPAA': '/badges/hipaa.svg',
   'GDPR': '/badges/gdpr.svg',
   'PCI DSS': '/badges/pci-dss.svg',
+  'PCI DSS Level 1': '/badges/pci-dss.svg',
   'NEN 7510': '/badges/nen7510.svg',
   'ISO 9001': '/badges/iso9001.svg',
 };
