@@ -316,7 +316,7 @@ export class PoliciesController {
 
     // Generate signed URL
     const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3');
-    const { getSignedUrl } = await import('@/app/s3');
+    const { getSignedUrl } = await import('../app/s3');
     const bucketName = process.env.APP_AWS_BUCKET_NAME;
 
     if (!bucketName) {
@@ -480,7 +480,7 @@ export class PoliciesController {
     if (!pdfUrl) return { url: null };
 
     const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3');
-    const { getSignedUrl } = await import('@/app/s3');
+    const { getSignedUrl } = await import('../app/s3');
     const bucketName = process.env.APP_AWS_BUCKET_NAME;
     if (!bucketName) return { url: null };
 
