@@ -7,6 +7,10 @@ import {
   type ConnectionListItem,
   type IntegrationProvider,
 } from '@/hooks/use-integration-platform';
+import {
+  CLOUD_RECONNECT_CUTOFF_LABEL,
+  requiresCloudReconnect,
+} from '@/lib/cloud-reconnect-policy';
 import { api } from '@/lib/api-client';
 import {
   Breadcrumb,
@@ -63,6 +67,14 @@ export function ProviderDetailView({ provider, initialConnections }: ProviderDet
       }
     ).services ?? [];
   const isCloudProvider = provider.category === 'Cloud';
+  const selectedConnectionRequiresReconnect = useMemo(() => {
+    if (!isCloudProvider || !selectedConnection) return false;
+    return requiresCloudReconnect({
+      providerId: provider.id,
+      createdAt: selectedConnection.createdAt,
+      status: selectedConnection.status,
+    });
+  }, [isCloudProvider, provider.id, selectedConnection]);
 
   // Services hook for the selected connection
   const {
@@ -181,6 +193,20 @@ export function ProviderDetailView({ provider, initialConnections }: ProviderDet
           onOpenSettings={() => setSettingsOpen(true)}
           onAddAccount={() => void handleConnect()}
         />
+
+        {selectedConnectionRequiresReconnect && (
+          <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Reconnect this account</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                This connection was created before {CLOUD_RECONNECT_CUTOFF_LABEL}. Reconnect it to keep scans and remediation fully reliable.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => void handleConnect()}>
+              Reconnect
+            </Button>
+          </div>
+        )}
 
         {/* Content: zero state OR findings */}
         {!isConnected && (

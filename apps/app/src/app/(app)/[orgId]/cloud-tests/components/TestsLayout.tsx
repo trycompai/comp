@@ -4,6 +4,7 @@ import { ConnectIntegrationDialog } from '@/components/integrations/ConnectInteg
 import { useApi } from '@/hooks/use-api';
 import { usePermissions } from '@/hooks/use-permissions';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
+import { CLOUD_RECONNECT_CUTOFF_LABEL, requiresCloudReconnect } from '@/lib/cloud-reconnect-policy';
 import { Button, PageHeader, PageHeaderDescription, PageLayout } from '@trycompai/design-system';
 import { Add, Settings } from '@trycompai/design-system/icons';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -101,6 +102,18 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   const isProvidersValidating = providersResponse.isValidating;
 
   const connectedProviders = providers;
+  const reconnectRequiredCount = useMemo(
+    () =>
+      connectedProviders.filter((provider) =>
+        requiresCloudReconnect({
+          providerId: provider.integrationId,
+          createdAt: provider.createdAt,
+          isLegacy: provider.isLegacy,
+          status: provider.status,
+        }),
+      ).length,
+    [connectedProviders],
+  );
 
   // Group connections by provider type (aws, gcp, azure)
   const providerGroups = useMemo(() => {
@@ -269,6 +282,17 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         <PageHeaderDescription>{multiProviderDescription}</PageHeaderDescription>
       </PageHeader>
 
+      {reconnectRequiredCount > 0 && (
+        <div className="mb-4 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3">
+          <p className="text-sm font-medium text-foreground">
+            Reconnect required for {reconnectRequiredCount} cloud connection{reconnectRequiredCount === 1 ? '' : 's'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Connections created before {CLOUD_RECONNECT_CUTOFF_LABEL} should be re-added to keep scans and remediation fully reliable.
+          </p>
+        </div>
+      )}
+
       <ProviderTabs
         providerGroups={providerGroups}
         providerTypes={activeProviderTypes}
@@ -303,6 +327,14 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           setConfigureDialogOpen(true);
         }}
         needsConfiguration={needsVariableConfiguration}
+        requiresReconnect={(provider) =>
+          requiresCloudReconnect({
+            providerId: provider.integrationId,
+            createdAt: provider.createdAt,
+            isLegacy: provider.isLegacy,
+            status: provider.status,
+          })
+        }
         canRunScan={canRunScan}
         canAddConnection={canCreateIntegration}
         orgId={orgId}

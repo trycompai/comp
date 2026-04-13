@@ -1,0 +1,57 @@
+import { describe, expect, it } from 'vitest';
+import {
+  CLOUD_RECONNECT_CUTOFF_ISO_UTC,
+  requiresCloudReconnect,
+} from './cloud-reconnect-policy';
+
+describe('requiresCloudReconnect', () => {
+  it('returns true for cloud connections created before the cutoff date', () => {
+    expect(
+      requiresCloudReconnect({
+        providerId: 'aws',
+        createdAt: '2026-04-12T23:59:59.999Z',
+        status: 'active',
+      }),
+    ).toBe(true);
+  });
+
+  it('returns false for cloud connections created exactly at the cutoff timestamp', () => {
+    expect(
+      requiresCloudReconnect({
+        providerId: 'aws',
+        createdAt: CLOUD_RECONNECT_CUTOFF_ISO_UTC,
+        status: 'active',
+      }),
+    ).toBe(false);
+  });
+
+  it('returns false for cloud connections created after the cutoff date', () => {
+    expect(
+      requiresCloudReconnect({
+        providerId: 'gcp',
+        createdAt: '2026-04-14T00:00:00.000Z',
+        status: 'active',
+      }),
+    ).toBe(false);
+  });
+
+  it('returns false for non-cloud providers', () => {
+    expect(
+      requiresCloudReconnect({
+        providerId: 'github',
+        createdAt: CLOUD_RECONNECT_CUTOFF_ISO_UTC,
+        status: 'active',
+      }),
+    ).toBe(false);
+  });
+
+  it('returns false for invalid dates', () => {
+    expect(
+      requiresCloudReconnect({
+        providerId: 'azure',
+        createdAt: 'not-a-date',
+        status: 'active',
+      }),
+    ).toBe(false);
+  });
+});

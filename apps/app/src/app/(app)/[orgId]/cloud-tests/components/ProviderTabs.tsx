@@ -1,5 +1,6 @@
 import { useApi } from '@/hooks/use-api';
 import { useConnectionServices } from '@/hooks/use-integration-platform';
+import { CLOUD_RECONNECT_CUTOFF_LABEL } from '@/lib/cloud-reconnect-policy';
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,6 +25,7 @@ interface ProviderTabsProps {
   onAddConnection: (providerType: string) => void;
   onConfigure: (provider: Provider) => void;
   needsConfiguration: (provider: Provider) => boolean;
+  requiresReconnect: (provider: Provider) => boolean;
   canRunScan?: boolean;
   canAddConnection?: boolean;
   orgId: string;
@@ -218,6 +220,7 @@ export function ProviderTabs({
   onAddConnection,
   onConfigure,
   needsConfiguration,
+  requiresReconnect,
   canRunScan,
   canAddConnection,
   orgId,
@@ -293,9 +296,29 @@ export function ProviderTabs({
                 </div>
 
                 {connections.map((connection) => {
+                  const reconnectRequired = requiresReconnect(connection);
+
                   return (
                     <TabsContent key={connection.id} value={connection.id}>
                       <div className="mt-4">
+                        {reconnectRequired && (
+                          <div className="mb-4 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-medium">Reconnect this account</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  This connection was created before {CLOUD_RECONNECT_CUTOFF_LABEL}. Reconnect it to keep scans and remediation fully reliable.
+                                </p>
+                              </div>
+                              {canAddConnection !== false && (
+                                <Button size="sm" onClick={() => onAddConnection(providerType)}>
+                                  Reconnect
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <ConnectionDetails connection={connection} />
 
                         {/* New platform connections get full tabbed UI */}
