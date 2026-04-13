@@ -172,6 +172,7 @@ export function SingleTask({
       await updateTask({
         status: updates.status,
         assigneeId: updates.assigneeId,
+        approverId: updates.approverId,
         frequency: updates.frequency,
         department: updates.department,
         reviewDate: updates.reviewDate ? String(updates.reviewDate) : undefined,
