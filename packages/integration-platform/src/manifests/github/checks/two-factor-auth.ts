@@ -79,8 +79,13 @@ export const twoFactorAuthCheck: IntegrationCheck = {
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
 
-        // 403 usually means the token lacks admin:org scope or user isn't an org owner
-        if (errorMsg.includes('403') || errorMsg.includes('Forbidden')) {
+        // 403/422 usually means the token lacks admin:org scope or user isn't an org owner
+        if (
+          errorMsg.includes('403') ||
+          errorMsg.includes('422') ||
+          errorMsg.includes('Forbidden') ||
+          errorMsg.includes('Unprocessable')
+        ) {
           ctx.warn(
             `Cannot check 2FA for ${org.login}: insufficient permissions. The admin:org scope and org owner/admin role are required.`,
           );
