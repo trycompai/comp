@@ -22,7 +22,7 @@ import {
   DialogTitle,
 } from '@trycompai/ui/dialog';
 import { Skeleton } from '@trycompai/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@trycompai/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import {
   AlertCircle,
   AlertTriangle,
@@ -676,6 +676,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                               );
                             })}
                             {provider.mappedTasks.length > 3 && (
+                              <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Badge
@@ -694,6 +695,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                                   </p>
                                 </TooltipContent>
                               </Tooltip>
+                              </TooltipProvider>
                             )}
                           </div>
                         )}
