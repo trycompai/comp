@@ -306,16 +306,19 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
     });
 
     // Connected integrations always appear first, then vendor-listed, then others
+    const ESTABLISHED_STATUSES = new Set(['active', 'pending', 'error', 'paused']);
     const sortByConnection = (list: UnifiedIntegration[]) =>
       list.sort((a, b) => {
         const aConnected =
           a.type === 'platform' &&
-          a.connection?.status === 'active'
+          a.connection?.status &&
+          ESTABLISHED_STATUSES.has(a.connection.status)
             ? 0
             : 1;
         const bConnected =
           b.type === 'platform' &&
-          b.connection?.status === 'active'
+          b.connection?.status &&
+          ESTABLISHED_STATUSES.has(b.connection.status)
             ? 0
             : 1;
         return aConnected - bConnected;
