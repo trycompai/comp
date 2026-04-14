@@ -33,10 +33,10 @@ export async function logCloudSecurityActivity(
         entityId: params.connectionId,
         description: params.description,
         data: {
+          ...params.metadata,
           action: params.action,
           resource: 'cloud-security',
           connectionId: params.connectionId,
-          ...params.metadata,
         },
       },
     });

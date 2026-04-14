@@ -53,6 +53,7 @@ import { EventBridgeAdapter } from './aws/eventbridge.adapter';
 import { TransferFamilyAdapter } from './aws/transfer-family.adapter';
 import { ElasticBeanstalkAdapter } from './aws/elastic-beanstalk.adapter';
 import { AppFlowAdapter } from './aws/appflow.adapter';
+import { SecurityHubAdapter } from './aws/security-hub.adapter';
 
 @Injectable()
 export class AWSSecurityService {
@@ -103,6 +104,7 @@ export class AWSSecurityService {
     new TransferFamilyAdapter(),
     new ElasticBeanstalkAdapter(),
     new AppFlowAdapter(),
+    new SecurityHubAdapter(),
   ];
 
   async scanSecurityFindings(

@@ -9,6 +9,7 @@ export class EcrAdapter implements AwsServiceAdapter {
   async scan({
     credentials,
     region,
+    accountId,
   }: {
     credentials: AwsCredentials;
     region: string;
@@ -28,7 +29,8 @@ export class EcrAdapter implements AwsServiceAdapter {
         for (const repo of response.repositories ?? []) {
           const repoName = repo.repositoryName ?? 'unknown';
           const repoArn =
-            repo.repositoryArn ?? `arn:aws:ecr:${region}:repo/${repoName}`;
+            repo.repositoryArn ??
+            `arn:aws:ecr:${region}:${accountId ?? 'unknown'}:repository/${repoName}`;
 
           if (repo.imageScanningConfiguration?.scanOnPush !== true) {
             findings.push(

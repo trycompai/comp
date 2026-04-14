@@ -117,7 +117,7 @@ export class HybridAuthGuard implements CanActivate {
     const actingUserId = request.headers['x-user-id'] as string;
     if (actingUserId) {
       const member = await db.member.findFirst({
-        where: { userId: actingUserId, organizationId },
+        where: { userId: actingUserId, organizationId, deactivated: false },
         select: { userId: true },
       });
       if (member) {

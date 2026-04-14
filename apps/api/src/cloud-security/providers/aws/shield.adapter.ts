@@ -37,9 +37,12 @@ export class ShieldAdapter implements AwsServiceAdapter {
         region,
       });
       const elbResp = await elbClient.send(
-        new DescribeLoadBalancersCommand({ PageSize: 1 }),
+        new DescribeLoadBalancersCommand({}),
       );
-      if ((elbResp.LoadBalancers ?? []).length > 0) {
+      const hasInternetFacingLb = (elbResp.LoadBalancers ?? []).some(
+        (lb) => lb.Scheme === 'internet-facing',
+      );
+      if (hasInternetFacingLb) {
         hasPublicResources = true;
       }
 

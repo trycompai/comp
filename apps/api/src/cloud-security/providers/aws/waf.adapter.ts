@@ -8,6 +8,10 @@ import {
   DescribeLoadBalancersCommand,
 } from '@aws-sdk/client-elastic-load-balancing-v2';
 import {
+  APIGatewayClient,
+  GetRestApisCommand,
+} from '@aws-sdk/client-api-gateway';
+import {
   ApiGatewayV2Client,
   GetApisCommand,
 } from '@aws-sdk/client-apigatewayv2';
@@ -39,10 +43,23 @@ export class WafAdapter implements AwsServiceAdapter {
         region,
       });
       const elbResp = await elbClient.send(
-        new DescribeLoadBalancersCommand({ PageSize: 1 }),
+        new DescribeLoadBalancersCommand({}),
       );
-      if ((elbResp.LoadBalancers ?? []).length > 0) {
+      const hasAlb = (elbResp.LoadBalancers ?? []).some(
+        (lb) => lb.Type === 'application',
+      );
+      if (hasAlb) {
         hasWebResources = true;
+      }
+
+      if (!hasWebResources) {
+        const apigwV1Client = new APIGatewayClient({ credentials, region });
+        const apigwV1Resp = await apigwV1Client.send(
+          new GetRestApisCommand({ limit: 1 }),
+        );
+        if ((apigwV1Resp.items ?? []).length > 0) {
+          hasWebResources = true;
+        }
       }
 
       if (!hasWebResources) {

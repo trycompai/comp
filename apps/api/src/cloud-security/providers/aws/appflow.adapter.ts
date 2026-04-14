@@ -68,7 +68,7 @@ export class AppFlowAdapter implements AwsServiceAdapter {
       } while (nextToken);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
-      if (msg.includes('AccessDenied')) return [];
+      if (msg.includes('AccessDenied')) return findings;
       throw error;
     }
 
