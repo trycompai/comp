@@ -702,12 +702,23 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                                   </Badge>
                                 </TooltipTrigger>
                                 <TooltipContent side="bottom" className="max-w-xs">
-                                  <p className="text-xs">
-                                    {provider.mappedTasks
-                                      .slice(3)
-                                      .map((t) => t.name)
-                                      .join(', ')}
-                                  </p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {provider.mappedTasks.slice(3).map((t) => {
+                                      const tid = templateToTaskMap.get(t.id);
+                                      return tid ? (
+                                        <Link
+                                          key={t.id}
+                                          href={`/${orgId}/tasks/${tid}`}
+                                          className="text-xs text-primary hover:underline"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {t.name}
+                                        </Link>
+                                      ) : (
+                                        <span key={t.id} className="text-xs">{t.name}</span>
+                                      );
+                                    })}
+                                  </div>
                                 </TooltipContent>
                               </Tooltip>
                               </TooltipProvider>
