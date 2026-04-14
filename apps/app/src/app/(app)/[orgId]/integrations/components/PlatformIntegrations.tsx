@@ -305,7 +305,22 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
       }
     });
 
-    return [...vendorListedIntegrations, ...otherIntegrations];
+    // Connected integrations always appear first, then vendor-listed, then others
+    const sortByConnection = (list: UnifiedIntegration[]) =>
+      list.sort((a, b) => {
+        const aConnected =
+          a.type === 'platform' &&
+          a.connection?.status === 'active'
+            ? 0
+            : 1;
+        const bConnected =
+          b.type === 'platform' &&
+          b.connection?.status === 'active'
+            ? 0
+            : 1;
+        return aConnected - bConnected;
+      });
+    return sortByConnection([...vendorListedIntegrations, ...otherIntegrations]);
   }, [providers, connectionsByProvider, vendorNames]);
 
   // Get all unique categories
