@@ -74,13 +74,6 @@ export class FindingsController {
     description: 'People-area scope (e.g. people directory)',
     enum: FindingScope,
   })
-  @ApiQuery({
-    name: 'hasScope',
-    required: false,
-    description:
-      'When true, return all findings in the organization that have a scope value set',
-    type: Boolean,
-  })
   @ApiResponse({
     status: 200,
     description: 'List of findings',
@@ -98,25 +91,19 @@ export class FindingsController {
     @Query('evidenceSubmissionId') evidenceSubmissionId: string,
     @Query('evidenceFormType') evidenceFormType: string,
     @Query('scope') scope: string,
-    @Query('hasScope') hasScope: string | undefined,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const hasScopeParam = hasScope === 'true' || hasScope === '1';
-    const targets = [
-      taskId,
-      evidenceSubmissionId,
-      evidenceFormType,
-      scope,
-      hasScopeParam ? 'hasScope' : null,
-    ].filter(Boolean);
+    const targets = [taskId, evidenceSubmissionId, evidenceFormType, scope].filter(
+      Boolean,
+    );
     if (targets.length === 0) {
       throw new BadRequestException(
-        'One of taskId, evidenceSubmissionId, evidenceFormType, scope, or hasScope=true query parameter is required',
+        'One of taskId, evidenceSubmissionId, evidenceFormType, or scope query parameter is required',
       );
     }
     if (targets.length > 1) {
       throw new BadRequestException(
-        'Provide only one target: taskId, evidenceSubmissionId, evidenceFormType, scope, or hasScope=true',
+        'Provide only one target: taskId, evidenceSubmissionId, evidenceFormType, or scope',
       );
     }
 
@@ -127,10 +114,6 @@ export class FindingsController {
       throw new BadRequestException(
         `Invalid evidenceFormType value. Must be one of: ${evidenceFormTypeSchema.options.join(', ')}`,
       );
-    }
-
-    if (hasScopeParam) {
-      return await this.findingsService.findWithScopeDefined(authContext.organizationId);
     }
 
     if (scope) {

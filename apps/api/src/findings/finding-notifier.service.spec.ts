@@ -224,7 +224,7 @@ describe('FindingNotifierService', () => {
       expect(novuTriggerMock).toHaveBeenCalledWith(
         expect.objectContaining({
           payload: expect.objectContaining({
-            findingUrl: 'https://app.trycomp.ai/org_123/people?tab=findings',
+            findingUrl: 'https://app.trycomp.ai/org_123/people?tab=devices',
           }),
         }),
       );
@@ -245,7 +245,7 @@ describe('FindingNotifierService', () => {
       expect(novuTriggerMock).toHaveBeenCalledWith(
         expect.objectContaining({
           payload: expect.objectContaining({
-            findingUrl: 'https://app.trycomp.ai/org_123/people?tab=findings',
+            findingUrl: 'https://app.trycomp.ai/org_123/people?tab=devices',
           }),
         }),
       );

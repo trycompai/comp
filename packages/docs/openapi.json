@@ -13839,15 +13839,6 @@
               ],
               "type": "string"
             }
-          },
-          {
-            "name": "hasScope",
-            "required": false,
-            "in": "query",
-            "description": "When true, return all findings in the organization that have a scope value set",
-            "schema": {
-              "type": "boolean"
-            }
           }
         ],
         "responses": {

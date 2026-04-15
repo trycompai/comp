@@ -193,25 +193,6 @@ export class FindingsService {
   }
 
   /**
-   * Get all findings that have a People-area scope set (any non-null scope).
-   */
-  async findWithScopeDefined(organizationId: string) {
-    const findings = await db.finding.findMany({
-      where: {
-        organizationId,
-        scope: { not: null },
-      },
-      include: this.findingInclude,
-      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
-    });
-
-    this.logger.log(
-      `Retrieved ${findings.length} findings with scope set in org ${organizationId}`,
-    );
-    return findings.map((finding) => this.normalizeFindingFormTypes(finding));
-  }
-
-  /**
    * Get all findings for an organization
    */
   async findByOrganizationId(organizationId: string, status?: FindingStatus) {
