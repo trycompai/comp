@@ -48,7 +48,10 @@ export class CodeBuildAdapter implements AwsServiceAdapter {
           const arn =
             project.arn ?? `arn:aws:codebuild:${region}:project/${name}`;
 
-          if (!project.encryptionKey || project.encryptionKey.includes('aws/codebuild')) {
+          if (
+            !project.encryptionKey ||
+            project.encryptionKey.includes('aws/codebuild')
+          ) {
             findings.push(
               this.makeFinding({
                 id: `codebuild-default-encryption-${name}`,
@@ -57,8 +60,7 @@ export class CodeBuildAdapter implements AwsServiceAdapter {
                 severity: 'low',
                 resourceId: arn,
                 evidence: { service: 'CodeBuild', projectName: name },
-                remediation:
-                  `Use codebuild:UpdateProjectCommand with name set to "${name}" and encryptionKey set to a customer-managed KMS key ARN (arn:aws:kms:region:account:key/key-id). Rollback: use codebuild:UpdateProjectCommand with encryptionKey set to the default 'aws/codebuild' key ARN.`,
+                remediation: `Use codebuild:UpdateProjectCommand with name set to "${name}" and encryptionKey set to a customer-managed KMS key ARN (arn:aws:kms:region:account:key/key-id). Rollback: use codebuild:UpdateProjectCommand with encryptionKey set to the default 'aws/codebuild' key ARN.`,
               }),
             );
           }
@@ -72,16 +74,14 @@ export class CodeBuildAdapter implements AwsServiceAdapter {
                 severity: 'medium',
                 resourceId: arn,
                 evidence: { service: 'CodeBuild', projectName: name },
-                remediation:
-                  `Use codebuild:UpdateProjectCommand with name set to "${name}" and environment.privilegedMode set to false. Rollback: use codebuild:UpdateProjectCommand with environment.privilegedMode set to true. [MANUAL] Verify that the project does not require Docker-in-Docker builds before disabling, as this will break Docker image builds.`,
+                remediation: `Use codebuild:UpdateProjectCommand with name set to "${name}" and environment.privilegedMode set to false. Rollback: use codebuild:UpdateProjectCommand with environment.privilegedMode set to true. [MANUAL] Verify that the project does not require Docker-in-Docker builds before disabling, as this will break Docker image builds.`,
               }),
             );
           }
 
           const cwEnabled =
             project.logsConfig?.cloudWatchLogs?.status === 'ENABLED';
-          const s3Enabled =
-            project.logsConfig?.s3Logs?.status === 'ENABLED';
+          const s3Enabled = project.logsConfig?.s3Logs?.status === 'ENABLED';
 
           if (!cwEnabled && !s3Enabled) {
             findings.push(
@@ -92,8 +92,7 @@ export class CodeBuildAdapter implements AwsServiceAdapter {
                 severity: 'medium',
                 resourceId: arn,
                 evidence: { service: 'CodeBuild', projectName: name },
-                remediation:
-                  `Use codebuild:UpdateProjectCommand with name set to "${name}" and logsConfig.cloudWatchLogs set to { status: 'ENABLED', groupName: '/aws/codebuild/${name}' }. Alternatively, set logsConfig.s3Logs to { status: 'ENABLED', location: 'bucket-name/prefix' }. Rollback: use codebuild:UpdateProjectCommand with logsConfig.cloudWatchLogs.status set to 'DISABLED'.`,
+                remediation: `Use codebuild:UpdateProjectCommand with name set to "${name}" and logsConfig.cloudWatchLogs set to { status: 'ENABLED', groupName: '/aws/codebuild/${name}' }. Alternatively, set logsConfig.s3Logs to { status: 'ENABLED', location: 'bucket-name/prefix' }. Rollback: use codebuild:UpdateProjectCommand with logsConfig.cloudWatchLogs.status set to 'DISABLED'.`,
               }),
             );
           }

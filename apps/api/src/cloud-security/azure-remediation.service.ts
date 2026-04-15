@@ -29,7 +29,8 @@ export class AzureRemediationService {
     }
     while (this.planCache.size > this.PLAN_CACHE_MAX) {
       const firstKey = this.planCache.keys().next().value;
-      if (firstKey) this.planCache.delete(firstKey); else break;
+      if (firstKey) this.planCache.delete(firstKey);
+      else break;
     }
   }
 
@@ -100,7 +101,9 @@ export class AzureRemediationService {
     // Validate fix steps
     const validationErrors = validateAzurePlanSteps(plan.fixSteps);
     if (validationErrors.length > 0) {
-      this.logger.warn(`Fix plan validation errors: ${validationErrors.join(', ')}`);
+      this.logger.warn(
+        `Fix plan validation errors: ${validationErrors.join(', ')}`,
+      );
       return this.buildGuidedResponse(plan);
     }
 
@@ -140,7 +143,9 @@ export class AzureRemediationService {
     } else {
       plan = await this.aiRemediationService.generateAzureFixPlan(finding);
       if (!plan.canAutoFix) {
-        throw new Error('This finding cannot be auto-fixed. Use guided steps instead.');
+        throw new Error(
+          'This finding cannot be auto-fixed. Use guided steps instead.',
+        );
       }
     }
 
@@ -165,7 +170,7 @@ export class AzureRemediationService {
 
     try {
       // Phase 1: Execute read steps to capture previous state
-      let previousState: Record<string, unknown> = {};
+      const previousState: Record<string, unknown> = {};
       if (plan.readSteps.length > 0) {
         const readResult = await executeAzurePlanSteps({
           steps: plan.readSteps,
@@ -189,8 +194,8 @@ export class AzureRemediationService {
 
       this.logger.log(
         `AI plan for ${finding.findingKey}: canAutoFix=${plan.canAutoFix}, ` +
-        `fixSteps=${plan.fixSteps.length}, readSteps=${plan.readSteps.length}, ` +
-        `rollbackSteps=${plan.rollbackSteps.length}`,
+          `fixSteps=${plan.fixSteps.length}, readSteps=${plan.readSteps.length}, ` +
+          `rollbackSteps=${plan.rollbackSteps.length}`,
       );
 
       // If AI decided it can't auto-fix after seeing real state, fail clearly
@@ -201,7 +206,9 @@ export class AzureRemediationService {
             status: 'failed',
             previousState: previousState as unknown as Prisma.InputJsonValue,
             appliedState: {
-              error: plan.reason || 'Auto-fix not possible for this finding after analyzing real resource state.',
+              error:
+                plan.reason ||
+                'Auto-fix not possible for this finding after analyzing real resource state.',
               guidedSteps: plan.guidedSteps,
             } as unknown as Prisma.InputJsonValue,
             executedAt: new Date(),
@@ -212,7 +219,9 @@ export class AzureRemediationService {
           actionId: action.id,
           status: 'failed' as const,
           resourceId: finding.resourceId,
-          error: plan.reason || 'Auto-fix not possible. The required resources (e.g., Log Analytics workspace) may not exist in your subscription.',
+          error:
+            plan.reason ||
+            'Auto-fix not possible. The required resources (e.g., Log Analytics workspace) may not exist in your subscription.',
           previousState,
           guidedSteps: plan.guidedSteps,
         };
@@ -229,13 +238,17 @@ export class AzureRemediationService {
       // Phase 3: Execute fix steps with self-healing retry
       // Executor auto-handles: provider registration, throttling, retries, provisioning waits
       for (const step of plan.fixSteps) {
-        this.logger.log(`Fix step: ${step.method} ${step.url} — ${step.purpose}`);
+        this.logger.log(
+          `Fix step: ${step.method} ${step.url} — ${step.purpose}`,
+        );
       }
 
       // Validate URLs before execution to prevent SSRF (especially after cache-miss regeneration)
       const validationErrors = validateAzurePlanSteps(plan.fixSteps);
       if (validationErrors.length > 0) {
-        throw new Error(`Fix plan validation failed: ${validationErrors.join('; ')}`);
+        throw new Error(
+          `Fix plan validation failed: ${validationErrors.join('; ')}`,
+        );
       }
 
       let fixResult = await executeAzurePlanSteps({
@@ -248,13 +261,20 @@ export class AzureRemediationService {
       if (fixResult.error) {
         const permError = parseAzurePermissionError(fixResult.error.message);
         if (permError?.isPermissionError) {
-          this.logger.warn(`Permission error: ${fixResult.error.message}. Assign the required Azure role to the app registration.`);
+          this.logger.warn(
+            `Permission error: ${fixResult.error.message}. Assign the required Azure role to the app registration.`,
+          );
         }
       }
 
       // Self-healing round 2: non-permission error → regenerate plan with error context → retry
-      if (fixResult.error && !parseAzurePermissionError(fixResult.error.message)?.isPermissionError) {
-        this.logger.log('Non-permission error — regenerating fix plan with error context...');
+      if (
+        fixResult.error &&
+        !parseAzurePermissionError(fixResult.error.message)?.isPermissionError
+      ) {
+        this.logger.log(
+          'Non-permission error — regenerating fix plan with error context...',
+        );
         const retryPlan = await this.aiRemediationService.refineAzureFixPlan({
           finding,
           originalPlan: plan,
@@ -266,7 +286,9 @@ export class AzureRemediationService {
         });
 
         if (retryPlan.canAutoFix && retryPlan.fixSteps.length > 0) {
-          this.logger.log(`Retrying with regenerated plan (${retryPlan.fixSteps.length} steps)...`);
+          this.logger.log(
+            `Retrying with regenerated plan (${retryPlan.fixSteps.length} steps)...`,
+          );
           plan = retryPlan;
           fixResult = await executeAzurePlanSteps({
             steps: plan.fixSteps,
@@ -352,7 +374,8 @@ export class AzureRemediationService {
         }
 
         // Compare: if post-fix state differs from pre-fix state, the fix changed something
-        verified = JSON.stringify(postFixState) !== JSON.stringify(previousState);
+        verified =
+          JSON.stringify(postFixState) !== JSON.stringify(previousState);
       }
 
       const status = verified ? 'success' : 'unverified';
@@ -379,13 +402,13 @@ export class AzureRemediationService {
       if (!verified) {
         this.logger.warn(
           `Fix for ${finding.findingKey} executed but verification shows no state change. ` +
-          `The fix may need time to propagate or may not have addressed the finding correctly.`,
+            `The fix may need time to propagate or may not have addressed the finding correctly.`,
         );
       }
 
       return {
         actionId: action.id,
-        status: status as 'success' | 'unverified',
+        status: status,
         resourceId: finding.resourceId,
         previousState,
         appliedState: { description: plan.description, verified },
@@ -424,7 +447,9 @@ export class AzureRemediationService {
     }
 
     const appliedState = action.appliedState as Record<string, unknown> | null;
-    const rollbackSteps = (appliedState?.rollbackSteps ?? []) as Array<Record<string, unknown>>;
+    const rollbackSteps = (appliedState?.rollbackSteps ?? []) as Array<
+      Record<string, unknown>
+    >;
 
     if (rollbackSteps.length === 0) {
       throw new Error('No rollback steps available for this action.');
@@ -441,7 +466,12 @@ export class AzureRemediationService {
 
     // OAuth flow: token from vault; legacy: SP client credentials
     let accessToken = credentials.access_token as string | undefined;
-    if (!accessToken && credentials.tenantId && credentials.clientId && credentials.clientSecret) {
+    if (
+      !accessToken &&
+      credentials.tenantId &&
+      credentials.clientId &&
+      credentials.clientSecret
+    ) {
       accessToken = await this.azureSecurityService.getAccessToken(
         credentials.tenantId as string,
         credentials.clientId as string,
@@ -452,9 +482,13 @@ export class AzureRemediationService {
       throw new Error('Cannot obtain Azure access token for rollback.');
     }
 
-    this.logger.log(`Rolling back action ${action.id}: ${rollbackSteps.length} steps`);
+    this.logger.log(
+      `Rolling back action ${action.id}: ${rollbackSteps.length} steps`,
+    );
     for (const step of rollbackSteps) {
-      this.logger.log(`Rollback step: ${(step as { method?: string }).method} ${(step as { url?: string }).url} — ${(step as { purpose?: string }).purpose}`);
+      this.logger.log(
+        `Rollback step: ${(step as { method?: string }).method} ${(step as { url?: string }).url} — ${(step as { purpose?: string }).purpose}`,
+      );
     }
 
     // Pre-flight: ensure write access before rollback
@@ -465,8 +499,10 @@ export class AzureRemediationService {
       await this.ensureWriteAccess(accessToken, subscriptionId);
     }
 
-    let result = await executeAzurePlanSteps({
-      steps: rollbackSteps as Parameters<typeof executeAzurePlanSteps>[0]['steps'],
+    const result = await executeAzurePlanSteps({
+      steps: rollbackSteps as Parameters<
+        typeof executeAzurePlanSteps
+      >[0]['steps'],
       accessToken,
       isRollback: true,
     });
@@ -475,7 +511,9 @@ export class AzureRemediationService {
     if (result.error && subscriptionId) {
       const permError = parseAzurePermissionError(result.error.message);
       if (permError?.isPermissionError) {
-        this.logger.warn(`Rollback permission error: ${result.error.message}. Assign the required Azure role to the app registration.`);
+        this.logger.warn(
+          `Rollback permission error: ${result.error.message}. Assign the required Azure role to the app registration.`,
+        );
       }
     }
 
@@ -492,7 +530,7 @@ export class AzureRemediationService {
 
       this.logger.error(
         `Rollback failed at step ${result.error.stepIndex}: ${result.error.message}. ` +
-        `${completedCount}/${rollbackSteps.length} steps completed before failure.`,
+          `${completedCount}/${rollbackSteps.length} steps completed before failure.`,
       );
 
       await db.remediationAction.update({
@@ -501,11 +539,15 @@ export class AzureRemediationService {
           status: 'rollback_failed',
           rolledBackAt: new Date(),
           appliedState: {
-            ...(action.appliedState as Record<string, unknown> ?? {}),
+            ...((action.appliedState as Record<string, unknown>) ?? {}),
             rollbackError: result.error.message,
             rollbackCompletedSteps: result.results
               .filter((r) => r.success)
-              .map((r) => ({ method: r.step.method, url: r.step.url, purpose: r.step.purpose })),
+              .map((r) => ({
+                method: r.step.method,
+                url: r.step.url,
+                purpose: r.step.purpose,
+              })),
             rollbackFailedStep: {
               method: result.error.step.method,
               url: result.error.step.url,
@@ -570,16 +612,22 @@ export class AzureRemediationService {
         value: Array<{ actions: string[]; notActions: string[] }>;
       };
       const allActions = data.value?.flatMap((p) => p.actions) ?? [];
-      const hasWrite = allActions.some((a) => a === '*' || a === '*/write' || a.endsWith('/write'));
+      const hasWrite = allActions.some(
+        (a) => a === '*' || a === '*/write' || a.endsWith('/write'),
+      );
 
       if (hasWrite) {
         this.logger.log('Pre-flight: write access confirmed');
         return;
       }
 
-      this.logger.warn('Pre-flight: no write access detected — fix may fail. Assign Contributor role to the app registration.');
+      this.logger.warn(
+        'Pre-flight: no write access detected — fix may fail. Assign Contributor role to the app registration.',
+      );
     } catch (err) {
-      this.logger.warn(`Pre-flight permission check failed: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.warn(
+        `Pre-flight permission check failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 
@@ -607,7 +655,10 @@ export class AzureRemediationService {
     organizationId: string,
     checkResultId: string,
   ) {
-    const credentials = await this.resolveCredentials(connectionId, organizationId);
+    const credentials = await this.resolveCredentials(
+      connectionId,
+      organizationId,
+    );
 
     let accessToken: string | null = null;
     // OAuth flow: token from vault
@@ -615,7 +666,12 @@ export class AzureRemediationService {
       accessToken = credentials.access_token as string;
     }
     // Legacy SP flow fallback
-    if (!accessToken && credentials?.tenantId && credentials?.clientId && credentials?.clientSecret) {
+    if (
+      !accessToken &&
+      credentials?.tenantId &&
+      credentials?.clientId &&
+      credentials?.clientSecret
+    ) {
       accessToken = await this.azureSecurityService.getAccessToken(
         credentials.tenantId as string,
         credentials.clientId as string,

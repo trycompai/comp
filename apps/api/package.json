@@ -60,7 +60,7 @@
         "@aws-sdk/client-transfer": "^3.948.0",
         "@aws-sdk/s3-request-presigner": "3.1013.0",
         "@browserbasehq/sdk": "2.6.0",
-        "@browserbasehq/stagehand": "^3.0.5",
+        "@browserbasehq/stagehand": "^3.2.1",
         "@mendable/firecrawl-js": "^4.9.3",
         "@nestjs/common": "^11.0.1",
         "@nestjs/config": "^4.0.2",

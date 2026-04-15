@@ -16,7 +16,7 @@ export class CorsExceptionFilter implements ExceptionFilter {
     const status = exception.getStatus();
 
     // Get the request origin
-    const origin = request.headers.origin as string | undefined;
+    const origin = request.headers.origin;
 
     // Set CORS headers on error responses for trusted origins.
     // Uses the sync check only — the main CORS middleware already validated

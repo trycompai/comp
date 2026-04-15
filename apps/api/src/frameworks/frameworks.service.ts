@@ -129,31 +129,35 @@ export class FrameworksService {
       }
     }
 
-    const [requirementDefinitions, tasks, requirementMaps, evidenceSubmissions] =
-      await Promise.all([
-        db.frameworkEditorRequirement.findMany({
-          where: { frameworkId: fi.frameworkId },
-          orderBy: { name: 'asc' },
-        }),
-        db.task.findMany({
-          where: { organizationId, controls: { some: { organizationId } } },
-          include: { controls: true },
-        }),
-        db.requirementMap.findMany({
-          where: { frameworkInstanceId },
-          include: { control: true },
-        }),
-        allFormTypes.size > 0
-          ? db.evidenceSubmission.findMany({
-              where: {
-                organizationId,
-                formType: { in: Array.from(allFormTypes) },
-              },
-              select: { id: true, formType: true, createdAt: true },
-              orderBy: { createdAt: 'desc' },
-            })
-          : Promise.resolve([]),
-      ]);
+    const [
+      requirementDefinitions,
+      tasks,
+      requirementMaps,
+      evidenceSubmissions,
+    ] = await Promise.all([
+      db.frameworkEditorRequirement.findMany({
+        where: { frameworkId: fi.frameworkId },
+        orderBy: { name: 'asc' },
+      }),
+      db.task.findMany({
+        where: { organizationId, controls: { some: { organizationId } } },
+        include: { controls: true },
+      }),
+      db.requirementMap.findMany({
+        where: { frameworkInstanceId },
+        include: { control: true },
+      }),
+      allFormTypes.size > 0
+        ? db.evidenceSubmission.findMany({
+            where: {
+              organizationId,
+              formType: { in: Array.from(allFormTypes) },
+            },
+            select: { id: true, formType: true, createdAt: true },
+            orderBy: { createdAt: 'desc' },
+          })
+        : Promise.resolve([]),
+    ]);
 
     return {
       ...rest,
@@ -181,10 +185,7 @@ export class FrameworksService {
     return { ...scores, currentMember };
   }
 
-  async addFrameworks(
-    organizationId: string,
-    frameworkIds: string[],
-  ) {
+  async addFrameworks(organizationId: string, frameworkIds: string[]) {
     const result = await db.$transaction(async (tx) => {
       const frameworks = await tx.frameworkEditorFramework.findMany({
         where: { id: { in: frameworkIds }, visible: true },
@@ -262,16 +263,17 @@ export class FrameworksService {
       }
     }
 
-    const evidenceSubmissions = formTypes.size > 0
-      ? await db.evidenceSubmission.findMany({
-          where: {
-            organizationId,
-            formType: { in: Array.from(formTypes) },
-          },
-          select: { id: true, formType: true, createdAt: true },
-          orderBy: { createdAt: 'desc' },
-        })
-      : [];
+    const evidenceSubmissions =
+      formTypes.size > 0
+        ? await db.evidenceSubmission.findMany({
+            where: {
+              organizationId,
+              formType: { in: Array.from(formTypes) },
+            },
+            select: { id: true, formType: true, createdAt: true },
+            orderBy: { createdAt: 'desc' },
+          })
+        : [];
 
     const siblingRequirements = allReqDefs
       .filter((r) => r.id !== requirementKey)

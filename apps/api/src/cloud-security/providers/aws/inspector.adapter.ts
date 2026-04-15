@@ -2,18 +2,9 @@ import {
   Inspector2Client,
   BatchGetAccountStatusCommand,
 } from '@aws-sdk/client-inspector2';
-import {
-  EC2Client,
-  DescribeInstancesCommand,
-} from '@aws-sdk/client-ec2';
-import {
-  ECRClient,
-  DescribeRepositoriesCommand,
-} from '@aws-sdk/client-ecr';
-import {
-  LambdaClient,
-  ListFunctionsCommand,
-} from '@aws-sdk/client-lambda';
+import { EC2Client, DescribeInstancesCommand } from '@aws-sdk/client-ec2';
+import { ECRClient, DescribeRepositoriesCommand } from '@aws-sdk/client-ecr';
+import { LambdaClient, ListFunctionsCommand } from '@aws-sdk/client-lambda';
 import type { SecurityFinding } from '../../cloud-security.service';
 import type { AwsCredentials, AwsServiceAdapter } from './aws-service-adapter';
 
@@ -90,12 +81,8 @@ export class InspectorAdapter implements AwsServiceAdapter {
       const resourceState = account.resourceState;
       // Only check scan types for resources that actually exist
       const scanTypes = [
-        ...(hasEc2
-          ? [{ name: 'EC2', status: resourceState.ec2?.status }]
-          : []),
-        ...(hasEcr
-          ? [{ name: 'ECR', status: resourceState.ecr?.status }]
-          : []),
+        ...(hasEc2 ? [{ name: 'EC2', status: resourceState.ec2?.status }] : []),
+        ...(hasEcr ? [{ name: 'ECR', status: resourceState.ecr?.status }] : []),
         ...(hasLambda
           ? [
               { name: 'Lambda', status: resourceState.lambda?.status },
@@ -114,8 +101,7 @@ export class InspectorAdapter implements AwsServiceAdapter {
             description: `The following Inspector scan types are not enabled in ${region}: ${disabled.map((d) => d.name).join(', ')}.`,
             severity: 'medium',
             resourceId: `arn:aws:inspector2:${region}`,
-            remediation:
-              `Use inspector2:EnableCommand with resourceTypes set to ['EC2', 'ECR', 'LAMBDA', 'LAMBDA_CODE'] and accountIds set to the target account ID. Rollback: use inspector2:DisableCommand with the same resourceTypes and accountIds.`,
+            remediation: `Use inspector2:EnableCommand with resourceTypes set to ['EC2', 'ECR', 'LAMBDA', 'LAMBDA_CODE'] and accountIds set to the target account ID. Rollback: use inspector2:DisableCommand with the same resourceTypes and accountIds.`,
             evidence: Object.fromEntries(
               scanTypes.map((s) => [s.name, s.status ?? 'UNKNOWN']),
             ),

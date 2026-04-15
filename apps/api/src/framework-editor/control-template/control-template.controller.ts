@@ -50,10 +50,7 @@ export class ControlTemplateController {
 
   @Patch(':id')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateControlTemplateDto,
-  ) {
+  async update(@Param('id') id: string, @Body() dto: UpdateControlTemplateDto) {
     return this.service.update(id, dto);
   }
 
@@ -95,10 +92,7 @@ export class ControlTemplateController {
   }
 
   @Post(':id/task-templates/:ttId')
-  async linkTaskTemplate(
-    @Param('id') id: string,
-    @Param('ttId') ttId: string,
-  ) {
+  async linkTaskTemplate(@Param('id') id: string, @Param('ttId') ttId: string) {
     return this.service.linkTaskTemplate(id, ttId);
   }
 

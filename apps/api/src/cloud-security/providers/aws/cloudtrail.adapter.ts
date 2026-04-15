@@ -49,7 +49,8 @@ export class CloudTrailAdapter implements AwsServiceAdapter {
           description:
             'None of the configured trails have multi-region logging enabled. Activity in other regions may not be captured.',
           severity: 'high',
-          remediation: 'Use cloudtrail:UpdateTrailCommand with the trail Name and IsMultiRegionTrail set to true. Rollback by calling cloudtrail:UpdateTrailCommand with IsMultiRegionTrail set to false.',
+          remediation:
+            'Use cloudtrail:UpdateTrailCommand with the trail Name and IsMultiRegionTrail set to true. Rollback by calling cloudtrail:UpdateTrailCommand with IsMultiRegionTrail set to false.',
           passed: false,
           accountId,
         }),
@@ -59,8 +60,7 @@ export class CloudTrailAdapter implements AwsServiceAdapter {
         this.makeFinding({
           id: 'cloudtrail-multi-region-ok',
           title: 'Multi-region CloudTrail trail is configured',
-          description:
-            'At least one trail has multi-region logging enabled.',
+          description: 'At least one trail has multi-region logging enabled.',
           severity: 'info',
           passed: true,
           accountId,

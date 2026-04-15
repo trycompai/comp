@@ -50,22 +50,59 @@ export class AthenaAdapter implements AwsServiceAdapter {
 
           if (!encryptionConfig) {
             findings.push(
-              this.makeFinding(resourceId, 'Query results not encrypted', `Athena workgroup "${wgName}" does not have encryption configured for query results`, 'medium', { workGroupName: wgName, encryptionConfiguration: null }, false, `Use athena:UpdateWorkGroupCommand with WorkGroup set to '${wgName}' and ConfigurationUpdates.ResultConfigurationUpdates.EncryptionConfiguration set to { EncryptionOption: 'SSE_KMS', KmsKey: '<kms-key-arn>' } (or 'SSE_S3' for S3-managed encryption). Rollback: use athena:UpdateWorkGroupCommand with RemoveEncryptionConfiguration set to true.`),
+              this.makeFinding(
+                resourceId,
+                'Query results not encrypted',
+                `Athena workgroup "${wgName}" does not have encryption configured for query results`,
+                'medium',
+                { workGroupName: wgName, encryptionConfiguration: null },
+                false,
+                `Use athena:UpdateWorkGroupCommand with WorkGroup set to '${wgName}' and ConfigurationUpdates.ResultConfigurationUpdates.EncryptionConfiguration set to { EncryptionOption: 'SSE_KMS', KmsKey: '<kms-key-arn>' } (or 'SSE_S3' for S3-managed encryption). Rollback: use athena:UpdateWorkGroupCommand with RemoveEncryptionConfiguration set to true.`,
+              ),
             );
           } else {
             findings.push(
-              this.makeFinding(resourceId, 'Query results encryption enabled', `Athena workgroup "${wgName}" has encryption configured for query results`, 'info', { workGroupName: wgName, encryptionOption: encryptionConfig.EncryptionOption }, true),
+              this.makeFinding(
+                resourceId,
+                'Query results encryption enabled',
+                `Athena workgroup "${wgName}" has encryption configured for query results`,
+                'info',
+                {
+                  workGroupName: wgName,
+                  encryptionOption: encryptionConfig.EncryptionOption,
+                },
+                true,
+              ),
             );
           }
 
           // Check workgroup configuration enforcement
           if (config?.EnforceWorkGroupConfiguration !== true) {
             findings.push(
-              this.makeFinding(resourceId, 'Workgroup configuration not enforced (users can override)', `Athena workgroup "${wgName}" does not enforce its configuration, allowing users to override settings`, 'medium', { workGroupName: wgName, enforceWorkGroupConfiguration: config?.EnforceWorkGroupConfiguration }, false, `Use athena:UpdateWorkGroupCommand with WorkGroup set to '${wgName}' and ConfigurationUpdates.EnforceWorkGroupConfiguration set to true. This prevents users from overriding workgroup settings at query time. Rollback: use athena:UpdateWorkGroupCommand with EnforceWorkGroupConfiguration set to false.`),
+              this.makeFinding(
+                resourceId,
+                'Workgroup configuration not enforced (users can override)',
+                `Athena workgroup "${wgName}" does not enforce its configuration, allowing users to override settings`,
+                'medium',
+                {
+                  workGroupName: wgName,
+                  enforceWorkGroupConfiguration:
+                    config?.EnforceWorkGroupConfiguration,
+                },
+                false,
+                `Use athena:UpdateWorkGroupCommand with WorkGroup set to '${wgName}' and ConfigurationUpdates.EnforceWorkGroupConfiguration set to true. This prevents users from overriding workgroup settings at query time. Rollback: use athena:UpdateWorkGroupCommand with EnforceWorkGroupConfiguration set to false.`,
+              ),
             );
           } else {
             findings.push(
-              this.makeFinding(resourceId, 'Workgroup configuration enforced', `Athena workgroup "${wgName}" enforces its configuration`, 'info', { workGroupName: wgName, enforceWorkGroupConfiguration: true }, true),
+              this.makeFinding(
+                resourceId,
+                'Workgroup configuration enforced',
+                `Athena workgroup "${wgName}" enforces its configuration`,
+                'info',
+                { workGroupName: wgName, enforceWorkGroupConfiguration: true },
+                true,
+              ),
             );
           }
         }

@@ -111,8 +111,7 @@ export class SecurityHubAdapter implements AwsServiceAdapter {
       resourceType: finding.Resources?.[0]?.Type || 'unknown',
       resourceId: finding.Resources?.[0]?.Id || 'unknown',
       remediation:
-        finding.Remediation?.Recommendation?.Text ||
-        'No remediation available',
+        finding.Remediation?.Recommendation?.Text || 'No remediation available',
       evidence: {
         awsAccountId: finding.AwsAccountId,
         region: findingRegion,

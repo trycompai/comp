@@ -112,7 +112,11 @@ export class SageMakerAdapter implements AwsServiceAdapter {
                 'Direct internet access disabled',
                 `SageMaker notebook "${notebookName}" has direct internet access disabled`,
                 'info',
-                { notebookName, directInternetAccess: descRes.DirectInternetAccess ?? 'Disabled' },
+                {
+                  notebookName,
+                  directInternetAccess:
+                    descRes.DirectInternetAccess ?? 'Disabled',
+                },
                 true,
               ),
             );

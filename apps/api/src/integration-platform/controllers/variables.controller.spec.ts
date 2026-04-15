@@ -228,9 +228,9 @@ describe('VariablesController', () => {
       });
       mockProviderRepository.findById.mockResolvedValue(null);
 
-      await expect(
-        controller.getConnectionVariables('conn_1'),
-      ).rejects.toThrow(HttpException);
+      await expect(controller.getConnectionVariables('conn_1')).rejects.toThrow(
+        HttpException,
+      );
     });
 
     it('should throw NOT_FOUND when manifest does not exist', async () => {
@@ -245,9 +245,9 @@ describe('VariablesController', () => {
       });
       mockedGetManifest.mockReturnValue(undefined as never);
 
-      await expect(
-        controller.getConnectionVariables('conn_1'),
-      ).rejects.toThrow(HttpException);
+      await expect(controller.getConnectionVariables('conn_1')).rejects.toThrow(
+        HttpException,
+      );
     });
   });
 
@@ -380,9 +380,9 @@ describe('VariablesController', () => {
         variables: { key: 'val' },
       });
 
-      expect(
-        mockAutoCheckRunnerService.tryAutoRunChecks,
-      ).toHaveBeenCalledWith('conn_1');
+      expect(mockAutoCheckRunnerService.tryAutoRunChecks).toHaveBeenCalledWith(
+        'conn_1',
+      );
     });
   });
 });

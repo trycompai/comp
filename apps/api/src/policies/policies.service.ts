@@ -97,11 +97,7 @@ export class PoliciesService {
     }
   }
 
-  async publishAll(
-    organizationId: string,
-    userId?: string,
-    memberId?: string,
-  ) {
+  async publishAll(organizationId: string, userId?: string, memberId?: string) {
     const draftPolicies = await db.policy.findMany({
       where: { organizationId, status: 'draft', isArchived: false },
       select: { id: true, name: true, frequency: true },
@@ -243,7 +239,9 @@ export class PoliciesService {
           include: { user: { select: { role: true } } },
         });
         if (assignee?.user.role === 'admin') {
-          throw new BadRequestException('Cannot assign a platform admin as assignee');
+          throw new BadRequestException(
+            'Cannot assign a platform admin as assignee',
+          );
         }
       }
       const contentValue = createData.content as Prisma.InputJsonValue[];
@@ -1032,7 +1030,9 @@ export class PoliciesService {
     }
 
     if (policy.approverId !== dto.approverId) {
-      throw new BadRequestException('Only the assigned approver can accept changes');
+      throw new BadRequestException(
+        'Only the assigned approver can accept changes',
+      );
     }
 
     const version = await db.policyVersion.findUnique({
@@ -1091,7 +1091,9 @@ export class PoliciesService {
     }
 
     if (policy.approverId !== dto.approverId) {
-      throw new BadRequestException('Only the assigned approver can deny changes');
+      throw new BadRequestException(
+        'Only the assigned approver can deny changes',
+      );
     }
 
     // Revert policy to previous state (draft if never published, published if it was)
@@ -1220,7 +1222,8 @@ export class PoliciesService {
       draft: 2,
     };
     policies.sort(
-      (a, b) => (statusPriority[a.status] ?? 3) - (statusPriority[b.status] ?? 3),
+      (a, b) =>
+        (statusPriority[a.status] ?? 3) - (statusPriority[b.status] ?? 3),
     );
 
     const mergedPdf = await PDFDocument.create();

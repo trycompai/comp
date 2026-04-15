@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { CloudSecurityModule } from '../cloud-security/cloud-security.module';
 import { OAuthController } from './controllers/oauth.controller';
 import { OAuthAppsController } from './controllers/oauth-apps.controller';
 import { ConnectionsController } from './controllers/connections.controller';
@@ -32,7 +33,7 @@ import { IntegrationSyncLoggerService } from './services/integration-sync-logger
 import { GenericEmployeeSyncService } from './services/generic-employee-sync.service';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, forwardRef(() => CloudSecurityModule)],
   controllers: [
     OAuthController,
     OAuthAppsController,

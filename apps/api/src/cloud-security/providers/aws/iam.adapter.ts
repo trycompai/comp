@@ -60,7 +60,7 @@ export class IamAdapter implements AwsServiceAdapter {
               'The AWS account does not have a custom password policy. Default password requirements may be insufficient.',
             severity: 'high',
             remediation:
-              "Use iam:UpdateAccountPasswordPolicyCommand with MinimumPasswordLength set to 14, RequireSymbols, RequireNumbers, RequireUppercaseCharacters, RequireLowercaseCharacters all set to true, MaxPasswordAge set to 90, PasswordReusePrevention set to 24. Rollback by restoring previous password policy values.",
+              'Use iam:UpdateAccountPasswordPolicyCommand with MinimumPasswordLength set to 14, RequireSymbols, RequireNumbers, RequireUppercaseCharacters, RequireLowercaseCharacters all set to true, MaxPasswordAge set to 90, PasswordReusePrevention set to 24. Rollback by restoring previous password policy values.',
             passed: false,
             accountId,
           }),
@@ -76,7 +76,7 @@ export class IamAdapter implements AwsServiceAdapter {
             description: `Password policy requires only ${policy.MinimumPasswordLength || 'default'} characters. CIS recommends at least 14.`,
             severity: 'medium',
             remediation:
-              "Use iam:UpdateAccountPasswordPolicyCommand with MinimumPasswordLength set to 14, RequireSymbols, RequireNumbers, RequireUppercaseCharacters, RequireLowercaseCharacters all set to true, MaxPasswordAge set to 90, PasswordReusePrevention set to 24. Rollback by restoring previous password policy values.",
+              'Use iam:UpdateAccountPasswordPolicyCommand with MinimumPasswordLength set to 14, RequireSymbols, RequireNumbers, RequireUppercaseCharacters, RequireLowercaseCharacters all set to true, MaxPasswordAge set to 90, PasswordReusePrevention set to 24. Rollback by restoring previous password policy values.',
             passed: false,
             accountId,
           }),
@@ -94,7 +94,12 @@ export class IamAdapter implements AwsServiceAdapter {
         );
       }
 
-      if (!policy.RequireUppercaseCharacters || !policy.RequireLowercaseCharacters || !policy.RequireNumbers || !policy.RequireSymbols) {
+      if (
+        !policy.RequireUppercaseCharacters ||
+        !policy.RequireLowercaseCharacters ||
+        !policy.RequireNumbers ||
+        !policy.RequireSymbols
+      ) {
         findings.push(
           this.makeFinding({
             id: 'iam-weak-password-complexity',
@@ -103,7 +108,7 @@ export class IamAdapter implements AwsServiceAdapter {
               'Password policy should require uppercase, lowercase, numbers, and symbols.',
             severity: 'medium',
             remediation:
-              "Use iam:UpdateAccountPasswordPolicyCommand with MinimumPasswordLength set to 14, RequireSymbols, RequireNumbers, RequireUppercaseCharacters, RequireLowercaseCharacters all set to true, MaxPasswordAge set to 90, PasswordReusePrevention set to 24. Rollback by restoring previous password policy values.",
+              'Use iam:UpdateAccountPasswordPolicyCommand with MinimumPasswordLength set to 14, RequireSymbols, RequireNumbers, RequireUppercaseCharacters, RequireLowercaseCharacters all set to true, MaxPasswordAge set to 90, PasswordReusePrevention set to 24. Rollback by restoring previous password policy values.',
             passed: false,
             accountId,
           }),
@@ -120,7 +125,7 @@ export class IamAdapter implements AwsServiceAdapter {
               'The AWS account does not have a custom password policy.',
             severity: 'high',
             remediation:
-              "Use iam:UpdateAccountPasswordPolicyCommand with MinimumPasswordLength set to 14, RequireSymbols, RequireNumbers, RequireUppercaseCharacters, RequireLowercaseCharacters all set to true, MaxPasswordAge set to 90, PasswordReusePrevention set to 24. Rollback by restoring previous password policy values.",
+              'Use iam:UpdateAccountPasswordPolicyCommand with MinimumPasswordLength set to 14, RequireSymbols, RequireNumbers, RequireUppercaseCharacters, RequireLowercaseCharacters all set to true, MaxPasswordAge set to 90, PasswordReusePrevention set to 24. Rollback by restoring previous password policy values.',
             passed: false,
             accountId,
           }),
@@ -147,8 +152,7 @@ export class IamAdapter implements AwsServiceAdapter {
         new ListMFADevicesCommand({ UserName: user.UserName }),
       );
 
-      const hasMfa =
-        mfaResp.MFADevices && mfaResp.MFADevices.length > 0;
+      const hasMfa = mfaResp.MFADevices && mfaResp.MFADevices.length > 0;
 
       if (!hasMfa) {
         findings.push(

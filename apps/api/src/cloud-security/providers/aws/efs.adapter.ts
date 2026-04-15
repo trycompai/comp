@@ -1,7 +1,4 @@
-import {
-  EFSClient,
-  DescribeFileSystemsCommand,
-} from '@aws-sdk/client-efs';
+import { EFSClient, DescribeFileSystemsCommand } from '@aws-sdk/client-efs';
 
 import type { SecurityFinding } from '../../cloud-security.service';
 import type { AwsCredentials, AwsServiceAdapter } from './aws-service-adapter';

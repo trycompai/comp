@@ -43,7 +43,9 @@ export class AdminContextController {
   }
 
   @Post(':orgId/context')
-  @ApiOperation({ summary: 'Create a context entry for an organization (admin)' })
+  @ApiOperation({
+    summary: 'Create a context entry for an organization (admin)',
+  })
   @UsePipes(
     new ValidationPipe({
       whitelist: true,
@@ -59,7 +61,9 @@ export class AdminContextController {
   }
 
   @Patch(':orgId/context/:contextId')
-  @ApiOperation({ summary: 'Update a context entry for an organization (admin)' })
+  @ApiOperation({
+    summary: 'Update a context entry for an organization (admin)',
+  })
   @UsePipes(
     new ValidationPipe({
       whitelist: true,

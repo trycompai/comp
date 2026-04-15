@@ -76,7 +76,10 @@ export class ChecksController {
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
   ) {
-    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+    await this.connectionService.getConnectionForOrg(
+      connectionId,
+      organizationId,
+    );
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
@@ -116,7 +119,10 @@ export class ChecksController {
     @Body() body: RunChecksDto,
     @OrganizationId() organizationId: string,
   ) {
-    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+    await this.connectionService.getConnectionForOrg(
+      connectionId,
+      organizationId,
+    );
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
@@ -291,9 +297,10 @@ export class ChecksController {
         totalChecked: result.results.length,
         passedCount: result.totalPassing,
         failedCount: result.totalFindings,
-        logs: allLogs.length > 0
-          ? (allLogs as unknown as Prisma.InputJsonValue)
-          : undefined,
+        logs:
+          allLogs.length > 0
+            ? (allLogs as unknown as Prisma.InputJsonValue)
+            : undefined,
       });
 
       return {
@@ -305,7 +312,8 @@ export class ChecksController {
     } catch (error) {
       // Mark the check run as failed with error details
       const startTime = checkRun.startedAt?.getTime() || Date.now();
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
       await this.checkRunRepository.complete(checkRun.id, {
         status: 'failed',
@@ -314,13 +322,15 @@ export class ChecksController {
         passedCount: 0,
         failedCount: 0,
         errorMessage,
-        logs: [{
-          check: body.checkId || 'all',
-          level: 'error',
-          message: errorMessage,
-          ...(errorStack ? { data: { stack: errorStack } } : {}),
-          timestamp: new Date().toISOString(),
-        }] as unknown as Prisma.InputJsonValue,
+        logs: [
+          {
+            check: body.checkId || 'all',
+            level: 'error',
+            message: errorMessage,
+            ...(errorStack ? { data: { stack: errorStack } } : {}),
+            timestamp: new Date().toISOString(),
+          },
+        ] as unknown as Prisma.InputJsonValue,
       });
 
       this.logger.error(`Check execution failed: ${error}`);

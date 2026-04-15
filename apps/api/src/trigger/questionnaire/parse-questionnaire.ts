@@ -346,8 +346,9 @@ export const parseQuestionnaireTask = task({
           'questionnaire';
         const s3Key = payload.s3Key || '';
         const fileType = payload.fileType || 'application/octet-stream';
-        const fileSize = payload.fileSize
-          ?? (payload.fileData
+        const fileSize =
+          payload.fileSize ??
+          (payload.fileData
             ? Buffer.from(payload.fileData, 'base64').length
             : 0);
 

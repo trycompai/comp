@@ -154,7 +154,8 @@ export const GET_RISK_BY_ID_RESPONSES: Record<number, ApiResponseOptions> = {
   },
   403: {
     status: 403,
-    description: 'Forbidden - User does not have permission to access this risk',
+    description:
+      'Forbidden - User does not have permission to access this risk',
     content: {
       'application/json': {
         schema: {

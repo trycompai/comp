@@ -67,9 +67,7 @@ export class AdminVendorsController {
     const updateData: Record<string, unknown> = {};
 
     if (body.status !== undefined) {
-      if (
-        !Object.values(VendorStatus).includes(body.status as VendorStatus)
-      ) {
+      if (!Object.values(VendorStatus).includes(body.status as VendorStatus)) {
         throw new BadRequestException(
           `Invalid status. Must be one of: ${Object.values(VendorStatus).join(', ')}`,
         );
@@ -79,9 +77,7 @@ export class AdminVendorsController {
 
     if (body.category !== undefined) {
       if (
-        !Object.values(VendorCategory).includes(
-          body.category as VendorCategory,
-        )
+        !Object.values(VendorCategory).includes(body.category as VendorCategory)
       ) {
         throw new BadRequestException(
           `Invalid category. Must be one of: ${Object.values(VendorCategory).join(', ')}`,

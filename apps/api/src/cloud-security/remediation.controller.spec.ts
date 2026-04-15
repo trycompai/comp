@@ -72,15 +72,15 @@ describe('RemediationController', () => {
     });
 
     it('should throw BAD_REQUEST when connectionId is missing', async () => {
-      await expect(
-        controller.getCapabilities('', orgId),
-      ).rejects.toThrow(HttpException);
+      await expect(controller.getCapabilities('', orgId)).rejects.toThrow(
+        HttpException,
+      );
 
-      await expect(
-        controller.getCapabilities('', orgId),
-      ).rejects.toMatchObject({
-        status: HttpStatus.BAD_REQUEST,
-      });
+      await expect(controller.getCapabilities('', orgId)).rejects.toMatchObject(
+        {
+          status: HttpStatus.BAD_REQUEST,
+        },
+      );
 
       expect(service.getCapabilities).not.toHaveBeenCalled();
     });
@@ -225,9 +225,9 @@ describe('RemediationController', () => {
         new Error('No credentials found'),
       );
 
-      await expect(
-        controller.execute(body, orgId, userId),
-      ).rejects.toThrow(HttpException);
+      await expect(controller.execute(body, orgId, userId)).rejects.toThrow(
+        HttpException,
+      );
     });
   });
 
@@ -281,13 +281,11 @@ describe('RemediationController', () => {
     });
 
     it('should throw BAD_REQUEST when connectionId is missing', async () => {
-      await expect(
-        controller.getActions('', orgId),
-      ).rejects.toThrow(HttpException);
+      await expect(controller.getActions('', orgId)).rejects.toThrow(
+        HttpException,
+      );
 
-      await expect(
-        controller.getActions('', orgId),
-      ).rejects.toMatchObject({
+      await expect(controller.getActions('', orgId)).rejects.toMatchObject({
         status: HttpStatus.BAD_REQUEST,
       });
 
@@ -299,9 +297,9 @@ describe('RemediationController', () => {
         new Error('Connection not found'),
       );
 
-      await expect(
-        controller.getActions(connectionId, orgId),
-      ).rejects.toThrow(HttpException);
+      await expect(controller.getActions(connectionId, orgId)).rejects.toThrow(
+        HttpException,
+      );
     });
   });
 });

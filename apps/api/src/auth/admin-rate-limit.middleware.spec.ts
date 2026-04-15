@@ -79,11 +79,7 @@ describe('adminAuthRateLimiter', () => {
 
     const next = jest.fn();
     const res = buildRes();
-    await adminAuthRateLimiter(
-      buildReq('/api/auth/admin/set-role'),
-      res,
-      next,
-    );
+    await adminAuthRateLimiter(buildReq('/api/auth/admin/set-role'), res, next);
     expect(next).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(429);
     expect(res.body).toEqual({

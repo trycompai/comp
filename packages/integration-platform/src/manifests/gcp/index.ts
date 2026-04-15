@@ -16,7 +16,12 @@ export const gcpManifest: IntegrationManifest = {
     config: {
       authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
       tokenUrl: 'https://oauth2.googleapis.com/token',
-      scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+      scopes: [
+        'https://www.googleapis.com/auth/cloud-platform',
+        'openid',
+        'email',
+        'profile',
+      ],
       pkce: false,
       clientAuthMethod: 'body',
       supportsRefreshToken: true,
@@ -40,6 +45,7 @@ export const gcpManifest: IntegrationManifest = {
 ### About the Required Permissions
 
 **OAuth Scope:** This integration requires the \`cloud-platform\` scope to access Security Command Center findings.
+We also request basic profile/email scopes so setup can identify which account to grant org IAM role to.
 
 **Important:** While Google's consent screen will say "See, edit, configure and delete your Google Cloud data", this is the **only scope available** for Security Command Center API. Google does not offer a read-only alternative.
 
@@ -88,6 +94,54 @@ This is industry standard - all GCP security monitoring tools use the same scope
       helpText:
         'Auto-detected after connecting. If not detected, find it at console.cloud.google.com/iam-admin/settings',
       placeholder: 'Auto-detected',
+    },
+    {
+      id: 'project_ids',
+      label: 'GCP Projects',
+      type: 'multi-select',
+      required: false,
+      helpText:
+        'Select which GCP projects to scan and monitor. Findings are scoped to these projects.',
+      fetchOptions: async (ctx) => {
+        try {
+          // Detect org first to scope projects
+          const orgData = await ctx.fetch<{
+            organizations?: Array<{
+              name: string;
+              state?: string;
+            }>;
+          }>(
+            'https://cloudresourcemanager.googleapis.com/v3/organizations:search',
+          );
+
+          const activeOrg = (orgData.organizations ?? []).find(
+            (o) => o.state === 'ACTIVE',
+          );
+          const orgId = activeOrg?.name?.replace('organizations/', '');
+
+          const filter = orgId
+            ? `lifecycleState:ACTIVE AND parent.id:${orgId}`
+            : 'lifecycleState:ACTIVE';
+
+          const data = await ctx.fetch<{
+            projects?: Array<{
+              projectId: string;
+              name: string;
+            }>;
+          }>(`/v1/projects?filter=${encodeURIComponent(filter)}&pageSize=50`);
+
+          if (!data.projects?.length) return [];
+
+          return data.projects
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((p) => ({
+              value: p.projectId,
+              label: `${p.name} (${p.projectId})`,
+            }));
+        } catch {
+          return [];
+        }
+      },
     },
   ],
 

@@ -3,35 +3,80 @@ import { z } from 'zod';
 // ─── Zod Schemas ────────────────────────────────────────────────────────────
 
 export const awsCommandStepSchema = z.object({
-  service: z.string().describe('AWS SDK client package suffix, e.g. "s3" for @aws-sdk/client-s3'),
-  command: z.string().describe('Exact AWS SDK v3 command class name with Command suffix, e.g. "PutPublicAccessBlockCommand"'),
-  params: z.record(z.string(), z.unknown()).describe('Exact input parameters the command expects'),
-  purpose: z.string().describe('Human-readable description of what this step does'),
+  service: z
+    .string()
+    .describe(
+      'AWS SDK client package suffix, e.g. "s3" for @aws-sdk/client-s3',
+    ),
+  command: z
+    .string()
+    .describe(
+      'Exact AWS SDK v3 command class name with Command suffix, e.g. "PutPublicAccessBlockCommand"',
+    ),
+  params: z
+    .record(z.string(), z.unknown())
+    .describe('Exact input parameters the command expects'),
+  purpose: z
+    .string()
+    .describe('Human-readable description of what this step does'),
 });
 
 export type AwsCommandStep = z.infer<typeof awsCommandStepSchema>;
 
 export const fixPlanSchema = z.object({
-  canAutoFix: z.boolean().describe('Whether this finding can be auto-fixed via AWS API calls'),
-  risk: z.enum(['low', 'medium', 'high', 'critical']).describe('Risk level of applying this fix'),
+  canAutoFix: z
+    .boolean()
+    .describe('Whether this finding can be auto-fixed via AWS API calls'),
+  risk: z
+    .enum(['low', 'medium', 'high', 'critical'])
+    .describe('Risk level of applying this fix'),
   description: z.string().describe('Human-readable description of the fix'),
-  currentState: z.record(z.string(), z.unknown()).describe('What the user currently has — the actual configuration that the scan found. Use real values from the evidence.'),
-  proposedState: z.record(z.string(), z.unknown()).describe('What the configuration will look like after the fix is applied.'),
-  requiredPermissions: z.array(z.string()).describe('IAM actions needed, e.g. ["s3:PutPublicAccessBlock"]'),
-  readSteps: z.array(awsCommandStepSchema).describe('Steps to read current state before fixing'),
+  currentState: z
+    .record(z.string(), z.unknown())
+    .describe(
+      'What the user currently has — the actual configuration that the scan found. Use real values from the evidence.',
+    ),
+  proposedState: z
+    .record(z.string(), z.unknown())
+    .describe(
+      'What the configuration will look like after the fix is applied.',
+    ),
+  requiredPermissions: z
+    .array(z.string())
+    .describe('IAM actions needed, e.g. ["s3:PutPublicAccessBlock"]'),
+  readSteps: z
+    .array(awsCommandStepSchema)
+    .describe('Steps to read current state before fixing'),
   fixSteps: z.array(awsCommandStepSchema).describe('Steps to apply the fix'),
-  rollbackSteps: z.array(awsCommandStepSchema).describe('Steps to reverse the fix using previous state'),
-  rollbackSupported: z.boolean().describe('Whether this fix can be rolled back'),
-  requiresAcknowledgment: z.boolean().describe('Whether user must acknowledge before execution'),
-  acknowledgmentMessage: z.string().optional().describe('Message shown when acknowledgment is required'),
-  guidedSteps: z.array(z.string()).optional().describe('Manual steps when canAutoFix is false'),
-  reason: z.string().optional().describe('Why auto-fix is not possible when canAutoFix is false'),
+  rollbackSteps: z
+    .array(awsCommandStepSchema)
+    .describe('Steps to reverse the fix using previous state'),
+  rollbackSupported: z
+    .boolean()
+    .describe('Whether this fix can be rolled back'),
+  requiresAcknowledgment: z
+    .boolean()
+    .describe('Whether user must acknowledge before execution'),
+  acknowledgmentMessage: z
+    .string()
+    .optional()
+    .describe('Message shown when acknowledgment is required'),
+  guidedSteps: z
+    .array(z.string())
+    .optional()
+    .describe('Manual steps when canAutoFix is false'),
+  reason: z
+    .string()
+    .optional()
+    .describe('Why auto-fix is not possible when canAutoFix is false'),
 });
 
 export type FixPlan = z.infer<typeof fixPlanSchema>;
 
 export const permissionFixSchema = z.object({
-  missingActions: z.array(z.string()).describe('IAM actions that need to be added'),
+  missingActions: z
+    .array(z.string())
+    .describe('IAM actions that need to be added'),
   policyStatement: z.object({
     Effect: z.literal('Allow'),
     Action: z.array(z.string()),
@@ -42,8 +87,12 @@ export const permissionFixSchema = z.object({
 export type PermissionFix = z.infer<typeof permissionFixSchema>;
 
 export const completePermissionsSchema = z.object({
-  permissions: z.array(z.string()).describe('Every single IAM action needed for the entire fix operation'),
-  reasoning: z.string().describe('Brief explanation of why each permission group is needed'),
+  permissions: z
+    .array(z.string())
+    .describe('Every single IAM action needed for the entire fix operation'),
+  reasoning: z
+    .string()
+    .describe('Brief explanation of why each permission group is needed'),
 });
 
 export type CompletePermissions = z.infer<typeof completePermissionsSchema>;

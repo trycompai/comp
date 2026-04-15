@@ -87,11 +87,24 @@ export class WafAdapter implements AwsServiceAdapter {
 
             if (rules.length === 0) {
               findings.push(
-                this.makeFinding(arn, 'WAF ACL has no rules', `Web ACL "${summary.Name}" has no rules configured, providing no protection`, 'medium', { aclName: summary.Name }),
+                this.makeFinding(
+                  arn,
+                  'WAF ACL has no rules',
+                  `Web ACL "${summary.Name}" has no rules configured, providing no protection`,
+                  'medium',
+                  { aclName: summary.Name },
+                ),
               );
             } else {
               findings.push(
-                this.makeFinding(arn, 'WAF ACL has rules configured', `Web ACL "${summary.Name}" has ${rules.length} rule(s) configured`, 'info', { aclName: summary.Name, ruleCount: rules.length }, true),
+                this.makeFinding(
+                  arn,
+                  'WAF ACL has rules configured',
+                  `Web ACL "${summary.Name}" has ${rules.length} rule(s) configured`,
+                  'info',
+                  { aclName: summary.Name, ruleCount: rules.length },
+                  true,
+                ),
               );
             }
           } catch (error: unknown) {
@@ -106,7 +119,13 @@ export class WafAdapter implements AwsServiceAdapter {
 
       if (!hasAcls) {
         findings.push(
-          this.makeFinding(`arn:aws:wafv2:${region}:no-acls`, 'No WAF web ACLs configured', 'No regional WAF web ACLs found in this region', 'medium', { region }),
+          this.makeFinding(
+            `arn:aws:wafv2:${region}:no-acls`,
+            'No WAF web ACLs configured',
+            'No regional WAF web ACLs found in this region',
+            'medium',
+            { region },
+          ),
         );
       }
     } catch (error: unknown) {

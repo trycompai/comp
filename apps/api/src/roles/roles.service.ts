@@ -1,6 +1,17 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { db } from '@db';
-import { statement, allRoles, BUILT_IN_ROLE_PERMISSIONS, BUILT_IN_ROLE_OBLIGATIONS, type RoleObligations } from '@trycompai/auth';
+import {
+  statement,
+  allRoles,
+  BUILT_IN_ROLE_PERMISSIONS,
+  BUILT_IN_ROLE_OBLIGATIONS,
+  type RoleObligations,
+} from '@trycompai/auth';
 import type { CreateRoleDto } from './dto/create-role.dto';
 import type { UpdateRoleDto } from './dto/update-role.dto';
 
@@ -27,7 +38,7 @@ export class RolesService {
       for (const action of actions) {
         if (!validActions.includes(action)) {
           throw new BadRequestException(
-            `Invalid action '${action}' for resource '${resource}'. Valid actions: ${validActions.join(', ')}`
+            `Invalid action '${action}' for resource '${resource}'. Valid actions: ${validActions.join(', ')}`,
           );
         }
       }
@@ -44,7 +55,10 @@ export class RolesService {
     organizationId: string,
   ): Promise<void> {
     // Get the caller's combined effective permissions from all their roles
-    const callerPermissions = await this.getCombinedPermissions(callerRoles, organizationId);
+    const callerPermissions = await this.getCombinedPermissions(
+      callerRoles,
+      organizationId,
+    );
 
     for (const [resource, actions] of Object.entries(permissions)) {
       const callerActions = callerPermissions[resource] || [];
@@ -52,16 +66,19 @@ export class RolesService {
       for (const action of actions) {
         if (!callerActions.includes(action)) {
           throw new ForbiddenException(
-            `Cannot grant '${resource}:${action}' permission - you don't have this permission`
+            `Cannot grant '${resource}:${action}' permission - you don't have this permission`,
           );
         }
       }
     }
 
     // Special check: only owners can grant organization:delete
-    if (permissions.organization?.includes('delete') && !callerRoles.includes('owner')) {
+    if (
+      permissions.organization?.includes('delete') &&
+      !callerRoles.includes('owner')
+    ) {
       throw new ForbiddenException(
-        'Only organization owners can grant organization:delete permission'
+        'Only organization owners can grant organization:delete permission',
       );
     }
   }
@@ -87,7 +104,10 @@ export class RolesService {
     const combined: Record<string, string[]> = {};
 
     for (const roleName of roleNames) {
-      const rolePermissions = await this.getEffectivePermissions(roleName, organizationId);
+      const rolePermissions = await this.getEffectivePermissions(
+        roleName,
+        organizationId,
+      );
 
       for (const [resource, actions] of Object.entries(rolePermissions)) {
         if (!combined[resource]) {
@@ -126,9 +146,10 @@ export class RolesService {
     });
 
     if (customRole) {
-      const perms = typeof customRole.permissions === 'string'
-        ? JSON.parse(customRole.permissions)
-        : customRole.permissions;
+      const perms =
+        typeof customRole.permissions === 'string'
+          ? JSON.parse(customRole.permissions)
+          : customRole.permissions;
       return perms as Record<string, string[]>;
     }
 
@@ -146,14 +167,20 @@ export class RolesService {
   ) {
     // Validate role name isn't a built-in role
     if (BUILT_IN_ROLES.includes(dto.name)) {
-      throw new BadRequestException(`Cannot create role with reserved name: ${dto.name}`);
+      throw new BadRequestException(
+        `Cannot create role with reserved name: ${dto.name}`,
+      );
     }
 
     // Validate permissions
     this.validatePermissions(dto.permissions);
 
     // Check for privilege escalation
-    await this.validateNoPrivilegeEscalation(callerRoles, dto.permissions, organizationId);
+    await this.validateNoPrivilegeEscalation(
+      callerRoles,
+      dto.permissions,
+      organizationId,
+    );
 
     // Check if role already exists
     const existing = await db.organizationRole.findFirst({
@@ -173,7 +200,9 @@ export class RolesService {
     });
 
     if (roleCount >= 20) {
-      throw new BadRequestException('Maximum of 20 custom roles per organization');
+      throw new BadRequestException(
+        'Maximum of 20 custom roles per organization',
+      );
     }
 
     // Create the role
@@ -215,7 +244,7 @@ export class RolesService {
     const countMap = new Map(memberCounts.map((mc) => [mc.roleId, mc.count]));
 
     // Include built-in roles info
-    const builtInRoles = BUILT_IN_ROLES.map(name => ({
+    const builtInRoles = BUILT_IN_ROLES.map((name) => ({
       name,
       isBuiltIn: true,
       description: this.getBuiltInRoleDescription(name),
@@ -223,11 +252,17 @@ export class RolesService {
 
     return {
       builtInRoles,
-      customRoles: customRoles.map(r => ({
+      customRoles: customRoles.map((r) => ({
         id: r.id,
         name: r.name,
-        permissions: typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions,
-        obligations: typeof r.obligations === 'string' ? JSON.parse(r.obligations) : (r.obligations || {}),
+        permissions:
+          typeof r.permissions === 'string'
+            ? JSON.parse(r.permissions)
+            : r.permissions,
+        obligations:
+          typeof r.obligations === 'string'
+            ? JSON.parse(r.obligations)
+            : r.obligations || {},
         isBuiltIn: false,
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),
@@ -258,8 +293,14 @@ export class RolesService {
     return {
       id: role.id,
       name: role.name,
-      permissions: typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions,
-      obligations: typeof role.obligations === 'string' ? JSON.parse(role.obligations) : (role.obligations || {}),
+      permissions:
+        typeof role.permissions === 'string'
+          ? JSON.parse(role.permissions)
+          : role.permissions,
+      obligations:
+        typeof role.obligations === 'string'
+          ? JSON.parse(role.obligations)
+          : role.obligations || {},
       isBuiltIn: false,
       createdAt: role.createdAt.toISOString(),
       updatedAt: role.updatedAt.toISOString(),
@@ -310,7 +351,11 @@ export class RolesService {
     // Validate and check permissions if provided
     if (dto.permissions) {
       this.validatePermissions(dto.permissions);
-      await this.validateNoPrivilegeEscalation(callerRoles, dto.permissions, organizationId);
+      await this.validateNoPrivilegeEscalation(
+        callerRoles,
+        dto.permissions,
+        organizationId,
+      );
     }
 
     // Update the role
@@ -318,16 +363,26 @@ export class RolesService {
       where: { id: roleId },
       data: {
         ...(dto.name && { name: dto.name }),
-        ...(dto.permissions && { permissions: JSON.stringify(dto.permissions) }),
-        ...(dto.obligations !== undefined && { obligations: JSON.stringify(dto.obligations) }),
+        ...(dto.permissions && {
+          permissions: JSON.stringify(dto.permissions),
+        }),
+        ...(dto.obligations !== undefined && {
+          obligations: JSON.stringify(dto.obligations),
+        }),
       },
     });
 
     return {
       id: updated.id,
       name: updated.name,
-      permissions: typeof updated.permissions === 'string' ? JSON.parse(updated.permissions) : updated.permissions,
-      obligations: typeof updated.obligations === 'string' ? JSON.parse(updated.obligations) : (updated.obligations || {}),
+      permissions:
+        typeof updated.permissions === 'string'
+          ? JSON.parse(updated.permissions)
+          : updated.permissions,
+      obligations:
+        typeof updated.obligations === 'string'
+          ? JSON.parse(updated.obligations)
+          : updated.obligations || {},
       isBuiltIn: false,
       createdAt: updated.createdAt,
       updatedAt: updated.updatedAt,
@@ -360,7 +415,7 @@ export class RolesService {
     if (membersWithRole > 0) {
       throw new BadRequestException(
         `Cannot delete role '${role.name}' - ${membersWithRole} member(s) are assigned to it. ` +
-        `Reassign them to a different role first.`
+          `Reassign them to a different role first.`,
       );
     }
 
@@ -429,9 +484,10 @@ export class RolesService {
 
     const combined: RoleObligations = {};
     for (const role of customRoles) {
-      const obligations = typeof role.obligations === 'string'
-        ? JSON.parse(role.obligations)
-        : (role.obligations || {});
+      const obligations =
+        typeof role.obligations === 'string'
+          ? JSON.parse(role.obligations)
+          : role.obligations || {};
       if (obligations.compliance) combined.compliance = true;
     }
 
@@ -445,8 +501,10 @@ export class RolesService {
     const descriptions: Record<string, string> = {
       owner: 'Full access to everything including organization deletion',
       admin: 'Full access except organization deletion',
-      auditor: 'Read-only access with export capabilities for compliance audits',
-      employee: 'Limited access to assigned tasks and basic compliance activities',
+      auditor:
+        'Read-only access with export capabilities for compliance audits',
+      employee:
+        'Limited access to assigned tasks and basic compliance activities',
       contractor: 'Limited access similar to employee for external contractors',
     };
     return descriptions[name] || '';

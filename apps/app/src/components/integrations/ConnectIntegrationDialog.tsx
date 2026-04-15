@@ -95,11 +95,11 @@ export function ConnectIntegrationDialog({
   // since hooks return [] as fallback, not undefined
   const isDataLoading = isProvidersLoading || isConnectionsLoading;
 
-  // Filter connections for this specific integration
+  // Filter connections for this specific integration (exclude soft-deleted)
   const existingConnections: ExistingConnection[] = useMemo(() => {
     if (!allConnections) return [];
     return allConnections
-      .filter((conn) => conn.providerSlug === integrationId)
+      .filter((conn) => conn.providerSlug === integrationId && conn.status !== 'disconnected')
       .map((conn) => {
         const metadata = (conn.metadata || {}) as Record<string, unknown>;
         return {

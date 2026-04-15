@@ -25,7 +25,9 @@ import type { AuthContext as AuthContextType } from './types';
 export class AuthController {
   @Get('me')
   @SkipOrgCheck()
-  @ApiOperation({ summary: 'Get current user info, organizations, and pending invitations' })
+  @ApiOperation({
+    summary: 'Get current user info, organizations, and pending invitations',
+  })
   async getMe(@AuthContext() authContext: AuthContextType) {
     const userId = authContext.userId;
     if (!userId) {

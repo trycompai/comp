@@ -105,8 +105,7 @@ export class LambdaAdapter implements AwsServiceAdapter {
               }
             }
           } catch (error) {
-            const msg =
-              error instanceof Error ? error.message : String(error);
+            const msg = error instanceof Error ? error.message : String(error);
             // ResourceNotFoundException means no policy — not public, skip
             if (msg.includes('ResourceNotFoundException')) {
               // No policy attached — this is normal

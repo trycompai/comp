@@ -187,7 +187,9 @@ export class SOAService {
     });
 
     if (!configuration) {
-      throw new NotFoundException('No SOA configuration found for this framework');
+      throw new NotFoundException(
+        'No SOA configuration found for this framework',
+      );
     }
 
     const existingLatestDocument = await db.sOADocument.findFirst({
@@ -397,7 +399,9 @@ export class SOAService {
       select: { role: true },
     });
     if (approverUser?.role === 'admin') {
-      throw new BadRequestException('Cannot assign a platform admin as approver');
+      throw new BadRequestException(
+        'Cannot assign a platform admin as approver',
+      );
     }
 
     const isOwnerOrAdmin =
@@ -525,7 +529,9 @@ export class SOAService {
       member.role.includes('owner') || member.role.includes('admin');
 
     if (!isOwnerOrAdmin) {
-      throw new ForbiddenException('Only owners and admins can perform this action');
+      throw new ForbiddenException(
+        'Only owners and admins can perform this action',
+      );
     }
 
     return member;

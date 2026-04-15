@@ -35,21 +35,51 @@ export class RedshiftAdapter implements AwsServiceAdapter {
 
           if (cluster.Encrypted !== true) {
             findings.push(
-              this.makeFinding(clusterId, 'Redshift cluster is not encrypted', `Cluster "${clusterId}" does not have encryption at rest enabled`, 'high', { encrypted: cluster.Encrypted }, false, `[MANUAL] Cannot be auto-fixed. Redshift cluster encryption requires cluster recreation. To fix: create a new encrypted cluster using redshift:CreateClusterCommand with Encrypted set to true, migrate data, then delete the old cluster.`),
+              this.makeFinding(
+                clusterId,
+                'Redshift cluster is not encrypted',
+                `Cluster "${clusterId}" does not have encryption at rest enabled`,
+                'high',
+                { encrypted: cluster.Encrypted },
+                false,
+                `[MANUAL] Cannot be auto-fixed. Redshift cluster encryption requires cluster recreation. To fix: create a new encrypted cluster using redshift:CreateClusterCommand with Encrypted set to true, migrate data, then delete the old cluster.`,
+              ),
             );
           } else {
             findings.push(
-              this.makeFinding(clusterId, 'Redshift cluster encryption enabled', `Cluster "${clusterId}" has encryption at rest enabled`, 'info', { encrypted: true }, true),
+              this.makeFinding(
+                clusterId,
+                'Redshift cluster encryption enabled',
+                `Cluster "${clusterId}" has encryption at rest enabled`,
+                'info',
+                { encrypted: true },
+                true,
+              ),
             );
           }
 
           if (cluster.PubliclyAccessible === true) {
             findings.push(
-              this.makeFinding(clusterId, 'Redshift cluster is publicly accessible', `Cluster "${clusterId}" is configured with public access`, 'critical', { publiclyAccessible: true }, false, `Use redshift:ModifyClusterCommand with ClusterIdentifier and PubliclyAccessible set to false. Rollback by setting PubliclyAccessible to true.`),
+              this.makeFinding(
+                clusterId,
+                'Redshift cluster is publicly accessible',
+                `Cluster "${clusterId}" is configured with public access`,
+                'critical',
+                { publiclyAccessible: true },
+                false,
+                `Use redshift:ModifyClusterCommand with ClusterIdentifier and PubliclyAccessible set to false. Rollback by setting PubliclyAccessible to true.`,
+              ),
             );
           } else {
             findings.push(
-              this.makeFinding(clusterId, 'Redshift cluster is not publicly accessible', `Cluster "${clusterId}" is not publicly accessible`, 'info', { publiclyAccessible: false }, true),
+              this.makeFinding(
+                clusterId,
+                'Redshift cluster is not publicly accessible',
+                `Cluster "${clusterId}" is not publicly accessible`,
+                'info',
+                { publiclyAccessible: false },
+                true,
+              ),
             );
           }
 
@@ -62,16 +92,30 @@ export class RedshiftAdapter implements AwsServiceAdapter {
 
             if (logRes.LoggingEnabled !== true) {
               findings.push(
-                this.makeFinding(clusterId, 'Redshift audit logging is disabled', `Cluster "${clusterId}" does not have audit logging enabled`, 'medium', { loggingEnabled: false }, false, `Use redshift:EnableLoggingCommand with ClusterIdentifier and BucketName for the S3 logging bucket. Rollback by calling redshift:DisableLoggingCommand.`),
+                this.makeFinding(
+                  clusterId,
+                  'Redshift audit logging is disabled',
+                  `Cluster "${clusterId}" does not have audit logging enabled`,
+                  'medium',
+                  { loggingEnabled: false },
+                  false,
+                  `Use redshift:EnableLoggingCommand with ClusterIdentifier and BucketName for the S3 logging bucket. Rollback by calling redshift:DisableLoggingCommand.`,
+                ),
               );
             } else {
               findings.push(
-                this.makeFinding(clusterId, 'Redshift audit logging is enabled', `Cluster "${clusterId}" has audit logging enabled`, 'info', { loggingEnabled: true }, true),
+                this.makeFinding(
+                  clusterId,
+                  'Redshift audit logging is enabled',
+                  `Cluster "${clusterId}" has audit logging enabled`,
+                  'info',
+                  { loggingEnabled: true },
+                  true,
+                ),
               );
             }
           } catch (error: unknown) {
-            const msg =
-              error instanceof Error ? error.message : String(error);
+            const msg = error instanceof Error ? error.message : String(error);
             if (!msg.includes('AccessDenied')) throw error;
           }
         }

@@ -14,7 +14,10 @@ import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
 import { OrganizationId } from '../../auth/auth-context.decorator';
-import { getManifest, type CheckVariable } from '@trycompai/integration-platform';
+import {
+  getManifest,
+  type CheckVariable,
+} from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ConnectionService } from '../services/connection.service';
 import { ProviderRepository } from '../repositories/provider.repository';
@@ -116,7 +119,10 @@ export class VariablesController {
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
   ) {
-    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+    await this.connectionService.getConnectionForOrg(
+      connectionId,
+      organizationId,
+    );
 
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
@@ -189,7 +195,10 @@ export class VariablesController {
     @Param('variableId') variableId: string,
     @OrganizationId() organizationId: string,
   ): Promise<{ options: VariableOption[] }> {
-    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+    await this.connectionService.getConnectionForOrg(
+      connectionId,
+      organizationId,
+    );
 
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
@@ -399,7 +408,10 @@ export class VariablesController {
     @Body() body: SaveVariablesDto,
     @OrganizationId() organizationId: string,
   ) {
-    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+    await this.connectionService.getConnectionForOrg(
+      connectionId,
+      organizationId,
+    );
 
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {

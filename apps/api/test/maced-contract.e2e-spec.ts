@@ -1,4 +1,7 @@
-import { MacedClient, type MacedPentestRun } from '../src/security-penetration-tests/maced-client';
+import {
+  MacedClient,
+  type MacedPentestRun,
+} from '../src/security-penetration-tests/maced-client';
 
 const enabledValues = new Set(['1', 'true', 'yes']);
 const isContractCanaryEnabled = enabledValues.has(

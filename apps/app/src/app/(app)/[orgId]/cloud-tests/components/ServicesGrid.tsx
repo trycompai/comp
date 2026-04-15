@@ -1,48 +1,56 @@
 'use client';
 
+import { orderServicesForConnectionGrid } from '@/lib/connection-services-display-order';
 import { Search } from '@trycompai/design-system/icons';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ServiceCard } from './ServiceCard';
 
 export function ServicesGrid({
   services,
-  connectionServices,
+  connectionServices = [],
   connectionId,
   onToggle,
   togglingService,
 }: {
   services: Array<{ id: string; name: string; description: string; implemented?: boolean }>;
-  connectionServices: Array<{ id: string; enabled: boolean }>;
+  connectionServices?: Array<{ id: string; enabled: boolean }>;
   connectionId: string | null;
-  onToggle: (id: string, enabled: boolean) => void;
+  onToggle: (id: string, enabled: boolean) => boolean | void | Promise<boolean | void>;
   togglingService: string | null;
 }) {
   const [search, setSearch] = useState('');
+  const [tailEnabledIds, setTailEnabledIds] = useState<string[]>([]);
 
-  const enabledSet = useMemo(
-    () => new Set(connectionServices.filter((s) => s.enabled).map((s) => s.id)),
-    [connectionServices],
+  useEffect(() => {
+    setTailEnabledIds([]);
+  }, [connectionId]);
+
+  const handleToggle = useCallback(
+    async (id: string, enabled: boolean) => {
+      let rollback: string[] | null = null;
+      setTailEnabledIds((prev) => {
+        rollback = [...prev];
+        if (enabled) return [...prev.filter((x) => x !== id), id];
+        return prev.filter((x) => x !== id);
+      });
+      const result = await Promise.resolve(onToggle(id, enabled));
+      if (result === false && rollback) {
+        setTailEnabledIds(rollback);
+      }
+    },
+    [onToggle],
   );
 
-  const sortedServices = useMemo(() => {
-    const filtered = search
-      ? services.filter(
-          (s) =>
-            s.name.toLowerCase().includes(search.toLowerCase()) ||
-            s.id.toLowerCase().includes(search.toLowerCase()),
-        )
-      : services;
-
-    return [...filtered].sort((a, b) => {
-      const aEnabled = enabledSet.has(a.id) ? 1 : 0;
-      const bEnabled = enabledSet.has(b.id) ? 1 : 0;
-      const aImpl = a.implemented !== false ? 1 : 0;
-      const bImpl = b.implemented !== false ? 1 : 0;
-      if (bEnabled !== aEnabled) return bEnabled - aEnabled;
-      if (bImpl !== aImpl) return bImpl - aImpl;
-      return a.name.localeCompare(b.name);
-    });
-  }, [services, search, enabledSet]);
+  const displayedServices = useMemo(
+    () =>
+      orderServicesForConnectionGrid({
+        manifestServices: services,
+        connectionServices,
+        search,
+        tailEnabledIds,
+      }),
+    [services, connectionServices, search, tailEnabledIds],
+  );
 
   return (
     <div className="space-y-3">
@@ -62,17 +70,17 @@ export function ServicesGrid({
         </div>
       </div>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {sortedServices.map((service) => (
+        {displayedServices.map((service) => (
           <ServiceCard
             key={service.id}
             service={service}
             connectionId={connectionId}
             isConnected
-            onToggle={onToggle}
+            onToggle={handleToggle}
             toggling={togglingService === service.id}
           />
         ))}
-        {sortedServices.length === 0 && search && (
+        {displayedServices.length === 0 && search && (
           <p className="col-span-full py-4 text-center text-xs text-muted-foreground">
             No services matching &quot;{search}&quot;
           </p>

@@ -244,7 +244,9 @@ export class PoliciesController {
       where: { organizationId },
       orderBy: { createdAt: 'asc' },
     });
-    const contextHub = contextEntries.map((c) => `${c.question}\n${c.answer}`).join('\n');
+    const contextHub = contextEntries
+      .map((c) => `${c.question}\n${c.answer}`)
+      .join('\n');
 
     const handle = await tasks.trigger<typeof updatePolicy>('update-policy', {
       organizationId,
@@ -345,19 +347,33 @@ export class PoliciesController {
   @ApiParam(POLICY_PARAMS.policyId)
   async uploadPolicyPdf(
     @Param('id') id: string,
-    @Body() body: { versionId?: string; fileName: string; fileType: string; fileData: string },
+    @Body()
+    body: {
+      versionId?: string;
+      fileName: string;
+      fileType: string;
+      fileData: string;
+    },
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const { S3Client, PutObjectCommand, DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+    const { S3Client, PutObjectCommand, DeleteObjectCommand } =
+      await import('@aws-sdk/client-s3');
     const bucketName = process.env.APP_AWS_BUCKET_NAME;
-    if (!bucketName) throw new BadRequestException('File storage is not configured');
+    if (!bucketName)
+      throw new BadRequestException('File storage is not configured');
 
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
     const policy = await db.policy.findFirst({
       where: { id, organizationId },
-      select: { id: true, status: true, pdfUrl: true, currentVersionId: true, pendingVersionId: true },
+      select: {
+        id: true,
+        status: true,
+        pdfUrl: true,
+        currentVersionId: true,
+        pendingVersionId: true,
+      },
     });
     if (!policy) throw new NotFoundException('Policy not found');
 
@@ -371,19 +387,39 @@ export class PoliciesController {
       });
       if (!version) throw new NotFoundException('Version not found');
       if (version.id === policy.currentVersionId && policy.status !== 'draft') {
-        throw new BadRequestException('Cannot upload PDF to the published version');
+        throw new BadRequestException(
+          'Cannot upload PDF to the published version',
+        );
       }
       if (version.id === policy.pendingVersionId) {
-        throw new BadRequestException('Cannot upload PDF to a version pending approval');
+        throw new BadRequestException(
+          'Cannot upload PDF to a version pending approval',
+        );
       }
 
       const s3Key = `${organizationId}/policies/${id}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
-      await s3.send(new PutObjectCommand({ Bucket: bucketName, Key: s3Key, Body: fileBuffer, ContentType: body.fileType }));
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: bucketName,
+          Key: s3Key,
+          Body: fileBuffer,
+          ContentType: body.fileType,
+        }),
+      );
       const oldPdfUrl = version.pdfUrl;
-      await db.policyVersion.update({ where: { id: body.versionId }, data: { pdfUrl: s3Key } });
+      await db.policyVersion.update({
+        where: { id: body.versionId },
+        data: { pdfUrl: s3Key },
+      });
 
       if (oldPdfUrl && oldPdfUrl !== s3Key) {
-        try { await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl })); } catch { /* ignore */ }
+        try {
+          await s3.send(
+            new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl }),
+          );
+        } catch {
+          /* ignore */
+        }
       }
 
       return { data: { s3Key }, authType: authContext.authType };
@@ -391,12 +427,28 @@ export class PoliciesController {
 
     // Legacy: upload to policy level
     const s3Key = `${organizationId}/policies/${id}/${Date.now()}-${sanitizedFileName}`;
-    await s3.send(new PutObjectCommand({ Bucket: bucketName, Key: s3Key, Body: fileBuffer, ContentType: body.fileType }));
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucketName,
+        Key: s3Key,
+        Body: fileBuffer,
+        ContentType: body.fileType,
+      }),
+    );
     const oldPdfUrl = policy.pdfUrl;
-    await db.policy.update({ where: { id }, data: { pdfUrl: s3Key, displayFormat: 'PDF' } });
+    await db.policy.update({
+      where: { id },
+      data: { pdfUrl: s3Key, displayFormat: 'PDF' },
+    });
 
     if (oldPdfUrl && oldPdfUrl !== s3Key) {
-      try { await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl })); } catch { /* ignore */ }
+      try {
+        await s3.send(
+          new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl }),
+        );
+      } catch {
+        /* ignore */
+      }
     }
 
     return { data: { s3Key }, authType: authContext.authType };
@@ -413,9 +465,11 @@ export class PoliciesController {
     @AuthContext() authContext: AuthContextType,
     @Query('versionId') versionId?: string,
   ) {
-    const { S3Client, DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+    const { S3Client, DeleteObjectCommand } =
+      await import('@aws-sdk/client-s3');
     const bucketName = process.env.APP_AWS_BUCKET_NAME;
-    if (!bucketName) throw new BadRequestException('File storage is not configured');
+    if (!bucketName)
+      throw new BadRequestException('File storage is not configured');
 
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
@@ -426,8 +480,20 @@ export class PoliciesController {
       });
       if (!version) throw new NotFoundException('Version not found');
       if (version.pdfUrl) {
-        try { await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: version.pdfUrl })); } catch { /* ignore */ }
-        await db.policyVersion.update({ where: { id: versionId }, data: { pdfUrl: null } });
+        try {
+          await s3.send(
+            new DeleteObjectCommand({
+              Bucket: bucketName,
+              Key: version.pdfUrl,
+            }),
+          );
+        } catch {
+          /* ignore */
+        }
+        await db.policyVersion.update({
+          where: { id: versionId },
+          data: { pdfUrl: null },
+        });
       }
     } else {
       const policy = await db.policy.findFirst({
@@ -436,7 +502,13 @@ export class PoliciesController {
       });
       if (!policy) throw new NotFoundException('Policy not found');
       if (policy.pdfUrl) {
-        try { await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: policy.pdfUrl })); } catch { /* ignore */ }
+        try {
+          await s3.send(
+            new DeleteObjectCommand({ Bucket: bucketName, Key: policy.pdfUrl }),
+          );
+        } catch {
+          /* ignore */
+        }
         await db.policy.update({ where: { id }, data: { pdfUrl: null } });
       }
     }
@@ -445,7 +517,10 @@ export class PoliciesController {
       success: true,
       authType: authContext.authType,
       ...(authContext.userId && {
-        authenticatedUser: { id: authContext.userId, email: authContext.userEmail },
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
       }),
     };
   }
@@ -485,7 +560,11 @@ export class PoliciesController {
     if (!bucketName) return { url: null };
 
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
-    const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucketName, Key: pdfUrl }), { expiresIn: 900 });
+    const url = await getSignedUrl(
+      s3,
+      new GetObjectCommand({ Bucket: bucketName, Key: pdfUrl }),
+      { expiresIn: 900 },
+    );
 
     return { url };
   }
@@ -933,7 +1012,9 @@ export class PoliciesController {
 
   @Post(':id/accept-changes')
   @RequirePermission('policy', 'update')
-  @ApiOperation({ summary: 'Accept pending policy changes and publish the version' })
+  @ApiOperation({
+    summary: 'Accept pending policy changes and publish the version',
+  })
   @ApiParam(POLICY_PARAMS.policyId)
   async acceptPolicyChanges(
     @Param('id') id: string,

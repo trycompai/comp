@@ -37,7 +37,9 @@ function isPrivateIpv6(hostname: string): boolean {
   }
 
   // IPv4-mapped IPv6 in hex form: ::ffff:a9fe:a9fe (169.254.169.254)
-  const hexMappedMatch = stripped.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  const hexMappedMatch = stripped.match(
+    /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/,
+  );
   if (hexMappedMatch) {
     const hi = parseInt(hexMappedMatch[1], 16);
     const lo = parseInt(hexMappedMatch[2], 16);

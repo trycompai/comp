@@ -722,9 +722,11 @@ async function extractFromExcelStandard(
     worksheet.eachRow((row) => {
       const cells = row.values as unknown[];
       jsonData.push(
-        cells.slice(1).map((cell) =>
-          cell !== null && cell !== undefined ? String(cell).trim() : '',
-        ),
+        cells
+          .slice(1)
+          .map((cell) =>
+            cell !== null && cell !== undefined ? String(cell).trim() : '',
+          ),
       );
     });
 

@@ -134,9 +134,10 @@ export class DynamicIntegrationRepository {
         authConfig: data.authConfig,
         capabilities: data.capabilities ?? ['checks'],
         supportsMultipleConnections: data.supportsMultipleConnections ?? false,
-        syncDefinition: data.syncDefinition === null
-          ? Prisma.DbNull
-          : (data.syncDefinition ?? undefined),
+        syncDefinition:
+          data.syncDefinition === null
+            ? Prisma.DbNull
+            : (data.syncDefinition ?? undefined),
         services: data.services ?? undefined,
       },
     });

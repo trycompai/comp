@@ -53,13 +53,9 @@ export class KinesisAdapter implements AwsServiceAdapter {
         if (!summary) continue;
 
         const streamArn =
-          summary.StreamARN ??
-          `arn:aws:kinesis:${region}:stream/${streamName}`;
+          summary.StreamARN ?? `arn:aws:kinesis:${region}:stream/${streamName}`;
 
-        if (
-          !summary.EncryptionType ||
-          summary.EncryptionType === 'NONE'
-        ) {
+        if (!summary.EncryptionType || summary.EncryptionType === 'NONE') {
           findings.push(
             this.makeFinding({
               id: `kinesis-not-encrypted-${streamName}`,
@@ -72,8 +68,7 @@ export class KinesisAdapter implements AwsServiceAdapter {
                 streamName,
                 encryptionType: summary.EncryptionType ?? 'NONE',
               },
-              remediation:
-                `Use kinesis:StartStreamEncryptionCommand with StreamName set to '${streamName}', EncryptionType set to 'KMS', and KeyId set to a KMS key ARN or alias (e.g., 'alias/aws/kinesis' for AWS-managed key, or a CMK ARN). Rollback: use kinesis:StopStreamEncryptionCommand with StreamName set to '${streamName}', EncryptionType set to 'KMS', and the same KeyId.`,
+              remediation: `Use kinesis:StartStreamEncryptionCommand with StreamName set to '${streamName}', EncryptionType set to 'KMS', and KeyId set to a KMS key ARN or alias (e.g., 'alias/aws/kinesis' for AWS-managed key, or a CMK ARN). Rollback: use kinesis:StopStreamEncryptionCommand with StreamName set to '${streamName}', EncryptionType set to 'KMS', and the same KeyId.`,
             }),
           );
         } else {
@@ -108,8 +103,7 @@ export class KinesisAdapter implements AwsServiceAdapter {
               severity: 'low',
               resourceId: streamArn,
               evidence: { service: 'Kinesis', streamName },
-              remediation:
-                `Use kinesis:EnableEnhancedMonitoringCommand with StreamName set to '${streamName}' and ShardLevelMetrics set to ['ALL'] (or specific metrics like 'IncomingBytes', 'OutgoingBytes'). Rollback: use kinesis:DisableEnhancedMonitoringCommand with the same StreamName and ShardLevelMetrics.`,
+              remediation: `Use kinesis:EnableEnhancedMonitoringCommand with StreamName set to '${streamName}' and ShardLevelMetrics set to ['ALL'] (or specific metrics like 'IncomingBytes', 'OutgoingBytes'). Rollback: use kinesis:DisableEnhancedMonitoringCommand with the same StreamName and ShardLevelMetrics.`,
             }),
           );
         }

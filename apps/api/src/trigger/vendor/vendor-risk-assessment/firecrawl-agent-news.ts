@@ -13,7 +13,8 @@ const newsResponseSchema = {
   properties: {
     news: {
       type: 'array' as const,
-      description: 'Recent news articles about the company from the last 12 months, ordered by date descending',
+      description:
+        'Recent news articles about the company from the last 12 months, ordered by date descending',
       items: {
         type: 'object' as const,
         properties: {
@@ -31,7 +32,8 @@ const newsResponseSchema = {
           },
           source: {
             type: 'string' as const,
-            description: 'Publication name, e.g. TechCrunch, Reuters, company blog',
+            description:
+              'Publication name, e.g. TechCrunch, Reuters, company blog',
           },
           url: {
             type: 'string' as const,
@@ -40,7 +42,8 @@ const newsResponseSchema = {
           sentiment: {
             type: 'string' as const,
             enum: ['positive', 'negative', 'neutral'],
-            description: 'Whether the news is positive (funding, partnerships), negative (breaches, lawsuits), or neutral',
+            description:
+              'Whether the news is positive (funding, partnerships), negative (breaches, lawsuits), or neutral',
           },
         },
         required: ['date', 'title'],
@@ -84,7 +87,11 @@ Search the company's blog, newsroom, press releases, and reputable tech news sou
       schema: newsResponseSchema,
     });
   } catch (error) {
-    return handleFirecrawlError(error, { vendorName, vendorWebsite, callType: 'news' });
+    return handleFirecrawlError(error, {
+      vendorName,
+      vendorWebsite,
+      callType: 'news',
+    });
   }
 
   if (!agentResponse.success || agentResponse.status === 'failed') {
@@ -96,10 +103,14 @@ Search the company's blog, newsroom, press releases, and reputable tech news sou
     return null;
   }
 
-  const data = agentResponse.data as { news?: Array<Record<string, unknown>> } | undefined;
+  const data = agentResponse.data as
+    | { news?: Array<Record<string, unknown>> }
+    | undefined;
   const rawNews = data?.news;
   if (!Array.isArray(rawNews) || rawNews.length === 0) {
-    logger.info('Firecrawl news research returned no news items', { vendorWebsite });
+    logger.info('Firecrawl news research returned no news items', {
+      vendorWebsite,
+    });
     return null;
   }
 
@@ -107,14 +118,17 @@ Search the company's blog, newsroom, press releases, and reputable tech news sou
     .flatMap((n) => {
       const isoDate = normalizeIso(n.date as string | undefined);
       if (!isoDate) return [];
-      return [{
-        date: isoDate,
-        title: (n.title as string) ?? '',
-        summary: (n.summary as string) ?? null,
-        source: (n.source as string) ?? null,
-        url: normalizeUrl(n.url as string | undefined),
-        sentiment: (n.sentiment as 'positive' | 'negative' | 'neutral') ?? null,
-      }];
+      return [
+        {
+          date: isoDate,
+          title: (n.title as string) ?? '',
+          summary: (n.summary as string) ?? null,
+          source: (n.source as string) ?? null,
+          url: normalizeUrl(n.url as string | undefined),
+          sentiment:
+            (n.sentiment as 'positive' | 'negative' | 'neutral') ?? null,
+        },
+      ];
     })
     .filter(Boolean);
 

@@ -40,9 +40,23 @@ export class CloudFrontAdapter implements AwsServiceAdapter {
           const distId = dist.Id;
           const domainName = dist.DomainName ?? distId;
 
-          this.checkViewerProtocol(dist, distId, domainName, region, accountId, findings);
+          this.checkViewerProtocol(
+            dist,
+            distId,
+            domainName,
+            region,
+            accountId,
+            findings,
+          );
           this.checkWaf(dist, distId, domainName, region, accountId, findings);
-          await this.checkLogging(client, distId, domainName, region, accountId, findings);
+          await this.checkLogging(
+            client,
+            distId,
+            domainName,
+            region,
+            accountId,
+            findings,
+          );
         }
 
         if (distList.IsTruncated && distList.NextMarker) {

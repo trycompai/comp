@@ -3,6 +3,7 @@
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useVendors } from '@/hooks/use-vendors';
 import {
   ConnectionListItem,
   IntegrationProvider,
@@ -21,6 +22,7 @@ import {
   DialogTitle,
 } from '@trycompai/ui/dialog';
 import { Skeleton } from '@trycompai/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import {
   AlertCircle,
   AlertTriangle,
@@ -66,6 +68,16 @@ const providerNeedsConfiguration = (
   return requiredVariables.some((varId) => !currentVars[varId]);
 };
 
+const normalizeIntegrationName = (value: string): string => {
+  return value
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)\s*$/, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/[^a-z0-9 ]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 interface RelevantTask {
   taskId: string; // Actual task ID for navigation
   taskTemplateId: string;
@@ -83,6 +95,38 @@ interface PlatformIntegrationsProps {
   taskTemplates: Array<{ id: string; taskId: string; name: string; description: string }>;
 }
 
+const CONNECTION_STATUS_PRIORITY: Record<string, number> = {
+  active: 5,
+  pending: 4,
+  error: 3,
+  paused: 2,
+  disconnected: 1,
+};
+
+const getConnectionPriority = (connection: ConnectionListItem): number => {
+  return CONNECTION_STATUS_PRIORITY[connection.status] ?? 0;
+};
+
+const getConnectionCreatedAtMs = (connection: ConnectionListItem): number => {
+  const date = new Date(connection.createdAt);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
+const shouldReplaceProviderConnection = (
+  current: ConnectionListItem | undefined,
+  candidate: ConnectionListItem,
+): boolean => {
+  if (!current) return true;
+
+  const currentPriority = getConnectionPriority(current);
+  const candidatePriority = getConnectionPriority(candidate);
+  if (candidatePriority !== currentPriority) {
+    return candidatePriority > currentPriority;
+  }
+
+  return getConnectionCreatedAtMs(candidate) > getConnectionCreatedAtMs(current);
+};
+
 export function PlatformIntegrations({ className, taskTemplates }: PlatformIntegrationsProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const router = useRouter();
@@ -96,6 +140,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
   const { hasPermission } = usePermissions();
   const canCreate = hasPermission('integration', 'create');
   const { startOAuth } = useIntegrationMutations();
+  const { data: vendorsResponse } = useVendors();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<IntegrationCategory | 'All'>('All');
@@ -178,13 +223,49 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
   };
 
   // Map connections by provider slug
-  const connectionsByProvider = useMemo(
-    () => new Map(connections?.map((c) => [c.providerSlug, c]) || []),
-    [connections],
-  );
+  const connectionsByProvider = useMemo(() => {
+    const map = new Map<string, ConnectionListItem>();
+    for (const connection of connections ?? []) {
+      const current = map.get(connection.providerSlug);
+      if (shouldReplaceProviderConnection(current, connection)) {
+        map.set(connection.providerSlug, connection);
+      }
+    }
+    return map;
+  }, [connections]);
 
-  // Merge and sort: platform first (warnings, then connected, then disconnected), then custom
+  const vendorNames = useMemo(() => {
+    const vendors = vendorsResponse?.data?.data;
+    if (!Array.isArray(vendors)) {
+      return new Set<string>();
+    }
+
+    return new Set(
+      vendors
+        .map((vendor) => normalizeIntegrationName(vendor.name))
+        .filter((name) => name.length > 0),
+    );
+  }, [vendorsResponse]);
+
+  // Merge/sort integrations, then prioritize entries matching vendors in the org's vendor list.
   const unifiedIntegrations = useMemo<UnifiedIntegration[]>(() => {
+    const platformSortTier = (
+      item: UnifiedIntegration & { type: 'platform' },
+    ): 0 | 1 | 2 => {
+      const { provider, connection } = item;
+      const isComingSoon =
+        provider.authType === 'oauth2' && provider.oauthConfigured === false;
+      if (isComingSoon) return 2;
+
+      const hasEstablishedConnection =
+        connection &&
+        connection.status !== 'disconnected' &&
+        ['active', 'pending', 'error', 'paused'].includes(connection.status);
+      if (hasEstablishedConnection) return 0;
+
+      return 1;
+    };
+
     const platformIntegrations: UnifiedIntegration[] = (providers?.filter((p) => p.isActive) || [])
       .map((provider) => ({
         type: 'platform' as const,
@@ -192,30 +273,58 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
         connection: connectionsByProvider.get(provider.id),
       }))
       .sort((a, b) => {
-        const aConnected = a.connection?.status === 'active';
-        const bConnected = b.connection?.status === 'active';
-        const aNeedsConfig = aConnected && a.connection?.variables === null;
-        const bNeedsConfig = bConnected && b.connection?.variables === null;
-
-        // Warnings first
-        if (aNeedsConfig && !bNeedsConfig) return -1;
-        if (!aNeedsConfig && bNeedsConfig) return 1;
-
-        // Then connected
-        if (aConnected && !bConnected) return -1;
-        if (!aConnected && bConnected) return 1;
-
-        // Then alphabetical
+        const tierA = platformSortTier(a);
+        const tierB = platformSortTier(b);
+        if (tierA !== tierB) return tierA - tierB;
         return a.provider.name.localeCompare(b.provider.name);
       });
 
-    const customIntegrations: UnifiedIntegration[] = INTEGRATIONS.map((integration) => ({
-      type: 'custom' as const,
-      integration,
-    }));
+    // AI Agent integrations are hidden — they are not real integrations
+    const allIntegrations = [...platformIntegrations];
+    if (vendorNames.size === 0) {
+      return allIntegrations;
+    }
 
-    return [...platformIntegrations, ...customIntegrations];
-  }, [providers, connectionsByProvider]);
+    const vendorListedIntegrations: UnifiedIntegration[] = [];
+    const otherIntegrations: UnifiedIntegration[] = [];
+
+    allIntegrations.forEach((integration) => {
+      const candidateNames =
+        integration.type === 'platform'
+          ? [integration.provider.name, integration.provider.id]
+          : [integration.integration.name, integration.integration.id];
+
+      const isVendorListed = candidateNames
+        .map((candidateName) => normalizeIntegrationName(candidateName))
+        .some((normalizedCandidateName) => vendorNames.has(normalizedCandidateName));
+
+      if (isVendorListed) {
+        vendorListedIntegrations.push(integration);
+      } else {
+        otherIntegrations.push(integration);
+      }
+    });
+
+    // Connected integrations always appear first, then vendor-listed, then others
+    const ESTABLISHED_STATUSES = new Set(['active', 'pending', 'error', 'paused']);
+    const sortByConnection = (list: UnifiedIntegration[]) =>
+      list.sort((a, b) => {
+        const aConnected =
+          a.type === 'platform' &&
+          a.connection?.status &&
+          ESTABLISHED_STATUSES.has(a.connection.status)
+            ? 0
+            : 1;
+        const bConnected =
+          b.type === 'platform' &&
+          b.connection?.status &&
+          ESTABLISHED_STATUSES.has(b.connection.status)
+            ? 0
+            : 1;
+        return aConnected - bConnected;
+      });
+    return sortByConnection([...vendorListedIntegrations, ...otherIntegrations]);
+  }, [providers, connectionsByProvider, vendorNames]);
 
   // Get all unique categories
   const allCategories = useMemo(() => {
@@ -457,13 +566,40 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
 
                 const isComingSoon = provider.authType === 'oauth2' && provider.oauthConfigured === false;
 
+                /** Primary CTA is Connect / Set up — card still opens details on click; hide redundant “View details” row */
+                const showConnectOrSetup =
+                  canCreate &&
+                  !needsConfiguration &&
+                  !isConnected &&
+                  !hasError &&
+                  !isComingSoon;
+
                 return (
                   <div
                     key={`platform-${provider.id}`}
+                    className={
+                      isComingSoon
+                        ? undefined
+                        : 'group rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+                    }
                     role={isComingSoon ? undefined : 'button'}
                     tabIndex={isComingSoon ? undefined : 0}
+                    aria-label={
+                      isComingSoon
+                        ? undefined
+                        : `Open ${provider.name} — connection details, services, and settings`
+                    }
                     onClick={isComingSoon ? undefined : () => router.push(`/${orgId}/integrations/${provider.id}`)}
-                    onKeyDown={isComingSoon ? undefined : (e) => { if (e.key === 'Enter') router.push(`/${orgId}/integrations/${provider.id}`); }}
+                    onKeyDown={
+                      isComingSoon
+                        ? undefined
+                        : (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              router.push(`/${orgId}/integrations/${provider.id}`);
+                            }
+                          }
+                    }
                   >
                   <Card
                     className={`relative overflow-hidden transition-all flex flex-col h-full ${isComingSoon ? 'opacity-75' : 'cursor-pointer'} ${
@@ -472,7 +608,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                         : isConnected
                           ? 'border-primary/30 bg-primary/5'
                           : 'hover:border-primary/20 hover:shadow-sm'
-                    }`}
+                    } ${!isComingSoon ? 'group-hover:border-primary/30 group-hover:shadow-md' : ''}`}
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
@@ -558,16 +694,51 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                               );
                             })}
                             {provider.mappedTasks.length > 3 && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] px-1.5 py-0.5 font-normal"
-                              >
-                                +{provider.mappedTasks.length - 3} more
-                              </Badge>
+                              <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 py-0.5 font-normal cursor-default"
+                                  >
+                                    +{provider.mappedTasks.length - 3} more
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="max-w-xs">
+                                  <div className="flex flex-wrap gap-1">
+                                    {provider.mappedTasks.slice(3).map((t) => {
+                                      const tid = templateToTaskMap.get(t.id);
+                                      return tid ? (
+                                        <Link
+                                          key={t.id}
+                                          href={`/${orgId}/tasks/${tid}`}
+                                          className="text-xs text-primary hover:underline"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {t.name}
+                                        </Link>
+                                      ) : (
+                                        <span key={t.id} className="text-xs">{t.name}</span>
+                                      );
+                                    })}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                              </TooltipProvider>
                             )}
                           </div>
                         )}
                       </div>
+
+                      {!isComingSoon && !showConnectOrSetup && (
+                        <div className="mt-4 flex items-center justify-end gap-1.5 border-t border-border/50 pt-3 text-xs font-medium text-primary">
+                          <span>View details</span>
+                          <ArrowRight
+                            className="h-3.5 w-3.5 shrink-0 transition-transform group-hover:translate-x-0.5"
+                            aria-hidden
+                          />
+                        </div>
+                      )}
 
                       <div className="mt-auto pt-4">
                         {needsConfiguration ? (
@@ -626,6 +797,12 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                         ) : null}
                       </div>
                     </CardContent>
+                    {!isComingSoon && (
+                      <div
+                        className="pointer-events-none absolute inset-0 rounded-xl bg-primary/5 opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-hidden
+                      />
+                    )}
                   </Card>
                   </div>
                 );

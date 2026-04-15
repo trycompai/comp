@@ -33,7 +33,10 @@ const PRIVILEGED_ROLES = new Set([
 export class EntraIdAdapter implements AzureServiceAdapter {
   readonly serviceId = 'entra-id';
 
-  async scan({ accessToken, subscriptionId }: {
+  async scan({
+    accessToken,
+    subscriptionId,
+  }: {
     accessToken: string;
     subscriptionId: string;
   }): Promise<SecurityFinding[]> {
@@ -68,7 +71,8 @@ export class EntraIdAdapter implements AzureServiceAdapter {
         severity: 'high',
         resourceType: 'subscription',
         resourceId: subscriptionId,
-        remediation: 'Review privileged role assignments and remove unnecessary ones. Use just-in-time access via Azure PIM.',
+        remediation:
+          'Review privileged role assignments and remove unnecessary ones. Use just-in-time access via Azure PIM.',
         evidence: {
           serviceId: this.serviceId,
           serviceName: 'Entra ID',
@@ -77,7 +81,8 @@ export class EntraIdAdapter implements AzureServiceAdapter {
           principals: privilegedAssignments.slice(0, 10).map((a) => ({
             principalId: a.properties.principalId,
             principalType: a.properties.principalType,
-            role: defMap.get(a.properties.roleDefinitionId)?.properties.roleName,
+            role: defMap.get(a.properties.roleDefinitionId)?.properties
+              .roleName,
           })),
         },
         createdAt: new Date().toISOString(),
@@ -91,7 +96,11 @@ export class EntraIdAdapter implements AzureServiceAdapter {
         resourceType: 'subscription',
         resourceId: subscriptionId,
         remediation: 'No action needed.',
-        evidence: { serviceId: this.serviceId, serviceName: 'Entra ID', findingKey: 'azure-entra-id-excessive-privileged-roles' },
+        evidence: {
+          serviceId: this.serviceId,
+          serviceName: 'Entra ID',
+          findingKey: 'azure-entra-id-excessive-privileged-roles',
+        },
         createdAt: new Date().toISOString(),
         passed: true,
       });
@@ -113,7 +122,8 @@ export class EntraIdAdapter implements AzureServiceAdapter {
         severity: 'high',
         resourceType: 'role-definition',
         resourceId: role.id,
-        remediation: 'Restrict custom role permissions to only the specific actions required.',
+        remediation:
+          'Restrict custom role permissions to only the specific actions required.',
         evidence: {
           serviceId: this.serviceId,
           serviceName: 'Entra ID',
@@ -134,7 +144,11 @@ export class EntraIdAdapter implements AzureServiceAdapter {
         resourceType: 'subscription',
         resourceId: subscriptionId,
         remediation: 'No action needed.',
-        evidence: { serviceId: this.serviceId, serviceName: 'Entra ID', findingKey: 'azure-entra-id-wildcard-custom-role' },
+        evidence: {
+          serviceId: this.serviceId,
+          serviceName: 'Entra ID',
+          findingKey: 'azure-entra-id-wildcard-custom-role',
+        },
         createdAt: new Date().toISOString(),
         passed: true,
       });
@@ -153,7 +167,8 @@ export class EntraIdAdapter implements AzureServiceAdapter {
         severity: 'medium',
         resourceType: 'subscription',
         resourceId: subscriptionId,
-        remediation: 'Replace broad roles with scoped custom roles for service principals.',
+        remediation:
+          'Replace broad roles with scoped custom roles for service principals.',
         evidence: {
           serviceId: this.serviceId,
           serviceName: 'Entra ID',

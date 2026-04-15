@@ -163,7 +163,9 @@ export class EvidenceFormsService {
   private requireEvidenceDeleteAccess(authContext: AuthContext): string {
     const userId = this.requireJwtUser(authContext);
     const roles = authContext.userRoles ?? [];
-    const canDelete = EVIDENCE_FORM_DELETE_ROLES.some((role) => roles.includes(role));
+    const canDelete = EVIDENCE_FORM_DELETE_ROLES.some((role) =>
+      roles.includes(role),
+    );
 
     if (!canDelete) {
       throw new UnauthorizedException(
@@ -214,10 +216,9 @@ export class EvidenceFormsService {
         typeof (value as Record<string, unknown>).fileKey === 'string'
       ) {
         const fileObj = value as Record<string, unknown>;
-        const freshUrl =
-          await this.attachmentsService.getPresignedDownloadUrl(
-            fileObj.fileKey as string,
-          );
+        const freshUrl = await this.attachmentsService.getPresignedDownloadUrl(
+          fileObj.fileKey as string,
+        );
         refreshed[key] = { ...fileObj, downloadUrl: freshUrl };
       }
     }

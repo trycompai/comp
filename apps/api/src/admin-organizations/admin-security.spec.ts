@@ -1,5 +1,8 @@
 import 'reflect-metadata';
-import { GUARDS_METADATA, INTERCEPTORS_METADATA } from '@nestjs/common/constants';
+import {
+  GUARDS_METADATA,
+  INTERCEPTORS_METADATA,
+} from '@nestjs/common/constants';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
 import { AdminOrganizationsController } from './admin-organizations.controller';
@@ -18,7 +21,12 @@ jest.mock('../auth/auth.server', () => ({
 
 jest.mock('@db', () => ({
   db: {},
-  FindingStatus: { open: 'open', ready_for_review: 'ready_for_review', needs_revision: 'needs_revision', closed: 'closed' },
+  FindingStatus: {
+    open: 'open',
+    ready_for_review: 'ready_for_review',
+    needs_revision: 'needs_revision',
+    closed: 'closed',
+  },
   FindingType: { soc2: 'soc2', iso27001: 'iso27001' },
   TaskStatus: { todo: 'todo', in_progress: 'in_progress', done: 'done' },
   TaskFrequency: { daily: 'daily', weekly: 'weekly', monthly: 'monthly' },
@@ -41,7 +49,10 @@ jest.mock('@trycompai/integration-platform', () => ({
 }));
 
 const ORG_ADMIN_CONTROLLERS = [
-  { name: 'AdminOrganizationsController', controller: AdminOrganizationsController },
+  {
+    name: 'AdminOrganizationsController',
+    controller: AdminOrganizationsController,
+  },
   { name: 'AdminFindingsController', controller: AdminFindingsController },
   { name: 'AdminPoliciesController', controller: AdminPoliciesController },
   { name: 'AdminTasksController', controller: AdminTasksController },
@@ -51,49 +62,46 @@ const ORG_ADMIN_CONTROLLERS = [
 ];
 
 describe('Admin controllers security baseline', () => {
-  describe.each(ORG_ADMIN_CONTROLLERS)(
-    '$name',
-    ({ controller }) => {
-      it('has PlatformAdminGuard applied at the class level', () => {
-        const guards = Reflect.getMetadata(GUARDS_METADATA, controller) ?? [];
-        const hasPlatformAdminGuard = guards.some(
-          (g: unknown) => g === PlatformAdminGuard,
-        );
-        expect(hasPlatformAdminGuard).toBe(true);
-      });
+  describe.each(ORG_ADMIN_CONTROLLERS)('$name', ({ controller }) => {
+    it('has PlatformAdminGuard applied at the class level', () => {
+      const guards = Reflect.getMetadata(GUARDS_METADATA, controller) ?? [];
+      const hasPlatformAdminGuard = guards.some(
+        (g: unknown) => g === PlatformAdminGuard,
+      );
+      expect(hasPlatformAdminGuard).toBe(true);
+    });
 
-      it('has AdminAuditLogInterceptor applied at the class level', () => {
-        const interceptors =
-          Reflect.getMetadata(INTERCEPTORS_METADATA, controller) ?? [];
-        const hasAuditInterceptor = interceptors.some(
-          (i: unknown) => i === AdminAuditLogInterceptor,
-        );
-        expect(hasAuditInterceptor).toBe(true);
-      });
+    it('has AdminAuditLogInterceptor applied at the class level', () => {
+      const interceptors =
+        Reflect.getMetadata(INTERCEPTORS_METADATA, controller) ?? [];
+      const hasAuditInterceptor = interceptors.some(
+        (i: unknown) => i === AdminAuditLogInterceptor,
+      );
+      expect(hasAuditInterceptor).toBe(true);
+    });
 
-      it('uses the correct controller path prefix', () => {
-        const path = Reflect.getMetadata('path', controller);
-        expect(path).toBe('admin/organizations');
-      });
+    it('uses the correct controller path prefix', () => {
+      const path = Reflect.getMetadata('path', controller);
+      expect(path).toBe('admin/organizations');
+    });
 
-      it('uses versioned controller format', () => {
-        const version = Reflect.getMetadata('__version__', controller);
-        expect(version).toBeDefined();
-      });
+    it('uses versioned controller format', () => {
+      const version = Reflect.getMetadata('__version__', controller);
+      expect(version).toBeDefined();
+    });
 
-      it('does NOT use HybridAuthGuard (admin controllers use PlatformAdminGuard)', () => {
-        const guards = Reflect.getMetadata(GUARDS_METADATA, controller) ?? [];
-        const guardNames = guards.map((g: { name?: string }) => g.name);
-        expect(guardNames).not.toContain('HybridAuthGuard');
-      });
+    it('does NOT use HybridAuthGuard (admin controllers use PlatformAdminGuard)', () => {
+      const guards = Reflect.getMetadata(GUARDS_METADATA, controller) ?? [];
+      const guardNames = guards.map((g: { name?: string }) => g.name);
+      expect(guardNames).not.toContain('HybridAuthGuard');
+    });
 
-      it('does NOT use PermissionGuard (admin controllers bypass RBAC)', () => {
-        const guards = Reflect.getMetadata(GUARDS_METADATA, controller) ?? [];
-        const guardNames = guards.map((g: { name?: string }) => g.name);
-        expect(guardNames).not.toContain('PermissionGuard');
-      });
-    },
-  );
+    it('does NOT use PermissionGuard (admin controllers bypass RBAC)', () => {
+      const guards = Reflect.getMetadata(GUARDS_METADATA, controller) ?? [];
+      const guardNames = guards.map((g: { name?: string }) => g.name);
+      expect(guardNames).not.toContain('PermissionGuard');
+    });
+  });
 
   it('covers all 7 expected org-scoped admin controllers', () => {
     expect(ORG_ADMIN_CONTROLLERS).toHaveLength(7);

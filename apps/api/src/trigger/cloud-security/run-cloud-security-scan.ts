@@ -22,20 +22,15 @@ export const runCloudSecurityScan = task({
 
     await tags.add([`org:${organizationId}`]);
 
-    logger.info(
-      `Starting cloud security scan for connection: ${connectionName}`,
-      {
-        connectionId,
-        provider: providerSlug,
-        organizationId,
-      },
-    );
-
     try {
-      // Verify connection is still active
+      // Verify connection is still active and resolve provider (payload may use legacy "platform")
       const connection = await db.integrationConnection.findUnique({
         where: { id: connectionId },
-        select: { id: true, status: true },
+        select: {
+          id: true,
+          status: true,
+          provider: { select: { slug: true } },
+        },
       });
 
       if (!connection) {
@@ -52,6 +47,19 @@ export const runCloudSecurityScan = task({
         };
       }
 
+      const resolvedProviderSlug =
+        connection.provider?.slug ?? providerSlug;
+
+      logger.info(
+        `Starting cloud security scan for connection: ${connectionName}`,
+        {
+          connectionId,
+          payloadProviderSlug: providerSlug,
+          resolvedProviderSlug,
+          organizationId,
+        },
+      );
+
       const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
       const headers = {
         'Content-Type': 'application/json',
@@ -61,7 +69,7 @@ export const runCloudSecurityScan = task({
 
       // Auto-detect services before scanning (AWS via Cost Explorer, GCP via Service Usage API)
       // Azure uses scan-based detection instead, so skip the pre-scan detect call
-      if (providerSlug === 'aws' || providerSlug === 'gcp') {
+      if (resolvedProviderSlug === 'aws' || resolvedProviderSlug === 'gcp') {
         try {
           await fetch(
             `${apiUrl}/v1/cloud-security/detect-services/${connectionId}`,

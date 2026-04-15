@@ -121,7 +121,9 @@ export class PeopleController {
 
   @Get('devices')
   @RequirePermission('member', 'read')
-  @ApiOperation({ summary: 'Get all employee devices with fleet compliance data' })
+  @ApiOperation({
+    summary: 'Get all employee devices with fleet compliance data',
+  })
   async getDevices(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
@@ -143,12 +145,15 @@ export class PeopleController {
 
   @Get('test-stats/by-assignee')
   @RequirePermission('member', 'read')
-  @ApiOperation({ summary: 'Get integration test statistics grouped by assignee' })
+  @ApiOperation({
+    summary: 'Get integration test statistics grouped by assignee',
+  })
   async getTestStatsByAssignee(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const data = await this.peopleService.getTestStatsByAssignee(organizationId);
+    const data =
+      await this.peopleService.getTestStatsByAssignee(organizationId);
 
     return {
       data,
@@ -226,7 +231,9 @@ export class PeopleController {
 
   @Get('mentionable')
   @RequirePermission('member', 'read')
-  @ApiOperation({ summary: 'Get members who can read a specific resource type' })
+  @ApiOperation({
+    summary: 'Get members who can read a specific resource type',
+  })
   async getMentionableMembers(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
@@ -527,7 +534,9 @@ export class PeopleController {
   }
 
   @Put('me/email-preferences')
-  @ApiOperation({ summary: 'Update current user email notification preferences' })
+  @ApiOperation({
+    summary: 'Update current user email notification preferences',
+  })
   async updateEmailPreferences(
     @AuthContext() authContext: AuthContextType,
     @Body() body: UpdateEmailPreferencesDto,
@@ -538,9 +547,8 @@ export class PeopleController {
       );
     }
 
-    return this.peopleService.updateEmailPreferences(
-      authContext.userId,
-      { ...body.preferences },
-    );
+    return this.peopleService.updateEmailPreferences(authContext.userId, {
+      ...body.preferences,
+    });
   }
 }

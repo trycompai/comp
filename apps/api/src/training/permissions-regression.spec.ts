@@ -92,9 +92,7 @@ describe('Built-in role permissions — regression', () => {
     });
 
     it('should have trust read/update', () => {
-      expect(perms.trust).toEqual(
-        expect.arrayContaining(['read', 'update']),
-      );
+      expect(perms.trust).toEqual(expect.arrayContaining(['read', 'update']));
     });
 
     it('should have pentest create/read/delete', () => {
@@ -110,9 +108,7 @@ describe('Built-in role permissions — regression', () => {
     });
 
     it('should have portal read/update', () => {
-      expect(perms.portal).toEqual(
-        expect.arrayContaining(['read', 'update']),
-      );
+      expect(perms.portal).toEqual(expect.arrayContaining(['read', 'update']));
     });
 
     it('should have organization read/update/delete', () => {
@@ -172,9 +168,7 @@ describe('Built-in role permissions — regression', () => {
     });
 
     it('should have portal read/update', () => {
-      expect(perms.portal).toEqual(
-        expect.arrayContaining(['read', 'update']),
-      );
+      expect(perms.portal).toEqual(expect.arrayContaining(['read', 'update']));
     });
 
     it('should have pentest create/read/delete', () => {
@@ -253,9 +247,7 @@ describe('Built-in role permissions — regression', () => {
     });
 
     it('should have portal read/update', () => {
-      expect(perms.portal).toEqual(
-        expect.arrayContaining(['read', 'update']),
-      );
+      expect(perms.portal).toEqual(expect.arrayContaining(['read', 'update']));
     });
 
     it('should NOT have app access', () => {

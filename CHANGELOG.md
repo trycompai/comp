@@ -1,3 +1,137 @@
+## [3.22.2](https://github.com/trycompai/comp/compare/v3.22.1...v3.22.2) (2026-04-15)
+
+
+### Bug Fixes
+
+* **cloud-tests:** sync connection state between pages and fix reconnect flow ([c7368ea](https://github.com/trycompai/comp/commit/c7368eac0f9013dfcef7b8c5a8acab0f78c1f1c1))
+
+## [3.22.1](https://github.com/trycompai/comp/compare/v3.22.0...v3.22.1) (2026-04-15)
+
+
+### Bug Fixes
+
+* **browser-automation:** upgrade stagehand to support sonnet 4.6 for CUA ([cea0413](https://github.com/trycompai/comp/commit/cea04130e84c6a5078ae87f3591e6299fbf72cde))
+
+# [3.22.0](https://github.com/trycompai/comp/compare/v3.21.2...v3.22.0) (2026-04-14)
+
+
+### Bug Fixes
+
+* address PR review feedback ([e96e850](https://github.com/trycompai/comp/commit/e96e850de487fff5892788e0af36416e06127e2e))
+* align app AWS SDK versions to prevent @smithy/types mismatch ([75b66e0](https://github.com/trycompai/comp/commit/75b66e0b23dce9744a0893fedc10c4bf32b041dd))
+* **api:** add .js extension for NodeNext dynamic s3 import ([124112a](https://github.com/trycompai/comp/commit/124112aef2612dbedc87a36e77f08b51f4c0fde2))
+* **api:** centralize S3 presigner type workaround for API build ([d80fe8d](https://github.com/trycompai/comp/commit/d80fe8df495bfdab723b30e02e3aa8c6c881f356))
+* **api:** consolidate duplicate @/app/s3 imports ([8af79ca](https://github.com/trycompai/comp/commit/8af79cae265d155bebd86c0025811b536129f25e))
+* **api:** use relative path for dynamic import of S3 presigner ([068e487](https://github.com/trycompai/comp/commit/068e487f7ba43347914aa6380f3d465d20b2280d))
+* **app:** align reconnect cutoff with rollout timestamp ([59167fd](https://github.com/trycompai/comp/commit/59167fdcd8766ed94189581d7704ed3eaa78500a))
+* **app:** clarify integration setup CTA and guard empty setup forms ([a17674c](https://github.com/trycompai/comp/commit/a17674cb0b1162efb06fbb4b43918ba721e5f8a3))
+* **app:** keep dynamic integrations connectable without setup fields ([0b2e26e](https://github.com/trycompai/comp/commit/0b2e26e6e435d6ad4c5e5de3d8941470a872b134))
+* **app:** make cloud reconnect cutoff exclusive ([fdfc5eb](https://github.com/trycompai/comp/commit/fdfc5eb3e9ca217df78193b08279bb53ae5d6015))
+* **app:** unblock GCP reconnect flow from integrations detail ([fd9e041](https://github.com/trycompai/comp/commit/fd9e041ef53523797e8cb376634665d8698c6c56))
+* **auth:** validate x-user-id header against organization membership ([e3d477c](https://github.com/trycompai/comp/commit/e3d477c5cd902af303d5f671d673949d7deddaf6))
+* cast getSignedUrl through unknown to bypass private property check ([efdfac4](https://github.com/trycompai/comp/commit/efdfac4f46c535b36fcf719f785fefbe10148099))
+* centralize S3 presigner workaround for all files ([c3b6828](https://github.com/trycompai/comp/commit/c3b6828a20bcea6cc2d306de636c41bd6807e546))
+* **cloud-security:** add all missing fields to BatchRemediationDialog types ([d9f7577](https://github.com/trycompai/comp/commit/d9f7577881dd1628b6b12b58a5702c4bcf44d2e0))
+* **cloud-security:** add needs_permissions to FindingStatus type ([ee9ba3e](https://github.com/trycompai/comp/commit/ee9ba3ef8eb1d74e76295425d1ce4c56f8cf5bd8))
+* **cloud-security:** add retrying and waiting_for_permissions to BatchProgress phase ([31339c5](https://github.com/trycompai/comp/commit/31339c59e8e57b00fc802422fc08c2d8c26a51bb))
+* **cloud-security:** address Bugbot review findings ([d2a3a20](https://github.com/trycompai/comp/commit/d2a3a20b0d96eef1c8d70b50c2489734d44ed5a5))
+* **cloud-security:** address CodeQL URL sanitization and role escalation ([40d18f8](https://github.com/trycompai/comp/commit/40d18f81daa3487b83090ef1791cf113cd8c8ab9))
+* **cloud-security:** address final Bugbot review findings ([8714be2](https://github.com/trycompai/comp/commit/8714be26db26a5fcfaa7203e9dbb644c644583eb))
+* **cloud-security:** address remaining review findings ([f1c0d1e](https://github.com/trycompai/comp/commit/f1c0d1e4c5452d0e2a1bae795543c8718b79c030))
+* **cloud-security:** catch async poll exceptions in Azure executor ([6a95756](https://github.com/trycompai/comp/commit/6a95756a3a92fb2a50d11e1bedece765bdf67e4f))
+* **cloud-security:** clone rollback step params before execution ([0def030](https://github.com/trycompai/comp/commit/0def030302746496059f8803915f90c7c3c05f8f))
+* **cloud-security:** don't re-enable user-disabled services on scan ([85f9fa6](https://github.com/trycompai/comp/commit/85f9fa6e1ceacd33a1cf0c745f489b9205ada196))
+* **cloud-security:** fix IAM baseline service ID mismatch ([5a122c1](https://github.com/trycompai/comp/commit/5a122c1c74ba715c5e0c8888e437d0e16650585c))
+* **cloud-security:** fix no-op auto-enable and undefined step in validation error ([8077963](https://github.com/trycompai/comp/commit/80779638bdfe8895ff8e3eda485a480b77b67a8e))
+* **cloud-security:** fix plan cache key, wildcard IAM, and async poll ([9e6e7ec](https://github.com/trycompai/comp/commit/9e6e7ece7a37a818a8dfad820d697f9b1dc19f69))
+* **cloud-security:** fix PROVIDER_FIELDS type for multi-provider support ([dcce094](https://github.com/trycompai/comp/commit/dcce09435557d7b9a3cd18574ed32a4b939e2beb))
+* **cloud-security:** fix undeclared userId crash and ARM token for Graph ([da842d3](https://github.com/trycompai/comp/commit/da842d34377030c201d65404479e625dcb0dd0bf))
+* **cloud-security:** guard against undefined rollback steps in Azure executor ([0ce8f53](https://github.com/trycompai/comp/commit/0ce8f53d2fae358d77c96466d9fe22c209e62061))
+* **cloud-security:** handle 'system' user ID in activity service ([103e052](https://github.com/trycompai/comp/commit/103e052322ddd179894808be570999583d1036ce))
+* **cloud-security:** handle malformed AI-generated URLs in GCP preview ([7f0fc14](https://github.com/trycompai/comp/commit/7f0fc147b4a34fbe6c69c562a76dab86109b3a9f))
+* **cloud-security:** handle non-JSON success responses in Azure executor ([6cdf207](https://github.com/trycompai/comp/commit/6cdf207c7b2ce2332479fba884a593e51383efcf))
+* **cloud-security:** map 'info' severity to 'low' risk in fallback plans ([33eab2e](https://github.com/trycompai/comp/commit/33eab2e809b1409e495445047f5c03d1b6c07a44))
+* **cloud-security:** remove Azure self-healing role grant entirely ([93a7f80](https://github.com/trycompai/comp/commit/93a7f80752d0817203b489669fb665bdcc4e32e5))
+* **cloud-security:** remove redundant needs_permissions check in retry else branch ([aef367b](https://github.com/trycompai/comp/commit/aef367bc8f51e4c3d91c08671a35fc8df92ec76e))
+* **cloud-security:** remove unused @UserId from scan, validate subscriptionId ([3210003](https://github.com/trycompai/comp/commit/3210003ee62933909dad147147cf05b313447675))
+* **cloud-security:** replace undeclared findingsResponse with onComplete ([02efe58](https://github.com/trycompai/comp/commit/02efe58cc380a67dfb46e51f09cc15f65b4e7c4f))
+* **cloud-security:** return correct verification status in API response ([5e69ea3](https://github.com/trycompai/comp/commit/5e69ea33f8647b6afbbfd5b947248aeba64d76dc))
+* **cloud-security:** scope check result queries by connection ([0f279a4](https://github.com/trycompai/comp/commit/0f279a4941cbf19b644339ede0a69b721a14dc94))
+* **cloud-security:** tighten Azure provider namespace regex ([0cdd2f1](https://github.com/trycompai/comp/commit/0cdd2f113a79320283016c662cbfbe601258116c))
+* **cloud-security:** type batch-fix API response to fix Vercel build ([c2eec97](https://github.com/trycompai/comp/commit/c2eec97ccef6ec59b95183eb1a10c1ceb3397cfc))
+* **cloud-security:** use @db/server import in remediate-batch task ([827ca8d](https://github.com/trycompai/comp/commit/827ca8d2888fb504cb9570bb18ed9ffb467989cf))
+* **cloud-security:** use composite plan cache key for AWS remediation ([218f386](https://github.com/trycompai/comp/commit/218f3865c61c97d7ec2c6a04e34332048c750378))
+* **cloud-security:** validate all step URLs in executors and add cache eviction ([8121b35](https://github.com/trycompai/comp/commit/8121b35bf92d45830572d092218e5040f2f512af))
+* **cloud-security:** validate Azure fix plan URLs before execution ([c4cefd5](https://github.com/trycompai/comp/commit/c4cefd5cbb3300756cba76ba9acb26c184926d00))
+* **cloud-security:** validate poll URLs and fix audit log FK violation ([de30e65](https://github.com/trycompai/comp/commit/de30e6559cb7e143c7c7f806bd6b5ee59c1d07ef))
+* **cloud-security:** write scan audit logs for session users ([2edb05e](https://github.com/trycompai/comp/commit/2edb05e1d546af66059e9068b75aaa9a30c457d4))
+* **cloud-tests:** keep gcp setup guide stable during focus revalidation ([2632b5d](https://github.com/trycompai/comp/commit/2632b5ddf53c64821e850d58d6a789fe2647a34d))
+* **cloud:** avoid false gcp api-enable failures when already enabled ([a4c3200](https://github.com/trycompai/comp/commit/a4c3200d85a7eb691bb2411a55be6b8c4d33eea3))
+* **cloud:** classify getIamPolicy permission errors correctly ([a48c33a](https://github.com/trycompai/comp/commit/a48c33a40aa249cf43a58859ed3ff2964bd9b741))
+* **cloud:** clear reconnect warning after successful OAuth reconnect ([4faab40](https://github.com/trycompai/comp/commit/4faab4001988e4934fec98cca1f5c7427ae07b09))
+* **cloud:** correctly flag legacy connections for reconnect ([4672ea2](https://github.com/trycompai/comp/commit/4672ea201ce4a7a7a986bd37389b5e56be6e90ee))
+* **cloud:** harden gcp setup copy + preserve iam etag ([0d40b2e](https://github.com/trycompai/comp/commit/0d40b2e26fefda506fa915134dcf991f42d14036))
+* **cloud:** honor gcp service toggles and preserve detection state ([77625ec](https://github.com/trycompai/comp/commit/77625ec616d16542f6f01ffd28b60d8761cea840))
+* **frameworks:** add PCI DSS Level 1 badge mapping ([#2529](https://github.com/trycompai/comp/issues/2529)) ([79af8b2](https://github.com/trycompai/comp/commit/79af8b22546a44066afa6ceed49e55a778f6e85c))
+* **gcp-setup:** detect api permission errors from raw response ([c863826](https://github.com/trycompai/comp/commit/c8638264fb0f3d34cd596fd35a80734b73d32408))
+* **gcp-ux:** show detection state and keep setup status accessible ([0e2c1e1](https://github.com/trycompai/comp/commit/0e2c1e123f39f29bcbe04ad731d3b09987131880))
+* **gcp:** capability-based setup checks and stable provider connection pick ([fe27546](https://github.com/trycompai/comp/commit/fe275460f4a1d90ee8847bdc9d2de793dc2056dd))
+* **github:** classify 2fa check permission errors precisely ([558ae63](https://github.com/trycompai/comp/commit/558ae63d5160acd70f2173a0a2a0abd69d148bdc))
+* **github:** handle org-owner 2FA filter failures ([50bc650](https://github.com/trycompai/comp/commit/50bc65038548f732c1fdcc5a0c3815502a7288b3))
+* **integrations:** default gcp services to enabled before detection data ([39e38b0](https://github.com/trycompai/comp/commit/39e38b0e39c0171bc1b545e9fcf7f65f752182a7))
+* **integrations:** hide AI Agent integrations from integrations list ([f25649d](https://github.com/trycompai/comp/commit/f25649dee4c3feb4f3280cb6a80c4117fdd40e3f))
+* **integrations:** make tooltip task names clickable links ([4ef60e7](https://github.com/trycompai/comp/commit/4ef60e7415d06fbf2b053eb6ea12b37d75c06525))
+* **integrations:** sort connected integrations to top of the list ([b63823f](https://github.com/trycompai/comp/commit/b63823f9185e51553a050ca2d9928fe6df5b52e9))
+* keep read:org scope, don't escalate to admin:org ([667809d](https://github.com/trycompai/comp/commit/667809d590d4718763e187ed1c7f356f5cb3e897))
+* pin client-s3 and s3-request-presigner to 3.1013.0 ([4372e40](https://github.com/trycompai/comp/commit/4372e407537e191dbf51b2b6870ef8f040d29903))
+* **portal:** apply S3 presigner type workaround for portal build ([7920e9b](https://github.com/trycompai/comp/commit/7920e9b95a500cc02c84564728f43433a674dfc8))
+* preserve trust favicon branding in token flows ([249e478](https://github.com/trycompai/comp/commit/249e478f83af211b49ade4ca68044aa186d7b7a0))
+* remove root-level AWS SDK pins that break app's s3-request-presigner ([0fdf078](https://github.com/trycompai/comp/commit/0fdf078fc0cdf751ef47adec2600f4176061518d))
+* restore .superpowers/* gitignore and separate .claude/worktrees ([96a5e0c](https://github.com/trycompai/comp/commit/96a5e0cc4390a81319aaa19d2fd7248b03809a40))
+* **tasks:** fallback monitor name in disconnect dialog ([95abc27](https://github.com/trycompai/comp/commit/95abc2761cb476f84a80a7a703e9e44adeea5cf6))
+* **tasks:** show integration monitor service names ([47e78bf](https://github.com/trycompai/comp/commit/47e78bf64b87a1adea453af9f205d5025e5d1d4c))
+* treat pending/error/paused connections as established in sort ([6e17ff3](https://github.com/trycompai/comp/commit/6e17ff38806c9df32ecb628459824cfd2b36cc67))
+* **trust:** update PCI DSS trust portal badge icon ([10b3959](https://github.com/trycompai/comp/commit/10b3959c7b1d8277fd07db82dbeb49701cbca232))
+* **types:** align connection services api response with SWR contract ([223b83f](https://github.com/trycompai/comp/commit/223b83ff2378072fe491274c87f3489e6c588b67))
+* workaround S3 presigner type mismatch from duplicate [@smithy](https://github.com/smithy) copies ([bde6fcc](https://github.com/trycompai/comp/commit/bde6fcccdd9f089f8854c3367191e3ec59b3e112))
+* wrap Tooltip in TooltipProvider to prevent runtime error ([1813085](https://github.com/trycompai/comp/commit/1813085c6c52a9b7f52f896e65264f1536c675a2))
+
+
+### Features
+
+* **app:** flag old cloud connections for reconnect ([442cc0b](https://github.com/trycompai/comp/commit/442cc0b113bf2269bda1b3aa25b82362c88250a9))
+* **cloud-security:** cloud tests v2 — services, remediation, and multi-provider adapters ([76d2539](https://github.com/trycompai/comp/commit/76d25399659ebf61dc58d9e3a4253432578ac3fc))
+* **cloud:** add actionable resolve flow for gcp setup steps ([b2446d7](https://github.com/trycompai/comp/commit/b2446d7fa669ea11b2605bcd21c7c1b2cefc2f22))
+* default policy lists to alphabetical order ([788fdb0](https://github.com/trycompai/comp/commit/788fdb0a52090e72a7aece8687567fd7ce278ee3))
+* **documents:** add warning alerts in CompanySubmissionWizard for pre-filled content and enhance DocumentFindingsSection with Empty state ([fceaaa8](https://github.com/trycompai/comp/commit/fceaaa81c6b01c25c9d069609679ab048078ba0d))
+* **gcp:** multi-project scoping for scans, services, and remediation ([e567ba1](https://github.com/trycompai/comp/commit/e567ba1f2a21a70eb316e023366bdc470cd12f53))
+* **github:** add 2FA enforcement check ([090eb62](https://github.com/trycompai/comp/commit/090eb626eb77bf4fabd97d260460b1e6a13b5b15))
+* **github:** include full 2fa username list in summary ([30d09c4](https://github.com/trycompai/comp/commit/30d09c46d4cda7afc2804cd398e8b6ab944ed040))
+* **integrations:** add tooltip to "+N more" badge showing remaining task names ([0ad7d7a](https://github.com/trycompai/comp/commit/0ad7d7abc5d819e10bdb11bb906aa7af93d8f8ad))
+* prioritize vendor-listed integrations ([f93f401](https://github.com/trycompai/comp/commit/f93f401d63e4b10d8e32568ae8c38456c027cb0d))
+* show full framework list in finding type dropdown ([bcb4ef7](https://github.com/trycompai/comp/commit/bcb4ef73e9633dc57f5da15ee47e2ecc3c6cd52b))
+* **tasks:** add approverId to task update in SingleTask component ([#2518](https://github.com/trycompai/comp/issues/2518)) ([8785c18](https://github.com/trycompai/comp/commit/8785c1853623df90a6cccf5833b0d069d057cc31))
+
+
+### Performance Improvements
+
+* **github:** avoid full member scan for 2fa summary ([592cea7](https://github.com/trycompai/comp/commit/592cea7d19fa4d3bd2ff9296474040c274ae4a72))
+
+## [3.21.2](https://github.com/trycompai/comp/compare/v3.21.1...v3.21.2) (2026-04-13)
+
+
+### Bug Fixes
+
+* **trust:** update PCI DSS trust portal badge icon ([d2e7fdf](https://github.com/trycompai/comp/commit/d2e7fdfb5bf21c42141250fadb15c8ccc5aa6bc9))
+
+## [3.21.1](https://github.com/trycompai/comp/compare/v3.21.0...v3.21.1) (2026-04-13)
+
+
+### Bug Fixes
+
+* **frameworks:** add PCI DSS Level 1 badge mapping ([a5a7f80](https://github.com/trycompai/comp/commit/a5a7f80db5fa9eea161e81ec0f30ca9fdcd9cd11))
+* **frameworks:** support PCI DSS badge name variants ([24fe953](https://github.com/trycompai/comp/commit/24fe953974779f7a985a69aa731df094754dea4a))
+
 # [3.21.0](https://github.com/trycompai/comp/compare/v3.20.2...v3.21.0) (2026-04-10)
 
 

@@ -66,7 +66,10 @@ export class PeopleService {
     // Collect all unique role names across members
     const allRoleNames = new Set<string>();
     for (const member of members) {
-      const roles = member.role.split(',').map((r) => r.trim()).filter(Boolean);
+      const roles = member.role
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean);
       for (const role of roles) {
         allRoleNames.add(role);
       }
@@ -92,16 +95,20 @@ export class PeopleService {
         where: { organizationId, name: { in: customRoleNames } },
       });
       for (const role of customRoles) {
-        const perms = typeof role.permissions === 'string'
-          ? JSON.parse(role.permissions) as Record<string, string[]>
-          : role.permissions as Record<string, string[]>;
+        const perms =
+          typeof role.permissions === 'string'
+            ? (JSON.parse(role.permissions) as Record<string, string[]>)
+            : (role.permissions as Record<string, string[]>);
         permissionMap.set(role.name, perms);
       }
     }
 
     // Filter members whose combined permissions include the required permission
     return members.filter((member) => {
-      const roles = member.role.split(',').map((r) => r.trim()).filter(Boolean);
+      const roles = member.role
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean);
       for (const role of roles) {
         const perms = permissionMap.get(role);
         if (perms && perms[resource]?.includes('read')) {
@@ -476,7 +483,10 @@ export class PeopleService {
         );
       }
 
-      const updatedMember = await MemberQueries.unlinkDevice(memberId, organizationId);
+      const updatedMember = await MemberQueries.unlinkDevice(
+        memberId,
+        organizationId,
+      );
 
       this.logger.log(
         `Unlinked device for member: ${updatedMember.user.name} (${memberId})`,

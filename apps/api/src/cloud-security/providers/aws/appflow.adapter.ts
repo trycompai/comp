@@ -26,9 +26,7 @@ export class AppFlowAdapter implements AwsServiceAdapter {
       let nextToken: string | undefined;
 
       do {
-        const listRes = await client.send(
-          new ListFlowsCommand({ nextToken }),
-        );
+        const listRes = await client.send(new ListFlowsCommand({ nextToken }));
 
         for (const flow of listRes.flows ?? []) {
           const flowName = flow.flowName;

@@ -5,7 +5,9 @@ import type { CredentialVaultService } from '../integration-platform/services/cr
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
 import { SecurityPenetrationTestsService } from './security-penetration-tests.service';
 
-const mockCredentialVaultService: jest.Mocked<Pick<CredentialVaultService, 'getDecryptedCredentials'>> = {
+const mockCredentialVaultService: jest.Mocked<
+  Pick<CredentialVaultService, 'getDecryptedCredentials'>
+> = {
   getDecryptedCredentials: jest.fn(),
 };
 
@@ -52,12 +54,13 @@ type MockDb = {
 describe('SecurityPenetrationTestsService', () => {
   const originalFetch = global.fetch;
   const originalMacedApiKey = process.env.MACED_API_KEY;
-  const originalWebhookBase = process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL;
+  const originalWebhookBase =
+    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL;
   const defaultWebhookToken = 'test-webhook-token';
   const defaultWebhookTokenHash = createHash('sha256')
     .update(defaultWebhookToken)
     .digest('hex');
-  const fetchMock = jest.fn() as jest.Mock;
+  const fetchMock = jest.fn();
   const mockedDb = db as unknown as MockDb;
   let service: SecurityPenetrationTestsService;
 
@@ -130,7 +133,8 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   it('creates report payload with resolved webhook URL', async () => {
-    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL = 'https://api.trycomp.ai/webhook';
+    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL =
+      'https://api.trycomp.ai/webhook';
     const expectedPayload = {
       id: 'run_456',
       status: 'provisioning',
@@ -150,7 +154,10 @@ describe('SecurityPenetrationTestsService', () => {
     await service.createReport('org_123', payload);
 
     const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
+    const requestBody = JSON.parse(options.body as string) as Record<
+      string,
+      unknown
+    >;
 
     expect(requestBody.webhookUrl).toBe(
       'https://api.trycomp.ai/webhook/v1/security-penetration-tests/webhook',
@@ -158,7 +165,10 @@ describe('SecurityPenetrationTestsService', () => {
     expect(requestBody.targetUrl).toBe(payload.targetUrl);
     expect(requestBody.repoUrl).toBe(payload.repoUrl);
     expect(requestBody.testMode).toBe(true);
-    expect(requestBody).not.toHaveProperty('webhookUrl', 'https://report-callback.example.com/webhook');
+    expect(requestBody).not.toHaveProperty(
+      'webhookUrl',
+      'https://report-callback.example.com/webhook',
+    );
     expect(mockedDb.secret.upsert).toHaveBeenCalledTimes(1);
     expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledTimes(1);
   });
@@ -183,7 +193,10 @@ describe('SecurityPenetrationTestsService', () => {
     });
 
     const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
+    const requestBody = JSON.parse(options.body as string) as Record<
+      string,
+      unknown
+    >;
 
     expect(requestBody.webhookUrl).toBe(
       'https://api.trycomp.ai/v1/security-penetration-tests/webhook',
@@ -354,17 +367,13 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   it('returns empty list for empty payload', async () => {
-    fetchMock.mockResolvedValueOnce(
-      new Response('', { status: 200 }),
-    );
+    fetchMock.mockResolvedValueOnce(new Response('', { status: 200 }));
 
     await expect(service.listReports('org_123')).resolves.toEqual([]);
   });
 
   it('maps invalid list payload to bad gateway', async () => {
-    fetchMock.mockResolvedValueOnce(
-      new Response('not-json', { status: 200 }),
-    );
+    fetchMock.mockResolvedValueOnce(new Response('not-json', { status: 200 }));
 
     await expect(service.listReports('org_123')).rejects.toEqual(
       expect.objectContaining({
@@ -382,7 +391,8 @@ describe('SecurityPenetrationTestsService', () => {
       status: 'provisioning',
       webhookToken: 'provider-token',
     };
-    const webhookUrl = 'https://app.company.test/security-penetration-tests/webhook';
+    const webhookUrl =
+      'https://app.company.test/security-penetration-tests/webhook';
 
     process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL = webhookUrl;
 
@@ -399,9 +409,14 @@ describe('SecurityPenetrationTestsService', () => {
     await service.createReport('org_123', payload);
 
     const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
+    const requestBody = JSON.parse(options.body as string) as Record<
+      string,
+      unknown
+    >;
 
-    expect(requestBody.webhookUrl).toBe('https://app.company.test/v1/security-penetration-tests/webhook');
+    expect(requestBody.webhookUrl).toBe(
+      'https://app.company.test/v1/security-penetration-tests/webhook',
+    );
   });
 
   it('allows third-party webhook URLs without requiring provider webhook token', async () => {
@@ -428,7 +443,10 @@ describe('SecurityPenetrationTestsService', () => {
     );
 
     const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
+    const requestBody = JSON.parse(options.body as string) as Record<
+      string,
+      unknown
+    >;
 
     expect(requestBody.webhookUrl).toBe(
       'https://external-webhook.example.com/callback/v1/security-penetration-tests/webhook',
@@ -457,7 +475,10 @@ describe('SecurityPenetrationTestsService', () => {
     });
 
     const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
+    const requestBody = JSON.parse(options.body as string) as Record<
+      string,
+      unknown
+    >;
 
     expect(requestBody.webhookUrl).toBe(
       'https://app.company.test/v1/security-penetration-tests/webhook?foo=bar',
@@ -470,7 +491,8 @@ describe('SecurityPenetrationTestsService', () => {
       status: 'provisioning',
     };
 
-    const webhookUrl = 'https://app.company.test/v1/security-penetration-tests/webhook?foo=bar';
+    const webhookUrl =
+      'https://app.company.test/v1/security-penetration-tests/webhook?foo=bar';
 
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify(expectedPayload), { status: 200 }),
@@ -483,9 +505,14 @@ describe('SecurityPenetrationTestsService', () => {
     });
 
     const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
+    const requestBody = JSON.parse(options.body as string) as Record<
+      string,
+      unknown
+    >;
 
-    expect(requestBody.webhookUrl).toBe('https://app.company.test/v1/security-penetration-tests/webhook?foo=bar');
+    expect(requestBody.webhookUrl).toBe(
+      'https://app.company.test/v1/security-penetration-tests/webhook?foo=bar',
+    );
   });
 
   it('supports absolute webhook URLs that require appending the expected endpoint', async () => {
@@ -505,9 +532,14 @@ describe('SecurityPenetrationTestsService', () => {
     });
 
     const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
+    const requestBody = JSON.parse(options.body as string) as Record<
+      string,
+      unknown
+    >;
 
-    expect(requestBody.webhookUrl).toBe('https://callback.example.com/hook/v1/security-penetration-tests/webhook');
+    expect(requestBody.webhookUrl).toBe(
+      'https://callback.example.com/hook/v1/security-penetration-tests/webhook',
+    );
   });
 
   it('strips webhookToken query parameter before forwarding webhook URL to provider', async () => {
@@ -530,7 +562,10 @@ describe('SecurityPenetrationTestsService', () => {
     });
 
     const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<string, unknown>;
+    const requestBody = JSON.parse(options.body as string) as Record<
+      string,
+      unknown
+    >;
 
     expect(requestBody.webhookUrl).toBe(
       'https://callback.example.com/hook/v1/security-penetration-tests/webhook?foo=bar',
@@ -805,7 +840,10 @@ describe('SecurityPenetrationTestsService', () => {
       }),
     );
 
-    const output = await service.getReportOutput('org_123', 'run_output_no_type');
+    const output = await service.getReportOutput(
+      'org_123',
+      'run_output_no_type',
+    );
 
     expect(output.contentType).toBe('text/markdown; charset=utf-8');
     expect(output.contentDisposition).toBeNull();
@@ -849,9 +887,7 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   it('maps empty get report response to bad gateway', async () => {
-    fetchMock.mockResolvedValueOnce(
-      new Response('', { status: 200 }),
-    );
+    fetchMock.mockResolvedValueOnce(new Response('', { status: 200 }));
 
     await expect(service.getReport('org_123', 'run_123')).rejects.toEqual(
       expect.objectContaining({
@@ -864,11 +900,11 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   it('maps empty get progress response to bad gateway', async () => {
-    fetchMock.mockResolvedValueOnce(
-      new Response('', { status: 200 }),
-    );
+    fetchMock.mockResolvedValueOnce(new Response('', { status: 200 }));
 
-    await expect(service.getReportProgress('org_123', 'run_123')).rejects.toEqual(
+    await expect(
+      service.getReportProgress('org_123', 'run_123'),
+    ).rejects.toEqual(
       expect.objectContaining({
         status: HttpStatus.BAD_GATEWAY,
         response: {
@@ -879,11 +915,11 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   it('maps invalid report progress payload to bad gateway', async () => {
-    fetchMock.mockResolvedValueOnce(
-      new Response('nope', { status: 200 }),
-    );
+    fetchMock.mockResolvedValueOnce(new Response('nope', { status: 200 }));
 
-    await expect(service.getReportProgress('org_123', 'run_123')).rejects.toEqual(
+    await expect(
+      service.getReportProgress('org_123', 'run_123'),
+    ).rejects.toEqual(
       expect.objectContaining({
         status: HttpStatus.BAD_GATEWAY,
         response: {
@@ -930,7 +966,9 @@ describe('SecurityPenetrationTestsService', () => {
     );
     expect(output.buffer).toEqual(Buffer.from(fixtureBuffer));
     expect(output.contentType).toBe('application/pdf');
-    expect(output.contentDisposition).toBe('attachment; filename="penetration-test-run_pdf.pdf"');
+    expect(output.contentDisposition).toBe(
+      'attachment; filename="penetration-test-run_pdf.pdf"',
+    );
   });
 
   it('throws a mapped HttpException for failed provider calls', async () => {

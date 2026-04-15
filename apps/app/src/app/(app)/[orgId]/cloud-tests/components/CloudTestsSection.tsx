@@ -39,21 +39,7 @@ import { GcpSetupGuide } from './GcpSetupGuide';
 import { RemediationDialog } from './RemediationDialog';
 import { ScheduledScanPopover } from './ScheduledScanPopover';
 
-interface Finding {
-  id: string;
-  title: string | null;
-  description: string | null;
-  remediation: string | null;
-  status: string | null;
-  severity: string | null;
-  serviceId: string | null;
-  findingKey: string | null;
-  resourceId: string | null;
-  completedAt: Date | null;
-  connectionId: string;
-  providerSlug: string;
-  integration: { integrationId: string };
-}
+import type { Finding } from '../types';
 
 interface RemediationCapabilities {
   enabled: boolean;
@@ -184,6 +170,7 @@ export function CloudTestsSection({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [severityFilter, setSeverityFilter] = useState<string | null>(null);
+  const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [capabilities, setCapabilities] =
     useState<RemediationCapabilities | null>(null);
@@ -208,6 +195,8 @@ export function CloudTestsSection({
   const allFindings = Array.isArray(findingsResponse.data?.data?.data)
     ? findingsResponse.data.data.data
     : [];
+  const hasLoadedFindings =
+    findingsResponse.data !== undefined || findingsResponse.error !== undefined;
 
   // Load remediation capabilities for the selected connection
   useEffect(() => {
@@ -258,11 +247,28 @@ export function CloudTestsSection({
         (f) =>
           f.providerSlug === providerSlug || f.connectionId === connectionId,
       )
+      .filter(
+        (f) => !projectFilter || f.projectDisplayName === projectFilter,
+      )
       .sort(
         (a, b) =>
           (SEVERITY_ORDER[a.severity ?? 'info'] ?? 5) -
           (SEVERITY_ORDER[b.severity ?? 'info'] ?? 5),
       );
+  }, [allFindings, providerSlug, connectionId, projectFilter]);
+
+  // Unique project names across all findings (for filter pills)
+  const projectNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const f of allFindings) {
+      if (
+        (f.providerSlug === providerSlug || f.connectionId === connectionId) &&
+        f.projectDisplayName
+      ) {
+        names.add(f.projectDisplayName);
+      }
+    }
+    return [...names].sort((a, b) => a.localeCompare(b));
   }, [allFindings, providerSlug, connectionId]);
 
   const failedFindings = findings.filter(
@@ -325,8 +331,12 @@ export function CloudTestsSection({
 
   // Split into baseline (security fundamentals) vs service-specific
   const BASELINE_SERVICE_IDS = new Set(['cloudtrail', 'config', 'guardduty', 'iam', 'cloudwatch', 'kms']);
-  const baselineGroups = serviceGroups.filter((g) => BASELINE_SERVICE_IDS.has(g.serviceId));
-  const regularGroups = serviceGroups.filter((g) => !BASELINE_SERVICE_IDS.has(g.serviceId));
+  const baselineGroups = providerSlug === 'aws'
+    ? serviceGroups.filter((g) => BASELINE_SERVICE_IDS.has(g.serviceId))
+    : [];
+  const regularGroups = providerSlug === 'aws'
+    ? serviceGroups.filter((g) => !BASELINE_SERVICE_IDS.has(g.serviceId))
+    : serviceGroups;
 
   const severityCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -479,6 +489,54 @@ export function CloudTestsSection({
         </div>
       </div>
 
+      {/* Selected projects indicator (GCP) */}
+      {providerSlug === 'gcp' && (() => {
+        const ids = Array.isArray(variables?.project_ids)
+          ? (variables.project_ids as string[])
+          : [];
+        const savedNames = (variables?.project_names ?? {}) as Record<string, string>;
+        return ids.length > 0 ? (
+          <div className="flex items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2.5">
+            <svg className="h-3.5 w-3.5 shrink-0 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+            </svg>
+            <span className="text-xs text-muted-foreground shrink-0">{ids.length} project{ids.length > 1 ? 's' : ''}:</span>
+            <div className="flex flex-wrap gap-1.5 min-w-0">
+              {ids.map((id: string) => {
+                const name = savedNames[id];
+                return (
+                  <span key={id} className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px]">
+                    <span className="font-medium">{name ?? id}</span>
+                    {name && <span className="text-muted-foreground">{id}</span>}
+                  </span>
+                );
+              })}
+            </div>
+            <a
+              href={`/${orgId}/integrations/gcp`}
+              className="ml-auto text-[11px] font-medium text-primary hover:underline shrink-0"
+            >
+              Change
+            </a>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2.5">
+            <div className="flex items-center gap-2">
+              <svg className="h-3.5 w-3.5 shrink-0 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+              <span className="text-xs text-muted-foreground">No projects selected — select projects to scope your scan.</span>
+            </div>
+            <a
+              href={`/${orgId}/integrations/gcp`}
+              className="text-[11px] font-medium text-primary hover:underline shrink-0"
+            >
+              Select projects
+            </a>
+          </div>
+        );
+      })()}
+
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
         <StatCard
@@ -538,6 +596,42 @@ export function CloudTestsSection({
                 </button>
               ) : null,
             )}
+        </div>
+      )}
+
+      {/* Project filter (GCP multi-project) */}
+      {projectNames.length > 1 && (
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50 mr-1">
+            Project
+          </span>
+          <button
+            type="button"
+            onClick={() => setProjectFilter(null)}
+            className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+              !projectFilter
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            All
+          </button>
+          {projectNames.map((name) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() =>
+                setProjectFilter(projectFilter === name ? null : name)
+              }
+              className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors truncate max-w-[10rem] ${
+                projectFilter === name
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {name}
+            </button>
+          ))}
         </div>
       )}
 
@@ -669,7 +763,7 @@ export function CloudTestsSection({
             <div className="flex-1 border-t border-border/50" />
           </div>
           <p className="text-xs text-muted-foreground -mt-1">
-            Core security checks that apply to every AWS account, regardless of which services you use.
+            Core security checks that apply to every cloud account, regardless of which services you use.
           </p>
           {baselineGroups.map((group) => {
             const isGroupExpanded = expandedGroups.has(group.serviceId);
@@ -802,13 +896,19 @@ export function CloudTestsSection({
       )}
 
       {/* Empty state — never scanned */}
-      {findings.length === 0 && !findingsResponse.isValidating && !lastRunAt && !scanCompleted && !scanError && (
+      {hasLoadedFindings && findings.length === 0 && !lastRunAt && !scanCompleted && !scanError && (
         providerSlug === 'gcp' ? (
           <GcpSetupGuide
             connectionId={connectionId}
             hasOrgId={Boolean(variables?.organization_id)}
+            hasSelectedProjects={
+              Array.isArray(variables?.project_ids)
+                ? (variables.project_ids as string[]).length > 0
+                : Boolean(variables?.project_id)
+            }
             onRunScan={handleRunScan}
             isScanning={isScanning}
+            orgId={orgId}
           />
         ) : providerSlug === 'azure' ? (
           <AzureSetupGuide
@@ -913,6 +1013,7 @@ export function CloudTestsSection({
           loadCapabilities();
         }}
       />
+
     </div>
   );
 }
@@ -1187,7 +1288,7 @@ function FindingRow({
         onClick={(e) => {
           // Don't toggle if user clicked a button or interactive element
           const target = e.target as HTMLElement;
-          if (target.closest('button') || target.closest('a') || target.closest('[role="button"]') || target.tagName === 'BUTTON') return;
+          if (target.closest('button') || target.closest('a') || target.tagName === 'BUTTON') return;
           onToggle();
         }}
         onKeyDown={(e) => {
@@ -1208,6 +1309,11 @@ function FindingRow({
         <span className="min-w-0 flex-1 truncate">
           {finding.title ?? 'Untitled finding'}
         </span>
+        {finding.projectDisplayName && (
+          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            {finding.projectDisplayName}
+          </span>
+        )}
         <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
           {renderFixButton()}
         </span>

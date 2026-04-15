@@ -54,11 +54,28 @@ export class GlueAdapter implements AwsServiceAdapter {
 
       if (encSettings?.CatalogEncryptionMode === 'DISABLED') {
         findings.push(
-          this.makeFinding(catalogId, 'AwsGlueCatalog', 'Data catalog not encrypted', `Glue Data Catalog in ${region} does not have encryption at rest enabled`, 'medium', { catalogEncryptionMode: encSettings.CatalogEncryptionMode }, false, `Use glue:PutDataCatalogEncryptionSettingsCommand with DataCatalogEncryptionSettings.EncryptionAtRest.CatalogEncryptionMode set to 'SSE-KMS' and SseAwsKmsKeyId set to a KMS key ARN. Rollback: use glue:PutDataCatalogEncryptionSettingsCommand with CatalogEncryptionMode set to 'DISABLED'. Note: disabling encryption does not decrypt existing encrypted objects.`),
+          this.makeFinding(
+            catalogId,
+            'AwsGlueCatalog',
+            'Data catalog not encrypted',
+            `Glue Data Catalog in ${region} does not have encryption at rest enabled`,
+            'medium',
+            { catalogEncryptionMode: encSettings.CatalogEncryptionMode },
+            false,
+            `Use glue:PutDataCatalogEncryptionSettingsCommand with DataCatalogEncryptionSettings.EncryptionAtRest.CatalogEncryptionMode set to 'SSE-KMS' and SseAwsKmsKeyId set to a KMS key ARN. Rollback: use glue:PutDataCatalogEncryptionSettingsCommand with CatalogEncryptionMode set to 'DISABLED'. Note: disabling encryption does not decrypt existing encrypted objects.`,
+          ),
         );
       } else {
         findings.push(
-          this.makeFinding(catalogId, 'AwsGlueCatalog', 'Data catalog encryption enabled', `Glue Data Catalog in ${region} has encryption at rest enabled (${encSettings?.CatalogEncryptionMode})`, 'info', { catalogEncryptionMode: encSettings?.CatalogEncryptionMode }, true),
+          this.makeFinding(
+            catalogId,
+            'AwsGlueCatalog',
+            'Data catalog encryption enabled',
+            `Glue Data Catalog in ${region} has encryption at rest enabled (${encSettings?.CatalogEncryptionMode})`,
+            'info',
+            { catalogEncryptionMode: encSettings?.CatalogEncryptionMode },
+            true,
+          ),
         );
       }
 
@@ -67,11 +84,31 @@ export class GlueAdapter implements AwsServiceAdapter {
 
       if (connPwdEnc?.ReturnConnectionPasswordEncrypted !== true) {
         findings.push(
-          this.makeFinding(catalogId, 'AwsGlueCatalog', 'Connection passwords not encrypted', `Glue Data Catalog in ${region} does not encrypt connection passwords`, 'medium', { returnConnectionPasswordEncrypted: connPwdEnc?.ReturnConnectionPasswordEncrypted }, false, `Use glue:PutDataCatalogEncryptionSettingsCommand with DataCatalogEncryptionSettings.ConnectionPasswordEncryption.ReturnConnectionPasswordEncrypted set to true and AwsKmsKeyId set to a KMS key ARN. Rollback: use glue:PutDataCatalogEncryptionSettingsCommand with ReturnConnectionPasswordEncrypted set to false.`),
+          this.makeFinding(
+            catalogId,
+            'AwsGlueCatalog',
+            'Connection passwords not encrypted',
+            `Glue Data Catalog in ${region} does not encrypt connection passwords`,
+            'medium',
+            {
+              returnConnectionPasswordEncrypted:
+                connPwdEnc?.ReturnConnectionPasswordEncrypted,
+            },
+            false,
+            `Use glue:PutDataCatalogEncryptionSettingsCommand with DataCatalogEncryptionSettings.ConnectionPasswordEncryption.ReturnConnectionPasswordEncrypted set to true and AwsKmsKeyId set to a KMS key ARN. Rollback: use glue:PutDataCatalogEncryptionSettingsCommand with ReturnConnectionPasswordEncrypted set to false.`,
+          ),
         );
       } else {
         findings.push(
-          this.makeFinding(catalogId, 'AwsGlueCatalog', 'Connection passwords encrypted', `Glue Data Catalog in ${region} encrypts connection passwords`, 'info', { returnConnectionPasswordEncrypted: true }, true),
+          this.makeFinding(
+            catalogId,
+            'AwsGlueCatalog',
+            'Connection passwords encrypted',
+            `Glue Data Catalog in ${region} encrypts connection passwords`,
+            'info',
+            { returnConnectionPasswordEncrypted: true },
+            true,
+          ),
         );
       }
 
@@ -91,11 +128,31 @@ export class GlueAdapter implements AwsServiceAdapter {
 
           if (!job.SecurityConfiguration && !hasEncryptionArg) {
             findings.push(
-              this.makeFinding(resourceId, 'AwsGlueJob', 'Glue job has no security configuration', `Glue job "${jobName}" does not have a security configuration or encryption type set`, 'low', { jobName, securityConfiguration: null }, false, `First create a security configuration using glue:CreateSecurityConfigurationCommand with Name and EncryptionConfiguration (S3Encryption, CloudWatchEncryption, JobBookmarksEncryption). Then use glue:UpdateJobCommand with JobName set to '${jobName}' and JobUpdate.SecurityConfiguration set to the security configuration name. Rollback: use glue:UpdateJobCommand with SecurityConfiguration set to empty string.`),
+              this.makeFinding(
+                resourceId,
+                'AwsGlueJob',
+                'Glue job has no security configuration',
+                `Glue job "${jobName}" does not have a security configuration or encryption type set`,
+                'low',
+                { jobName, securityConfiguration: null },
+                false,
+                `First create a security configuration using glue:CreateSecurityConfigurationCommand with Name and EncryptionConfiguration (S3Encryption, CloudWatchEncryption, JobBookmarksEncryption). Then use glue:UpdateJobCommand with JobName set to '${jobName}' and JobUpdate.SecurityConfiguration set to the security configuration name. Rollback: use glue:UpdateJobCommand with SecurityConfiguration set to empty string.`,
+              ),
             );
           } else {
             findings.push(
-              this.makeFinding(resourceId, 'AwsGlueJob', 'Glue job has security configuration', `Glue job "${jobName}" has a security configuration applied`, 'info', { jobName, securityConfiguration: job.SecurityConfiguration ?? null }, true),
+              this.makeFinding(
+                resourceId,
+                'AwsGlueJob',
+                'Glue job has security configuration',
+                `Glue job "${jobName}" has a security configuration applied`,
+                'info',
+                {
+                  jobName,
+                  securityConfiguration: job.SecurityConfiguration ?? null,
+                },
+                true,
+              ),
             );
           }
         }

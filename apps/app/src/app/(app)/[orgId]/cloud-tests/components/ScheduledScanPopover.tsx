@@ -16,9 +16,10 @@ interface ScheduledScanPopoverProps {
 
 export function ScheduledScanPopover({ connectionId }: ScheduledScanPopoverProps) {
   const apiClient = useApi();
-  const { services, refresh: refreshServices } = useConnectionServices(connectionId);
+  const { services, meta, refresh: refreshServices } = useConnectionServices(connectionId);
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState<string | null>(null);
+  const waitingForDetection = meta.providerSlug === 'gcp' && meta.detectionReady === false;
 
   const filteredServices = useMemo(() => {
     if (!search) return services.filter((s) => s.implemented !== false);
@@ -76,7 +77,11 @@ export function ScheduledScanPopover({ connectionId }: ScheduledScanPopoverProps
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div>
             <p className="text-sm font-medium">Daily scan</p>
-            <p className="text-xs text-muted-foreground">Every day at 5:00 AM UTC</p>
+            <p className="text-xs text-muted-foreground">
+              {waitingForDetection
+                ? 'Detecting active GCP services...'
+                : 'Every day at 5:00 AM UTC'}
+            </p>
           </div>
           <span className="inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary">
             Active
@@ -87,12 +92,14 @@ export function ScheduledScanPopover({ connectionId }: ScheduledScanPopoverProps
         <div className="px-4 pt-3 pb-1">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted-foreground">
-              {enabledCount} of {implementedServices.length} services
+              {waitingForDetection
+                ? 'Waiting for detection'
+                : `${enabledCount} of ${implementedServices.length} services`}
             </p>
             <button
               type="button"
               onClick={handleEnableAll}
-              disabled={saving === 'all' || enabledCount === implementedServices.length}
+              disabled={waitingForDetection || saving === 'all' || enabledCount === implementedServices.length}
               className="text-[11px] font-medium text-primary hover:text-primary/80 disabled:text-muted-foreground transition-colors"
             >
               Enable all
@@ -101,7 +108,7 @@ export function ScheduledScanPopover({ connectionId }: ScheduledScanPopoverProps
         </div>
 
         {/* Search (only if many services) */}
-        {implementedServices.length > 8 && (
+        {implementedServices.length > 8 && !waitingForDetection && (
           <div className="px-4 py-1.5">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/50" />
@@ -118,7 +125,12 @@ export function ScheduledScanPopover({ connectionId }: ScheduledScanPopoverProps
 
         {/* Service list */}
         <div className="max-h-[280px] overflow-y-auto px-2 py-1">
-          {filteredServices.map((service) => (
+          {waitingForDetection ? (
+            <p className="py-3 text-center text-xs text-muted-foreground">
+              Service toggles will appear once detection completes.
+            </p>
+          ) : (
+            filteredServices.map((service) => (
             <label
               key={service.id}
               className={cn(
@@ -134,8 +146,9 @@ export function ScheduledScanPopover({ connectionId }: ScheduledScanPopoverProps
               />
               <span className="truncate">{service.name}</span>
             </label>
-          ))}
-          {filteredServices.length === 0 && search && (
+          ))
+          )}
+          {!waitingForDetection && filteredServices.length === 0 && search && (
             <p className="py-3 text-center text-xs text-muted-foreground">
               No services match &quot;{search}&quot;
             </p>

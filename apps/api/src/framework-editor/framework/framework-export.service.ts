@@ -211,7 +211,7 @@ export class FrameworkExportService {
             data: {
               name: ct.name,
               description: ct.description,
-              documentTypes: (ct.documentTypes ?? []) as EvidenceFormType[],
+              documentTypes: ct.documentTypes ?? [],
               requirements: {
                 connect: (ct.requirementIndices ?? []).map((i) => ({
                   id: createdRequirements[i].id,

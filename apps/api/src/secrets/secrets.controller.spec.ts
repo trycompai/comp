@@ -129,10 +129,7 @@ describe('SecretsController', () => {
         mockAuthContext,
       );
 
-      expect(secretsService.createSecret).toHaveBeenCalledWith(
-        'org_123',
-        body,
-      );
+      expect(secretsService.createSecret).toHaveBeenCalledWith('org_123', body);
       expect(result).toEqual({
         secret: created,
         authType: 'session',

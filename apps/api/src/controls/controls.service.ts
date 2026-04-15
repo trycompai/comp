@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { db, Prisma } from '@db';
 import { CreateControlDto } from './dto/create-control.dto';
 
@@ -107,7 +104,8 @@ export class ControlsService {
       progress: {
         total: totalItems,
         completed,
-        progress: totalItems > 0 ? Math.round((completed / totalItems) * 100) : 0,
+        progress:
+          totalItems > 0 ? Math.round((completed / totalItems) * 100) : 0,
         byType: {
           policy: { total: policies.length, completed: policyCompleted },
           task: { total: tasks.length, completed: taskCompleted },

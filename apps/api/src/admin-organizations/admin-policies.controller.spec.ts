@@ -29,9 +29,7 @@ jest.mock('@db', () => ({
 
 jest.mock('@trigger.dev/sdk', () => ({
   auth: {
-    createPublicToken: jest
-      .fn()
-      .mockResolvedValue('mock-public-access-token'),
+    createPublicToken: jest.fn().mockResolvedValue('mock-public-access-token'),
   },
   tasks: {
     trigger: jest.fn().mockResolvedValue({ id: 'run_123' }),
@@ -85,9 +83,9 @@ describe('AdminPoliciesController', () => {
     });
 
     it('should reject missing status', async () => {
-      await expect(
-        controller.update('org_1', 'pol_1', {}),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.update('org_1', 'pol_1', {})).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject invalid status', async () => {

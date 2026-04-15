@@ -17010,9 +17010,55 @@
         ]
       }
     },
+    "/v1/cloud-security/select-gcp-projects/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_selectGcpProjects_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
     "/v1/cloud-security/setup-gcp/{connectionId}": {
       "post": {
         "operationId": "CloudSecurityController_setupGcp_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/setup-gcp/{connectionId}/resolve-step": {
+      "post": {
+        "operationId": "CloudSecurityController_resolveGcpSetupStep_v1",
         "parameters": [
           {
             "name": "connectionId",

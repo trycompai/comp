@@ -123,7 +123,9 @@ export class HybridAuthGuard implements CanActivate {
       if (member) {
         request.userId = actingUserId;
       } else {
-        this.logger.warn(`Service token x-user-id "${actingUserId}" not found in org ${organizationId}`);
+        this.logger.warn(
+          `Service token x-user-id "${actingUserId}" not found in org ${organizationId}`,
+        );
       }
     }
 

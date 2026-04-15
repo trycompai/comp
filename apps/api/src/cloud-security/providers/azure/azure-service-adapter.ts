@@ -42,40 +42,40 @@ export async function fetchAllPages<T>(
 export const AZURE_CATEGORY_TO_SERVICE: Record<string, string> = {
   // Identity & Access
   'Identity and Access': 'entra-id',
-  'IdentityAndAccess': 'entra-id',
+  IdentityAndAccess: 'entra-id',
   // Network
-  'Networking': 'network-watcher',
-  'Network': 'network-watcher',
+  Networking: 'network-watcher',
+  Network: 'network-watcher',
   // Data
-  'Data': 'key-vault',
+  Data: 'key-vault',
   'Data Protection': 'key-vault',
-  'Encryption': 'key-vault',
+  Encryption: 'key-vault',
   // Compute
-  'Compute': 'defender',
-  'Container': 'defender',
-  'AppServices': 'defender',
+  Compute: 'defender',
+  Container: 'defender',
+  AppServices: 'defender',
   // Governance
   'Regulatory Compliance': 'policy',
-  'Governance': 'policy',
+  Governance: 'policy',
   // Monitoring
   'Logging and Threat Detection': 'monitor',
-  'IoT': 'defender',
-  'API': 'defender',
+  IoT: 'defender',
+  API: 'defender',
 };
 
 /** Human-readable service names for UI grouping. */
 export const AZURE_SERVICE_NAMES: Record<string, string> = {
-  'defender': 'Microsoft Defender',
+  defender: 'Microsoft Defender',
   'entra-id': 'Entra ID',
-  'policy': 'Azure Policy',
+  policy: 'Azure Policy',
   'key-vault': 'Key Vault',
-  'monitor': 'Azure Monitor',
+  monitor: 'Azure Monitor',
   'network-watcher': 'Network Watcher',
   'storage-account': 'Storage Accounts',
   'sql-database': 'SQL Database',
   'virtual-machine': 'Virtual Machines',
   'app-service': 'App Service',
-  'aks': 'AKS',
+  aks: 'AKS',
   'container-registry': 'Container Registry',
   'cosmos-db': 'Cosmos DB',
 };

@@ -10,7 +10,9 @@ import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
 
-function computeNextTaskReviewDate(frequency: TaskFrequency | null | undefined): Date {
+function computeNextTaskReviewDate(
+  frequency: TaskFrequency | null | undefined,
+): Date {
   const now = new Date();
   switch (frequency) {
     case TaskFrequency.daily:
@@ -175,10 +177,7 @@ export class TasksService {
   /**
    * Get a single task by ID
    */
-  async getTask(
-    organizationId: string,
-    taskId: string,
-  ) {
+  async getTask(organizationId: string, taskId: string) {
     try {
       const [task, activeFrameworkNames] = await Promise.all([
         db.task.findFirst({
@@ -256,7 +255,13 @@ export class TasksService {
         where,
         include: {
           user: {
-            select: { id: true, name: true, email: true, image: true, role: true },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true,
+            },
           },
         },
         orderBy: { timestamp: 'desc' },
@@ -423,7 +428,9 @@ export class TasksService {
           include: { user: { select: { role: true } } },
         });
         if (assigneeMember?.user.role === 'admin') {
-          throw new BadRequestException('Cannot assign a platform admin as assignee');
+          throw new BadRequestException(
+            'Cannot assign a platform admin as assignee',
+          );
         }
       }
 
@@ -562,7 +569,10 @@ export class TasksService {
       }
       if (updateData.status !== undefined) {
         // Prevent bypassing the approval workflow via direct status change
-        if (existingTask.status === 'in_review' && updateData.status !== 'in_review') {
+        if (
+          existingTask.status === 'in_review' &&
+          updateData.status !== 'in_review'
+        ) {
           throw new BadRequestException(
             'Cannot change status directly while task is in review. Use the approve or reject actions instead.',
           );
@@ -587,7 +597,9 @@ export class TasksService {
             include: { user: { select: { role: true } } },
           });
           if (assigneeMember?.user.role === 'admin') {
-            throw new BadRequestException('Cannot assign a platform admin as assignee');
+            throw new BadRequestException(
+              'Cannot assign a platform admin as assignee',
+            );
           }
         }
         dataToUpdate.assigneeId =
@@ -600,7 +612,9 @@ export class TasksService {
       if (updateData.frequency !== undefined) {
         dataToUpdate.frequency = updateData.frequency;
         // When frequency changes, recalculate the review date
-        dataToUpdate.reviewDate = computeNextTaskReviewDate(updateData.frequency);
+        dataToUpdate.reviewDate = computeNextTaskReviewDate(
+          updateData.frequency,
+        );
       }
       if (updateData.department !== undefined) {
         dataToUpdate.department = updateData.department;
@@ -821,10 +835,7 @@ export class TasksService {
   /**
    * Regenerate task from its associated template
    */
-  async regenerateFromTemplate(
-    organizationId: string,
-    taskId: string,
-  ) {
+  async regenerateFromTemplate(organizationId: string, taskId: string) {
     const task = await db.task.findFirst({
       where: { id: taskId, organizationId },
       include: { taskTemplate: true },
@@ -835,7 +846,9 @@ export class TasksService {
     }
 
     if (!task.taskTemplate) {
-      throw new BadRequestException('Task has no associated template to regenerate from');
+      throw new BadRequestException(
+        'Task has no associated template to regenerate from',
+      );
     }
 
     const updated = await db.task.update({
@@ -868,10 +881,7 @@ export class TasksService {
   /**
    * Delete a single task by ID
    */
-  async deleteTask(
-    organizationId: string,
-    taskId: string,
-  ): Promise<void> {
+  async deleteTask(organizationId: string, taskId: string): Promise<void> {
     const task = await db.task.findFirst({
       where: {
         id: taskId,
@@ -924,7 +934,9 @@ export class TasksService {
     }
 
     if (approver.user.role === 'admin') {
-      throw new BadRequestException('Cannot assign a platform admin as approver');
+      throw new BadRequestException(
+        'Cannot assign a platform admin as approver',
+      );
     }
 
     const currentMember = await db.member.findFirst({
@@ -1001,7 +1013,9 @@ export class TasksService {
     }
 
     if (approver.user.role === 'admin') {
-      throw new BadRequestException('Cannot assign a platform admin as approver');
+      throw new BadRequestException(
+        'Cannot assign a platform admin as approver',
+      );
     }
 
     const tasks = await db.task.findMany({

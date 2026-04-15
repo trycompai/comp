@@ -29,7 +29,10 @@ interface CosmosDbAccount {
 export class CosmosDbAdapter implements AzureServiceAdapter {
   readonly serviceId = 'cosmos-db';
 
-  async scan({ accessToken, subscriptionId }: {
+  async scan({
+    accessToken,
+    subscriptionId,
+  }: {
     accessToken: string;
     subscriptionId: string;
   }): Promise<SecurityFinding[]> {
@@ -48,62 +51,81 @@ export class CosmosDbAdapter implements AzureServiceAdapter {
       // Check 1: Public network access
       const hasIpRules = (props.ipRules?.length ?? 0) > 0;
       const hasVnetFilter = props.isVirtualNetworkFilterEnabled === true;
-      if (props.publicNetworkAccess !== 'Disabled' && !hasIpRules && !hasVnetFilter) {
-        findings.push(this.finding(acct, {
-          key: 'public-unrestricted',
-          title: `Public Access Unrestricted: ${acct.name}`,
-          description: `Cosmos DB account "${acct.name}" is publicly accessible without IP or VNet restrictions.`,
-          severity: 'high',
-          remediation: 'Disable public network access or add IP rules / VNet service endpoints.',
-        }));
+      if (
+        props.publicNetworkAccess !== 'Disabled' &&
+        !hasIpRules &&
+        !hasVnetFilter
+      ) {
+        findings.push(
+          this.finding(acct, {
+            key: 'public-unrestricted',
+            title: `Public Access Unrestricted: ${acct.name}`,
+            description: `Cosmos DB account "${acct.name}" is publicly accessible without IP or VNet restrictions.`,
+            severity: 'high',
+            remediation:
+              'Disable public network access or add IP rules / VNet service endpoints.',
+          }),
+        );
       }
 
       // Check 2: Local auth (key-based)
       if (props.disableLocalAuth !== true) {
-        findings.push(this.finding(acct, {
-          key: 'local-auth-enabled',
-          title: `Key-Based Auth Enabled: ${acct.name}`,
-          description: `Cosmos DB account "${acct.name}" allows key-based authentication. Use Azure AD authentication for better security and auditing.`,
-          severity: 'medium',
-          remediation: 'Disable local authentication and use Azure AD RBAC for data plane access.',
-        }));
+        findings.push(
+          this.finding(acct, {
+            key: 'local-auth-enabled',
+            title: `Key-Based Auth Enabled: ${acct.name}`,
+            description: `Cosmos DB account "${acct.name}" allows key-based authentication. Use Azure AD authentication for better security and auditing.`,
+            severity: 'medium',
+            remediation:
+              'Disable local authentication and use Azure AD RBAC for data plane access.',
+          }),
+        );
       }
 
       // Check 3: Automatic failover
       if (props.enableAutomaticFailover !== true) {
-        findings.push(this.finding(acct, {
-          key: 'no-auto-failover',
-          title: `Automatic Failover Disabled: ${acct.name}`,
-          description: `Cosmos DB account "${acct.name}" does not have automatic failover enabled. Manual intervention required during regional outages.`,
-          severity: 'low',
-          remediation: 'Enable automatic failover for high availability.',
-        }));
+        findings.push(
+          this.finding(acct, {
+            key: 'no-auto-failover',
+            title: `Automatic Failover Disabled: ${acct.name}`,
+            description: `Cosmos DB account "${acct.name}" does not have automatic failover enabled. Manual intervention required during regional outages.`,
+            severity: 'low',
+            remediation: 'Enable automatic failover for high availability.',
+          }),
+        );
       }
 
       // Check 4: Backup policy
       const backup = props.backupPolicy;
       if (backup?.type === 'Periodic') {
-        const retention = backup.periodicModeProperties?.backupRetentionIntervalInHours ?? 0;
+        const retention =
+          backup.periodicModeProperties?.backupRetentionIntervalInHours ?? 0;
         if (retention < 24) {
-          findings.push(this.finding(acct, {
-            key: 'low-backup-retention',
-            title: `Low Backup Retention: ${acct.name}`,
-            description: `Cosmos DB account "${acct.name}" has backup retention of only ${retention} hours. Consider increasing for disaster recovery.`,
-            severity: 'medium',
-            remediation: 'Increase backup retention or switch to continuous backup mode.',
-          }));
+          findings.push(
+            this.finding(acct, {
+              key: 'low-backup-retention',
+              title: `Low Backup Retention: ${acct.name}`,
+              description: `Cosmos DB account "${acct.name}" has backup retention of only ${retention} hours. Consider increasing for disaster recovery.`,
+              severity: 'medium',
+              remediation:
+                'Increase backup retention or switch to continuous backup mode.',
+            }),
+          );
         }
       }
 
       // Check 5: Metadata write access
       if (props.disableKeyBasedMetadataWriteAccess !== true) {
-        findings.push(this.finding(acct, {
-          key: 'metadata-write-enabled',
-          title: `Key-Based Metadata Write Enabled: ${acct.name}`,
-          description: `Cosmos DB account "${acct.name}" allows key-based metadata write access. This means account keys can modify database resources (create/delete databases, containers).`,
-          severity: 'low',
-          remediation: 'Disable key-based metadata write access to prevent accidental resource modification via account keys.',
-        }));
+        findings.push(
+          this.finding(acct, {
+            key: 'metadata-write-enabled',
+            title: `Key-Based Metadata Write Enabled: ${acct.name}`,
+            description: `Cosmos DB account "${acct.name}" allows key-based metadata write access. This means account keys can modify database resources (create/delete databases, containers).`,
+            severity: 'low',
+            remediation:
+              'Disable key-based metadata write access to prevent accidental resource modification via account keys.',
+          }),
+        );
       }
     }
 
@@ -116,7 +138,11 @@ export class CosmosDbAdapter implements AzureServiceAdapter {
         resourceType: 'cosmos-db',
         resourceId: subscriptionId,
         remediation: 'No action needed.',
-        evidence: { serviceId: this.serviceId, serviceName: 'Cosmos DB', findingKey: 'azure-cosmos-db-all-ok' },
+        evidence: {
+          serviceId: this.serviceId,
+          serviceName: 'Cosmos DB',
+          findingKey: 'azure-cosmos-db-all-ok',
+        },
         createdAt: new Date().toISOString(),
         passed: true,
       });
@@ -125,10 +151,16 @@ export class CosmosDbAdapter implements AzureServiceAdapter {
     return findings;
   }
 
-  private finding(acct: CosmosDbAccount, opts: {
-    key: string; title: string; description: string;
-    severity: SecurityFinding['severity']; remediation: string;
-  }): SecurityFinding {
+  private finding(
+    acct: CosmosDbAccount,
+    opts: {
+      key: string;
+      title: string;
+      description: string;
+      severity: SecurityFinding['severity'];
+      remediation: string;
+    },
+  ): SecurityFinding {
     return {
       id: `azure-cosmos-${opts.key}-${acct.name}`,
       title: opts.title,

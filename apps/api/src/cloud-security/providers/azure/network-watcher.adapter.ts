@@ -25,13 +25,23 @@ interface SecurityRule {
   };
 }
 
-const DANGEROUS_PORTS = new Set(['22', '3389', '3306', '5432', '1433', '27017']);
+const DANGEROUS_PORTS = new Set([
+  '22',
+  '3389',
+  '3306',
+  '5432',
+  '1433',
+  '27017',
+]);
 const WILDCARD_SOURCES = new Set(['*', '0.0.0.0/0', 'Internet', 'Any']);
 
 export class NetworkWatcherAdapter implements AzureServiceAdapter {
   readonly serviceId = 'network-watcher';
 
-  async scan({ accessToken, subscriptionId }: {
+  async scan({
+    accessToken,
+    subscriptionId,
+  }: {
     accessToken: string;
     subscriptionId: string;
   }): Promise<SecurityFinding[]> {
@@ -47,7 +57,9 @@ export class NetworkWatcherAdapter implements AzureServiceAdapter {
 
     for (const nsg of nsgs) {
       const inboundAllows = nsg.properties.securityRules.filter(
-        (r) => r.properties.direction === 'Inbound' && r.properties.access === 'Allow',
+        (r) =>
+          r.properties.direction === 'Inbound' &&
+          r.properties.access === 'Allow',
       );
 
       for (const rule of inboundAllows) {
@@ -59,47 +71,64 @@ export class NetworkWatcherAdapter implements AzureServiceAdapter {
 
         // Check 1: SSH open to internet
         if (ports.includes('22')) {
-          findings.push(this.finding(nsg, rule, {
-            key: 'ssh-open',
-            title: `SSH Open to Internet: ${nsg.name}/${rule.name}`,
-            description: `NSG "${nsg.name}" allows SSH (port 22) from the internet. Restrict to specific IP ranges or use a bastion host.`,
-            severity: 'high',
-            remediation: 'Restrict source address to specific IPs or use Azure Bastion for SSH access.',
-          }));
+          findings.push(
+            this.finding(nsg, rule, {
+              key: 'ssh-open',
+              title: `SSH Open to Internet: ${nsg.name}/${rule.name}`,
+              description: `NSG "${nsg.name}" allows SSH (port 22) from the internet. Restrict to specific IP ranges or use a bastion host.`,
+              severity: 'high',
+              remediation:
+                'Restrict source address to specific IPs or use Azure Bastion for SSH access.',
+            }),
+          );
         }
 
         // Check 2: RDP open to internet
         if (ports.includes('3389')) {
-          findings.push(this.finding(nsg, rule, {
-            key: 'rdp-open',
-            title: `RDP Open to Internet: ${nsg.name}/${rule.name}`,
-            description: `NSG "${nsg.name}" allows RDP (port 3389) from the internet. This is a common attack vector.`,
-            severity: 'critical',
-            remediation: 'Restrict source address to specific IPs or use Azure Bastion for RDP access.',
-          }));
+          findings.push(
+            this.finding(nsg, rule, {
+              key: 'rdp-open',
+              title: `RDP Open to Internet: ${nsg.name}/${rule.name}`,
+              description: `NSG "${nsg.name}" allows RDP (port 3389) from the internet. This is a common attack vector.`,
+              severity: 'critical',
+              remediation:
+                'Restrict source address to specific IPs or use Azure Bastion for RDP access.',
+            }),
+          );
         }
 
         // Check 3: Database ports open to internet
-        const openDbPorts = ports.filter((p) => DANGEROUS_PORTS.has(p) && p !== '22' && p !== '3389');
+        const openDbPorts = ports.filter(
+          (p) => DANGEROUS_PORTS.has(p) && p !== '22' && p !== '3389',
+        );
         if (openDbPorts.length > 0) {
-          findings.push(this.finding(nsg, rule, {
-            key: 'db-ports-open',
-            title: `Database Ports Open to Internet: ${nsg.name}/${rule.name}`,
-            description: `NSG "${nsg.name}" exposes database ports (${openDbPorts.join(', ')}) to the internet.`,
-            severity: 'critical',
-            remediation: 'Restrict database access to private networks only. Use Private Link for database connections.',
-          }));
+          findings.push(
+            this.finding(nsg, rule, {
+              key: 'db-ports-open',
+              title: `Database Ports Open to Internet: ${nsg.name}/${rule.name}`,
+              description: `NSG "${nsg.name}" exposes database ports (${openDbPorts.join(', ')}) to the internet.`,
+              severity: 'critical',
+              remediation:
+                'Restrict database access to private networks only. Use Private Link for database connections.',
+            }),
+          );
         }
 
         // Check 4: All ports open to internet
-        if (ports.includes('*') || rule.properties.destinationPortRange === '*') {
-          findings.push(this.finding(nsg, rule, {
-            key: 'all-ports-open',
-            title: `All Ports Open to Internet: ${nsg.name}/${rule.name}`,
-            description: `NSG "${nsg.name}" allows all ports from the internet. This effectively bypasses network security.`,
-            severity: 'critical',
-            remediation: 'Replace with specific port rules following least-privilege principle.',
-          }));
+        if (
+          ports.includes('*') ||
+          rule.properties.destinationPortRange === '*'
+        ) {
+          findings.push(
+            this.finding(nsg, rule, {
+              key: 'all-ports-open',
+              title: `All Ports Open to Internet: ${nsg.name}/${rule.name}`,
+              description: `NSG "${nsg.name}" allows all ports from the internet. This effectively bypasses network security.`,
+              severity: 'critical',
+              remediation:
+                'Replace with specific port rules following least-privilege principle.',
+            }),
+          );
         }
       }
     }
@@ -113,7 +142,11 @@ export class NetworkWatcherAdapter implements AzureServiceAdapter {
         resourceType: 'nsg',
         resourceId: subscriptionId,
         remediation: 'No action needed.',
-        evidence: { serviceId: this.serviceId, serviceName: 'Network Watcher', findingKey: 'azure-network-watcher-all-ok' },
+        evidence: {
+          serviceId: this.serviceId,
+          serviceName: 'Network Watcher',
+          findingKey: 'azure-network-watcher-all-ok',
+        },
         createdAt: new Date().toISOString(),
         passed: true,
       });
@@ -126,20 +159,31 @@ export class NetworkWatcherAdapter implements AzureServiceAdapter {
     if (rule.properties.sourceAddressPrefixes?.length) {
       return rule.properties.sourceAddressPrefixes;
     }
-    return rule.properties.sourceAddressPrefix ? [rule.properties.sourceAddressPrefix] : [];
+    return rule.properties.sourceAddressPrefix
+      ? [rule.properties.sourceAddressPrefix]
+      : [];
   }
 
   private getPorts(rule: SecurityRule): string[] {
     if (rule.properties.destinationPortRanges?.length) {
       return rule.properties.destinationPortRanges;
     }
-    return rule.properties.destinationPortRange ? [rule.properties.destinationPortRange] : [];
+    return rule.properties.destinationPortRange
+      ? [rule.properties.destinationPortRange]
+      : [];
   }
 
-  private finding(nsg: NetworkSecurityGroup, rule: SecurityRule, opts: {
-    key: string; title: string; description: string;
-    severity: SecurityFinding['severity']; remediation: string;
-  }): SecurityFinding {
+  private finding(
+    nsg: NetworkSecurityGroup,
+    rule: SecurityRule,
+    opts: {
+      key: string;
+      title: string;
+      description: string;
+      severity: SecurityFinding['severity'];
+      remediation: string;
+    },
+  ): SecurityFinding {
     return {
       id: `azure-nw-${opts.key}-${nsg.name}-${rule.name}`,
       title: opts.title,

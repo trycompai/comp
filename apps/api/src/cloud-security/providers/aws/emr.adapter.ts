@@ -28,12 +28,7 @@ export class EmrAdapter implements AwsServiceAdapter {
       do {
         const listRes = await client.send(
           new ListClustersCommand({
-            ClusterStates: [
-              'STARTING',
-              'BOOTSTRAPPING',
-              'RUNNING',
-              'WAITING',
-            ],
+            ClusterStates: ['STARTING', 'BOOTSTRAPPING', 'RUNNING', 'WAITING'],
             Marker: marker,
           }),
         );
@@ -50,39 +45,91 @@ export class EmrAdapter implements AwsServiceAdapter {
           if (!cluster) continue;
 
           const clusterName = cluster.Name ?? clusterId;
-          const resourceId =
-            `arn:aws:elasticmapreduce:${region}:cluster/${clusterId}`;
+          const resourceId = `arn:aws:elasticmapreduce:${region}:cluster/${clusterId}`;
 
           // Check security configuration
           if (!cluster.SecurityConfiguration) {
             findings.push(
-              this.makeFinding(resourceId, 'No security configuration applied', `EMR cluster "${clusterName}" (${clusterId}) does not have a security configuration applied`, 'medium', { clusterId, clusterName, securityConfiguration: null }, false, `[MANUAL] Cannot be auto-fixed on a running cluster. Security configurations can only be set at cluster launch time. Create a security configuration using emr:CreateSecurityConfigurationCommand with Name and SecurityConfiguration (JSON string with EncryptionConfiguration, AuthenticationConfiguration). Then terminate the cluster using emr:TerminateJobFlowsCommand and relaunch with emr:RunJobFlowCommand specifying SecurityConfiguration.`),
+              this.makeFinding(
+                resourceId,
+                'No security configuration applied',
+                `EMR cluster "${clusterName}" (${clusterId}) does not have a security configuration applied`,
+                'medium',
+                { clusterId, clusterName, securityConfiguration: null },
+                false,
+                `[MANUAL] Cannot be auto-fixed on a running cluster. Security configurations can only be set at cluster launch time. Create a security configuration using emr:CreateSecurityConfigurationCommand with Name and SecurityConfiguration (JSON string with EncryptionConfiguration, AuthenticationConfiguration). Then terminate the cluster using emr:TerminateJobFlowsCommand and relaunch with emr:RunJobFlowCommand specifying SecurityConfiguration.`,
+              ),
             );
           } else {
             findings.push(
-              this.makeFinding(resourceId, 'Security configuration applied', `EMR cluster "${clusterName}" (${clusterId}) has a security configuration applied`, 'info', { clusterId, clusterName, securityConfiguration: cluster.SecurityConfiguration }, true),
+              this.makeFinding(
+                resourceId,
+                'Security configuration applied',
+                `EMR cluster "${clusterName}" (${clusterId}) has a security configuration applied`,
+                'info',
+                {
+                  clusterId,
+                  clusterName,
+                  securityConfiguration: cluster.SecurityConfiguration,
+                },
+                true,
+              ),
             );
           }
 
           // Check logging configuration
           if (!cluster.LogUri) {
             findings.push(
-              this.makeFinding(resourceId, 'Logging not configured', `EMR cluster "${clusterName}" (${clusterId}) does not have logging configured`, 'medium', { clusterId, clusterName, logUri: null }, false, `[MANUAL] Cannot be auto-fixed on a running cluster. Logging must be configured at cluster launch time. Use emr:RunJobFlowCommand with LogUri set to an S3 path (e.g., 's3://bucket-name/emr-logs/') when creating a new cluster. The current cluster must be terminated and relaunched with logging enabled.`),
+              this.makeFinding(
+                resourceId,
+                'Logging not configured',
+                `EMR cluster "${clusterName}" (${clusterId}) does not have logging configured`,
+                'medium',
+                { clusterId, clusterName, logUri: null },
+                false,
+                `[MANUAL] Cannot be auto-fixed on a running cluster. Logging must be configured at cluster launch time. Use emr:RunJobFlowCommand with LogUri set to an S3 path (e.g., 's3://bucket-name/emr-logs/') when creating a new cluster. The current cluster must be terminated and relaunched with logging enabled.`,
+              ),
             );
           } else {
             findings.push(
-              this.makeFinding(resourceId, 'Logging configured', `EMR cluster "${clusterName}" (${clusterId}) has logging configured`, 'info', { clusterId, clusterName, logUri: cluster.LogUri }, true),
+              this.makeFinding(
+                resourceId,
+                'Logging configured',
+                `EMR cluster "${clusterName}" (${clusterId}) has logging configured`,
+                'info',
+                { clusterId, clusterName, logUri: cluster.LogUri },
+                true,
+              ),
             );
           }
 
           // Check termination protection
           if (cluster.TerminationProtected !== true) {
             findings.push(
-              this.makeFinding(resourceId, 'Termination protection disabled', `EMR cluster "${clusterName}" (${clusterId}) does not have termination protection enabled`, 'low', { clusterId, clusterName, terminationProtected: cluster.TerminationProtected }, false, `Use emr:SetTerminationProtectionCommand with JobFlowIds set to ['${clusterId}'] and TerminationProtected set to true. Rollback: use emr:SetTerminationProtectionCommand with TerminationProtected set to false.`),
+              this.makeFinding(
+                resourceId,
+                'Termination protection disabled',
+                `EMR cluster "${clusterName}" (${clusterId}) does not have termination protection enabled`,
+                'low',
+                {
+                  clusterId,
+                  clusterName,
+                  terminationProtected: cluster.TerminationProtected,
+                },
+                false,
+                `Use emr:SetTerminationProtectionCommand with JobFlowIds set to ['${clusterId}'] and TerminationProtected set to true. Rollback: use emr:SetTerminationProtectionCommand with TerminationProtected set to false.`,
+              ),
             );
           } else {
             findings.push(
-              this.makeFinding(resourceId, 'Termination protection enabled', `EMR cluster "${clusterName}" (${clusterId}) has termination protection enabled`, 'info', { clusterId, clusterName, terminationProtected: true }, true),
+              this.makeFinding(
+                resourceId,
+                'Termination protection enabled',
+                `EMR cluster "${clusterName}" (${clusterId}) has termination protection enabled`,
+                'info',
+                { clusterId, clusterName, terminationProtected: true },
+                true,
+              ),
             );
           }
         }

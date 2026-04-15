@@ -48,55 +48,101 @@ import * as sagemaker from '@aws-sdk/client-sagemaker';
 import * as efs from '@aws-sdk/client-efs';
 import * as elasticache from '@aws-sdk/client-elasticache';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SdkModule = Record<string, any>;
 
 /** Static map of service name → SDK module. Includes common aliases AI might use. */
 const SDK_MODULES: Record<string, SdkModule> = {
-  's3': s3, 'dynamodb': dynamodb, 'kinesis': kinesis, 'redshift': redshift,
-  'backup': backup, 'ecr': ecr, 'glue': glue, 'athena': athena,
-  'opensearch': opensearch, 'secrets-manager': secretsManager, 'kms': kms,
-  'cloudtrail': cloudtrail, 'guardduty': guardduty, 'config-service': configService,
-  'iam': iam, 'sts': sts, 'inspector2': inspector2, 'macie2': macie2,
-  'cognito-identity-provider': cognito, 'shield': shield, 'wafv2': wafv2,
-  'acm': acm, 'cloudwatch-logs': cwLogs, 'cloudwatch': cloudwatch, 'sns': sns,
-  'ec2': ec2, 'lambda': lambda, 'eks': eks, 'emr': emr, 'codebuild': codebuild,
-  'elastic-beanstalk': elasticBeanstalk, 'sfn': sfn,
-  'elastic-load-balancing-v2': elbv2, 'cloudfront': cloudfront, 'rds': rds,
-  'apigatewayv2': apigw, 'route-53': route53, 'network-firewall': networkFirewall,
-  'transfer': transfer, 'sqs': sqs, 'eventbridge': eventbridge, 'ssm': ssm,
-  'kafka': kafka, 'sagemaker': sagemaker, 'efs': efs, 'elasticache': elasticache,
+  s3: s3,
+  dynamodb: dynamodb,
+  kinesis: kinesis,
+  redshift: redshift,
+  backup: backup,
+  ecr: ecr,
+  glue: glue,
+  athena: athena,
+  opensearch: opensearch,
+  'secrets-manager': secretsManager,
+  kms: kms,
+  cloudtrail: cloudtrail,
+  guardduty: guardduty,
+  'config-service': configService,
+  iam: iam,
+  sts: sts,
+  inspector2: inspector2,
+  macie2: macie2,
+  'cognito-identity-provider': cognito,
+  shield: shield,
+  wafv2: wafv2,
+  acm: acm,
+  'cloudwatch-logs': cwLogs,
+  cloudwatch: cloudwatch,
+  sns: sns,
+  ec2: ec2,
+  lambda: lambda,
+  eks: eks,
+  emr: emr,
+  codebuild: codebuild,
+  'elastic-beanstalk': elasticBeanstalk,
+  sfn: sfn,
+  'elastic-load-balancing-v2': elbv2,
+  cloudfront: cloudfront,
+  rds: rds,
+  apigatewayv2: apigw,
+  'route-53': route53,
+  'network-firewall': networkFirewall,
+  transfer: transfer,
+  sqs: sqs,
+  eventbridge: eventbridge,
+  ssm: ssm,
+  kafka: kafka,
+  sagemaker: sagemaker,
+  efs: efs,
+  elasticache: elasticache,
   // Common aliases AI might use
-  'logs': cwLogs,
-  'config': configService,
-  'cognito': cognito,
-  'waf': wafv2,
-  'route53': route53,
+  logs: cwLogs,
+  config: configService,
+  cognito: cognito,
+  waf: wafv2,
+  route53: route53,
   'step-functions': sfn,
-  'elb': elbv2,
-  'elbv2': elbv2,
-  'apigateway': apigw,
-  'msk': kafka,
-  'inspector': inspector2,
-  'macie': macie2,
-  'secretsmanager': secretsManager,
+  elb: elbv2,
+  elbv2: elbv2,
+  apigateway: apigw,
+  msk: kafka,
+  inspector: inspector2,
+  macie: macie2,
+  secretsmanager: secretsManager,
 };
 
 /** Commands that are too dangerous or not allowed to execute. */
 const BLOCKED_COMMANDS = new Set([
   // Destructive
-  'DeleteBucketCommand', 'DeleteTableCommand', 'DeleteDBInstanceCommand',
-  'DeleteDBClusterCommand', 'DeleteFileSystemCommand', 'TerminateInstancesCommand',
-  'DeleteClusterCommand', 'DeleteStackCommand', 'DeleteVpcCommand',
-  'DeleteSubnetCommand', 'DeleteUserCommand', 'DeleteRoleCommand',
+  'DeleteBucketCommand',
+  'DeleteTableCommand',
+  'DeleteDBInstanceCommand',
+  'DeleteDBClusterCommand',
+  'DeleteFileSystemCommand',
+  'TerminateInstancesCommand',
+  'DeleteClusterCommand',
+  'DeleteStackCommand',
+  'DeleteVpcCommand',
+  'DeleteSubnetCommand',
+  'DeleteUserCommand',
+  'DeleteRoleCommand',
   // AttachRolePolicy blocked — use PutRolePolicy (inline) instead
   'AttachRolePolicyCommand',
 ]);
 
 /** Param names that AWS expects as JSON strings, not objects. */
 const JSON_STRING_PARAMS = new Set([
-  'Content', 'PolicyDocument', 'AssumeRolePolicyDocument', 'Policy',
-  'TrustPolicy', 'ResourcePolicy', 'Configuration', 'Definition',
+  'Content',
+  'PolicyDocument',
+  'AssumeRolePolicyDocument',
+  'Policy',
+  'TrustPolicy',
+  'ResourcePolicy',
+  'Configuration',
+  'Definition',
 ]);
 
 /**
@@ -110,7 +156,12 @@ function normaliseInputParams(
 ): void {
   for (const [key, value] of Object.entries(input)) {
     // Rule 1: Stringify any object param that AWS expects as a JSON string
-    if (value !== null && typeof value === 'object' && !Array.isArray(value) && JSON_STRING_PARAMS.has(key)) {
+    if (
+      value !== null &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      JSON_STRING_PARAMS.has(key)
+    ) {
       input[key] = JSON.stringify(value);
     }
   }
@@ -139,11 +190,10 @@ function normaliseInputParams(
  *  3. IAM propagation     → wait and retry (roles/policies take seconds to propagate)
  * Everything else is surfaced immediately.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 async function sendWithAutoRetry(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   CommandClass: any,
   input: Record<string, unknown>,
   command: string,
@@ -157,27 +207,42 @@ async function sendWithAutoRetry(
       const result = await client.send(new CommandClass(input));
 
       // After creating an IAM role, wait for propagation
-      if (command === 'CreateRoleCommand' || command === 'PutRolePolicyCommand') {
+      if (
+        command === 'CreateRoleCommand' ||
+        command === 'PutRolePolicyCommand'
+      ) {
         await new Promise((r) => setTimeout(r, 5000));
       }
 
       return (result ?? {}) as Record<string, unknown>;
     } catch (err) {
-      const awsErr = err as { name?: string; message?: string; Code?: string; $metadata?: { httpStatusCode?: number } };
+      const awsErr = err as {
+        name?: string;
+        message?: string;
+        Code?: string;
+        $metadata?: { httpStatusCode?: number };
+      };
       const errName = awsErr.name ?? '';
-      const errMsg = awsErr.message || awsErr.Code || `${errName} (HTTP ${awsErr.$metadata?.httpStatusCode ?? 'unknown'})`;
+      const errMsg =
+        awsErr.message ||
+        awsErr.Code ||
+        `${errName} (HTTP ${awsErr.$metadata?.httpStatusCode ?? 'unknown'})`;
 
-      console.error(`AWS Command Error [${service}:${command}] attempt ${attempt + 1}:`, errName, errMsg);
+      console.error(
+        `AWS Command Error [${service}:${command}] attempt ${attempt + 1}:`,
+        errName,
+        errMsg,
+      );
 
       // ── Idempotent "already exists" → treat as success ──
       if (
-        errName === 'ResourceAlreadyExistsException'
-        || errName === 'DuplicateDocumentContent'
-        || errName === 'DuplicateDocumentVersionName'
-        || errMsg.includes('already exists')
-        || errMsg.includes('AlreadyExists')
-        || errMsg.includes('same metadata and content')
-        || errMsg.includes('DuplicateDocument')
+        errName === 'ResourceAlreadyExistsException' ||
+        errName === 'DuplicateDocumentContent' ||
+        errName === 'DuplicateDocumentVersionName' ||
+        errMsg.includes('already exists') ||
+        errMsg.includes('AlreadyExists') ||
+        errMsg.includes('same metadata and content') ||
+        errMsg.includes('DuplicateDocument')
       ) {
         return { _alreadyExists: true, message: errMsg };
       }
@@ -185,7 +250,9 @@ async function sendWithAutoRetry(
       // ── Throttle / rate limit → backoff and retry ──
       if (isThrottleError(errName, errMsg) && attempt < MAX_ATTEMPTS - 1) {
         const delay = Math.min(1000 * 2 ** attempt, 8000); // 1s, 2s, 4s, 8s
-        console.log(`Throttled on ${service}:${command}, retrying in ${delay}ms`);
+        console.log(
+          `Throttled on ${service}:${command}, retrying in ${delay}ms`,
+        );
         await new Promise((r) => setTimeout(r, delay));
         continue;
       }
@@ -194,7 +261,9 @@ async function sendWithAutoRetry(
       if (!validationFixed && isValidationError(errName, errMsg)) {
         const fixed = tryAutoFixValidationError(input, errMsg);
         if (fixed) {
-          console.log(`Auto-fixed validation error, retrying ${service}:${command}`);
+          console.log(
+            `Auto-fixed validation error, retrying ${service}:${command}`,
+          );
           validationFixed = true;
           continue;
         }
@@ -202,45 +271,55 @@ async function sendWithAutoRetry(
 
       // ── Not found → clear message ──
       if (
-        errName === 'ServiceSettingNotFound'
-        || errName === 'ResourceNotFoundException'
-        || errName === 'NotFoundException'
-        || errName === 'InvalidDocument'
-        || errName === 'NoSuchEntity'
-        || errName === 'NoSuchBucket'
-        || errName === 'DetectorNotFoundException'
-        || errMsg.includes('does not exist')
-        || errMsg.includes('not found')
+        errName === 'ServiceSettingNotFound' ||
+        errName === 'ResourceNotFoundException' ||
+        errName === 'NotFoundException' ||
+        errName === 'InvalidDocument' ||
+        errName === 'NoSuchEntity' ||
+        errName === 'NoSuchBucket' ||
+        errName === 'DetectorNotFoundException' ||
+        errMsg.includes('does not exist') ||
+        errMsg.includes('not found')
       ) {
-        throw new Error(`${service}:${command} failed: target resource not found (${errName}). ${errMsg}`);
+        throw new Error(
+          `${service}:${command} failed: target resource not found (${errName}). ${errMsg}`,
+        );
       }
 
       // ── Unknown / unrecoverable ──
       if (!errMsg || errMsg === 'Unknown' || errMsg === 'UnknownError') {
-        throw new Error(`${service}:${command} failed with ${errName || 'unknown error'} (HTTP ${awsErr.$metadata?.httpStatusCode ?? '?'}). Check IAM permissions and input parameters.`);
+        throw new Error(
+          `${service}:${command} failed with ${errName || 'unknown error'} (HTTP ${awsErr.$metadata?.httpStatusCode ?? '?'}). Check IAM permissions and input parameters.`,
+        );
       }
       throw err;
     }
   }
-  throw new Error(`${service}:${command} failed after ${MAX_ATTEMPTS} attempts`);
+  throw new Error(
+    `${service}:${command} failed after ${MAX_ATTEMPTS} attempts`,
+  );
 }
 
 function isThrottleError(errName: string, errMsg: string): boolean {
-  return errName === 'Throttling'
-    || errName === 'ThrottlingException'
-    || errName === 'TooManyRequestsException'
-    || errName === 'RequestLimitExceeded'
-    || errMsg.includes('Rate exceeded')
-    || errMsg.includes('Throttling')
-    || errMsg.includes('Too Many Requests');
+  return (
+    errName === 'Throttling' ||
+    errName === 'ThrottlingException' ||
+    errName === 'TooManyRequestsException' ||
+    errName === 'RequestLimitExceeded' ||
+    errMsg.includes('Rate exceeded') ||
+    errMsg.includes('Throttling') ||
+    errMsg.includes('Too Many Requests')
+  );
 }
 
 function isValidationError(errName: string, errMsg: string): boolean {
-  return errName === 'ValidationException'
-    || errName === 'InvalidParameterValue'
-    || errName === 'InvalidParameterValueException'
-    || errMsg.includes('validation error')
-    || errMsg.includes('failed to satisfy constraint');
+  return (
+    errName === 'ValidationException' ||
+    errName === 'InvalidParameterValue' ||
+    errName === 'InvalidParameterValueException' ||
+    errMsg.includes('validation error') ||
+    errMsg.includes('failed to satisfy constraint')
+  );
 }
 
 /**
@@ -300,7 +379,7 @@ export function validatePlanSteps(steps: AwsCommandStep[]): string[] {
   const errors: string[] = [];
 
   for (let i = 0; i < steps.length; i++) {
-    const step = steps[i]!;
+    const step = steps[i];
     const prefix = `Step ${i + 1} (${step.command})`;
 
     // Check service exists
@@ -311,19 +390,26 @@ export function validatePlanSteps(steps: AwsCommandStep[]): string[] {
 
     // Check command exists in module (with fuzzy match for AI mistakes)
     const mod = SDK_MODULES[step.service];
-    let cmdExists = mod[step.command] && typeof mod[step.command] === 'function';
+    let cmdExists =
+      mod[step.command] && typeof mod[step.command] === 'function';
     if (!cmdExists) {
       const cmdBase = step.command.replace('Command', '');
       const fuzzy = Object.keys(mod).find((k) => {
-        if (!k.endsWith('Command') || typeof mod[k] !== 'function') return false;
+        if (!k.endsWith('Command') || typeof mod[k] !== 'function')
+          return false;
         const kBase = k.replace('Command', '');
-        return kBase.includes(cmdBase) || cmdBase.includes(kBase)
-          || kBase.replace('Bucket', '') === cmdBase.replace('Bucket', '');
+        return (
+          kBase.includes(cmdBase) ||
+          cmdBase.includes(kBase) ||
+          kBase.replace('Bucket', '') === cmdBase.replace('Bucket', '')
+        );
       });
       cmdExists = Boolean(fuzzy);
     }
     if (!cmdExists) {
-      errors.push(`${prefix}: Command "${step.command}" not found in @aws-sdk/client-${step.service}`);
+      errors.push(
+        `${prefix}: Command "${step.command}" not found in @aws-sdk/client-${step.service}`,
+      );
       continue;
     }
 
@@ -341,7 +427,9 @@ export function validatePlanSteps(steps: AwsCommandStep[]): string[] {
     const paramStr = JSON.stringify(step.params);
     const placeholders = paramStr.match(/\{\{[\w]+\}\}|<[A-Z_]+>/g);
     if (placeholders) {
-      errors.push(`${prefix}: Contains placeholder values: ${placeholders.join(', ')}`);
+      errors.push(
+        `${prefix}: Contains placeholder values: ${placeholders.join(', ')}`,
+      );
     }
   }
 
@@ -401,8 +489,11 @@ export async function executeAwsCommand(params: {
       if (!k.endsWith('Command') || typeof mod[k] !== 'function') return false;
       const kBase = k.replace('Command', '');
       // Check if one contains the other (e.g., PutBucketPublicAccessBlock vs PutPublicAccessBlock)
-      return kBase.includes(cmdBase) || cmdBase.includes(kBase)
-        || kBase.replace('Bucket', '') === cmdBase.replace('Bucket', '');
+      return (
+        kBase.includes(cmdBase) ||
+        cmdBase.includes(kBase) ||
+        kBase.replace('Bucket', '') === cmdBase.replace('Bucket', '')
+      );
     });
     if (match) {
       // Re-check blocked commands against the resolved name
@@ -413,13 +504,20 @@ export async function executeAwsCommand(params: {
     }
   }
   if (!CommandClass || typeof CommandClass !== 'function') {
-    throw new Error(`Command "${command}" not found in @aws-sdk/client-${service}`);
+    throw new Error(
+      `Command "${command}" not found in @aws-sdk/client-${service}`,
+    );
   }
 
   // Find the client class from the same module (skip internal __Client)
   const clientKey = Object.keys(mod).find(
-    (k) => k.endsWith('Client') && k !== 'Client' && !k.startsWith('_')
-      && typeof mod[k] === 'function' && !k.includes('Command') && !k.includes('Exception'),
+    (k) =>
+      k.endsWith('Client') &&
+      k !== 'Client' &&
+      !k.startsWith('_') &&
+      typeof mod[k] === 'function' &&
+      !k.includes('Command') &&
+      !k.includes('Exception'),
   );
   if (!clientKey) {
     throw new Error(`No client found in @aws-sdk/client-${service}`);
@@ -435,7 +533,13 @@ export async function executeAwsCommand(params: {
   });
 
   try {
-    return await sendWithAutoRetry(client, CommandClass, input, command, service);
+    return await sendWithAutoRetry(
+      client,
+      CommandClass,
+      input,
+      command,
+      service,
+    );
   } finally {
     client.destroy?.();
   }
@@ -457,7 +561,7 @@ export async function executePlanSteps(params: {
   const results: StepResult[] = [];
 
   for (let i = 0; i < params.steps.length; i++) {
-    const step = params.steps[i]!;
+    const step = params.steps[i];
     try {
       const output = await executeAwsCommand({
         service: step.service,
@@ -478,15 +582,23 @@ export async function executePlanSteps(params: {
       const hasPriorNoOp = results.some(
         (r) => r.output._alreadyExists || r.output._skipped,
       );
-      if (hasPriorNoOp && (message.includes('validation error') || message.includes('failed to satisfy constraint'))) {
-        console.log(`Skipping step ${i + 1} (${step.command}) — prior step was no-op, this step likely depends on its output`);
+      if (
+        hasPriorNoOp &&
+        (message.includes('validation error') ||
+          message.includes('failed to satisfy constraint'))
+      ) {
+        console.log(
+          `Skipping step ${i + 1} (${step.command}) — prior step was no-op, this step likely depends on its output`,
+        );
         results.push({ step, output: { _skipped: true, reason: message } });
         continue;
       }
 
       // Auto-rollback completed steps if rollback steps were provided
       if (params.autoRollbackSteps && results.length > 0) {
-        const rollbackSlice = params.autoRollbackSteps.slice(0, results.length).reverse();
+        const rollbackSlice = params.autoRollbackSteps
+          .slice(0, results.length)
+          .reverse();
         for (const rbStep of rollbackSlice) {
           try {
             await executeAwsCommand({

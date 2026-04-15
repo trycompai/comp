@@ -98,7 +98,10 @@ export class TaskNotifierService {
 
       // Build recipient list: all members excluding actor.
       // The isUserUnsubscribed check handles role-based filtering via the notification matrix.
-      const recipientMap = new Map<string, { id: string; name: string; email: string }>();
+      const recipientMap = new Map<
+        string,
+        { id: string; name: string; email: string }
+      >();
 
       for (const member of allMembers) {
         if (member.user?.id && member.user.email) {
@@ -452,7 +455,10 @@ export class TaskNotifierService {
 
       // Build recipient list: all members excluding actor.
       // The isUserUnsubscribed check handles role-based filtering via the notification matrix.
-      const recipientMap = new Map<string, { id: string; name: string; email: string }>();
+      const recipientMap = new Map<
+        string,
+        { id: string; name: string; email: string }
+      >();
 
       for (const member of allMembers) {
         if (member.user?.id && member.user.email) {
@@ -1266,7 +1272,9 @@ export class TaskNotifierService {
     const { organizationId, tasks: failedTasks } = params;
 
     if (failedTasks.length === 0) {
-      this.logger.log('[notifyBulkAutomationFailures] No failed tasks, skipping');
+      this.logger.log(
+        '[notifyBulkAutomationFailures] No failed tasks, skipping',
+      );
       return;
     }
 

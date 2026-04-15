@@ -89,8 +89,7 @@ export class ElasticBeanstalkAdapter implements AwsServiceAdapter {
 
         const healthReportingOpt = settings.find(
           (s) =>
-            s.Namespace ===
-              'aws:elasticbeanstalk:healthreporting:system' &&
+            s.Namespace === 'aws:elasticbeanstalk:healthreporting:system' &&
             s.OptionName === 'SystemType',
         );
 

@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { Prisma } from '@db';
 import {
   registry,
@@ -11,7 +16,10 @@ import {
   type FindingSeverity,
   type CheckVariable,
 } from '@trycompai/integration-platform';
-import { DynamicIntegrationRepository, type DynamicIntegrationWithChecks } from '../repositories/dynamic-integration.repository';
+import {
+  DynamicIntegrationRepository,
+  type DynamicIntegrationWithChecks,
+} from '../repositories/dynamic-integration.repository';
 import type { DynamicCheck } from '@db';
 
 @Injectable()
@@ -41,7 +49,10 @@ export class DynamicManifestLoaderService
           );
           return;
         }
-        this.logger.error('Background refresh of dynamic manifests failed', err);
+        this.logger.error(
+          'Background refresh of dynamic manifests failed',
+          err,
+        );
       });
     }, 60_000);
   }
@@ -93,7 +104,9 @@ export class DynamicManifestLoaderService
     }
 
     registry.refreshDynamic(manifests);
-    this.logger.log(`Loaded ${manifests.length} dynamic integrations into registry`);
+    this.logger.log(
+      `Loaded ${manifests.length} dynamic integrations into registry`,
+    );
   }
 
   /**
@@ -122,7 +135,10 @@ export class DynamicManifestLoaderService
 
     // Collect manifest-level variables from syncDefinition (if present)
     // These appear in the customer configuration UI (ManageIntegrationDialog)
-    const syncDef = integration.syncDefinition as Record<string, unknown> | null;
+    const syncDef = integration.syncDefinition as Record<
+      string,
+      unknown
+    > | null;
     const syncVariables = syncDef?.variables as CheckVariable[] | undefined;
 
     return {
@@ -134,11 +150,17 @@ export class DynamicManifestLoaderService
       docsUrl: integration.docsUrl ?? undefined,
       auth,
       baseUrl: integration.baseUrl ?? undefined,
-      defaultHeaders: (integration.defaultHeaders as Record<string, string>) ?? undefined,
-      capabilities: (integration.capabilities as unknown as IntegrationCapability[]) ?? ['checks'],
+      defaultHeaders:
+        (integration.defaultHeaders as Record<string, string>) ?? undefined,
+      capabilities:
+        (integration.capabilities as unknown as IntegrationCapability[]) ?? [
+          'checks',
+        ],
       supportsMultipleConnections: integration.supportsMultipleConnections,
-      variables: syncVariables && syncVariables.length > 0 ? syncVariables : undefined,
-      services: (integration.services as IntegrationService[] | null) ?? undefined,
+      variables:
+        syncVariables && syncVariables.length > 0 ? syncVariables : undefined,
+      services:
+        (integration.services as IntegrationService[] | null) ?? undefined,
       checks,
       isActive: integration.isActive,
     };
@@ -155,7 +177,9 @@ export class DynamicManifestLoaderService
       id: check.checkSlug,
       name: check.name,
       description: check.description,
-      definition: definition as Parameters<typeof interpretDeclarativeCheck>[0]['definition'],
+      definition: definition as Parameters<
+        typeof interpretDeclarativeCheck
+      >[0]['definition'],
       taskMapping: check.taskMapping ?? undefined,
       defaultSeverity: (check.defaultSeverity as FindingSeverity) ?? 'medium',
       variables: variables && variables.length > 0 ? variables : undefined,

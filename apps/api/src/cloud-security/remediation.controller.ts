@@ -74,8 +74,7 @@ export class RemediationController {
         cachedPermissions: body.cachedPermissions,
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Preview failed';
+      const message = error instanceof Error ? error.message : 'Preview failed';
       this.logger.error(`Remediation preview failed: ${message}`);
       throw new HttpException(message, HttpStatus.BAD_REQUEST);
     }
@@ -118,11 +117,13 @@ export class RemediationController {
             acknowledgmentText: body.acknowledgment,
             acknowledgedBy: userId,
             acknowledgedAt: new Date().toISOString(),
+            previousState: result.previousState,
             appliedState: result.appliedState,
-            verified: (result.appliedState as Record<string, unknown>)?.verified,
+            verified: (result.appliedState as Record<string, unknown>)
+              ?.verified,
           },
         });
-      } else {
+      } else if (result.status === 'failed') {
         await logCloudSecurityActivity({
           organizationId,
           userId,
@@ -136,6 +137,22 @@ export class RemediationController {
             acknowledgmentText: body.acknowledgment,
             acknowledgedBy: userId,
             error: result.error,
+          },
+        });
+      } else {
+        await logCloudSecurityActivity({
+          organizationId,
+          userId,
+          connectionId: body.connectionId,
+          action: 'remediation_failed',
+          description: `Auto-fix did not succeed: ${body.remediationKey} on ${result.resourceId} (status ${result.status})`,
+          metadata: {
+            remediationKey: body.remediationKey,
+            actionId: result.actionId,
+            resourceId: result.resourceId,
+            acknowledgmentText: body.acknowledgment,
+            acknowledgedBy: userId,
+            status: result.status,
           },
         });
       }
@@ -178,7 +195,9 @@ export class RemediationController {
           status: result.status,
           rolledBackBy: userId,
           rolledBackAt: new Date().toISOString(),
-          ...((result as { error?: string }).error && { error: (result as { error?: string }).error }),
+          ...((result as { error?: string }).error && {
+            error: (result as { error?: string }).error,
+          }),
         },
       });
 
@@ -201,11 +220,14 @@ export class RemediationController {
       try {
         const parsed = JSON.parse(raw);
         if (parsed.missingActions) {
-          throw new HttpException({
-            message: parsed.message,
-            missingActions: parsed.missingActions,
-            script: parsed.script,
-          }, HttpStatus.BAD_REQUEST);
+          throw new HttpException(
+            {
+              message: parsed.message,
+              missingActions: parsed.missingActions,
+              script: parsed.script,
+            },
+            HttpStatus.BAD_REQUEST,
+          );
         }
       } catch (parseErr) {
         if (parseErr instanceof HttpException) throw parseErr;
@@ -265,7 +287,8 @@ export class RemediationController {
   @Post('batch')
   @RequirePermission('integration', 'update')
   async createBatch(
-    @Body() body: {
+    @Body()
+    body: {
       connectionId: string;
       findings: Array<{ id: string; key: string; title: string }>;
     },

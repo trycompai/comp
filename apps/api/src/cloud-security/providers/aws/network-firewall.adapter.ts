@@ -68,8 +68,7 @@ export class NetworkFirewallAdapter implements AwsServiceAdapter {
               severity: 'high',
               resourceId: fw.arn,
               evidence: { service: 'Network Firewall', firewallName: fw.name },
-              remediation:
-                `Use network-firewall:AssociateFirewallPolicyCommand with FirewallArn set to '${fw.arn}' and FirewallPolicyArn set to the policy ARN. If no policy exists, first create one with network-firewall:CreateFirewallPolicyCommand with FirewallPolicyName and FirewallPolicy containing StatelessDefaultActions and StatefulRuleGroupReferences. Rollback: use network-firewall:AssociateFirewallPolicyCommand to revert to the previous policy ARN.`,
+              remediation: `Use network-firewall:AssociateFirewallPolicyCommand with FirewallArn set to '${fw.arn}' and FirewallPolicyArn set to the policy ARN. If no policy exists, first create one with network-firewall:CreateFirewallPolicyCommand with FirewallPolicyName and FirewallPolicy containing StatelessDefaultActions and StatefulRuleGroupReferences. Rollback: use network-firewall:AssociateFirewallPolicyCommand to revert to the previous policy ARN.`,
             }),
           );
         }
@@ -90,8 +89,7 @@ export class NetworkFirewallAdapter implements AwsServiceAdapter {
               severity: 'medium',
               resourceId: fw.arn,
               evidence: { service: 'Network Firewall', firewallName: fw.name },
-              remediation:
-                `Use network-firewall:UpdateLoggingConfigurationCommand with FirewallArn set to '${fw.arn}' and LoggingConfiguration.LogDestinationConfigs containing LogType 'ALERT' (or 'FLOW'), LogDestinationType 'CloudWatchLogs' (or 'S3', 'KinesisDataFirehose'), and LogDestination with the destination details (e.g., logGroup for CloudWatch). Rollback: use network-firewall:UpdateLoggingConfigurationCommand with an empty LogDestinationConfigs array.`,
+              remediation: `Use network-firewall:UpdateLoggingConfigurationCommand with FirewallArn set to '${fw.arn}' and LoggingConfiguration.LogDestinationConfigs containing LogType 'ALERT' (or 'FLOW'), LogDestinationType 'CloudWatchLogs' (or 'S3', 'KinesisDataFirehose'), and LogDestination with the destination details (e.g., logGroup for CloudWatch). Rollback: use network-firewall:UpdateLoggingConfigurationCommand with an empty LogDestinationConfigs array.`,
             }),
           );
         }

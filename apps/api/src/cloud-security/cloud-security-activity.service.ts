@@ -135,8 +135,7 @@ export class CloudSecurityActivityService {
 
     return actions.map((action) => {
       const isRollback =
-        action.status === 'rolled_back' ||
-        action.status === 'rollback_failed';
+        action.status === 'rolled_back' || action.status === 'rollback_failed';
       const type: ActivityEntry['type'] = isRollback
         ? 'rollback'
         : 'remediation';

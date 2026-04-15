@@ -142,9 +142,7 @@ export class CloudWatchAdapter implements AwsServiceAdapter {
       for (const check of CIS_CHECKS) {
         const matchingFilter = allFilters.find((filter) => {
           const pattern = filter.filterPattern ?? '';
-          return check.keywords.every((keyword) =>
-            pattern.includes(keyword),
-          );
+          return check.keywords.every((keyword) => pattern.includes(keyword));
         });
 
         if (!matchingFilter) {
@@ -229,9 +227,7 @@ export class CloudWatchAdapter implements AwsServiceAdapter {
     return findings;
   }
 
-  private async fetchAllMetricFilters(
-    client: CloudWatchLogsClient,
-  ): Promise<
+  private async fetchAllMetricFilters(client: CloudWatchLogsClient): Promise<
     {
       filterName?: string;
       filterPattern?: string;
@@ -274,7 +270,11 @@ export class CloudWatchAdapter implements AwsServiceAdapter {
     metricName: string,
   ): Promise<boolean> {
     // Check common namespaces — customers may use any of these
-    const namespaces = ['CloudTrailMetrics', 'CompAI-CIS-Metrics', 'CISBenchmark'];
+    const namespaces = [
+      'CloudTrailMetrics',
+      'CompAI-CIS-Metrics',
+      'CISBenchmark',
+    ];
     try {
       for (const ns of namespaces) {
         const resp = await client.send(

@@ -49,8 +49,14 @@ export class SystemsManagerAdapter implements AwsServiceAdapter {
         const inputs = content?.inputs ?? {};
 
         // Logging is configured if there's an actual destination (non-empty bucket or log group)
-        const s3Bucket = typeof inputs.s3BucketName === 'string' ? inputs.s3BucketName.trim() : '';
-        const cwLogGroup = typeof inputs.cloudWatchLogGroupName === 'string' ? inputs.cloudWatchLogGroupName.trim() : '';
+        const s3Bucket =
+          typeof inputs.s3BucketName === 'string'
+            ? inputs.s3BucketName.trim()
+            : '';
+        const cwLogGroup =
+          typeof inputs.cloudWatchLogGroupName === 'string'
+            ? inputs.cloudWatchLogGroupName.trim()
+            : '';
         const hasLogging = s3Bucket.length > 0 || cwLogGroup.length > 0;
 
         if (hasLogging) {
@@ -76,20 +82,29 @@ export class SystemsManagerAdapter implements AwsServiceAdapter {
               'Session Manager logging not configured',
               'Session Manager preferences exist but no logging destination (S3 bucket or CloudWatch log group) is configured.',
               'medium',
-              { documentExists: true, loggingEnabled: false, currentInputs: inputs },
+              {
+                documentExists: true,
+                loggingEnabled: false,
+                currentInputs: inputs,
+              },
               undefined,
               'Update the SSM-SessionManagerRunShell document to enable logging. Use ssm:UpdateDocumentCommand with Name "SSM-SessionManagerRunShell" and Content that sets inputs.cloudWatchLogGroupName to a log group name (e.g. "/aws/ssm/session-logs") and inputs.cloudWatchEncryptionEnabled to true. The document Content must be a JSON string with schemaVersion "1.0" and sessionType "Standard_Stream". Create the log group first with logs:CreateLogGroupCommand if it does not exist. Rollback by calling ssm:UpdateDocumentCommand with the original Content.',
             ),
           );
         }
       } catch (docError: unknown) {
-        const docMsg = docError instanceof Error ? docError.message : String(docError);
-        const errName = docError instanceof Error ? (docError as { name?: string }).name ?? '' : '';
+        const docMsg =
+          docError instanceof Error ? docError.message : String(docError);
+        const errName =
+          docError instanceof Error
+            ? ((docError as { name?: string }).name ?? '')
+            : '';
 
-        const isPermissionError = docMsg.toLowerCase().includes('accessdenied')
-          || docMsg.toLowerCase().includes('not authorized')
-          || docMsg.toLowerCase().includes('access denied')
-          || errName === 'AccessDeniedException';
+        const isPermissionError =
+          docMsg.toLowerCase().includes('accessdenied') ||
+          docMsg.toLowerCase().includes('not authorized') ||
+          docMsg.toLowerCase().includes('access denied') ||
+          errName === 'AccessDeniedException';
 
         if (isPermissionError) {
           // Skip silently — auditor role may not have ssm:GetDocument

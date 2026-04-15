@@ -6,7 +6,9 @@
  * in isolation rather than importing the module directly.
  */
 
-function getTrustedOriginsLogic(authTrustedOrigins: string | undefined): string[] {
+function getTrustedOriginsLogic(
+  authTrustedOrigins: string | undefined,
+): string[] {
   if (authTrustedOrigins) {
     return authTrustedOrigins.split(',').map((o) => o.trim());
   }
@@ -68,7 +70,9 @@ describe('getTrustedOrigins', () => {
   });
 
   it('should trim whitespace from comma-separated origins', () => {
-    const origins = getTrustedOriginsLogic('  https://a.com  ,  https://b.com  ');
+    const origins = getTrustedOriginsLogic(
+      '  https://a.com  ,  https://b.com  ',
+    );
     expect(origins).toEqual(['https://a.com', 'https://b.com']);
   });
 });
@@ -77,26 +81,45 @@ describe('isStaticTrustedOrigin', () => {
   const defaults = getTrustedOriginsLogic(undefined);
 
   it('should allow static trusted origins', () => {
-    expect(isStaticTrustedOriginLogic('https://app.trycomp.ai', defaults)).toBe(true);
+    expect(isStaticTrustedOriginLogic('https://app.trycomp.ai', defaults)).toBe(
+      true,
+    );
   });
 
   it('should allow trust portal subdomains of trycomp.ai', () => {
-    expect(isStaticTrustedOriginLogic('https://security.trycomp.ai', defaults)).toBe(true);
-    expect(isStaticTrustedOriginLogic('https://acme.trycomp.ai', defaults)).toBe(true);
+    expect(
+      isStaticTrustedOriginLogic('https://security.trycomp.ai', defaults),
+    ).toBe(true);
+    expect(
+      isStaticTrustedOriginLogic('https://acme.trycomp.ai', defaults),
+    ).toBe(true);
   });
 
   it('should allow trust portal subdomains of staging.trycomp.ai', () => {
-    expect(isStaticTrustedOriginLogic('https://security.staging.trycomp.ai', defaults)).toBe(true);
+    expect(
+      isStaticTrustedOriginLogic(
+        'https://security.staging.trycomp.ai',
+        defaults,
+      ),
+    ).toBe(true);
   });
 
   it('should allow trust.inc and its subdomains', () => {
-    expect(isStaticTrustedOriginLogic('https://trust.inc', defaults)).toBe(true);
-    expect(isStaticTrustedOriginLogic('https://acme.trust.inc', defaults)).toBe(true);
+    expect(isStaticTrustedOriginLogic('https://trust.inc', defaults)).toBe(
+      true,
+    );
+    expect(isStaticTrustedOriginLogic('https://acme.trust.inc', defaults)).toBe(
+      true,
+    );
   });
 
   it('should reject unknown origins', () => {
-    expect(isStaticTrustedOriginLogic('https://evil.com', defaults)).toBe(false);
-    expect(isStaticTrustedOriginLogic('https://trycomp.ai.evil.com', defaults)).toBe(false);
+    expect(isStaticTrustedOriginLogic('https://evil.com', defaults)).toBe(
+      false,
+    );
+    expect(
+      isStaticTrustedOriginLogic('https://trycomp.ai.evil.com', defaults),
+    ).toBe(false);
   });
 
   it('should handle invalid origins gracefully', () => {
@@ -112,7 +135,9 @@ describe('isStaticTrustedOrigin', () => {
     ) as string;
     expect(mainTs).not.toContain('origin: true');
     expect(mainTs).toContain('isTrustedOrigin');
-    expect(mainTs).toContain("import { isTrustedOrigin } from './auth/auth.server'");
+    expect(mainTs).toContain(
+      "import { isTrustedOrigin } from './auth/auth.server'",
+    );
   });
 });
 

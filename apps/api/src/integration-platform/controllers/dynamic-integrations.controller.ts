@@ -47,7 +47,10 @@ export class DynamicIntegrationsController {
     const validation = validateIntegrationDefinition(body);
     if (!validation.success) {
       throw new HttpException(
-        { message: 'Invalid integration definition', errors: validation.errors },
+        {
+          message: 'Invalid integration definition',
+          errors: validation.errors,
+        },
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -55,7 +58,7 @@ export class DynamicIntegrationsController {
     const def = validation.data!;
 
     // Validate and store syncDefinition through Zod to apply defaults (e.g., employeesPath)
-    const rawSyncDef = (body as Record<string, unknown>).syncDefinition;
+    const rawSyncDef = body.syncDefinition;
     const validatedSyncDef = rawSyncDef
       ? SyncDefinitionSchema.parse(rawSyncDef)
       : undefined;
@@ -74,13 +77,17 @@ export class DynamicIntegrationsController {
       capabilities: def.capabilities as unknown as Prisma.InputJsonValue,
       supportsMultipleConnections: def.supportsMultipleConnections,
       syncDefinition: validatedSyncDef
-        ? (JSON.parse(JSON.stringify(validatedSyncDef)) as Prisma.InputJsonValue)
+        ? (JSON.parse(
+            JSON.stringify(validatedSyncDef),
+          ) as Prisma.InputJsonValue)
         : null,
       services: (def.services as unknown as Prisma.InputJsonValue) ?? undefined,
     });
 
     // Delete checks not in the new definition, then upsert the rest
-    const existingChecks = await this.dynamicCheckRepo.findByIntegrationId(integration.id);
+    const existingChecks = await this.dynamicCheckRepo.findByIntegrationId(
+      integration.id,
+    );
     const newCheckSlugs = new Set(def.checks.map((c) => c.checkSlug));
     for (const existing of existingChecks) {
       if (!newCheckSlugs.has(existing.checkSlug)) {
@@ -116,7 +123,9 @@ export class DynamicIntegrationsController {
     // Refresh registry
     await this.loaderService.invalidateCache();
 
-    this.logger.log(`Upserted dynamic integration: ${def.slug} with ${def.checks.length} checks`);
+    this.logger.log(
+      `Upserted dynamic integration: ${def.slug} with ${def.checks.length} checks`,
+    );
 
     return {
       success: true,
@@ -134,7 +143,10 @@ export class DynamicIntegrationsController {
     const validation = validateIntegrationDefinition(body);
     if (!validation.success) {
       throw new HttpException(
-        { message: 'Invalid integration definition', errors: validation.errors },
+        {
+          message: 'Invalid integration definition',
+          errors: validation.errors,
+        },
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -149,7 +161,7 @@ export class DynamicIntegrationsController {
       );
     }
 
-    const rawSyncDefCreate = (body as Record<string, unknown>).syncDefinition;
+    const rawSyncDefCreate = body.syncDefinition;
     const validatedSyncDefCreate = rawSyncDefCreate
       ? SyncDefinitionSchema.parse(rawSyncDefCreate)
       : undefined;
@@ -166,7 +178,9 @@ export class DynamicIntegrationsController {
       capabilities: def.capabilities as unknown as Prisma.InputJsonValue,
       supportsMultipleConnections: def.supportsMultipleConnections,
       syncDefinition: validatedSyncDefCreate
-        ? (JSON.parse(JSON.stringify(validatedSyncDefCreate)) as Prisma.InputJsonValue)
+        ? (JSON.parse(
+            JSON.stringify(validatedSyncDefCreate),
+          ) as Prisma.InputJsonValue)
         : undefined,
     });
 
@@ -196,7 +210,9 @@ export class DynamicIntegrationsController {
 
     await this.loaderService.invalidateCache();
 
-    this.logger.log(`Created dynamic integration: ${def.slug} with ${def.checks.length} checks`);
+    this.logger.log(
+      `Created dynamic integration: ${def.slug} with ${def.checks.length} checks`,
+    );
 
     return { success: true, id: integration.id, slug: integration.slug };
   }
@@ -227,7 +243,10 @@ export class DynamicIntegrationsController {
   async getById(@Param('id') id: string) {
     const integration = await this.dynamicIntegrationRepo.findById(id);
     if (!integration) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
     return integration;
   }
@@ -239,7 +258,10 @@ export class DynamicIntegrationsController {
   async update(@Param('id') id: string, @Body() body: Record<string, unknown>) {
     const existing = await this.dynamicIntegrationRepo.findById(id);
     if (!existing) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     await this.dynamicIntegrationRepo.update(id, body);
@@ -255,7 +277,10 @@ export class DynamicIntegrationsController {
   async remove(@Param('id') id: string) {
     const existing = await this.dynamicIntegrationRepo.findById(id);
     if (!existing) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     await this.dynamicIntegrationRepo.delete(id);
@@ -277,7 +302,10 @@ export class DynamicIntegrationsController {
   ) {
     const integration = await this.dynamicIntegrationRepo.findById(id);
     if (!integration) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     const check = await this.dynamicCheckRepo.create({
@@ -346,7 +374,10 @@ export class DynamicIntegrationsController {
   async activate(@Param('id') id: string) {
     const integration = await this.dynamicIntegrationRepo.findById(id);
     if (!integration) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     for (const check of integration.checks) {
@@ -362,7 +393,9 @@ export class DynamicIntegrationsController {
       slug: integration.slug,
       name: integration.name,
       category: integration.category,
-      capabilities: (integration.capabilities as unknown as string[]) ?? ['checks'],
+      capabilities: (integration.capabilities as unknown as string[]) ?? [
+        'checks',
+      ],
       isActive: true,
     });
 
@@ -380,7 +413,10 @@ export class DynamicIntegrationsController {
   async deactivate(@Param('id') id: string) {
     const integration = await this.dynamicIntegrationRepo.findById(id);
     if (!integration) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     await this.dynamicIntegrationRepo.update(id, { isActive: false });
@@ -421,7 +457,7 @@ export class DynamicIntegrationsController {
         capabilities: definition.capabilities,
         checksCount: definition.checks.length,
         checkSlugs: definition.checks.map((c) => c.checkSlug),
-        hasSyncDefinition: !!(body as Record<string, unknown>).syncDefinition,
+        hasSyncDefinition: !!body.syncDefinition,
       },
     };
   }
@@ -434,7 +470,10 @@ export class DynamicIntegrationsController {
   async getCheckRuns(@Param('id') id: string) {
     const integration = await this.dynamicIntegrationRepo.findById(id);
     if (!integration) {
-      throw new HttpException('Dynamic integration not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Dynamic integration not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     // Find all connections for this provider
@@ -520,7 +559,10 @@ export class DynamicIntegrationsController {
       logs: run.logs,
       results: run.results,
       provider: run.connection?.provider
-        ? { slug: run.connection.provider.slug, name: run.connection.provider.name }
+        ? {
+            slug: run.connection.provider.slug,
+            name: run.connection.provider.name,
+          }
         : null,
     };
   }

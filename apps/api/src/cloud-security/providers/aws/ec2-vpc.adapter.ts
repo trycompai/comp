@@ -87,7 +87,8 @@ export class Ec2VpcAdapter implements AwsServiceAdapter {
                   id: `ec2-sg-open-${sg.GroupId}-${portNum}`,
                   title: `Security group "${sg.GroupName || sg.GroupId}" allows ${service} (${portNum}) from 0.0.0.0/0 (${region})`,
                   description: `Security group ${sg.GroupId} in VPC ${sg.VpcId || 'default'} allows unrestricted inbound access on port ${portNum} (${service}). This exposes the service to the entire internet.`,
-                  severity: portNum === 22 || portNum === 3389 ? 'high' : 'critical',
+                  severity:
+                    portNum === 22 || portNum === 3389 ? 'high' : 'critical',
                   resourceType: 'AwsEc2SecurityGroup',
                   resourceId: sg.GroupId,
                   remediation: `Use ec2:RevokeSecurityGroupIngressCommand with GroupId set to '${sg.GroupId}' and IpPermissions containing FromPort: ${portNum}, ToPort: ${portNum}, IpProtocol: 'tcp', and IpRanges: [{ CidrIp: '0.0.0.0/0' }] to remove the open rule. Then use ec2:AuthorizeSecurityGroupIngressCommand with restricted CidrIp values. Rollback: use ec2:AuthorizeSecurityGroupIngressCommand with the original 0.0.0.0/0 CidrIp.`,
@@ -143,9 +144,7 @@ export class Ec2VpcAdapter implements AwsServiceAdapter {
       // If prerequisite check fails (permissions), fall through to existing behavior
     }
 
-    const resp = await client.send(
-      new GetEbsEncryptionByDefaultCommand({}),
-    );
+    const resp = await client.send(new GetEbsEncryptionByDefaultCommand({}));
 
     if (!resp.EbsEncryptionByDefault) {
       return [

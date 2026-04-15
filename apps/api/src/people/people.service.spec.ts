@@ -51,8 +51,14 @@ jest.mock('@db', () => ({
 
 jest.mock('@trycompai/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {
-    owner: { organization: ['read', 'update', 'delete'], member: ['create', 'read', 'update', 'delete'] },
-    admin: { organization: ['read', 'update'], member: ['create', 'read', 'update', 'delete'] },
+    owner: {
+      organization: ['read', 'update', 'delete'],
+      member: ['create', 'read', 'update', 'delete'],
+    },
+    admin: {
+      organization: ['read', 'update'],
+      member: ['create', 'read', 'update', 'delete'],
+    },
     auditor: { organization: ['read'], member: ['read'] },
     employee: { compliance: ['required'] },
     contractor: { compliance: ['required'] },
@@ -220,7 +226,11 @@ describe('PeopleService', () => {
         userId: 'usr_1',
         role: 'employee',
       };
-      const updatedMember = { id: 'mem_1', user: { name: 'Alice' }, role: 'admin' };
+      const updatedMember = {
+        id: 'mem_1',
+        user: { name: 'Alice' },
+        role: 'admin',
+      };
 
       (MemberValidator.validateOrganization as jest.Mock).mockResolvedValue(
         undefined,
@@ -253,7 +263,11 @@ describe('PeopleService', () => {
         userId: 'usr_old',
         role: 'employee',
       };
-      const updatedMember = { id: 'mem_1', user: { name: 'New' }, role: 'employee' };
+      const updatedMember = {
+        id: 'mem_1',
+        user: { name: 'New' },
+        role: 'employee',
+      };
 
       (MemberValidator.validateOrganization as jest.Mock).mockResolvedValue(
         undefined,
@@ -476,9 +490,9 @@ describe('PeopleService', () => {
         null,
       );
 
-      await expect(
-        service.unlinkDevice('mem_none', 'org_123'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.unlinkDevice('mem_none', 'org_123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

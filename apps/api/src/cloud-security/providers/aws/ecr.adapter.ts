@@ -1,7 +1,4 @@
-import {
-  ECRClient,
-  DescribeRepositoriesCommand,
-} from '@aws-sdk/client-ecr';
+import { ECRClient, DescribeRepositoriesCommand } from '@aws-sdk/client-ecr';
 import type { SecurityFinding } from '../../cloud-security.service';
 import type { AwsCredentials, AwsServiceAdapter } from './aws-service-adapter';
 

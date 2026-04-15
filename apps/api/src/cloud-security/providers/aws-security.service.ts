@@ -5,7 +5,10 @@ import {
   GetCostAndUsageCommand,
 } from '@aws-sdk/client-cost-explorer';
 import type { SecurityFinding } from '../cloud-security.service';
-import type { AwsCredentials, AwsServiceAdapter } from './aws/aws-service-adapter';
+import type {
+  AwsCredentials,
+  AwsServiceAdapter,
+} from './aws/aws-service-adapter';
 import { IamAdapter } from './aws/iam.adapter';
 import { CloudTrailAdapter } from './aws/cloudtrail.adapter';
 import { S3Adapter } from './aws/s3.adapter';
@@ -141,9 +144,10 @@ export class AWSSecurityService {
     }
 
     // undefined = scan all (no detection data), [] = scan nothing (all disabled), [...] = scan specific
-    const activeAdapters = enabledServices === undefined
-      ? this.adapters
-      : this.adapters.filter((a) => enabledServices.includes(a.serviceId));
+    const activeAdapters =
+      enabledServices === undefined
+        ? this.adapters
+        : this.adapters.filter((a) => enabledServices.includes(a.serviceId));
 
     this.logger.log(
       `Scanning ${activeAdapters.length} service adapters` +
@@ -196,9 +200,7 @@ export class AWSSecurityService {
           );
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);
-          this.logger.warn(
-            `[${adapter.serviceId}] Error in ${region}: ${msg}`,
-          );
+          this.logger.warn(`[${adapter.serviceId}] Error in ${region}: ${msg}`);
           failedRegions.add(region);
         }
       }
@@ -328,9 +330,7 @@ export class AWSSecurityService {
       credentials: roleAssumerAwsCreds,
     });
 
-    this.logger.log(
-      `Assuming customer role ${roleArn} in region ${region}`,
-    );
+    this.logger.log(`Assuming customer role ${roleArn} in region ${region}`);
 
     const customerResp = await roleAssumerSts.send(
       new AssumeRoleCommand({
@@ -422,9 +422,7 @@ export class AWSSecurityService {
     for (const result of response.ResultsByTime ?? []) {
       for (const group of result.Groups ?? []) {
         const serviceName = group.Keys?.[0];
-        const amount = parseFloat(
-          group.Metrics?.UnblendedCost?.Amount ?? '0',
-        );
+        const amount = parseFloat(group.Metrics?.UnblendedCost?.Amount ?? '0');
         if (serviceName && amount > 0) {
           activeAwsNames.add(serviceName);
         }

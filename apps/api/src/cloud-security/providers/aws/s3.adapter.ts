@@ -121,8 +121,7 @@ export class S3Adapter implements AwsServiceAdapter {
       const resp = await client.send(
         new GetBucketEncryptionCommand({ Bucket: bucketName }),
       );
-      const rules =
-        resp.ServerSideEncryptionConfiguration?.Rules || [];
+      const rules = resp.ServerSideEncryptionConfiguration?.Rules || [];
 
       if (rules.length === 0) {
         return [
