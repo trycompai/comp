@@ -24,6 +24,53 @@ import { Add, Edit } from '@trycompai/design-system/icons';
 import { TimelinePhaseBar } from '@/app/(app)/[orgId]/overview/components/TimelinePhaseBar';
 import { NewTemplateDialog } from './NewTemplateDialog';
 
+interface TemplateTrackGroup {
+  key: string;
+  frameworkId: string;
+  frameworkName: string;
+  isVisible: boolean;
+  displayName: string;
+  templates: AdminTimelineTemplate[];
+}
+
+function groupByTrack(
+  templates: AdminTimelineTemplate[],
+): TemplateTrackGroup[] {
+  const groups = new Map<string, TemplateTrackGroup>();
+
+  for (const template of templates) {
+    const trackKey = template.trackKey ?? 'primary';
+    const key = `${template.frameworkId}:${trackKey}`;
+    const existing = groups.get(key);
+    if (!existing) {
+      groups.set(key, {
+        key,
+        frameworkId: template.frameworkId,
+        frameworkName: template.framework?.name ?? 'Unknown',
+        isVisible: template.framework?.visible === true,
+        displayName: template.name,
+        templates: [template],
+      });
+      continue;
+    }
+    existing.templates.push(template);
+  }
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      templates: [...group.templates].sort(
+        (a, b) => a.cycleNumber - b.cycleNumber,
+      ),
+    }))
+    .sort((a, b) => {
+      if (a.frameworkName !== b.frameworkName) {
+        return a.frameworkName.localeCompare(b.frameworkName);
+      }
+      return a.displayName.localeCompare(b.displayName);
+    });
+}
+
 export function TemplateList() {
   const { templates, isLoading } = useAdminTimelineTemplates();
   const { orgId } = useParams<{ orgId: string }>();
@@ -49,9 +96,13 @@ export function TemplateList() {
       orderIndex: p.orderIndex,
     }));
 
-  const visibleCount = templates.filter(
-    (template) => template.framework?.visible === true,
-  ).length;
+  const groupedAllTemplates = groupByTrack(templates);
+  const groupedVisibleTemplates = groupByTrack(
+    templates.filter((template) => template.framework?.visible === true),
+  );
+  const groupedHiddenTemplates = groupByTrack(
+    templates.filter((template) => template.framework?.visible !== true),
+  );
 
   const filteredTemplates = templates.filter((template) => {
     if (visibilityFilter === 'all') return true;
@@ -60,6 +111,10 @@ export function TemplateList() {
     }
     return template.framework?.visible !== true;
   });
+  const groupedFilteredTemplates = groupByTrack(filteredTemplates);
+  const filteredFrameworkCount = new Set(
+    groupedFilteredTemplates.map((template) => template.frameworkId),
+  ).size;
 
   if (isLoading) {
     return (
@@ -98,27 +153,35 @@ export function TemplateList() {
             variant={visibilityFilter === 'all' ? 'default' : 'outline'}
             onClick={() => setVisibilityFilter('all')}
           >
-            All ({templates.length})
+            All Templates ({groupedAllTemplates.length})
           </Button>
           <Button
             size="sm"
             variant={visibilityFilter === 'visible' ? 'default' : 'outline'}
             onClick={() => setVisibilityFilter('visible')}
           >
-            Visible ({visibleCount})
+            Visible Templates ({groupedVisibleTemplates.length})
           </Button>
           <Button
             size="sm"
             variant={visibilityFilter === 'hidden' ? 'default' : 'outline'}
             onClick={() => setVisibilityFilter('hidden')}
           >
-            Hidden ({templates.length - visibleCount})
+            Hidden Templates ({groupedHiddenTemplates.length})
           </Button>
         </div>
+        <div className="mb-4">
+          <Text size="sm" variant="muted">
+            Showing {groupedFilteredTemplates.length} template track
+            {groupedFilteredTemplates.length === 1 ? '' : 's'} across{' '}
+            {filteredFrameworkCount} framework
+            {filteredFrameworkCount === 1 ? '' : 's'}.
+          </Text>
+        </div>
 
-        {filteredTemplates.length === 0 ? (
+        {groupedFilteredTemplates.length === 0 ? (
           <div className="rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">
-            {templates.length === 0
+            {groupedAllTemplates.length === 0
               ? 'No timeline templates yet. Create one to get started.'
               : 'No templates match the selected visibility filter.'}
           </div>
@@ -137,46 +200,72 @@ export function TemplateList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTemplates.map((template) => (
-                <TableRow key={template.id}>
+              {groupedFilteredTemplates.map((group) => {
+                const baseTemplate = group.templates[0];
+                const phaseCounts = group.templates.map((t) => t.phases.length);
+                const minPhases = Math.min(...phaseCounts);
+                const maxPhases = Math.max(...phaseCounts);
+                const durations = group.templates.map(totalDurationWeeks);
+                const minDuration = Math.min(...durations);
+                const maxDuration = Math.max(...durations);
+
+                return (
+                <TableRow key={group.key}>
                   <TableCell>
                     <Text size="sm" weight="medium">
-                      {template.name}
+                      {group.displayName}
                     </Text>
                   </TableCell>
                   <TableCell>
                     <Text size="sm" variant="muted">
-                      {template.framework?.name ?? 'Unknown'}
+                      {group.frameworkName}
                     </Text>
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant={
-                        template.framework?.visible === true
+                        group.isVisible
                           ? 'default'
                           : 'outline'
                       }
                     >
-                      {template.framework?.visible === true
+                      {group.isVisible
                         ? 'Visible'
                         : 'Hidden'}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">Cycle {template.cycleNumber}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Text size="sm">{template.phases.length}</Text>
+                    <div className="flex flex-wrap gap-1">
+                      {group.templates.map((template) => (
+                        <Button
+                          key={template.id}
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(template)}
+                        >
+                          Cycle {template.cycleNumber}
+                        </Button>
+                      ))}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Text size="sm">
-                      {totalDurationWeeks(template)} weeks
+                      {minPhases === maxPhases
+                        ? minPhases
+                        : `${minPhases}-${maxPhases}`}
+                    </Text>
+                  </TableCell>
+                  <TableCell>
+                    <Text size="sm">
+                      {minDuration === maxDuration
+                        ? `${minDuration} weeks`
+                        : `${minDuration}-${maxDuration} weeks`}
                     </Text>
                   </TableCell>
                   <TableCell>
                     <div className="w-48">
                       <TimelinePhaseBar
-                        phases={phasesForBar(template)}
+                        phases={phasesForBar(baseTemplate)}
                         height={20}
                       />
                     </div>
@@ -186,13 +275,15 @@ export function TemplateList() {
                       size="sm"
                       variant="outline"
                       iconLeft={<Edit size={16} />}
-                      onClick={() => handleEdit(template)}
+                      onClick={() => handleEdit(baseTemplate)}
                     >
-                      Edit
+                      {group.templates.length > 1
+                        ? `Edit Cycle ${baseTemplate.cycleNumber}`
+                        : 'Edit'}
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
             </TableBody>
           </Table>
         )}

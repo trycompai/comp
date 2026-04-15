@@ -16,6 +16,7 @@ interface TemplateFormValues {
       | 'AUTO_TASKS'
       | 'AUTO_POLICIES'
       | 'AUTO_PEOPLE'
+      | 'AUTO_FINDINGS'
       | 'AUTO_UPLOAD'
       | 'MANUAL';
     locksTimelineOnComplete?: boolean;

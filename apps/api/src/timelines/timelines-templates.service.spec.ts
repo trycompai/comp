@@ -149,6 +149,44 @@ describe('TimelinesTemplatesService', () => {
     expect(upsertDefaultTemplate).not.toHaveBeenCalled();
   });
 
+  it('normalizes legacy default SOC 2 renewal template name', async () => {
+    const service = new TimelinesTemplatesService();
+
+    (mockDb.frameworkEditorFramework.findMany as jest.Mock).mockResolvedValue([
+      { id: 'frk_soc2', name: 'SOC 2' },
+    ]);
+    (getDefaultTemplatesForFramework as jest.Mock).mockReturnValue([
+      {
+        frameworkName: 'SOC 2',
+        name: 'SOC 2 Type 2',
+        cycleNumber: 2,
+        trackKey: 'soc2_type2',
+        templateKey: 'soc2_type2_renewal',
+        nextTemplateKey: 'soc2_type2_renewal',
+        phases: [],
+      },
+    ]);
+    (mockDb.timelineTemplate.findUnique as jest.Mock).mockResolvedValue({
+      id: 'tml_soc2_renewal',
+      name: 'SOC 2 Type 2 - Year 2+',
+      templateKey: 'soc2_type2_renewal',
+      nextTemplateKey: 'soc2_type2_renewal',
+    });
+    (mockDb.timelineTemplate.findMany as jest.Mock).mockResolvedValue([]);
+
+    await service.findAll();
+
+    expect(mockDb.timelineTemplate.update).toHaveBeenCalledWith({
+      where: { id: 'tml_soc2_renewal' },
+      data: {
+        name: 'SOC 2 Type 2',
+        templateKey: 'soc2_type2_renewal',
+        nextTemplateKey: 'soc2_type2_renewal',
+      },
+    });
+    expect(upsertDefaultTemplate).not.toHaveBeenCalled();
+  });
+
   it('returns an empty list when no frameworks exist', async () => {
     const service = new TimelinesTemplatesService();
 

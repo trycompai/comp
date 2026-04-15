@@ -46,6 +46,7 @@ jest.mock('./timelines-template-resolver', () => ({
 import { db } from '@db';
 import { getOverviewScores } from '../frameworks/frameworks-scores.helper';
 import { createInstanceFromTemplate } from './timelines-template-resolver';
+import { backfillTimeline } from './timelines-backfill.helper';
 
 const mockDb = db as jest.Mocked<typeof db>;
 
@@ -291,6 +292,100 @@ describe('TimelinesService', () => {
     });
     expect(result[0].phases[0].status).toBe('COMPLETED');
     expect(result[0].phases[0].regressedAt).toBeTruthy();
+  });
+
+  it('re-opens AUTO_PEOPLE immediately when live people score drops below 100%', async () => {
+    const orgId = 'org_1';
+    const lifecycle = {
+      activate: jest.fn(),
+      pause: jest.fn(),
+      resume: jest.fn(),
+      completePhase: jest.fn(),
+    };
+    const service = new TimelinesService(lifecycle as any);
+
+    const timelineState = {
+      id: 'tli_people_reopen',
+      organizationId: orgId,
+      frameworkInstanceId: 'fi_1',
+      templateId: 'tml_1',
+      cycleNumber: 1,
+      status: 'ACTIVE',
+      lockedAt: null,
+      startDate: '2026-01-01T00:00:00.000Z',
+      pausedAt: null,
+      completedAt: null,
+      phases: [
+        {
+          id: 'p1',
+          name: 'People',
+          orderIndex: 0,
+          status: 'COMPLETED',
+          completionType: 'AUTO_PEOPLE',
+          completedAt: '2026-01-10T00:00:00.000Z',
+          regressedAt: null,
+          completedById: null,
+          readyForReview: false,
+          readyForReviewAt: null,
+        },
+        {
+          id: 'p2',
+          name: 'Auditor Review',
+          orderIndex: 1,
+          status: 'PENDING',
+          completionType: 'MANUAL',
+          completedAt: null,
+          regressedAt: null,
+          completedById: null,
+          readyForReview: false,
+          readyForReviewAt: null,
+        },
+      ],
+      frameworkInstance: { framework: { id: 'frk_1', name: 'SOC 2' } },
+      template: { id: 'tml_1', name: 'SOC 2 Type 1' },
+    };
+
+    (mockDb.frameworkInstance.findMany as jest.Mock).mockResolvedValue([
+      {
+        id: 'fi_1',
+        frameworkId: 'frk_1',
+        framework: { id: 'frk_1', name: 'SOC 2' },
+        timelineInstances: [{ id: 'tli_people_reopen' }],
+      },
+    ]);
+    (mockDb.timelineInstance.findMany as jest.Mock).mockImplementation(() =>
+      Promise.resolve([cloneTimeline(timelineState)]),
+    );
+
+    (mockDb.$transaction as jest.Mock).mockImplementation(async (fn: any) => {
+      const tx = {
+        timelinePhase: {
+          findMany: jest.fn(async () => cloneTimeline(timelineState.phases)),
+          update: jest.fn(async ({ where, data }: any) => {
+            const phase = timelineState.phases.find((p) => p.id === where.id);
+            if (!phase) return null;
+            Object.assign(phase, data);
+            return phase;
+          }),
+        },
+      };
+      return fn(tx);
+    });
+
+    (getOverviewScores as jest.Mock).mockResolvedValue({
+      policies: { total: 10, published: 10 },
+      tasks: { total: 1, done: 1 },
+      people: { total: 2, completed: 1 },
+    });
+
+    const result = await service.findAllForOrganization(orgId);
+
+    expect(mockDb.$transaction).toHaveBeenCalledTimes(1);
+    expect(result[0].phases.map((phase) => phase.status)).toEqual([
+      'IN_PROGRESS',
+      'PENDING',
+    ]);
+    expect(result[0].phases[0].regressedAt).toBeNull();
   });
 
   it('re-opens a regressed AUTO phase after the 24-hour grace window', async () => {
@@ -617,5 +712,42 @@ describe('TimelinesService', () => {
       },
     });
     expect(result).toEqual(refreshed);
+  });
+
+  it('recreate clears grace periods by bypassing regression grace on refresh', async () => {
+    const lifecycle = {
+      activate: jest.fn(),
+      pause: jest.fn(),
+      resume: jest.fn(),
+      completePhase: jest.fn(),
+    };
+    const service = new TimelinesService(lifecycle as any);
+
+    (mockDb.timelineInstance.findMany as jest.Mock).mockResolvedValue([
+      { id: 'tli_1' },
+    ]);
+    (mockDb.frameworkInstance.findMany as jest.Mock).mockResolvedValue([
+      {
+        id: 'fi_1',
+        frameworkId: 'frk_1',
+        framework: { id: 'frk_1', name: 'SOC 2' },
+        timelineInstances: [],
+      },
+    ]);
+
+    const findAllSpy = jest
+      .spyOn(service, 'findAllForOrganization')
+      .mockResolvedValue([] as any);
+
+    await service.recreateAllForOrganization('org_1');
+
+    expect(backfillTimeline).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      frameworkInstance: expect.objectContaining({ id: 'fi_1' }),
+      forceRefresh: true,
+    });
+    expect(findAllSpy).toHaveBeenLastCalledWith('org_1', {
+      bypassRegressionGrace: true,
+    });
   });
 });

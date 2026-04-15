@@ -10,6 +10,10 @@ import {
   getDefaultTemplatesForFramework,
 } from './default-templates';
 
+const LEGACY_DEFAULT_TEMPLATE_NAME_BY_KEY: Record<string, string> = {
+  soc2_type2_renewal: 'SOC 2 Type 2 - Year 2+',
+};
+
 @Injectable()
 export class TimelinesTemplatesService {
   private async ensureCatalogTemplatesExist() {
@@ -31,18 +35,38 @@ export class TimelinesTemplatesService {
                 cycleNumber: template.cycleNumber,
               },
             },
-            select: { id: true, templateKey: true, nextTemplateKey: true },
+            select: {
+              id: true,
+              name: true,
+              templateKey: true,
+              nextTemplateKey: true,
+            },
           });
           if (existing) {
+            const expectedTemplateKey = template.templateKey ?? null;
+            const expectedNextTemplateKey = template.nextTemplateKey ?? null;
+            const legacyDefaultName =
+              expectedTemplateKey
+                ? LEGACY_DEFAULT_TEMPLATE_NAME_BY_KEY[expectedTemplateKey]
+                : undefined;
+            const shouldNormalizeLegacyDefaultName =
+              !!legacyDefaultName &&
+              existing.name === legacyDefaultName &&
+              template.name !== legacyDefaultName;
+
             if (
-              existing.templateKey !== (template.templateKey ?? null) ||
-              existing.nextTemplateKey !== (template.nextTemplateKey ?? null)
+              existing.templateKey !== expectedTemplateKey ||
+              existing.nextTemplateKey !== expectedNextTemplateKey ||
+              shouldNormalizeLegacyDefaultName
             ) {
               await db.timelineTemplate.update({
                 where: { id: existing.id },
                 data: {
-                  templateKey: template.templateKey ?? null,
-                  nextTemplateKey: template.nextTemplateKey ?? null,
+                  ...(shouldNormalizeLegacyDefaultName
+                    ? { name: template.name }
+                    : {}),
+                  templateKey: expectedTemplateKey,
+                  nextTemplateKey: expectedNextTemplateKey,
                 },
               });
             }

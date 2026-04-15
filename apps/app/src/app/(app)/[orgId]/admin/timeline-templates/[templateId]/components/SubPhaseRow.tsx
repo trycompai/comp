@@ -37,6 +37,7 @@ const COMPLETION_OPTIONS = [
   { value: 'AUTO_TASKS', label: 'Auto (Tasks)' },
   { value: 'AUTO_POLICIES', label: 'Auto (Policies)' },
   { value: 'AUTO_PEOPLE', label: 'Auto (People)' },
+  { value: 'AUTO_FINDINGS', label: 'Auto (Findings)' },
   { value: 'AUTO_UPLOAD', label: 'Auto (Upload)' },
 ] as const;
 

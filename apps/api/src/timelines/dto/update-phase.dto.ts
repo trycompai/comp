@@ -8,9 +8,15 @@ import {
   Min,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PhaseCompletionType } from '@db';
 
-const COMPLETION_TYPES = Object.values(PhaseCompletionType);
+const COMPLETION_TYPES = [
+  'AUTO_TASKS',
+  'AUTO_POLICIES',
+  'AUTO_PEOPLE',
+  'AUTO_FINDINGS',
+  'AUTO_UPLOAD',
+  'MANUAL',
+] as const;
 
 export class UpdatePhaseDto {
   @ApiPropertyOptional({ description: 'Phase name' })

@@ -7,6 +7,7 @@ export const PhaseCompletionType = {
   AUTO_TASKS: 'AUTO_TASKS',
   AUTO_POLICIES: 'AUTO_POLICIES',
   AUTO_PEOPLE: 'AUTO_PEOPLE',
+  AUTO_FINDINGS: 'AUTO_FINDINGS',
   AUTO_UPLOAD: 'AUTO_UPLOAD',
   MANUAL: 'MANUAL',
 } as const;
@@ -88,7 +89,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         description: 'Auditor reviews your account.',
         orderIndex: 3,
         defaultDurationWeeks: 2,
-        completionType: PhaseCompletionType.MANUAL,
+        completionType: PhaseCompletionType.AUTO_FINDINGS,
       },
       {
         name: 'Draft Report',
@@ -156,7 +157,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         description: 'Auditor reviews evidence and addresses any feedback.',
         orderIndex: 4,
         defaultDurationWeeks: 4,
-        completionType: PhaseCompletionType.MANUAL,
+        completionType: PhaseCompletionType.AUTO_FINDINGS,
       },
       {
         name: 'Draft Report',
@@ -176,10 +177,10 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
     ],
   },
 
-  // SOC 2 Type 2 - Year 2+ (cycle 2+ in the Type 2 track)
+  // SOC 2 Type 2 renewal (cycle 2+ in the same Type 2 track)
   {
     frameworkName: 'SOC 2',
-    name: 'SOC 2 Type 2 - Year 2+',
+    name: 'SOC 2 Type 2',
     cycleNumber: 2,
     trackKey: 'soc2_type2',
     templateKey: 'soc2_type2_renewal',
@@ -225,7 +226,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         description: 'Auditor reviews evidence and addresses any feedback.',
         orderIndex: 4,
         defaultDurationWeeks: 4,
-        completionType: PhaseCompletionType.MANUAL,
+        completionType: PhaseCompletionType.AUTO_FINDINGS,
       },
       {
         name: 'Draft Report',
@@ -267,7 +268,7 @@ export const DEFAULT_TIMELINE_TEMPLATES: DefaultTimelineTemplate[] = [
         description: 'Auditor reviews your account.',
         orderIndex: 1,
         defaultDurationWeeks: 2,
-        completionType: PhaseCompletionType.MANUAL,
+        completionType: PhaseCompletionType.AUTO_FINDINGS,
       },
       {
         name: 'Final Report',

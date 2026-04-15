@@ -57,8 +57,17 @@ export class DynamicManifestLoaderService
     if (error instanceof Prisma.PrismaClientInitializationError) {
       return true;
     }
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'ECONNREFUSED'
+    ) {
+      return true;
+    }
     if (error instanceof Error) {
-      return error.message.includes("Can't reach database server");
+      return (
+        error.message.includes("Can't reach database server") ||
+        error.message.includes('ECONNREFUSED')
+      );
     }
     return false;
   }

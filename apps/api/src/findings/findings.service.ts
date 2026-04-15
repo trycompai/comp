@@ -20,6 +20,8 @@ import { UpdateFindingDto } from './dto/update-finding.dto';
 import { FindingAuditService } from './finding-audit.service';
 import { FindingNotifierService } from './finding-notifier.service';
 import { type EvidenceFormType } from '@/evidence-forms/evidence-forms.definitions';
+import { TimelinesService } from '../timelines/timelines.service';
+import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
 
 @Injectable()
 export class FindingsService {
@@ -71,6 +73,7 @@ export class FindingsService {
   constructor(
     private readonly findingAuditService: FindingAuditService,
     private readonly findingNotifierService: FindingNotifierService,
+    private readonly timelinesService: TimelinesService,
   ) {}
 
   private normalizeFindingFormTypes<
@@ -549,6 +552,15 @@ export class FindingsService {
           void this.findingNotifierService.notifyFindingClosed(
             notificationParams,
           );
+          void checkAutoCompletePhases({
+            organizationId,
+            timelinesService: this.timelinesService,
+          }).catch((error) => {
+            this.logger.warn(
+              `Failed to auto-complete AUTO_FINDINGS phases after finding ${findingId} closed`,
+              error instanceof Error ? error.message : String(error),
+            );
+          });
           break;
         case FindingStatus.open:
           this.logger.log(

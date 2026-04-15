@@ -22,6 +22,7 @@ export class TimelinesPhasesService {
       startDate?: Date;
       endDate?: Date;
       durationWeeks?: number;
+      completionType?: PhaseCompletionType;
       documentUrl?: string;
       documentName?: string;
       locksTimelineOnComplete?: boolean;
@@ -62,6 +63,9 @@ export class TimelinesPhasesService {
         ...(data.name !== undefined && { name: data.name }),
         ...(data.description !== undefined && { description: data.description }),
         ...(data.durationWeeks !== undefined && { durationWeeks: data.durationWeeks }),
+        ...(data.completionType !== undefined && {
+          completionType: data.completionType,
+        }),
         ...(data.startDate !== undefined && { startDate: data.startDate }),
         ...(newEndDate !== undefined && { endDate: newEndDate }),
         ...(data.documentUrl !== undefined && { documentUrl: data.documentUrl }),

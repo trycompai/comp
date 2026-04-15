@@ -14,6 +14,7 @@ interface AdminTimelinePhaseTemplate {
     | 'AUTO_TASKS'
     | 'AUTO_POLICIES'
     | 'AUTO_PEOPLE'
+    | 'AUTO_FINDINGS'
     | 'AUTO_UPLOAD'
     | 'MANUAL';
   locksTimelineOnComplete: boolean;
@@ -22,6 +23,7 @@ interface AdminTimelinePhaseTemplate {
 interface AdminTimelineTemplate {
   id: string;
   frameworkId: string;
+  trackKey?: string;
   name: string;
   description: string | null;
   isDefault: boolean;
@@ -61,6 +63,13 @@ interface AdminOrgTimeline {
     name: string;
     description: string | null;
     groupLabel?: string | null;
+    completionType:
+      | 'AUTO_TASKS'
+      | 'AUTO_POLICIES'
+      | 'AUTO_PEOPLE'
+      | 'AUTO_FINDINGS'
+      | 'AUTO_UPLOAD'
+      | 'MANUAL';
     status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
     durationWeeks: number;
     orderIndex: number;

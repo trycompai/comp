@@ -22,11 +22,28 @@ import { Checkmark, Locked } from '@trycompai/design-system/icons';
 import { Input } from '@trycompai/ui/input';
 import { Label } from '@trycompai/ui/label';
 
+const COMPLETION_OPTIONS = [
+  { value: 'MANUAL', label: 'Manual' },
+  { value: 'AUTO_TASKS', label: 'Auto (Tasks)' },
+  { value: 'AUTO_POLICIES', label: 'Auto (Policies)' },
+  { value: 'AUTO_PEOPLE', label: 'Auto (People)' },
+  { value: 'AUTO_FINDINGS', label: 'Auto (Findings)' },
+  { value: 'AUTO_UPLOAD', label: 'Auto (Upload)' },
+] as const;
+
 const phaseUpdateSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
   durationWeeks: z.number().min(1, 'Must be at least 1 week'),
   startDate: z.string().optional(),
+  completionType: z.enum([
+    'AUTO_TASKS',
+    'AUTO_POLICIES',
+    'AUTO_PEOPLE',
+    'AUTO_FINDINGS',
+    'AUTO_UPLOAD',
+    'MANUAL',
+  ]),
   locksTimelineOnComplete: z.boolean(),
 });
 
@@ -96,6 +113,7 @@ export function TimelinePhaseEditor({
         name: values.name,
         description: values.description || undefined,
         durationWeeks: values.durationWeeks,
+        completionType: values.completionType,
         startDate: values.startDate
           ? new Date(values.startDate).toISOString()
           : undefined,
@@ -193,6 +211,20 @@ export function TimelinePhaseEditor({
                   <Label htmlFor="phase-start">Start Date</Label>
                   <Input id="phase-start" type="date" {...register('startDate')} />
                 </div>
+                <div className="col-span-2 flex flex-col gap-1.5">
+                  <Label htmlFor="phase-completionType">Resolution</Label>
+                  <select
+                    id="phase-completionType"
+                    {...register('completionType')}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {COMPLETION_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {calculatedEnd && (
@@ -230,6 +262,7 @@ function phaseDefaults(phase: TimelinePhase | null): PhaseUpdateValues {
     return {
       name: '',
       durationWeeks: 2,
+      completionType: 'MANUAL',
       locksTimelineOnComplete: false,
     };
   }
@@ -238,6 +271,7 @@ function phaseDefaults(phase: TimelinePhase | null): PhaseUpdateValues {
     description: phase.description ?? '',
     durationWeeks: phase.durationWeeks,
     startDate: toDateInput(phase.startDate),
+    completionType: phase.completionType,
     locksTimelineOnComplete: phase.locksTimelineOnComplete,
   };
 }

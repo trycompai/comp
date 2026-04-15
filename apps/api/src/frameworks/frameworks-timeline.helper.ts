@@ -1,6 +1,8 @@
 import { Logger } from '@nestjs/common';
 import {
   db,
+  FindingStatus,
+  FindingType,
   PhaseCompletionType,
   TimelinePhaseStatus,
   TimelineStatus,
@@ -9,6 +11,28 @@ import { TimelinesService } from '../timelines/timelines.service';
 import { getOverviewScores } from './frameworks-scores.helper';
 
 const logger = new Logger('FrameworksTimelineHelper');
+
+type TaskForAutoCompletion = {
+  id: string;
+  status: string;
+  controls: Array<{ id: string }>;
+};
+
+const FRAMEWORK_TO_FINDING_TYPE: Record<string, FindingType> = {
+  SOC2: FindingType.soc2,
+  SOC2V1: FindingType.soc2,
+  ISO27001: FindingType.iso27001,
+};
+
+function getFindingTypeForFrameworkName(
+  frameworkName: string | null | undefined,
+): FindingType | undefined {
+  if (!frameworkName) return undefined;
+  const normalized = frameworkName
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+  return FRAMEWORK_TO_FINDING_TYPE[normalized];
+}
 
 /**
  * For each framework editor ID, look up the corresponding FrameworkInstance
@@ -64,8 +88,8 @@ export async function createTimelinesForFrameworks({
 
 /**
  * Check all active timeline instances for this org. For any IN_PROGRESS
- * phase with completionType AUTO_TASKS, verify whether the linked
- * framework instance has 100% task completion and auto-complete if so.
+ * AUTO_* phase, verify whether the linked auto-completion criteria
+ * are satisfied and auto-complete the phase if so.
  */
 export async function checkAutoCompletePhases({
   organizationId,
@@ -78,6 +102,7 @@ export async function checkAutoCompletePhases({
     PhaseCompletionType.AUTO_TASKS,
     PhaseCompletionType.AUTO_POLICIES,
     PhaseCompletionType.AUTO_PEOPLE,
+    PhaseCompletionType.AUTO_FINDINGS,
   ];
 
   const phases = await db.timelinePhase.findMany({
@@ -95,6 +120,13 @@ export async function checkAutoCompletePhases({
           id: true,
           organizationId: true,
           frameworkInstanceId: true,
+          frameworkInstance: {
+            select: {
+              framework: {
+                select: { name: true },
+              },
+            },
+          },
         },
       },
     },
@@ -127,6 +159,7 @@ export async function checkAutoCompletePhases({
 
   // Deduplicate controls per framework instance
   const frameworkControlsMap = new Map<string, { id: string }[]>();
+  const frameworkControlIdsMap = new Map<string, Set<string>>();
   for (const fi of frameworkInstances) {
     const controlsMap = new Map<string, { id: string }>();
     for (const rm of fi.requirementsMapped) {
@@ -134,7 +167,9 @@ export async function checkAutoCompletePhases({
         controlsMap.set(rm.control.id, { id: rm.control.id });
       }
     }
-    frameworkControlsMap.set(fi.id, Array.from(controlsMap.values()));
+    const controls = Array.from(controlsMap.values());
+    frameworkControlsMap.set(fi.id, controls);
+    frameworkControlIdsMap.set(fi.id, new Set(controls.map((c) => c.id)));
   }
 
   // Fetch all tasks linked to any of these controls
@@ -146,19 +181,95 @@ export async function checkAutoCompletePhases({
     ),
   ];
 
-  if (allControlIds.length === 0) return;
+  const hasAutoFindingsPhase = phases.some(
+    (phase) => phase.completionType === PhaseCompletionType.AUTO_FINDINGS,
+  );
+
+  if (allControlIds.length === 0 && !hasAutoFindingsPhase) return;
 
   // Fetch tasks and overview scores in parallel
+  const tasksPromise: Promise<TaskForAutoCompletion[]> =
+    allControlIds.length > 0
+      ? db.task.findMany({
+          where: {
+            organizationId,
+            controls: { some: { id: { in: allControlIds } } },
+          },
+          select: {
+            id: true,
+            status: true,
+            controls: { select: { id: true } },
+          },
+        })
+      : Promise.resolve([]);
+
   const [tasks, scores] = await Promise.all([
-    db.task.findMany({
-      where: {
-        organizationId,
-        controls: { some: { id: { in: allControlIds } } },
-      },
-      include: { controls: { select: { id: true } } },
-    }),
+    tasksPromise,
     getOverviewScores(organizationId),
   ]);
+
+  const frameworkTaskIdsMap = new Map<string, Set<string>>();
+  for (const fiId of frameworkInstanceIds) {
+    const controlIds = frameworkControlIdsMap.get(fiId) ?? new Set<string>();
+    const taskIds = new Set<string>();
+    for (const task of tasks) {
+      const matchesFramework = task.controls.some((c) => controlIds.has(c.id));
+      if (matchesFramework) taskIds.add(task.id);
+    }
+    frameworkTaskIdsMap.set(fiId, taskIds);
+  }
+
+  let findingsForAutoCompletion: Array<{
+    status: FindingStatus;
+    createdAt: Date;
+    type: FindingType;
+  }> = [];
+
+  if (hasAutoFindingsPhase) {
+    const autoFindingPhaseStartDates = phases
+      .filter(
+        (phase) => phase.completionType === PhaseCompletionType.AUTO_FINDINGS,
+      )
+      .map((phase) => phase.startDate)
+      .filter((d): d is Date => d instanceof Date);
+    const findingTypes = Array.from(
+      new Set(
+        phases
+          .filter(
+            (phase) =>
+              phase.completionType === PhaseCompletionType.AUTO_FINDINGS,
+          )
+          .map(
+            (phase) =>
+              getFindingTypeForFrameworkName(
+                phase.instance.frameworkInstance.framework.name,
+              ),
+          )
+          .filter((t): t is FindingType => !!t),
+      ),
+    );
+
+    if (
+      autoFindingPhaseStartDates.length > 0 &&
+      findingTypes.length > 0
+    ) {
+      const earliestStartDate = new Date(
+        Math.min(...autoFindingPhaseStartDates.map((d) => d.getTime())),
+      );
+      findingsForAutoCompletion = await db.finding.findMany({
+        where: {
+          organizationId,
+          createdAt: { gte: earliestStartDate },
+          type: { in: findingTypes },
+        },
+        select: {
+          status: true,
+          createdAt: true,
+          type: true,
+        },
+      });
+    }
+  }
 
   for (const phase of phases) {
     const fiId = phase.instance.frameworkInstanceId;
@@ -181,6 +292,27 @@ export async function checkAutoCompletePhases({
     } else if (phase.completionType === PhaseCompletionType.AUTO_PEOPLE) {
       const { total, completed } = scores.people;
       shouldComplete = total > 0 && completed >= total;
+    } else if (phase.completionType === PhaseCompletionType.AUTO_FINDINGS) {
+      if (!phase.startDate) continue;
+
+      const phaseStartTime = phase.startDate.getTime();
+      const findingType = getFindingTypeForFrameworkName(
+        phase.instance.frameworkInstance.framework.name,
+      );
+
+      if (!findingType) continue;
+
+      const relevantFindings = findingsForAutoCompletion.filter((finding) => {
+        if (finding.createdAt.getTime() < phaseStartTime) return false;
+        return finding.type === findingType;
+      });
+
+      // Don't auto-complete phases where no findings were ever raised.
+      if (relevantFindings.length === 0) continue;
+
+      shouldComplete = relevantFindings.every(
+        (finding) => finding.status === FindingStatus.closed,
+      );
     }
 
     if (!shouldComplete) continue;

@@ -14,7 +14,13 @@ interface TimelinePhase {
   startDate: string | null;
   endDate: string | null;
   completedAt: string | null;
-  completionType: 'AUTO_TASKS' | 'AUTO_POLICIES' | 'AUTO_PEOPLE' | 'AUTO_UPLOAD' | 'MANUAL';
+  completionType:
+    | 'AUTO_TASKS'
+    | 'AUTO_POLICIES'
+    | 'AUTO_PEOPLE'
+    | 'AUTO_FINDINGS'
+    | 'AUTO_UPLOAD'
+    | 'MANUAL';
   completionPercent?: number;
   readyForReview: boolean;
   readyForReviewAt: string | null;

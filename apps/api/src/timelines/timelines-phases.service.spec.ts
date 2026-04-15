@@ -15,6 +15,7 @@ jest.mock('@db', () => ({
     AUTO_TASKS: 'AUTO_TASKS',
     AUTO_POLICIES: 'AUTO_POLICIES',
     AUTO_PEOPLE: 'AUTO_PEOPLE',
+    AUTO_FINDINGS: 'AUTO_FINDINGS',
     AUTO_UPLOAD: 'AUTO_UPLOAD',
     MANUAL: 'MANUAL',
   },
@@ -178,6 +179,50 @@ describe('TimelinesPhasesService', () => {
       expect.objectContaining({
         id: 'phase_1',
         locksTimelineOnComplete: true,
+      }),
+    );
+  });
+
+  it('updates completionType when provided', async () => {
+    const lifecycle = {
+      completePhase: jest.fn(),
+    };
+    const service = new TimelinesPhasesService(lifecycle as any);
+
+    (mockDb.timelineInstance.findUnique as jest.Mock).mockResolvedValue({
+      id: 'tli_1',
+      organizationId: 'org_1',
+      startDate: new Date('2026-01-01T00:00:00.000Z'),
+      phases: [
+        {
+          id: 'phase_1',
+          completionType: 'MANUAL',
+          status: 'IN_PROGRESS',
+          durationWeeks: 2,
+          startDate: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      ],
+    });
+    (mockDb.timelinePhase.update as jest.Mock).mockResolvedValue({
+      id: 'phase_1',
+      completionType: 'AUTO_FINDINGS',
+      status: 'IN_PROGRESS',
+    });
+
+    const result = await service.updatePhase('tli_1', 'phase_1', 'org_1', {
+      completionType: 'AUTO_FINDINGS',
+    } as any);
+
+    expect(mockDb.timelinePhase.update).toHaveBeenCalledWith({
+      where: { id: 'phase_1' },
+      data: expect.objectContaining({
+        completionType: 'AUTO_FINDINGS',
+      }),
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'phase_1',
+        completionType: 'AUTO_FINDINGS',
       }),
     );
   });

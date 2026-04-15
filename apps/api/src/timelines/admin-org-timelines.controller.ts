@@ -23,6 +23,7 @@ import { ActivateTimelineDto } from './dto/activate-timeline.dto';
 import { UpdatePhaseDto } from './dto/update-phase.dto';
 import { AddPhaseToInstanceDto } from './dto/create-phase-template.dto';
 import { UnlockTimelineDto } from './dto/unlock-timeline.dto';
+import { PhaseCompletionType } from '@db';
 
 @ApiExcludeController()
 @Controller({ path: 'admin/organizations', version: '1' })
@@ -90,6 +91,7 @@ export class AdminOrgTimelinesController {
       durationWeeks: dto.durationWeeks,
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
       endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+      completionType: dto.completionType as PhaseCompletionType | undefined,
       locksTimelineOnComplete: dto.locksTimelineOnComplete,
     });
   }
@@ -109,6 +111,7 @@ export class AdminOrgTimelinesController {
         | 'AUTO_TASKS'
         | 'AUTO_POLICIES'
         | 'AUTO_PEOPLE'
+        | 'AUTO_FINDINGS'
         | 'AUTO_UPLOAD'
         | 'MANUAL'
         | undefined,

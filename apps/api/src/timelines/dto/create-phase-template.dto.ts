@@ -8,9 +8,15 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PhaseCompletionType } from '@db';
 
-const COMPLETION_TYPES = Object.values(PhaseCompletionType);
+const COMPLETION_TYPES = [
+  'AUTO_TASKS',
+  'AUTO_POLICIES',
+  'AUTO_PEOPLE',
+  'AUTO_FINDINGS',
+  'AUTO_UPLOAD',
+  'MANUAL',
+] as const;
 
 export class CreatePhaseTemplateDto {
   @ApiProperty({ description: 'Phase name', example: 'Gap Assessment' })
@@ -54,7 +60,8 @@ export class CreatePhaseTemplateDto {
   completionType?: string;
 
   @ApiPropertyOptional({
-    description: 'If true, completing this phase locks timeline automation state',
+    description:
+      'If true, completing this phase locks timeline automation state',
     default: false,
   })
   @IsOptional()

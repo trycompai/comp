@@ -35,6 +35,28 @@ describe('default-templates', () => {
     expect(observationPhase?.locksTimelineOnComplete).toBe(true);
   });
 
+  it('sets Auditor Review phases to AUTO_FINDINGS for SOC 2 templates', () => {
+    const type1 = getDefaultTemplateForCycle('SOC 2', 1, {
+      trackKey: 'soc2_type1',
+    });
+    const type2 = getDefaultTemplateForCycle('SOC 2', 1, {
+      trackKey: 'soc2_type2',
+    });
+    const legacyType1 = getDefaultTemplateForCycle('SOC 2 v.1', 1, {
+      trackKey: 'primary',
+    });
+
+    const type1AuditorReview = type1?.phases.find((phase) => phase.name === 'Auditor Review');
+    const type2AuditorReview = type2?.phases.find((phase) => phase.name === 'Auditor Review');
+    const legacyAuditorReview = legacyType1?.phases.find(
+      (phase) => phase.name === 'Auditor Review',
+    );
+
+    expect(type1AuditorReview?.completionType).toBe('AUTO_FINDINGS');
+    expect(type2AuditorReview?.completionType).toBe('AUTO_FINDINGS');
+    expect(legacyAuditorReview?.completionType).toBe('AUTO_FINDINGS');
+  });
+
   it('defines explicit SOC 2 progression within each independent track', () => {
     const type1 = getDefaultTemplateForCycle('SOC 2', 1, {
       trackKey: 'soc2_type1',
@@ -54,6 +76,7 @@ describe('default-templates', () => {
 
     expect(renewal?.templateKey).toBe('soc2_type2_renewal');
     expect(renewal?.nextTemplateKey).toBe('soc2_type2_renewal');
+    expect(renewal?.name).toBe('SOC 2 Type 2');
   });
 
   it('falls back to framework defaults when an unknown track key is requested', () => {

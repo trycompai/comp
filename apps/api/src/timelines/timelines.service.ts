@@ -17,7 +17,12 @@ const AUTO_PHASE_TYPES = new Set([
   'AUTO_TASKS',
   'AUTO_PEOPLE',
 ]);
+const AUTO_PHASE_TYPES_NO_GRACE = new Set(['AUTO_PEOPLE']);
 const REGRESSION_GRACE_MS = 24 * 60 * 60 * 1000;
+
+interface TimelinesQueryOptions {
+  bypassRegressionGrace?: boolean;
+}
 
 @Injectable()
 export class TimelinesService {
@@ -29,7 +34,10 @@ export class TimelinesService {
   // Customer-facing queries
   // ---------------------------------------------------------------------------
 
-  async findAllForOrganization(organizationId: string) {
+  async findAllForOrganization(
+    organizationId: string,
+    options: TimelinesQueryOptions = {},
+  ) {
     await this.ensureTimelinesExist(organizationId);
 
     const fetchTimelines = async () =>
@@ -154,6 +162,16 @@ export class TimelinesService {
 
           if (phase.status === TimelinePhaseStatus.COMPLETED) {
             if (livePct < 100) {
+              if (
+                canAutoTransition &&
+                (AUTO_PHASE_TYPES_NO_GRACE.has(phase.completionType) ||
+                  options.bypassRegressionGrace === true)
+              ) {
+                await reopenFromRegressedPhase(timeline.id, phase.orderIndex);
+                changed = true;
+                break;
+              }
+
               if (!phase.regressedAt) {
                 await db.timelinePhase.update({
                   where: { id: phase.id },
@@ -524,6 +542,8 @@ export class TimelinesService {
       }
     }
 
-    return this.findAllForOrganization(organizationId);
+    return this.findAllForOrganization(organizationId, {
+      bypassRegressionGrace: true,
+    });
   }
 }

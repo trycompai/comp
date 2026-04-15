@@ -80,6 +80,7 @@ export function notifyPhaseCompleted({
     completionType === 'AUTO_TASKS' ? ':clipboard:  All evidence tasks completed' :
     completionType === 'AUTO_POLICIES' ? ':page_facing_up:  All policies published' :
     completionType === 'AUTO_PEOPLE' ? ':busts_in_silhouette:  All employees compliant' :
+    completionType === 'AUTO_FINDINGS' ? ':mag:  All auditor findings resolved' :
     completionType === 'AUTO_UPLOAD' ? ':paperclip:  Document uploaded' :
     ':pencil:  Manually completed';
 

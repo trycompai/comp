@@ -45,6 +45,18 @@ const STATUS_BADGE: Record<
   COMPLETED: { label: 'Completed', variant: 'default' },
 };
 
+const PHASE_COMPLETION_LABEL: Record<
+  AdminOrgTimeline['phases'][number]['completionType'],
+  string
+> = {
+  MANUAL: 'Manual',
+  AUTO_TASKS: 'Auto (Tasks)',
+  AUTO_POLICIES: 'Auto (Policies)',
+  AUTO_PEOPLE: 'Auto (People)',
+  AUTO_FINDINGS: 'Auto (Findings)',
+  AUTO_UPLOAD: 'Auto (Upload)',
+};
+
 function formatDate(date: string | null): string {
   if (!date) return '--';
   return new Date(date).toLocaleDateString('en-US', {
@@ -246,6 +258,9 @@ function PhaseRow({
           Lock
         </Badge>
       ) : null}
+      <Badge variant="outline">
+        {PHASE_COMPLETION_LABEL[phase.completionType]}
+      </Badge>
       <Badge variant="outline">
         {phase.status.replace('_', ' ')}
       </Badge>
