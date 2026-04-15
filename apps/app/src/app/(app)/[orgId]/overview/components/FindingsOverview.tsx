@@ -55,8 +55,17 @@ function findingHref(finding: FindingWithTask, organizationId: string): string {
     return `/${organizationId}/documents/${finding.evidenceSubmission.formType}?tab=findings`;
   }
   if (finding.scope) {
-    // Findings list lives only on the People "Findings" tab (not devices/chart/tasks).
-    return `/${organizationId}/people?tab=findings`;
+    const peopleTab =
+      finding.scope === FindingScope.people
+        ? 'people'
+        : finding.scope === FindingScope.people_tasks
+          ? 'tasks'
+          : finding.scope === FindingScope.people_devices
+            ? 'devices'
+            : finding.scope === FindingScope.people_chart
+              ? 'chart'
+              : 'people';
+    return `/${organizationId}/people?tab=${peopleTab}`;
   }
   return `/${organizationId}/overview`;
 }

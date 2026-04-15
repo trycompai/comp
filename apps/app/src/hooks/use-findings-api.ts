@@ -3,7 +3,7 @@
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
 import type { EvidenceFormType } from '@trycompai/company';
-import { FindingScope, FindingType, type FindingStatus } from '@db';
+import type { FindingStatus, FindingType, FindingScope } from '@db';
 import { useCallback } from 'react';
 
 // Types for findings
@@ -154,10 +154,12 @@ export function useFormTypeFindings(
 }
 
 /**
- * Org findings that have a People-area scope set (any non-null scope). Uses `GET /v1/findings?hasScope=true`.
+ * Hook to fetch findings for a People-area scope (directory, devices, etc.)
  */
-export function useScopeFindings(options: UseFindingsOptions = {}) {
-  return useApiSWR<Finding[]>('/v1/findings?hasScope=true', {
+export function useScopeFindings(scope: FindingScope | null, options: UseFindingsOptions = {}) {
+  const endpoint = scope ? `/v1/findings?scope=${encodeURIComponent(scope)}` : null;
+
+  return useApiSWR<Finding[]>(endpoint, {
     ...options,
     refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
   });
@@ -426,12 +428,4 @@ export const FINDING_TYPE_FRAMEWORK_OPTIONS = [
 export const FINDING_TYPE_LABELS: Record<FindingType, string> = {
   soc2: 'SOC 2',
   iso27001: 'ISO 27001',
-};
-
-/** Labels for People-area finding scopes (see FindingsOverview). */
-export const FINDING_SCOPE_LABELS: Record<FindingScope, string> = {
-  [FindingScope.people]: 'People',
-  [FindingScope.people_tasks]: 'Tasks',
-  [FindingScope.people_devices]: 'Devices',
-  [FindingScope.people_chart]: 'Chart',
 };

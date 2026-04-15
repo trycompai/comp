@@ -3,7 +3,6 @@
 import {
   DEFAULT_FINDING_TEMPLATES,
   FINDING_CATEGORY_LABELS,
-  FINDING_SCOPE_LABELS,
   FINDING_TYPE_FRAMEWORK_OPTIONS,
   FINDING_TYPE_LABELS,
   useFindingActions,
@@ -43,7 +42,6 @@ import { usePermissions } from '@/hooks/use-permissions';
 
 const createFindingSchema = z.object({
   type: z.nativeEnum(FindingType),
-  scope: z.nativeEnum(FindingScope).optional(),
   templateId: z.string().nullable().optional(),
   content: z.string().min(1, {
     message: 'Finding content is required',
@@ -54,7 +52,7 @@ interface CreateFindingSheetProps {
   taskId?: string;
   evidenceSubmissionId?: string;
   evidenceFormType?: EvidenceFormType;
-  showScope?: boolean;
+  scope?: FindingScope;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -64,7 +62,7 @@ export function CreateFindingSheet({
   taskId,
   evidenceSubmissionId,
   evidenceFormType,
-  showScope = false,
+  scope,
   open,
   onOpenChange,
   onSuccess,
@@ -82,7 +80,6 @@ export function CreateFindingSheet({
     resolver: zodResolver(createFindingSchema),
     defaultValues: {
       type: FindingType.soc2,
-      scope: FindingScope.people,
       templateId: null,
       content: '',
     },
@@ -120,19 +117,14 @@ export function CreateFindingSheet({
           taskId,
           evidenceSubmissionId,
           evidenceFormType,
-          scope: showScope ? data.scope : undefined,
+          scope,
           type: data.type,
           templateId: templateId || undefined,
           content: data.content,
         });
         toast.success('Finding created successfully');
         onOpenChange(false);
-        form.reset({
-          type: FindingType.soc2,
-          scope: FindingScope.people,
-          templateId: null,
-          content: '',
-        });
+        form.reset();
         onSuccess?.();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Failed to create finding');
@@ -140,7 +132,7 @@ export function CreateFindingSheet({
         setIsSubmitting(false);
       }
     },
-    [createFinding, taskId, evidenceSubmissionId, evidenceFormType, showScope, onOpenChange, form, onSuccess],
+    [createFinding, taskId, evidenceSubmissionId, evidenceFormType, scope, onOpenChange, form, onSuccess],
   );
 
   const handleTemplateChange = useCallback(
@@ -193,34 +185,6 @@ export function CreateFindingSheet({
             </FormItem>
           )}
         />
-
-        {showScope && (
-          <FormField
-            control={form.control}
-            name="scope"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Scope</FormLabel>
-                <Select
-                  value={field.value ?? FindingScope.people}
-                  onValueChange={field.onChange}
-                >
-                  <SelectTrigger>
-                    {FINDING_SCOPE_LABELS[field.value ?? FindingScope.people]}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(FINDING_SCOPE_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
 
         <FormField
           control={form.control}

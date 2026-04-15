@@ -40,12 +40,6 @@ const mockFindings = [
 const mockMutate = vi.fn();
 
 vi.mock('@/hooks/use-findings-api', () => ({
-  FINDING_SCOPE_LABELS: {
-    people: 'People',
-    people_tasks: 'Tasks',
-    people_devices: 'Devices',
-    people_chart: 'Chart',
-  },
   useScopeFindings: () => ({
     data: { data: mockFindings },
     isLoading: false,
@@ -81,6 +75,7 @@ vi.mock('../../../tasks/[taskId]/components/findings/FindingItem', () => ({
 import { PeopleFindingsList } from './PeopleFindingsList';
 
 const defaultProps = {
+  scope: 'people' as const,
   isAuditor: false,
   isPlatformAdmin: false,
   isAdminOrOwner: false,

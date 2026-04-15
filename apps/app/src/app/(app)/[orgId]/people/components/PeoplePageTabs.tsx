@@ -20,7 +20,6 @@ interface PeoplePageTabsProps {
   employeeTasksContent: ReactNode | null;
   devicesContent: ReactNode;
   orgChartContent: ReactNode;
-  findingsContent: ReactNode;
   roleMappingContent: ReactNode | null;
   showRoleMapping: boolean;
   showEmployeeTasks: boolean;
@@ -47,9 +46,6 @@ function tabParamToInternal(
   if (tabParam === 'chart') {
     return 'org-chart';
   }
-  if (tabParam === 'findings') {
-    return 'findings';
-  }
   if (tabParam === 'role-mapping') {
     return showRoleMapping ? 'role-mapping' : 'people';
   }
@@ -65,7 +61,6 @@ function internalValueToTabParam(value: string): string {
       return 'chart';
     case 'people':
     case 'devices':
-    case 'findings':
     case 'role-mapping':
       return value;
     default:
@@ -79,7 +74,6 @@ export function PeoplePageTabs({
   devicesContent,
   orgChartContent,
   roleMappingContent,
-  findingsContent,
   showRoleMapping,
   showEmployeeTasks,
   canInviteUsers,
@@ -124,7 +118,6 @@ export function PeoplePageTabs({
                 {showEmployeeTasks && <TabsTrigger value="employee-tasks">Tasks</TabsTrigger>}
                 <TabsTrigger value="devices">Devices</TabsTrigger>
                 <TabsTrigger value="org-chart">Chart</TabsTrigger>
-                <TabsTrigger value="findings">Findings</TabsTrigger>
                 {showRoleMapping && <TabsTrigger value="role-mapping">Role Mapping</TabsTrigger>}
               </TabsList>
             }
@@ -149,7 +142,6 @@ export function PeoplePageTabs({
         {showRoleMapping && (
           <TabsContent value="role-mapping">{roleMappingContent}</TabsContent>
         )}
-        <TabsContent value="findings">{findingsContent}</TabsContent>
       </PageLayout>
 
       <InviteMembersModal
