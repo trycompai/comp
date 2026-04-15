@@ -149,18 +149,20 @@ export function ProviderDetailView({
     router,
   ]);
 
-  // Auto-detect GCP organization after OAuth connect
-  const gcpDetectedRef = useRef<Set<string>>(new Set());
+  // Fetch GCP organizations and projects for the project picker.
+  // Runs every time the connection changes — not gated by a ref, since
+  // gcpOrgs is local state that resets on navigation.
+  const gcpOrgsFetchedForRef = useRef<string | null>(null);
   useEffect(() => {
     if (
       provider.id !== 'gcp' ||
       !isConnected ||
       !selectedConnection?.id ||
-      gcpDetectedRef.current.has(selectedConnection.id)
+      gcpOrgsFetchedForRef.current === selectedConnection.id
     ) {
       return;
     }
-    gcpDetectedRef.current.add(selectedConnection.id);
+    gcpOrgsFetchedForRef.current = selectedConnection.id;
     api
       .post<{
         organizations: Array<{
@@ -178,14 +180,16 @@ export function ProviderDetailView({
         if (res.data?.selectedProjectIds?.length) {
           setGcpSelectedProjectIds(res.data.selectedProjectIds);
         }
-        if (orgs.length === 1) {
-          toast.success(`Connected to GCP organization: ${orgs[0].displayName}`);
-        } else if (orgs.length > 1) {
+        if (orgs.length === 1 && !gcpOAuthJustConnected) {
+          // Only toast on first detection, not on every page visit
+        } else if (orgs.length > 1 && !gcpOAuthJustConnected) {
           toast.info(`${orgs.length} GCP organizations found — select projects below.`);
         }
       })
-      .catch(() => {});
-  }, [provider.id, isConnected, selectedConnection?.id]);
+      .catch((err) => {
+        console.error('Failed to detect GCP orgs:', err);
+      });
+  }, [provider.id, isConnected, selectedConnection?.id, gcpOAuthJustConnected]);
 
   // Auto-detect services when switching accounts (skip GCP — needs project selection first)
   const detectedConnections = useRef<Set<string>>(new Set());
@@ -304,6 +308,16 @@ export function ProviderDetailView({
             </a>
 
             {/* GCP org → project selector */}
+            {provider.id === 'gcp' && gcpOrgs.length === 0 && selectedConnection && (
+              <div className="rounded-xl border px-5 py-4 space-y-2">
+                <div>
+                  <p className="text-sm font-semibold">GCP Projects</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Loading projects...
+                  </p>
+                </div>
+              </div>
+            )}
             {provider.id === 'gcp' && gcpOrgs.length > 0 && selectedConnection && (
               <GcpProjectPicker
                 organizations={gcpOrgs}
