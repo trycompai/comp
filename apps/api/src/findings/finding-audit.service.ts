@@ -21,6 +21,7 @@ export class FindingAuditService {
       taskTitle?: string;
       evidenceSubmissionId?: string;
       evidenceSubmissionFormType?: string;
+      findingScope?: string;
       content: string;
       type: FindingType;
     },
@@ -41,6 +42,7 @@ export class FindingAuditService {
             taskTitle: params.taskTitle,
             evidenceSubmissionId: params.evidenceSubmissionId,
             evidenceSubmissionFormType: params.evidenceSubmissionFormType,
+            findingScope: params.findingScope,
             content: params.content,
             type: params.type,
             status: FindingStatus.open,
@@ -155,6 +157,7 @@ export class FindingAuditService {
       taskTitle?: string;
       evidenceSubmissionId?: string;
       evidenceSubmissionFormType?: string;
+      findingScope?: string;
       content: string;
     },
   ): Promise<void> {
@@ -174,6 +177,7 @@ export class FindingAuditService {
             taskTitle: params.taskTitle,
             evidenceSubmissionId: params.evidenceSubmissionId,
             evidenceSubmissionFormType: params.evidenceSubmissionFormType,
+            findingScope: params.findingScope,
             content: params.content,
           },
         },

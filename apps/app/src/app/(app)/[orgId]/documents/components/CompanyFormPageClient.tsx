@@ -4,7 +4,9 @@ import { conciseFormDescriptions } from '@/app/(app)/[orgId]/documents/form-desc
 import {
   evidenceFormDefinitions,
   meetingSubTypeValues,
+  meetingSubTypes,
   type EvidenceFormType,
+  type MeetingSubType,
 } from '@/app/(app)/[orgId]/documents/forms';
 import { api } from '@/lib/api-client';
 import { useActiveMember } from '@/utils/auth-client';
@@ -27,6 +29,8 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
+  Field,
+  FieldLabel,
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
@@ -61,6 +65,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@trycompai/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -160,6 +171,8 @@ export function CompanyFormPageClient({
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedMeetingType, setSelectedMeetingType] = useState<MeetingSubType>('board-meeting');
+  const [uploadSelectPortalRoot, setUploadSelectPortalRoot] = useState<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [submissionToDelete, setSubmissionToDelete] = useState<EvidenceSubmissionRow | null>(null);
@@ -297,7 +310,7 @@ export function CompanyFormPageClient({
     setIsUploading(true);
     try {
       const fileData = await fileToBase64(selectedFile);
-      const submitFormType = isMeeting ? MEETING_SUB_TYPES[0] : formType;
+      const submitFormType = isMeeting ? selectedMeetingType : formType;
 
       const response = await api.post(
         `/v1/evidence-forms/${submitFormType}/upload-submission`,
@@ -329,7 +342,7 @@ export function CompanyFormPageClient({
     } finally {
       setIsUploading(false);
     }
-  }, [selectedFile, isMeeting, formType, organizationId, query, globalMutate]);
+  }, [selectedFile, selectedMeetingType, isMeeting, formType, organizationId, query, globalMutate]);
 
   const handleConfirmDelete = useCallback(async () => {
     if (!submissionToDelete) return;
@@ -589,7 +602,36 @@ export function CompanyFormPageClient({
               Upload a PDF or image as evidence for this document.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div ref={setUploadSelectPortalRoot} className="min-w-0 space-y-4 overflow-visible">
+            {isMeeting && (
+              <Field>
+                <div className="flex flex-row items-center gap-4">
+                  <div className="shrink-0">
+                    <FieldLabel htmlFor="upload-meeting-type">Meeting type</FieldLabel>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <Select
+                      value={selectedMeetingType}
+                      onValueChange={(value) => setSelectedMeetingType(value as MeetingSubType)}
+                    >
+                      <SelectTrigger id="upload-meeting-type">
+                        <SelectValue placeholder="Select meeting type">
+                          {meetingSubTypes.find((m) => m.value === selectedMeetingType)?.label ??
+                            'Select meeting type'}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent container={uploadSelectPortalRoot}>
+                        {meetingSubTypes.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </Field>
+            )}
             <input
               ref={fileInputRef}
               type="file"

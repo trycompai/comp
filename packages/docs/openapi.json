@@ -13824,6 +13824,21 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "name": "scope",
+            "required": false,
+            "in": "query",
+            "description": "People-area scope (e.g. people directory)",
+            "schema": {
+              "enum": [
+                "people",
+                "people_tasks",
+                "people_devices",
+                "people_chart"
+              ],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -25157,6 +25172,16 @@
               "employee-performance-evaluation",
               "network-diagram",
               "tabletop-exercise"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "description": "People area scope (e.g. people directory) when not tied to a task or evidence",
+            "enum": [
+              "people",
+              "people_tasks",
+              "people_devices",
+              "people_chart"
             ]
           },
           "type": {
