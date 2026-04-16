@@ -2,7 +2,7 @@ import { logger } from '@trigger.dev/sdk';
 import { getDomain } from 'tldts';
 
 // Well-known trust portal domains that vendors use to host their security pages
-const TRUSTED_PORTAL_DOMAINS = [
+export const TRUSTED_PORTAL_DOMAINS = [
   'trust.page', // SafeBase
   'vanta.com', // Vanta trust centers
   'drata.com', // Drata trust centers
@@ -99,4 +99,17 @@ export function validateVendorUrl(
   } catch {
     return null;
   }
+}
+
+/**
+ * Returns true if the given hostname matches (or is a subdomain of)
+ * a known third-party trust portal (SafeBase, Vanta, Drata, etc.).
+ * Used to gate the trust-portal deep-scrape pass: those portals are
+ * already handled well by the Firecrawl Agent, so we skip them.
+ */
+export function isKnownThirdPartyPortalHost(hostname: string): boolean {
+  const lower = hostname.toLowerCase();
+  return TRUSTED_PORTAL_DOMAINS.some(
+    (portal) => lower === portal || lower.endsWith(`.${portal}`),
+  );
 }
