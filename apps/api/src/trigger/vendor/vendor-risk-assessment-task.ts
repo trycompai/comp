@@ -476,7 +476,9 @@ export const vendorRiskAssessmentTask: Task<
     minTimeoutInMs: 1000,
     maxTimeoutInMs: 10000,
   },
-  maxDuration: 1000 * 60 * 10,
+  // 30 minutes total: Firecrawl Agent can take up to 25 min on slow SPA
+  // trust centers (Ubiquiti), and deep-scrape + DB writes need room too.
+  maxDuration: 1000 * 60 * 30,
   run: async (payload) => {
     await tags.add([`org:${payload.organizationId}`]);
 

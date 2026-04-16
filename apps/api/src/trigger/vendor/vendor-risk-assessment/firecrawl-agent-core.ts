@@ -71,7 +71,12 @@ export async function firecrawlResearchCore(params: {
       urls,
       strictConstrainToURLs: false,
       maxCredits: 4000,
-      timeout: 360,
+      // SDK polls this long before returning whatever status it has. 360s
+      // wasn't enough for slow SPA trust centers (Ubiquiti) — SDK returned
+      // "processing" and we silently parsed empty data. 25 min gives the
+      // agent plenty of room; the new status check also ensures we surface
+      // timeouts instead of pretending success.
+      timeout: 1500,
       pollInterval: 5,
       ...({ model: 'spark-1-pro' } as Record<string, unknown>), // SDK types lag behind API — model is supported but not typed yet
       schema: firecrawlAgentJsonSchema,
@@ -143,11 +148,16 @@ export async function firecrawlResearchCore(params: {
     agentResponseJson: JSON.stringify(agentResponse).slice(0, 4000),
   });
 
-  if (!agentResponse.success || agentResponse.status === 'failed') {
+  if (!agentResponse.success || agentResponse.status !== 'completed') {
+    const isProcessing = agentResponse.status === 'processing';
     logger.warn('Firecrawl core research job did not complete successfully', {
       vendorWebsite,
       status: agentResponse.status,
+      success: agentResponse.success,
       error: agentResponse.error,
+      note: isProcessing
+        ? 'SDK returned while the agent job is still running on Firecrawl. Bump timeout, or poll with getAgentStatus.'
+        : undefined,
     });
     return null;
   }
