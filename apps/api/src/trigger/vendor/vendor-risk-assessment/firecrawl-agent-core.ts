@@ -16,6 +16,7 @@ import { deepScrapeTrustPortal } from './trust-portal-deep-scrape';
 import { mergeCertifications } from './trust-portal-deep-scrape-merge';
 import { pickDeepScrapeSourceUrl } from './deep-scrape-source-url';
 import { firecrawlAgentJsonSchema } from './firecrawl-agent-schema-json';
+import { buildFirecrawlAgentPrompt } from './firecrawl-agent-prompt';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object'
@@ -58,38 +59,18 @@ export async function firecrawlResearchCore(params: {
   const { firecrawlClient, vendorDomain, seedUrls } = setup;
   const { vendorName, vendorWebsite } = params;
 
-  const prompt = `Complete cyber security research on the vendor "${vendorName}" with website ${vendorWebsite}.
-
-Extract the following information:
-
-1. **Certifications**: Find all security and compliance certifications. For each one found, determine:
-   - The type of certification (SOC 2 Type I, SOC 2 Type II, ISO 27001, ISO 27017, ISO 27018, ISO 27701, ISO 42001, FedRAMP, HIPAA, PCI DSS, GDPR, TISAX, CSA STAR, C5, SOC 1, SOC 3, etc.)
-   - Whether it's currently active/verified, expired, or not certified
-   - Any issue or expiry dates mentioned
-   - Direct link to the certification report or trust page
-   - IMPORTANT: Trust pages often use tabs/anchors/sections (e.g. /trust-center#cloud-security) where certification badges are shown. Inspect those sections and capture every explicitly listed framework/certification.
-   - IMPORTANT: On SPA trust centers, open each trust-center section from the left navigation (e.g. NDAA Compliance, Cloud Security, Corporate Security). Do not stop at the top-level trust-center overview.
-   - If a certification/compliance claim is explicitly listed on the vendor's official trust center, mark it as "verified" unless the page explicitly says it is expired, historical, or no longer valid.
-   - Never use "not_certified" as a default/guess. Only set "not_certified" when the page explicitly states the vendor is not certified/compliant for that framework.
-   - If status is ambiguous, use "unknown" rather than "not_certified".
-
-2. **Security & Legal Links**: Find the direct URLs to these pages. IMPORTANT: Many vendors host their trust portal on a third-party platform (e.g., SafeBase at trust.page, Vanta, Drata, Whistic). Prefer the actual trust portal where customers can request security reports over documentation pages that just describe compliance processes.
-   - **Trust Center / Security Portal**: The page where customers can review security posture and request compliance reports. This is NOT the docs page about security — it's the dedicated trust portal. Look for links labeled "Trust Center", "Security", "Trust Portal" in the site navigation or footer. It may be hosted on a subdomain (trust.${vendorDomain}, security.${vendorDomain}) or a third-party domain (e.g., ${vendorName.toLowerCase()}.trust.page, ${vendorName.toLowerCase()}.safebase.io). TIP: Try searching "${vendorName} trust portal" or "${vendorName} security trust center" to find it if not immediately visible on the site.
-   - **Privacy Policy**: Usually at /privacy or /privacy-policy
-   - **Terms of Service**: Usually at /terms or /tos
-   - **Security Overview**: A page describing security practices (this CAN be a docs page)
-   - **SOC 2 Report**: Direct link to request or download the SOC 2 report
-
-3. **Summary**: Provide an overall assessment of the vendor's security posture based on your findings.
-
-Focus on the official website ${vendorWebsite} and its trust/security/compliance pages.`;
+  const prompt = buildFirecrawlAgentPrompt({
+    vendorName,
+    vendorWebsite,
+    vendorDomain,
+  });
 
   const runCoreAgent = async (urls: string[]) =>
     firecrawlClient.agent({
       prompt,
       urls,
       strictConstrainToURLs: false,
-      maxCredits: 2500,
+      maxCredits: 4000,
       timeout: 360,
       pollInterval: 5,
       ...({ model: 'spark-1-pro' } as Record<string, unknown>), // SDK types lag behind API — model is supported but not typed yet
