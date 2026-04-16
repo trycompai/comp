@@ -49,7 +49,8 @@ export function TrustPortalDomain({
   vercelVerification: string | null;
   orgId: string;
 }) {
-  const { data: domainStatus } = useDomain(initialDomain);
+  const { data: domainStatus, isLoading: domainStatusLoading } =
+    useDomain(initialDomain);
 
   const verificationInfo = useMemo(() => {
     const data = domainStatus?.data;
@@ -94,7 +95,6 @@ export function TrustPortalDomain({
     return target.endsWith('.') ? target : `${target}.`;
   }, [checkRecommendedCNAME, domainStatus?.data?.cnameTarget]);
 
-  const domainStatusLoading = !!initialDomain && !domainStatus;
   const vercelReportsMisconfigured =
     vercelMisconfigured === true ||
     (domainStatus?.data?.misconfigured === true &&
