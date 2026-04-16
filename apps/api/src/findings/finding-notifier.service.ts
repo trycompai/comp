@@ -1,4 +1,4 @@
-import { db, FindingStatus, FindingType } from '@db';
+import { db, FindingScope, FindingStatus, FindingType } from '@db';
 import { Injectable, Logger } from '@nestjs/common';
 import { isUserUnsubscribed } from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
@@ -37,6 +37,7 @@ interface NotificationParams {
   evidenceSubmissionId?: string;
   evidenceSubmissionFormType?: string;
   evidenceSubmissionSubmittedById?: string | null;
+  findingScope?: FindingScope | null;
   findingContent: string;
   findingType: FindingType;
   actorUserId: string;
@@ -100,6 +101,92 @@ function getDocumentContextTitle(
   return 'Document submission';
 }
 
+/** Matches People page `?tab=` query (see PeoplePageTabs). */
+function scopePeopleTabParam(scope: FindingScope): string {
+  switch (scope) {
+    case FindingScope.people:
+      return 'people';
+    case FindingScope.people_tasks:
+      return 'tasks';
+    case FindingScope.people_devices:
+      return 'devices';
+    case FindingScope.people_chart:
+      return 'chart';
+    default:
+      return 'people';
+  }
+}
+
+function scopeContextTitle(scope: FindingScope): string {
+  switch (scope) {
+    case FindingScope.people:
+      return 'People';
+    case FindingScope.people_tasks:
+      return 'People: Tasks';
+    case FindingScope.people_devices:
+      return 'People: Devices';
+    case FindingScope.people_chart:
+      return 'People: Chart';
+    default:
+      return 'People';
+  }
+}
+
+function resolveFindingContextTitle(params: {
+  taskTitle?: string;
+  evidenceSubmissionFormType?: string;
+  evidenceSubmissionId?: string;
+  findingScope?: FindingScope | null;
+}): string {
+  const {
+    taskTitle,
+    evidenceSubmissionFormType,
+    evidenceSubmissionId,
+    findingScope,
+  } = params;
+  if (taskTitle) {
+    return taskTitle;
+  }
+  if (findingScope) {
+    return scopeContextTitle(findingScope);
+  }
+  return getDocumentContextTitle(
+    evidenceSubmissionFormType,
+    evidenceSubmissionId,
+  );
+}
+
+function buildFindingDeepLink(params: {
+  organizationId: string;
+  taskId?: string;
+  evidenceSubmissionId?: string;
+  evidenceSubmissionFormType?: string;
+  findingScope?: FindingScope | null;
+}): string {
+  const base = getAppUrl();
+  const {
+    organizationId,
+    taskId,
+    evidenceSubmissionId,
+    evidenceSubmissionFormType,
+    findingScope,
+  } = params;
+
+  if (taskId) {
+    return `${base}/${organizationId}/tasks/${taskId}`;
+  }
+  if (findingScope) {
+    return `${base}/${organizationId}/people?tab=${scopePeopleTabParam(findingScope)}`;
+  }
+  if (evidenceSubmissionId && evidenceSubmissionFormType) {
+    return `${base}/${organizationId}/documents/${evidenceSubmissionFormType}/submissions/${evidenceSubmissionId}`;
+  }
+  if (evidenceSubmissionFormType) {
+    return `${base}/${organizationId}/documents/${evidenceSubmissionFormType}`;
+  }
+  return `${base}/${organizationId}/overview`;
+}
+
 // ============================================================================
 // Service
 // ============================================================================
@@ -116,7 +203,8 @@ export class FindingNotifierService {
 
   /**
    * Notify when a new finding is created.
-   * Recipients: All org members (filtered by notification matrix)
+   * Recipients: task-linked → assignee pool; People scope → owners/admins;
+   * document-linked → submitter + admins (see getSubmissionSubmitterAndAdmins).
    */
   async notifyFindingCreated(params: NotificationParams): Promise<void> {
     const {
@@ -129,26 +217,34 @@ export class FindingNotifierService {
       findingType,
       actorUserId,
       actorName,
+      findingScope,
     } = params;
 
-    const recipients = taskId
-      ? await this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId)
-      : await this.getSubmissionSubmitterAndAdmins(
-          organizationId,
-          evidenceSubmissionId,
-          evidenceSubmissionSubmittedById,
-          actorUserId,
-        );
+    const recipients = await this.resolveFindingNotificationRecipients({
+      organizationId,
+      taskId,
+      findingScope,
+      evidenceSubmissionId,
+      evidenceSubmissionSubmittedById,
+      actorUserId,
+    });
 
     if (recipients.length === 0) {
       this.logger.log('No recipients for finding created notification');
       return;
     }
 
-    const contextTitle =
-      taskTitle ??
-      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
-    const contextLabel = taskId ? 'task' : 'document submission';
+    const contextTitle = resolveFindingContextTitle({
+      taskTitle,
+      evidenceSubmissionFormType,
+      evidenceSubmissionId,
+      findingScope,
+    });
+    const contextLabel = taskId
+      ? 'task'
+      : findingScope
+        ? 'People area'
+        : 'document submission';
 
     await this.sendNotifications({
       ...params,
@@ -175,6 +271,7 @@ export class FindingNotifierService {
       actorUserId,
       actorName,
       findingCreatorMemberId,
+      findingScope,
     } = params;
 
     this.logger.log(
@@ -197,9 +294,12 @@ export class FindingNotifierService {
       `[notifyReadyForReview] Finding ${findingId}: Sending to ${recipients.length} recipient(s): ${recipients.map((r) => r.email).join(', ')}`,
     );
 
-    const contextTitle =
-      taskTitle ??
-      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
+    const contextTitle = resolveFindingContextTitle({
+      taskTitle,
+      evidenceSubmissionFormType,
+      evidenceSubmissionId,
+      findingScope,
+    });
 
     await this.sendNotifications({
       ...params,
@@ -214,7 +314,8 @@ export class FindingNotifierService {
 
   /**
    * Notify when status changes to Needs Revision.
-   * Recipients: All org members (filtered by notification matrix)
+   * Recipients: task-linked → assignee pool; People scope → owners/admins;
+   * document-linked → submitter + admins.
    */
   async notifyNeedsRevision(params: NotificationParams): Promise<void> {
     const {
@@ -226,25 +327,29 @@ export class FindingNotifierService {
       evidenceSubmissionSubmittedById,
       actorUserId,
       actorName,
+      findingScope,
     } = params;
 
-    const recipients = taskId
-      ? await this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId)
-      : await this.getSubmissionSubmitterAndAdmins(
-          organizationId,
-          evidenceSubmissionId,
-          evidenceSubmissionSubmittedById,
-          actorUserId,
-        );
+    const recipients = await this.resolveFindingNotificationRecipients({
+      organizationId,
+      taskId,
+      findingScope,
+      evidenceSubmissionId,
+      evidenceSubmissionSubmittedById,
+      actorUserId,
+    });
 
     if (recipients.length === 0) {
       this.logger.log('No recipients for needs revision notification');
       return;
     }
 
-    const contextTitle =
-      taskTitle ??
-      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
+    const contextTitle = resolveFindingContextTitle({
+      taskTitle,
+      evidenceSubmissionFormType,
+      evidenceSubmissionId,
+      findingScope,
+    });
 
     await this.sendNotifications({
       ...params,
@@ -259,7 +364,8 @@ export class FindingNotifierService {
 
   /**
    * Notify when finding is closed.
-   * Recipients: All org members (filtered by notification matrix)
+   * Recipients: task-linked → assignee pool; People scope → owners/admins;
+   * document-linked → submitter + admins.
    */
   async notifyFindingClosed(params: NotificationParams): Promise<void> {
     const {
@@ -271,25 +377,29 @@ export class FindingNotifierService {
       evidenceSubmissionSubmittedById,
       actorUserId,
       actorName,
+      findingScope,
     } = params;
 
-    const recipients = taskId
-      ? await this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId)
-      : await this.getSubmissionSubmitterAndAdmins(
-          organizationId,
-          evidenceSubmissionId,
-          evidenceSubmissionSubmittedById,
-          actorUserId,
-        );
+    const recipients = await this.resolveFindingNotificationRecipients({
+      organizationId,
+      taskId,
+      findingScope,
+      evidenceSubmissionId,
+      evidenceSubmissionSubmittedById,
+      actorUserId,
+    });
 
     if (recipients.length === 0) {
       this.logger.log('No recipients for finding closed notification');
       return;
     }
 
-    const contextTitle =
-      taskTitle ??
-      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
+    const contextTitle = resolveFindingContextTitle({
+      taskTitle,
+      evidenceSubmissionFormType,
+      evidenceSubmissionId,
+      findingScope,
+    });
 
     await this.sendNotifications({
       ...params,
@@ -328,6 +438,7 @@ export class FindingNotifierService {
       heading,
       message,
       newStatus,
+      findingScope,
     } = params;
 
     // Fetch organization name
@@ -337,15 +448,19 @@ export class FindingNotifierService {
     });
     const organizationName = organization?.name ?? 'your organization';
 
-    const contextTitle =
-      taskTitle ??
-      getDocumentContextTitle(evidenceSubmissionFormType, evidenceSubmissionId);
-    const findingUrl =
-      evidenceSubmissionId && evidenceSubmissionFormType
-        ? `${getAppUrl()}/${organizationId}/documents/${evidenceSubmissionFormType}/submissions/${evidenceSubmissionId}`
-        : evidenceSubmissionFormType
-          ? `${getAppUrl()}/${organizationId}/documents/${evidenceSubmissionFormType}`
-          : `${getAppUrl()}/${organizationId}/tasks/${taskId}`;
+    const contextTitle = resolveFindingContextTitle({
+      taskTitle,
+      evidenceSubmissionFormType,
+      evidenceSubmissionId,
+      findingScope,
+    });
+    const findingUrl = buildFindingDeepLink({
+      organizationId,
+      taskId,
+      evidenceSubmissionId,
+      evidenceSubmissionFormType,
+      findingScope,
+    });
     const typeLabel = TYPE_LABELS[findingType];
     const statusLabel = newStatus ? STATUS_LABELS[newStatus] : undefined;
 
@@ -593,6 +708,95 @@ export class FindingNotifierService {
   // ==========================================================================
   // Private Methods - Recipient Resolution
   // ==========================================================================
+
+  /**
+   * Task findings → task notification pool; People scope → owners/admins only;
+   * otherwise document flow (submitter + admins).
+   */
+  private async resolveFindingNotificationRecipients(args: {
+    organizationId: string;
+    taskId?: string;
+    findingScope?: FindingScope | null;
+    evidenceSubmissionId?: string;
+    evidenceSubmissionSubmittedById?: string | null;
+    actorUserId: string;
+  }): Promise<Recipient[]> {
+    const {
+      organizationId,
+      taskId,
+      findingScope,
+      evidenceSubmissionId,
+      evidenceSubmissionSubmittedById,
+      actorUserId,
+    } = args;
+
+    if (taskId) {
+      return this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId);
+    }
+    if (findingScope) {
+      return this.getOrganizationOwnersAndAdmins(organizationId, actorUserId);
+    }
+    return this.getSubmissionSubmitterAndAdmins(
+      organizationId,
+      evidenceSubmissionId,
+      evidenceSubmissionSubmittedById,
+      actorUserId,
+    );
+  }
+
+  /**
+   * Recipients for People-area (scope) findings: organization owners and admins.
+   * Excludes the actor. Notification matrix (unsubscribe) still applies per recipient.
+   */
+  private async getOrganizationOwnersAndAdmins(
+    organizationId: string,
+    excludeUserId: string,
+  ): Promise<Recipient[]> {
+    try {
+      const allMembers = await db.member.findMany({
+        where: {
+          organizationId,
+          deactivated: false,
+        },
+        select: {
+          role: true,
+          user: { select: { id: true, email: true, name: true } },
+        },
+      });
+
+      const members = allMembers.filter(
+        (member) =>
+          member.role.includes('admin') || member.role.includes('owner'),
+      );
+
+      const recipients: Recipient[] = [];
+      const addedUserIds = new Set<string>();
+
+      for (const member of members) {
+        const user = member.user;
+        if (
+          user.id !== excludeUserId &&
+          user.email &&
+          !addedUserIds.has(user.id)
+        ) {
+          recipients.push({
+            userId: user.id,
+            email: user.email,
+            name: user.name || user.email,
+          });
+          addedUserIds.add(user.id);
+        }
+      }
+
+      return recipients;
+    } catch (error) {
+      this.logger.error(
+        'Failed to get organization owners and admins for scope finding:',
+        error instanceof Error ? error.message : 'Unknown error',
+      );
+      return [];
+    }
+  }
 
   /**
    * Get all organization members as potential recipients.

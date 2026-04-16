@@ -169,6 +169,8 @@ export function useTrustPortalSettings() {
         isCnameVerified?: boolean;
         isTxtVerified?: boolean;
         isVercelTxtVerified?: boolean;
+        vercelMisconfigured?: boolean | null;
+        recommendedCNAME?: string | null;
         error?: string;
       }>('/v1/trust-portal/settings/check-dns', { domain });
       if (response.error) throw new Error(response.error);

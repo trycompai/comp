@@ -1,7 +1,7 @@
 'use client';
 
 import { useDnsStatus } from '@/hooks/use-dns-status';
-import { DEFAULT_CNAME_TARGET, useDomain } from '@/hooks/use-domain';
+import { useDomain } from '@/hooks/use-domain';
 import { Button } from '@trycompai/ui/button';
 import {
   Card,
@@ -72,22 +72,33 @@ export function TrustPortalDomain({
   // Prefer live Vercel verification value over stale DB value
   const effectiveVercelTxtValue = verificationInfo?.value ?? vercelVerification;
 
-  // Get the actual CNAME target from Vercel, with fallback
-  // Normalize to include trailing dot for DNS record display
-  const cnameTarget = useMemo(() => {
-    const target = domainStatus?.data?.cnameTarget || DEFAULT_CNAME_TARGET;
-    return target.endsWith('.') ? target : `${target}.`;
-  }, [domainStatus?.data?.cnameTarget]);
-
   const {
     isCnameVerified,
     isTxtVerified,
     isVercelTxtVerified,
+    vercelMisconfigured,
+    recommendedCNAME: checkRecommendedCNAME,
     mutate: recheckDns,
   } = useDnsStatus({
     domain: initialDomain,
     enabled: !!initialDomain && !isEffectivelyVerified,
   });
+
+  // CNAME target must come from Vercel — never guess a default. The status
+  // endpoint's `cnameTarget` is the primary source; the check-dns response can
+  // refresh it after the user clicks "Check DNS record".
+  // Normalize to include trailing dot for DNS record display.
+  const cnameTarget = useMemo<string | null>(() => {
+    const target = checkRecommendedCNAME ?? domainStatus?.data?.cnameTarget;
+    if (!target) return null;
+    return target.endsWith('.') ? target : `${target}.`;
+  }, [checkRecommendedCNAME, domainStatus?.data?.cnameTarget]);
+
+  const domainStatusLoading = !!initialDomain && !domainStatus;
+  const vercelReportsMisconfigured =
+    vercelMisconfigured === true ||
+    (domainStatus?.data?.misconfigured === true &&
+      vercelMisconfigured !== false);
 
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('trust', 'update');
@@ -235,6 +246,23 @@ export function TrustPortalDomain({
                         </AlertDescription>
                       </Alert>
                     )}
+                    {vercelReportsMisconfigured && (
+                      <Alert variant="warning">
+                        <AlertDescription>
+                          Vercel reports this domain is still misconfigured. The CNAME value must
+                          match exactly: <code className="font-mono">{cnameTarget ?? 'unknown'}</code>. Update it at
+                          your DNS provider and try again.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    {!cnameTarget && !domainStatusLoading && (
+                      <Alert variant="warning">
+                        <AlertDescription>
+                          Could not fetch the recommended CNAME target from Vercel. Please refresh
+                          in a moment — do not guess the value.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     <div className="rounded-md border">
                       <div className="text-sm">
                         <table className="hidden w-full table-fixed lg:table">
@@ -272,12 +300,23 @@ export function TrustPortalDomain({
                               </td>
                               <td>
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="min-w-0 break-all">{cnameTarget}</span>
+                                  <span className="min-w-0 break-all">
+                                    {cnameTarget ?? (
+                                      <span className="text-muted-foreground italic">
+                                        {domainStatusLoading
+                                          ? 'Loading from Vercel…'
+                                          : 'Unavailable — refresh to retry'}
+                                      </span>
+                                    )}
+                                  </span>
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     type="button"
-                                    onClick={() => handleCopy(cnameTarget, 'Value')}
+                                    onClick={() =>
+                                      cnameTarget && handleCopy(cnameTarget, 'Value')
+                                    }
+                                    disabled={!cnameTarget}
                                     className="h-6 w-6 shrink-0"
                                   >
                                     <Copy size={16} />
@@ -401,12 +440,21 @@ export function TrustPortalDomain({
                           <div>
                             <div className="mb-1 font-medium">Value:</div>
                             <div className="flex items-center justify-between gap-2">
-                              <span className="min-w-0 break-all">{cnameTarget}</span>
+                              <span className="min-w-0 break-all">
+                                {cnameTarget ?? (
+                                  <span className="text-muted-foreground italic">
+                                    {domainStatusLoading
+                                      ? 'Loading from Vercel…'
+                                      : 'Unavailable — refresh to retry'}
+                                  </span>
+                                )}
+                              </span>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 type="button"
-                                onClick={() => handleCopy(cnameTarget, 'Value')}
+                                onClick={() => cnameTarget && handleCopy(cnameTarget, 'Value')}
+                                disabled={!cnameTarget}
                                 className="h-6 w-6 shrink-0"
                               >
                                 <Copy size={16} />

@@ -24,6 +24,10 @@ import {
   UploadComplianceResourceDto,
 } from './dto/compliance-resource.dto';
 import * as dns from 'node:dns';
+import {
+  decideDomainVerification,
+  deriveDnsVerified,
+} from './domain-verification';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '../app/s3';
 import {
   DeleteTrustDocumentDto,
@@ -248,11 +252,18 @@ export class TrustPortalService {
         recommendedCNAMEs?.find((c) => c.rank === 1)?.value ||
         recommendedCNAMEs?.[0]?.value;
 
+      // Null when config fetch failed (silent catch returns null above) — the UI
+      // uses this to distinguish "Vercel says misconfigured" from "we don't know".
+      const misconfigured: boolean | null = configInfo
+        ? configInfo.misconfigured === true
+        : null;
+
       return {
         domain: domainInfo.name,
         verified: domainInfo.verified ?? false,
         verification,
         cnameTarget,
+        misconfigured,
       };
     } catch (error) {
       this.logger.error(
@@ -1012,19 +1023,43 @@ export class TrustPortalService {
     // potentially stale DB values (tokens change if domain was re-added).
     let liveIsVercelDomain = false;
     let liveVercelVerification: string | null = null;
+    let vercelMisconfigured: boolean | null = null;
+    let recommendedCNAME: string | null = null;
+    const hasVercelConfig =
+      !!process.env.TRUST_PORTAL_PROJECT_ID && !!process.env.VERCEL_TEAM_ID;
 
-    if (process.env.TRUST_PORTAL_PROJECT_ID && process.env.VERCEL_TEAM_ID) {
-      try {
-        const vercelStatusResp = await this.vercelFetch<VercelDomainResponse>({
+    if (hasVercelConfig) {
+      const teamId = process.env.VERCEL_TEAM_ID!;
+      const projectId = process.env.TRUST_PORTAL_PROJECT_ID!;
+
+      const [statusResult, configResult] = await Promise.all([
+        this.vercelFetch<VercelDomainResponse>({
           method: 'GET',
-          path: `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}`,
-          params: { teamId: process.env.VERCEL_TEAM_ID },
-        });
-        const vercelData = vercelStatusResp.data;
+          path: `/v9/projects/${projectId}/domains/${TrustPortalService.safeDomainPath(domain)}`,
+          params: { teamId },
+        }).catch((error: unknown) => {
+          this.logger.warn(
+            `Failed to fetch live Vercel status for ${domain}: ${error instanceof Error ? error.message : error}`,
+          );
+          return null;
+        }),
+        this.vercelFetch<VercelDomainConfigResponse>({
+          method: 'GET',
+          path: `/v6/domains/${TrustPortalService.safeDomainPath(domain)}/config`,
+          params: { teamId },
+        }).catch((error: unknown) => {
+          this.logger.warn(
+            `Failed to fetch Vercel domain config for ${domain}: ${error instanceof Error ? error.message : error}`,
+          );
+          return null;
+        }),
+      ]);
+
+      if (statusResult) {
+        const vercelData = statusResult.data;
         liveIsVercelDomain = vercelData.verified === false;
         liveVercelVerification = vercelData.verification?.[0]?.value || null;
 
-        // Sync DB with live Vercel state
         await db.trust.update({
           where: { organizationId },
           data: {
@@ -1032,16 +1067,22 @@ export class TrustPortalService {
             vercelVerification: liveVercelVerification,
           },
         });
-      } catch (error) {
-        this.logger.warn(
-          `Failed to fetch live Vercel status for ${domain}, falling back to DB: ${error}`,
-        );
-        const trustRecord = await db.trust.findUnique({
+      } else {
+        const fallbackRecord = await db.trust.findUnique({
           where: { organizationId, domain },
           select: { isVercelDomain: true, vercelVerification: true },
         });
-        liveIsVercelDomain = trustRecord?.isVercelDomain === true;
-        liveVercelVerification = trustRecord?.vercelVerification ?? null;
+        liveIsVercelDomain = fallbackRecord?.isVercelDomain === true;
+        liveVercelVerification = fallbackRecord?.vercelVerification ?? null;
+      }
+
+      if (configResult) {
+        vercelMisconfigured = configResult.data.misconfigured === true;
+        recommendedCNAME =
+          configResult.data.recommendedCNAME?.find((c) => c.rank === 1)
+            ?.value ||
+          configResult.data.recommendedCNAME?.[0]?.value ||
+          null;
       }
     }
 
@@ -1053,94 +1094,88 @@ export class TrustPortalService {
       expected != null &&
       records.some((segments) => segments.some((s) => s === expected));
 
-    // Check CNAME — Node DNS resolve returns string[] of CNAME targets
-    let isCnameVerified = cnameRecords.some((address) =>
+    // Regex check is only a fallback for when Vercel's config call fails —
+    // Vercel is the source of truth for whether the CNAME is correct.
+    let dnsRegexMatches = cnameRecords.some((address) =>
       TrustPortalService.VERCEL_DNS_CNAME_PATTERN.test(address),
     );
-    if (!isCnameVerified) {
+    if (!dnsRegexMatches) {
       const fallback = cnameRecords.find((address) =>
         TrustPortalService.VERCEL_DNS_FALLBACK_PATTERN.test(address),
       );
       if (fallback) {
         this.logger.warn(`CNAME matched fallback pattern: ${fallback}`);
-        isCnameVerified = true;
+        dnsRegexMatches = true;
       }
     }
 
-    // Check TXT
-    const isTxtVerified = txtRecordMatches(txtRecords, expectedTxtValue);
+    const isCnameVerified = deriveDnsVerified({
+      dnsRegexMatches,
+      vercelMisconfigured,
+    });
 
-    // Check Vercel TXT
+    const isTxtVerified = txtRecordMatches(txtRecords, expectedTxtValue);
     const isVercelTxtVerified = txtRecordMatches(
       vercelTxtRecords,
       expectedVercelTxtValue,
     );
-
     const requiresVercelTxt = liveIsVercelDomain;
-    const isVerified =
-      isCnameVerified &&
-      isTxtVerified &&
-      (!requiresVercelTxt || isVercelTxtVerified);
 
-    if (!isVerified) {
-      return {
-        success: false,
-        isCnameVerified,
-        isTxtVerified,
-        isVercelTxtVerified,
-        error:
-          'Some DNS records are not configured correctly. Please check the records marked as unverified above and try again.',
-      };
-    }
-
-    // Trigger Vercel to re-verify the domain so it provisions SSL and starts serving.
-    let vercelVerified = false;
-    if (process.env.TRUST_PORTAL_PROJECT_ID && process.env.VERCEL_TEAM_ID) {
+    // Trigger Vercel re-verification up front so we can factor the result into
+    // the final verdict rather than optimistically trusting our own DNS regex.
+    let vercelVerifiedAfterTrigger: boolean | null = null;
+    if (hasVercelConfig) {
       try {
         const verifyResp = await this.vercelFetch<{ verified: boolean }>({
           method: 'POST',
           path: `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}/verify`,
-          params: { teamId: process.env.VERCEL_TEAM_ID },
+          params: { teamId: process.env.VERCEL_TEAM_ID! },
           body: {},
         });
-        vercelVerified = verifyResp.data?.verified === true;
+        vercelVerifiedAfterTrigger = verifyResp.data?.verified === true;
       } catch (error) {
         this.logger.warn(
-          `Failed to trigger Vercel domain verification for ${domain}: ${error}`,
+          `Failed to trigger Vercel domain verification for ${domain}: ${error instanceof Error ? error.message : error}`,
         );
       }
     }
 
-    // For cross-account domains (liveIsVercelDomain=true), Vercel must confirm
-    // the _vercel TXT record before the domain will serve traffic.
-    // For same-account domains, DNS verification is sufficient — Vercel will
-    // pick up the CNAME on its own, so don't block on the verify response.
-    const domainFullyVerified = requiresVercelTxt ? vercelVerified : true;
-
-    await db.trust.update({
-      where: { organizationId },
-      data: {
-        domainVerified: domainFullyVerified,
-        ...(domainFullyVerified ? { status: 'published' as const } : {}),
-      },
-    });
-
-    if (!domainFullyVerified) {
-      return {
-        success: false,
-        isCnameVerified,
-        isTxtVerified,
-        isVercelTxtVerified,
-        error:
-          'DNS records verified but Vercel has not yet confirmed domain ownership. Please ensure the _vercel TXT record is correctly configured and try again.',
-      };
-    }
-
-    return {
-      success: true,
+    const verdict = decideDomainVerification({
       isCnameVerified,
       isTxtVerified,
       isVercelTxtVerified,
+      requiresVercelTxt,
+      vercelAvailable: hasVercelConfig,
+      vercelMisconfigured,
+      vercelVerifiedAfterTrigger,
+    });
+
+    // Only write `domainVerified` when we have a confident answer. A transient
+    // Vercel outage that returns `success=false` should NOT de-verify a
+    // previously working custom domain.
+    if (verdict.success) {
+      await db.trust.update({
+        where: { organizationId },
+        data: {
+          domainVerified: true,
+          status: 'published' as const,
+        },
+      });
+    } else if (!verdict.transient) {
+      await db.trust.update({
+        where: { organizationId },
+        data: { domainVerified: false },
+      });
+    }
+
+    return {
+      success: verdict.success,
+      isCnameVerified,
+      isTxtVerified,
+      isVercelTxtVerified,
+      vercelMisconfigured,
+      recommendedCNAME,
+      ...(verdict.error ? { error: verdict.error } : {}),
     };
   }
 

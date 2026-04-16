@@ -10,6 +10,12 @@ jest.mock(
       soc2: 'soc2',
       iso27001: 'iso27001',
     },
+    FindingScope: {
+      people: 'people',
+      people_tasks: 'people_tasks',
+      people_devices: 'people_devices',
+      people_chart: 'people_chart',
+    },
     FindingStatus: {
       open: 'open',
       ready_for_review: 'ready_for_review',
@@ -75,8 +81,14 @@ const mockDbModule: {
     soc2: 'soc2';
     iso27001: 'iso27001';
   };
+  FindingScope: {
+    people: 'people';
+    people_tasks: 'people_tasks';
+    people_devices: 'people_devices';
+    people_chart: 'people_chart';
+  };
 } = jest.requireMock('@db');
-const { db, FindingType } = mockDbModule;
+const { db, FindingType, FindingScope } = mockDbModule;
 
 describe('FindingNotifierService', () => {
   const mockedDb = db;
@@ -190,6 +202,50 @@ describe('FindingNotifierService', () => {
         expect.objectContaining({
           payload: expect.objectContaining({
             findingUrl: 'https://app.trycomp.ai/org_123/documents/meeting',
+          }),
+        }),
+      );
+    });
+
+    it('builds People page URLs with tab query for scope-based findings', async () => {
+      await service.notifyFindingCreated({
+        organizationId: 'org_123',
+        findingId: 'fdg_scope',
+        findingScope: FindingScope.people_devices,
+        findingContent: 'Device area finding',
+        findingType: FindingType.soc2,
+        actorUserId: 'usr_actor',
+        actorName: 'Actor',
+      });
+
+      expect(mockedDb.task.findUnique).not.toHaveBeenCalled();
+      expect(mockedDb.evidenceSubmission.findUnique).not.toHaveBeenCalled();
+
+      expect(novuTriggerMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            findingUrl: 'https://app.trycomp.ai/org_123/people?tab=people',
+          }),
+        }),
+      );
+    });
+
+    it('aligns title and URL by preferring People scope over document fields when both are set', async () => {
+      await service.notifyFindingCreated({
+        organizationId: 'org_123',
+        findingId: 'fdg_mixed',
+        findingScope: FindingScope.people,
+        evidenceSubmissionFormType: 'meeting',
+        findingContent: 'Ambiguous finding',
+        findingType: FindingType.soc2,
+        actorUserId: 'usr_actor',
+        actorName: 'Actor',
+      });
+
+      expect(novuTriggerMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            findingUrl: 'https://app.trycomp.ai/org_123/people?tab=devices',
           }),
         }),
       );

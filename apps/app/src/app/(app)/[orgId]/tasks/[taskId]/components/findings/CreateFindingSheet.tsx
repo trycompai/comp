@@ -10,9 +10,9 @@ import {
   type FindingTemplate,
 } from '@/hooks/use-findings-api';
 import type { EvidenceFormType } from '@trycompai/company';
+import { FindingScope, FindingType } from '@db';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { useMediaQuery } from '@trycompai/ui/hooks';
-import { FindingType } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
@@ -52,6 +52,7 @@ interface CreateFindingSheetProps {
   taskId?: string;
   evidenceSubmissionId?: string;
   evidenceFormType?: EvidenceFormType;
+  scope?: FindingScope;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -61,6 +62,7 @@ export function CreateFindingSheet({
   taskId,
   evidenceSubmissionId,
   evidenceFormType,
+  scope,
   open,
   onOpenChange,
   onSuccess,
@@ -115,6 +117,7 @@ export function CreateFindingSheet({
           taskId,
           evidenceSubmissionId,
           evidenceFormType,
+          scope,
           type: data.type,
           templateId: templateId || undefined,
           content: data.content,
@@ -129,7 +132,7 @@ export function CreateFindingSheet({
         setIsSubmitting(false);
       }
     },
-    [createFinding, taskId, evidenceSubmissionId, evidenceFormType, onOpenChange, form, onSuccess],
+    [createFinding, taskId, evidenceSubmissionId, evidenceFormType, scope, onOpenChange, form, onSuccess],
   );
 
   const handleTemplateChange = useCallback(

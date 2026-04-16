@@ -3,10 +3,12 @@ import { auth } from '@/utils/auth';
 import { s3Client, BUCKET_NAME } from '@/app/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@/lib/s3-presigner';
+import { FindingScope } from '@db';
 import { db } from '@db/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { PeopleFindings } from './all/components/PeopleFindings';
 import { TeamMembers } from './all/components/TeamMembers';
 import { getEmployeeSyncConnections } from './all/data/queries';
 import { PeoplePageTabs } from './components/PeoplePageTabs';
@@ -41,6 +43,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   const isAuditor = currentUserRoles.includes('auditor');
   const canInviteUsers = canManageMembers || isAuditor;
   const isCurrentUserOwner = currentUserRoles.includes('owner');
+  const isPlatformAdmin = session.user.role === 'admin';
 
   // Fetch members with user info (used for both employee check and org chart)
   const membersWithUsers = await db.member.findMany({
@@ -198,6 +201,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
     <PeoplePageTabs
       peopleContent={
         <TeamMembers
+          isPlatformAdmin={isPlatformAdmin}
           canManageMembers={canManageMembers}
           canInviteUsers={canInviteUsers}
           isAuditor={isAuditor}
@@ -206,7 +210,15 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           deviceStatusMap={deviceStatusMap}
         />
       }
-      employeeTasksContent={showEmployeeTasks ? <EmployeesOverview /> : null}
+      employeeTasksContent={
+        showEmployeeTasks ? (
+          <EmployeesOverview
+            isAuditor={isAuditor}
+            isPlatformAdmin={isPlatformAdmin}
+            isAdminOrOwner={canManageMembers}
+          />
+        ) : null
+      }
       devicesContent={
         <div className="space-y-6">
           {/* Unified compliance chart covering both device-agent and fleet devices */}
@@ -224,12 +236,22 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           {filteredFleetDevices.length > 0 && (
             <EmployeeDevicesList devices={filteredFleetDevices} isCurrentUserOwner={isCurrentUserOwner} />
           )}
+
+          <PeopleFindings
+            scope={FindingScope.people_devices}
+            isAuditor={isAuditor}
+            isPlatformAdmin={isPlatformAdmin}
+            isAdminOrOwner={canManageMembers}
+          />
         </div>
       }
       orgChartContent={
         <OrgChartContent
           chartData={orgChartData as any}
           members={membersWithUsers}
+          isAuditor={isAuditor}
+          isPlatformAdmin={isPlatformAdmin}
+          isAdminOrOwner={canManageMembers}
         />
       }
       showRoleMapping={false}
