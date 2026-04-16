@@ -1,3 +1,17 @@
+# [3.23.0](https://github.com/trycompai/comp/compare/v3.22.4...v3.23.0) (2026-04-16)
+
+
+### Bug Fixes
+
+* **app:** able to change meeting type when uploading evidence ([#2514](https://github.com/trycompai/comp/issues/2514)) ([5bdf430](https://github.com/trycompai/comp/commit/5bdf430b630b4b8277ebf58e10390ce34f6d3d2e))
+* fix missing DNS records coming from Vercel ([eab60fe](https://github.com/trycompai/comp/commit/eab60fedd0239e038066a3dcbb16713b26e7b275))
+* **trust-portal:** trust Vercel verdict for custom domain DNS verification ([3f4faf2](https://github.com/trycompai/comp/commit/3f4faf2449b305ebde3703729f4b85abd98ad81b))
+
+
+### Features
+
+* **app:** adding findings section on People page tabs ([9241d3f](https://github.com/trycompai/comp/commit/9241d3f15aa41a4f11bc8cb17d41306c5f081acb)), closes [#finding-](https://github.com/trycompai/comp/issues/finding-)
+
 ## [3.22.4](https://github.com/trycompai/comp/compare/v3.22.3...v3.22.4) (2026-04-16)
 
 
