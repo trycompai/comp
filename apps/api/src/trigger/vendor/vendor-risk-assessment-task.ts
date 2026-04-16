@@ -1061,20 +1061,19 @@ export const vendorRiskAssessmentTask: Task<
           badgeCount: Array.isArray(complianceBadges)
             ? complianceBadges.length
             : 0,
-          complianceBadges,
+          complianceBadgesJson: JSON.stringify(complianceBadges ?? null),
           hasLogo: Boolean(logoUrl),
-          certificationsInAssessment: Array.isArray(
-            (coreData as { certifications?: unknown })?.certifications,
-          )
-            ? (
-                coreData as {
-                  certifications?: Array<{ type: string; status: string }>;
-                }
-              ).certifications?.map((c) => ({
-                type: c.type,
-                status: c.status,
-              }))
-            : [],
+          certificationsInAssessmentJson: JSON.stringify(
+            Array.isArray(
+              (coreData as { certifications?: unknown })?.certifications,
+            )
+              ? (
+                  coreData as {
+                    certifications?: Array<{ type: string; status: string }>;
+                  }
+                ).certifications
+              : [],
+          ),
         });
 
         // Update vendor with core data (keep status in_progress — news may still be loading)

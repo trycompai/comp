@@ -215,13 +215,15 @@ Focus on the official website ${vendorWebsite} and its trust/security/compliance
 
   logger.info('Firecrawl Agent returned — pre-deep-scrape snapshot', {
     vendorWebsite,
-    rawAgentLinks: links,
-    normalizedLinks,
-    agentCertifications: certifications.map((c) => ({
-      type: c.type,
-      status: c.status,
-      url: c.url,
-    })),
+    rawAgentLinksJson: JSON.stringify(links ?? null),
+    normalizedLinksJson: JSON.stringify(normalizedLinks),
+    agentCertificationsJson: JSON.stringify(
+      certifications.map((c) => ({
+        type: c.type,
+        status: c.status,
+        url: c.url,
+      })),
+    ),
     verifiedAgentCertCount: certifications.filter(
       (c) => c.status === 'verified',
     ).length,
@@ -254,10 +256,12 @@ Focus on the official website ${vendorWebsite} and its trust/security/compliance
         coreCount: certifications.length,
         deepCount: deepCerts.length,
         mergedCount: mergedCertifications.length,
-        mergedTypes: mergedCertifications.map((c) => ({
-          type: c.type,
-          status: c.status,
-        })),
+        mergedTypesJson: JSON.stringify(
+          mergedCertifications.map((c) => ({
+            type: c.type,
+            status: c.status,
+          })),
+        ),
       });
     } else {
       logger.info(
@@ -275,13 +279,14 @@ Focus on the official website ${vendorWebsite} and its trust/security/compliance
       {
         vendorWebsite,
         vendorDomain,
-        availableLinks: normalizedLinks.map((l) => ({
-          label: l.label,
-          url: l.url,
-        })),
-        verifiedCertsWithUrls: certifications
-          .filter((c) => c.status === 'verified' && c.url)
-          .map((c) => ({ type: c.type, url: c.url })),
+        availableLinksJson: JSON.stringify(
+          normalizedLinks.map((l) => ({ label: l.label, url: l.url })),
+        ),
+        verifiedCertsWithUrlsJson: JSON.stringify(
+          certifications
+            .filter((c) => c.status === 'verified' && c.url)
+            .map((c) => ({ type: c.type, url: c.url })),
+        ),
       },
     );
   }
