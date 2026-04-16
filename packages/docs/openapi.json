@@ -14038,6 +14038,7 @@
             "apikey": []
           }
         ],
+        "summary": "List questionnaires",
         "tags": [
           "Questionnaire"
         ]
@@ -14066,6 +14067,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get a questionnaire by ID",
         "tags": [
           "Questionnaire"
         ]
@@ -14092,6 +14094,7 @@
             "apikey": []
           }
         ],
+        "summary": "Delete a questionnaire",
         "tags": [
           "Questionnaire"
         ]
@@ -14128,6 +14131,7 @@
             "apikey": []
           }
         ],
+        "summary": "Parse an uploaded questionnaire file",
         "tags": [
           "Questionnaire"
         ]
@@ -14194,6 +14198,7 @@
             "apikey": []
           }
         ],
+        "summary": "Answer a single questionnaire question",
         "tags": [
           "Questionnaire"
         ]
@@ -14239,6 +14244,7 @@
             "apikey": []
           }
         ],
+        "summary": "Save a questionnaire answer",
         "tags": [
           "Questionnaire"
         ]
@@ -14284,6 +14290,7 @@
             "apikey": []
           }
         ],
+        "summary": "Delete a questionnaire answer",
         "tags": [
           "Questionnaire"
         ]
@@ -14313,6 +14320,7 @@
             "apikey": []
           }
         ],
+        "summary": "Export a questionnaire",
         "tags": [
           "Questionnaire"
         ]
@@ -14357,6 +14365,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload and parse a questionnaire file",
         "tags": [
           "Questionnaire"
         ]
@@ -14425,6 +14434,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload a questionnaire file and parse its questions",
         "tags": [
           "Questionnaire"
         ]
@@ -14488,6 +14498,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload a questionnaire file and auto-answer with export",
         "tags": [
           "Questionnaire"
         ]
@@ -14547,6 +14558,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload and auto-answer a questionnaire via trust portal token",
         "tags": [
           "Questionnaire"
         ]
@@ -14576,6 +14588,7 @@
             "apikey": []
           }
         ],
+        "summary": "Export questionnaire answers",
         "tags": [
           "Questionnaire"
         ]
@@ -14630,6 +14643,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload a questionnaire file and export auto-generated answers",
         "tags": [
           "Questionnaire"
         ]
@@ -14659,6 +14673,7 @@
             "apikey": []
           }
         ],
+        "summary": "Auto-answer a questionnaire",
         "tags": [
           "Questionnaire"
         ]
