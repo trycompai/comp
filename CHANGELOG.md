@@ -1,3 +1,11 @@
+## [3.22.4](https://github.com/trycompai/comp/compare/v3.22.3...v3.22.4) (2026-04-16)
+
+
+### Bug Fixes
+
+* **github:** scope 2FA check to selected repos' orgs only ([6c49228](https://github.com/trycompai/comp/commit/6c49228dd597838ea6b33eebcc94836472cdce12))
+* **github:** skip unowned orgs in 2FA check instead of failing ([b5f9f3d](https://github.com/trycompai/comp/commit/b5f9f3d5f6bb8ccc955f6a4124b45c61067b3d62))
+
 ## [3.22.3](https://github.com/trycompai/comp/compare/v3.22.2...v3.22.3) (2026-04-16)
 
 
