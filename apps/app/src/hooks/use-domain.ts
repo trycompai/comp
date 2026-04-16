@@ -14,10 +14,8 @@ export interface DomainStatusResponse {
   verified: boolean;
   verification?: DomainVerification[];
   cnameTarget?: string;
+  misconfigured?: boolean | null;
 }
-
-/** Default CNAME target when Vercel doesn't return a specific one */
-export const DEFAULT_CNAME_TARGET = 'cname.vercel-dns.com';
 
 export function useDomain(domain: string) {
   const endpoint =
