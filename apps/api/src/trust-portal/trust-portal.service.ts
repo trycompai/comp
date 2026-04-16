@@ -1154,13 +1154,23 @@ export class TrustPortalService {
       vercelVerifiedAfterTrigger,
     });
 
-    await db.trust.update({
-      where: { organizationId },
-      data: {
-        domainVerified: verdict.success,
-        ...(verdict.success ? { status: 'published' as const } : {}),
-      },
-    });
+    // Only write `domainVerified` when we have a confident answer. A transient
+    // Vercel outage that returns `success=false` should NOT de-verify a
+    // previously working custom domain.
+    if (verdict.success) {
+      await db.trust.update({
+        where: { organizationId },
+        data: {
+          domainVerified: true,
+          status: 'published' as const,
+        },
+      });
+    } else if (!verdict.transient) {
+      await db.trust.update({
+        where: { organizationId },
+        data: { domainVerified: false },
+      });
+    }
 
     return {
       success: verdict.success,

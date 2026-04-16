@@ -110,6 +110,52 @@ describe('decideDomainVerification', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  describe('transient flag (to avoid de-verifying working domains)', () => {
+    it('marks failure as transient when Vercel is reachable but config fetch failed', () => {
+      const result = decideDomainVerification({
+        ...baseInputs,
+        vercelAvailable: true,
+        vercelMisconfigured: null,
+      });
+      expect(result.success).toBe(false);
+      expect(result.transient).toBe(true);
+    });
+
+    it('marks failure as NOT transient when Vercel explicitly reports misconfigured', () => {
+      const result = decideDomainVerification({
+        ...baseInputs,
+        vercelMisconfigured: true,
+      });
+      expect(result.success).toBe(false);
+      expect(result.transient).toBe(false);
+    });
+
+    it('marks failure as NOT transient when DNS records are clearly wrong', () => {
+      const result = decideDomainVerification({
+        ...baseInputs,
+        isCnameVerified: false,
+      });
+      expect(result.success).toBe(false);
+      expect(result.transient).toBe(false);
+    });
+
+    it('marks failure as transient when cross-account verify returns null (not explicitly false)', () => {
+      const result = decideDomainVerification({
+        ...baseInputs,
+        requiresVercelTxt: true,
+        vercelVerifiedAfterTrigger: null,
+      });
+      expect(result.success).toBe(false);
+      expect(result.transient).toBe(true);
+    });
+
+    it('does not mark success as transient', () => {
+      const result = decideDomainVerification(baseInputs);
+      expect(result.success).toBe(true);
+      expect(result.transient).toBeFalsy();
+    });
+  });
 });
 
 describe('deriveCnameVerified', () => {

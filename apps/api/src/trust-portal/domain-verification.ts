@@ -31,6 +31,13 @@ export interface DomainVerificationInputs {
 export interface DomainVerificationResult {
   success: boolean;
   error?: string;
+  /**
+   * True when the failure is due to a transient/indeterminate condition
+   * (Vercel API unreachable, no verdict available yet). Callers should avoid
+   * writing `domainVerified=false` on transient failures — doing so can
+   * de-verify a previously working domain on a temporary outage.
+   */
+  transient?: boolean;
 }
 
 export type VercelConfiguredBy =
@@ -86,6 +93,7 @@ export function decideDomainVerification(
   if (!dnsOk) {
     return {
       success: false,
+      transient: false,
       error:
         'Some DNS records are not configured correctly. Please check the records marked as unverified above and try again.',
     };
@@ -100,6 +108,7 @@ export function decideDomainVerification(
   if (vercelMisconfigured === null) {
     return {
       success: false,
+      transient: true,
       error:
         'Could not confirm configuration with Vercel. Please try again in a few minutes.',
     };
@@ -108,14 +117,18 @@ export function decideDomainVerification(
   if (vercelMisconfigured === true) {
     return {
       success: false,
+      transient: false,
       error:
         'Vercel reports this domain is still misconfigured. The CNAME value must exactly match the recommended target shown above.',
     };
   }
 
   if (requiresVercelTxt && vercelVerifiedAfterTrigger !== true) {
+    // `null` means the /verify call failed (transient); `false` means Vercel
+    // explicitly said the ownership record is not yet present.
     return {
       success: false,
+      transient: vercelVerifiedAfterTrigger === null,
       error:
         'DNS records verified but Vercel has not yet confirmed domain ownership. Please ensure the _vercel TXT record is correctly configured and try again.',
     };
