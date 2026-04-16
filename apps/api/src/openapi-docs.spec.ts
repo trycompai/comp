@@ -137,4 +137,19 @@ describe('OpenAPI document', () => {
       expect(exposed).toEqual([]);
     });
   }
+
+  describe('summaries', () => {
+    it('every public operation declares a non-empty summary', () => {
+      const missing: string[] = [];
+      for (const [routePath, methods] of Object.entries(document.paths)) {
+        for (const [method, op] of Object.entries(methods as Record<string, { summary?: string }>)) {
+          if (typeof op !== 'object' || !op) continue;
+          if (!op.summary || op.summary.trim() === '') {
+            missing.push(`${method.toUpperCase()} ${routePath}`);
+          }
+        }
+      }
+      expect(missing).toEqual([]);
+    });
+  });
 });
