@@ -1,5 +1,4 @@
 import { deepScrapeTrustPortal } from './trust-portal-deep-scrape';
-import type { VendorRiskAssessmentCertification } from './agent-types';
 
 jest.mock('@trigger.dev/sdk', () => ({
   logger: {
@@ -27,17 +26,6 @@ type ScrapeMock = jest.Mock<
 function makeFirecrawlMock(scrape: ScrapeMock) {
   return { scrape } as unknown as import('@mendable/firecrawl-js').default;
 }
-
-const cert = (
-  overrides: Partial<VendorRiskAssessmentCertification> = {},
-): VendorRiskAssessmentCertification => ({
-  type: 'SOC 2 Type II',
-  status: 'verified',
-  issuedAt: null,
-  expiresAt: null,
-  url: null,
-  ...overrides,
-});
 
 describe('deepScrapeTrustPortal — gate', () => {
   beforeEach(() => {
@@ -92,9 +80,6 @@ describe('deepScrapeTrustPortal — gate', () => {
     expect(scrape).not.toHaveBeenCalled();
   });
 });
-
-// Suppress unused variable warning — cert() is referenced here to satisfy TS
-void cert;
 
 describe('deepScrapeTrustPortal — extraction', () => {
   beforeEach(() => {

@@ -64,8 +64,8 @@ Rules:
 - Mark status as "expired" only when the page explicitly says the certification has lapsed.
 - Mark status as "not_certified" only when the page explicitly says the vendor is not certified.
 - Otherwise use "unknown".
-- For each certification, include an evidence_snippet that is a short quote from the markdown showing where you found it.
 - Normalize the type name to canonical form (e.g. "Soc 2 Type II" → "SOC 2 Type II", "ISO/IEC 27001:2013" → "ISO 27001", "PCI-DSS" → "PCI DSS").
+- Always include evidence_snippet with a verbatim quote from the markdown. Certifications without an evidence_snippet will be discarded.
 
 Markdown from the trust portal and its sections:
 

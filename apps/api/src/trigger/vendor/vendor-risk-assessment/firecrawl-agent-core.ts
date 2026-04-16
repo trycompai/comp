@@ -14,6 +14,8 @@ import {
 } from './firecrawl-agent-shared';
 import { deepScrapeTrustPortal } from './trust-portal-deep-scrape';
 import { mergeCertifications } from './trust-portal-deep-scrape-merge';
+import { pickDeepScrapeSourceUrl } from './deep-scrape-source-url';
+import { firecrawlAgentJsonSchema } from './firecrawl-agent-schema-json';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object'
@@ -44,40 +46,6 @@ function extractAgentPayloadCandidates(agentResponse: unknown): unknown[] {
 
   visit(agentResponse);
   return candidates;
-}
-
-function pickDeepScrapeSourceUrl(args: {
-  vendorDomain: string;
-  links: Array<{ label: string; url: string }>;
-  certifications: VendorRiskAssessmentCertification[];
-}): string | null {
-  const { vendorDomain, links, certifications } = args;
-
-  const isOnVendorDomain = (url: string): boolean => {
-    try {
-      const host = new URL(url).hostname.toLowerCase();
-      return host === vendorDomain || host.endsWith(`.${vendorDomain}`);
-    } catch {
-      return false;
-    }
-  };
-
-  const byLabel = (label: string) =>
-    links.find((l) => l.label === label && isOnVendorDomain(l.url))?.url ??
-    null;
-
-  const trustUrl = byLabel('Trust & Security');
-  if (trustUrl) return trustUrl;
-
-  const securityUrl = byLabel('Security Overview');
-  if (securityUrl) return securityUrl;
-
-  for (const cert of certifications) {
-    if (cert.status !== 'verified') continue;
-    if (cert.url && isOnVendorDomain(cert.url)) return cert.url;
-  }
-
-  return null;
 }
 
 export async function firecrawlResearchCore(params: {
@@ -125,93 +93,7 @@ Focus on the official website ${vendorWebsite} and its trust/security/compliance
       timeout: 360,
       pollInterval: 5,
       ...({ model: 'spark-1-pro' } as Record<string, unknown>), // SDK types lag behind API — model is supported but not typed yet
-      schema: {
-        type: 'object',
-        properties: {
-          risk_level: {
-            type: 'string',
-            description:
-              'Overall vendor risk level: critical, high, medium, low, or very_low',
-          },
-          security_assessment: {
-            type: 'string',
-            description:
-              'A detailed paragraph summarizing the vendor security posture, including strengths, weaknesses, and key findings',
-          },
-          last_researched_at: {
-            type: 'string',
-            description: 'ISO 8601 date of when this research was conducted',
-          },
-          certifications: {
-            type: 'array',
-            description:
-              'All security and compliance certifications found on the vendor website',
-            items: {
-              type: 'object',
-              properties: {
-                type: {
-                  type: 'string',
-                  description:
-                    'Certification name, e.g. SOC 2 Type II, ISO 27001, FedRAMP, HIPAA, PCI DSS, GDPR, ISO 42001, ISO 27017, ISO 27018, TISAX, CSA STAR, C5, etc.',
-                },
-                status: {
-                  type: 'string',
-                  enum: ['verified', 'expired', 'not_certified', 'unknown'],
-                  description:
-                    'Whether the certification is currently active/verified, expired, not certified, or unknown',
-                },
-                issued_at: {
-                  type: 'string',
-                  description:
-                    'ISO 8601 date when the certification was issued, if mentioned',
-                },
-                expires_at: {
-                  type: 'string',
-                  description:
-                    'ISO 8601 date when the certification expires, if mentioned',
-                },
-                url: {
-                  type: 'string',
-                  description:
-                    'Direct URL to the certification report or trust page on the vendor domain',
-                },
-              },
-              required: ['type'],
-            },
-          },
-          links: {
-            type: 'object',
-            description:
-              'Direct URLs to key legal and security pages on the vendor domain',
-            properties: {
-              privacy_policy_url: {
-                type: 'string',
-                description: 'Direct URL to the privacy policy page',
-              },
-              terms_of_service_url: {
-                type: 'string',
-                description: 'Direct URL to the terms of service page',
-              },
-              trust_center_url: {
-                type: 'string',
-                description:
-                  'Direct URL to the trust portal where customers can review security posture and request reports. Prefer the dedicated trust portal (often on trust.page, safebase.io, vanta.com, or a trust. subdomain) over documentation pages.',
-              },
-              security_page_url: {
-                type: 'string',
-                description:
-                  'Direct URL to the security overview or security practices page',
-              },
-              soc2_report_url: {
-                type: 'string',
-                description:
-                  'Direct URL to request or download the SOC 2 report',
-              },
-            },
-          },
-        },
-        required: ['security_assessment'],
-      },
+      schema: firecrawlAgentJsonSchema,
     });
 
   let agentResponse;
