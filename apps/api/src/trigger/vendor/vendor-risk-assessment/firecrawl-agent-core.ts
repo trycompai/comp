@@ -17,60 +17,11 @@ import { mergeCertifications } from './trust-portal-deep-scrape-merge';
 import { pickDeepScrapeSourceUrl } from './deep-scrape-source-url';
 import { firecrawlAgentJsonSchema } from './firecrawl-agent-schema-json';
 import { buildFirecrawlAgentPrompt } from './firecrawl-agent-prompt';
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object'
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-/**
- * Firecrawl SDK responses occasionally wrap the structured result under
- * different keys depending on SDK/runtime versions.
- */
-function extractAgentPayloadCandidates(agentResponse: unknown): unknown[] {
-  const candidates: unknown[] = [];
-  const seen = new Set<unknown>();
-
-  const visit = (value: unknown) => {
-    if (value === undefined || seen.has(value)) return;
-    seen.add(value);
-    candidates.push(value);
-
-    const record = asRecord(value);
-    if (!record) return;
-
-    for (const key of ['data', 'output', 'result', 'response']) {
-      visit(record[key]);
-    }
-  };
-
-  visit(agentResponse);
-  return candidates;
-}
-
-/**
- * Every field in the agent schema is optional, so parsing an outer wrapper
- * object (which contains no known keys) will succeed as an empty object.
- * Score candidates by how many schema fields were actually populated so we
- * prefer the inner payload over the wrapper.
- */
-function countPopulatedAgentFields(parsed: unknown): number {
-  if (!parsed || typeof parsed !== 'object') return 0;
-  let count = 0;
-  for (const value of Object.values(parsed as Record<string, unknown>)) {
-    if (value === null || value === undefined) continue;
-    if (Array.isArray(value) && value.length === 0) continue;
-    if (
-      typeof value === 'object' &&
-      !Array.isArray(value) &&
-      Object.keys(value as Record<string, unknown>).length === 0
-    )
-      continue;
-    count += 1;
-  }
-  return count;
-}
+import {
+  asRecord,
+  countPopulatedAgentFields,
+  extractAgentPayloadCandidates,
+} from './firecrawl-agent-payload';
 
 export async function firecrawlResearchCore(params: {
   vendorName: string;
@@ -155,22 +106,6 @@ export async function firecrawlResearchCore(params: {
     }
   }
 
-  logger.info('Firecrawl Agent raw response received', {
-    vendorWebsite,
-    agentSuccess: agentResponse.success,
-    agentStatus: agentResponse.status,
-    agentError:
-      typeof agentResponse.error === 'string'
-        ? agentResponse.error
-        : agentResponse.error
-          ? JSON.stringify(agentResponse.error)
-          : null,
-    agentResponseKeys: Object.keys(
-      (agentResponse as Record<string, unknown>) ?? {},
-    ),
-    agentResponseJson: JSON.stringify(agentResponse).slice(0, 4000),
-  });
-
   if (!agentResponse.success || agentResponse.status !== 'completed') {
     const isProcessing = agentResponse.status === 'processing';
     logger.warn('Firecrawl core research job did not complete successfully', {
@@ -178,6 +113,9 @@ export async function firecrawlResearchCore(params: {
       status: agentResponse.status,
       success: agentResponse.success,
       error: agentResponse.error,
+      // Full raw response only on the exceptional path — on happy path
+      // the parsed data is already surfaced by the snapshot log below.
+      agentResponseJson: JSON.stringify(agentResponse).slice(0, 4000),
       note: isProcessing
         ? 'SDK returned while the agent job is still running on Firecrawl. Bump timeout, or poll with getAgentStatus.'
         : undefined,
@@ -259,20 +197,16 @@ export async function firecrawlResearchCore(params: {
 
   logger.info('Firecrawl Agent returned — pre-deep-scrape snapshot', {
     vendorWebsite,
-    rawAgentLinksJson: JSON.stringify(links ?? null),
     normalizedLinksJson: JSON.stringify(normalizedLinks),
     agentCertificationsJson: JSON.stringify(
       certifications.map((c) => ({
         type: c.type,
         status: c.status,
-        url: c.url,
       })),
     ),
     verifiedAgentCertCount: certifications.filter(
       (c) => c.status === 'verified',
     ).length,
-    parsedDataJson: JSON.stringify(parsed.data).slice(0, 4000),
-    agentSecurityAssessment: parsed.data.security_assessment ?? null,
     agentRiskLevel: parsed.data.risk_level ?? null,
   });
 

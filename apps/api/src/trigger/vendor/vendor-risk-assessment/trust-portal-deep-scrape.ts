@@ -14,14 +14,12 @@ import {
   type DeepScrapeSection,
 } from './trust-portal-deep-scrape-sections';
 import { identifySidebarTabs } from './trust-portal-deep-scrape-tabs';
+import {
+  buildInitialScrapeOptions,
+  buildSectionScrapeOptions,
+} from './trust-portal-deep-scrape-scrape-options';
 
 const EXTRACTION_MODEL = 'claude-sonnet-4-6';
-const INITIAL_WAIT_MS = 3000;
-const CLICK_WAIT_BEFORE_MS = 1500;
-const CLICK_WAIT_AFTER_MS = 2000;
-const PATH_WAIT_MS = 2000;
-// Firecrawl scrape v2 `timeout` is capped at 300000ms.
-const SCRAPE_TIMEOUT_MS = 120_000;
 const SECTION_CONCURRENCY = 5;
 const MARKDOWN_TRUNCATE_LIMIT = 200_000;
 
@@ -75,92 +73,6 @@ Markdown from the trust portal and its sections:
 ${args.combinedMarkdown}`;
 }
 
-function buildInitialScrapeOptions() {
-  return {
-    formats: ['markdown', 'links'] as const,
-    onlyMainContent: false,
-    timeout: SCRAPE_TIMEOUT_MS,
-    actions: [{ type: 'wait', milliseconds: INITIAL_WAIT_MS }],
-  };
-}
-
-// Escape `"` and `\` for use inside a CSS double-quoted attribute value.
-function cssEscapeAttr(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
-function buildClickByTextScript(tabLabel: string): string {
-  const safe = JSON.stringify(tabLabel);
-  return `(() => {
-  const label = ${safe};
-  const candidates = Array.from(
-    document.querySelectorAll(
-      'button, a, [role="tab"], [role="button"], [role="menuitem"], li, span, div'
-    )
-  )
-    .filter((el) => {
-      if (!el || typeof el.textContent !== 'string') return false;
-      if (el.textContent.trim() !== label) return false;
-      if (el.children && el.children.length > 2) return false;
-      if (typeof el.getBoundingClientRect === 'function') {
-        const rect = el.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) return false;
-      }
-      return true;
-    })
-    .sort((a, b) => (a.textContent || '').length - (b.textContent || '').length);
-  const target = candidates[0];
-  if (target) {
-    try { target.scrollIntoView({ block: 'center' }); } catch {}
-    target.click();
-  }
-})();`;
-}
-
-function buildSectionScrapeOptions(section: DeepScrapeSection) {
-  if (section.tabLabel) {
-    return {
-      formats: ['markdown'] as const,
-      onlyMainContent: true,
-      timeout: SCRAPE_TIMEOUT_MS,
-      actions: [
-        { type: 'wait', milliseconds: CLICK_WAIT_BEFORE_MS },
-        {
-          type: 'executeJavascript',
-          script: buildClickByTextScript(section.tabLabel),
-        },
-        { type: 'wait', milliseconds: CLICK_WAIT_AFTER_MS },
-      ],
-    };
-  }
-
-  if (section.anchor) {
-    const safeAnchor = cssEscapeAttr(section.anchor);
-    const safeLabel = cssEscapeAttr(section.label);
-    const selector = [
-      `a[href="${safeAnchor}"]`,
-      `a[href$="${safeAnchor}"]`,
-      `[data-tab="${safeLabel}"]`,
-    ].join(', ');
-    return {
-      formats: ['markdown'] as const,
-      onlyMainContent: true,
-      timeout: SCRAPE_TIMEOUT_MS,
-      actions: [
-        { type: 'wait', milliseconds: CLICK_WAIT_BEFORE_MS },
-        { type: 'click', selector },
-        { type: 'wait', milliseconds: CLICK_WAIT_AFTER_MS },
-      ],
-    };
-  }
-
-  return {
-    formats: ['markdown'] as const,
-    onlyMainContent: true,
-    timeout: SCRAPE_TIMEOUT_MS,
-    actions: [{ type: 'wait', milliseconds: PATH_WAIT_MS }],
-  };
-}
 
 async function mapWithConcurrency<T, R>(
   items: T[],
@@ -251,8 +163,6 @@ export async function deepScrapeTrustPortal(
     sourceUrl,
     markdownLength: initialMarkdown.length,
     linkCount: links.length,
-    initialLinksJson: JSON.stringify(links.slice(0, 50)),
-    initialMarkdownHead: initialMarkdown.slice(0, 2000),
   });
   // 2. Discover sections
   const urlSections = discoverSectionUrls({ sourceUrl, links });

@@ -98,22 +98,6 @@ Search the company's blog, newsroom, press releases, and reputable tech news sou
     });
   }
 
-  logger.info('Firecrawl News Agent raw response received', {
-    vendorWebsite,
-    agentSuccess: agentResponse.success,
-    agentStatus: agentResponse.status,
-    agentError:
-      typeof agentResponse.error === 'string'
-        ? agentResponse.error
-        : agentResponse.error
-          ? JSON.stringify(agentResponse.error)
-          : null,
-    agentResponseKeys: Object.keys(
-      (agentResponse as Record<string, unknown>) ?? {},
-    ),
-    agentResponseJson: JSON.stringify(agentResponse).slice(0, 4000),
-  });
-
   if (!agentResponse.success || agentResponse.status !== 'completed') {
     const isProcessing = agentResponse.status === 'processing';
     logger.warn('Firecrawl news research job did not complete successfully', {
@@ -121,6 +105,8 @@ Search the company's blog, newsroom, press releases, and reputable tech news sou
       status: agentResponse.status,
       success: agentResponse.success,
       error: agentResponse.error,
+      // Full raw response only on the exceptional path.
+      agentResponseJson: JSON.stringify(agentResponse).slice(0, 4000),
       note: isProcessing
         ? 'SDK returned while the news agent job is still running on Firecrawl. Bump timeout, or poll with getAgentStatus.'
         : undefined,
