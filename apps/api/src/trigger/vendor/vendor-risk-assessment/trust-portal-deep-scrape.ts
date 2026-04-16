@@ -18,7 +18,8 @@ const INITIAL_WAIT_MS = 3000;
 const CLICK_WAIT_BEFORE_MS = 1500;
 const CLICK_WAIT_AFTER_MS = 2000;
 const PATH_WAIT_MS = 2000;
-const SCRAPE_MAX_CREDITS = 3000;
+// Firecrawl scrape v2 `timeout` is capped at 300000ms.
+const SCRAPE_TIMEOUT_MS = 120_000;
 const SECTION_CONCURRENCY = 5;
 const MARKDOWN_TRUNCATE_LIMIT = 200_000;
 
@@ -76,7 +77,7 @@ function buildInitialScrapeOptions() {
   return {
     formats: ['markdown', 'links'] as const,
     onlyMainContent: false,
-    maxCredits: SCRAPE_MAX_CREDITS,
+    timeout: SCRAPE_TIMEOUT_MS,
     actions: [{ type: 'wait', milliseconds: INITIAL_WAIT_MS }],
   };
 }
@@ -98,7 +99,7 @@ function buildSectionScrapeOptions(section: DeepScrapeSection) {
     return {
       formats: ['markdown'] as const,
       onlyMainContent: true,
-      maxCredits: SCRAPE_MAX_CREDITS,
+      timeout: SCRAPE_TIMEOUT_MS,
       actions: [
         { type: 'wait', milliseconds: CLICK_WAIT_BEFORE_MS },
         { type: 'click', selector },
@@ -110,7 +111,7 @@ function buildSectionScrapeOptions(section: DeepScrapeSection) {
   return {
     formats: ['markdown'] as const,
     onlyMainContent: true,
-    maxCredits: SCRAPE_MAX_CREDITS,
+    timeout: SCRAPE_TIMEOUT_MS,
     actions: [{ type: 'wait', milliseconds: PATH_WAIT_MS }],
   };
 }
