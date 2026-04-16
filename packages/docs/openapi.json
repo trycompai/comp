@@ -7785,6 +7785,7 @@
             "description": ""
           }
         },
+        "summary": "Exchange an auth code for device credentials",
         "tags": [
           "Device Agent"
         ]
@@ -7808,6 +7809,7 @@
             "description": ""
           }
         },
+        "summary": "Download a device-agent update",
         "tags": [
           "Device Agent"
         ]
@@ -7829,6 +7831,7 @@
             "description": ""
           }
         },
+        "summary": "Check a device-agent update's metadata",
         "tags": [
           "Device Agent"
         ]
@@ -7853,6 +7856,7 @@
             "description": ""
           }
         },
+        "summary": "Create a device-agent auth code",
         "tags": [
           "Device Agent"
         ]
@@ -7867,6 +7871,7 @@
             "description": ""
           }
         },
+        "summary": "List organizations for the current device",
         "tags": [
           "Device Agent"
         ]
@@ -7891,6 +7896,7 @@
             "description": ""
           }
         },
+        "summary": "Register a device agent",
         "tags": [
           "Device Agent"
         ]
@@ -7915,6 +7921,7 @@
             "description": ""
           }
         },
+        "summary": "Submit a device check-in",
         "tags": [
           "Device Agent"
         ]
@@ -7946,6 +7953,7 @@
             "description": ""
           }
         },
+        "summary": "Get device-agent status",
         "tags": [
           "Device Agent"
         ]
@@ -16486,6 +16494,7 @@
             "description": ""
           }
         },
+        "summary": "List recent cloud security activity",
         "tags": [
           "CloudSecurity"
         ]
@@ -16500,6 +16509,7 @@
             "description": ""
           }
         },
+        "summary": "List supported cloud providers",
         "tags": [
           "CloudSecurity"
         ]
@@ -16514,6 +16524,7 @@
             "description": ""
           }
         },
+        "summary": "List cloud security findings",
         "tags": [
           "CloudSecurity"
         ]
@@ -16537,6 +16548,7 @@
             "description": ""
           }
         },
+        "summary": "Trigger a security scan for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -16560,6 +16572,7 @@
             "description": ""
           }
         },
+        "summary": "Detect available cloud services for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -16583,6 +16596,7 @@
             "description": ""
           }
         },
+        "summary": "Detect the GCP organization for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -16606,6 +16620,7 @@
             "description": ""
           }
         },
+        "summary": "Select GCP projects for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -16629,6 +16644,7 @@
             "description": ""
           }
         },
+        "summary": "Set up GCP for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -16652,6 +16668,7 @@
             "description": ""
           }
         },
+        "summary": "Resolve a GCP setup step",
         "tags": [
           "CloudSecurity"
         ]
@@ -16675,6 +16692,7 @@
             "description": ""
           }
         },
+        "summary": "Set up Azure for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -16698,6 +16716,7 @@
             "description": ""
           }
         },
+        "summary": "Validate Azure credentials for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -16721,6 +16740,7 @@
             "description": ""
           }
         },
+        "summary": "Trigger a cloud security run for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -16752,6 +16772,7 @@
             "description": ""
           }
         },
+        "summary": "Get a cloud security scan run by ID",
         "tags": [
           "CloudSecurity"
         ]
@@ -16766,6 +16787,7 @@
             "description": ""
           }
         },
+        "summary": "Create a legacy cloud integration",
         "tags": [
           "CloudSecurity"
         ]
@@ -16780,6 +16802,7 @@
             "description": ""
           }
         },
+        "summary": "Validate legacy AWS credentials",
         "tags": [
           "CloudSecurity"
         ]
@@ -16803,6 +16826,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a legacy cloud integration",
         "tags": [
           "CloudSecurity"
         ]
@@ -16826,6 +16850,7 @@
             "description": ""
           }
         },
+        "summary": "List remediation capabilities",
         "tags": [
           "Remediation"
         ]
@@ -16840,6 +16865,7 @@
             "description": ""
           }
         },
+        "summary": "Preview a remediation",
         "tags": [
           "Remediation"
         ]
@@ -16854,6 +16880,7 @@
             "description": ""
           }
         },
+        "summary": "Execute a remediation",
         "tags": [
           "Remediation"
         ]
@@ -16877,6 +16904,7 @@
             "description": ""
           }
         },
+        "summary": "Roll back a remediation action",
         "tags": [
           "Remediation"
         ]
@@ -16900,6 +16928,7 @@
             "description": ""
           }
         },
+        "summary": "List remediation actions",
         "tags": [
           "Remediation"
         ]
@@ -16923,6 +16952,7 @@
             "description": ""
           }
         },
+        "summary": "Get the active remediation batch",
         "tags": [
           "Remediation"
         ]
@@ -16937,6 +16967,7 @@
             "description": ""
           }
         },
+        "summary": "Create a remediation batch",
         "tags": [
           "Remediation"
         ]
@@ -16960,6 +16991,7 @@
             "description": ""
           }
         },
+        "summary": "Update a remediation batch",
         "tags": [
           "Remediation"
         ]
@@ -16991,6 +17023,7 @@
             "description": ""
           }
         },
+        "summary": "Skip a finding in a remediation batch",
         "tags": [
           "Remediation"
         ]

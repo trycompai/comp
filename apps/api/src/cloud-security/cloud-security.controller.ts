@@ -12,6 +12,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -49,6 +50,7 @@ export class CloudSecurityController {
   @SkipThrottle()
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'List recent cloud security activity' })
   async getActivity(
     @Query('connectionId') connectionId: string,
     @Query('take') take: string | undefined,
@@ -78,6 +80,7 @@ export class CloudSecurityController {
   @SkipThrottle()
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'List supported cloud providers' })
   async getProviders(@OrganizationId() organizationId: string) {
     const providers = await this.queryService.getProviders(organizationId);
     return { data: providers, count: providers.length };
@@ -87,6 +90,7 @@ export class CloudSecurityController {
   @SkipThrottle()
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'List cloud security findings' })
   async getFindings(@OrganizationId() organizationId: string) {
     const findings = await this.queryService.getFindings(organizationId);
     return { data: findings, count: findings.length };
@@ -95,6 +99,7 @@ export class CloudSecurityController {
   @Post('scan/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Trigger a security scan for a connection' })
   async scan(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -165,6 +170,7 @@ export class CloudSecurityController {
   @Post('detect-services/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'Detect available cloud services for a connection' })
   async detectServices(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -188,6 +194,7 @@ export class CloudSecurityController {
   @Post('detect-gcp-org/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'Detect the GCP organization for a connection' })
   async detectGcpOrg(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -262,6 +269,7 @@ export class CloudSecurityController {
   @Post('select-gcp-projects/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Select GCP projects for a connection' })
   async selectGcpProjects(
     @Param('connectionId') connectionId: string,
     @Body()
@@ -306,6 +314,7 @@ export class CloudSecurityController {
   @Post('setup-gcp/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Set up GCP for a connection' })
   async setupGcp(
     @Param('connectionId') connectionId: string,
     @Body() body: { projectId?: string },
@@ -341,6 +350,7 @@ export class CloudSecurityController {
   @Post('setup-gcp/:connectionId/resolve-step')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Resolve a GCP setup step' })
   async resolveGcpSetupStep(
     @Param('connectionId') connectionId: string,
     @Body() body: { stepId: GcpSetupStepId },
@@ -475,6 +485,7 @@ export class CloudSecurityController {
   @Post('setup-azure/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Set up Azure for a connection' })
   async setupAzure(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -638,6 +649,7 @@ export class CloudSecurityController {
   @Post('validate-azure/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'Validate Azure credentials for a connection' })
   async validateAzure(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -749,6 +761,7 @@ export class CloudSecurityController {
   @Post('trigger/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Trigger a cloud security run for a connection' })
   async triggerScan(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -773,6 +786,7 @@ export class CloudSecurityController {
   @Get('runs/:runId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'Get a cloud security scan run by ID' })
   async getRunStatus(
     @Param('runId') runId: string,
     @Query('connectionId') connectionId: string,
@@ -804,6 +818,7 @@ export class CloudSecurityController {
   @Post('legacy/connect')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'create')
+  @ApiOperation({ summary: 'Create a legacy cloud integration' })
   async connectLegacy(
     @OrganizationId() organizationId: string,
     @Body()
@@ -823,6 +838,7 @@ export class CloudSecurityController {
   @Post('legacy/validate-aws')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'Validate legacy AWS credentials' })
   async validateAwsCredentials(
     @Body() body: { accessKeyId: string; secretAccessKey: string },
   ) {
@@ -840,6 +856,7 @@ export class CloudSecurityController {
   @Delete('legacy/:integrationId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'delete')
+  @ApiOperation({ summary: 'Delete a legacy cloud integration' })
   async disconnectLegacy(
     @Param('integrationId') integrationId: string,
     @OrganizationId() organizationId: string,

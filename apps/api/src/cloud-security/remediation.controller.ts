@@ -11,6 +11,7 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { db } from '@db';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
@@ -30,6 +31,7 @@ export class RemediationController {
   @Get('capabilities')
   @SkipThrottle()
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'List remediation capabilities' })
   async getCapabilities(
     @Query('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -55,6 +57,7 @@ export class RemediationController {
 
   @Post('preview')
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Preview a remediation' })
   async preview(
     @Body()
     body: {
@@ -82,6 +85,7 @@ export class RemediationController {
 
   @Post('execute')
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Execute a remediation' })
   async execute(
     @Body()
     body: {
@@ -168,6 +172,7 @@ export class RemediationController {
 
   @Post(':actionId/rollback')
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Roll back a remediation action' })
   async rollback(
     @Param('actionId') actionId: string,
     @OrganizationId() organizationId: string,
@@ -239,6 +244,7 @@ export class RemediationController {
 
   @Get('actions')
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'List remediation actions' })
   async getActions(
     @Query('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -268,6 +274,7 @@ export class RemediationController {
   /** Get active batch for a connection (if any). */
   @Get('batch/active')
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'Get the active remediation batch' })
   async getActiveBatch(
     @Query('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -286,6 +293,7 @@ export class RemediationController {
   /** Create a new batch record (called before triggering the task). */
   @Post('batch')
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Create a remediation batch' })
   async createBatch(
     @Body()
     body: {
@@ -327,6 +335,7 @@ export class RemediationController {
   /** Update a batch (set triggerRunId after task starts). */
   @Patch('batch/:batchId')
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Update a remediation batch' })
   async updateBatch(
     @Param('batchId') batchId: string,
     @Body() body: { triggerRunId?: string; status?: string },
@@ -345,6 +354,7 @@ export class RemediationController {
   /** Skip a specific finding in an active batch. */
   @Post('batch/:batchId/skip/:findingId')
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Skip a finding in a remediation batch' })
   async skipFinding(
     @Param('batchId') batchId: string,
     @Param('findingId') findingId: string,
