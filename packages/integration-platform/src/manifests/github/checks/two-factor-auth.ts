@@ -10,7 +10,7 @@
 
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
-import type { GitHubOrg } from '../types';
+import { parseRepoBranches, targetReposVariable } from '../variables';
 
 interface GitHubOrgMember {
   login: string;
@@ -81,46 +81,43 @@ export const twoFactorAuthCheck: IntegrationCheck = {
   taskMapping: TASK_TEMPLATES.twoFactorAuth,
   defaultSeverity: 'high',
 
-  run: async (ctx) => {
-    // Step 1: Get all orgs the authenticated user belongs to
-    let orgs: GitHubOrg[];
-    try {
-      orgs = await ctx.fetchAllPages<GitHubOrg>('/user/orgs');
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      ctx.error(`Failed to fetch organizations: ${errorMsg}`);
-      ctx.fail({
-        title: 'Cannot fetch GitHub organizations',
-        description: `Failed to list organizations: ${errorMsg}`,
-        resourceType: 'organization',
-        resourceId: 'github',
-        severity: 'medium',
-        remediation:
-          'Ensure the GitHub integration has the read:org scope. You may need to reconnect the integration.',
-      });
-      return;
-    }
+  variables: [targetReposVariable],
 
-    if (orgs.length === 0) {
+  run: async (ctx) => {
+    // Derive the orgs to check from the user-selected repositories.
+    // We intentionally do NOT call /user/orgs — checking orgs the user happens to
+    // belong to but did not select would surface findings for unrelated orgs
+    // (e.g. personal side-project orgs) and confuse customers.
+    const targetRepos = ctx.variables.target_repos as string[] | undefined;
+    const orgsToCheck = Array.from(
+      new Set(
+        (targetRepos ?? [])
+          .map((value) => parseRepoBranches(value).repo.split('/')[0])
+          .filter((owner): owner is string => Boolean(owner)),
+      ),
+    );
+
+    if (orgsToCheck.length === 0) {
       ctx.fail({
-        title: 'No GitHub organizations found',
+        title: 'No repositories configured',
         description:
-          'The connected GitHub account is not a member of any organizations. 2FA enforcement is an organization-level setting.',
-        resourceType: 'organization',
+          'No repositories are configured for 2FA enforcement checking. Please select at least one repository.',
+        resourceType: 'integration',
         resourceId: 'github',
         severity: 'low',
-        remediation:
-          'Connect a GitHub account that belongs to at least one organization.',
+        remediation: 'Open the integration settings and select repositories to monitor.',
       });
       return;
     }
 
-    ctx.log(`Found ${orgs.length} organization(s). Checking 2FA status...`);
+    ctx.log(
+      `Checking 2FA for ${orgsToCheck.length} organization(s) derived from selected repos: ${orgsToCheck.join(', ')}`,
+    );
 
     // Step 2: For each org, check for members without 2FA
-    for (const org of orgs) {
-      ctx.log(`Checking 2FA for organization: ${org.login}`);
-      const orgSlug = encodeURIComponent(org.login);
+    for (const orgLogin of orgsToCheck) {
+      ctx.log(`Checking 2FA for organization: ${orgLogin}`);
+      const orgSlug = encodeURIComponent(orgLogin);
       const checkedAt = new Date().toISOString();
 
       let membersWithout2FA: GitHubOrgMember[];
@@ -132,13 +129,13 @@ export const twoFactorAuthCheck: IntegrationCheck = {
         const errorMsg = error instanceof Error ? error.message : String(error);
 
         if (isSamlSsoError(errorMsg)) {
-          ctx.warn(`Cannot check 2FA for ${org.login}: SSO authorization is required.`);
+          ctx.warn(`Cannot check 2FA for ${orgLogin}: SSO authorization is required.`);
           ctx.fail({
-            title: `Cannot verify 2FA for ${org.login}`,
+            title: `Cannot verify 2FA for ${orgLogin}`,
             description:
               'GitHub organization SSO authorization is required to access organization members.',
             resourceType: 'organization',
-            resourceId: org.login,
+            resourceId: orgLogin,
             severity: 'medium',
             remediation:
               'Authorize this OAuth app for your organization SSO, then rerun the check.',
@@ -147,43 +144,45 @@ export const twoFactorAuthCheck: IntegrationCheck = {
         }
 
         if (isRateLimitError(error, errorMsg)) {
-          ctx.warn(`Rate limit reached while checking 2FA for ${org.login}.`);
+          ctx.warn(`Rate limit reached while checking 2FA for ${orgLogin}.`);
           ctx.fail({
-            title: `Rate limited while checking ${org.login}`,
+            title: `Rate limited while checking ${orgLogin}`,
             description:
               'GitHub rate limits prevented completion of this 2FA check for the organization.',
             resourceType: 'organization',
-            resourceId: org.login,
+            resourceId: orgLogin,
             severity: 'low',
             remediation: 'Wait for the GitHub rate limit to reset, then rerun the check.',
           });
           continue;
         }
 
-        // GitHub returns 422 when the caller is not an org owner for 2fa_* filters.
+        // The user explicitly selected a repo in this org but isn't an owner.
+        // Surface as a finding so they know to either reconnect with an owner
+        // account or remove the repo from the selection.
         if (isOwnerPermissionError(error, errorMsg)) {
           ctx.warn(
-            `Cannot check 2FA for ${org.login}: the account must be an organization owner to use the 2FA filter.`,
+            `Cannot check 2FA for ${orgLogin}: the account must be an organization owner to use the 2FA filter.`,
           );
           ctx.fail({
-            title: `Cannot verify 2FA for ${org.login}`,
+            title: `Cannot verify 2FA for ${orgLogin}`,
             description:
               'Insufficient permissions to check 2FA status. The `filter=2fa_disabled` parameter is only available to organization owners on GitHub.',
             resourceType: 'organization',
-            resourceId: org.login,
+            resourceId: orgLogin,
             severity: 'medium',
             remediation:
-              'Reconnect the GitHub integration with an account that is an owner of this organization.',
+              'Reconnect the GitHub integration with an account that is an owner of this organization, or remove the org\'s repositories from the selection.',
           });
           continue;
         }
 
-        ctx.error(`Failed to check 2FA for ${org.login}: ${errorMsg}`);
+        ctx.error(`Failed to check 2FA for ${orgLogin}: ${errorMsg}`);
         ctx.fail({
-          title: `Error checking 2FA for ${org.login}`,
+          title: `Error checking 2FA for ${orgLogin}`,
           description: `Failed to query members without 2FA: ${errorMsg}`,
           resourceType: 'organization',
-          resourceId: org.login,
+          resourceId: orgLogin,
           severity: 'medium',
           remediation: 'Check the integration connection and try again.',
         });
@@ -194,12 +193,12 @@ export const twoFactorAuthCheck: IntegrationCheck = {
 
       if (without2FACount === 0) {
         ctx.pass({
-          title: `All members have 2FA enabled in ${org.login}`,
-          description: `No members without 2FA were returned for ${org.login}.`,
+          title: `All members have 2FA enabled in ${orgLogin}`,
+          description: `No members without 2FA were returned for ${orgLogin}.`,
           resourceType: 'organization',
-          resourceId: org.login,
+          resourceId: orgLogin,
           evidence: {
-            organization: org.login,
+            organization: orgLogin,
             membersWithout2FA: 0,
             checkedAt,
           },
@@ -209,13 +208,13 @@ export const twoFactorAuthCheck: IntegrationCheck = {
         for (const member of membersWithout2FA) {
           ctx.fail({
             title: `2FA not enabled: ${member.login}`,
-            description: `GitHub user @${member.login} in the ${org.login} organization does not have two-factor authentication enabled.`,
+            description: `GitHub user @${member.login} in the ${orgLogin} organization does not have two-factor authentication enabled.`,
             resourceType: 'user',
-            resourceId: `${org.login}/${member.login}`,
+            resourceId: `${orgLogin}/${member.login}`,
             severity: 'high',
-            remediation: `Ask @${member.login} to enable 2FA in their GitHub account settings (Settings > Password and authentication > Two-factor authentication). Alternatively, enforce 2FA at the organization level in ${org.login}'s settings.`,
+            remediation: `Ask @${member.login} to enable 2FA in their GitHub account settings (Settings > Password and authentication > Two-factor authentication). Alternatively, enforce 2FA at the organization level in ${orgLogin}'s settings.`,
             evidence: {
-              organization: org.login,
+              organization: orgLogin,
               username: member.login,
               userId: member.id,
               profileUrl: member.html_url,
@@ -226,14 +225,14 @@ export const twoFactorAuthCheck: IntegrationCheck = {
 
         // Also emit a summary
         ctx.fail({
-          title: `${without2FACount} member(s) without 2FA in ${org.login}`,
-          description: `${without2FACount} member(s) in the ${org.login} organization do not have two-factor authentication enabled: ${formatUsernames(membersWithout2FA)}`,
+          title: `${without2FACount} member(s) without 2FA in ${orgLogin}`,
+          description: `${without2FACount} member(s) in the ${orgLogin} organization do not have two-factor authentication enabled: ${formatUsernames(membersWithout2FA)}`,
           resourceType: 'organization',
-          resourceId: `${org.login}/2fa-summary`,
+          resourceId: `${orgLogin}/2fa-summary`,
           severity: 'high',
-          remediation: `1. Go to https://github.com/organizations/${org.login}/settings/security\n2. Under "Authentication security", check "Require two-factor authentication for everyone"\n3. This will require all existing and future members to enable 2FA`,
+          remediation: `1. Go to https://github.com/organizations/${orgLogin}/settings/security\n2. Under "Authentication security", check "Require two-factor authentication for everyone"\n3. This will require all existing and future members to enable 2FA`,
           evidence: {
-            organization: org.login,
+            organization: orgLogin,
             membersWithout2FA: without2FACount,
             usernames: membersWithout2FA.map((member) => member.login),
             checkedAt,
