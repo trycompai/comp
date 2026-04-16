@@ -12,6 +12,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
+import { ApiExcludeController } from '@nestjs/swagger';
 import type { Prisma } from '@db';
 import { db } from '@db';
 import { InternalTokenGuard } from '../../auth/internal-token.guard';
@@ -25,6 +26,7 @@ import {
   SyncDefinitionSchema,
 } from '@trycompai/integration-platform';
 
+@ApiExcludeController()
 @Controller({ path: 'internal/dynamic-integrations', version: '1' })
 @UseGuards(InternalTokenGuard)
 export class DynamicIntegrationsController {

@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import {
+  ApiExcludeController,
   ApiOperation,
   ApiResponse,
   ApiSecurity,
@@ -15,6 +16,7 @@ import {
   TriggerSingleVendorRiskAssessmentDto,
 } from './dto/trigger-vendor-risk-assessment.dto';
 
+@ApiExcludeController()
 @ApiTags('Internal - Vendors')
 @Controller({ path: 'internal/vendors', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
