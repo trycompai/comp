@@ -127,6 +127,22 @@ export async function firecrawlResearchCore(params: {
     }
   }
 
+  logger.info('Firecrawl Agent raw response received', {
+    vendorWebsite,
+    agentSuccess: agentResponse.success,
+    agentStatus: agentResponse.status,
+    agentError:
+      typeof agentResponse.error === 'string'
+        ? agentResponse.error
+        : agentResponse.error
+          ? JSON.stringify(agentResponse.error)
+          : null,
+    agentResponseKeys: Object.keys(
+      (agentResponse as Record<string, unknown>) ?? {},
+    ),
+    agentResponseJson: JSON.stringify(agentResponse).slice(0, 4000),
+  });
+
   if (!agentResponse.success || agentResponse.status === 'failed') {
     logger.warn('Firecrawl core research job did not complete successfully', {
       vendorWebsite,
@@ -208,6 +224,9 @@ export async function firecrawlResearchCore(params: {
     verifiedAgentCertCount: certifications.filter(
       (c) => c.status === 'verified',
     ).length,
+    parsedDataJson: JSON.stringify(parsed.data).slice(0, 4000),
+    agentSecurityAssessment: parsed.data.security_assessment ?? null,
+    agentRiskLevel: parsed.data.risk_level ?? null,
   });
 
   const deepScrapeSourceUrl = pickDeepScrapeSourceUrl({
