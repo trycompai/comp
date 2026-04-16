@@ -1,0 +1,41 @@
+apps/api/src/trust-portal/domain-verification.ts
+  5647a86fe776173b 1-125
+apps/api/src/trust-portal/trust-portal.service.ts
+  5647a86fe776173b 27-31,256-261,267,1027-1031,1033-1038,1040-1061,1072-1073,1077-1088,1100-1102,1105,1111,1115-1119,1121,1128-1131,1136,1139,1142,1147-1155,1160-1161,1166,1170-1172
+apps/api/src/trust-portal/dto/domain-status.dto.ts
+  5647a86fe776173b 50,54-61
+apps/app/src/hooks/use-domain.ts
+  5647a86fe776173b 17
+apps/app/src/app/(app)/[orgId]/trust/portal-settings/components/TrustPortalDomain.tsx
+  5647a86fe776173b 4,79-80,87-102,249-265,303-311,316-319,443-451,456-457
+apps/app/src/app/(app)/[orgId]/trust/settings/components/TrustSettingsClient.test.tsx
+  5647a86fe776173b 37-38
+apps/app/src/app/(app)/[orgId]/trust/portal-settings/components/TrustPortalDomain.test.tsx
+  5647a86fe776173b 31-32
+apps/app/src/hooks/use-dns-status.ts
+  5647a86fe776173b 11-12,44-45
+apps/api/src/trust-portal/domain-verification.spec.ts
+  5647a86fe776173b 1-173
+apps/app/src/hooks/use-trust-portal-settings.ts
+  5647a86fe776173b 172-173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "51711da53c8225941942751557eceab382fe6eba",
+  "prompts": {
+    "5647a86fe776173b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "481da50f-7c62-476a-b82a-d8f7ac03e709",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 1376,
+      "total_deletions": 86,
+      "accepted_lines": 712,
+      "overriden_lines": 0
+    }
+  }
+}
