@@ -234,6 +234,9 @@ describe('deepScrapeTrustPortal — extraction', () => {
       markdown: '# Trust center content',
       links: [],
     });
+    // First generateObject call is identifySidebarTabs; return no tabs so
+    // the flow proceeds straight to cert extraction.
+    generateObjectMock.mockResolvedValueOnce({ object: { tabLabels: [] } });
     generateObjectMock.mockRejectedValueOnce(new Error('model error'));
 
     const result = await deepScrapeTrustPortal({
@@ -252,6 +255,7 @@ describe('deepScrapeTrustPortal — extraction', () => {
       links: [],
     });
 
+    generateObjectMock.mockResolvedValueOnce({ object: { tabLabels: [] } });
     generateObjectMock.mockResolvedValueOnce({
       object: {
         certifications: [
@@ -283,6 +287,7 @@ describe('deepScrapeTrustPortal — extraction', () => {
       links: [],
     });
 
+    generateObjectMock.mockResolvedValueOnce({ object: { tabLabels: [] } });
     generateObjectMock.mockResolvedValueOnce({
       object: {
         certifications: [
@@ -308,6 +313,67 @@ describe('deepScrapeTrustPortal — extraction', () => {
     });
 
     expect(scrape).toHaveBeenCalledTimes(1);
+    expect(result?.map((c) => c.type).sort()).toEqual([
+      'ISO 27001',
+      'SOC 2 Type II',
+    ]);
+  });
+
+  it('discovers SPA tab labels via LLM and scrapes each by clicking text', async () => {
+    const scrape: ScrapeMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        markdown:
+          '# Secure by Design\nPhilosophy\nNDAA Compliance\nCloud Security',
+        links: [], // No sidebar anchors — triggers tab-label discovery
+      })
+      .mockResolvedValueOnce({
+        markdown: '# Philosophy\nWe believe in edge-first security.',
+      })
+      .mockResolvedValueOnce({
+        markdown: '# Cloud Security\nSOC 2 Type II, ISO 27001, PCI-DSS.',
+      });
+
+    // First LLM call: sidebar tabs. Second: cert extraction.
+    generateObjectMock.mockResolvedValueOnce({
+      object: { tabLabels: ['Philosophy', 'Cloud Security'] },
+    });
+    generateObjectMock.mockResolvedValueOnce({
+      object: {
+        certifications: [
+          {
+            type: 'SOC 2 Type II',
+            status: 'verified',
+            evidence_snippet: 'SOC 2 Type II',
+          },
+          {
+            type: 'ISO 27001',
+            status: 'verified',
+            evidence_snippet: 'ISO 27001',
+          },
+        ],
+      },
+    });
+
+    const result = await deepScrapeTrustPortal({
+      vendorName: 'Ubiquiti',
+      vendorDomain: 'ui.com',
+      sourceUrl: 'https://ui.com/trust-center',
+      firecrawlClient: makeFirecrawlMock(scrape),
+    });
+
+    // 1 initial + 2 tab-label scrapes = 3 scrape calls
+    expect(scrape).toHaveBeenCalledTimes(3);
+
+    // Each tab scrape must use executeJavascript click-by-text actions.
+    const tabCall = scrape.mock.calls[1];
+    const actions =
+      (tabCall[1] as { actions?: Array<{ type: string; script?: string }> })
+        ?.actions ?? [];
+    const jsAction = actions.find((a) => a.type === 'executeJavascript');
+    expect(jsAction?.script).toBeDefined();
+    expect(jsAction?.script).toContain('"Philosophy"');
+
     expect(result?.map((c) => c.type).sort()).toEqual([
       'ISO 27001',
       'SOC 2 Type II',

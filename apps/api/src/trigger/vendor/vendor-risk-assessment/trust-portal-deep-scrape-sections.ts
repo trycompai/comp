@@ -15,6 +15,12 @@ export type DeepScrapeSection = {
   anchor: string | null;
   /** A human-friendly label used for logging and markdown section headers. */
   label: string;
+  /**
+   * When present, the section must be revealed by clicking a DOM element whose
+   * textContent equals this value. Used for SPA trust portals where sidebar
+   * items are buttons/divs without href attributes (e.g. Ubiquiti).
+   */
+  tabLabel?: string | null;
 };
 
 function stripTrailingSlash(path: string): string {

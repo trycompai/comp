@@ -10,8 +10,10 @@ import type {
 import { isKnownThirdPartyPortalHost } from './url-validation';
 import {
   discoverSectionUrls,
+  MAX_SECTION_URLS,
   type DeepScrapeSection,
 } from './trust-portal-deep-scrape-sections';
+import { identifySidebarTabs } from './trust-portal-deep-scrape-tabs';
 
 const EXTRACTION_MODEL = 'claude-sonnet-4-6';
 const INITIAL_WAIT_MS = 3000;
@@ -87,7 +89,51 @@ function cssEscapeAttr(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
+function buildClickByTextScript(tabLabel: string): string {
+  const safe = JSON.stringify(tabLabel);
+  return `(() => {
+  const label = ${safe};
+  const candidates = Array.from(
+    document.querySelectorAll(
+      'button, a, [role="tab"], [role="button"], [role="menuitem"], li, span, div'
+    )
+  )
+    .filter((el) => {
+      if (!el || typeof el.textContent !== 'string') return false;
+      if (el.textContent.trim() !== label) return false;
+      if (el.children && el.children.length > 2) return false;
+      if (typeof el.getBoundingClientRect === 'function') {
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => (a.textContent || '').length - (b.textContent || '').length);
+  const target = candidates[0];
+  if (target) {
+    try { target.scrollIntoView({ block: 'center' }); } catch {}
+    target.click();
+  }
+})();`;
+}
+
 function buildSectionScrapeOptions(section: DeepScrapeSection) {
+  if (section.tabLabel) {
+    return {
+      formats: ['markdown'] as const,
+      onlyMainContent: true,
+      timeout: SCRAPE_TIMEOUT_MS,
+      actions: [
+        { type: 'wait', milliseconds: CLICK_WAIT_BEFORE_MS },
+        {
+          type: 'executeJavascript',
+          script: buildClickByTextScript(section.tabLabel),
+        },
+        { type: 'wait', milliseconds: CLICK_WAIT_AFTER_MS },
+      ],
+    };
+  }
+
   if (section.anchor) {
     const safeAnchor = cssEscapeAttr(section.anchor);
     const safeLabel = cssEscapeAttr(section.label);
@@ -209,10 +255,38 @@ export async function deepScrapeTrustPortal(
     initialMarkdownHead: initialMarkdown.slice(0, 2000),
   });
   // 2. Discover sections
-  const sections = discoverSectionUrls({ sourceUrl, links });
+  const urlSections = discoverSectionUrls({ sourceUrl, links });
+
+  // 2a. If URL-based discovery found nothing (SPA sidebar with no hrefs),
+  // ask an LLM to identify tab labels from the initial markdown and
+  // synthesize click-by-text sections.
+  const tabSections: DeepScrapeSection[] =
+    urlSections.length === 0 && initialMarkdown.trim().length > 0
+      ? (await identifySidebarTabs({ vendorName, initialMarkdown })).map(
+          (tabLabel) => ({
+            url: sourceUrl,
+            anchor: null,
+            label: tabLabel,
+            tabLabel,
+          }),
+        )
+      : [];
+
+  const seenLabels = new Set<string>();
+  const sections: DeepScrapeSection[] = [];
+  for (const s of [...urlSections, ...tabSections]) {
+    const key = s.label.trim().toLowerCase();
+    if (!key || seenLabels.has(key)) continue;
+    seenLabels.add(key);
+    sections.push(s);
+    if (sections.length >= MAX_SECTION_URLS) break;
+  }
+
   logger.info('Trust portal deep-scrape: sections discovered', {
     vendorName,
     sectionCount: sections.length,
+    urlSectionCount: urlSections.length,
+    tabSectionCount: tabSections.length,
     sections: sections.map((s) => s.label),
   });
   // 3. Per-section scrapes (bounded concurrency)
