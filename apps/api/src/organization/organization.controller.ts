@@ -92,6 +92,7 @@ export class OrganizationController {
 
   @Get('onboarding')
   @RequirePermission('organization', 'read')
+  @ApiOperation({ summary: 'Get organization onboarding status' })
   async getOnboarding(@OrganizationId() organizationId: string) {
     return this.organizationService.findOnboarding(organizationId);
   }

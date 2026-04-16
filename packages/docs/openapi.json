@@ -445,6 +445,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get organization onboarding status",
         "tags": [
           "Organization"
         ]
