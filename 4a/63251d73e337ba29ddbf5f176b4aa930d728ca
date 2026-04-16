@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "4a63251d73e337ba29ddbf5f176b4aa930d728ca",
+  "prompts": {
+    "8d9f3540e3044be5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d8893-7f38-7081-8759-aba5e9f6b35c",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 21616,
+      "overriden_lines": 0
+    }
+  }
+}
