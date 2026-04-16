@@ -162,7 +162,12 @@
         "testEnvironment": "node",
         "moduleNameMapper": {
             "^@db$": "<rootDir>/../prisma/index",
-            "^@/(.*)$": "<rootDir>/$1"
+            "^@/(.*)$": "<rootDir>/$1",
+            "^@trycompai/auth$": "<rootDir>/../../../packages/auth/src/index.ts",
+            "^@trycompai/company$": "<rootDir>/../../../packages/company/src/index.ts",
+            "^@trycompai/db$": "@prisma/client",
+            "^@trycompai/email$": "<rootDir>/../../../packages/email/index.ts",
+            "^@trycompai/integration-platform$": "<rootDir>/../../../packages/integration-platform/src/index.ts"
         }
     },
     "license": "UNLICENSED",
