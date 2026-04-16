@@ -12163,6 +12163,7 @@
             "description": ""
           }
         },
+        "summary": "List control templates",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12194,6 +12195,7 @@
             "description": ""
           }
         },
+        "summary": "Create a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12217,6 +12219,7 @@
             "description": ""
           }
         },
+        "summary": "Get a control template by ID",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12248,6 +12251,7 @@
             "description": ""
           }
         },
+        "summary": "Update a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12269,6 +12273,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12300,6 +12305,7 @@
             "description": ""
           }
         },
+        "summary": "Link a requirement to a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12329,6 +12335,7 @@
             "description": ""
           }
         },
+        "summary": "Unlink a requirement from a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12360,6 +12367,7 @@
             "description": ""
           }
         },
+        "summary": "Link a policy template to a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12389,6 +12397,7 @@
             "description": ""
           }
         },
+        "summary": "Unlink a policy template from a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12420,6 +12429,7 @@
             "description": ""
           }
         },
+        "summary": "Link a task template to a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12449,6 +12459,7 @@
             "description": ""
           }
         },
+        "summary": "Unlink a task template from a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12480,6 +12491,7 @@
             "description": ""
           }
         },
+        "summary": "List frameworks",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12502,6 +12514,7 @@
             "description": ""
           }
         },
+        "summary": "Create a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12525,6 +12538,7 @@
             "description": ""
           }
         },
+        "summary": "Get a framework by ID",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12556,6 +12570,7 @@
             "description": ""
           }
         },
+        "summary": "Update a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12577,6 +12592,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12601,6 +12617,7 @@
             "description": ""
           }
         },
+        "summary": "Import a framework definition",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12624,6 +12641,7 @@
             "description": ""
           }
         },
+        "summary": "Export a framework definition",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12647,6 +12665,7 @@
             "description": ""
           }
         },
+        "summary": "List controls for a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12670,6 +12689,7 @@
             "description": ""
           }
         },
+        "summary": "List policy templates for a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12693,6 +12713,7 @@
             "description": ""
           }
         },
+        "summary": "List task templates for a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12716,6 +12737,7 @@
             "description": ""
           }
         },
+        "summary": "List documents for a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12747,6 +12769,7 @@
             "description": ""
           }
         },
+        "summary": "Link a control to a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12778,6 +12801,7 @@
             "description": ""
           }
         },
+        "summary": "Link a task template to a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12809,6 +12833,7 @@
             "description": ""
           }
         },
+        "summary": "Link a policy template to a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12848,6 +12873,7 @@
             "description": ""
           }
         },
+        "summary": "List policy templates",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -12879,6 +12905,7 @@
             "description": ""
           }
         },
+        "summary": "Create a policy template",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -12902,6 +12929,7 @@
             "description": ""
           }
         },
+        "summary": "Get a policy template by ID",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -12933,6 +12961,7 @@
             "description": ""
           }
         },
+        "summary": "Update a policy template",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -12954,6 +12983,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a policy template",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -12987,6 +13017,7 @@
             "description": ""
           }
         },
+        "summary": "Update policy template content",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13018,6 +13049,7 @@
             "description": ""
           }
         },
+        "summary": "List requirements",
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13040,6 +13072,7 @@
             "description": ""
           }
         },
+        "summary": "Create a requirement",
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13073,6 +13106,7 @@
             "description": ""
           }
         },
+        "summary": "Update a requirement",
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13094,6 +13128,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a requirement",
         "tags": [
           "Framework Editor Requirements"
         ]

@@ -11,7 +11,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
 import { CreatePolicyTemplateDto } from './dto/create-policy-template.dto';
 import { UpdatePolicyContentDto } from './dto/update-policy-content.dto';
@@ -25,6 +25,7 @@ export class PolicyTemplateController {
   constructor(private readonly service: PolicyTemplateService) {}
 
   @Get()
+  @ApiOperation({ summary: 'List policy templates' })
   async findAll(
     @Query('take') take?: string,
     @Query('skip') skip?: string,
@@ -36,11 +37,13 @@ export class PolicyTemplateController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a policy template by ID' })
   async findById(@Param('id') id: string) {
     return this.service.findById(id);
   }
 
   @Post()
+  @ApiOperation({ summary: 'Create a policy template' })
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async create(
     @Body() dto: CreatePolicyTemplateDto,
@@ -50,12 +53,14 @@ export class PolicyTemplateController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update a policy template' })
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async update(@Param('id') id: string, @Body() dto: UpdatePolicyTemplateDto) {
     return this.service.update(id, dto);
   }
 
   @Patch(':id/content')
+  @ApiOperation({ summary: 'Update policy template content' })
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async updateContent(
     @Param('id') id: string,
@@ -65,6 +70,7 @@ export class PolicyTemplateController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete a policy template' })
   async delete(@Param('id') id: string) {
     return this.service.delete(id);
   }
