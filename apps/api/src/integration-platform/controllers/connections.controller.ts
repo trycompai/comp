@@ -13,7 +13,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import { db } from '@db';
 import {
   AssumeRoleCommand,
@@ -72,6 +72,7 @@ export class ConnectionsController {
    * List all available integration providers
    */
   @Get('providers')
+  @ApiOperation({ summary: 'List available integration providers' })
   @RequirePermission('integration', 'read')
   async listProviders(@Query('activeOnly') activeOnly?: string) {
     const manifests =
@@ -174,6 +175,7 @@ export class ConnectionsController {
    * Get a specific provider's details
    */
   @Get('providers/:slug')
+  @ApiOperation({ summary: 'Get an integration provider by slug' })
   @RequirePermission('integration', 'read')
   async getProvider(@Param('slug') slug: string) {
     const manifest = getManifest(slug);
@@ -265,6 +267,7 @@ export class ConnectionsController {
    * List connections for an organization (excludes soft-deleted/disconnected)
    */
   @Get()
+  @ApiOperation({ summary: 'List integration connections' })
   @RequirePermission('integration', 'read')
   async listConnections(@OrganizationId() organizationId: string) {
     const connections =
@@ -292,6 +295,7 @@ export class ConnectionsController {
    * Get a specific connection
    */
   @Get(':id')
+  @ApiOperation({ summary: 'Get an integration connection by ID' })
   @RequirePermission('integration', 'read')
   async getConnection(
     @Param('id') id: string,
@@ -382,6 +386,7 @@ export class ConnectionsController {
    * Create a new connection with API key credentials
    */
   @Post()
+  @ApiOperation({ summary: 'Create an integration connection' })
   @RequirePermission('integration', 'create')
   async createConnection(
     @OrganizationId() organizationId: string,
@@ -682,6 +687,7 @@ export class ConnectionsController {
    * Test a connection's credentials
    */
   @Post(':id/test')
+  @ApiOperation({ summary: 'Test an integration connection' })
   @RequirePermission('integration', 'update')
   async testConnection(
     @Param('id') id: string,
@@ -778,6 +784,7 @@ export class ConnectionsController {
    * Pause a connection
    */
   @Post(':id/pause')
+  @ApiOperation({ summary: 'Pause an integration connection' })
   @RequirePermission('integration', 'update')
   async pauseConnection(
     @Param('id') id: string,
@@ -792,6 +799,7 @@ export class ConnectionsController {
    * Resume a paused connection
    */
   @Post(':id/resume')
+  @ApiOperation({ summary: 'Resume an integration connection' })
   @RequirePermission('integration', 'update')
   async resumeConnection(
     @Param('id') id: string,
@@ -806,6 +814,7 @@ export class ConnectionsController {
    * Disconnect (soft delete) a connection
    */
   @Post(':id/disconnect')
+  @ApiOperation({ summary: 'Disconnect an integration' })
   @RequirePermission('integration', 'delete')
   async disconnectConnection(
     @Param('id') id: string,
@@ -820,6 +829,7 @@ export class ConnectionsController {
    * Delete a connection permanently
    */
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete an integration connection' })
   @RequirePermission('integration', 'delete')
   async deleteConnection(
     @Param('id') id: string,
@@ -834,6 +844,7 @@ export class ConnectionsController {
    * Update connection metadata (connectionName, regions, etc.)
    */
   @Patch(':id')
+  @ApiOperation({ summary: 'Update an integration connection' })
   @RequirePermission('integration', 'update')
   async updateConnection(
     @Param('id') id: string,
@@ -867,6 +878,7 @@ export class ConnectionsController {
    * Used by scheduled jobs to ensure tokens are valid before running checks.
    */
   @Post(':id/ensure-valid-credentials')
+  @ApiOperation({ summary: 'Ensure valid credentials for a connection' })
   @RequirePermission('integration', 'update')
   async ensureValidCredentials(
     @Param('id') id: string,
@@ -1029,6 +1041,7 @@ export class ConnectionsController {
    * Update enabled services for a connection
    */
   @Put(':id/services')
+  @ApiOperation({ summary: 'Set services enabled on a connection' })
   @RequirePermission('integration', 'update')
   async updateConnectionServices(
     @Param('id') id: string,
@@ -1097,6 +1110,7 @@ export class ConnectionsController {
    * Update credentials for a custom auth connection
    */
   @Put(':id/credentials')
+  @ApiOperation({ summary: 'Update integration credentials' })
   @RequirePermission('integration', 'update')
   async updateCredentials(
     @Param('id') id: string,

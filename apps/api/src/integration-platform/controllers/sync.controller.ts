@@ -10,7 +10,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -81,6 +81,7 @@ export class SyncController {
    * Sync employees from Google Workspace
    */
   @Post('google-workspace/employees')
+  @ApiOperation({ summary: 'Sync Google Workspace employees' })
   @RequirePermission('integration', 'update')
   async syncGoogleWorkspaceEmployees(
     @OrganizationId() organizationId: string,
@@ -525,6 +526,7 @@ export class SyncController {
    * Check if Google Workspace is connected for an organization
    */
   @Post('google-workspace/status')
+  @ApiOperation({ summary: 'Get Google Workspace sync status' })
   @RequirePermission('integration', 'read')
   async getGoogleWorkspaceStatus(@OrganizationId() organizationId: string) {
     const connection = await this.connectionRepository.findBySlugAndOrg(
@@ -553,6 +555,7 @@ export class SyncController {
    * Sync employees from Rippling
    */
   @Post('rippling/employees')
+  @ApiOperation({ summary: 'Sync Rippling employees' })
   @RequirePermission('integration', 'update')
   async syncRipplingEmployees(
     @OrganizationId() organizationId: string,
@@ -923,6 +926,7 @@ export class SyncController {
    * Check if Rippling is connected for an organization
    */
   @Post('rippling/status')
+  @ApiOperation({ summary: 'Get Rippling sync status' })
   @RequirePermission('integration', 'read')
   async getRipplingStatus(@OrganizationId() organizationId: string) {
     const connection = await this.connectionRepository.findBySlugAndOrg(
@@ -951,6 +955,7 @@ export class SyncController {
    * Sync employees from JumpCloud
    */
   @Post('jumpcloud/employees')
+  @ApiOperation({ summary: 'Sync JumpCloud employees' })
   @RequirePermission('integration', 'update')
   async syncJumpCloudEmployees(
     @OrganizationId() organizationId: string,
@@ -1461,6 +1466,7 @@ export class SyncController {
    * Check if JumpCloud is connected for an organization
    */
   @Post('jumpcloud/status')
+  @ApiOperation({ summary: 'Get JumpCloud sync status' })
   @RequirePermission('integration', 'read')
   async getJumpCloudStatus(@OrganizationId() organizationId: string) {
     const connection = await this.connectionRepository.findBySlugAndOrg(
@@ -1489,6 +1495,7 @@ export class SyncController {
    * Get the current employee sync provider for an organization
    */
   @Get('employee-sync-provider')
+  @ApiOperation({ summary: 'Get the currently configured employee sync provider' })
   @RequirePermission('integration', 'read')
   async getEmployeeSyncProvider(@OrganizationId() organizationId: string) {
     const org = await db.organization.findUnique({
@@ -1518,6 +1525,7 @@ export class SyncController {
    * Set the employee sync provider for an organization
    */
   @Post('employee-sync-provider')
+  @ApiOperation({ summary: 'Set the employee sync provider' })
   @RequirePermission('integration', 'update')
   async setEmployeeSyncProvider(
     @OrganizationId() organizationId: string,
@@ -1576,6 +1584,7 @@ export class SyncController {
    * Used by the frontend to render the provider selector dynamically.
    */
   @Get('available-providers')
+  @ApiOperation({ summary: 'List employee sync providers available to the org' })
   @RequirePermission('integration', 'read')
   async getAvailableSyncProviders(@OrganizationId() organizationId: string) {
     const allManifests = registry.getActiveManifests();
@@ -1622,6 +1631,7 @@ export class SyncController {
    * This only matches for slugs that don't match the 4 built-in providers.
    */
   @Post('dynamic/:providerSlug/employees')
+  @ApiOperation({ summary: 'Sync employees for a dynamic provider' })
   @RequirePermission('integration', 'update')
   async syncDynamicProviderEmployees(
     @OrganizationId() organizationId: string,

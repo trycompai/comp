@@ -10,7 +10,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -87,6 +87,7 @@ export class TaskIntegrationsController {
    * which checks have been manually disconnected from that task.
    */
   @Get('template/:templateId/checks')
+  @ApiOperation({ summary: 'List checks for a task template' })
   @RequirePermission('integration', 'read')
   async getChecksForTaskTemplate(
     @Param('templateId') templateId: string,
@@ -183,6 +184,7 @@ export class TaskIntegrationsController {
    * Get integration checks for a specific task (by task ID)
    */
   @Get(':taskId/checks')
+  @ApiOperation({ summary: 'List checks attached to a task' })
   @RequirePermission('integration', 'read')
   async getChecksForTask(
     @Param('taskId') taskId: string,
@@ -225,6 +227,7 @@ export class TaskIntegrationsController {
    * Run a specific check for a task and store results
    */
   @Post(':taskId/run-check')
+  @ApiOperation({ summary: 'Run a check for a task' })
   @RequirePermission('integration', 'update')
   async runCheckForTask(
     @Param('taskId') taskId: string,
@@ -529,6 +532,7 @@ export class TaskIntegrationsController {
    * skip this (task, check) pair until it is reconnected.
    */
   @Post(':taskId/checks/disconnect')
+  @ApiOperation({ summary: 'Disconnect checks from a task' })
   @RequirePermission('integration', 'update')
   async disconnectCheckFromTask(
     @Param('taskId') taskId: string,
@@ -549,6 +553,7 @@ export class TaskIntegrationsController {
    * task. Inverse of the disconnect endpoint.
    */
   @Post(':taskId/checks/reconnect')
+  @ApiOperation({ summary: 'Reconnect checks to a task' })
   @RequirePermission('integration', 'update')
   async reconnectCheckToTask(
     @Param('taskId') taskId: string,
@@ -568,6 +573,7 @@ export class TaskIntegrationsController {
    * Get check run history for a task
    */
   @Get(':taskId/runs')
+  @ApiOperation({ summary: 'List check runs for a task' })
   @RequirePermission('integration', 'read')
   async getTaskCheckRuns(
     @Param('taskId') taskId: string,

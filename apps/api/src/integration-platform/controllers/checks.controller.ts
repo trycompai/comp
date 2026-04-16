@@ -9,7 +9,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import type { Prisma } from '@db';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
@@ -50,6 +50,7 @@ export class ChecksController {
    * List available checks for a provider
    */
   @Get('providers/:providerSlug')
+  @ApiOperation({ summary: 'List check definitions for a provider' })
   @RequirePermission('integration', 'read')
   async listProviderChecks(@Param('providerSlug') providerSlug: string) {
     const manifest = getManifest(providerSlug);
@@ -71,6 +72,7 @@ export class ChecksController {
    * List available checks for a connection
    */
   @Get('connections/:connectionId')
+  @ApiOperation({ summary: 'List checks for a connection' })
   @RequirePermission('integration', 'read')
   async listConnectionChecks(
     @Param('connectionId') connectionId: string,
@@ -113,6 +115,7 @@ export class ChecksController {
    * Run checks for a connection
    */
   @Post('connections/:connectionId/run')
+  @ApiOperation({ summary: 'Run all checks for a connection' })
   @RequirePermission('integration', 'update')
   async runConnectionChecks(
     @Param('connectionId') connectionId: string,
@@ -345,6 +348,7 @@ export class ChecksController {
    * Run a specific check for a connection
    */
   @Post('connections/:connectionId/run/:checkId')
+  @ApiOperation({ summary: 'Run a single check on a connection' })
   @RequirePermission('integration', 'update')
   async runSingleCheck(
     @Param('connectionId') connectionId: string,

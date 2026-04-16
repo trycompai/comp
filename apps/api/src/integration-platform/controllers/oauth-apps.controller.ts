@@ -11,7 +11,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -43,6 +43,7 @@ export class OAuthAppsController {
    * List custom OAuth apps for an organization
    */
   @Get()
+  @ApiOperation({ summary: 'List configured OAuth apps' })
   @RequirePermission('integration', 'read')
   async listOAuthApps(@OrganizationId() organizationId: string) {
     const apps =
@@ -62,6 +63,7 @@ export class OAuthAppsController {
    * Get OAuth app setup info for a provider
    */
   @Get('setup/:providerSlug')
+  @ApiOperation({ summary: 'Get OAuth app setup details' })
   @RequirePermission('integration', 'read')
   async getSetupInfo(
     @Param('providerSlug') providerSlug: string,
@@ -106,6 +108,7 @@ export class OAuthAppsController {
    * Save custom OAuth app credentials for an organization
    */
   @Post()
+  @ApiOperation({ summary: 'Create an OAuth app configuration' })
   @RequirePermission('integration', 'create')
   async saveOAuthApp(
     @OrganizationId() organizationId: string,
@@ -156,6 +159,7 @@ export class OAuthAppsController {
    * Delete custom OAuth app credentials for an organization
    */
   @Delete(':providerSlug')
+  @ApiOperation({ summary: 'Delete an OAuth app configuration' })
   @RequirePermission('integration', 'delete')
   async deleteOAuthApp(
     @Param('providerSlug') providerSlug: string,

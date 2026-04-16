@@ -10,7 +10,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { randomBytes, createHash } from 'crypto';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
@@ -59,6 +59,7 @@ export class OAuthController {
    * Check if OAuth credentials are available for a provider
    */
   @Get('availability')
+  @ApiOperation({ summary: 'Check OAuth provider availability' })
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
   async checkAvailability(
@@ -82,6 +83,7 @@ export class OAuthController {
    * Start OAuth flow - returns authorization URL
    */
   @Post('start')
+  @ApiOperation({ summary: 'Start an OAuth authorization flow' })
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'create')
   async startOAuth(
@@ -213,6 +215,7 @@ export class OAuthController {
    * OAuth callback - exchanges code for tokens
    */
   @Get('callback')
+  @ApiOperation({ summary: 'Handle OAuth provider callback' })
   async oauthCallback(
     @Query() query: OAuthCallbackQuery,
     @Res() res: Response,

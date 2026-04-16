@@ -6,7 +6,7 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -25,6 +25,7 @@ export class ServicesController {
    * Get services for a connection with their enabled state
    */
   @Get(':id/services')
+  @ApiOperation({ summary: 'List services enabled on a connection' })
   @RequirePermission('integration', 'read')
   async getConnectionServices(
     @Param('id') id: string,

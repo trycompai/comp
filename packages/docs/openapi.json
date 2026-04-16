@@ -15179,6 +15179,7 @@
             "apikey": []
           }
         ],
+        "summary": "Check OAuth provider availability",
         "tags": [
           "Integrations"
         ]
@@ -15198,6 +15199,7 @@
             "apikey": []
           }
         ],
+        "summary": "Start an OAuth authorization flow",
         "tags": [
           "Integrations"
         ]
@@ -15217,6 +15219,7 @@
             "apikey": []
           }
         ],
+        "summary": "Handle OAuth provider callback",
         "tags": [
           "Integrations"
         ]
@@ -15236,6 +15239,7 @@
             "apikey": []
           }
         ],
+        "summary": "List configured OAuth apps",
         "tags": [
           "Integrations"
         ]
@@ -15253,6 +15257,7 @@
             "apikey": []
           }
         ],
+        "summary": "Create an OAuth app configuration",
         "tags": [
           "Integrations"
         ]
@@ -15281,6 +15286,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get OAuth app setup details",
         "tags": [
           "Integrations"
         ]
@@ -15309,6 +15315,7 @@
             "apikey": []
           }
         ],
+        "summary": "Delete an OAuth app configuration",
         "tags": [
           "Integrations"
         ]
@@ -15337,6 +15344,7 @@
             "apikey": []
           }
         ],
+        "summary": "List available integration providers",
         "tags": [
           "Integrations"
         ]
@@ -15365,6 +15373,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get an integration provider by slug",
         "tags": [
           "Integrations"
         ]
@@ -15384,6 +15393,7 @@
             "apikey": []
           }
         ],
+        "summary": "List integration connections",
         "tags": [
           "Integrations"
         ]
@@ -15401,6 +15411,7 @@
             "apikey": []
           }
         ],
+        "summary": "Create an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15429,6 +15440,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get an integration connection by ID",
         "tags": [
           "Integrations"
         ]
@@ -15455,6 +15467,7 @@
             "apikey": []
           }
         ],
+        "summary": "Delete an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15481,6 +15494,7 @@
             "apikey": []
           }
         ],
+        "summary": "Update an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15509,6 +15523,7 @@
             "apikey": []
           }
         ],
+        "summary": "Test an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15537,6 +15552,7 @@
             "apikey": []
           }
         ],
+        "summary": "Pause an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15565,6 +15581,7 @@
             "apikey": []
           }
         ],
+        "summary": "Resume an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15593,6 +15610,7 @@
             "apikey": []
           }
         ],
+        "summary": "Disconnect an integration",
         "tags": [
           "Integrations"
         ]
@@ -15621,6 +15639,7 @@
             "apikey": []
           }
         ],
+        "summary": "Ensure valid credentials for a connection",
         "tags": [
           "Integrations"
         ]
@@ -15649,6 +15668,7 @@
             "apikey": []
           }
         ],
+        "summary": "Set services enabled on a connection",
         "tags": [
           "Integrations"
         ]
@@ -15675,6 +15695,7 @@
             "apikey": []
           }
         ],
+        "summary": "List services enabled on a connection",
         "tags": [
           "Integrations"
         ]
@@ -15703,6 +15724,7 @@
             "apikey": []
           }
         ],
+        "summary": "Update integration credentials",
         "tags": [
           "Integrations"
         ]
@@ -15731,6 +15753,7 @@
             "apikey": []
           }
         ],
+        "summary": "List check definitions for a provider",
         "tags": [
           "Integrations"
         ]
@@ -15759,6 +15782,7 @@
             "apikey": []
           }
         ],
+        "summary": "List checks for a connection",
         "tags": [
           "Integrations"
         ]
@@ -15787,6 +15811,7 @@
             "apikey": []
           }
         ],
+        "summary": "Run all checks for a connection",
         "tags": [
           "Integrations"
         ]
@@ -15823,6 +15848,7 @@
             "apikey": []
           }
         ],
+        "summary": "Run a single check on a connection",
         "tags": [
           "Integrations"
         ]
@@ -15851,6 +15877,7 @@
             "apikey": []
           }
         ],
+        "summary": "List variable definitions for a provider",
         "tags": [
           "Integrations"
         ]
@@ -15879,6 +15906,7 @@
             "apikey": []
           }
         ],
+        "summary": "List connection variables",
         "tags": [
           "Integrations"
         ]
@@ -15905,6 +15933,7 @@
             "apikey": []
           }
         ],
+        "summary": "Update connection variables",
         "tags": [
           "Integrations"
         ]
@@ -15941,6 +15970,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get options for a connection variable",
         "tags": [
           "Integrations"
         ]
@@ -15969,6 +15999,7 @@
             "apikey": []
           }
         ],
+        "summary": "List checks for a task template",
         "tags": [
           "Integrations"
         ]
@@ -15997,6 +16028,7 @@
             "apikey": []
           }
         ],
+        "summary": "List checks attached to a task",
         "tags": [
           "Integrations"
         ]
@@ -16025,6 +16057,7 @@
             "apikey": []
           }
         ],
+        "summary": "Run a check for a task",
         "tags": [
           "Integrations"
         ]
@@ -16053,6 +16086,7 @@
             "apikey": []
           }
         ],
+        "summary": "Disconnect checks from a task",
         "tags": [
           "Integrations"
         ]
@@ -16081,6 +16115,7 @@
             "apikey": []
           }
         ],
+        "summary": "Reconnect checks to a task",
         "tags": [
           "Integrations"
         ]
@@ -16117,6 +16152,7 @@
             "apikey": []
           }
         ],
+        "summary": "List check runs for a task",
         "tags": [
           "Integrations"
         ]
@@ -16148,6 +16184,7 @@
             "description": ""
           }
         },
+        "summary": "Receive a provider webhook event",
         "tags": [
           "Webhook"
         ]
@@ -16176,6 +16213,7 @@
             "apikey": []
           }
         ],
+        "summary": "Sync Google Workspace employees",
         "tags": [
           "Integrations"
         ]
@@ -16195,6 +16233,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get Google Workspace sync status",
         "tags": [
           "Integrations"
         ]
@@ -16223,6 +16262,7 @@
             "apikey": []
           }
         ],
+        "summary": "Sync Rippling employees",
         "tags": [
           "Integrations"
         ]
@@ -16242,6 +16282,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get Rippling sync status",
         "tags": [
           "Integrations"
         ]
@@ -16270,6 +16311,7 @@
             "apikey": []
           }
         ],
+        "summary": "Sync JumpCloud employees",
         "tags": [
           "Integrations"
         ]
@@ -16289,6 +16331,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get JumpCloud sync status",
         "tags": [
           "Integrations"
         ]
@@ -16308,6 +16351,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get the currently configured employee sync provider",
         "tags": [
           "Integrations"
         ]
@@ -16325,6 +16369,7 @@
             "apikey": []
           }
         ],
+        "summary": "Set the employee sync provider",
         "tags": [
           "Integrations"
         ]
@@ -16344,6 +16389,7 @@
             "apikey": []
           }
         ],
+        "summary": "List employee sync providers available to the org",
         "tags": [
           "Integrations"
         ]
@@ -16380,6 +16426,7 @@
             "apikey": []
           }
         ],
+        "summary": "Sync employees for a dynamic provider",
         "tags": [
           "Integrations"
         ]
