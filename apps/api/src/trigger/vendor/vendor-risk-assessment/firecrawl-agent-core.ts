@@ -1,7 +1,10 @@
 // apps/api/src/trigger/vendor/vendor-risk-assessment/firecrawl-agent-core.ts
 import { logger } from '@trigger.dev/sdk';
 import { vendorRiskAssessmentAgentSchema } from './agent-schema';
-import type { VendorRiskAssessmentDataV1 } from './agent-types';
+import type {
+  VendorRiskAssessmentCertification,
+  VendorRiskAssessmentDataV1,
+} from './agent-types';
 import { validateVendorUrl } from './url-validation';
 import {
   type FirecrawlSetup,
@@ -9,6 +12,8 @@ import {
   normalizeIso,
   setupFirecrawlClient,
 } from './firecrawl-agent-shared';
+import { deepScrapeTrustPortal } from './trust-portal-deep-scrape';
+import { mergeCertifications } from './trust-portal-deep-scrape-merge';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object'
@@ -39,6 +44,40 @@ function extractAgentPayloadCandidates(agentResponse: unknown): unknown[] {
 
   visit(agentResponse);
   return candidates;
+}
+
+function pickDeepScrapeSourceUrl(args: {
+  vendorDomain: string;
+  links: Array<{ label: string; url: string }>;
+  certifications: VendorRiskAssessmentCertification[];
+}): string | null {
+  const { vendorDomain, links, certifications } = args;
+
+  const isOnVendorDomain = (url: string): boolean => {
+    try {
+      const host = new URL(url).hostname.toLowerCase();
+      return host === vendorDomain || host.endsWith(`.${vendorDomain}`);
+    } catch {
+      return false;
+    }
+  };
+
+  const byLabel = (label: string) =>
+    links.find((l) => l.label === label && isOnVendorDomain(l.url))?.url ??
+    null;
+
+  const trustUrl = byLabel('Trust & Security');
+  if (trustUrl) return trustUrl;
+
+  const securityUrl = byLabel('Security Overview');
+  if (securityUrl) return securityUrl;
+
+  for (const cert of certifications) {
+    if (cert.status !== 'verified') continue;
+    if (cert.url && isOnVendorDomain(cert.url)) return cert.url;
+  }
+
+  return null;
 }
 
 export async function firecrawlResearchCore(params: {
@@ -292,11 +331,37 @@ Focus on the official website ${vendorWebsite} and its trust/security/compliance
       url: validateVendorUrl(c.url ?? null, vendorDomain, `cert:${c.type}`),
     })) ?? [];
 
+  const deepScrapeSourceUrl = pickDeepScrapeSourceUrl({
+    vendorDomain,
+    links: normalizedLinks,
+    certifications,
+  });
+
+  let mergedCertifications: VendorRiskAssessmentCertification[] =
+    certifications;
+  if (deepScrapeSourceUrl) {
+    const deepCerts = await deepScrapeTrustPortal({
+      vendorName,
+      vendorDomain,
+      sourceUrl: deepScrapeSourceUrl,
+      firecrawlClient,
+    });
+    if (deepCerts && deepCerts.length > 0) {
+      mergedCertifications = mergeCertifications(certifications, deepCerts);
+      logger.info('Trust portal deep-scrape merged into core certifications', {
+        vendorWebsite,
+        coreCount: certifications.length,
+        deepCount: deepCerts.length,
+        mergedCount: mergedCertifications.length,
+      });
+    }
+  }
+
   logger.info('Firecrawl core research completed', {
     vendorWebsite,
     found: {
       links: normalizedLinks.length,
-      certifications: certifications.length,
+      certifications: mergedCertifications.length,
     },
   });
 
@@ -309,7 +374,8 @@ Focus on the official website ${vendorWebsite} and its trust/security/compliance
       new Date().toISOString(),
     riskLevel: parsed.data.risk_level ?? null,
     securityAssessment: parsed.data.security_assessment ?? null,
-    certifications: certifications.length > 0 ? certifications : null,
+    certifications:
+      mergedCertifications.length > 0 ? mergedCertifications : null,
     links: normalizedLinks.length > 0 ? normalizedLinks : null,
   };
 }
