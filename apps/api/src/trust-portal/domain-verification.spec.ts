@@ -1,4 +1,4 @@
-import { decideDomainVerification, deriveCnameVerified } from './domain-verification';
+import { decideDomainVerification, deriveDnsVerified } from './domain-verification';
 
 describe('decideDomainVerification', () => {
   const baseInputs = {
@@ -158,12 +158,20 @@ describe('decideDomainVerification', () => {
   });
 });
 
-describe('deriveCnameVerified', () => {
-  it('returns true when Vercel reports CNAME configured and not misconfigured', () => {
+describe('deriveDnsVerified', () => {
+  it('returns true when Vercel reports the domain is not misconfigured (CNAME)', () => {
     expect(
-      deriveCnameVerified({
+      deriveDnsVerified({
         dnsRegexMatches: true,
-        vercelConfiguredBy: 'CNAME',
+        vercelMisconfigured: false,
+      }),
+    ).toBe(true);
+  });
+
+  it('returns true when Vercel reports the domain is not misconfigured (A record / apex)', () => {
+    expect(
+      deriveDnsVerified({
+        dnsRegexMatches: false,
         vercelMisconfigured: false,
       }),
     ).toBe(true);
@@ -171,29 +179,8 @@ describe('deriveCnameVerified', () => {
 
   it('returns false when Vercel reports misconfigured, even if our DNS regex matches', () => {
     expect(
-      deriveCnameVerified({
+      deriveDnsVerified({
         dnsRegexMatches: true,
-        vercelConfiguredBy: 'CNAME',
-        vercelMisconfigured: true,
-      }),
-    ).toBe(false);
-  });
-
-  it('returns false when Vercel sees configuration via a non-CNAME method', () => {
-    expect(
-      deriveCnameVerified({
-        dnsRegexMatches: true,
-        vercelConfiguredBy: 'A',
-        vercelMisconfigured: false,
-      }),
-    ).toBe(false);
-  });
-
-  it('returns false when Vercel reports no configuration at all', () => {
-    expect(
-      deriveCnameVerified({
-        dnsRegexMatches: true,
-        vercelConfiguredBy: null,
         vercelMisconfigured: true,
       }),
     ).toBe(false);
@@ -201,17 +188,15 @@ describe('deriveCnameVerified', () => {
 
   it('falls back to DNS regex when Vercel data is not available', () => {
     expect(
-      deriveCnameVerified({
+      deriveDnsVerified({
         dnsRegexMatches: true,
-        vercelConfiguredBy: undefined,
         vercelMisconfigured: null,
       }),
     ).toBe(true);
 
     expect(
-      deriveCnameVerified({
+      deriveDnsVerified({
         dnsRegexMatches: false,
-        vercelConfiguredBy: undefined,
         vercelMisconfigured: null,
       }),
     ).toBe(false);

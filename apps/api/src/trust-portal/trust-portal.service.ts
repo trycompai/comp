@@ -26,8 +26,7 @@ import {
 import * as dns from 'node:dns';
 import {
   decideDomainVerification,
-  deriveCnameVerified,
-  type VercelConfiguredBy,
+  deriveDnsVerified,
 } from './domain-verification';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '../app/s3';
 import {
@@ -1025,7 +1024,6 @@ export class TrustPortalService {
     let liveIsVercelDomain = false;
     let liveVercelVerification: string | null = null;
     let vercelMisconfigured: boolean | null = null;
-    let vercelConfiguredBy: VercelConfiguredBy = undefined;
     let recommendedCNAME: string | null = null;
     const hasVercelConfig =
       !!process.env.TRUST_PORTAL_PROJECT_ID && !!process.env.VERCEL_TEAM_ID;
@@ -1080,7 +1078,6 @@ export class TrustPortalService {
 
       if (configResult) {
         vercelMisconfigured = configResult.data.misconfigured === true;
-        vercelConfiguredBy = configResult.data.configuredBy ?? null;
         recommendedCNAME =
           configResult.data.recommendedCNAME?.find((c) => c.rank === 1)
             ?.value ||
@@ -1112,9 +1109,8 @@ export class TrustPortalService {
       }
     }
 
-    const isCnameVerified = deriveCnameVerified({
+    const isCnameVerified = deriveDnsVerified({
       dnsRegexMatches,
-      vercelConfiguredBy,
       vercelMisconfigured,
     });
 

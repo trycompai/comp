@@ -40,33 +40,26 @@ export interface DomainVerificationResult {
   transient?: boolean;
 }
 
-export type VercelConfiguredBy =
-  | 'CNAME'
-  | 'A'
-  | 'http'
-  | 'dns-01'
-  | null
-  | undefined;
-
-export interface CnameVerifiedInputs {
+export interface DnsVerifiedInputs {
   /** Whether the resolved CNAME target matched a known Vercel DNS pattern. */
   dnsRegexMatches: boolean;
-  /** `configuredBy` from Vercel's `/v6/domains/{d}/config`. */
-  vercelConfiguredBy: VercelConfiguredBy;
-  /** `misconfigured` from Vercel. `null` when the call failed. */
+  /**
+   * `misconfigured` from Vercel's `/v6/domains/{d}/config`. `null` when the
+   * call failed or Vercel isn't configured on the server.
+   */
   vercelMisconfigured: boolean | null;
 }
 
 /**
- * Vercel is the source of truth for whether a CNAME is correctly pointing at
- * the right project target. When Vercel's verdict is available, we ignore our
- * own regex. Only fall back to the regex when Vercel is unreachable.
+ * Vercel hosts these domains, so Vercel is the source of truth for whether the
+ * DNS points at the right project. We accept any configuration method Vercel
+ * accepts (CNAME for subdomains, A for apex, ALIAS, etc.) — `misconfigured`
+ * is Vercel's single "works / doesn't work" verdict. Our regex is only a
+ * fallback for when Vercel's API is unreachable.
  */
-export function deriveCnameVerified(inputs: CnameVerifiedInputs): boolean {
+export function deriveDnsVerified(inputs: DnsVerifiedInputs): boolean {
   if (inputs.vercelMisconfigured !== null) {
-    return (
-      inputs.vercelConfiguredBy === 'CNAME' && !inputs.vercelMisconfigured
-    );
+    return !inputs.vercelMisconfigured;
   }
   return inputs.dnsRegexMatches;
 }
