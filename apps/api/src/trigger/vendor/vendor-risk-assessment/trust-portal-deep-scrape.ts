@@ -200,6 +200,14 @@ export async function deepScrapeTrustPortal(
 
   const initialMarkdown = initial.markdown ?? '';
   const links = Array.isArray(initial.links) ? initial.links : [];
+  logger.info('Trust portal deep-scrape: initial scrape returned', {
+    vendorName,
+    sourceUrl,
+    markdownLength: initialMarkdown.length,
+    linkCount: links.length,
+    initialLinksJson: JSON.stringify(links.slice(0, 50)),
+    initialMarkdownHead: initialMarkdown.slice(0, 2000),
+  });
   // 2. Discover sections
   const sections = discoverSectionUrls({ sourceUrl, links });
   logger.info('Trust portal deep-scrape: sections discovered', {
