@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db, Prisma } from '@db';
+import { getManifest } from '@trycompai/integration-platform';
 import { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
+import { OAuthCredentialsService } from '../integration-platform/services/oauth-credentials.service';
 import { AiRemediationService } from './ai-remediation.service';
 import { AzureSecurityService } from './providers/azure-security.service';
 import { parseAzurePermissionError } from './remediation-error.utils';
@@ -36,6 +38,7 @@ export class AzureRemediationService {
 
   constructor(
     private readonly credentialVaultService: CredentialVaultService,
+    private readonly oauthCredentialsService: OAuthCredentialsService,
     private readonly aiRemediationService: AiRemediationService,
     private readonly azureSecurityService: AzureSecurityService,
   ) {}
@@ -455,31 +458,13 @@ export class AzureRemediationService {
       throw new Error('No rollback steps available for this action.');
     }
 
-    // Get fresh access token
-    const credentials = await this.resolveCredentials(
+    // Get fresh access token (auto-refreshes if expired)
+    const accessToken = await this.getValidAzureToken(
       action.connectionId,
       action.organizationId,
     );
-    if (!credentials) {
-      throw new Error('Cannot retrieve Azure credentials for rollback.');
-    }
-
-    // OAuth flow: token from vault; legacy: SP client credentials
-    let accessToken = credentials.access_token as string | undefined;
-    if (
-      !accessToken &&
-      credentials.tenantId &&
-      credentials.clientId &&
-      credentials.clientSecret
-    ) {
-      accessToken = await this.azureSecurityService.getAccessToken(
-        credentials.tenantId as string,
-        credentials.clientId as string,
-        credentials.clientSecret as string,
-      );
-    }
     if (!accessToken) {
-      throw new Error('Cannot obtain Azure access token for rollback.');
+      throw new Error('Cannot obtain Azure access token for rollback. Please reconnect the integration.');
     }
 
     this.logger.log(
@@ -638,6 +623,56 @@ export class AzureRemediationService {
 
   // --- Private helpers ---
 
+  /**
+   * Get a valid Azure access token, refreshing if expired.
+   */
+  private async getValidAzureToken(
+    connectionId: string,
+    organizationId: string,
+  ): Promise<string | null> {
+    const manifest = getManifest('azure');
+    const oauthConfig = manifest?.auth?.type === 'oauth2' ? manifest.auth.config : null;
+
+    if (oauthConfig) {
+      const oauthCreds = await this.oauthCredentialsService.getCredentials(
+        'azure',
+        organizationId,
+      );
+      if (oauthCreds) {
+        const token = await this.credentialVaultService.getValidAccessToken(
+          connectionId,
+          {
+            tokenUrl: oauthConfig.tokenUrl,
+            clientId: oauthCreds.clientId,
+            clientSecret: oauthCreds.clientSecret,
+            clientAuthMethod: oauthConfig.clientAuthMethod,
+          },
+        );
+        if (token) return token;
+      }
+    }
+
+    // Fallback: try raw credentials (legacy SP or expired token)
+    const credentials =
+      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+    if (!credentials) return null;
+
+    if (credentials.access_token) {
+      return credentials.access_token as string;
+    }
+
+    // Legacy service principal flow
+    if (credentials.tenantId && credentials.clientId && credentials.clientSecret) {
+      return this.azureSecurityService.getAccessToken(
+        credentials.tenantId as string,
+        credentials.clientId as string,
+        credentials.clientSecret as string,
+      );
+    }
+
+    return null;
+  }
+
   private async resolveCredentials(
     connectionId: string,
     organizationId: string,
@@ -655,29 +690,15 @@ export class AzureRemediationService {
     organizationId: string,
     checkResultId: string,
   ) {
-    const credentials = await this.resolveCredentials(
-      connectionId,
-      organizationId,
-    );
+    const connection = await db.integrationConnection.findFirst({
+      where: { id: connectionId, organizationId, status: 'active' },
+      include: { provider: true },
+    });
+    if (!connection || connection.provider.slug !== 'azure') {
+      throw new Error('Azure connection not found or not active');
+    }
 
-    let accessToken: string | null = null;
-    // OAuth flow: token from vault
-    if (credentials?.access_token) {
-      accessToken = credentials.access_token as string;
-    }
-    // Legacy SP flow fallback
-    if (
-      !accessToken &&
-      credentials?.tenantId &&
-      credentials?.clientId &&
-      credentials?.clientSecret
-    ) {
-      accessToken = await this.azureSecurityService.getAccessToken(
-        credentials.tenantId as string,
-        credentials.clientId as string,
-        credentials.clientSecret as string,
-      );
-    }
+    const accessToken = await this.getValidAzureToken(connectionId, organizationId);
 
     const checkResult = await db.integrationCheckResult.findFirst({
       where: {

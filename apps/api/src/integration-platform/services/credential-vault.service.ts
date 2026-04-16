@@ -197,14 +197,28 @@ export class CredentialVaultService {
   }
 
   /**
-   * Get decrypted credentials for a connection
+   * Get decrypted credentials for a connection.
+   * Prefers the explicitly marked active version, falls back to latest by version number.
    */
   async getDecryptedCredentials(
     connectionId: string,
   ): Promise<Record<string, string | string[]> | null> {
-    const latestVersion =
-      await this.credentialRepository.findLatestByConnection(connectionId);
-    if (!latestVersion) return null;
+    // Prefer the active credential version set during token storage/refresh
+    const connection = await this.connectionRepository.findById(connectionId);
+    let version = connection?.activeCredentialVersionId
+      ? await this.credentialRepository.findById(
+          connection.activeCredentialVersionId,
+        )
+      : null;
+
+    // Fall back to latest version by version number
+    if (!version) {
+      version =
+        await this.credentialRepository.findLatestByConnection(connectionId);
+    }
+    if (!version) return null;
+
+    const latestVersion = version;
 
     const encryptedPayload = latestVersion.encryptedPayload as Record<
       string,
@@ -297,8 +311,66 @@ export class CredentialVaultService {
   }
 
   /**
-   * Refresh OAuth tokens using the refresh token
-   * Returns the new access token, or null if refresh failed
+   * Attempt a single token refresh request to the OAuth provider.
+   * Returns the new access token on success, or null on failure.
+   */
+  private async attemptTokenRefresh(
+    connectionId: string,
+    refreshToken: string,
+    config: TokenRefreshConfig,
+  ): Promise<{ token?: string; status?: number; errorBody?: string }> {
+    const body = new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    });
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+    };
+
+    // Per OAuth 2.0 RFC 6749 Section 2.3.1, when using HTTP Basic auth (header),
+    // client credentials should NOT be included in the request body
+    if (config.clientAuthMethod === 'header') {
+      const credentials = Buffer.from(
+        `${config.clientId}:${config.clientSecret}`,
+      ).toString('base64');
+      headers['Authorization'] = `Basic ${credentials}`;
+    } else {
+      body.set('client_id', config.clientId);
+      body.set('client_secret', config.clientSecret);
+    }
+
+    const refreshEndpoint = config.refreshUrl || config.tokenUrl;
+    const response = await fetch(refreshEndpoint, {
+      method: 'POST',
+      headers,
+      body: body.toString(),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      return { status: response.status, errorBody };
+    }
+
+    const tokens: OAuthTokens = await response.json();
+
+    const tokensToStore: OAuthTokens = {
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token || refreshToken,
+      token_type: tokens.token_type,
+      expires_in: tokens.expires_in,
+      scope: tokens.scope,
+    };
+
+    await this.storeOAuthTokens(connectionId, tokensToStore);
+    return { token: tokens.access_token };
+  }
+
+  /**
+   * Refresh OAuth tokens using the refresh token.
+   * Retries once after a short delay before marking the connection as error.
+   * Returns the new access token, or null if refresh failed.
    */
   async refreshOAuthTokens(
     connectionId: string,
@@ -315,76 +387,55 @@ export class CredentialVaultService {
     try {
       this.logger.log(`Refreshing OAuth tokens for connection ${connectionId}`);
 
-      // Build the token request
-      const body = new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-      });
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Accept: 'application/json',
-      };
-
-      // Add client credentials based on auth method
-      // Per OAuth 2.0 RFC 6749 Section 2.3.1, when using HTTP Basic auth (header),
-      // client credentials should NOT be included in the request body
-      if (config.clientAuthMethod === 'header') {
-        const credentials = Buffer.from(
-          `${config.clientId}:${config.clientSecret}`,
-        ).toString('base64');
-        headers['Authorization'] = `Basic ${credentials}`;
-      } else {
-        // Default: send in body
-        body.set('client_id', config.clientId);
-        body.set('client_secret', config.clientSecret);
-      }
-
-      // Use refreshUrl if provided, otherwise fall back to tokenUrl
-      const refreshEndpoint = config.refreshUrl || config.tokenUrl;
-
-      const response = await fetch(refreshEndpoint, {
-        method: 'POST',
-        headers,
-        body: body.toString(),
-      });
-
-      if (!response.ok) {
-        await response.text(); // consume body
-        this.logger.error(
-          `Token refresh failed for connection ${connectionId}: ${response.status}`,
-        );
-
-        // If refresh token is invalid/expired, mark connection as error
-        if (response.status === 400 || response.status === 401) {
-          await this.connectionRepository.update(connectionId, {
-            status: 'error',
-            errorMessage:
-              'OAuth token expired. Please reconnect the integration.',
-          });
-        }
-
-        return null;
-      }
-
-      const tokens: OAuthTokens = await response.json();
-
-      // Store the new tokens
-      // Note: Some providers return a new refresh token, some don't
-      const tokensToStore: OAuthTokens = {
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token || refreshToken, // Keep old refresh token if not provided
-        token_type: tokens.token_type,
-        expires_in: tokens.expires_in,
-        scope: tokens.scope,
-      };
-
-      await this.storeOAuthTokens(connectionId, tokensToStore);
-
-      this.logger.log(
-        `Successfully refreshed OAuth tokens for connection ${connectionId}`,
+      // First attempt
+      const first = await this.attemptTokenRefresh(
+        connectionId,
+        refreshToken,
+        config,
       );
-      return tokens.access_token;
+      if (first.token) {
+        this.logger.log(
+          `Successfully refreshed OAuth tokens for connection ${connectionId}`,
+        );
+        return first.token;
+      }
+
+      // Retry once after 2 seconds for transient failures (rate limits, network blips)
+      this.logger.warn(
+        `Token refresh attempt 1 failed for connection ${connectionId}: HTTP ${first.status} — ${first.errorBody ?? '(no body)'}. Retrying in 2s...`,
+      );
+      await new Promise((r) => setTimeout(r, 2000));
+
+      const second = await this.attemptTokenRefresh(
+        connectionId,
+        refreshToken,
+        config,
+      );
+      if (second.token) {
+        this.logger.log(
+          `Successfully refreshed OAuth tokens for connection ${connectionId} on retry`,
+        );
+        return second.token;
+      }
+
+      // Both attempts failed — log the full error and mark connection
+      this.logger.error(
+        `Token refresh failed for connection ${connectionId} after 2 attempts: HTTP ${second.status} — ${second.errorBody ?? '(no body)'}`,
+      );
+
+      if (
+        second.status === 400 ||
+        second.status === 401 ||
+        second.status === 403
+      ) {
+        await this.connectionRepository.update(connectionId, {
+          status: 'error',
+          errorMessage:
+            'OAuth token expired. Please reconnect the integration.',
+        });
+      }
+
+      return null;
     } catch (error) {
       this.logger.error(
         `Error refreshing tokens for connection ${connectionId}:`,
@@ -402,10 +453,9 @@ export class CredentialVaultService {
     connectionId: string,
     refreshConfig?: TokenRefreshConfig,
   ): Promise<string | null> {
-    // Check if we need to refresh
-    const needsRefresh = await this.needsRefresh(connectionId);
+    const shouldRefresh = await this.needsRefresh(connectionId);
 
-    if (needsRefresh && refreshConfig) {
+    if (shouldRefresh && refreshConfig) {
       const newToken = await this.refreshOAuthTokens(
         connectionId,
         refreshConfig,
@@ -416,7 +466,6 @@ export class CredentialVaultService {
       // If refresh failed, try to use existing token (might still work briefly)
     }
 
-    // Get current credentials
     const credentials = await this.getDecryptedCredentials(connectionId);
     return typeof credentials?.access_token === 'string'
       ? credentials.access_token

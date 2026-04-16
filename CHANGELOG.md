@@ -1,3 +1,15 @@
+## [3.22.3](https://github.com/trycompai/comp/compare/v3.22.2...v3.22.3) (2026-04-16)
+
+
+### Bug Fixes
+
+* **cloud-tests:** add OAuth token auto-refresh to Azure remediation ([9c2c0ab](https://github.com/trycompai/comp/commit/9c2c0ab9110dc913e68fe6eb329c8b506700e9bf))
+* **cloud-tests:** derive organizationId from session, don't default acknowledgment ([69a170d](https://github.com/trycompai/comp/commit/69a170d84d4c227ca8fbf392f995a7f6ee24797c))
+* **cloud-tests:** move remediation preview to Trigger.dev to avoid browser timeout ([ef88b91](https://github.com/trycompai/comp/commit/ef88b9152d956eec84ec2f3ef0e6f4f2b1c6766d))
+* **cloud-tests:** move single-finding remediation to Trigger.dev ([3004bd8](https://github.com/trycompai/comp/commit/3004bd8efbcbfe1a53f20b385967f10517f91d19))
+* **cloud-tests:** use seconds for Trigger.dev maxDuration, not milliseconds ([c85f2b3](https://github.com/trycompai/comp/commit/c85f2b3e404d92fcc268b158804832d3ae55d1ac))
+* **integrations:** make OAuth token refresh robust with retry and logging ([3f17765](https://github.com/trycompai/comp/commit/3f17765e9dfd3882197dd6355a14861e7c6a4b7f))
+
 ## [3.22.2](https://github.com/trycompai/comp/compare/v3.22.1...v3.22.2) (2026-04-15)
 
 

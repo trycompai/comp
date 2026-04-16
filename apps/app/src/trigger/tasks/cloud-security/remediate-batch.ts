@@ -135,7 +135,7 @@ async function persistProgress(batchId: string, progress: BatchProgress) {
 
 export const remediateBatch = task({
   id: 'remediate-batch',
-  maxDuration: 1000 * 60 * 30,
+  maxDuration: 60 * 30, // 30 minutes (seconds, not ms)
   retry: { maxAttempts: 1 },
   run: async (payload: {
     batchId: string;
