@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { CloudSecurityModule } from '../cloud-security/cloud-security.module';
 import { OAuthController } from './controllers/oauth.controller';
 import { OAuthAppsController } from './controllers/oauth-apps.controller';
 import { ConnectionsController } from './controllers/connections.controller';
@@ -10,6 +11,7 @@ import { VariablesController } from './controllers/variables.controller';
 import { TaskIntegrationsController } from './controllers/task-integrations.controller';
 import { WebhookController } from './controllers/webhook.controller';
 import { SyncController } from './controllers/sync.controller';
+import { ServicesController } from './controllers/services.controller';
 import { CredentialVaultService } from './services/credential-vault.service';
 import { ConnectionService } from './services/connection.service';
 import { OAuthCredentialsService } from './services/oauth-credentials.service';
@@ -31,7 +33,7 @@ import { IntegrationSyncLoggerService } from './services/integration-sync-logger
 import { GenericEmployeeSyncService } from './services/generic-employee-sync.service';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, forwardRef(() => CloudSecurityModule)],
   controllers: [
     OAuthController,
     OAuthAppsController,
@@ -43,6 +45,7 @@ import { GenericEmployeeSyncService } from './services/generic-employee-sync.ser
     TaskIntegrationsController,
     WebhookController,
     SyncController,
+    ServicesController,
   ],
   providers: [
     // Services

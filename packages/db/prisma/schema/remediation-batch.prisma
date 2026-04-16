@@ -1,0 +1,20 @@
+model RemediationBatch {
+    id             String   @id @default(dbgenerated("generate_prefixed_cuid('rmb'::text)"))
+    connectionId   String
+    organizationId String
+    initiatedById  String
+    triggerRunId   String?
+    status         String   @default("pending") // pending, running, done, cancelled
+    findings       Json     @default("[]") // Array of { id, key, title, status, error? }
+    fixed          Int      @default(0)
+    skipped        Int      @default(0)
+    failed         Int      @default(0)
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+
+    connection IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+    @@index([connectionId])
+    @@index([organizationId])
+    @@index([status])
+}

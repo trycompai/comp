@@ -7,6 +7,15 @@ const CLOUD_PROVIDER_CATEGORY = 'Cloud';
 /** Scan window for filtering legacy results to latest scan only */
 const SCAN_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
+/** Extract project ID from a GCP resource path like //iam.googleapis.com/projects/my-proj/... */
+function extractProjectIdFromResource(
+  resourceId: string | null,
+): string | null {
+  if (!resourceId) return null;
+  const match = resourceId.match(/\/projects\/([^/]+)/);
+  return match?.[1] ?? null;
+}
+
 export interface CloudProvider {
   id: string;
   integrationId: string;
@@ -17,6 +26,7 @@ export interface CloudProvider {
   status: string;
   createdAt: Date;
   updatedAt: Date;
+  reconnectedAt?: Date;
   isLegacy: boolean;
   variables: Record<string, unknown> | null;
   requiredVariables: string[];
@@ -37,6 +47,10 @@ export interface CloudFinding {
   completedAt: Date | null;
   connectionId: string;
   providerSlug: string;
+  serviceId: string | null;
+  findingKey: string | null;
+  resourceId: string | null;
+  projectDisplayName: string | null;
   integration: { integrationId: string };
 }
 
@@ -93,6 +107,12 @@ export class CloudSecurityQueryService {
     const newProviders: CloudProvider[] = newConnections.map((conn) => {
       const metadata = (conn.metadata || {}) as Record<string, unknown>;
       const manifest = getManifest(conn.provider.slug);
+      const reconnectMarker = metadata.reconnectedAt;
+      const reconnectedAt =
+        typeof reconnectMarker === 'string' &&
+        !Number.isNaN(new Date(reconnectMarker).getTime())
+          ? new Date(reconnectMarker)
+          : undefined;
       return {
         id: conn.id,
         integrationId: conn.provider.slug,
@@ -106,6 +126,7 @@ export class CloudSecurityQueryService {
         status: conn.status,
         createdAt: conn.createdAt,
         updatedAt: conn.updatedAt,
+        reconnectedAt,
         isLegacy: false,
         variables: (conn.variables as Record<string, unknown>) ?? null,
         requiredVariables: getRequiredVariables(conn.provider.slug),
@@ -114,14 +135,10 @@ export class CloudSecurityQueryService {
             ? metadata.accountId
             : undefined,
         regions: Array.isArray(metadata.regions)
-          ? metadata.regions.filter(
-              (r): r is string => typeof r === 'string',
-            )
+          ? metadata.regions.filter((r): r is string => typeof r === 'string')
           : undefined,
         tenantId:
-          typeof metadata.tenantId === 'string'
-            ? metadata.tenantId
-            : undefined,
+          typeof metadata.tenantId === 'string' ? metadata.tenantId : undefined,
         subscriptionId:
           typeof metadata.subscriptionId === 'string'
             ? metadata.subscriptionId
@@ -156,14 +173,10 @@ export class CloudSecurityQueryService {
             ? settings.accountId
             : undefined,
         regions: Array.isArray(settings.regions)
-          ? settings.regions.filter(
-              (r): r is string => typeof r === 'string',
-            )
+          ? settings.regions.filter((r): r is string => typeof r === 'string')
           : undefined,
         tenantId:
-          typeof settings.tenantId === 'string'
-            ? settings.tenantId
-            : undefined,
+          typeof settings.tenantId === 'string' ? settings.tenantId : undefined,
         subscriptionId:
           typeof settings.subscriptionId === 'string'
             ? settings.subscriptionId
@@ -206,6 +219,18 @@ export class CloudSecurityQueryService {
       connections.map((c) => [c.id, c.provider.slug]),
     );
 
+    // Build project ID → name map from all GCP connections
+    const projectNameMap = new Map<string, string>();
+    for (const conn of connections) {
+      const vars = (conn.variables ?? {}) as Record<string, unknown>;
+      const names = vars.project_names as Record<string, string> | undefined;
+      if (names) {
+        for (const [id, name] of Object.entries(names)) {
+          projectNameMap.set(id, name);
+        }
+      }
+    }
+
     const latestRuns = await db.integrationCheckRun.findMany({
       where: {
         connectionId: { in: connectionIds },
@@ -219,9 +244,7 @@ export class CloudSecurityQueryService {
     const latestRunIds = latestRuns.map((r) => r.id);
     if (latestRunIds.length === 0) return [];
 
-    const checkRunMap = Object.fromEntries(
-      latestRuns.map((cr) => [cr.id, cr]),
-    );
+    const checkRunMap = Object.fromEntries(latestRuns.map((cr) => [cr.id, cr]));
 
     const results = await db.integrationCheckResult.findMany({
       where: { checkRunId: { in: latestRunIds } },
@@ -234,6 +257,8 @@ export class CloudSecurityQueryService {
         collectedAt: true,
         checkRunId: true,
         passed: true,
+        evidence: true,
+        resourceId: true,
       },
       orderBy: { collectedAt: 'desc' },
     });
@@ -243,6 +268,7 @@ export class CloudSecurityQueryService {
       const slug = checkRun
         ? connectionToSlug[checkRun.connectionId] || 'unknown'
         : 'unknown';
+      const evidence = (result.evidence ?? {}) as Record<string, unknown>;
       return {
         id: result.id,
         title: result.title,
@@ -253,6 +279,18 @@ export class CloudSecurityQueryService {
         completedAt: result.collectedAt,
         connectionId: checkRun?.connectionId ?? '',
         providerSlug: slug,
+        serviceId: (evidence.serviceId as string) ?? null,
+        findingKey: (evidence.findingKey as string) ?? null,
+        resourceId: result.resourceId ?? null,
+        projectDisplayName: (() => {
+          const fromEvidence = evidence.projectDisplayName as
+            | string
+            | undefined;
+          if (fromEvidence) return fromEvidence;
+          const projectId = extractProjectIdFromResource(result.resourceId);
+          if (!projectId) return null;
+          return projectNameMap.get(projectId) ?? projectId;
+        })(),
         integration: { integrationId: slug },
       };
     });
@@ -274,9 +312,7 @@ export class CloudSecurityQueryService {
     if (legacyIds.length === 0) return [];
 
     const lastRunMap = new Map(
-      activeLegacy
-        .filter((i) => i.lastRunAt)
-        .map((i) => [i.id, i.lastRunAt!]),
+      activeLegacy.filter((i) => i.lastRunAt).map((i) => [i.id, i.lastRunAt!]),
     );
 
     const results = await db.integrationResult.findMany({
@@ -320,6 +356,10 @@ export class CloudSecurityQueryService {
       completedAt: result.completedAt,
       connectionId: result.integration.id,
       providerSlug: result.integration.integrationId,
+      serviceId: null,
+      findingKey: null,
+      resourceId: null,
+      projectDisplayName: null,
       integration: { integrationId: result.integration.integrationId },
     }));
   }

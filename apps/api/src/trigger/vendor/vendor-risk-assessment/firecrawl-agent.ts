@@ -179,8 +179,7 @@ Focus on their official website ${vendorWebsite} (especially trust/security/comp
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error ? error.message : String(error);
     const isBillingOrRateLimit =
       message.includes('402') ||
       message.includes('429') ||

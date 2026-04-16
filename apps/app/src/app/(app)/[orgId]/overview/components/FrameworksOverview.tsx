@@ -24,35 +24,38 @@ export interface FrameworksOverviewProps {
 }
 
 export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
-  if (framework.framework.name === 'SOC 2') {
+  const frameworkName = framework.framework.name.trim();
+  const normalizedName = frameworkName.toLowerCase();
+
+  if (frameworkName === 'SOC 2') {
     return '/badges/soc2.svg';
   }
 
-  if (framework.framework.name === 'ISO 27001') {
+  if (frameworkName === 'ISO 27001') {
     return '/badges/iso27001.svg';
   }
 
-  if (framework.framework.name === 'ISO 42001') {
+  if (frameworkName === 'ISO 42001') {
     return '/badges/iso42001.svg';
   }
 
-  if (framework.framework.name === 'HIPAA') {
+  if (frameworkName === 'HIPAA') {
     return '/badges/hipaa.svg';
   }
 
-  if (framework.framework.name === 'GDPR') {
+  if (frameworkName === 'GDPR') {
     return '/badges/gdpr.svg';
   }
 
-  if (framework.framework.name === 'PCI DSS') {
+  if (normalizedName.includes('pci dss')) {
     return '/badges/pci-dss.svg';
   }
 
-  if (framework.framework.name === 'NEN 7510') {
+  if (frameworkName === 'NEN 7510') {
     return '/badges/nen7510.svg';
   }
 
-  if (framework.framework.name === 'ISO 9001') {
+  if (frameworkName === 'ISO 9001') {
     return '/badges/iso9001.svg';
   }
 

@@ -43,7 +43,9 @@ export function setupFirecrawlClient(params: {
 }): FirecrawlSetup | null {
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) {
-    logger.warn('FIRECRAWL_API_KEY is not configured; skipping vendor research');
+    logger.warn(
+      'FIRECRAWL_API_KEY is not configured; skipping vendor research',
+    );
     return null;
   }
 
@@ -95,11 +97,14 @@ export function handleFirecrawlError(
     message.includes('Too Many Requests');
 
   if (isBillingOrRateLimit) {
-    logger.error(`Firecrawl API billing or rate limit error (${context.callType})`, {
-      vendorName: context.vendorName,
-      vendorWebsite: context.vendorWebsite,
-      error: message,
-    });
+    logger.error(
+      `Firecrawl API billing or rate limit error (${context.callType})`,
+      {
+        vendorName: context.vendorName,
+        vendorWebsite: context.vendorWebsite,
+        error: message,
+      },
+    );
     throw error;
   }
 

@@ -11,8 +11,17 @@ import {
   StreamableFile,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
-import { AuthContext, OrganizationId, UserId } from '../auth/auth-context.decorator';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  AuthContext,
+  OrganizationId,
+  UserId,
+} from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { Public } from '../auth/public.decorator';
@@ -94,7 +103,7 @@ export class DeviceAgentController {
     // Construct Web API Headers from Express IncomingHttpHeaders
     const headers = new Headers();
     const authHeader = req.headers['authorization'];
-    if (authHeader) headers.set('authorization', authHeader as string);
+    if (authHeader) headers.set('authorization', authHeader);
     const cookieHeader = req.headers['cookie'];
     if (cookieHeader) headers.set('cookie', cookieHeader);
 
@@ -114,7 +123,10 @@ export class DeviceAgentController {
   @Post('register')
   @UseGuards(HybridAuthGuard)
   @SkipOrgCheck()
-  async registerDevice(@UserId() userId: string, @Body() dto: RegisterDeviceDto) {
+  async registerDevice(
+    @UserId() userId: string,
+    @Body() dto: RegisterDeviceDto,
+  ) {
     return this.deviceAgentAuthService.registerDevice({ userId, dto });
   }
 

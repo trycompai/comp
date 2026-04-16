@@ -14,11 +14,11 @@ export const awsCredentialFields = [
   },
   {
     id: 'roleArn',
-    label: 'IAM Role ARN',
+    label: 'Role ARN',
     type: 'text' as const,
     required: true,
-    placeholder: 'arn:aws:iam::123456789012:role/ComplianceAuditRole',
-    helpText: 'The ARN of the IAM role you created for Comp to assume',
+    placeholder: 'arn:aws:iam::123456789012:role/CompAI-Auditor',
+    helpText: 'Paste the Role ARN from the script output above',
   },
   {
     id: 'externalId',
@@ -30,13 +30,21 @@ export const awsCredentialFields = [
       'A unique identifier you choose. Use the same value here AND in your IAM trust policy. Your organization ID works well for this.',
   },
   {
+    id: 'remediationRoleArn',
+    label: 'Remediation Role ARN',
+    type: 'text' as const,
+    required: false,
+    placeholder: 'arn:aws:iam::123456789012:role/CompAI-Remediator',
+    helpText:
+      'Optional: A separate IAM role with write permissions for auto-remediation. The audit role stays read-only.',
+  },
+  {
     id: 'regions',
-    label: 'AWS Regions',
+    label: 'Regions to scan',
     type: 'multi-select' as const,
     required: true,
-    placeholder: 'Select one or more regions...',
-    helpText:
-      'Select all regions to scan. Tip: If Security Hub cross-region aggregation is enabled, select only your home region.',
+    placeholder: 'Select regions...',
+    helpText: 'Choose which AWS regions to scan for security findings',
     options: [
       // US Regions
       { value: 'us-east-1', label: 'us-east-1 (N. Virginia)' },
@@ -92,163 +100,131 @@ export const awsCredentialSchema = z.object({
       'Must be a valid IAM Role ARN (arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME)',
     ),
   externalId: z.string().min(1),
+  remediationRoleArn: z
+    .string()
+    .regex(
+      /^arn:aws:iam::\d{12}:role\/.+$/,
+      'Must be a valid IAM Role ARN',
+    )
+    .optional()
+    .or(z.literal('')),
   regions: z.array(z.string()).min(1, 'Select at least one region'),
 });
 
 /**
- * Minimal IAM policy - only what's needed for Security Hub checks
+ * CloudShell setup script for customers to create the IAM role.
+ * Customers run this in AWS CloudShell with their External ID as argument.
  */
-export const awsMinimalPolicy = {
-  Version: '2012-10-17',
-  Statement: [
-    {
-      Sid: 'SecurityHubReadOnly',
-      Effect: 'Allow',
-      Action: ['securityhub:GetFindings', 'securityhub:DescribeHub'],
-      Resource: '*',
-    },
-  ],
-};
+export const awsCloudShellScript = [
+  '#!/bin/bash',
+  'set -euo pipefail',
+  '',
+  'ROLE_NAME="CompAI-Auditor"',
+  'EXTERNAL_ID="YOUR_EXTERNAL_ID"',
+  '',
+  'echo "Creating IAM role $ROLE_NAME..."',
+  '',
+  'TRUST_POLICY=$(cat <<EOF',
+  '{',
+  '  "Version": "2012-10-17",',
+  '  "Statement": [{',
+  '    "Effect": "Allow",',
+  '    "Principal": { "AWS": "arn:aws:iam::684120556289:role/roleAssumer" },',
+  '    "Action": "sts:AssumeRole",',
+  '    "Condition": { "StringEquals": { "sts:ExternalId": "$EXTERNAL_ID" } }',
+  '  }]',
+  '}',
+  'EOF',
+  ')',
+  '',
+  'ROLE_ARN=$(aws iam create-role \\',
+  '  --role-name "$ROLE_NAME" \\',
+  '  --max-session-duration 43200 \\',
+  '  --assume-role-policy-document "$TRUST_POLICY" \\',
+  '  --query "Role.Arn" --output text)',
+  '',
+  'aws iam attach-role-policy --role-name "$ROLE_NAME" \\',
+  '  --policy-arn arn:aws:iam::aws:policy/SecurityAudit',
+  '',
+  'aws iam attach-role-policy --role-name "$ROLE_NAME" \\',
+  '  --policy-arn arn:aws:iam::aws:policy/job-function/ViewOnlyAccess',
+  '',
+  'aws iam put-role-policy --role-name "$ROLE_NAME" \\',
+  '  --policy-name CompAI-CostExplorer \\',
+  '  --policy-document \'{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"ce:GetCostAndUsage","Resource":"*"}]}\'',
+  '',
+  'aws iam put-role-policy --role-name "$ROLE_NAME" \\',
+  '  --policy-name CompAI-ExtraReadAccess \\',
+  '  --policy-document \'{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ssm:GetDocument","ssm:DescribeDocument","ssm:ListDocuments"],"Resource":"*"}]}\'',
+  '',
+  'echo ""',
+  'echo "============================================"',
+  'echo "  Role ARN:    $ROLE_ARN"',
+  'echo "  External ID: $EXTERNAL_ID"',
+  'echo "============================================"',
+  'echo ""',
+  'echo "Paste these values into your Comp AI connection form."',
+].join('\n');
 
 /**
- * Comprehensive IAM policy for additional future compliance checks
- * (Not required if you only want Security Hub findings)
+ * CloudShell setup script for the remediation IAM role.
+ * Separate from the auditor role so the audit role stays read-only.
  */
-export const awsRecommendedPolicy = {
-  Version: '2012-10-17',
-  Statement: [
-    {
-      Sid: 'AccessReviewAndRBAC',
-      Effect: 'Allow',
-      Action: [
-        'iam:ListUsers',
-        'iam:ListRoles',
-        'iam:ListGroups',
-        'iam:ListPolicies',
-        'iam:GetUser',
-        'iam:GetRole',
-        'iam:GetGroup',
-        'iam:GetPolicy',
-        'iam:GetPolicyVersion',
-        'iam:ListAttachedUserPolicies',
-        'iam:ListAttachedRolePolicies',
-        'iam:ListAttachedGroupPolicies',
-        'iam:ListUserPolicies',
-        'iam:ListRolePolicies',
-        'iam:ListGroupPolicies',
-        'iam:GetAccountAuthorizationDetails',
-        'iam:ListMFADevices',
-        'iam:GetLoginProfile',
-        'iam:ListAccessKeys',
-        'iam:GetAccessKeyLastUsed',
-        'cloudtrail:DescribeTrails',
-        'cloudtrail:GetTrailStatus',
-        'cloudtrail:LookupEvents',
-      ],
-      Resource: '*',
-    },
-    {
-      Sid: 'MonitoringAndAlerting',
-      Effect: 'Allow',
-      Action: [
-        'cloudwatch:DescribeAlarms',
-        'cloudwatch:DescribeAlarmsForMetric',
-        'cloudwatch:ListMetrics',
-        'sns:ListTopics',
-        'sns:ListSubscriptions',
-        'sns:GetTopicAttributes',
-        'events:ListRules',
-        'events:DescribeRule',
-        'logs:DescribeLogGroups',
-        'logs:DescribeMetricFilters',
-      ],
-      Resource: '*',
-    },
-    {
-      Sid: 'AutoscalingAndAvailability',
-      Effect: 'Allow',
-      Action: [
-        'autoscaling:DescribeAutoScalingGroups',
-        'autoscaling:DescribeLaunchConfigurations',
-        'autoscaling:DescribePolicies',
-        'elasticloadbalancing:DescribeLoadBalancers',
-        'elasticloadbalancing:DescribeTargetGroups',
-        'elasticloadbalancing:DescribeTargetHealth',
-        'ec2:DescribeInstances',
-        'ec2:DescribeAvailabilityZones',
-        'ec2:DescribeRegions',
-      ],
-      Resource: '*',
-    },
-    {
-      Sid: 'EncryptionAtRest',
-      Effect: 'Allow',
-      Action: [
-        's3:ListAllMyBuckets',
-        's3:GetBucketEncryption',
-        's3:GetBucketPublicAccessBlock',
-        'ec2:DescribeVolumes',
-        'rds:DescribeDBInstances',
-        'rds:DescribeDBClusters',
-        'dynamodb:ListTables',
-        'dynamodb:DescribeTable',
-        'kms:ListKeys',
-        'kms:DescribeKey',
-        'kms:GetKeyRotationStatus',
-      ],
-      Resource: '*',
-    },
-    {
-      Sid: 'BackupAndRecovery',
-      Effect: 'Allow',
-      Action: [
-        'backup:ListBackupPlans',
-        'backup:GetBackupPlan',
-        'backup:ListBackupVaults',
-        'backup:ListRecoveryPointsByBackupVault',
-        'rds:DescribeDBSnapshots',
-        'rds:DescribeDBClusterSnapshots',
-        'dynamodb:DescribeContinuousBackups',
-        'ec2:DescribeSnapshots',
-        's3:GetBucketVersioning',
-      ],
-      Resource: '*',
-    },
-  ],
-};
+export const awsRemediationScript = `# Create Remediation Role for Auto-Fix
+# Run this in AWS CloudShell after setting up the Auditor role.
+
+EXTERNAL_ID="YOUR_EXTERNAL_ID"
+ROLE_NAME="CompAI-Remediator"
+
+ROLE_ARN=$(aws iam create-role --role-name "$ROLE_NAME" --max-session-duration 3600 \\
+  --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::684120556289:role/roleAssumer"},"Action":"sts:AssumeRole","Condition":{"StringEquals":{"sts:ExternalId":"'$EXTERNAL_ID'"}}}]}' \\
+  --query 'Role.Arn' --output text)
+
+# Storage Remediation: S3, DynamoDB, Redshift, Glue, Athena
+aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-StorageRemediation \\
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:CreateBucket","s3:GetPublicAccessBlock","s3:PutPublicAccessBlock","s3:DeletePublicAccessBlock","s3:GetBucketEncryption","s3:PutBucketEncryption","s3:DeleteBucketEncryption","s3:GetBucketVersioning","s3:PutBucketVersioning","s3:PutBucketPolicy","s3:GetBucketPolicy","s3:DeleteBucketPolicy","dynamodb:DescribeContinuousBackups","dynamodb:UpdateContinuousBackups","dynamodb:DescribeTable","dynamodb:UpdateTable","redshift:DescribeLoggingStatus","redshift:EnableLogging","redshift:DisableLogging","glue:GetDataCatalogEncryptionSettings","glue:PutDataCatalogEncryptionSettings","athena:GetWorkGroup","athena:UpdateWorkGroup"],"Resource":"*"}]}'
+
+# Compute Remediation: EC2, EMR, CodeBuild, Step Functions
+aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-ComputeRemediation \\
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ec2:GetEbsEncryptionByDefault","ec2:EnableEbsEncryptionByDefault","ec2:DisableEbsEncryptionByDefault","elasticmapreduce:DescribeCluster","elasticmapreduce:SetTerminationProtection","codebuild:BatchGetProjects","codebuild:UpdateProject","states:DescribeStateMachine","states:UpdateStateMachine"],"Resource":"*"}]}'
+
+# Network Remediation: ELB, CloudFront, API Gateway, Route53, Network Firewall, Transfer Family
+aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-NetworkRemediation \\
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["elasticloadbalancing:DescribeLoadBalancerAttributes","elasticloadbalancing:ModifyLoadBalancerAttributes","cloudfront:GetDistributionConfig","cloudfront:GetDistribution","cloudfront:UpdateDistribution","apigateway:GET","apigateway:PATCH","route53:CreateQueryLoggingConfig","route53:DeleteQueryLoggingConfig","route53:ListQueryLoggingConfigs","network-firewall:DescribeLoggingConfiguration","network-firewall:UpdateLoggingConfiguration","transfer:DescribeServer","transfer:UpdateServer"],"Resource":"*"}]}'
+
+# Security Remediation: KMS, CloudTrail, GuardDuty, Config, Inspector, Macie, Cognito, IAM
+aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-SecurityRemediation \\
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["kms:GetKeyRotationStatus","kms:EnableKeyRotation","kms:DisableKeyRotation","cloudtrail:GetTrailStatus","cloudtrail:GetTrail","cloudtrail:CreateTrail","cloudtrail:StartLogging","cloudtrail:StopLogging","cloudtrail:UpdateTrail","guardduty:CreateDetector","guardduty:UpdateDetector","guardduty:DeleteDetector","guardduty:ListDetectors","config:DescribeConfigurationRecorders","config:DescribeConfigurationRecorderStatus","config:DescribeDeliveryChannels","config:DescribeDeliveryChannelStatus","config:PutConfigurationRecorder","config:PutDeliveryChannel","config:DeleteDeliveryChannel","config:StartConfigurationRecorder","config:StopConfigurationRecorder","inspector2:Enable","inspector2:Disable","inspector2:BatchGetAccountStatus","macie2:EnableMacie","macie2:DisableMacie","macie2:GetMacieSession","cognito-idp:DescribeUserPool","cognito-idp:UpdateUserPool","iam:GetAccountPasswordPolicy","iam:UpdateAccountPasswordPolicy","iam:DeleteAccountPasswordPolicy","iam:CreateServiceLinkedRole","iam:CreateRole","iam:PutRolePolicy","iam:PassRole","iam:ListRolePolicies","iam:GetRolePolicy","iam:GetRole"],"Resource":"*"}]}'
+
+# Messaging Remediation: SNS, SQS, Kinesis, EventBridge, ECR, Systems Manager, RDS
+aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-MessagingRemediation \\
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["sns:GetTopicAttributes","sns:SetTopicAttributes","sns:CreateTopic","sns:Subscribe","sqs:GetQueueAttributes","sqs:SetQueueAttributes","sqs:GetQueueUrl","kinesis:DescribeStream","kinesis:StartStreamEncryption","kinesis:StopStreamEncryption","kinesis:EnableEnhancedMonitoring","kinesis:DisableEnhancedMonitoring","events:DescribeEventBus","events:RemovePermission","events:PutPermission","ecr:DescribeRepositories","ecr:PutImageScanningConfiguration","ecr:PutImageTagMutability","ssm:GetServiceSetting","ssm:UpdateServiceSetting","ssm:ResetServiceSetting","ssm:GetDocument","ssm:UpdateDocument","ssm:CreateDocument","ssm:DeleteDocument","ssm:UpdateDocumentDefaultVersion","ssm:DescribeDocument","rds:DescribeDBInstances","rds:ModifyDBInstance"],"Resource":"*"}]}'
+
+# Extended Remediation: Shield, Elastic Beanstalk, Lambda, EKS, CloudWatch, SNS, Backup, OpenSearch, MSK, Secrets Manager, SageMaker, ACM, ElastiCache, EFS, AppFlow, WAF
+aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-ExtendedRemediation \\
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["shield:CreateSubscription","shield:DescribeSubscription","elasticbeanstalk:UpdateEnvironment","elasticbeanstalk:DescribeConfigurationSettings","elasticbeanstalk:DescribeEnvironments","lambda:GetPolicy","lambda:RemovePermission","lambda:GetFunction","lambda:UpdateFunctionConfiguration","eks:DescribeCluster","eks:UpdateClusterConfig","logs:PutMetricFilter","logs:DeleteMetricFilter","logs:DescribeLogGroups","cloudwatch:PutMetricAlarm","cloudwatch:DeleteAlarms","cloudwatch:DescribeAlarms","sns:CreateTopic","sns:Subscribe","backup:CreateBackupPlan","backup:CreateBackupSelection","backup:DeleteBackupPlan","backup:ListBackupPlans","es:DescribeDomain","es:UpdateDomainConfig","kafka:DescribeCluster","kafka:UpdateMonitoring","secretsmanager:DescribeSecret","secretsmanager:RotateSecret","sagemaker:DescribeNotebookInstance","sagemaker:StopNotebookInstance","sagemaker:UpdateNotebookInstance","sagemaker:StartNotebookInstance","acm:DescribeCertificate","acm:RenewCertificate","elasticache:DescribeReplicationGroups","elasticache:DescribeCacheClusters","efs:DescribeFileSystems","appflow:DescribeFlow","wafv2:GetWebACL","wafv2:UpdateWebACL"],"Resource":"*"}]}'
+
+# Rollback permissions (allows undoing auto-fixes)
+aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-Rollback \\
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["cloudtrail:DeleteTrail","cloudtrail:StopLogging","s3:DeleteBucket","s3:DeleteBucketPolicy","s3:DeleteBucketEncryption","s3:DeletePublicAccessBlock","iam:DeleteRole","iam:DeleteRolePolicy","logs:DeleteLogGroup","logs:DeleteMetricFilter","logs:DeleteRetentionPolicy","cloudwatch:DeleteAlarms","sns:DeleteTopic","sns:Unsubscribe","guardduty:DeleteDetector","config:StopConfigurationRecorder","config:DeleteDeliveryChannel","inspector2:Disable","macie2:DisableMacie","kms:DisableKeyRotation","ssm:DeleteDocument","ssm:UpdateDocument","ssm:UpdateServiceSetting","ec2:DisableEbsEncryptionByDefault","ec2:DeleteFlowLogs","redshift:DisableLogging","kinesis:StopStreamEncryption","kinesis:DisableEnhancedMonitoring"],"Resource":"*"}]}'
+
+echo ""
+echo "============================================"
+echo "  Remediation Role ARN (paste this below):"
+echo ""
+echo "  $ROLE_ARN"
+echo ""
+echo "============================================"`;
 
 /**
  * Setup instructions for AWS IAM Role
  */
-export const awsSetupInstructions = `## Quick Setup
+export const awsSetupInstructions = `Setup (AWS CloudShell)
 
-### 1. Create IAM Role
-IAM Console → Roles → Create role → Custom trust policy
+1. Open AWS CloudShell at console.aws.amazon.com/cloudshell
+2. Run the following command (replace YOUR_EXTERNAL_ID with your Comp AI organization ID):
 
-**Trust Policy** (replace YOUR_EXTERNAL_ID with your organization ID):
-\`\`\`json
-{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Principal": { 
-      "AWS": "arn:aws:iam::684120556289:role/roleAssumer"
-    },
-    "Action": "sts:AssumeRole",
-    "Condition": {
-      "StringEquals": { "sts:ExternalId": "YOUR_EXTERNAL_ID" }
-    }
-  }]
-}
-\`\`\`
+EXTERNAL_ID="YOUR_EXTERNAL_ID" && ROLE_NAME="CompAI-Auditor" && aws iam create-role --role-name "$ROLE_NAME" --max-session-duration 43200 --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::684120556289:role/roleAssumer"},"Action":"sts:AssumeRole","Condition":{"StringEquals":{"sts:ExternalId":"'$EXTERNAL_ID'"}}}]}' --query 'Role.Arn' --output text && aws iam attach-role-policy --role-name "$ROLE_NAME" --policy-arn arn:aws:iam::aws:policy/SecurityAudit && aws iam attach-role-policy --role-name "$ROLE_NAME" --policy-arn arn:aws:iam::aws:policy/job-function/ViewOnlyAccess && aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-CostExplorer --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"ce:GetCostAndUsage","Resource":"*"}]}' && aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-ExtraReadAccess --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ssm:GetDocument","ssm:DescribeDocument","ssm:ListDocuments"],"Resource":"*"}]}'
 
-### 2. Attach Permissions
-Select **SecurityAudit** managed policy.
-
-### 3. Name the Role
-• **Name**: CompSecurityAudit
-• **Description**: Read-only access for Comp AI compliance monitoring
-
-### 4. Copy ARN
-After creating, copy the Role ARN (looks like \`arn:aws:iam::123456789012:role/CompSecurityAudit\`)
-`;
+3. Copy the Role ARN from the output
+4. Paste the Role ARN and External ID into the form below`;

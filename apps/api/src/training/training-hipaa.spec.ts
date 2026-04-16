@@ -85,11 +85,7 @@ describe('TrainingService — HIPAA training', () => {
       });
       db.employeeTrainingVideoCompletion.findMany.mockResolvedValue([]);
 
-      const result = await service.markVideoComplete(
-        'mem_1',
-        'org_1',
-        'sat-3',
-      );
+      const result = await service.markVideoComplete('mem_1', 'org_1', 'sat-3');
 
       expect(result.videoId).toBe('sat-3');
     });

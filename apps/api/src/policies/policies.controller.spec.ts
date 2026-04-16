@@ -110,9 +110,7 @@ describe('PoliciesController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PoliciesController],
-      providers: [
-        { provide: PoliciesService, useValue: mockPoliciesService },
-      ],
+      providers: [{ provide: PoliciesService, useValue: mockPoliciesService }],
     })
       .overrideGuard(HybridAuthGuard)
       .useValue(mockGuard)
@@ -208,7 +206,11 @@ describe('PoliciesController', () => {
       const mockPolicy = { id: 'pol_1', name: 'Test Policy' };
       mockPoliciesService.findById.mockResolvedValue(mockPolicy);
 
-      const result = await controller.getPolicy('pol_1', orgId, mockAuthContext);
+      const result = await controller.getPolicy(
+        'pol_1',
+        orgId,
+        mockAuthContext,
+      );
 
       expect(policiesService.findById).toHaveBeenCalledWith('pol_1', orgId);
       expect(result).toEqual({

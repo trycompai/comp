@@ -1,18 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import {
-  RiskCategory,
-  Departments,
-  RiskStatus,
-} from '@db';
+import { RiskCategory, Departments, RiskStatus } from '@db';
 
 export enum RiskSortBy {
   CREATED_AT = 'createdAt',

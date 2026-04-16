@@ -68,11 +68,13 @@ model IntegrationConnection {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    credentialVersions IntegrationCredentialVersion[]
-    runs               IntegrationRun[]
-    findings           IntegrationPlatformFinding[]
-    checkRuns          IntegrationCheckRun[]
-    syncLogs           IntegrationSyncLog[]
+    credentialVersions  IntegrationCredentialVersion[]
+    runs                IntegrationRun[]
+    findings            IntegrationPlatformFinding[]
+    checkRuns           IntegrationCheckRun[]
+    syncLogs            IntegrationSyncLog[]
+    remediationActions  RemediationAction[]
+    remediationBatches  RemediationBatch[]
 
     @@index([organizationId])
     @@index([providerId])
@@ -373,6 +375,8 @@ model IntegrationCheckResult {
 
     /// When this evidence was collected
     collectedAt DateTime @default(now())
+
+    remediationActions RemediationAction[]
 
     @@index([checkRunId])
     @@index([passed])

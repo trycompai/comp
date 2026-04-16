@@ -24,8 +24,15 @@ jest.mock('@db', () => ({
   },
 }));
 
-function buildContext(headers: Record<string, string | undefined> = {}): ExecutionContext {
-  const request = { headers, userId: undefined, userEmail: undefined, isPlatformAdmin: undefined };
+function buildContext(
+  headers: Record<string, string | undefined> = {},
+): ExecutionContext {
+  const request = {
+    headers,
+    userId: undefined,
+    userEmail: undefined,
+    isPlatformAdmin: undefined,
+  };
   return {
     switchToHttp: () => ({
       getRequest: () => request,

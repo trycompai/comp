@@ -396,6 +396,19 @@ export const FINDING_STATUS_CONFIG: Record<
 };
 
 /**
+ * Framework options shown in finding type selectors
+ */
+export const FINDING_TYPE_FRAMEWORK_OPTIONS = [
+  { value: 'soc2', label: 'SOC 2' },
+  { value: 'iso27001', label: 'ISO 27001' },
+  { value: 'pci_dss', label: 'PCI DSS' },
+  { value: 'hipaa', label: 'HIPAA' },
+  { value: 'gdpr', label: 'GDPR' },
+  { value: 'iso9001', label: 'ISO 9001' },
+  { value: 'iso42001', label: 'ISO 42001' },
+] as const;
+
+/**
  * Finding type labels
  */
 export const FINDING_TYPE_LABELS: Record<FindingType, string> = {

@@ -11,7 +11,7 @@ import type {
   TestConnectionResponse,
 } from '@trycompai/integration-platform';
 import { useParams } from 'next/navigation';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 // ============================================================================
@@ -580,5 +580,83 @@ export function useIntegrationPlatform() {
 
     // Mutations
     ...mutations,
+  };
+}
+
+// ============================================================================
+// Service Hooks
+// ============================================================================
+
+interface ConnectionServiceItem {
+  id: string;
+  name: string;
+  description: string;
+  implemented: boolean;
+  enabled: boolean;
+  projects?: string[];
+}
+
+interface ConnectionServicesMeta {
+  providerSlug?: string;
+  source?: 'legacy-enabled' | 'detected' | 'manifest-default';
+  detectionReady?: boolean;
+  detectionCompletedAt?: string | null;
+}
+
+interface ConnectionServicesResponse {
+  services: ConnectionServiceItem[];
+  meta?: ConnectionServicesMeta;
+}
+
+export function useConnectionServices(connectionId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR<ConnectionServicesResponse>(
+    connectionId ? ['connection-services', connectionId] : null,
+    async () => {
+      const response = await api.get<ConnectionServicesResponse>(
+        `/v1/integrations/connections/${connectionId}/services`,
+      );
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data!;
+    },
+    { revalidateOnFocus: false, dedupingInterval: 10000 },
+  );
+
+  const services = useMemo(() => data?.services ?? [], [data]);
+  const meta = useMemo<ConnectionServicesMeta>(
+    () => data?.meta ?? { detectionReady: true },
+    [data],
+  );
+
+  const updateServices = useCallback(
+    async (serviceId: string, enabled: boolean) => {
+      if (!connectionId) return;
+
+      const newEnabledIds = services
+        .filter((s) => (s.id === serviceId ? enabled : s.enabled))
+        .map((s) => s.id);
+
+      const response = await api.put(
+        `/v1/integrations/connections/${connectionId}/services`,
+        { services: newEnabledIds },
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      await mutate();
+    },
+    [connectionId, services, mutate],
+  );
+
+  return {
+    services,
+    meta,
+    isLoading,
+    error: error?.message,
+    refresh: mutate,
+    updateServices,
   };
 }

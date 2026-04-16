@@ -18,10 +18,7 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import {
-  AuthContext,
-  OrganizationId,
-} from '../auth/auth-context.decorator';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -54,7 +51,11 @@ export class OrganizationController {
   @Get()
   @RequirePermission('organization', 'read')
   @ApiOperation(ORGANIZATION_OPERATIONS.getOrganization)
-  @ApiQuery({ name: 'includeOwnership', required: false, description: 'Include ownership data for transfer UI' })
+  @ApiQuery({
+    name: 'includeOwnership',
+    required: false,
+    description: 'Include ownership data for transfer UI',
+  })
   @ApiResponse(GET_ORGANIZATION_RESPONSES[200])
   @ApiResponse(GET_ORGANIZATION_RESPONSES[401])
   async getOrganization(

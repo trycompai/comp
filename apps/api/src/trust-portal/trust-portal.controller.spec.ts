@@ -99,7 +99,11 @@ describe('TrustPortalController', () => {
 
   describe('uploadFavicon', () => {
     it('should call service.uploadFavicon with organizationId and body', async () => {
-      const body = { fileName: 'fav.png', fileType: 'image/png', fileData: 'base64data' };
+      const body = {
+        fileName: 'fav.png',
+        fileType: 'image/png',
+        fileData: 'base64data',
+      };
       const mockResult = { url: 'https://example.com/fav.png' };
       mockService.uploadFavicon.mockResolvedValue(mockResult);
 
@@ -140,7 +144,10 @@ describe('TrustPortalController', () => {
       const mockResult = { id: 'cr_1' };
       mockService.uploadComplianceResource.mockResolvedValue(mockResult);
 
-      const result = await controller.uploadComplianceResource(dto, authContext);
+      const result = await controller.uploadComplianceResource(
+        dto,
+        authContext,
+      );
 
       expect(result).toEqual(mockResult);
       expect(service.uploadComplianceResource).toHaveBeenCalledWith(dto);
@@ -161,7 +168,10 @@ describe('TrustPortalController', () => {
       const mockResult = { url: 'https://signed-url' };
       mockService.getComplianceResourceUrl.mockResolvedValue(mockResult);
 
-      const result = await controller.getComplianceResourceUrl(dto, authContext);
+      const result = await controller.getComplianceResourceUrl(
+        dto,
+        authContext,
+      );
 
       expect(result).toEqual(mockResult);
       expect(service.getComplianceResourceUrl).toHaveBeenCalledWith(dto);
@@ -182,7 +192,10 @@ describe('TrustPortalController', () => {
       const mockResult = [{ id: 'cr_1' }];
       mockService.listComplianceResources.mockResolvedValue(mockResult);
 
-      const result = await controller.listComplianceResources(dto as any, authContext);
+      const result = await controller.listComplianceResources(
+        dto as any,
+        authContext,
+      );
 
       expect(result).toEqual(mockResult);
       expect(service.listComplianceResources).toHaveBeenCalledWith(orgId);
@@ -224,7 +237,10 @@ describe('TrustPortalController', () => {
       const mockResult = [{ id: 'td_1' }];
       mockService.listTrustDocuments.mockResolvedValue(mockResult);
 
-      const result = await controller.listTrustDocuments(dto as any, authContext);
+      const result = await controller.listTrustDocuments(
+        dto as any,
+        authContext,
+      );
 
       expect(result).toEqual(mockResult);
       expect(service.listTrustDocuments).toHaveBeenCalledWith(orgId);
@@ -238,7 +254,11 @@ describe('TrustPortalController', () => {
       const mockResult = { url: 'https://signed-url' };
       mockService.getTrustDocumentUrl.mockResolvedValue(mockResult);
 
-      const result = await controller.getTrustDocumentUrl(dto, documentId, authContext);
+      const result = await controller.getTrustDocumentUrl(
+        dto,
+        documentId,
+        authContext,
+      );
 
       expect(result).toEqual(mockResult);
       expect(service.getTrustDocumentUrl).toHaveBeenCalledWith(documentId, dto);
@@ -259,7 +279,11 @@ describe('TrustPortalController', () => {
       const documentId = 'td_1';
       mockService.deleteTrustDocument.mockResolvedValue({ success: true });
 
-      const result = await controller.deleteTrustDocument(dto, documentId, authContext);
+      const result = await controller.deleteTrustDocument(
+        dto,
+        documentId,
+        authContext,
+      );
 
       expect(result).toEqual({ success: true });
       expect(service.deleteTrustDocument).toHaveBeenCalledWith(documentId, dto);
@@ -276,7 +300,11 @@ describe('TrustPortalController', () => {
 
   describe('togglePortal', () => {
     it('should call service.togglePortal with correct params', async () => {
-      const body = { enabled: true, contactEmail: 'test@example.com', primaryColor: '#000' };
+      const body = {
+        enabled: true,
+        contactEmail: 'test@example.com',
+        primaryColor: '#000',
+      };
       mockService.togglePortal.mockResolvedValue({ enabled: true });
 
       const result = await controller.togglePortal(orgId, body);
@@ -308,12 +336,17 @@ describe('TrustPortalController', () => {
   describe('addCustomDomain', () => {
     it('should call service.addCustomDomain with organizationId and domain', async () => {
       const body = { domain: 'trust.example.com' };
-      mockService.addCustomDomain.mockResolvedValue({ domain: 'trust.example.com' });
+      mockService.addCustomDomain.mockResolvedValue({
+        domain: 'trust.example.com',
+      });
 
       const result = await controller.addCustomDomain(orgId, body);
 
       expect(result).toEqual({ domain: 'trust.example.com' });
-      expect(service.addCustomDomain).toHaveBeenCalledWith(orgId, 'trust.example.com');
+      expect(service.addCustomDomain).toHaveBeenCalledWith(
+        orgId,
+        'trust.example.com',
+      );
     });
 
     it('should throw BadRequestException when domain is empty', async () => {
@@ -332,7 +365,10 @@ describe('TrustPortalController', () => {
       const result = await controller.checkDnsRecords(orgId, body);
 
       expect(result).toEqual(mockResult);
-      expect(service.checkDnsRecords).toHaveBeenCalledWith(orgId, 'trust.example.com');
+      expect(service.checkDnsRecords).toHaveBeenCalledWith(
+        orgId,
+        'trust.example.com',
+      );
     });
 
     it('should throw BadRequestException when domain is empty', async () => {
@@ -396,7 +432,11 @@ describe('TrustPortalController', () => {
 
   describe('updateOverview', () => {
     it('should call service.updateOverview with organizationId and parsed dto', async () => {
-      const body = { organizationId: orgId, overviewTitle: 'Our Trust', overviewContent: 'Desc' };
+      const body = {
+        organizationId: orgId,
+        overviewTitle: 'Our Trust',
+        overviewContent: 'Desc',
+      };
       mockService.updateOverview.mockResolvedValue({ success: true });
 
       const result = await controller.updateOverview(body as any, authContext);
@@ -404,7 +444,10 @@ describe('TrustPortalController', () => {
       expect(result).toEqual({ success: true });
       expect(service.updateOverview).toHaveBeenCalledWith(
         orgId,
-        expect.objectContaining({ overviewTitle: 'Our Trust', overviewContent: 'Desc' }),
+        expect.objectContaining({
+          overviewTitle: 'Our Trust',
+          overviewContent: 'Desc',
+        }),
       );
     });
 
@@ -437,10 +480,17 @@ describe('TrustPortalController', () => {
 
   describe('createCustomLink', () => {
     it('should call service.createCustomLink with organizationId and parsed dto', async () => {
-      const body = { organizationId: orgId, title: 'Link', url: 'https://example.com' };
+      const body = {
+        organizationId: orgId,
+        title: 'Link',
+        url: 'https://example.com',
+      };
       mockService.createCustomLink.mockResolvedValue({ id: 'cl_1' });
 
-      const result = await controller.createCustomLink(body as any, authContext);
+      const result = await controller.createCustomLink(
+        body as any,
+        authContext,
+      );
 
       expect(result).toEqual({ id: 'cl_1' });
       expect(service.createCustomLink).toHaveBeenCalledWith(
@@ -450,7 +500,11 @@ describe('TrustPortalController', () => {
     });
 
     it('should throw BadRequestException for organization mismatch', async () => {
-      const body = { organizationId: orgId, title: 'Link', url: 'https://example.com' };
+      const body = {
+        organizationId: orgId,
+        title: 'Link',
+        url: 'https://example.com',
+      };
 
       await expect(
         controller.createCustomLink(body as any, otherOrgAuthContext),
@@ -463,7 +517,11 @@ describe('TrustPortalController', () => {
       const body = { title: 'Updated', url: 'https://new.com' };
       mockService.updateCustomLink.mockResolvedValue({ id: 'cl_1' });
 
-      const result = await controller.updateCustomLink('cl_1', body as any, authContext);
+      const result = await controller.updateCustomLink(
+        'cl_1',
+        body as any,
+        authContext,
+      );
 
       expect(result).toEqual({ id: 'cl_1' });
       expect(service.updateCustomLink).toHaveBeenCalledWith(
@@ -490,10 +548,16 @@ describe('TrustPortalController', () => {
       const body = { organizationId: orgId, linkIds: ['cl_1', 'cl_2'] };
       mockService.reorderCustomLinks.mockResolvedValue({ success: true });
 
-      const result = await controller.reorderCustomLinks(body as any, authContext);
+      const result = await controller.reorderCustomLinks(
+        body as any,
+        authContext,
+      );
 
       expect(result).toEqual({ success: true });
-      expect(service.reorderCustomLinks).toHaveBeenCalledWith(orgId, ['cl_1', 'cl_2']);
+      expect(service.reorderCustomLinks).toHaveBeenCalledWith(orgId, [
+        'cl_1',
+        'cl_2',
+      ]);
     });
 
     it('should throw BadRequestException for organization mismatch', async () => {
@@ -526,9 +590,15 @@ describe('TrustPortalController', () => {
   describe('updateVendorTrustSettings', () => {
     it('should call service.updateVendorTrustSettings with vendorId, dto, and organizationId', async () => {
       const body = { showOnTrustPortal: true };
-      mockService.updateVendorTrustSettings.mockResolvedValue({ success: true });
+      mockService.updateVendorTrustSettings.mockResolvedValue({
+        success: true,
+      });
 
-      const result = await controller.updateVendorTrustSettings('v_1', body as any, authContext);
+      const result = await controller.updateVendorTrustSettings(
+        'v_1',
+        body as any,
+        authContext,
+      );
 
       expect(result).toEqual({ success: true });
       expect(service.updateVendorTrustSettings).toHaveBeenCalledWith(

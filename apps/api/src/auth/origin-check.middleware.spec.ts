@@ -39,8 +39,12 @@ function createMockReq(
 /** Flush the microtask queue so async middleware completes. */
 const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
-function createMockRes(): Record<string, unknown> & { statusCode?: number; body?: unknown } {
-  const res: Record<string, unknown> & { statusCode?: number; body?: unknown } = {};
+function createMockRes(): Record<string, unknown> & {
+  statusCode?: number;
+  body?: unknown;
+} {
+  const res: Record<string, unknown> & { statusCode?: number; body?: unknown } =
+    {};
   res.status = jest.fn().mockImplementation((code: number) => {
     res.statusCode = code;
     return res;
@@ -84,7 +88,11 @@ describe('originCheckMiddleware', () => {
   });
 
   it('should allow POST from trusted origin', async () => {
-    const req = createMockReq('POST', '/v1/organization/api-keys', 'http://localhost:3000');
+    const req = createMockReq(
+      'POST',
+      '/v1/organization/api-keys',
+      'http://localhost:3000',
+    );
     const res = createMockRes();
     const next = jest.fn();
 
@@ -95,7 +103,11 @@ describe('originCheckMiddleware', () => {
   });
 
   it('should block POST from untrusted origin', async () => {
-    const req = createMockReq('POST', '/v1/organization/transfer-ownership', 'http://evil.com');
+    const req = createMockReq(
+      'POST',
+      '/v1/organization/transfer-ownership',
+      'http://evil.com',
+    );
     const res = createMockRes();
     const next = jest.fn();
 
@@ -119,7 +131,11 @@ describe('originCheckMiddleware', () => {
   });
 
   it('should block PATCH from untrusted origin', async () => {
-    const req = createMockReq('PATCH', '/v1/members/123/role', 'http://evil.com');
+    const req = createMockReq(
+      'PATCH',
+      '/v1/members/123/role',
+      'http://evil.com',
+    );
     const res = createMockRes();
     const next = jest.fn();
 
@@ -161,7 +177,11 @@ describe('originCheckMiddleware', () => {
   });
 
   it('should allow production origins', async () => {
-    const req = createMockReq('POST', '/v1/organization/api-keys', 'https://app.trycomp.ai');
+    const req = createMockReq(
+      'POST',
+      '/v1/organization/api-keys',
+      'https://app.trycomp.ai',
+    );
     const res = createMockRes();
     const next = jest.fn();
 

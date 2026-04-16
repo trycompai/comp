@@ -8,7 +8,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -28,9 +33,21 @@ export class ControlsController {
   @ApiOperation({ summary: 'List controls with relations' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'perPage', required: false })
-  @ApiQuery({ name: 'name', required: false, description: 'Filter by name (case-insensitive contains)' })
-  @ApiQuery({ name: 'sortBy', required: false, description: 'Field to sort by (default: name)' })
-  @ApiQuery({ name: 'sortDesc', required: false, description: 'Sort descending (true/false)' })
+  @ApiQuery({
+    name: 'name',
+    required: false,
+    description: 'Filter by name (case-insensitive contains)',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    description: 'Field to sort by (default: name)',
+  })
+  @ApiQuery({
+    name: 'sortDesc',
+    required: false,
+    description: 'Sort descending (true/false)',
+  })
   async findAll(
     @OrganizationId() organizationId: string,
     @Query('page') page?: string,

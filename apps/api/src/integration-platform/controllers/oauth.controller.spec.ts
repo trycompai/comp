@@ -10,9 +10,18 @@ import { CredentialVaultService } from '../services/credential-vault.service';
 import { ConnectionService } from '../services/connection.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { AutoCheckRunnerService } from '../services/auto-check-runner.service';
+import { CloudSecurityService } from '../../cloud-security/cloud-security.service';
 
 jest.mock('../../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
+}));
+
+jest.mock('../../auth/hybrid-auth.guard', () => ({
+  HybridAuthGuard: class HybridAuthGuard {},
+}));
+
+jest.mock('../../auth/permission.guard', () => ({
+  PermissionGuard: class PermissionGuard {},
 }));
 
 jest.mock('@trycompai/auth', () => ({
@@ -26,10 +35,20 @@ jest.mock('@trycompai/integration-platform', () => ({
   getManifest: jest.fn(),
 }));
 
+jest.mock('@trigger.dev/sdk', () => ({
+  tasks: {
+    trigger: jest.fn(),
+  },
+}));
+
 import { getManifest } from '@trycompai/integration-platform';
+import { tasks } from '@trigger.dev/sdk';
 
 const mockedGetManifest = getManifest as jest.MockedFunction<
   typeof getManifest
+>;
+const mockedTriggerTask = tasks.trigger as jest.MockedFunction<
+  typeof tasks.trigger
 >;
 
 describe('OAuthController', () => {
@@ -48,6 +67,7 @@ describe('OAuthController', () => {
 
   const mockConnectionRepository = {
     findByProviderAndOrg: jest.fn(),
+    update: jest.fn(),
   };
 
   const mockCredentialVaultService = {
@@ -56,6 +76,7 @@ describe('OAuthController', () => {
 
   const mockConnectionService = {
     createConnection: jest.fn(),
+    activateConnection: jest.fn(),
   };
 
   const mockOAuthCredentialsService = {
@@ -65,6 +86,10 @@ describe('OAuthController', () => {
 
   const mockAutoCheckRunnerService = {
     tryAutoRunChecks: jest.fn().mockResolvedValue(false),
+  };
+
+  const mockCloudSecurityService = {
+    detectServices: jest.fn().mockResolvedValue([]),
   };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
@@ -89,6 +114,10 @@ describe('OAuthController', () => {
           provide: AutoCheckRunnerService,
           useValue: mockAutoCheckRunnerService,
         },
+        {
+          provide: CloudSecurityService,
+          useValue: mockCloudSecurityService,
+        },
       ],
     })
       .overrideGuard(HybridAuthGuard)
@@ -101,6 +130,8 @@ describe('OAuthController', () => {
 
     jest.clearAllMocks();
     mockAutoCheckRunnerService.tryAutoRunChecks.mockResolvedValue(false);
+    mockCloudSecurityService.detectServices.mockResolvedValue([]);
+    mockedTriggerTask.mockResolvedValue({ id: 'run_1' } as never);
   });
 
   describe('checkAvailability', () => {
@@ -122,9 +153,9 @@ describe('OAuthController', () => {
     });
 
     it('should throw BAD_REQUEST when providerSlug is empty', async () => {
-      await expect(
-        controller.checkAvailability('', 'org_1'),
-      ).rejects.toThrow(HttpException);
+      await expect(controller.checkAvailability('', 'org_1')).rejects.toThrow(
+        HttpException,
+      );
     });
   });
 
@@ -296,10 +327,7 @@ describe('OAuthController', () => {
     });
 
     it('should redirect with error when code or state is missing', async () => {
-      await controller.oauthCallback(
-        { code: '', state: '' },
-        mockResponse,
-      );
+      await controller.oauthCallback({ code: '', state: '' }, mockResponse);
 
       expect(mockResponse.redirect).toHaveBeenCalled();
       const redirectUrl = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
@@ -366,6 +394,169 @@ describe('OAuthController', () => {
       expect(mockResponse.redirect).toHaveBeenCalled();
       const redirectUrl = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
       expect(redirectUrl).toContain('error=token_exchange_failed');
+    });
+
+    it('should trigger initial GCP service discovery scan on successful first connect', async () => {
+      const futureDate = new Date(Date.now() + 600000);
+      mockOAuthStateRepository.findByState.mockResolvedValue({
+        state: 'valid_gcp_state',
+        providerSlug: 'gcp',
+        organizationId: 'org_1',
+        userId: 'user_1',
+        codeVerifier: null,
+        redirectUrl: null,
+        expiresAt: futureDate,
+      });
+      mockedGetManifest.mockReturnValue({
+        id: 'gcp',
+        name: 'Google Cloud Platform',
+        category: 'Cloud',
+        auth: {
+          type: 'oauth2',
+          config: {
+            authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+            tokenUrl: 'https://oauth2.googleapis.com/token',
+          },
+        },
+        capabilities: [],
+        isActive: true,
+      } as never);
+      mockOAuthCredentialsService.getCredentials.mockResolvedValue({
+        clientId: 'client_123',
+        clientSecret: 'secret_456',
+        scopes: ['openid'],
+        source: 'platform',
+      });
+      mockProviderRepository.findBySlug.mockResolvedValue({
+        id: 'provider_1',
+      });
+      mockConnectionRepository.findByProviderAndOrg.mockResolvedValue({
+        id: 'conn_1',
+        metadata: {},
+        variables: {},
+        lastSyncAt: null,
+      });
+      mockConnectionRepository.update.mockResolvedValue({
+        id: 'conn_1',
+        metadata: {},
+        variables: {},
+        lastSyncAt: null,
+      });
+      mockConnectionService.activateConnection.mockResolvedValue({
+        id: 'conn_1',
+      });
+
+      const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ access_token: 'access_123' }),
+        text: () => Promise.resolve(''),
+      } as unknown as Response);
+
+      await controller.oauthCallback(
+        { code: 'auth_code', state: 'valid_gcp_state' },
+        mockResponse,
+      );
+
+      await new Promise<void>((resolve) => setImmediate(resolve));
+
+      expect(mockCloudSecurityService.detectServices).toHaveBeenCalledWith(
+        'conn_1',
+        'org_1',
+      );
+      expect(mockedTriggerTask).toHaveBeenCalledWith(
+        'run-cloud-security-scan',
+        {
+          connectionId: 'conn_1',
+          organizationId: 'org_1',
+          providerSlug: 'gcp',
+          connectionName: 'conn_1',
+        },
+      );
+      expect(mockResponse.redirect).toHaveBeenCalled();
+      const redirectUrl = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
+      expect(redirectUrl).toContain('success=true');
+      expect(redirectUrl).toContain('provider=gcp');
+
+      fetchSpy.mockRestore();
+    });
+
+    it('should skip initial GCP service discovery scan when detection already completed', async () => {
+      const futureDate = new Date(Date.now() + 600000);
+      mockOAuthStateRepository.findByState.mockResolvedValue({
+        state: 'valid_gcp_state',
+        providerSlug: 'gcp',
+        organizationId: 'org_1',
+        userId: 'user_1',
+        codeVerifier: null,
+        redirectUrl: null,
+        expiresAt: futureDate,
+      });
+      mockedGetManifest.mockReturnValue({
+        id: 'gcp',
+        name: 'Google Cloud Platform',
+        category: 'Cloud',
+        auth: {
+          type: 'oauth2',
+          config: {
+            authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+            tokenUrl: 'https://oauth2.googleapis.com/token',
+          },
+        },
+        capabilities: [],
+        isActive: true,
+      } as never);
+      mockOAuthCredentialsService.getCredentials.mockResolvedValue({
+        clientId: 'client_123',
+        clientSecret: 'secret_456',
+        scopes: ['openid'],
+        source: 'platform',
+      });
+      mockProviderRepository.findBySlug.mockResolvedValue({
+        id: 'provider_1',
+      });
+      mockConnectionRepository.findByProviderAndOrg.mockResolvedValue({
+        id: 'conn_1',
+        metadata: {},
+        variables: {
+          serviceDetectionCompletedAt: new Date().toISOString(),
+          detectedServices: ['compute-engine'],
+        },
+        lastSyncAt: null,
+      });
+      mockConnectionRepository.update.mockResolvedValue({
+        id: 'conn_1',
+        metadata: {},
+        variables: {
+          serviceDetectionCompletedAt: new Date().toISOString(),
+          detectedServices: ['compute-engine'],
+        },
+        lastSyncAt: null,
+      });
+      mockConnectionService.activateConnection.mockResolvedValue({
+        id: 'conn_1',
+      });
+
+      const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ access_token: 'access_123' }),
+        text: () => Promise.resolve(''),
+      } as unknown as Response);
+
+      await controller.oauthCallback(
+        { code: 'auth_code', state: 'valid_gcp_state' },
+        mockResponse,
+      );
+
+      expect(mockedTriggerTask).not.toHaveBeenCalledWith(
+        'run-cloud-security-scan',
+        expect.anything(),
+      );
+      expect(mockCloudSecurityService.detectServices).not.toHaveBeenCalled();
+      expect(mockResponse.redirect).toHaveBeenCalled();
+
+      fetchSpy.mockRestore();
     });
   });
 });

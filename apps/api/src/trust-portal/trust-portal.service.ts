@@ -11,7 +11,6 @@ import {
   GetObjectCommand,
   PutObjectCommand,
 } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db } from '@db';
 import {
   DomainStatusResponseDto,
@@ -25,7 +24,7 @@ import {
   UploadComplianceResourceDto,
 } from './dto/compliance-resource.dto';
 import * as dns from 'node:dns';
-import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '../app/s3';
 import {
   DeleteTrustDocumentDto,
   TrustDocumentResponseDto,
@@ -101,7 +100,8 @@ export class TrustPortalService {
     if (!resp.ok) {
       const errorBody = await resp.json().catch(() => ({}));
       const err = new Error(
-        errorBody?.error?.message || `Vercel API ${method} ${path} failed (${resp.status})`,
+        errorBody?.error?.message ||
+          `Vercel API ${method} ${path} failed (${resp.status})`,
       ) as Error & { status: number; responseData: unknown };
       err.status = resp.status;
       err.responseData = errorBody;
@@ -210,7 +210,7 @@ export class TrustPortalService {
 
       // Get domain information including verification status
       // Vercel API endpoint: GET /v9/projects/{projectId}/domains/{domain}
-      const teamId = process.env.VERCEL_TEAM_ID!;
+      const teamId = process.env.VERCEL_TEAM_ID;
       const [domainResponse, configResponse] = await Promise.all([
         this.vercelFetch<VercelDomainResponse>({
           method: 'GET',
@@ -771,9 +771,7 @@ export class TrustPortalService {
       });
 
       const domainVerified =
-        currentTrust?.domain === domain
-          ? currentTrust.domainVerified
-          : false;
+        currentTrust?.domain === domain ? currentTrust.domainVerified : false;
 
       // Remove old domain from Vercel if switching to a different one
       if (currentTrust?.domain && currentTrust.domain !== domain) {
@@ -826,8 +824,7 @@ export class TrustPortalService {
 
         const statusData = statusResp.data;
         const isVercelDomain = statusData.verified === false;
-        const vercelVerification =
-          statusData.verification?.[0]?.value || null;
+        const vercelVerification = statusData.verification?.[0]?.value || null;
 
         await db.trust.upsert({
           where: { organizationId },
@@ -863,8 +860,7 @@ export class TrustPortalService {
 
       const addData = addResp.data;
       const isVercelDomain = addData.verified === false;
-      const vercelVerification =
-        addData.verification?.[0]?.value || null;
+      const vercelVerification = addData.verification?.[0]?.value || null;
 
       await db.trust.upsert({
         where: { organizationId },
@@ -889,7 +885,17 @@ export class TrustPortalService {
       };
     } catch (error) {
       // Handle Vercel 409 conflict — domain already exists on the project
-      const vercelError = error as Error & { status?: number; responseData?: { error?: { code?: string; projectId?: string; message?: string; domain?: VercelDomainResponse } } };
+      const vercelError = error as Error & {
+        status?: number;
+        responseData?: {
+          error?: {
+            code?: string;
+            projectId?: string;
+            message?: string;
+            domain?: VercelDomainResponse;
+          };
+        };
+      };
       if (vercelError.status === 409) {
         const errorData = vercelError.responseData?.error;
 
@@ -943,7 +949,9 @@ export class TrustPortalService {
 
       // Extract meaningful error message
       const errorMessage =
-        error instanceof Error ? error.message : 'Failed to update custom domain';
+        error instanceof Error
+          ? error.message
+          : 'Failed to update custom domain';
 
       this.logger.error(`Custom domain error for ${domain}:`, error);
       throw new BadRequestException(errorMessage);
@@ -951,7 +959,8 @@ export class TrustPortalService {
   }
 
   /** Validate domain to prevent path injection in API URLs */
-  private static readonly VALID_DOMAIN_PATTERN = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+  private static readonly VALID_DOMAIN_PATTERN =
+    /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
 
   private validateDomain(domain: string): void {
     if (!TrustPortalService.VALID_DOMAIN_PATTERN.test(domain)) {
@@ -1013,8 +1022,7 @@ export class TrustPortalService {
         });
         const vercelData = vercelStatusResp.data;
         liveIsVercelDomain = vercelData.verified === false;
-        liveVercelVerification =
-          vercelData.verification?.[0]?.value || null;
+        liveVercelVerification = vercelData.verification?.[0]?.value || null;
 
         // Sync DB with live Vercel state
         await db.trust.update({
@@ -1107,9 +1115,7 @@ export class TrustPortalService {
     // the _vercel TXT record before the domain will serve traffic.
     // For same-account domains, DNS verification is sufficient — Vercel will
     // pick up the CNAME on its own, so don't block on the verify response.
-    const domainFullyVerified = requiresVercelTxt
-      ? vercelVerified
-      : true;
+    const domainFullyVerified = requiresVercelTxt ? vercelVerified : true;
 
     await db.trust.update({
       where: { organizationId },
@@ -1485,8 +1491,8 @@ export class TrustPortalService {
       soc2type1Status: trust.soc2type1_status ?? 'started',
       soc2type2Status:
         !trust.soc2type2 && trust.soc2
-          ? trust.soc2_status ?? 'started'
-          : trust.soc2type2_status ?? 'started',
+          ? (trust.soc2_status ?? 'started')
+          : (trust.soc2type2_status ?? 'started'),
       iso27001Status: trust.iso27001_status ?? 'started',
       iso42001Status: trust.iso42001_status ?? 'started',
       gdprStatus: trust.gdpr_status ?? 'started',
@@ -1627,9 +1633,9 @@ export class TrustPortalService {
               globalVendor.riskAssessmentData,
             );
             if (extractedBadges && extractedBadges.length > 0) {
-              const currentBadges = vendor.complianceBadges as
-                | Array<{ type: string }>
-                | null;
+              const currentBadges = vendor.complianceBadges as Array<{
+                type: string;
+              }> | null;
               const currentTypes = new Set(
                 currentBadges?.map((b) => b.type) ?? [],
               );

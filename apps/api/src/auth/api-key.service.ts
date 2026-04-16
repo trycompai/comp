@@ -65,9 +65,7 @@ export class ApiKeyService {
     const availableScopes = this.getAvailableScopes();
     const invalid = scopes.filter((s) => !availableScopes.includes(s));
     if (invalid.length > 0) {
-      throw new BadRequestException(
-        `Invalid scopes: ${invalid.join(', ')}`,
-      );
+      throw new BadRequestException(`Invalid scopes: ${invalid.join(', ')}`);
     }
 
     const apiKey = this.generateApiKey();
@@ -85,9 +83,7 @@ export class ApiKeyService {
           expirationDate = new Date(now.setDate(now.getDate() + 90));
           break;
         case '1year':
-          expirationDate = new Date(
-            now.setFullYear(now.getFullYear() + 1),
-          );
+          expirationDate = new Date(now.setFullYear(now.getFullYear() + 1));
           break;
         default:
           throw new BadRequestException(
@@ -179,15 +175,14 @@ export class ApiKeyService {
 
       // Use key prefix for indexed lookup when available (new keys),
       // fall back to full scan for legacy keys without prefix
-      const keyPrefix = apiKey.startsWith('comp_') ? this.extractPrefix(apiKey) : null;
+      const keyPrefix = apiKey.startsWith('comp_')
+        ? this.extractPrefix(apiKey)
+        : null;
 
       const apiKeyRecords = await db.apiKey.findMany({
         where: {
           isActive: true,
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gt: new Date() } },
-          ],
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           ...(keyPrefix ? { keyPrefix } : {}),
         },
         select: {
@@ -215,10 +210,7 @@ export class ApiKeyService {
             where: {
               isActive: true,
               keyPrefix: null,
-              OR: [
-                { expiresAt: null },
-                { expiresAt: { gt: new Date() } },
-              ],
+              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
             },
             select: {
               id: true,
@@ -279,10 +271,7 @@ export class ApiKeyService {
    * Resources from better-auth that are not used by any API endpoint's @RequirePermission.
    * These are handled internally by better-auth for session-based auth only.
    */
-  private static readonly INTERNAL_ONLY_RESOURCES = [
-    'invitation',
-    'team',
-  ];
+  private static readonly INTERNAL_ONLY_RESOURCES = ['invitation', 'team'];
 
   /**
    * Returns all valid `resource:action` scope pairs derived from the permission statement.

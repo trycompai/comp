@@ -99,9 +99,7 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
       });
       const ctx = buildContext({ cookie: 'session=valid' });
 
-      await expect(guard.canActivate(ctx)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
       await expect(guard.canActivate(ctx)).rejects.toThrow(
         'Access denied: Platform admin privileges required',
       );
@@ -116,9 +114,7 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
       });
       const ctx = buildContext({ cookie: 'session=valid' });
 
-      await expect(guard.canActivate(ctx)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
     });
 
     it('rejects a user with role "owner" (org role, not platform admin)', async () => {
@@ -130,9 +126,7 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
       });
       const ctx = buildContext({ cookie: 'session=valid' });
 
-      await expect(guard.canActivate(ctx)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
     });
 
     it('rejects when session claims admin but DB says user', async () => {
@@ -146,9 +140,7 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
       });
       const ctx = buildContext({ authorization: 'Bearer valid' });
 
-      await expect(guard.canActivate(ctx)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
       expect(mockFindUnique).toHaveBeenCalledWith({
         where: { id: 'usr_sneaky' },
         select: { id: true, email: true, role: true },

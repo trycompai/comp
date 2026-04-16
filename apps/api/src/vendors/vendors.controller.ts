@@ -45,10 +45,12 @@ export class VendorsController {
   @Get('global/search')
   @RequirePermission('vendor', 'read')
   @ApiOperation({ summary: 'Search global vendors database' })
-  @ApiQuery({ name: 'name', required: false, description: 'Vendor name to search for' })
-  async searchGlobalVendors(
-    @Query('name') name?: string,
-  ) {
+  @ApiQuery({
+    name: 'name',
+    required: false,
+    description: 'Vendor name to search for',
+  })
+  async searchGlobalVendors(@Query('name') name?: string) {
     return this.vendorsService.searchGlobal(name ?? '');
   }
 

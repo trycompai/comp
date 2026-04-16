@@ -51,10 +51,7 @@ export class PolicyTemplateController {
 
   @Patch(':id')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdatePolicyTemplateDto,
-  ) {
+  async update(@Param('id') id: string, @Body() dto: UpdatePolicyTemplateDto) {
     return this.service.update(id, dto);
   }
 

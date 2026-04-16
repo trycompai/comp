@@ -91,7 +91,9 @@ describe('FrameworksService', () => {
     });
 
     it('should throw NotFoundException when instance not found', async () => {
-      (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue(null);
+      (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue(
+        null,
+      );
 
       await expect(service.delete('missing', 'org_1')).rejects.toThrow(
         NotFoundException,

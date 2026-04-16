@@ -18,12 +18,36 @@ jest.mock('@db', () => ({
   },
   Prisma: {},
   db: {
-    auditLog: { get create() { return mockCreate; } },
-    policy: { get findFirst() { return mockPolicyFind; } },
-    taskItem: { get findFirst() { return mockTaskFind; } },
-    vendor: { get findFirst() { return mockVendorFind; } },
-    finding: { get findFirst() { return mockFindingFind; } },
-    context: { get findFirst() { return mockContextFind; } },
+    auditLog: {
+      get create() {
+        return mockCreate;
+      },
+    },
+    policy: {
+      get findFirst() {
+        return mockPolicyFind;
+      },
+    },
+    taskItem: {
+      get findFirst() {
+        return mockTaskFind;
+      },
+    },
+    vendor: {
+      get findFirst() {
+        return mockVendorFind;
+      },
+    },
+    finding: {
+      get findFirst() {
+        return mockFindingFind;
+      },
+    },
+    context: {
+      get findFirst() {
+        return mockContextFind;
+      },
+    },
   },
 }));
 

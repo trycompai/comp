@@ -28,7 +28,8 @@ export const TaskReminderEmail = ({ email, name, dueDate, recordId }: Props) => 
   return (
     <Html>
       <Tailwind>
-<Preview>Comp AI - Task Reminder</Preview>
+        <head />
+        <Preview>Comp AI - Task Reminder</Preview>
 
         <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container

@@ -315,6 +315,23 @@ export class OAuthController {
 
       // Store tokens and mark connection as active
       await this.credentialVaultService.storeOAuthTokens(connection.id, tokens);
+
+      // Mark cloud OAuth reconnect completion so reconnect banners clear after successful OAuth.
+      if (manifest.category === 'Cloud') {
+        const metadata =
+          connection.metadata &&
+          typeof connection.metadata === 'object' &&
+          !Array.isArray(connection.metadata)
+            ? (connection.metadata as Record<string, unknown>)
+            : {};
+        connection = await this.connectionRepository.update(connection.id, {
+          metadata: {
+            ...metadata,
+            reconnectedAt: new Date().toISOString(),
+          },
+        });
+      }
+
       await this.connectionService.activateConnection(connection.id);
 
       // Provider-specific post-OAuth actions
@@ -346,6 +363,10 @@ export class OAuthController {
             `Failed to auto-run checks after OAuth: ${err.message}`,
           );
         });
+
+      // GCP: skip automatic service detection and scan after OAuth.
+      // The user must first select projects on the integrations page.
+      // Service detection and scanning run after project selection.
 
       // Redirect to success URL
       const successUrl = this.buildRedirectUrl(
@@ -510,4 +531,5 @@ export class OAuthController {
     }
     return url.toString();
   }
+
 }

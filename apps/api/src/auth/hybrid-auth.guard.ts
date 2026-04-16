@@ -112,6 +112,23 @@ export class HybridAuthGuard implements CanActivate {
     request.isPlatformAdmin = false;
     request.userRoles = null;
 
+    // Service tokens can pass x-user-id to act on behalf of a user
+    // Validate that the user exists and belongs to the organization
+    const actingUserId = request.headers['x-user-id'] as string;
+    if (actingUserId) {
+      const member = await db.member.findFirst({
+        where: { userId: actingUserId, organizationId },
+        select: { userId: true },
+      });
+      if (member) {
+        request.userId = actingUserId;
+      } else {
+        this.logger.warn(
+          `Service token x-user-id "${actingUserId}" not found in org ${organizationId}`,
+        );
+      }
+    }
+
     this.logger.log(
       `Service "${service.definition.name}" authenticated for org ${organizationId}`,
     );

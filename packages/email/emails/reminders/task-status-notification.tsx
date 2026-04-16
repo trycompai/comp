@@ -41,7 +41,8 @@ export const TaskStatusNotificationEmail = ({
   return (
     <Html>
       <Tailwind>
-<Preview>
+        <head />
+        <Preview>
           Task &quot;{taskName}&quot; {statusLabel} - {organizationName}
         </Preview>
 

@@ -72,16 +72,25 @@ async function bootstrap(): Promise<void> {
   // Express-level middleware runs BEFORE NestJS module middleware, so without this
   // skip, express.json() would consume the stream before better-auth's handler.
   const jsonParser = express.json({ limit: '150mb' });
-  const urlencodedParser = express.urlencoded({ limit: '150mb', extended: true });
-  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (req.path.startsWith('/api/auth')) {
-      return next();
-    }
-    jsonParser(req, res, (err?: unknown) => {
-      if (err) return next(err);
-      urlencodedParser(req, res, next);
-    });
+  const urlencodedParser = express.urlencoded({
+    limit: '150mb',
+    extended: true,
   });
+  app.use(
+    (
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction,
+    ) => {
+      if (req.path.startsWith('/api/auth')) {
+        return next();
+      }
+      jsonParser(req, res, (err?: unknown) => {
+        if (err) return next(err);
+        urlencodedParser(req, res, next);
+      });
+    },
+  );
 
   // STEP 4b: Enable global pipes and filters
   app.useGlobalPipes(

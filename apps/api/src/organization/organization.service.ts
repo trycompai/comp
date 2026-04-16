@@ -8,9 +8,8 @@ import {
 } from '@nestjs/common';
 import { allRoles } from '@trycompai/auth';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db, Role } from '@db';
-import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '../app/s3';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 import type { TransferOwnershipResponseDto } from './dto/transfer-ownership.dto';
 
@@ -319,10 +318,7 @@ export class OrganizationService {
   async getRoleNotificationSettings(organizationId: string) {
     const BUILT_IN_ROLES = Object.keys(allRoles);
 
-    const BUILT_IN_DEFAULTS: Record<
-      string,
-      Record<string, boolean>
-    > = {
+    const BUILT_IN_DEFAULTS: Record<string, Record<string, boolean>> = {
       owner: {
         policyNotifications: true,
         taskReminders: true,
@@ -432,7 +428,9 @@ export class OrganizationService {
     return { data: configs };
   }
 
-  async getLogoSignedUrl(logoKey: string | null | undefined): Promise<string | null> {
+  async getLogoSignedUrl(
+    logoKey: string | null | undefined,
+  ): Promise<string | null> {
     if (!logoKey || !s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
       return null;
     }

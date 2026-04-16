@@ -80,7 +80,8 @@ export const UnassignedItemsNotificationEmail = ({
   return (
     <Html>
       <Tailwind>
-<Preview>Member removed - items require reassignment</Preview>
+        <head />
+        <Preview>Member removed - items require reassignment</Preview>
 
         <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container

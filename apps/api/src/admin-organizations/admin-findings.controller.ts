@@ -33,10 +33,7 @@ export class AdminFindingsController {
 
   @Get(':orgId/findings')
   @ApiOperation({ summary: 'List all findings for an organization (admin)' })
-  async list(
-    @Param('orgId') orgId: string,
-    @Query('status') status?: string,
-  ) {
+  async list(@Param('orgId') orgId: string, @Query('status') status?: string) {
     let validatedStatus: FindingStatus | undefined;
     if (status) {
       if (!Object.values(FindingStatus).includes(status as FindingStatus)) {

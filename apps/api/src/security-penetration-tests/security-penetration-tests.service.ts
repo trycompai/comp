@@ -94,9 +94,12 @@ export class SecurityPenetrationTestsService {
   private readonly logger = new Logger(SecurityPenetrationTestsService.name);
   private readonly macedClient = new MacedClient();
 
-  constructor(private readonly credentialVaultService: CredentialVaultService) {}
+  constructor(
+    private readonly credentialVaultService: CredentialVaultService,
+  ) {}
 
-  private readonly canonicalWebhookPath = '/v1/security-penetration-tests/webhook';
+  private readonly canonicalWebhookPath =
+    '/v1/security-penetration-tests/webhook';
   private readonly defaultWebhookBaseUrl = 'https://api.trycomp.ai';
   private readonly defaultCompWebhookHosts = new Set([
     'api.trycomp.ai',
@@ -111,7 +114,9 @@ export class SecurityPenetrationTestsService {
     );
   }
 
-  async listReports(organizationId: string): Promise<SecurityPenetrationTest[]> {
+  async listReports(
+    organizationId: string,
+  ): Promise<SecurityPenetrationTest[]> {
     const ownedRunIds = await this.listOwnedRunIds(organizationId);
     if (ownedRunIds.size === 0) {
       return [];
@@ -119,9 +124,11 @@ export class SecurityPenetrationTestsService {
 
     const reports = await this.macedClient.listPentests();
 
-    return reports.filter((report) => {
-      return ownedRunIds.has(report.id);
-    }).map((report) => this.mapMacedRunToSecurityPenetrationTest(report));
+    return reports
+      .filter((report) => {
+        return ownedRunIds.has(report.id);
+      })
+      .map((report) => this.mapMacedRunToSecurityPenetrationTest(report));
   }
 
   async createReport(
@@ -158,7 +165,8 @@ export class SecurityPenetrationTestsService {
         (await this.getGithubTokenForOrg(organizationId)) ?? undefined;
     }
 
-    const createdReport = await this.macedClient.createPentest(sanitizedPayload);
+    const createdReport =
+      await this.macedClient.createPentest(sanitizedPayload);
 
     const providerRunId = createdReport.id;
 
@@ -267,7 +275,10 @@ export class SecurityPenetrationTestsService {
     }
   }
 
-  async getReport(organizationId: string, id: string): Promise<SecurityPenetrationTest> {
+  async getReport(
+    organizationId: string,
+    id: string,
+  ): Promise<SecurityPenetrationTest> {
     await this.assertRunOwnership(organizationId, id);
     const report = await this.macedClient.getPentest(id);
     return this.mapMacedRunToSecurityPenetrationTest(report);
@@ -281,19 +292,26 @@ export class SecurityPenetrationTestsService {
     return this.macedClient.getPentestProgress(id);
   }
 
-  async getReportOutput(organizationId: string, id: string): Promise<BinaryArtifact> {
+  async getReportOutput(
+    organizationId: string,
+    id: string,
+  ): Promise<BinaryArtifact> {
     await this.getReport(organizationId, id);
 
     const response = await this.macedClient.getPentestReportRaw(id);
 
     return {
       buffer: Buffer.from(await response.arrayBuffer()),
-      contentType: response.headers.get('Content-Type') || 'text/markdown; charset=utf-8',
+      contentType:
+        response.headers.get('Content-Type') || 'text/markdown; charset=utf-8',
       contentDisposition: response.headers.get('Content-Disposition'),
     };
   }
 
-  async getReportPdf(organizationId: string, id: string): Promise<BinaryArtifact> {
+  async getReportPdf(
+    organizationId: string,
+    id: string,
+  ): Promise<BinaryArtifact> {
     await this.getReport(organizationId, id);
 
     const response = await this.macedClient.getPentestReportPdf(id);
@@ -344,7 +362,8 @@ export class SecurityPenetrationTestsService {
       throw new BadRequestException('Webhook payload must include a report id');
     }
 
-    const organizationId = await this.resolveOrganizationForRun(payloadReportId);
+    const organizationId =
+      await this.resolveOrganizationForRun(payloadReportId);
 
     const duplicate = await this.verifyAndRecordWebhookHandshake({
       organizationId,
@@ -360,7 +379,11 @@ export class SecurityPenetrationTestsService {
       (completedEvent ? 'completed' : undefined) ||
       (failedEvent ? 'failed' : undefined);
 
-    const eventType: WebhookEventType = completedEvent ? 'completed' : failedEvent ? 'failed' : 'status';
+    const eventType: WebhookEventType = completedEvent
+      ? 'completed'
+      : failedEvent
+        ? 'failed'
+        : 'status';
 
     this.logger.log(
       `[Webhook] Received penetration test ${eventType} event for org=${organizationId}${payloadReportId ? ` run=${payloadReportId}` : ''} status=${payloadStatus ?? 'unknown'}`,
@@ -394,7 +417,9 @@ export class SecurityPenetrationTestsService {
     };
   }
 
-  private async getGithubTokenForOrg(organizationId: string): Promise<string | null> {
+  private async getGithubTokenForOrg(
+    organizationId: string,
+  ): Promise<string | null> {
     try {
       const provider = await db.integrationProvider.findUnique({
         where: { slug: 'github' },
@@ -418,9 +443,10 @@ export class SecurityPenetrationTestsService {
         return null;
       }
 
-      const credentials = await this.credentialVaultService.getDecryptedCredentials(
-        connection.id,
-      );
+      const credentials =
+        await this.credentialVaultService.getDecryptedCredentials(
+          connection.id,
+        );
 
       const token = credentials?.access_token;
       return typeof token === 'string' && token.length > 0 ? token : null;
@@ -470,7 +496,10 @@ export class SecurityPenetrationTestsService {
 
     for (const suffix of legacySuffixes) {
       if (normalizedPath.endsWith(suffix)) {
-        const basePath = normalizedPath.slice(0, normalizedPath.length - suffix.length);
+        const basePath = normalizedPath.slice(
+          0,
+          normalizedPath.length - suffix.length,
+        );
         return basePath
           ? `${basePath}${this.canonicalWebhookPath}`
           : this.canonicalWebhookPath;
@@ -488,9 +517,7 @@ export class SecurityPenetrationTestsService {
     return path.endsWith(this.canonicalWebhookPath);
   }
 
-  private resolveWebhookUrl(
-    providedUrl?: string,
-  ): string | undefined {
+  private resolveWebhookUrl(providedUrl?: string): string | undefined {
     const baseUrl = providedUrl?.trim() || this.defaultWebhookBase;
     if (!baseUrl) {
       return undefined;
@@ -517,7 +544,9 @@ export class SecurityPenetrationTestsService {
     }
 
     const value = payload[key];
-    return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+    return typeof value === 'string' && value.trim().length > 0
+      ? value.trim()
+      : undefined;
   }
 
   private extractNumberField(
@@ -529,7 +558,9 @@ export class SecurityPenetrationTestsService {
     }
 
     const value = payload[key];
-    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+    return typeof value === 'number' && Number.isFinite(value)
+      ? value
+      : undefined;
   }
 
   private extractCompletedWebhookPayload(
@@ -547,7 +578,7 @@ export class SecurityPenetrationTestsService {
       return null;
     }
 
-    const reportRecord = reportValue as Record<string, unknown>;
+    const reportRecord = reportValue;
     const markdown = this.extractStringField(reportRecord, 'markdown');
     const costUsd = this.extractNumberField(reportRecord, 'costUsd');
     const durationMs = this.extractNumberField(reportRecord, 'durationMs');
@@ -658,10 +689,7 @@ export class SecurityPenetrationTestsService {
   ): Promise<void> {
     const ownerOrganizationId = await this.resolveOrganizationForRun(
       reportId,
-      new HttpException(
-        { error: 'Report not found' },
-        HttpStatus.NOT_FOUND,
-      ),
+      new HttpException({ error: 'Report not found' }, HttpStatus.NOT_FOUND),
     );
 
     if (ownerOrganizationId !== organizationId) {
@@ -674,7 +702,9 @@ export class SecurityPenetrationTestsService {
 
   private async resolveOrganizationForRun(
     reportId: string,
-    notFoundError: Error = new ForbiddenException('Run ownership mapping not found'),
+    notFoundError: Error = new ForbiddenException(
+      'Run ownership mapping not found',
+    ),
   ): Promise<string> {
     const marker = await db.securityPenetrationTestRun.findUnique({
       where: {
@@ -693,14 +723,15 @@ export class SecurityPenetrationTestsService {
   }
 
   private async listOwnedRunIds(organizationId: string): Promise<Set<string>> {
-    const markers = (await db.securityPenetrationTestRun.findMany({
-      where: {
-        organizationId,
-      },
-      select: {
-        providerRunId: true,
-      },
-    })) ?? [];
+    const markers =
+      (await db.securityPenetrationTestRun.findMany({
+        where: {
+          organizationId,
+        },
+        select: {
+          providerRunId: true,
+        },
+      })) ?? [];
 
     return new Set(markers.map(({ providerRunId }) => providerRunId));
   }
@@ -737,7 +768,9 @@ export class SecurityPenetrationTestsService {
       try {
         hosts.add(new URL(candidate).host.toLowerCase());
       } catch {
-        this.logger.warn(`Ignoring invalid trusted webhook host URL: ${candidate}`);
+        this.logger.warn(
+          `Ignoring invalid trusted webhook host URL: ${candidate}`,
+        );
       }
     }
 
@@ -822,7 +855,11 @@ export class SecurityPenetrationTestsService {
   ): Promise<boolean> {
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       try {
-        await this.persistWebhookHandshake(organizationId, reportId, webhookToken);
+        await this.persistWebhookHandshake(
+          organizationId,
+          reportId,
+          webhookToken,
+        );
         return true;
       } catch (error) {
         this.logger.error(

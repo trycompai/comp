@@ -24,12 +24,7 @@ import { PermissionGuard } from './permission.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [
-    ApiKeyService,
-    ApiKeyGuard,
-    HybridAuthGuard,
-    PermissionGuard,
-  ],
+  providers: [ApiKeyService, ApiKeyGuard, HybridAuthGuard, PermissionGuard],
   exports: [
     ApiKeyService,
     ApiKeyGuard,

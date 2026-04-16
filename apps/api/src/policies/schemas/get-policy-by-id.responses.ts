@@ -40,7 +40,8 @@ export const GET_POLICY_BY_ID_RESPONSES: Record<string, ApiResponseOptions> = {
   },
   403: {
     status: 403,
-    description: 'Forbidden - User does not have permission to access this policy',
+    description:
+      'Forbidden - User does not have permission to access this policy',
     content: {
       'application/json': {
         schema: {

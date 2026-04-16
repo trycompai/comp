@@ -79,9 +79,7 @@ export class AdminPoliciesController {
     const updateData: Record<string, unknown> = {};
 
     if (body.status !== undefined) {
-      if (
-        !Object.values(PolicyStatus).includes(body.status as PolicyStatus)
-      ) {
+      if (!Object.values(PolicyStatus).includes(body.status as PolicyStatus)) {
         throw new BadRequestException(
           `Invalid status. Must be one of: ${Object.values(PolicyStatus).join(', ')}`,
         );
@@ -135,9 +133,7 @@ export class AdminPoliciesController {
     });
 
     const uniqueFrameworks = Array.from(
-      new Map(
-        instances.map((fi) => [fi.framework.id, fi.framework]),
-      ).values(),
+      new Map(instances.map((fi) => [fi.framework.id, fi.framework])).values(),
     ).map((f) => ({
       id: f.id,
       name: f.name,

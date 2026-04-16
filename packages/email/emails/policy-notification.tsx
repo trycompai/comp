@@ -50,7 +50,8 @@ export const PolicyNotificationEmail = ({
   return (
     <Html>
       <Tailwind>
-<Preview>{subjectText}</Preview>
+        <head />
+        <Preview>{subjectText}</Preview>
 
         <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container

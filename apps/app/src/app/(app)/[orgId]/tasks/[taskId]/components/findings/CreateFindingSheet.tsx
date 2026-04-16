@@ -3,6 +3,7 @@
 import {
   DEFAULT_FINDING_TEMPLATES,
   FINDING_CATEGORY_LABELS,
+  FINDING_TYPE_FRAMEWORK_OPTIONS,
   FINDING_TYPE_LABELS,
   useFindingActions,
   useFindingTemplates,
@@ -68,6 +69,7 @@ export function CreateFindingSheet({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { hasPermission } = usePermissions();
   const canCreateFinding = hasPermission('finding', 'create');
+  const supportedFindingTypes = new Set(Object.values(FindingType));
 
   const { data: templatesData } = useFindingTemplates();
   const { createFinding } = useFindingActions();
@@ -165,8 +167,12 @@ export function CreateFindingSheet({
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>{FINDING_TYPE_LABELS[field.value as FindingType]}</SelectTrigger>
                 <SelectContent>
-                  {Object.entries(FINDING_TYPE_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
+                  {FINDING_TYPE_FRAMEWORK_OPTIONS.map(({ value, label }) => (
+                    <SelectItem
+                      key={value}
+                      value={value}
+                      disabled={!supportedFindingTypes.has(value as FindingType)}
+                    >
                       {label}
                     </SelectItem>
                   ))}

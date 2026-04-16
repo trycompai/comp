@@ -7,7 +7,7 @@
   "private": true,
   "main": "dist/main/index.js",
   "scripts": {
-    "postinstall": "node node_modules/electron/install.js || true",
+    "postinstall": "electron-builder install-app-deps",
     "dev": "electron-vite dev --watch",
     "build": "electron-vite build",
     "preview": "electron-vite preview",

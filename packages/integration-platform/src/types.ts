@@ -152,8 +152,10 @@ export const CustomAuthConfigSchema = z.object({
     .optional(),
   /** Validation schema for credentials (optional, for runtime validation) */
   validationSchema: z.any().optional(),
-  /** Setup instructions (markdown) */
+  /** Setup instructions (plaintext) */
   setupInstructions: z.string().optional(),
+  /** CloudShell/CLI setup script for one-command setup */
+  setupScript: z.string().optional(),
 });
 
 export type CustomAuthConfig = z.infer<typeof CustomAuthConfigSchema>;
@@ -725,6 +727,30 @@ export interface IntegrationCheck {
    * }
    */
   run: (ctx: CheckContext) => Promise<void>;
+
+  /** Service ID this check belongs to (groups checks under a service on the provider detail page) */
+  service?: string;
+}
+
+// ============================================================================
+// Integration Service (grouping concept for checks within a provider)
+// ============================================================================
+
+export interface IntegrationService {
+  /** Unique ID within this integration (e.g., "security-hub", "guardduty") */
+  id: string;
+
+  /** Display name */
+  name: string;
+
+  /** Short description */
+  description: string;
+
+  /** Whether this service is enabled by default when the provider is connected */
+  enabledByDefault?: boolean;
+
+  /** Whether this service has a working implementation */
+  implemented?: boolean;
 }
 
 // ============================================================================
@@ -790,6 +816,12 @@ export interface IntegrationManifest {
    * Variables defined here are merged with check-specific variables.
    */
   variables?: CheckVariable[];
+
+  /**
+   * Services this integration provides (e.g., Security Hub, GuardDuty for AWS).
+   * Used to group checks and enable/disable features on the provider detail page.
+   */
+  services?: IntegrationService[];
 
   /**
    * Compliance checks this integration can run.

@@ -52,7 +52,8 @@ export class CreatePenetrationTestDto {
   workspace?: string;
 
   @ApiPropertyOptional({
-    description: 'Optional webhook URL to notify when report generation completes',
+    description:
+      'Optional webhook URL to notify when report generation completes',
     required: false,
   })
   @IsOptional()

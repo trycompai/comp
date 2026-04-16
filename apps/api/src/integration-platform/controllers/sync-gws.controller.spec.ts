@@ -31,9 +31,9 @@ jest.mock('@trycompai/auth', () => ({
 }));
 
 jest.mock('@trycompai/integration-platform', () => {
-  const actual = jest.requireActual<typeof import('@trycompai/integration-platform')>(
-    '@trycompai/integration-platform',
-  );
+  const actual = jest.requireActual<
+    typeof import('@trycompai/integration-platform')
+  >('@trycompai/integration-platform');
   return {
     ...actual,
     getManifest: jest.fn().mockReturnValue({
@@ -193,7 +193,9 @@ describe('SyncController - Google Workspace employees', () => {
         email: 'new@example.com',
       });
       (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(null);
-      (mockedDb.member.create as jest.Mock).mockResolvedValue({ id: 'mem_new' });
+      (mockedDb.member.create as jest.Mock).mockResolvedValue({
+        id: 'mem_new',
+      });
       (mockedDb.member.findMany as jest.Mock).mockResolvedValue([]);
 
       const result = await controller.syncGoogleWorkspaceEmployees(
@@ -677,7 +679,7 @@ describe('SyncController - Google Workspace employees', () => {
         ],
       });
 
-      let callCount = 0;
+      const callCount = 0;
       (mockedDb.user.findUnique as jest.Mock).mockImplementation(
         ({ where }: { where: { email: string } }) => {
           const map: Record<string, unknown> = {
@@ -714,7 +716,9 @@ describe('SyncController - Google Workspace employees', () => {
           return Promise.resolve(map[where.userId] ?? null);
         },
       );
-      (mockedDb.member.create as jest.Mock).mockResolvedValue({ id: 'mem_new' });
+      (mockedDb.member.create as jest.Mock).mockResolvedValue({
+        id: 'mem_new',
+      });
 
       // Deactivation pass: suspended@example.com member is active in org
       (mockedDb.member.findMany as jest.Mock).mockResolvedValue([
@@ -782,9 +786,7 @@ describe('SyncController - Google Workspace employees', () => {
 
       expect(result.errors).toBe(1);
       expect(result.imported).toBe(0);
-      const detail = result.details.find(
-        (d) => d.email === 'fail@example.com',
-      );
+      const detail = result.details.find((d) => d.email === 'fail@example.com');
       expect(detail?.status).toBe('error');
       expect(detail?.reason).toBe('DB write failed');
     });

@@ -1,19 +1,31 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+import { Prisma } from '@db';
 import {
   registry,
   interpretDeclarativeCheck,
   type IntegrationManifest,
+  type IntegrationService,
   type AuthStrategy,
   type IntegrationCategory,
   type IntegrationCapability,
   type FindingSeverity,
   type CheckVariable,
 } from '@trycompai/integration-platform';
-import { DynamicIntegrationRepository, type DynamicIntegrationWithChecks } from '../repositories/dynamic-integration.repository';
+import {
+  DynamicIntegrationRepository,
+  type DynamicIntegrationWithChecks,
+} from '../repositories/dynamic-integration.repository';
 import type { DynamicCheck } from '@db';
 
 @Injectable()
-export class DynamicManifestLoaderService implements OnModuleInit {
+export class DynamicManifestLoaderService
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(DynamicManifestLoaderService.name);
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -24,15 +36,52 @@ export class DynamicManifestLoaderService implements OnModuleInit {
   async onModuleInit() {
     try {
       await this.loadDynamicManifests();
-      // Background refresh every 60 seconds as safety net
-      this.refreshTimer = setInterval(() => {
-        this.loadDynamicManifests().catch((err) => {
-          this.logger.error('Background refresh failed', err);
-        });
-      }, 60_000);
     } catch (error) {
-      this.logger.error('Failed to load dynamic manifests on boot', error);
+      this.logManifestLoadFailure(error, 'boot');
     }
+
+    // Always schedule refresh so manifests load after Postgres comes online (common in local dev).
+    this.refreshTimer = setInterval(() => {
+      this.loadDynamicManifests().catch((err) => {
+        if (this.isDatabaseUnavailable(err)) {
+          this.logger.debug(
+            'Dynamic manifests skipped: database still unreachable',
+          );
+          return;
+        }
+        this.logger.error(
+          'Background refresh of dynamic manifests failed',
+          err,
+        );
+      });
+    }, 60_000);
+  }
+
+  onModuleDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  }
+
+  private isDatabaseUnavailable(error: unknown): boolean {
+    if (error instanceof Prisma.PrismaClientInitializationError) {
+      return true;
+    }
+    if (error instanceof Error) {
+      return error.message.includes("Can't reach database server");
+    }
+    return false;
+  }
+
+  private logManifestLoadFailure(error: unknown, phase: 'boot') {
+    if (this.isDatabaseUnavailable(error)) {
+      this.logger.warn(
+        'Dynamic integration manifests not loaded: database unreachable. Start Postgres (e.g. packages/db docker) or set DATABASE_URL. Manifests will load when the DB is reachable.',
+      );
+      return;
+    }
+    this.logger.error(`Failed to load dynamic manifests on ${phase}`, error);
   }
 
   /**
@@ -55,7 +104,9 @@ export class DynamicManifestLoaderService implements OnModuleInit {
     }
 
     registry.refreshDynamic(manifests);
-    this.logger.log(`Loaded ${manifests.length} dynamic integrations into registry`);
+    this.logger.log(
+      `Loaded ${manifests.length} dynamic integrations into registry`,
+    );
   }
 
   /**
@@ -84,7 +135,10 @@ export class DynamicManifestLoaderService implements OnModuleInit {
 
     // Collect manifest-level variables from syncDefinition (if present)
     // These appear in the customer configuration UI (ManageIntegrationDialog)
-    const syncDef = integration.syncDefinition as Record<string, unknown> | null;
+    const syncDef = integration.syncDefinition as Record<
+      string,
+      unknown
+    > | null;
     const syncVariables = syncDef?.variables as CheckVariable[] | undefined;
 
     return {
@@ -96,10 +150,17 @@ export class DynamicManifestLoaderService implements OnModuleInit {
       docsUrl: integration.docsUrl ?? undefined,
       auth,
       baseUrl: integration.baseUrl ?? undefined,
-      defaultHeaders: (integration.defaultHeaders as Record<string, string>) ?? undefined,
-      capabilities: (integration.capabilities as unknown as IntegrationCapability[]) ?? ['checks'],
+      defaultHeaders:
+        (integration.defaultHeaders as Record<string, string>) ?? undefined,
+      capabilities:
+        (integration.capabilities as unknown as IntegrationCapability[]) ?? [
+          'checks',
+        ],
       supportsMultipleConnections: integration.supportsMultipleConnections,
-      variables: syncVariables && syncVariables.length > 0 ? syncVariables : undefined,
+      variables:
+        syncVariables && syncVariables.length > 0 ? syncVariables : undefined,
+      services:
+        (integration.services as IntegrationService[] | null) ?? undefined,
       checks,
       isActive: integration.isActive,
     };
@@ -116,10 +177,13 @@ export class DynamicManifestLoaderService implements OnModuleInit {
       id: check.checkSlug,
       name: check.name,
       description: check.description,
-      definition: definition as Parameters<typeof interpretDeclarativeCheck>[0]['definition'],
+      definition: definition as Parameters<
+        typeof interpretDeclarativeCheck
+      >[0]['definition'],
       taskMapping: check.taskMapping ?? undefined,
       defaultSeverity: (check.defaultSeverity as FindingSeverity) ?? 'medium',
       variables: variables && variables.length > 0 ? variables : undefined,
+      service: check.service ?? undefined,
     });
   }
 }

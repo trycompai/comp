@@ -11,7 +11,8 @@ import type { SecurityPenetrationTestsService } from './security-penetration-tes
 import type { Request as ExpressRequest } from 'express';
 
 describe('SecurityPenetrationTestsController', () => {
-  const originalWebhookBase = process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL;
+  const originalWebhookBase =
+    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL;
   const createReportMock = jest.fn();
   const listReportsMock = jest.fn();
   const getReportMock = jest.fn();
@@ -34,7 +35,8 @@ describe('SecurityPenetrationTestsController', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL = 'https://callback.example.com/webhook';
+    process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL =
+      'https://callback.example.com/webhook';
   });
 
   afterAll(() => {
@@ -110,7 +112,11 @@ describe('SecurityPenetrationTestsController', () => {
     });
     const responseMock = { set: jest.fn() };
 
-    const output = await controller.getReport('org_123', 'run_1', responseMock as never);
+    const output = await controller.getReport(
+      'org_123',
+      'run_1',
+      responseMock as never,
+    );
 
     expect(getReportOutputMock).toHaveBeenCalledWith('org_123', 'run_1');
     expect(responseMock.set).toHaveBeenCalledWith({
@@ -127,12 +133,17 @@ describe('SecurityPenetrationTestsController', () => {
     });
     const responseMock = { set: jest.fn() };
 
-    const output = await controller.getPdf('org_123', 'run_1', responseMock as never);
+    const output = await controller.getPdf(
+      'org_123',
+      'run_1',
+      responseMock as never,
+    );
 
     expect(getReportPdfMock).toHaveBeenCalledWith('org_123', 'run_1');
     expect(responseMock.set).toHaveBeenCalledWith({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="penetration-test-run_1.pdf"',
+      'Content-Disposition':
+        'attachment; filename="penetration-test-run_1.pdf"',
       'Cache-Control': 'no-store',
     });
     expect(output).toBeDefined();
@@ -153,13 +164,10 @@ describe('SecurityPenetrationTestsController', () => {
 
     await controller.handleWebhook(requestMock, webhookPayload);
 
-    expect(handleWebhookMock).toHaveBeenCalledWith(
-      webhookPayload,
-      {
-        webhookToken: undefined,
-        eventId: undefined,
-      },
-    );
+    expect(handleWebhookMock).toHaveBeenCalledWith(webhookPayload, {
+      webhookToken: undefined,
+      eventId: undefined,
+    });
   });
 
   it('accepts first query value from array form in webhook extraction', async () => {
@@ -177,13 +185,10 @@ describe('SecurityPenetrationTestsController', () => {
 
     await controller.handleWebhook(requestMock, webhookPayload);
 
-    expect(handleWebhookMock).toHaveBeenCalledWith(
-      webhookPayload,
-      {
-        webhookToken: 'query-token',
-        eventId: undefined,
-      },
-    );
+    expect(handleWebhookMock).toHaveBeenCalledWith(webhookPayload, {
+      webhookToken: 'query-token',
+      eventId: undefined,
+    });
   });
 
   it('passes webhook token and event id metadata into service handler', async () => {
@@ -201,12 +206,9 @@ describe('SecurityPenetrationTestsController', () => {
 
     await controller.handleWebhook(requestMock, webhookPayload);
 
-    expect(handleWebhookMock).toHaveBeenCalledWith(
-      webhookPayload,
-      {
-        webhookToken: 'query-token',
-        eventId: 'evt_123',
-      },
-    );
+    expect(handleWebhookMock).toHaveBeenCalledWith(webhookPayload, {
+      webhookToken: 'query-token',
+      eventId: 'evt_123',
+    });
   });
 });

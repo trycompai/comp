@@ -200,7 +200,7 @@ describe('PolicyPdfRendererService', () => {
       const result = service.renderPoliciesPdfBuffer(
         [
           {
-            name: 'Politique d\'Authentification',
+            name: "Politique d'Authentification",
             content: {
               type: 'doc',
               content: [
@@ -209,7 +209,7 @@ describe('PolicyPdfRendererService', () => {
                   content: [
                     {
                       type: 'text',
-                      text: '🇫🇷 Résumé des règles d\'authentification café',
+                      text: "🇫🇷 Résumé des règles d'authentification café",
                     },
                   ],
                 },

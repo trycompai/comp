@@ -162,12 +162,14 @@ export function TaskIntegrationChecks({
 
   const handleConfirmDisconnect = useCallback(async () => {
     if (!disconnectTarget) return;
-    const { connectionId, checkId, checkName } = disconnectTarget;
+    const { connectionId, checkId, checkName, integrationName } =
+      disconnectTarget;
+    const monitorName = integrationName || checkName;
     setTogglingCheck(checkId);
     setDisconnectError(null);
     try {
       await disconnectCheckFromTask(connectionId, checkId);
-      toast.success(`Disconnected "${checkName}" from this task.`);
+      toast.success(`Disconnected "${monitorName}" from this task.`);
       setDisconnectTarget(null);
     } catch (err) {
       console.error('Failed to disconnect check:', err);
@@ -196,6 +198,12 @@ export function TaskIntegrationChecks({
       }
     },
     [reconnectCheckToTask],
+  );
+
+  const getMonitorDisplayName = useCallback(
+    (check: Pick<TaskIntegrationCheck, 'integrationName' | 'checkName'>) =>
+      check.integrationName || check.checkName,
+    [],
   );
 
   if (loading) {
@@ -380,6 +388,7 @@ export function TaskIntegrationChecks({
                 const isRunning = runningCheck === check.checkId;
                 const isExpanded = expandedCheck === check.checkId;
                 const needsConfig = check.needsConfiguration;
+                const monitorName = getMonitorDisplayName(check);
 
                 // Determine status from latest run
                 const hasFailed = latestRun
@@ -459,8 +468,13 @@ export function TaskIntegrationChecks({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="font-semibold text-foreground text-sm tracking-tight">
-                            {check.checkName}
+                            {monitorName}
                           </p>
+                          {check.checkName !== monitorName && (
+                            <span className="text-xs text-muted-foreground">
+                              {check.checkName}
+                            </span>
+                          )}
                         </div>
                         {needsConfig ? (
                           <p className="text-xs text-muted-foreground mt-0.5">
@@ -640,6 +654,7 @@ export function TaskIntegrationChecks({
                 <div className="space-y-1">
                   {disabledForTaskChecks.map((check) => {
                     const isToggling = togglingCheck === check.checkId;
+                    const monitorName = getMonitorDisplayName(check);
                     return (
                       <div
                         key={`disabled-${check.integrationId}-${check.checkId}`}
@@ -655,7 +670,7 @@ export function TaskIntegrationChecks({
                           />
                           <div>
                             <p className="text-sm text-muted-foreground line-through">
-                              {check.checkName}
+                              {monitorName}
                             </p>
                             <p className="text-[11px] text-muted-foreground/80">
                               Will not run until reconnected
@@ -671,7 +686,7 @@ export function TaskIntegrationChecks({
                             handleReconnect(
                               check.connectionId!,
                               check.checkId,
-                              check.checkName,
+                              monitorName,
                             )
                           }
                         >
@@ -696,33 +711,36 @@ export function TaskIntegrationChecks({
                   More integrations available
                 </p>
                 <div className="space-y-1">
-                  {disconnectedChecks.map((check) => (
-                    <Link
-                      key={`${check.integrationId}-${check.checkId}`}
-                      href={`/${orgId}/integrations`}
-                      className={cn(
-                        'flex flex-row items-center justify-between py-2 px-3 rounded-md',
-                        'hover:bg-muted/50 transition-colors',
-                        'cursor-pointer group',
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Image
-                          src={check.integrationLogoUrl}
-                          alt={check.integrationName}
-                          width={20}
-                          height={20}
-                          className="rounded opacity-50 group-hover:opacity-100 transition-opacity"
-                        />
-                        <div>
-                          <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                            {check.checkName}
-                          </p>
+                  {disconnectedChecks.map((check) => {
+                    const monitorName = getMonitorDisplayName(check);
+                    return (
+                      <Link
+                        key={`${check.integrationId}-${check.checkId}`}
+                        href={`/${orgId}/integrations`}
+                        className={cn(
+                          'flex flex-row items-center justify-between py-2 px-3 rounded-md',
+                          'hover:bg-muted/50 transition-colors',
+                          'cursor-pointer group',
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Image
+                            src={check.integrationLogoUrl}
+                            alt={check.integrationName}
+                            width={20}
+                            height={20}
+                            className="rounded opacity-50 group-hover:opacity-100 transition-opacity"
+                          />
+                          <div>
+                            <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                              {monitorName}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <ExternalLink className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
-                    </Link>
-                  ))}
+                        <ExternalLink className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -748,11 +766,21 @@ export function TaskIntegrationChecks({
             <AlertDialogDescription>
               {disconnectTarget ? (
                 <>
-                  <strong>{disconnectTarget.checkName}</strong> from{' '}
-                  <strong>{disconnectTarget.integrationName}</strong> will no
-                  longer run for this task. The integration itself stays
-                  connected and will continue running for other tasks. You can
-                  reconnect it to this task at any time.
+                  <strong>
+                    {disconnectTarget.integrationName ||
+                      disconnectTarget.checkName}
+                  </strong>
+                  {disconnectTarget.checkName !==
+                    (disconnectTarget.integrationName ||
+                      disconnectTarget.checkName) && (
+                    <>
+                      {' '}
+                      (<strong>{disconnectTarget.checkName}</strong> check)
+                    </>
+                  )}{' '}
+                  will no longer run for this task. The integration itself
+                  stays connected and will continue running for other tasks. You
+                  can reconnect it to this task at any time.
                 </>
               ) : null}
             </AlertDialogDescription>

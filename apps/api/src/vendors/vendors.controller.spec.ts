@@ -59,9 +59,7 @@ describe('VendorsController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [VendorsController],
-      providers: [
-        { provide: VendorsService, useValue: mockVendorsService },
-      ],
+      providers: [{ provide: VendorsService, useValue: mockVendorsService }],
     })
       .overrideGuard(HybridAuthGuard)
       .useValue(mockGuard)
@@ -124,7 +122,10 @@ describe('VendorsController', () => {
     it('should not include authenticatedUser when userId is missing', async () => {
       mockVendorsService.findAllByOrganization.mockResolvedValue([]);
 
-      const result = await controller.getAllVendors('org_123', apiKeyAuthContext);
+      const result = await controller.getAllVendors(
+        'org_123',
+        apiKeyAuthContext,
+      );
 
       expect(result.authenticatedUser).toBeUndefined();
       expect(result.authType).toBe('api-key');
@@ -171,7 +172,11 @@ describe('VendorsController', () => {
   describe('createVendor', () => {
     it('should create a vendor and return with auth context', async () => {
       const dto = { name: 'New Vendor', category: 'SaaS' };
-      const createdVendor = { id: 'vnd_new', name: 'New Vendor', category: 'SaaS' };
+      const createdVendor = {
+        id: 'vnd_new',
+        name: 'New Vendor',
+        category: 'SaaS',
+      };
       mockVendorsService.create.mockResolvedValue(createdVendor);
 
       const result = await controller.createVendor(
@@ -280,7 +285,9 @@ describe('VendorsController', () => {
     });
 
     it('should pass undefined userId when auth context has no userId', async () => {
-      mockVendorsService.triggerAssessment.mockResolvedValue({ status: 'pending' });
+      mockVendorsService.triggerAssessment.mockResolvedValue({
+        status: 'pending',
+      });
 
       await controller.triggerAssessment('vnd_1', 'org_123', apiKeyAuthContext);
 

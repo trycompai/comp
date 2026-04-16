@@ -118,8 +118,7 @@ export class MemberQueries {
       updatePayload.fleetDmLabelId = null;
     }
 
-    const hasUserUpdates =
-      name !== undefined || email !== undefined;
+    const hasUserUpdates = name !== undefined || email !== undefined;
     const hasMemberUpdates = Object.keys(updatePayload).length > 0;
 
     // If we need to update both user and member, use a transaction

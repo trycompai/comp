@@ -13,26 +13,27 @@ const GENERAL_TRAINING_IDS = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
 const HIPAA_TRAINING_ID = 'hipaa-sat-1';
 
 export async function getOverviewScores(organizationId: string) {
-  const [allPolicies, allTasks, employees, onboarding, org, hipaaInstance] = await Promise.all([
-    db.policy.findMany({ where: { organizationId } }),
-    db.task.findMany({ where: { organizationId } }),
-    db.member.findMany({
-      where: { organizationId, deactivated: false },
-      include: { user: true },
-    }),
-    db.onboarding.findUnique({
-      where: { organizationId },
-      select: { triggerJobId: true },
-    }),
-    db.organization.findUnique({
-      where: { id: organizationId },
-      select: { securityTrainingStepEnabled: true },
-    }),
-    db.frameworkInstance.findFirst({
-      where: { organizationId, framework: { name: 'HIPAA' } },
-      select: { id: true },
-    }),
-  ]);
+  const [allPolicies, allTasks, employees, onboarding, org, hipaaInstance] =
+    await Promise.all([
+      db.policy.findMany({ where: { organizationId } }),
+      db.task.findMany({ where: { organizationId } }),
+      db.member.findMany({
+        where: { organizationId, deactivated: false },
+        include: { user: true },
+      }),
+      db.onboarding.findUnique({
+        where: { organizationId },
+        select: { triggerJobId: true },
+      }),
+      db.organization.findUnique({
+        where: { id: organizationId },
+        select: { securityTrainingStepEnabled: true },
+      }),
+      db.frameworkInstance.findFirst({
+        where: { organizationId, framework: { name: 'HIPAA' } },
+        select: { id: true },
+      }),
+    ]);
 
   const securityTrainingStepEnabled = org?.securityTrainingStepEnabled === true;
   const hasHipaaFramework = !!hipaaInstance;
@@ -56,14 +57,16 @@ export async function getOverviewScores(organizationId: string) {
   );
 
   // People score — filter to members with compliance:required permission
-  const activeEmployees = await filterComplianceMembers(employees, organizationId);
+  const activeEmployees = await filterComplianceMembers(
+    employees,
+    organizationId,
+  );
 
   let completedMembers = 0;
 
   if (activeEmployees.length > 0) {
     const requiredPolicies = allPolicies.filter(
-      (p) =>
-        p.isRequiredToSign && p.status === 'published' && !p.isArchived,
+      (p) => p.isRequiredToSign && p.status === 'published' && !p.isArchived,
     );
 
     const memberIds = activeEmployees.map((e) => e.id);
@@ -92,7 +95,11 @@ export async function getOverviewScores(organizationId: string) {
         ? completedVideoIds.includes(HIPAA_TRAINING_ID)
         : true;
 
-      if (hasAcceptedAllPolicies && hasCompletedAllTraining && hasCompletedHipaa) {
+      if (
+        hasAcceptedAllPolicies &&
+        hasCompletedAllTraining &&
+        hasCompletedHipaa
+      ) {
         completedMembers++;
       }
     }
@@ -138,18 +145,25 @@ async function computeDocumentsScore(organizationId: string) {
     };
   }
 
-  const includedForms = evidenceFormDefinitionList.filter((f) => !f.hidden && !f.optional);
+  const includedForms = evidenceFormDefinitionList.filter(
+    (f) => !f.hidden && !f.optional,
+  );
   const totalDocuments = includedForms.length;
   const outstandingDocuments = includedForms.reduce((count, form) => {
     if (form.type === 'meeting') {
       const allMeetingsOutstanding = meetingSubTypeValues.every((subType) => {
         const lastSubmitted = statuses[subType]?.lastSubmittedAt;
-        return !lastSubmitted || Date.now() - new Date(lastSubmitted).getTime() > SIX_MONTHS_MS;
+        return (
+          !lastSubmitted ||
+          Date.now() - new Date(lastSubmitted).getTime() > SIX_MONTHS_MS
+        );
       });
       return allMeetingsOutstanding ? count + 1 : count;
     }
     const lastSubmitted = statuses[form.type]?.lastSubmittedAt;
-    const isOutstanding = !lastSubmitted || Date.now() - new Date(lastSubmitted).getTime() > SIX_MONTHS_MS;
+    const isOutstanding =
+      !lastSubmitted ||
+      Date.now() - new Date(lastSubmitted).getTime() > SIX_MONTHS_MS;
     return isOutstanding ? count + 1 : count;
   }, 0);
 
@@ -184,10 +198,7 @@ async function getOrganizationFindings(organizationId: string) {
   }));
 }
 
-export async function getCurrentMember(
-  organizationId: string,
-  userId: string,
-) {
+export async function getCurrentMember(organizationId: string, userId: string) {
   const member = await db.member.findFirst({
     where: { userId, organizationId, deactivated: false },
     select: { id: true, role: true },

@@ -410,7 +410,12 @@ export class FindingNotifierService {
 
     try {
       // Check unsubscribe preferences
-      const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'findingNotifications', organizationId);
+      const isUnsubscribed = await isUserUnsubscribed(
+        db,
+        recipient.email,
+        'findingNotifications',
+        organizationId,
+      );
 
       if (isUnsubscribed) {
         this.logger.log(

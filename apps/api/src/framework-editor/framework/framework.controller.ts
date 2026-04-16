@@ -29,10 +29,7 @@ export class FrameworkEditorFrameworkController {
   ) {}
 
   @Get()
-  async findAll(
-    @Query('take') take?: string,
-    @Query('skip') skip?: string,
-  ) {
+  async findAll(@Query('take') take?: string, @Query('skip') skip?: string) {
     const limit = Math.min(Number(take) || 500, 500);
     const offset = Number(skip) || 0;
     return this.frameworkService.findAll(limit, offset);
@@ -100,10 +97,7 @@ export class FrameworkEditorFrameworkController {
   }
 
   @Post(':id/link-task/:taskId')
-  async linkTask(
-    @Param('id') id: string,
-    @Param('taskId') taskId: string,
-  ) {
+  async linkTask(@Param('id') id: string, @Param('taskId') taskId: string) {
     return this.frameworkService.linkTask(id, taskId);
   }
 

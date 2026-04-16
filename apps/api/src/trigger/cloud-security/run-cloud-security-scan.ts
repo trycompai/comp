@@ -22,20 +22,15 @@ export const runCloudSecurityScan = task({
 
     await tags.add([`org:${organizationId}`]);
 
-    logger.info(
-      `Starting cloud security scan for connection: ${connectionName}`,
-      {
-        connectionId,
-        provider: providerSlug,
-        organizationId,
-      },
-    );
-
     try {
-      // Verify connection is still active
+      // Verify connection is still active and resolve provider (payload may use legacy "platform")
       const connection = await db.integrationConnection.findUnique({
         where: { id: connectionId },
-        select: { id: true, status: true },
+        select: {
+          id: true,
+          status: true,
+          provider: { select: { slug: true } },
+        },
       });
 
       if (!connection) {
@@ -52,19 +47,43 @@ export const runCloudSecurityScan = task({
         };
       }
 
-      // Call the cloud security scan API endpoint
-      const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
+      const resolvedProviderSlug =
+        connection.provider?.slug ?? providerSlug;
 
+      logger.info(
+        `Starting cloud security scan for connection: ${connectionName}`,
+        {
+          connectionId,
+          payloadProviderSlug: providerSlug,
+          resolvedProviderSlug,
+          organizationId,
+        },
+      );
+
+      const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
+      const headers = {
+        'Content-Type': 'application/json',
+        'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+        'x-organization-id': organizationId,
+      };
+
+      // Auto-detect services before scanning (AWS via Cost Explorer, GCP via Service Usage API)
+      // Azure uses scan-based detection instead, so skip the pre-scan detect call
+      if (resolvedProviderSlug === 'aws' || resolvedProviderSlug === 'gcp') {
+        try {
+          await fetch(
+            `${apiUrl}/v1/cloud-security/detect-services/${connectionId}`,
+            { method: 'POST', headers },
+          );
+        } catch {
+          // Non-critical — scan proceeds even if detect fails
+        }
+      }
+
+      // Run the scan
       const response = await fetch(
         `${apiUrl}/v1/cloud-security/scan/${connectionId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
-            'x-organization-id': organizationId,
-          },
-        },
+        { method: 'POST', headers },
       );
 
       if (!response.ok) {

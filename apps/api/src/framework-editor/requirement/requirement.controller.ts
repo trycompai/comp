@@ -24,10 +24,7 @@ export class RequirementController {
   constructor(private readonly service: RequirementService) {}
 
   @Get()
-  async findAll(
-    @Query('take') take?: string,
-    @Query('skip') skip?: string,
-  ) {
+  async findAll(@Query('take') take?: string, @Query('skip') skip?: string) {
     const limit = Math.min(Number(take) || 500, 500);
     const offset = Number(skip) || 0;
     return this.service.findAll(limit, offset);
@@ -41,10 +38,7 @@ export class RequirementController {
 
   @Patch(':id')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateRequirementDto,
-  ) {
+  async update(@Param('id') id: string, @Body() dto: UpdateRequirementDto) {
     return this.service.update(id, dto);
   }
 

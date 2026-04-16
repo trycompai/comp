@@ -80,7 +80,9 @@ const { db, FindingType } = mockDbModule;
 
 describe('FindingNotifierService', () => {
   const mockedDb = db;
-  const mockedTriggerEmail = triggerEmail as jest.MockedFunction<typeof triggerEmail>;
+  const mockedTriggerEmail = triggerEmail as jest.MockedFunction<
+    typeof triggerEmail
+  >;
   const mockedIsUserUnsubscribed = isUserUnsubscribed as jest.MockedFunction<
     typeof isUserUnsubscribed
   >;

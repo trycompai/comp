@@ -69,9 +69,7 @@ export class DeviceAgentAuthService {
     );
 
     if (!stored) {
-      throw new UnauthorizedException(
-        'Invalid or expired authorization code',
-      );
+      throw new UnauthorizedException('Invalid or expired authorization code');
     }
 
     return {

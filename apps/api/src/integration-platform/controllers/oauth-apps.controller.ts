@@ -111,12 +111,7 @@ export class OAuthAppsController {
     @OrganizationId() organizationId: string,
     @Body() body: SaveOAuthAppDto,
   ) {
-    const {
-      providerSlug,
-      clientId,
-      clientSecret,
-      customScopes,
-    } = body;
+    const { providerSlug, clientId, clientSecret, customScopes } = body;
 
     // Validate provider
     const manifest = getManifest(providerSlug);

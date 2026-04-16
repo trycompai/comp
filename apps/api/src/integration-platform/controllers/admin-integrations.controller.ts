@@ -72,8 +72,11 @@ export class AdminIntegrationsController {
         encryptedClientId: credential?.encryptedClientId,
         encryptedClientSecret: credential?.encryptedClientSecret,
         existingCustomSettings:
-          (credential as { customSettings?: Record<string, unknown> } | undefined)
-            ?.customSettings || undefined,
+          (
+            credential as
+              | { customSettings?: Record<string, unknown> }
+              | undefined
+          )?.customSettings || undefined,
         ...(manifest.auth.type === 'oauth2' && {
           setupInstructions: manifest.auth.config.setupInstructions,
           createAppUrl: manifest.auth.config.createAppUrl,

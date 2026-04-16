@@ -16,6 +16,7 @@ import {
 import { Search } from '@trycompai/design-system/icons';
 import { useMemo, useState } from 'react';
 import { PoliciesTableDS } from './PoliciesTableDS';
+import { comparePoliciesByName } from './policy-name-sort';
 
 interface PolicyFiltersProps {
   policies: Policy[];
@@ -33,8 +34,8 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<PolicyStatus | 'all' | 'archived'>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
-  const [sortColumn, setSortColumn] = useState<'name' | 'status' | 'updatedAt'>('updatedAt');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sortColumn, setSortColumn] = useState<'name' | 'status' | 'updatedAt'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Get unique departments from policies
   const departments = useMemo(() => {
@@ -74,7 +75,7 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
     result.sort((a, b) => {
       let comparison = 0;
       if (sortColumn === 'name') {
-        comparison = a.name.localeCompare(b.name);
+        comparison = comparePoliciesByName(a, b);
       } else if (sortColumn === 'status') {
         comparison = a.status.localeCompare(b.status);
       } else if (sortColumn === 'updatedAt') {

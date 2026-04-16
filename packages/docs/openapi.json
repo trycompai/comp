@@ -15741,6 +15741,60 @@
         ]
       }
     },
+    "/v1/integrations/connections/{id}/services": {
+      "put": {
+        "operationId": "ConnectionsController_updateConnectionServices_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      },
+      "get": {
+        "operationId": "ServicesController_getConnectionServices_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
     "/v1/integrations/connections/{id}/credentials": {
       "put": {
         "operationId": "ConnectionsController_updateCredentials_v1",
@@ -16457,6 +16511,62 @@
         ]
       }
     },
+    "/v1/integrations/tasks/{taskId}/checks/disconnect": {
+      "post": {
+        "operationId": "TaskIntegrationsController_disconnectCheckFromTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/{taskId}/checks/reconnect": {
+      "post": {
+        "operationId": "TaskIntegrationsController_reconnectCheckToTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
     "/v1/integrations/tasks/{taskId}/runs": {
       "get": {
         "operationId": "TaskIntegrationsController_getTaskCheckRuns_v1",
@@ -16756,6 +16866,29 @@
         ]
       }
     },
+    "/v1/cloud-security/activity": {
+      "get": {
+        "operationId": "CloudSecurityController_getActivity_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
     "/v1/cloud-security/providers": {
       "get": {
         "operationId": "CloudSecurityController_getProviders_v1",
@@ -16787,6 +16920,167 @@
     "/v1/cloud-security/scan/{connectionId}": {
       "post": {
         "operationId": "CloudSecurityController_scan_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/detect-services/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_detectServices_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/detect-gcp-org/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_detectGcpOrg_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/select-gcp-projects/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_selectGcpProjects_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/setup-gcp/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_setupGcp_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/setup-gcp/{connectionId}/resolve-step": {
+      "post": {
+        "operationId": "CloudSecurityController_resolveGcpSetupStep_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/setup-azure/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_setupAzure_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/validate-azure/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_validateAzure_v1",
         "parameters": [
           {
             "name": "connectionId",
@@ -16909,6 +17203,194 @@
         },
         "tags": [
           "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/capabilities": {
+      "get": {
+        "operationId": "RemediationController_getCapabilities_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/preview": {
+      "post": {
+        "operationId": "RemediationController_preview_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/execute": {
+      "post": {
+        "operationId": "RemediationController_execute_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/{actionId}/rollback": {
+      "post": {
+        "operationId": "RemediationController_rollback_v1",
+        "parameters": [
+          {
+            "name": "actionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/actions": {
+      "get": {
+        "operationId": "RemediationController_getActions_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/batch/active": {
+      "get": {
+        "operationId": "RemediationController_getActiveBatch_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/batch": {
+      "post": {
+        "operationId": "RemediationController_createBatch_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/batch/{batchId}": {
+      "patch": {
+        "operationId": "RemediationController_updateBatch_v1",
+        "parameters": [
+          {
+            "name": "batchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/batch/{batchId}/skip/{findingId}": {
+      "post": {
+        "operationId": "RemediationController_skipFinding_v1",
+        "parameters": [
+          {
+            "name": "batchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "findingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Remediation"
         ]
       }
     },
@@ -19638,6 +20120,38 @@
         ]
       }
     },
+    "/v1/email/unsubscribe": {
+      "post": {
+        "operationId": "UnsubscribeController_unsubscribe_v1",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "One-click unsubscribe (RFC 8058)",
+        "tags": [
+          "Email - Unsubscribe"
+        ]
+      }
+    },
     "/v1/secrets": {
       "get": {
         "operationId": "SecretsController_listSecrets_v1",
@@ -20264,6 +20778,65 @@
           }
         },
         "summary": "List all organizations (platform admin)",
+        "tags": [
+          "Admin - Organizations"
+        ]
+      }
+    },
+    "/v1/admin/organizations/activity": {
+      "get": {
+        "operationId": "AdminOrganizationsController_activity_v1",
+        "parameters": [
+          {
+            "name": "inactiveDays",
+            "required": false,
+            "in": "query",
+            "description": "Filter orgs with no session in N days (default: 90)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hasAccess",
+            "required": false,
+            "in": "query",
+            "description": "Filter by hasAccess (true/false)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onboarded",
+            "required": false,
+            "in": "query",
+            "description": "Filter by onboardingCompleted (true/false)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Organization activity report - shows last session per org (platform admin)",
         "tags": [
           "Admin - Organizations"
         ]

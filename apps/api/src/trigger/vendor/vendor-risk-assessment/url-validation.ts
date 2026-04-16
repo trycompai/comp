@@ -3,10 +3,10 @@ import { getDomain } from 'tldts';
 
 // Well-known trust portal domains that vendors use to host their security pages
 const TRUSTED_PORTAL_DOMAINS = [
-  'trust.page',       // SafeBase
-  'vanta.com',        // Vanta trust centers
-  'drata.com',        // Drata trust centers
-  'safebase.io',      // SafeBase
+  'trust.page', // SafeBase
+  'vanta.com', // Vanta trust centers
+  'drata.com', // Drata trust centers
+  'safebase.io', // SafeBase
   'securityscorecard.com',
   'whistic.com',
   'conveyor.com',
@@ -32,7 +32,7 @@ export function isUrlFromVendorDomain(
     const parsed = new URL(url);
     const hostname = parsed.hostname.toLowerCase();
     const domain = vendorDomain.toLowerCase();
-    const vendorName = domain.split('.')[0]!; // "github" from "github.com"
+    const vendorName = domain.split('.')[0]; // "github" from "github.com"
 
     // Direct match: github.com or *.github.com
     if (hostname === domain || hostname.endsWith(`.${domain}`)) {
@@ -60,9 +60,7 @@ export function isUrlFromVendorDomain(
  * For example, "https://app.slack.com" → "slack.com".
  * Returns null if the URL is invalid.
  */
-export function extractVendorDomain(
-  website: string,
-): string | null {
+export function extractVendorDomain(website: string): string | null {
   try {
     const urlObj = new URL(
       /^https?:\/\//i.test(website) ? website : `https://${website}`,

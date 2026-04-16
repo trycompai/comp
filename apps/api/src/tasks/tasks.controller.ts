@@ -111,7 +111,11 @@ export class TasksController {
       },
     },
   })
-  @ApiQuery({ name: 'includeRelations', required: false, description: 'Include controls and automations with runs' })
+  @ApiQuery({
+    name: 'includeRelations',
+    required: false,
+    description: 'Include controls and automations with runs',
+  })
   async getTasks(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
@@ -134,12 +138,15 @@ export class TasksController {
   @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get task templates',
-    description: 'Retrieve all available task templates, optionally filtered by framework.',
+    description:
+      'Retrieve all available task templates, optionally filtered by framework.',
   })
-  @ApiQuery({ name: 'frameworkId', required: false, description: 'Filter templates by framework ID' })
-  async getTaskTemplates(
-    @Query('frameworkId') frameworkId?: string,
-  ) {
+  @ApiQuery({
+    name: 'frameworkId',
+    required: false,
+    description: 'Filter templates by framework ID',
+  })
+  async getTaskTemplates(@Query('frameworkId') frameworkId?: string) {
     return await this.tasksService.getTaskTemplates(frameworkId);
   }
 
@@ -421,7 +428,8 @@ export class TasksController {
   @ApiResponse({ status: 400, description: 'Invalid request body' })
   async reorderTasks(
     @OrganizationId() organizationId: string,
-    @Body() body: { updates: { id: string; order: number; status: TaskStatus }[] },
+    @Body()
+    body: { updates: { id: string; order: number; status: TaskStatus }[] },
   ): Promise<{ success: boolean }> {
     if (!Array.isArray(body.updates) || body.updates.length === 0) {
       throw new BadRequestException('updates must be a non-empty array');
@@ -605,9 +613,16 @@ export class TasksController {
 
     // Check assignment access for restricted roles
     // The task object from service includes assigneeId even though DTO doesn't declare it
-    const taskWithAssignee = task as TaskResponseDto & { assigneeId: string | null };
+    const taskWithAssignee = task as TaskResponseDto & {
+      assigneeId: string | null;
+    };
     if (
-      !hasTaskAccess(taskWithAssignee, authContext.memberId, authContext.userRoles, { isApiKey: authContext.isApiKey })
+      !hasTaskAccess(
+        taskWithAssignee,
+        authContext.memberId,
+        authContext.userRoles,
+        { isApiKey: authContext.isApiKey },
+      )
     ) {
       throw new ForbiddenException('You do not have access to this task');
     }

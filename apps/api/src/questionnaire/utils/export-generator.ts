@@ -68,7 +68,11 @@ export async function generateXLSX(
   // Add data rows
   for (let i = 0; i < questionsAndAnswers.length; i++) {
     const qa = questionsAndAnswers[i];
-    worksheet.addRow({ num: i + 1, question: qa.question, answer: qa.answer || '' });
+    worksheet.addRow({
+      num: i + 1,
+      question: qa.question,
+      answer: qa.answer || '',
+    });
   }
 
   const xlsxBuffer = await workbook.xlsx.writeBuffer();

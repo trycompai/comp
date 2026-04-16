@@ -35,7 +35,8 @@ export const TrainingCompletedEmail = ({
   return (
     <Html>
       <Tailwind>
-<Preview>Congratulations! You've completed your Security Awareness Training</Preview>
+        <head />
+        <Preview>Congratulations! You've completed your Security Awareness Training</Preview>
 
         <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container

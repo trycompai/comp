@@ -67,13 +67,13 @@ describe('SOAService', () => {
 
     it('throws NotFoundException when framework not found', async () => {
       mockDb.frameworkEditorFramework.findUnique.mockResolvedValue(null);
-      await expect(service.ensureSetup(dto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.ensureSetup(dto)).rejects.toThrow(NotFoundException);
     });
 
     it('returns success:false for non-ISO 27001 framework', async () => {
-      (mockDb.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue({
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({
         id: 'fw-1',
         name: 'SOC 2',
       });
@@ -83,14 +83,18 @@ describe('SOAService', () => {
     });
 
     it('throws InternalServerErrorException when config creation fails', async () => {
-      (mockDb.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue({
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({
         id: 'fw-1',
         name: 'ISO 27001',
       });
-      (mockDb.sOAFrameworkConfiguration.findFirst as jest.Mock).mockResolvedValue(null);
-      (mockDb.frameworkEditorFramework.findFirst as jest.Mock).mockRejectedValue(
-        new Error('DB error'),
-      );
+      (
+        mockDb.sOAFrameworkConfiguration.findFirst as jest.Mock
+      ).mockResolvedValue(null);
+      (
+        mockDb.frameworkEditorFramework.findFirst as jest.Mock
+      ).mockRejectedValue(new Error('DB error'));
       await expect(service.ensureSetup(dto)).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -98,15 +102,19 @@ describe('SOAService', () => {
 
     it('throws InternalServerErrorException when document creation fails', async () => {
       const config = { id: 'cfg-1', questions: [] };
-      (mockDb.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue({
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({
         id: 'fw-1',
         name: 'ISO 27001',
       });
-      (mockDb.sOAFrameworkConfiguration.findFirst as jest.Mock).mockResolvedValue(config);
+      (
+        mockDb.sOAFrameworkConfiguration.findFirst as jest.Mock
+      ).mockResolvedValue(config);
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
-      (mockDb.sOAFrameworkConfiguration.findUnique as jest.Mock).mockRejectedValue(
-        new Error('DB error'),
-      );
+      (
+        mockDb.sOAFrameworkConfiguration.findUnique as jest.Mock
+      ).mockRejectedValue(new Error('DB error'));
       await expect(service.ensureSetup(dto)).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -115,11 +123,15 @@ describe('SOAService', () => {
     it('returns existing document when setup already complete', async () => {
       const config = { id: 'cfg-1', questions: [{ id: 'q1' }] };
       const doc = { id: 'doc-1', answers: [] };
-      (mockDb.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue({
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({
         id: 'fw-1',
         name: 'ISO 27001',
       });
-      (mockDb.sOAFrameworkConfiguration.findFirst as jest.Mock).mockResolvedValue(config);
+      (
+        mockDb.sOAFrameworkConfiguration.findFirst as jest.Mock
+      ).mockResolvedValue(config);
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(doc);
       const result = await service.ensureSetup(dto);
       expect(result.success).toBe(true);
@@ -230,7 +242,9 @@ describe('SOAService', () => {
         userId: 'user-1',
         role: 'admin',
       });
-      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ role: 'admin' });
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({
+        role: 'admin',
+      });
       await expect(service.submitForApproval(dto)).rejects.toThrow(
         BadRequestException,
       );
