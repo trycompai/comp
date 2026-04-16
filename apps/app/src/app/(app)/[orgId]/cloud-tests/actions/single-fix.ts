@@ -6,7 +6,6 @@ import { headers } from 'next/headers';
 
 interface SingleFixInput {
   connectionId: string;
-  organizationId: string;
   checkResultId: string;
   remediationKey: string;
   acknowledgment?: string;
@@ -24,9 +23,14 @@ export async function startSingleFix(
       return { error: 'Unauthorized' };
     }
 
+    const organizationId = session.session?.activeOrganizationId;
+    if (!organizationId) {
+      return { error: 'No active organization' };
+    }
+
     const handle = await tasks.trigger('remediate-single', {
       connectionId: input.connectionId,
-      organizationId: input.organizationId,
+      organizationId,
       checkResultId: input.checkResultId,
       remediationKey: input.remediationKey,
       userId: session.user.id,

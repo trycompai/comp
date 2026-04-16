@@ -58,7 +58,7 @@ export const remediateSingle = task({
           connectionId,
           checkResultId,
           remediationKey,
-          acknowledgment: acknowledgment ?? 'acknowledged',
+          acknowledgment,
         }),
       });
 

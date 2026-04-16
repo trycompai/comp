@@ -12,7 +12,6 @@ import {
 } from '@trycompai/ui/dialog';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { AlertTriangle, ListOrdered, Loader2, RotateCcw } from 'lucide-react';
-import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { startSingleFix } from '../actions/single-fix';
@@ -269,7 +268,6 @@ export function RemediationDialog({
   onComplete,
 }: RemediationDialogProps) {
   const api = useApi();
-  const { orgId } = useParams<{ orgId: string }>();
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -399,7 +397,6 @@ export function RemediationDialog({
     try {
       const result = await startSingleFix({
         connectionId,
-        organizationId: orgId,
         checkResultId,
         remediationKey,
         acknowledgment: acknowledgment ?? undefined,
