@@ -10,6 +10,37 @@ import {
   setupFirecrawlClient,
 } from './firecrawl-agent-shared';
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object'
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+/**
+ * Firecrawl SDK responses occasionally wrap the structured result under
+ * different keys depending on SDK/runtime versions.
+ */
+function extractAgentPayloadCandidates(agentResponse: unknown): unknown[] {
+  const candidates: unknown[] = [];
+  const seen = new Set<unknown>();
+
+  const visit = (value: unknown) => {
+    if (value === undefined || seen.has(value)) return;
+    seen.add(value);
+    candidates.push(value);
+
+    const record = asRecord(value);
+    if (!record) return;
+
+    for (const key of ['data', 'output', 'result', 'response']) {
+      visit(record[key]);
+    }
+  };
+
+  visit(agentResponse);
+  return candidates;
+}
+
 export async function firecrawlResearchCore(params: {
   vendorName: string;
   vendorWebsite: string;
@@ -29,6 +60,11 @@ Extract the following information:
    - Whether it's currently active/verified, expired, or not certified
    - Any issue or expiry dates mentioned
    - Direct link to the certification report or trust page
+   - IMPORTANT: Trust pages often use tabs/anchors/sections (e.g. /trust-center#cloud-security) where certification badges are shown. Inspect those sections and capture every explicitly listed framework/certification.
+   - IMPORTANT: On SPA trust centers, open each trust-center section from the left navigation (e.g. NDAA Compliance, Cloud Security, Corporate Security). Do not stop at the top-level trust-center overview.
+   - If a certification/compliance claim is explicitly listed on the vendor's official trust center, mark it as "verified" unless the page explicitly says it is expired, historical, or no longer valid.
+   - Never use "not_certified" as a default/guess. Only set "not_certified" when the page explicitly states the vendor is not certified/compliant for that framework.
+   - If status is ambiguous, use "unknown" rather than "not_certified".
 
 2. **Security & Legal Links**: Find the direct URLs to these pages. IMPORTANT: Many vendors host their trust portal on a third-party platform (e.g., SafeBase at trust.page, Vanta, Drata, Whistic). Prefer the actual trust portal where customers can request security reports over documentation pages that just describe compliance processes.
    - **Trust Center / Security Portal**: The page where customers can review security posture and request compliance reports. This is NOT the docs page about security — it's the dedicated trust portal. Look for links labeled "Trust Center", "Security", "Trust Portal" in the site navigation or footer. It may be hosted on a subdomain (trust.${vendorDomain}, security.${vendorDomain}) or a third-party domain (e.g., ${vendorName.toLowerCase()}.trust.page, ${vendorName.toLowerCase()}.safebase.io). TIP: Try searching "${vendorName} trust portal" or "${vendorName} security trust center" to find it if not immediately visible on the site.
@@ -41,11 +77,10 @@ Extract the following information:
 
 Focus on the official website ${vendorWebsite} and its trust/security/compliance pages.`;
 
-  let agentResponse;
-  try {
-    agentResponse = await firecrawlClient.agent({
+  const runCoreAgent = async (urls: string[]) =>
+    firecrawlClient.agent({
       prompt,
-      urls: seedUrls,
+      urls,
       strictConstrainToURLs: false,
       maxCredits: 2500,
       timeout: 360,
@@ -139,12 +174,55 @@ Focus on the official website ${vendorWebsite} and its trust/security/compliance
         required: ['security_assessment'],
       },
     });
+
+  let agentResponse;
+  try {
+    agentResponse = await runCoreAgent(seedUrls);
   } catch (error) {
     return handleFirecrawlError(error, {
       vendorName,
       vendorWebsite,
       callType: 'core',
     });
+  }
+
+  const responseErrorMessage =
+    typeof agentResponse.error === 'string'
+      ? agentResponse.error
+      : String(agentResponse.error ?? '');
+  const shouldRetryFetchFailed =
+    agentResponse.status === 'failed' &&
+    /fetch failed/i.test(responseErrorMessage);
+
+  if (shouldRetryFetchFailed) {
+    const retryUrls = Array.from(
+      new Set([
+        ...seedUrls,
+        `https://${vendorDomain}`,
+        `https://${vendorDomain}/trust-center`,
+        `https://${vendorDomain}/trust-center#cloud-security`,
+        `https://www.${vendorDomain}`,
+        `https://www.${vendorDomain}/trust-center`,
+        `https://www.${vendorDomain}/trust-center#cloud-security`,
+      ]),
+    );
+
+    logger.warn('Firecrawl core research fetch failed; retrying once', {
+      vendorWebsite,
+      originalStatus: agentResponse.status,
+      originalError: responseErrorMessage,
+      retryUrlCount: retryUrls.length,
+    });
+
+    try {
+      agentResponse = await runCoreAgent(retryUrls);
+    } catch (error) {
+      return handleFirecrawlError(error, {
+        vendorName,
+        vendorWebsite,
+        callType: 'core_retry',
+      });
+    }
   }
 
   if (!agentResponse.success || agentResponse.status === 'failed') {
@@ -156,14 +234,28 @@ Focus on the official website ${vendorWebsite} and its trust/security/compliance
     return null;
   }
 
-  const parsed = vendorRiskAssessmentAgentSchema.safeParse(agentResponse.data);
-  if (!parsed.success) {
+  const payloadCandidates = extractAgentPayloadCandidates(agentResponse);
+  const parseAttempts = payloadCandidates.map((candidate) => ({
+    candidate,
+    result: vendorRiskAssessmentAgentSchema.safeParse(candidate),
+  }));
+  const parsedAttempt = parseAttempts.find((attempt) => attempt.result.success);
+
+  if (!parsedAttempt || !parsedAttempt.result.success) {
+    const responseRecord = asRecord(agentResponse);
+    const firstAttempt = parseAttempts[0]?.result;
+    const primaryIssues =
+      firstAttempt && !firstAttempt.success ? firstAttempt.error.issues : [];
+
     logger.warn('Firecrawl core research returned invalid data shape', {
       vendorWebsite,
-      issues: parsed.error.issues,
+      issues: primaryIssues,
+      payloadCandidateCount: payloadCandidates.length,
+      responseKeys: responseRecord ? Object.keys(responseRecord) : [],
     });
     return null;
   }
+  const parsed = parsedAttempt.result;
 
   const links = parsed.data.links ?? null;
   const linkPairs: Array<{ label: string; url: string }> = [];

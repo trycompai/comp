@@ -69,17 +69,46 @@ export function setupFirecrawlClient(params: {
 
   const firecrawlClient = new Firecrawl({ apiKey });
 
-  const seedUrls = [
-    origin,
-    `${origin}/privacy`,
-    `${origin}/privacy-policy`,
-    `${origin}/terms`,
-    `${origin}/terms-of-service`,
-    `${origin}/security`,
-    `${origin}/trust`,
-    `${origin}/legal`,
-    `${origin}/compliance`,
+  const origins = new Set<string>([origin]);
+  try {
+    const originUrl = new URL(origin);
+    const host = originUrl.hostname.toLowerCase();
+    // Firecrawl can occasionally fail on apex hosts even when the canonical
+    // site is served from www.<domain>. Include a safe fallback origin.
+    if (host === vendorDomain) {
+      origins.add(`${originUrl.protocol}//www.${vendorDomain}`);
+    }
+  } catch {
+    // Keep existing origin-only behavior if URL parsing unexpectedly fails.
+  }
+
+  const seedUrlsFromOrigin = (baseOrigin: string): string[] => [
+    baseOrigin,
+    `${baseOrigin}/trust`,
+    `${baseOrigin}/trust-center`,
+    `${baseOrigin}/trust-center#cloud-security`,
+    `${baseOrigin}/trust-center#corporate-security`,
+    `${baseOrigin}/trust-center#ndaa-compliance`,
+    `${baseOrigin}/security`,
+    `${baseOrigin}/security/trust-center`,
+    `${baseOrigin}/security/compliance`,
+    `${baseOrigin}/security-and-compliance`,
+    `${baseOrigin}/compliance`,
+    `${baseOrigin}/compliance/security`,
+    `${baseOrigin}/privacy`,
+    `${baseOrigin}/privacy-policy`,
+    `${baseOrigin}/terms`,
+    `${baseOrigin}/terms-of-service`,
+    `${baseOrigin}/legal`,
   ];
+
+  const seedUrls = Array.from(
+    new Set([
+      ...Array.from(origins).flatMap((baseOrigin) =>
+        seedUrlsFromOrigin(baseOrigin),
+      ),
+    ]),
+  );
 
   return { firecrawlClient, origin, vendorDomain, seedUrls };
 }
