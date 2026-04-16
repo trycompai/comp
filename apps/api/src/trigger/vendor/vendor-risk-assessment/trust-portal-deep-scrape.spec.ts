@@ -328,4 +328,93 @@ describe('deepScrapeTrustPortal — extraction', () => {
       'SOC 2 Type II',
     ]);
   });
+
+  it('escapes CSS special characters in anchor selectors', async () => {
+    // Use a backslash in the anchor: `\` is a CSS special character that must
+    // be escaped as `\\` inside attribute values, and it survives URL parsing
+    // (unlike `"` which browsers percent-encode to `%22` in the fragment).
+    const scrape: ScrapeMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        markdown: '# Landing',
+        links: ['https://acme.com/trust#weird\\section'],
+      })
+      .mockResolvedValueOnce({ markdown: '# Weird\nWe are ISO 27001 certified.' });
+
+    generateObjectMock.mockResolvedValueOnce({
+      object: {
+        certifications: [
+          {
+            type: 'ISO 27001',
+            status: 'verified',
+            evidence_snippet: 'ISO 27001 certified',
+          },
+        ],
+      },
+    });
+
+    await deepScrapeTrustPortal({
+      vendorName: 'Acme',
+      vendorDomain: 'acme.com',
+      sourceUrl: 'https://acme.com/trust',
+      firecrawlClient: makeFirecrawlMock(scrape),
+    });
+
+    // The second call is the section scrape. Its selector should contain the
+    // escaped backslash (`\\`) not the raw single backslash.
+    const sectionCall = scrape.mock.calls[1];
+    const actions = (sectionCall[1] as { actions?: Array<{ type: string; selector?: string }> })?.actions ?? [];
+    const clickAction = actions.find((a) => a.type === 'click');
+    expect(clickAction?.selector).toBeDefined();
+    // cssEscapeAttr converts `\` → `\\`, so the selector contains `\\section`
+    expect(clickAction?.selector).toContain('#weird\\\\section');
+    // Raw single backslash should NOT appear unescaped in the selector string
+    expect(clickAction?.selector).not.toMatch(/#weird\\[^\\]/);
+  });
+
+  it('scrapes every section exactly once when section count exceeds concurrency bound', async () => {
+    const anchors = Array.from({ length: 8 }, (_, i) => `#section-${i}`);
+    const sourceUrl = 'https://acme.com/trust';
+
+    const scrape: ScrapeMock = jest.fn(async (url: string) => {
+      if (url === sourceUrl) {
+        return {
+          markdown: '# Landing',
+          links: anchors.map((a) => `${sourceUrl}${a}`),
+        };
+      }
+      return { markdown: `# ${url}\nplaceholder` };
+    }) as ScrapeMock;
+
+    generateObjectMock.mockResolvedValueOnce({
+      object: {
+        certifications: [
+          {
+            type: 'SOC 2 Type II',
+            status: 'verified',
+            evidence_snippet: 'SOC 2 Type II',
+          },
+        ],
+      },
+    });
+
+    await deepScrapeTrustPortal({
+      vendorName: 'Acme',
+      vendorDomain: 'acme.com',
+      sourceUrl,
+      firecrawlClient: makeFirecrawlMock(scrape),
+    });
+
+    // 1 initial + 8 sections = 9 scrape calls
+    expect(scrape).toHaveBeenCalledTimes(9);
+
+    // Each section URL should have been requested exactly once.
+    const sectionCalls = scrape.mock.calls
+      .slice(1)
+      .map((call) => call[0] as string);
+    expect(new Set(sectionCalls).size).toBe(8);
+    for (const anchor of anchors) {
+      expect(sectionCalls).toContain(`${sourceUrl}${anchor}`);
+    }
+  });
 });

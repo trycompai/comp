@@ -81,12 +81,19 @@ function buildInitialScrapeOptions() {
   };
 }
 
+// Escape `"` and `\` for use inside a CSS double-quoted attribute value.
+function cssEscapeAttr(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 function buildSectionScrapeOptions(section: DeepScrapeSection) {
   if (section.anchor) {
+    const safeAnchor = cssEscapeAttr(section.anchor);
+    const safeLabel = cssEscapeAttr(section.label);
     const selector = [
-      `a[href="${section.anchor}"]`,
-      `a[href$="${section.anchor}"]`,
-      `[data-tab="${section.label}"]`,
+      `a[href="${safeAnchor}"]`,
+      `a[href$="${safeAnchor}"]`,
+      `[data-tab="${safeLabel}"]`,
     ].join(', ');
     return {
       formats: ['markdown'] as const,
@@ -174,7 +181,6 @@ export async function deepScrapeTrustPortal(
     vendorName,
     sourceUrl,
   });
-
   // 1. Initial scrape
   let initial: ScrapeResponse;
   try {
@@ -193,16 +199,13 @@ export async function deepScrapeTrustPortal(
 
   const initialMarkdown = initial.markdown ?? '';
   const links = Array.isArray(initial.links) ? initial.links : [];
-
   // 2. Discover sections
   const sections = discoverSectionUrls({ sourceUrl, links });
-
   logger.info('Trust portal deep-scrape: sections discovered', {
     vendorName,
     sectionCount: sections.length,
     sections: sections.map((s) => s.label),
   });
-
   // 3. Per-section scrapes (bounded concurrency)
   const sectionResults = await mapWithConcurrency(
     sections,
@@ -251,7 +254,6 @@ export async function deepScrapeTrustPortal(
     );
     return null;
   }
-
   // 4. AI extraction
   type ExtractedCert = {
     type: string; status: VendorRiskAssessmentCertificationStatus;
