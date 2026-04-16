@@ -13,13 +13,14 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { AdminOrganizationsService } from './admin-organizations.service';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
 import { InviteMemberDto } from './dto/invite-member.dto';
 
+@ApiExcludeController()
 @ApiTags('Admin - Organizations')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)

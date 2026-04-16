@@ -11,7 +11,7 @@ import {
   ValidationPipe,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { db } from '@db';
 import {
@@ -32,6 +32,7 @@ interface UpdatePolicyBody {
   frequency?: string | null;
 }
 
+@ApiExcludeController()
 @ApiTags('Admin - Policies')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)
