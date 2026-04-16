@@ -49,6 +49,29 @@ function extractAgentPayloadCandidates(agentResponse: unknown): unknown[] {
   return candidates;
 }
 
+/**
+ * Every field in the agent schema is optional, so parsing an outer wrapper
+ * object (which contains no known keys) will succeed as an empty object.
+ * Score candidates by how many schema fields were actually populated so we
+ * prefer the inner payload over the wrapper.
+ */
+function countPopulatedAgentFields(parsed: unknown): number {
+  if (!parsed || typeof parsed !== 'object') return 0;
+  let count = 0;
+  for (const value of Object.values(parsed as Record<string, unknown>)) {
+    if (value === null || value === undefined) continue;
+    if (Array.isArray(value) && value.length === 0) continue;
+    if (
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      Object.keys(value as Record<string, unknown>).length === 0
+    )
+      continue;
+    count += 1;
+  }
+  return count;
+}
+
 export async function firecrawlResearchCore(params: {
   vendorName: string;
   vendorWebsite: string;
@@ -167,7 +190,21 @@ export async function firecrawlResearchCore(params: {
     candidate,
     result: vendorRiskAssessmentAgentSchema.safeParse(candidate),
   }));
-  const parsedAttempt = parseAttempts.find((attempt) => attempt.result.success);
+  // Pick the candidate that parsed successfully AND populated the most
+  // fields. Every schema field is optional, so the outer wrapper parses
+  // as {} and would otherwise win over the nested `.data` payload — which
+  // is exactly what was dropping real agent output on the floor.
+  const successfulAttempts = parseAttempts.filter((a) => a.result.success);
+  const parsedAttempt = successfulAttempts.reduce<
+    (typeof successfulAttempts)[number] | null
+  >((best, curr) => {
+    if (!curr.result.success) return best;
+    if (!best || !best.result.success) return curr;
+    return countPopulatedAgentFields(curr.result.data) >
+      countPopulatedAgentFields(best.result.data)
+      ? curr
+      : best;
+  }, null);
 
   if (!parsedAttempt || !parsedAttempt.result.success) {
     const responseRecord = asRecord(agentResponse);
