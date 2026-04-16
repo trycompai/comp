@@ -213,6 +213,20 @@ Focus on the official website ${vendorWebsite} and its trust/security/compliance
       url: validateVendorUrl(c.url ?? null, vendorDomain, `cert:${c.type}`),
     })) ?? [];
 
+  logger.info('Firecrawl Agent returned — pre-deep-scrape snapshot', {
+    vendorWebsite,
+    rawAgentLinks: links,
+    normalizedLinks,
+    agentCertifications: certifications.map((c) => ({
+      type: c.type,
+      status: c.status,
+      url: c.url,
+    })),
+    verifiedAgentCertCount: certifications.filter(
+      (c) => c.status === 'verified',
+    ).length,
+  });
+
   const deepScrapeSourceUrl = pickDeepScrapeSourceUrl({
     vendorDomain,
     links: normalizedLinks,
@@ -222,6 +236,11 @@ Focus on the official website ${vendorWebsite} and its trust/security/compliance
   let mergedCertifications: VendorRiskAssessmentCertification[] =
     certifications;
   if (deepScrapeSourceUrl) {
+    logger.info('Trust portal deep-scrape: source URL resolved', {
+      vendorWebsite,
+      vendorDomain,
+      sourceUrl: deepScrapeSourceUrl,
+    });
     const deepCerts = await deepScrapeTrustPortal({
       vendorName,
       vendorDomain,
@@ -235,8 +254,36 @@ Focus on the official website ${vendorWebsite} and its trust/security/compliance
         coreCount: certifications.length,
         deepCount: deepCerts.length,
         mergedCount: mergedCertifications.length,
+        mergedTypes: mergedCertifications.map((c) => ({
+          type: c.type,
+          status: c.status,
+        })),
       });
+    } else {
+      logger.info(
+        'Trust portal deep-scrape returned no certifications — keeping Agent result',
+        {
+          vendorWebsite,
+          deepReturnedNull: deepCerts === null,
+          deepReturnedEmpty: Array.isArray(deepCerts) && deepCerts.length === 0,
+        },
+      );
     }
+  } else {
+    logger.info(
+      'Trust portal deep-scrape skipped: pickDeepScrapeSourceUrl found no usable URL on vendor domain',
+      {
+        vendorWebsite,
+        vendorDomain,
+        availableLinks: normalizedLinks.map((l) => ({
+          label: l.label,
+          url: l.url,
+        })),
+        verifiedCertsWithUrls: certifications
+          .filter((c) => c.status === 'verified' && c.url)
+          .map((c) => ({ type: c.type, url: c.url })),
+      },
+    );
   }
 
   logger.info('Firecrawl core research completed', {

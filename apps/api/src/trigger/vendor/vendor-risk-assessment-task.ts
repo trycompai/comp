@@ -1061,7 +1061,20 @@ export const vendorRiskAssessmentTask: Task<
           badgeCount: Array.isArray(complianceBadges)
             ? complianceBadges.length
             : 0,
+          complianceBadges,
           hasLogo: Boolean(logoUrl),
+          certificationsInAssessment: Array.isArray(
+            (coreData as { certifications?: unknown })?.certifications,
+          )
+            ? (
+                coreData as {
+                  certifications?: Array<{ type: string; status: string }>;
+                }
+              ).certifications?.map((c) => ({
+                type: c.type,
+                status: c.status,
+              }))
+            : [],
         });
 
         // Update vendor with core data (keep status in_progress — news may still be loading)
