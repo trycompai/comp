@@ -15,6 +15,13 @@ import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
 let app: INestApplication | null = null;
 
+function describeServer(baseUrl: string): string {
+  if (baseUrl.includes('api.staging.trycomp.ai')) return 'Staging API Server';
+  if (baseUrl.includes('api.trycomp.ai')) return 'Production API Server';
+  if (baseUrl.startsWith('http://localhost')) return 'Local API Server';
+  return 'API Server';
+}
+
 async function bootstrap(): Promise<void> {
   // Disable body parser - required for better-auth NestJS integration
   // The library will re-add body parsers after handling auth routes
@@ -113,12 +120,14 @@ async function bootstrap(): Promise<void> {
   // Get server configuration from environment variables
   const port = process.env.PORT ?? 3333;
 
-  // Swagger/OpenAPI configuration
+  // Swagger/OpenAPI configuration — single server derived from BASE_URL
+  const baseUrl = process.env.BASE_URL ?? `http://localhost:${port}`;
+  const serverDescription = describeServer(baseUrl);
+
   const config = new DocumentBuilder()
     .setTitle('API Documentation')
     .setDescription('The API documentation for this application')
     .setVersion('1.0')
-    .addServer('http://localhost:3333', 'Local API Server')
     .addApiKey(
       {
         type: 'apiKey',
@@ -128,7 +137,7 @@ async function bootstrap(): Promise<void> {
       },
       'apikey',
     )
-    .addServer('https://api.trycomp.ai', 'API Server')
+    .addServer(baseUrl, serverDescription)
     .build();
   const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
 

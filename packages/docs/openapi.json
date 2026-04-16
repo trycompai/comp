@@ -20375,10 +20375,6 @@
     {
       "url": "http://localhost:3333",
       "description": "Local API Server"
-    },
-    {
-      "url": "https://api.trycomp.ai",
-      "description": "API Server"
     }
   ],
   "components": {

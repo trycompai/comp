@@ -121,11 +121,19 @@ maybeDescribe('Generate openapi.json', () => {
   });
 
   it('writes openapi.json without excluded paths', () => {
+    const baseUrl = process.env.BASE_URL ?? 'http://localhost:3333';
+    const serverDescription = baseUrl.includes('api.staging.trycomp.ai')
+      ? 'Staging API Server'
+      : baseUrl.includes('api.trycomp.ai')
+        ? 'Production API Server'
+        : baseUrl.startsWith('http://localhost')
+          ? 'Local API Server'
+          : 'API Server';
+
     const config = new DocumentBuilder()
       .setTitle('API Documentation')
       .setDescription('The API documentation for this application')
       .setVersion('1.0')
-      .addServer('http://localhost:3333', 'Local API Server')
       .addApiKey(
         {
           type: 'apiKey',
@@ -135,7 +143,7 @@ maybeDescribe('Generate openapi.json', () => {
         },
         'apikey',
       )
-      .addServer('https://api.trycomp.ai', 'API Server')
+      .addServer(baseUrl, serverDescription)
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
