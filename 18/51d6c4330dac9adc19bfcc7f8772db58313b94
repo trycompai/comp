@@ -1,0 +1,27 @@
+apps/api/src/trust-portal/domain-verification.ts
+  5647a86fe776173b 43,46-49,54-58,60,62
+apps/api/src/trust-portal/trust-portal.service.ts
+  5647a86fe776173b 29,1112
+apps/api/src/trust-portal/domain-verification.spec.ts
+  5647a86fe776173b 1,161-162,164,171,173-174,177,180,182,191,198
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "1851d6c4330dac9adc19bfcc7f8772db58313b94",
+  "prompts": {
+    "5647a86fe776173b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "481da50f-7c62-476a-b82a-d8f7ac03e709",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 230,
+      "total_deletions": 2236,
+      "accepted_lines": 268,
+      "overriden_lines": 0
+    }
+  }
+}
