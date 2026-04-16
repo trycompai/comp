@@ -81,7 +81,11 @@ Search the company's blog, newsroom, press releases, and reputable tech news sou
       urls: [origin, `${origin}/blog`, `${origin}/newsroom`, `${origin}/press`],
       strictConstrainToURLs: false,
       maxCredits: 2500,
-      timeout: 360,
+      // SDK polls this long before returning whatever status it has.
+      // Matches core agent timeout (25 min) — news agent was hitting 360s
+      // for slow vendor sites and silently returning processing state as
+      // "no news items."
+      timeout: 1500,
       pollInterval: 5,
       ...({ model: 'spark-1-pro' } as Record<string, unknown>),
       schema: newsResponseSchema,
@@ -94,11 +98,32 @@ Search the company's blog, newsroom, press releases, and reputable tech news sou
     });
   }
 
-  if (!agentResponse.success || agentResponse.status === 'failed') {
+  logger.info('Firecrawl News Agent raw response received', {
+    vendorWebsite,
+    agentSuccess: agentResponse.success,
+    agentStatus: agentResponse.status,
+    agentError:
+      typeof agentResponse.error === 'string'
+        ? agentResponse.error
+        : agentResponse.error
+          ? JSON.stringify(agentResponse.error)
+          : null,
+    agentResponseKeys: Object.keys(
+      (agentResponse as Record<string, unknown>) ?? {},
+    ),
+    agentResponseJson: JSON.stringify(agentResponse).slice(0, 4000),
+  });
+
+  if (!agentResponse.success || agentResponse.status !== 'completed') {
+    const isProcessing = agentResponse.status === 'processing';
     logger.warn('Firecrawl news research job did not complete successfully', {
       vendorWebsite,
       status: agentResponse.status,
+      success: agentResponse.success,
       error: agentResponse.error,
+      note: isProcessing
+        ? 'SDK returned while the news agent job is still running on Firecrawl. Bump timeout, or poll with getAgentStatus.'
+        : undefined,
     });
     return null;
   }
@@ -110,6 +135,12 @@ Search the company's blog, newsroom, press releases, and reputable tech news sou
   if (!Array.isArray(rawNews) || rawNews.length === 0) {
     logger.info('Firecrawl news research returned no news items', {
       vendorWebsite,
+      agentDataKeys: data ? Object.keys(data) : [],
+      rawNewsType: Array.isArray(rawNews)
+        ? 'empty-array'
+        : rawNews === undefined
+          ? 'undefined'
+          : typeof rawNews,
     });
     return null;
   }
