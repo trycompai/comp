@@ -98,6 +98,31 @@ export async function checkAutoCompletePhases({
   organizationId: string;
   timelinesService: TimelinesService;
 }) {
+  try {
+    await runPhaseAdvancement({ organizationId, timelinesService });
+  } finally {
+    // Always reconcile — handles regressions on COMPLETED phases, which
+    // runPhaseAdvancement skips via its early return when no phase is
+    // IN_PROGRESS. Without this, a metric drop on an already-completed
+    // phase would be missed by every event hook.
+    await timelinesService
+      .reconcileAutoPhasesForOrganization(organizationId)
+      .catch((err) =>
+        logger.warn(
+          'reconcileAutoPhasesForOrganization failed',
+          err instanceof Error ? err.message : err,
+        ),
+      );
+  }
+}
+
+async function runPhaseAdvancement({
+  organizationId,
+  timelinesService,
+}: {
+  organizationId: string;
+  timelinesService: TimelinesService;
+}) {
   const autoTypes = [
     PhaseCompletionType.AUTO_TASKS,
     PhaseCompletionType.AUTO_POLICIES,
@@ -330,17 +355,4 @@ export async function checkAutoCompletePhases({
       );
     }
   }
-
-  // After per-phase completion attempts, run the full org-level
-  // reconciliation so metric drops (regressions) also get picked up.
-  // Without this, only event-driven advances would apply — regressions
-  // previously happened in the GET /timelines read path, which is now pure.
-  await timelinesService
-    .reconcileAutoPhasesForOrganization(organizationId)
-    .catch((err) =>
-      logger.warn(
-        'reconcileAutoPhasesForOrganization failed',
-        err instanceof Error ? err.message : err,
-      ),
-    );
 }
