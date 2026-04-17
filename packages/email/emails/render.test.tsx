@@ -1,6 +1,7 @@
 import { render } from '@react-email/render';
 import { describe, expect, it } from 'vitest';
 import { AllPolicyNotificationEmail } from './all-policy-notification';
+import { PolicyAcknowledgmentDigestEmail } from './policy-acknowledgment-digest';
 import { InviteEmail } from './invite';
 import { InvitePortalEmail } from './invite-portal';
 import { MagicLinkEmail } from './magic-link';
@@ -140,6 +141,29 @@ const cases = [
         organizationId="org_123"
         removedMemberName="Former"
         unassignedItems={[{ type: 'task', id: 't1', name: 'Task' }]}
+      />
+    ),
+  },
+  {
+    name: 'policy-acknowledgment-digest',
+    el: (
+      <PolicyAcknowledgmentDigestEmail
+        email="user@example.com"
+        userName="User"
+        organizationName="Acme"
+        organizationId="org_123"
+        policies={[
+          {
+            id: 'p1',
+            name: 'Acceptable Use Policy',
+            url: 'https://portal.trycomp.ai/org_123/policy/p1',
+          },
+          {
+            id: 'p2',
+            name: 'Security Policy',
+            url: 'https://portal.trycomp.ai/org_123/policy/p2',
+          },
+        ]}
       />
     ),
   },

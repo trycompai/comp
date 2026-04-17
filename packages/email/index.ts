@@ -1,5 +1,6 @@
 // Email templates
 export * from './emails/all-policy-notification';
+export * from './emails/policy-acknowledgment-digest';
 export * from './emails/invite';
 export * from './emails/invite-portal';
 export * from './emails/magic-link';
