@@ -1,0 +1,31 @@
+packages/db/prisma/migrations/20260417170048_add_policy_acknowledgments/migration.sql
+  a610da88f606d7de 1-49
+packages/db/prisma/schema/policy-acknowledgment.prisma
+  a610da88f606d7de 1-16
+packages/db/prisma/schema/policy.prisma
+  a610da88f606d7de 73-74
+packages/db/prisma/schema/auth.prisma
+  a610da88f606d7de 118
+packages/db/prisma/schema/organization.prisma
+  a610da88f606d7de 35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "870fc43efcdf07bdcbf638369775ec1c5f8361e7",
+  "prompts": {
+    "a610da88f606d7de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6cc4163b-915a-4c8c-8fd6-cc849d7421e5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 183462,
+      "total_deletions": 116,
+      "accepted_lines": 183346,
+      "overriden_lines": 0
+    }
+  }
+}
