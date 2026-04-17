@@ -104,7 +104,7 @@ export class PoliciesService {
     });
 
     if (draftPolicies.length === 0) {
-      return { success: true, publishedCount: 0 };
+      return { success: true, publishedCount: 0, members: [] };
     }
 
     const now = new Date();
@@ -144,7 +144,28 @@ export class PoliciesService {
       });
     }
 
-    return { success: true, publishedCount: draftPolicies.length };
+    const members = await db.member.findMany({
+      where: {
+        organizationId,
+        deactivated: false,
+        role: { in: ['employee', 'contractor'] },
+      },
+      include: {
+        user: { select: { email: true, name: true } },
+        organization: { select: { name: true, id: true } },
+      },
+    });
+
+    return {
+      success: true,
+      publishedCount: draftPolicies.length,
+      members: members.map((m) => ({
+        email: m.user.email,
+        userName: m.user.name || '',
+        organizationName: m.organization.name || '',
+        organizationId: m.organization.id,
+      })),
+    };
   }
 
   async findById(id: string, organizationId: string) {
@@ -300,12 +321,6 @@ export class PoliciesService {
       // Prepare update data with special handling for status changes
       const updatePayload: Record<string, unknown> = { ...updateData };
 
-      // If status is being changed to published, update lastPublishedAt and clear signedBy
-      if (updateData.status === 'published') {
-        updatePayload.lastPublishedAt = new Date();
-        updatePayload.signedBy = [];
-      }
-
       // If isArchived is being set to true, update lastArchivedAt
       if (updateData.isArchived === true) {
         updatePayload.lastArchivedAt = new Date();
@@ -338,6 +353,16 @@ export class PoliciesService {
           throw new BadRequestException(
             'Cannot update content of a published policy. Create a new version to make changes.',
           );
+        }
+
+        // Only clear signatures when actually transitioning to published.
+        // Re-sending the full object for an already-published policy must not wipe acknowledgments.
+        if (
+          updateData.status === 'published' &&
+          existingPolicy.status !== 'published'
+        ) {
+          updatePayload.lastPublishedAt = new Date();
+          updatePayload.signedBy = [];
         }
 
         const policy = await tx.policy.update({

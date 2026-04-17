@@ -10,6 +10,9 @@ jest.mock('@db', () => ({
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+    member: {
+      findMany: jest.fn(),
+    },
     auditLog: {
       createMany: jest.fn(),
     },
@@ -40,6 +43,7 @@ jest.mock('@db', () => ({
 const { db } = require('@db') as {
   db: {
     policy: { findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
+    member: { findMany: jest.Mock };
     auditLog: { createMany: jest.Mock };
     $transaction: jest.Mock;
   };
@@ -83,6 +87,28 @@ describe('PoliciesService', () => {
       expect(updateArg.data.lastPublishedAt).toBeInstanceOf(Date);
     });
 
+    it('does not clear signedBy when the policy is already published and status is re-sent', async () => {
+      const orgId = 'org_abc';
+      const existing = { id: 'pol_1', organizationId: orgId, status: 'published' };
+      const updatedResult = { ...existing, description: 'tweak', name: 'Test' };
+
+      db.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+        const tx = { policy: { findFirst: db.policy.findFirst, update: db.policy.update } };
+        return callback(tx);
+      });
+      db.policy.findFirst.mockResolvedValueOnce(existing);
+      db.policy.update.mockResolvedValueOnce(updatedResult);
+
+      await service.updateById('pol_1', orgId, {
+        status: 'published',
+        description: 'tweak',
+      } as never);
+
+      const updateArg = db.policy.update.mock.calls[0][0];
+      expect(updateArg.data.signedBy).toBeUndefined();
+      expect(updateArg.data.lastPublishedAt).toBeUndefined();
+    });
+
     it('does not clear signedBy[] on non-publish updates', async () => {
       const orgId = 'org_abc';
       const existing = { id: 'pol_1', organizationId: orgId, status: 'published', signedBy: ['usr_a'] };
@@ -103,7 +129,7 @@ describe('PoliciesService', () => {
   });
 
   describe('publishAll', () => {
-    it('clears signedBy[] on every published policy and returns { success, publishedCount }', async () => {
+    it('clears signedBy[] on every published policy and returns { success, publishedCount, members }', async () => {
       const orgId = 'org_abc';
       const drafts = [
         { id: 'pol_1', name: 'Access', frequency: 'yearly' },
@@ -112,6 +138,7 @@ describe('PoliciesService', () => {
       db.policy.findMany.mockResolvedValueOnce(drafts);
       db.$transaction.mockImplementation((updates: unknown[]) => Promise.resolve(updates));
       db.policy.update.mockImplementation((args) => args);
+      db.member.findMany.mockResolvedValueOnce([]);
 
       const result = await service.publishAll(orgId);
 
@@ -126,14 +153,15 @@ describe('PoliciesService', () => {
         expect(update.data.signedBy).toEqual([]);
         expect(update.data.lastPublishedAt).toBeInstanceOf(Date);
       }
-      expect(result).toEqual({ success: true, publishedCount: 2 });
-      expect(result).not.toHaveProperty('members');
+      expect(result.success).toBe(true);
+      expect(result.publishedCount).toBe(2);
+      expect(result.members).toEqual([]);
     });
 
     it('returns early with publishedCount 0 when there are no drafts', async () => {
       db.policy.findMany.mockResolvedValueOnce([]);
       const result = await service.publishAll('org_empty');
-      expect(result).toEqual({ success: true, publishedCount: 0 });
+      expect(result).toEqual({ success: true, publishedCount: 0, members: [] });
       expect(db.$transaction).not.toHaveBeenCalled();
     });
   });
