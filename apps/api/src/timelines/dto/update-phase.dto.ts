@@ -1,7 +1,7 @@
 import {
   IsOptional,
   IsString,
-  IsNumber,
+  IsInt,
   IsDateString,
   IsBoolean,
   IsIn,
@@ -23,7 +23,7 @@ export class UpdatePhaseDto {
 
   @ApiPropertyOptional({ description: 'Duration in weeks', minimum: 1 })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(1)
   durationWeeks?: number;
 

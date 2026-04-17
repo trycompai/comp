@@ -29,7 +29,14 @@ export function TimelineActivateForm({
 
     setLoading(true);
     try {
-      const parsed = new Date(startDate);
+      // startDate comes from <input type="date"> as YYYY-MM-DD. Using
+      // `new Date(...)` would treat it as UTC midnight and shift the day
+      // in negative UTC offsets. Parse as local midnight so the user's
+      // chosen calendar day is preserved when serialized to ISO.
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(startDate);
+      const parsed = match
+        ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+        : new Date(NaN);
       if (Number.isNaN(parsed.getTime())) {
         toast.error('Invalid start date');
         return;

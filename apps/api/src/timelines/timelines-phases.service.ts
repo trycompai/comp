@@ -22,6 +22,7 @@ export class TimelinesPhasesService {
       startDate?: Date;
       endDate?: Date;
       durationWeeks?: number;
+      datesPinned?: boolean;
       completionType?: PhaseCompletionType;
       documentUrl?: string;
       documentName?: string;
@@ -42,12 +43,13 @@ export class TimelinesPhasesService {
       throw new NotFoundException('Phase not found');
     }
 
-    // Calculate endDate from startDate + durationWeeks
+    // Resolve the effective endDate: prefer an explicit endDate from the
+    // caller, otherwise compute from startDate + duration when either changed.
     const newDuration = data.durationWeeks ?? phase.durationWeeks;
     const newStartDate = data.startDate ?? phase.startDate;
-    let newEndDate: Date | undefined;
+    let newEndDate: Date | undefined = data.endDate;
 
-    if (data.startDate || data.durationWeeks) {
+    if (newEndDate === undefined && (data.startDate || data.durationWeeks)) {
       if (newStartDate) {
         const end = new Date(newStartDate);
         end.setUTCDate(end.getUTCDate() + newDuration * 7);
@@ -55,7 +57,14 @@ export class TimelinesPhasesService {
       }
     }
 
-    const datesPinned = data.startDate !== undefined ? true : undefined;
+    // Pin dates when the caller explicitly sets any date field. An explicit
+    // datesPinned in the DTO always wins so the user can un-pin on demand.
+    const datesPinned =
+      data.datesPinned !== undefined
+        ? data.datesPinned
+        : data.startDate !== undefined || data.endDate !== undefined
+          ? true
+          : undefined;
 
     const updated = await db.timelinePhase.update({
       where: { id: phaseId },

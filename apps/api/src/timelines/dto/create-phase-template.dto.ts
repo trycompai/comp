@@ -2,7 +2,7 @@ import {
   IsString,
   IsNotEmpty,
   IsOptional,
-  IsNumber,
+  IsInt,
   IsIn,
   Min,
   IsBoolean,
@@ -30,7 +30,7 @@ export class CreatePhaseTemplateDto {
     description: 'Position in the phase sequence (0-based)',
     minimum: 0,
   })
-  @IsNumber()
+  @IsInt()
   @Min(0)
   orderIndex: number;
 
@@ -39,7 +39,7 @@ export class CreatePhaseTemplateDto {
     minimum: 1,
     example: 4,
   })
-  @IsNumber()
+  @IsInt()
   @Min(1)
   defaultDurationWeeks: number;
 
@@ -76,7 +76,7 @@ export class AddPhaseToInstanceDto {
     description: 'Position in the phase sequence (0-based)',
     minimum: 0,
   })
-  @IsNumber()
+  @IsInt()
   @Min(0)
   orderIndex: number;
 
@@ -85,7 +85,7 @@ export class AddPhaseToInstanceDto {
     minimum: 1,
     example: 4,
   })
-  @IsNumber()
+  @IsInt()
   @Min(1)
   durationWeeks: number;
 

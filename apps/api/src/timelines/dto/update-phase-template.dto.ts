@@ -1,7 +1,7 @@
 import {
   IsOptional,
   IsString,
-  IsNumber,
+  IsInt,
   IsIn,
   Min,
   IsBoolean,
@@ -30,7 +30,7 @@ export class UpdatePhaseTemplateDto {
     minimum: 0,
   })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(0)
   orderIndex?: number;
 
@@ -39,7 +39,7 @@ export class UpdatePhaseTemplateDto {
     minimum: 1,
   })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(1)
   defaultDurationWeeks?: number;
 

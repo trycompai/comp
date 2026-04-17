@@ -151,7 +151,10 @@ export function FeatureFlagsTab({ orgId }: FeatureFlagsTabProps) {
                 {!flag.active && <Badge variant="outline">Inactive</Badge>}
                 <Switch
                   checked={flag.enabled}
-                  disabled={!flag.active || updatingKey === flag.key}
+                  // Disable every switch while any flag is being updated —
+                  // prevents overlapping PATCHes where a late rollback could
+                  // overwrite a newer successful toggle.
+                  disabled={!flag.active || updatingKey !== null}
                   onCheckedChange={(checked) => handleToggle(flag, checked)}
                 />
               </div>

@@ -410,20 +410,16 @@ export class TasksService {
           );
         });
 
-      // Check timeline auto-completion when tasks reach a "finished" state —
-      // AUTO_TASKS counts both done and not_relevant as complete, so both
-      // statuses can unblock a phase.
-      if (
-        status === TaskStatus.done ||
-        status === TaskStatus.not_relevant
-      ) {
-        checkAutoCompletePhases({
-          organizationId,
-          timelinesService: this.timelinesService,
-        }).catch((err) => {
-          this.logger.warn('timeline auto-complete check failed', err);
-        });
-      }
+      // Any task status change can shift AUTO_TASKS metric in either
+      // direction (done/not_relevant can complete a phase; back to
+      // todo/in_progress can regress one). checkAutoCompletePhases also
+      // kicks off regression reconciliation, so fire on every change.
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
 
       return { updatedCount: result.count };
     } catch (error) {
@@ -719,19 +715,14 @@ export class TasksService {
             console.error('Failed to send status change notifications:', error);
           });
 
-        // Check timeline auto-completion when task reaches a "finished"
-        // state (AUTO_TASKS counts done and not_relevant as complete).
-        if (
-          updateData.status === TaskStatus.done ||
-          updateData.status === TaskStatus.not_relevant
-        ) {
-          checkAutoCompletePhases({
-            organizationId,
-            timelinesService: this.timelinesService,
-          }).catch((err) => {
-            this.logger.warn('timeline auto-complete check failed', err);
-          });
-        }
+        // Any status change can shift AUTO_TASKS metric in either direction,
+        // and checkAutoCompletePhases also triggers regression reconciliation.
+        checkAutoCompletePhases({
+          organizationId,
+          timelinesService: this.timelinesService,
+        }).catch((err) => {
+          this.logger.warn('timeline auto-complete check failed', err);
+        });
       }
 
       // Write audit logs and send notifications for assignee changes

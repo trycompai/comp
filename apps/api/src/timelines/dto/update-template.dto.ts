@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber, Min } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateTemplateDto {
@@ -12,7 +12,7 @@ export class UpdateTemplateDto {
     minimum: 1,
   })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(1)
   cycleNumber?: number;
 }

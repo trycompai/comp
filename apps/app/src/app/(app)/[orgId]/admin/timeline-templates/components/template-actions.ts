@@ -81,17 +81,9 @@ export async function saveExistingTemplate(
     values.phases.filter((p) => p.id).map((p) => p.id),
   );
 
-  // Delete removed phases
-  for (const ep of template.phases) {
-    if (!formIds.has(ep.id)) {
-      const delRes = await api.delete(
-        `/v1/admin/timeline-templates/${template.id}/phases/${ep.id}`,
-      );
-      if (delRes.error) throw new Error(delRes.error);
-    }
-  }
-
-  // Create or update phases (orderIndex is the array position)
+  // Upsert phases first — if any of these fail we abort with the original
+  // set still intact. Deletions happen only after all upserts succeed so a
+  // mid-save failure can't leave the template with missing phases.
   for (const [index, phase] of values.phases.entries()) {
     if (phase.id && existingIds.has(phase.id)) {
       const patchRes = await api.patch(
@@ -121,5 +113,16 @@ export async function saveExistingTemplate(
       if (postRes.error) throw new Error(postRes.error);
     }
   }
+
+  // All upserts succeeded — safe to remove phases the user dropped.
+  for (const ep of template.phases) {
+    if (!formIds.has(ep.id)) {
+      const delRes = await api.delete(
+        `/v1/admin/timeline-templates/${template.id}/phases/${ep.id}`,
+      );
+      if (delRes.error) throw new Error(delRes.error);
+    }
+  }
+
   toast.success('Template updated');
 }

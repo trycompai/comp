@@ -91,6 +91,7 @@ export class AdminOrgTimelinesController {
       durationWeeks: dto.durationWeeks,
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
       endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+      datesPinned: dto.datesPinned,
       completionType: dto.completionType as PhaseCompletionType | undefined,
       locksTimelineOnComplete: dto.locksTimelineOnComplete,
     });

@@ -577,15 +577,6 @@ export class FindingsService {
           void this.findingNotifierService.notifyFindingClosed(
             notificationParams,
           );
-          void checkAutoCompletePhases({
-            organizationId,
-            timelinesService: this.timelinesService,
-          }).catch((error) => {
-            this.logger.warn(
-              `Failed to auto-complete AUTO_FINDINGS phases after finding ${findingId} closed`,
-              error instanceof Error ? error.message : String(error),
-            );
-          });
           break;
         case FindingStatus.open:
           this.logger.log(
@@ -597,6 +588,20 @@ export class FindingsService {
             `Unknown status ${updateDto.status} for finding ${findingId}. No notification sent.`,
           );
       }
+
+      // Any status transition can move AUTO_FINDINGS metric in either
+      // direction — advance when everything is closed, regress when a
+      // closed finding is reopened. checkAutoCompletePhases also triggers
+      // the regression reconciliation pass.
+      void checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((error) => {
+        this.logger.warn(
+          `Failed to reconcile AUTO_FINDINGS phases after finding ${findingId} status change`,
+          error instanceof Error ? error.message : String(error),
+        );
+      });
     } else if (updateDto.status && updateDto.status === previousStatus) {
       this.logger.log(
         `Status unchanged for finding ${findingId}: ${previousStatus}. Skipping notification.`,

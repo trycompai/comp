@@ -41,29 +41,42 @@ export class AdminFeatureFlagsService {
     const config = this.getPostHogRestConfig();
     if (!config) return [];
 
-    const url = `${config.apiHost.replace(/\/$/, '')}/api/projects/${config.projectId}/feature_flags/?limit=200`;
+    const results: PostHogFlagListItem[] = [];
+    const baseUrl = `${config.apiHost.replace(/\/$/, '')}/api/projects/${config.projectId}/feature_flags/`;
+    let nextUrl: string | null = `${baseUrl}?limit=200`;
+    // Hard cap so a misbehaving cursor can't loop forever.
+    const maxPages = 25;
 
     try {
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      for (let page = 0; page < maxPages && nextUrl; page++) {
+        const response: Response = await fetch(nextUrl, {
+          headers: {
+            Authorization: `Bearer ${config.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-      if (!response.ok) {
-        this.logger.error(
-          `PostHog flag list failed: ${response.status} ${await response.text()}`,
-        );
-        return [];
+        if (!response.ok) {
+          this.logger.error(
+            `PostHog flag list failed: ${response.status} ${await response.text()}`,
+          );
+          break;
+        }
+
+        const data = (await response.json()) as {
+          results?: PostHogFlagListItem[];
+          next?: string | null;
+        };
+        for (const f of data.results ?? []) {
+          if (!f.deleted) results.push(f);
+        }
+        nextUrl = data.next ?? null;
       }
-
-      const data = (await response.json()) as { results?: PostHogFlagListItem[] };
-      return (data.results ?? []).filter((f) => !f.deleted);
     } catch (err) {
       this.logger.error('Failed to fetch flags from PostHog REST API', err);
-      return [];
     }
+
+    return results;
   }
 
   async listForOrganization(orgId: string): Promise<FlagState[]> {
@@ -86,13 +99,19 @@ export class AdminFeatureFlagsService {
       this.logger.error(`Failed to evaluate flags for org ${orgId}`, err);
     }
 
+    // A flag is "on" for this org when the evaluator returns true (boolean
+    // flags) OR any string variant key (multivariate flags — PostHog returns
+    // the variant name for enabled variants, `false` for disabled).
+    const isEnabled = (value: string | boolean | undefined): boolean =>
+      value === true || (typeof value === 'string' && value.length > 0);
+
     return flags
       .map((flag) => ({
         key: flag.key,
         name: flag.key,
         description: flag.name ?? '',
         active: flag.active,
-        enabled: evaluated[flag.key] === true,
+        enabled: isEnabled(evaluated[flag.key]),
         createdAt: flag.created_at ?? null,
       }))
       .sort((a, b) => {
