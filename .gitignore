@@ -98,3 +98,4 @@ scripts/sync-release-branch.sh
 
 .superpowers/*
 .claude/worktrees/
+.worktrees/
