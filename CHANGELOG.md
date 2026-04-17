@@ -1,3 +1,11 @@
+## [3.23.5](https://github.com/trycompai/comp/compare/v3.23.4...v3.23.5) (2026-04-17)
+
+
+### Bug Fixes
+
+* batch policy acceptance emails, daily ([ceb3c50](https://github.com/trycompai/comp/commit/ceb3c50a0671001188e12d9500dffa9840fd6416))
+* **digest:** inline compliance filter to avoid trigger.dev bundle failure ([#2591](https://github.com/trycompai/comp/issues/2591)) ([cee8ed4](https://github.com/trycompai/comp/commit/cee8ed419b00d7a87ffbdb1b7e207cd1898abd78))
+
 ## [3.23.4](https://github.com/trycompai/comp/compare/v3.23.3...v3.23.4) (2026-04-17)
 
 
