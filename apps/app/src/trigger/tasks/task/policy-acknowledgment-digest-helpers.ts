@@ -1,3 +1,7 @@
+/**
+ * Helper types and pure filter function for the policy acknowledgment digest.
+ * Extracted from the scheduled task for testability.
+ */
 import type { Departments, PolicyVisibility } from '@db';
 
 export interface DigestPolicy {
