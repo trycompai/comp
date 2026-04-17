@@ -104,7 +104,7 @@ export class PoliciesService {
     });
 
     if (draftPolicies.length === 0) {
-      return { success: true, publishedCount: 0, members: [] };
+      return { success: true, publishedCount: 0 };
     }
 
     const now = new Date();
@@ -117,12 +117,13 @@ export class PoliciesService {
             status: 'published',
             lastPublishedAt: now,
             reviewDate: computeNextReviewDate(p.frequency),
+            // Clear signatures — employees must re-acknowledge new content
+            signedBy: [],
           },
         }),
       ),
     );
 
-    // Create audit log entry for each published policy
     if (userId) {
       await db.auditLog.createMany({
         data: draftPolicies.map((p) => ({
@@ -143,29 +144,7 @@ export class PoliciesService {
       });
     }
 
-    // Fetch employee/contractor members for email notifications
-    const members = await db.member.findMany({
-      where: {
-        organizationId,
-        deactivated: false,
-        role: { in: ['employee', 'contractor'] },
-      },
-      include: {
-        user: { select: { email: true, name: true } },
-        organization: { select: { name: true, id: true } },
-      },
-    });
-
-    return {
-      success: true,
-      publishedCount: draftPolicies.length,
-      members: members.map((m) => ({
-        email: m.user.email,
-        userName: m.user.name || '',
-        organizationName: m.organization.name || '',
-        organizationId: m.organization.id,
-      })),
-    };
+    return { success: true, publishedCount: draftPolicies.length };
   }
 
   async findById(id: string, organizationId: string) {
