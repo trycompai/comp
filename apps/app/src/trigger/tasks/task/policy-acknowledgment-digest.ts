@@ -1,13 +1,14 @@
 import { db } from '@db/server';
 import { logger, schedules } from '@trigger.dev/sdk';
 
-import { filterComplianceMembers } from '@/lib/compliance';
 import { PolicyAcknowledgmentDigestEmail } from '@trycompai/email';
 import { getUnsubscribedEmails } from '@trycompai/email/lib/check-unsubscribe';
 
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
 import {
   computePendingPolicies,
+  filterDigestMembersByCompliance,
+  type ComplianceFilterDb,
   type DigestMember,
 } from './policy-acknowledgment-digest-helpers';
 
@@ -90,7 +91,8 @@ export const policyAcknowledgmentDigest = schedules.task({
 
     for (const org of organizations) {
       orgsProcessed += 1;
-      const complianceMembers = await filterComplianceMembers<DigestMember>(
+      const complianceMembers = await filterDigestMembersByCompliance(
+        db as unknown as ComplianceFilterDb,
         org.members,
         org.id,
       );
