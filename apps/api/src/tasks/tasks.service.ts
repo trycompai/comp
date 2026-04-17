@@ -410,14 +410,19 @@ export class TasksService {
           );
         });
 
-      // Check timeline auto-completion when tasks are marked done
-      if (status === TaskStatus.done) {
+      // Check timeline auto-completion when tasks reach a "finished" state —
+      // AUTO_TASKS counts both done and not_relevant as complete, so both
+      // statuses can unblock a phase.
+      if (
+        status === TaskStatus.done ||
+        status === TaskStatus.not_relevant
+      ) {
         checkAutoCompletePhases({
           organizationId,
           timelinesService: this.timelinesService,
         }).catch((err) => {
-      this.logger.warn('timeline auto-complete check failed', err);
-    });
+          this.logger.warn('timeline auto-complete check failed', err);
+        });
       }
 
       return { updatedCount: result.count };
@@ -714,14 +719,18 @@ export class TasksService {
             console.error('Failed to send status change notifications:', error);
           });
 
-        // Check timeline auto-completion when task is marked done
-        if (updateData.status === TaskStatus.done) {
+        // Check timeline auto-completion when task reaches a "finished"
+        // state (AUTO_TASKS counts done and not_relevant as complete).
+        if (
+          updateData.status === TaskStatus.done ||
+          updateData.status === TaskStatus.not_relevant
+        ) {
           checkAutoCompletePhases({
             organizationId,
             timelinesService: this.timelinesService,
           }).catch((err) => {
-      this.logger.warn('timeline auto-complete check failed', err);
-    });
+            this.logger.warn('timeline auto-complete check failed', err);
+          });
         }
       }
 
@@ -853,13 +862,9 @@ export class TasksService {
         },
       });
 
-      // Check timeline auto-completion after task creation (total task count changed)
-      checkAutoCompletePhases({
-        organizationId,
-        timelinesService: this.timelinesService,
-      }).catch((err) => {
-      this.logger.warn('timeline auto-complete check failed', err);
-    });
+      // Intentionally no checkAutoCompletePhases here: new tasks default to
+      // todo, which can't advance an AUTO_TASKS phase and has no bearing on
+      // AUTO_POLICIES / AUTO_PEOPLE / AUTO_FINDINGS criteria.
 
       return {
         id: task.id,

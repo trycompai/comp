@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { api } from '@/lib/api-client';
+import useSWR from 'swr';
+import { api, apiClient } from '@/lib/api-client';
 import type { AdminTimelineTemplate } from '@/hooks/use-admin-timelines';
 import {
   Button,
@@ -43,15 +44,18 @@ export function TemplateMetadataForm({
   onMutate,
 }: TemplateMetadataFormProps) {
   const [saving, setSaving] = useState(false);
-  const [frameworks, setFrameworks] = useState<Framework[]>([]);
 
-  useEffect(() => {
-    api
-      .get<{ data: Framework[] }>('/v1/frameworks/available')
-      .then((res) => {
-        if (res.data?.data) setFrameworks(res.data.data);
-      });
-  }, []);
+  const { data: frameworks = [] } = useSWR(
+    ['/v1/frameworks/available'],
+    async () => {
+      const res = await apiClient.get<{ data: Framework[] }>(
+        '/v1/frameworks/available',
+      );
+      if (res.error) throw new Error(res.error);
+      return res.data?.data ?? [];
+    },
+    { revalidateOnFocus: false },
+  );
 
   const {
     register,

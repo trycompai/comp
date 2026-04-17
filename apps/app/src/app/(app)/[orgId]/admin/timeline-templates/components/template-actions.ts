@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import type { AdminTimelineTemplate } from '@/hooks/use-admin-timelines';
+import type { CompletionType } from './constants';
 
 interface TemplateFormValues {
   name: string;
@@ -10,15 +11,8 @@ interface TemplateFormValues {
     id?: string;
     name: string;
     description?: string;
-    orderIndex: number;
     defaultDurationWeeks: number;
-    completionType:
-      | 'AUTO_TASKS'
-      | 'AUTO_POLICIES'
-      | 'AUTO_PEOPLE'
-      | 'AUTO_FINDINGS'
-      | 'AUTO_UPLOAD'
-      | 'MANUAL';
+    completionType: CompletionType;
     locksTimelineOnComplete?: boolean;
   }[];
 }
@@ -39,7 +33,6 @@ export function getDefaults(
         id: p.id,
         name: p.name,
         description: p.description ?? '',
-        orderIndex: p.orderIndex,
         defaultDurationWeeks: p.defaultDurationWeeks,
         completionType: p.completionType ?? 'MANUAL',
         locksTimelineOnComplete: p.locksTimelineOnComplete ?? false,
@@ -56,13 +49,13 @@ export async function createNewTemplate(values: TemplateFormValues) {
   if (res.error) throw new Error(res.error);
 
   const created = res.data as { id: string };
-  for (const phase of values.phases) {
+  for (const [index, phase] of values.phases.entries()) {
     const phaseRes = await api.post(
       `/v1/admin/timeline-templates/${created.id}/phases`,
       {
         name: phase.name,
         description: phase.description || undefined,
-        orderIndex: phase.orderIndex,
+        orderIndex: index,
         defaultDurationWeeks: phase.defaultDurationWeeks,
         completionType: phase.completionType,
         locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,
@@ -98,15 +91,15 @@ export async function saveExistingTemplate(
     }
   }
 
-  // Create or update phases
-  for (const phase of values.phases) {
+  // Create or update phases (orderIndex is the array position)
+  for (const [index, phase] of values.phases.entries()) {
     if (phase.id && existingIds.has(phase.id)) {
       const patchRes = await api.patch(
         `/v1/admin/timeline-templates/${template.id}/phases/${phase.id}`,
         {
           name: phase.name,
           description: phase.description || undefined,
-          orderIndex: phase.orderIndex,
+          orderIndex: index,
           defaultDurationWeeks: phase.defaultDurationWeeks,
           completionType: phase.completionType,
           locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,
@@ -119,7 +112,7 @@ export async function saveExistingTemplate(
         {
           name: phase.name,
           description: phase.description || undefined,
-          orderIndex: phase.orderIndex,
+          orderIndex: index,
           defaultDurationWeeks: phase.defaultDurationWeeks,
           completionType: phase.completionType,
           locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,

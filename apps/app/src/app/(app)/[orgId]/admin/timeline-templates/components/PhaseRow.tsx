@@ -5,15 +5,7 @@ import { Button, Text } from '@trycompai/design-system';
 import { TrashCan } from '@trycompai/design-system/icons';
 import { Input } from '@trycompai/ui/input';
 import { Label } from '@trycompai/ui/label';
-
-const COMPLETION_OPTIONS = [
-  { value: 'MANUAL', label: 'Manual' },
-  { value: 'AUTO_TASKS', label: 'Auto (Tasks)' },
-  { value: 'AUTO_POLICIES', label: 'Auto (Policies)' },
-  { value: 'AUTO_PEOPLE', label: 'Auto (People)' },
-  { value: 'AUTO_FINDINGS', label: 'Auto (Findings)' },
-  { value: 'AUTO_UPLOAD', label: 'Auto (Upload)' },
-] as const;
+import { COMPLETION_OPTIONS, type CompletionType } from './constants';
 
 interface PhaseFormValues {
   name: string;
@@ -23,15 +15,8 @@ interface PhaseFormValues {
     id?: string;
     name: string;
     description?: string;
-    orderIndex: number;
     defaultDurationWeeks: number;
-    completionType:
-      | 'AUTO_TASKS'
-      | 'AUTO_POLICIES'
-      | 'AUTO_PEOPLE'
-      | 'AUTO_FINDINGS'
-      | 'AUTO_UPLOAD'
-      | 'MANUAL';
+    completionType: CompletionType;
     locksTimelineOnComplete?: boolean;
   }[];
 }
@@ -111,14 +96,6 @@ export function PhaseRow({ index, register, errors, onRemove }: PhaseRowProps) {
             ))}
           </select>
         </div>
-
-        <input
-          type="hidden"
-          {...register(`phases.${index}.orderIndex`, {
-            valueAsNumber: true,
-          })}
-          value={index}
-        />
 
         <div className="col-span-2 flex items-center gap-2">
           <input

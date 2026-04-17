@@ -8,15 +8,7 @@ import {
   Min,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-
-const COMPLETION_TYPES = [
-  'AUTO_TASKS',
-  'AUTO_POLICIES',
-  'AUTO_PEOPLE',
-  'AUTO_FINDINGS',
-  'AUTO_UPLOAD',
-  'MANUAL',
-] as const;
+import { COMPLETION_TYPES, type CompletionType } from '../timeline-constants';
 
 export class UpdatePhaseDto {
   @ApiPropertyOptional({ description: 'Phase name' })
@@ -64,7 +56,7 @@ export class UpdatePhaseDto {
   })
   @IsOptional()
   @IsIn(COMPLETION_TYPES)
-  completionType?: string;
+  completionType?: CompletionType;
 
   @ApiPropertyOptional({
     description: 'Whether completing this phase should lock the timeline',
