@@ -1,0 +1,25 @@
+apps/api/src/policies/policies.service.spec.ts
+  a610da88f606d7de 1-100
+apps/api/src/policies/policies.service.ts
+  a610da88f606d7de 107,120-121,147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "e151d9f21adf8a76cac63b239eaba7b703b1f906",
+  "prompts": {
+    "a610da88f606d7de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6cc4163b-915a-4c8c-8fd6-cc849d7421e5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 105,
+      "total_deletions": 26,
+      "accepted_lines": 104,
+      "overriden_lines": 0
+    }
+  }
+}
