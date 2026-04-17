@@ -30,6 +30,8 @@ export const PolicyAcknowledgmentDigestEmail = ({
   organizationId,
   policies,
 }: PolicyAcknowledgmentDigestEmailProps) => {
+  if (policies.length === 0) return null;
+
   const portalBase =
     process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai';
   const portalLink = `${portalBase}/${organizationId}`;
@@ -78,7 +80,7 @@ export const PolicyAcknowledgmentDigestEmail = ({
 
             <Section className="mt-[16px] mb-[42px] text-center">
               <Button
-                className="text-primary border border-solid border-[#121212] bg-transparent px-6 py-3 text-center text-[14px] font-medium text-[#121212] no-underline"
+                className="border border-solid border-[#121212] bg-transparent px-6 py-3 text-center text-[14px] font-medium text-[#121212] no-underline"
                 href={portalLink}
               >
                 Review in portal
