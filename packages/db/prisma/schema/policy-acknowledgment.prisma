@@ -2,8 +2,10 @@ model PolicyAcknowledgment {
   id              String   @id @default(dbgenerated("generate_prefixed_cuid('polack'::text)"))
   policyVersionId String
   policyVersion   PolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
-  memberId        String
-  member          Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId        String?
+  member          Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  memberName      String?
+  memberEmail     String
   organizationId  String
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   signedAt        DateTime @default(now())
@@ -12,5 +14,4 @@ model PolicyAcknowledgment {
   @@unique([policyVersionId, memberId])
   @@index([memberId])
   @@index([organizationId])
-  @@index([policyVersionId])
 }
