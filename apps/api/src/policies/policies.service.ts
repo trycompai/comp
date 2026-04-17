@@ -8,6 +8,7 @@ import { db, Frequency, PolicyStatus, Prisma } from '@db';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
+import { filterComplianceMembers } from '../utils/compliance-filters';
 import type { CreatePolicyDto } from './dto/create-policy.dto';
 import type { UpdatePolicyDto } from './dto/update-policy.dto';
 import type {
@@ -144,22 +145,23 @@ export class PoliciesService {
       });
     }
 
-    const members = await db.member.findMany({
-      where: {
-        organizationId,
-        deactivated: false,
-        role: { in: ['employee', 'contractor'] },
-      },
+    const allMembers = await db.member.findMany({
+      where: { organizationId, deactivated: false },
       include: {
-        user: { select: { email: true, name: true } },
+        user: { select: { email: true, name: true, role: true } },
         organization: { select: { name: true, id: true } },
       },
     });
 
+    const complianceMembers = await filterComplianceMembers(
+      allMembers,
+      organizationId,
+    );
+
     return {
       success: true,
       publishedCount: draftPolicies.length,
-      members: members.map((m) => ({
+      members: complianceMembers.map((m) => ({
         email: m.user.email,
         userName: m.user.name || '',
         organizationName: m.organization.name || '',

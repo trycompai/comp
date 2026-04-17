@@ -39,6 +39,10 @@ jest.mock('@db', () => ({
   },
 }));
 
+jest.mock('../utils/compliance-filters', () => ({
+  filterComplianceMembers: jest.fn(async (members: unknown[]) => members),
+}));
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { db } = require('@db') as {
   db: {
@@ -47,6 +51,11 @@ const { db } = require('@db') as {
     auditLog: { createMany: jest.Mock };
     $transaction: jest.Mock;
   };
+};
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { filterComplianceMembers: mockedFilterComplianceMembers } = require('../utils/compliance-filters') as {
+  filterComplianceMembers: jest.Mock;
 };
 
 describe('PoliciesService', () => {
@@ -163,6 +172,48 @@ describe('PoliciesService', () => {
       const result = await service.publishAll('org_empty');
       expect(result).toEqual({ success: true, publishedCount: 0, members: [] });
       expect(db.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('returns only compliance-obligated members in the members array', async () => {
+      const orgId = 'org_abc';
+      db.policy.findMany.mockResolvedValueOnce([
+        { id: 'pol_1', name: 'P', frequency: 'yearly' },
+      ]);
+      db.$transaction.mockImplementation((updates: unknown[]) =>
+        Promise.resolve(updates),
+      );
+      db.policy.update.mockImplementation((args) => args);
+      db.member.findMany.mockResolvedValueOnce([
+        {
+          role: 'employee',
+          user: { email: 'alice@example.com', name: 'Alice', role: null },
+          organization: { id: orgId, name: 'Acme' },
+        },
+        {
+          role: 'auditor',
+          user: { email: 'audit@example.com', name: 'Aud', role: null },
+          organization: { id: orgId, name: 'Acme' },
+        },
+      ]);
+      // Mock filterComplianceMembers to return only Alice
+      mockedFilterComplianceMembers.mockResolvedValueOnce([
+        {
+          role: 'employee',
+          user: { email: 'alice@example.com', name: 'Alice', role: null },
+          organization: { id: orgId, name: 'Acme' },
+        },
+      ] as never);
+
+      const result = await service.publishAll(orgId);
+
+      expect(result.members).toEqual([
+        {
+          email: 'alice@example.com',
+          userName: 'Alice',
+          organizationName: 'Acme',
+          organizationId: orgId,
+        },
+      ]);
     });
   });
 });
