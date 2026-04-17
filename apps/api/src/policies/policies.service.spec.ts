@@ -16,6 +16,9 @@ jest.mock('@db', () => ({
     auditLog: {
       createMany: jest.fn(),
     },
+    policyAcknowledgment: {
+      findMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   },
   Frequency: {
@@ -49,6 +52,7 @@ const { db } = require('@db') as {
     policy: { findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
     member: { findMany: jest.Mock };
     auditLog: { createMany: jest.Mock };
+    policyAcknowledgment: { findMany: jest.Mock };
     $transaction: jest.Mock;
   };
 };
@@ -214,6 +218,74 @@ describe('PoliciesService', () => {
           organizationId: orgId,
         },
       ]);
+    });
+  });
+
+  describe('findAcknowledgments', () => {
+    it('returns acknowledgments ordered by signedAt DESC from the denormalized row, scoped by organizationId', async () => {
+      const orgId = 'org_abc';
+      const policyId = 'pol_1';
+
+      db.policy.findFirst.mockResolvedValueOnce({ id: policyId, organizationId: orgId });
+      db.policyAcknowledgment.findMany.mockResolvedValueOnce([
+        {
+          memberId: 'mem_alice',
+          memberName: 'Alice Example',
+          memberEmail: 'alice@example.com',
+          policyVersionId: 'pv_2',
+          signedAt: new Date('2026-04-10T00:00:00Z'),
+          policyVersion: { version: 2 },
+        },
+        {
+          memberId: null,
+          memberName: 'Bob Former',
+          memberEmail: 'bob@example.com',
+          policyVersionId: 'pv_1',
+          signedAt: new Date('2026-03-01T00:00:00Z'),
+          policyVersion: { version: 1 },
+        },
+      ]);
+
+      const result = await service.findAcknowledgments(policyId, orgId);
+
+      expect(db.policyAcknowledgment.findMany).toHaveBeenCalledWith({
+        where: { organizationId: orgId, policyVersion: { policyId } },
+        select: {
+          memberId: true,
+          memberName: true,
+          memberEmail: true,
+          policyVersionId: true,
+          signedAt: true,
+          policyVersion: { select: { version: true } },
+        },
+        orderBy: { signedAt: 'desc' },
+      });
+      expect(result).toEqual([
+        {
+          memberId: 'mem_alice',
+          memberName: 'Alice Example',
+          memberEmail: 'alice@example.com',
+          policyVersionId: 'pv_2',
+          policyVersion: 2,
+          signedAt: '2026-04-10T00:00:00.000Z',
+        },
+        {
+          memberId: null,
+          memberName: 'Bob Former',
+          memberEmail: 'bob@example.com',
+          policyVersionId: 'pv_1',
+          policyVersion: 1,
+          signedAt: '2026-03-01T00:00:00.000Z',
+        },
+      ]);
+    });
+
+    it('throws NotFoundException when the policy does not exist in the org', async () => {
+      db.policy.findFirst.mockResolvedValueOnce(null);
+      await expect(
+        service.findAcknowledgments('pol_missing', 'org_abc'),
+      ).rejects.toThrow(/not found/i);
+      expect(db.policyAcknowledgment.findMany).not.toHaveBeenCalled();
     });
   });
 });

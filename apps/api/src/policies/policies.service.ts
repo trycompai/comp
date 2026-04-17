@@ -233,6 +233,38 @@ export class PoliciesService {
     }
   }
 
+  async findAcknowledgments(policyId: string, organizationId: string) {
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+      select: { id: true },
+    });
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    const rows = await db.policyAcknowledgment.findMany({
+      where: { organizationId, policyVersion: { policyId } },
+      select: {
+        memberId: true,
+        memberName: true,
+        memberEmail: true,
+        policyVersionId: true,
+        signedAt: true,
+        policyVersion: { select: { version: true } },
+      },
+      orderBy: { signedAt: 'desc' },
+    });
+
+    return rows.map((r) => ({
+      memberId: r.memberId,
+      memberName: r.memberName,
+      memberEmail: r.memberEmail,
+      policyVersionId: r.policyVersionId,
+      policyVersion: r.policyVersion.version,
+      signedAt: r.signedAt.toISOString(),
+    }));
+  }
+
   async create(organizationId: string, createData: CreatePolicyDto) {
     try {
       if (createData.assigneeId) {
