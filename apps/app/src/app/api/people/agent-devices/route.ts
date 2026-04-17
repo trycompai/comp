@@ -15,7 +15,10 @@ export async function GET() {
   const devices = await db.device.findMany({
     where: {
       organizationId,
-      NOT: { member: { user: { role: 'admin' } } },
+      member: {
+        deactivated: false,
+        NOT: { user: { role: 'admin' } },
+      },
     },
     include: {
       member: {

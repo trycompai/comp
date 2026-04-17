@@ -2,6 +2,7 @@
 
 import { apiClient } from '@/lib/api-client';
 import type { Edge, Node } from '@xyflow/react';
+import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 
 export interface OrgChartData {
@@ -35,7 +36,9 @@ function sanitize(raw: OrgChartApiResponse | null): OrgChartData | null {
     .map((n) => ({
       ...n,
       position:
-        n.position && typeof (n.position as Record<string, unknown>).x === 'number'
+        n.position &&
+        typeof (n.position as Record<string, unknown>).x === 'number' &&
+        typeof (n.position as Record<string, unknown>).y === 'number'
           ? n.position
           : { x: 0, y: 0 },
     })) as unknown as Node[];
@@ -65,8 +68,9 @@ async function fetchOrgChart(): Promise<OrgChartData | null> {
 }
 
 export function useOrgChart() {
+  const { orgId } = useParams<{ orgId: string }>();
   const { data, error, isLoading, mutate } = useSWR<OrgChartData | null>(
-    'people-org-chart',
+    orgId ? ['people-org-chart', orgId] : null,
     fetchOrgChart,
     { revalidateOnFocus: false },
   );

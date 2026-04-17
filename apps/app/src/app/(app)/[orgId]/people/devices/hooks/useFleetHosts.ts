@@ -1,5 +1,6 @@
 'use client';
 
+import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 import type { Host } from '../types';
 
@@ -19,8 +20,9 @@ async function fetchFleetHosts(): Promise<Host[]> {
 }
 
 export function useFleetHosts() {
+  const { orgId } = useParams<{ orgId: string }>();
   const { data, error, isLoading, mutate } = useSWR<Host[]>(
-    'people-fleet-hosts',
+    orgId ? ['people-fleet-hosts', orgId] : null,
     fetchFleetHosts,
     { revalidateOnFocus: false },
   );

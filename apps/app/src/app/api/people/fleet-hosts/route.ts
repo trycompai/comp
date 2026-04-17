@@ -46,9 +46,15 @@ export async function GET() {
     })),
   );
 
-  const devices = await Promise.all(
-    hostRequests.map(({ hostId }) => fleet.get(`/hosts/${hostId}`)),
-  );
+  const CONCURRENCY_LIMIT = 10;
+  const devices: { data: { host: Host } }[] = [];
+  for (let i = 0; i < hostRequests.length; i += CONCURRENCY_LIMIT) {
+    const batch = hostRequests.slice(i, i + CONCURRENCY_LIMIT);
+    const batchResults = await Promise.all(
+      batch.map(({ hostId }) => fleet.get(`/hosts/${hostId}`)),
+    );
+    devices.push(...batchResults);
+  }
   const userIds = hostRequests.map(({ userId }) => userId);
   const memberIds = hostRequests.map(({ memberId }) => memberId);
   const userNames = hostRequests.map(({ userName }) => userName);
@@ -57,6 +63,14 @@ export async function GET() {
     where: { organizationId },
     orderBy: { createdAt: 'desc' },
   });
+
+  const resultIndex = new Map<string, (typeof results)[number]>();
+  for (const result of results) {
+    const key = `${result.userId}:${result.fleetPolicyId}`;
+    if (!resultIndex.has(key)) {
+      resultIndex.set(key, result);
+    }
+  }
 
   const data: Host[] = devices.map(
     (device: { data: { host: Host } }, index: number) => {
@@ -84,10 +98,8 @@ export async function GET() {
               ]
             : []),
         ].map((policy) => {
-          const policyResult = results.find(
-            (result) =>
-              result.fleetPolicyId === policy.id &&
-              result.userId === userIds[index],
+          const policyResult = resultIndex.get(
+            `${userIds[index]}:${policy.id}`,
           );
           return {
             ...policy,

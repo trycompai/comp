@@ -1,5 +1,6 @@
 'use client';
 
+import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 import type { DeviceWithChecks } from '../types';
 
@@ -19,8 +20,9 @@ async function fetchAgentDevices(): Promise<DeviceWithChecks[]> {
 }
 
 export function useAgentDevices() {
+  const { orgId } = useParams<{ orgId: string }>();
   const { data, error, isLoading, mutate } = useSWR<DeviceWithChecks[]>(
-    'people-agent-devices',
+    orgId ? ['people-agent-devices', orgId] : null,
     fetchAgentDevices,
     { revalidateOnFocus: false },
   );
