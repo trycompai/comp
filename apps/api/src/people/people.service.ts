@@ -180,7 +180,9 @@ export class PeopleService {
       checkAutoCompletePhases({
         organizationId,
         timelinesService: this.timelinesService,
-      }).catch(() => {});
+      }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
       return member;
     } catch (error) {
@@ -268,7 +270,9 @@ export class PeopleService {
         checkAutoCompletePhases({
           organizationId,
           timelinesService: this.timelinesService,
-        }).catch(() => {});
+        }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
       }
 
       return { created, errors, summary };
@@ -404,7 +408,9 @@ export class PeopleService {
     checkAutoCompletePhases({
       organizationId,
       timelinesService: this.timelinesService,
-    }).catch(() => {});
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
     return {
       success: true,
@@ -450,7 +456,9 @@ export class PeopleService {
     checkAutoCompletePhases({
       organizationId,
       timelinesService: this.timelinesService,
-    }).catch(() => {});
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
     return reactivatedMember;
   }

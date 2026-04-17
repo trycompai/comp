@@ -27,6 +27,7 @@ export function TemplateEditorPage({
 
   const phasesForBar =
     template?.phases
+      .slice()
       .sort((a, b) => a.orderIndex - b.orderIndex)
       .map((p) => ({
         id: p.id,

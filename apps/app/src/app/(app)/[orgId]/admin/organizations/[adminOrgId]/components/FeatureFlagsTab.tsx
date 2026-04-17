@@ -26,7 +26,7 @@ interface FeatureFlagsTabProps {
 }
 
 export function FeatureFlagsTab({ orgId }: FeatureFlagsTabProps) {
-  const { flags, isLoading, mutate } = useAdminOrgFeatureFlags(orgId);
+  const { flags, isLoading, error, mutate } = useAdminOrgFeatureFlags(orgId);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,6 +82,17 @@ export function FeatureFlagsTab({ orgId }: FeatureFlagsTabProps) {
       <div className="flex items-center justify-center py-12 text-muted-foreground">
         Loading feature flags…
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Stack gap="xs">
+        <Text weight="semibold">Failed to load feature flags</Text>
+        <Text variant="muted">
+          {error instanceof Error ? error.message : 'Unknown error'}
+        </Text>
+      </Stack>
     );
   }
 

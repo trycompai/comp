@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   UseGuards,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import { ApiExcludeController, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { db } from '@db';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
+import { AdminAuditLogInterceptor } from '../admin-organizations/admin-audit-log.interceptor';
 import { AdminFeatureFlagsService } from './admin-feature-flags.service';
 import { UpdateFeatureFlagDto } from './dto/update-feature-flag.dto';
 
@@ -20,6 +22,7 @@ import { UpdateFeatureFlagDto } from './dto/update-feature-flag.dto';
 @ApiTags('Admin - Feature Flags')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)
+@UseInterceptors(AdminAuditLogInterceptor)
 @Throttle({ default: { ttl: 60000, limit: 60 } })
 export class AdminFeatureFlagsController {
   constructor(private readonly service: AdminFeatureFlagsService) {}

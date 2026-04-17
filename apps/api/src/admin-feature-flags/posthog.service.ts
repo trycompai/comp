@@ -5,15 +5,18 @@ import { PostHog } from 'posthog-node';
 export class PostHogService implements OnModuleDestroy {
   private readonly logger = new Logger(PostHogService.name);
   private client: PostHog | null = null;
+  private initialized = false;
 
   getClient(): PostHog | null {
-    if (this.client) return this.client;
+    if (this.initialized) return this.client;
 
     const apiKey = process.env.NEXT_PUBLIC_POSTHOG_KEY || process.env.POSTHOG_API_KEY;
     const apiHost =
       process.env.POSTHOG_HOST ||
       process.env.NEXT_PUBLIC_POSTHOG_HOST ||
       'https://us.i.posthog.com';
+
+    this.initialized = true;
 
     if (!apiKey) {
       this.logger.warn('PostHog API key not configured; feature flag operations will be no-ops');

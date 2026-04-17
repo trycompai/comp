@@ -14,7 +14,6 @@ import {
 import { ApiExcludeController } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
-import { AdminAuditLogInterceptor } from '../admin-organizations/admin-audit-log.interceptor';
 import { TimelinesTemplatesService } from './timelines-templates.service';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';

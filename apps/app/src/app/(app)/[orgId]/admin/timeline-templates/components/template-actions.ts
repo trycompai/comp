@@ -91,16 +91,17 @@ export async function saveExistingTemplate(
   // Delete removed phases
   for (const ep of template.phases) {
     if (!formIds.has(ep.id)) {
-      await api.delete(
+      const delRes = await api.delete(
         `/v1/admin/timeline-templates/${template.id}/phases/${ep.id}`,
       );
+      if (delRes.error) throw new Error(delRes.error);
     }
   }
 
   // Create or update phases
   for (const phase of values.phases) {
     if (phase.id && existingIds.has(phase.id)) {
-      await api.patch(
+      const patchRes = await api.patch(
         `/v1/admin/timeline-templates/${template.id}/phases/${phase.id}`,
         {
           name: phase.name,
@@ -111,8 +112,9 @@ export async function saveExistingTemplate(
           locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,
         },
       );
+      if (patchRes.error) throw new Error(patchRes.error);
     } else {
-      await api.post(
+      const postRes = await api.post(
         `/v1/admin/timeline-templates/${template.id}/phases`,
         {
           name: phase.name,
@@ -123,6 +125,7 @@ export async function saveExistingTemplate(
           locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,
         },
       );
+      if (postRes.error) throw new Error(postRes.error);
     }
   }
   toast.success('Template updated');

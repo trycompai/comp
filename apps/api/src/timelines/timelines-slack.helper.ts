@@ -2,17 +2,19 @@ import { Logger } from '@nestjs/common';
 
 const logger = new Logger('TimelinesSlack');
 
-const WEBHOOK_URL = process.env.SLACK_CX_WEBHOOK_URL;
-const APP_URL = process.env.APP_URL ?? 'https://app.trycomp.ai';
+function appUrl() {
+  return process.env.APP_URL ?? 'https://app.trycomp.ai';
+}
 
 function adminTimelineUrl(orgId: string) {
-  return `${APP_URL}/${orgId}/admin/organizations/${orgId}`;
+  return `${appUrl()}/${orgId}/admin/organizations/${orgId}`;
 }
 
 async function sendSlack(blocks: unknown[], fallbackText: string) {
-  if (!WEBHOOK_URL) return;
+  const webhookUrl = process.env.SLACK_CX_WEBHOOK_URL;
+  if (!webhookUrl) return;
   try {
-    await fetch(WEBHOOK_URL, {
+    await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: fallbackText, blocks }),

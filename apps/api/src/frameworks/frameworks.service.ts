@@ -228,11 +228,16 @@ export class FrameworksService {
       return { success: true, frameworksAdded: finalIds.length, finalIds };
     });
 
-    // Auto-create timeline instances from templates for newly added frameworks
-    await createTimelinesForFrameworks({
+    // Auto-create timeline instances from templates for newly added
+    // frameworks. Fire-and-forget so a timeline-creation failure never masks
+    // the primary transaction's success — the user has their frameworks, and
+    // timelines are backfilled on the next /timelines read.
+    createTimelinesForFrameworks({
       organizationId,
       frameworkEditorIds: result.finalIds,
       timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('createTimelinesForFrameworks failed after framework add', err);
     });
 
     return { success: result.success, frameworksAdded: result.frameworksAdded };

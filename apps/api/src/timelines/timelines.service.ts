@@ -120,6 +120,14 @@ export class TimelinesService {
             },
           });
         }
+
+        // If the timeline was COMPLETED, regression means it's no longer
+        // complete — flip it back to ACTIVE and clear completion metadata
+        // so status stays consistent with phase state.
+        await tx.timelineInstance.updateMany({
+          where: { id: timelineId, status: 'COMPLETED' },
+          data: { status: 'ACTIVE', completedAt: null },
+        });
       });
     };
 

@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { filterDescriptionByFrameworks } from './description-framework-filter';
@@ -34,6 +35,8 @@ function computeNextTaskReviewDate(
 
 @Injectable()
 export class TasksService {
+  private readonly logger = new Logger(TasksService.name);
+
   constructor(
     private readonly taskNotifierService: TaskNotifierService,
     private readonly timelinesService: TimelinesService,
@@ -412,7 +415,9 @@ export class TasksService {
         checkAutoCompletePhases({
           organizationId,
           timelinesService: this.timelinesService,
-        }).catch(() => {});
+        }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
       }
 
       return { updatedCount: result.count };
@@ -518,7 +523,9 @@ export class TasksService {
       checkAutoCompletePhases({
         organizationId,
         timelinesService: this.timelinesService,
-      }).catch(() => {});
+      }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
       return { deletedCount: result.count };
     } catch (error) {
@@ -712,7 +719,9 @@ export class TasksService {
           checkAutoCompletePhases({
             organizationId,
             timelinesService: this.timelinesService,
-          }).catch(() => {});
+          }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
         }
       }
 
@@ -848,7 +857,9 @@ export class TasksService {
       checkAutoCompletePhases({
         organizationId,
         timelinesService: this.timelinesService,
-      }).catch(() => {});
+      }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
       return {
         id: task.id,
@@ -934,7 +945,9 @@ export class TasksService {
     checkAutoCompletePhases({
       organizationId,
       timelinesService: this.timelinesService,
-    }).catch(() => {});
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
   }
 
   /**
@@ -1203,7 +1216,9 @@ export class TasksService {
     checkAutoCompletePhases({
       organizationId,
       timelinesService: this.timelinesService,
-    }).catch(() => {});
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
     return updatedTask;
   }
