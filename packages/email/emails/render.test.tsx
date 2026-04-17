@@ -1,12 +1,12 @@
 import { render } from '@react-email/render';
 import { describe, expect, it } from 'vitest';
 import { AllPolicyNotificationEmail } from './all-policy-notification';
-import { PolicyAcknowledgmentDigestEmail } from './policy-acknowledgment-digest';
 import { InviteEmail } from './invite';
 import { InvitePortalEmail } from './invite-portal';
 import { MagicLinkEmail } from './magic-link';
 import { WelcomeEmail } from './marketing/welcome';
 import { OTPVerificationEmail } from './otp';
+import { PolicyAcknowledgmentDigestEmail } from './policy-acknowledgment-digest';
 import { PolicyNotificationEmail } from './policy-notification';
 import { TaskReminderEmail } from './reminders/task-reminder';
 import { TaskStatusNotificationEmail } from './reminders/task-status-notification';
@@ -38,12 +38,7 @@ const cases = [
   {
     name: 'task-reminder',
     el: (
-      <TaskReminderEmail
-        email="user@example.com"
-        name="User"
-        dueDate="2026-04-20"
-        recordId="r1"
-      />
+      <TaskReminderEmail email="user@example.com" name="User" dueDate="2026-04-20" recordId="r1" />
     ),
   },
   {

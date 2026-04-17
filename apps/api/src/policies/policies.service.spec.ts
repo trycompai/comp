@@ -67,7 +67,7 @@ describe('PoliciesService', () => {
         { id: 'pol_2', name: 'Backup', frequency: null },
       ];
       db.policy.findMany.mockResolvedValueOnce(drafts);
-      db.$transaction.mockImplementation(async (updates: unknown[]) => updates);
+      db.$transaction.mockImplementation((updates: unknown[]) => Promise.resolve(updates));
       db.policy.update.mockImplementation((args) => args);
 
       const result = await service.publishAll(orgId);

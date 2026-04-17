@@ -32,11 +32,9 @@ export const PolicyAcknowledgmentDigestEmail = ({
 }: PolicyAcknowledgmentDigestEmailProps) => {
   if (policies.length === 0) return null;
 
-  const portalBase =
-    process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai';
+  const portalBase = process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai';
   const portalLink = `${portalBase}/${organizationId}`;
-  const countLabel =
-    policies.length === 1 ? '1 policy' : `${policies.length} policies`;
+  const countLabel = policies.length === 1 ? '1 policy' : `${policies.length} policies`;
   const subjectText = `You have ${countLabel} to review at ${organizationName}`;
 
   return (
@@ -55,21 +53,16 @@ export const PolicyAcknowledgmentDigestEmail = ({
               {subjectText}
             </Heading>
 
-            <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Hi {userName},
-            </Text>
+            <Text className="text-[14px] leading-[24px] text-[#121212]">Hi {userName},</Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Your organization <strong>{organizationName}</strong> has{' '}
-              {countLabel} awaiting your review and acknowledgment:
+              Your organization <strong>{organizationName}</strong> has {countLabel} awaiting your
+              review and acknowledgment:
             </Text>
 
             <Section className="mt-[16px] mb-[24px]">
               {policies.map((policy) => (
-                <Text
-                  key={policy.id}
-                  className="m-0 text-[14px] leading-[24px] text-[#121212]"
-                >
+                <Text key={policy.id} className="m-0 text-[14px] leading-[24px] text-[#121212]">
                   &bull;{' '}
                   <Link href={policy.url} className="text-[#121212] underline">
                     {policy.name}
@@ -97,15 +90,11 @@ export const PolicyAcknowledgmentDigestEmail = ({
             <br />
             <Section>
               <Text className="text-[12px] leading-[24px] text-[#666666]">
-                This notification was intended for{' '}
-                <span className="text-[#121212]">{email}</span>.
+                This notification was intended for <span className="text-[#121212]">{email}</span>.
               </Text>
             </Section>
 
-            <UnsubscribeLink
-              email={email}
-              unsubscribeUrl={getUnsubscribeUrl(email)}
-            />
+            <UnsubscribeLink email={email} unsubscribeUrl={getUnsubscribeUrl(email)} />
 
             <br />
 
