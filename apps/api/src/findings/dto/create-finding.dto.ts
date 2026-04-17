@@ -7,7 +7,7 @@ import {
   IsOptional,
   MaxLength,
 } from 'class-validator';
-import { FindingType } from '@db';
+import { FindingScope, FindingType } from '@db';
 import {
   evidenceFormTypeSchema,
   type EvidenceFormType,
@@ -42,6 +42,16 @@ export class CreateFindingDto {
   @IsIn(evidenceFormTypeSchema.options)
   @IsOptional()
   evidenceFormType?: EvidenceFormType;
+
+  @ApiProperty({
+    description:
+      'People area scope (e.g. people directory) when not tied to a task or evidence',
+    enum: FindingScope,
+    required: false,
+  })
+  @IsEnum(FindingScope)
+  @IsOptional()
+  scope?: FindingScope;
 
   @ApiProperty({
     description: 'Type of finding (SOC 2 or ISO 27001)',

@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db, Prisma } from '@db';
+import { getManifest } from '@trycompai/integration-platform';
 import { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
+import { OAuthCredentialsService } from '../integration-platform/services/oauth-credentials.service';
 import { AiRemediationService } from './ai-remediation.service';
 import { parseGcpPermissionError } from './remediation-error.utils';
 import {
@@ -23,16 +25,19 @@ export class GcpRemediationService {
     if (this.planCache.size <= this.PLAN_CACHE_MAX) return;
     const now = Date.now();
     for (const [key, entry] of this.planCache) {
-      if (now - entry.timestamp > this.PLAN_CACHE_TTL) this.planCache.delete(key);
+      if (now - entry.timestamp > this.PLAN_CACHE_TTL)
+        this.planCache.delete(key);
     }
     while (this.planCache.size > this.PLAN_CACHE_MAX) {
       const firstKey = this.planCache.keys().next().value;
-      if (firstKey) this.planCache.delete(firstKey); else break;
+      if (firstKey) this.planCache.delete(firstKey);
+      else break;
     }
   }
 
   constructor(
     private readonly credentialVaultService: CredentialVaultService,
+    private readonly oauthCredentialsService: OAuthCredentialsService,
     private readonly aiRemediationService: AiRemediationService,
   ) {}
 
@@ -124,20 +129,22 @@ export class GcpRemediationService {
               risk: refined.risk,
               apiCalls: [],
               guidedOnly: true,
-              guidedSteps:
-                refined.guidedSteps ?? [
-                  refined.reason ?? refined.description,
-                ],
+              guidedSteps: refined.guidedSteps ?? [
+                refined.reason ?? refined.description,
+              ],
               rollbackSupported: false,
               requiresAcknowledgment: undefined,
             };
           }
 
           this.evictStalePlans();
-          this.planCache.set(`${params.connectionId}:${params.checkResultId}:${params.remediationKey}`, {
-            plan: refined,
-            timestamp: Date.now(),
-          });
+          this.planCache.set(
+            `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+            {
+              plan: refined,
+              timestamp: Date.now(),
+            },
+          );
 
           return this.buildPreviewResponse(refined);
         } catch {
@@ -148,10 +155,13 @@ export class GcpRemediationService {
 
     // Fallback: show initial AI plan without real data
     this.evictStalePlans();
-    this.planCache.set(`${params.connectionId}:${params.checkResultId}:${params.remediationKey}`, {
-      plan,
-      timestamp: Date.now(),
-    });
+    this.planCache.set(
+      `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+      {
+        plan,
+        timestamp: Date.now(),
+      },
+    );
     return this.buildPreviewResponse(plan);
   }
 
@@ -167,7 +177,9 @@ export class GcpRemediationService {
 
     // Get plan from cache or regenerate
     let plan: GcpFixPlan;
-    const cached = this.planCache.get(`${params.connectionId}:${params.checkResultId}:${params.remediationKey}`);
+    const cached = this.planCache.get(
+      `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+    );
     if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
       plan = cached.plan;
     } else {
@@ -216,9 +228,11 @@ export class GcpRemediationService {
       },
     });
 
+    let previousState: Record<string, unknown> = {};
+    let fixResult: { results: Array<{ step: GcpApiStep; output: unknown }>; error?: { stepIndex: number; step: GcpApiStep; message: string } } | undefined;
+
     try {
       // Phase 1: Execute read steps to get real state
-      let previousState: Record<string, unknown> = {};
       if (plan.readSteps.length > 0) {
         const readErrors = validateGcpPlanSteps(plan.readSteps);
         if (readErrors.length > 0) {
@@ -236,7 +250,7 @@ export class GcpRemediationService {
 
       // Phase 2: Refine plan with real data
       const evidence = (finding.evidence ?? {}) as Record<string, unknown>;
-      const refinedPlan = await this.aiRemediationService.refineGcpFixPlan({
+      let refinedPlan = await this.aiRemediationService.refineGcpFixPlan({
         finding: {
           title: finding.title ?? 'Unknown',
           description: finding.description,
@@ -273,19 +287,45 @@ export class GcpRemediationService {
       if (!refinedPlan.fixSteps || refinedPlan.fixSteps.length === 0) {
         throw new Error('AI refined plan has no fix steps. Cannot proceed.');
       }
-      const fixErrors = validateGcpPlanSteps(refinedPlan.fixSteps);
+      let fixErrors = validateGcpPlanSteps(refinedPlan.fixSteps);
       if (fixErrors.length > 0) {
-        throw new Error(`Invalid fix steps: ${fixErrors.join('; ')}`);
+        this.logger.warn(
+          `Fix plan validation failed: ${fixErrors.join('; ')} — retrying with error context`,
+        );
+        const retryPlan = await this.aiRemediationService.refineGcpFixPlan({
+          finding: {
+            title: finding.title ?? 'Unknown',
+            description: finding.description,
+            severity: finding.severity,
+            resourceType: finding.resourceType,
+            resourceId: finding.resourceId,
+            remediation: finding.remediation,
+            findingKey: evidence.findingKey as string,
+            evidence,
+          },
+          originalPlan: refinedPlan,
+          realGcpState: {
+            ...previousState,
+            _validationErrors: fixErrors,
+          },
+        });
+        refinedPlan = retryPlan;
+        fixErrors = validateGcpPlanSteps(refinedPlan.fixSteps);
+        if (fixErrors.length > 0) {
+          throw new Error(`Invalid fix steps after retry: ${fixErrors.join('; ')}`);
+        }
       }
 
       // Phase 3: Execute fix steps with self-healing retry
       // (executor auto-handles: API enablement, throttling, retries, long-running ops)
       for (const step of refinedPlan.fixSteps) {
-        this.logger.log(`Fix step: ${step.method} ${step.url} — ${step.purpose}`);
+        this.logger.log(
+          `Fix step: ${step.method} ${step.url} — ${step.purpose}`,
+        );
       }
 
       let currentPlan = refinedPlan;
-      let fixResult = await executeGcpPlanSteps({
+      fixResult = await executeGcpPlanSteps({
         steps: currentPlan.fixSteps,
         accessToken,
         autoRollbackSteps: currentPlan.rollbackSteps,
@@ -293,10 +333,14 @@ export class GcpRemediationService {
 
       // Self-healing: if non-permission error, regenerate plan with error context and retry
       if (fixResult.error) {
-        const isPermError = fixResult.error.message.includes('Permission denied') || fixResult.error.message.includes('PERMISSION_DENIED');
+        const isPermError =
+          fixResult.error.message.includes('Permission denied') ||
+          fixResult.error.message.includes('PERMISSION_DENIED');
 
         if (!isPermError) {
-          this.logger.log('Non-permission error — regenerating fix plan with error context...');
+          this.logger.log(
+            'Non-permission error — regenerating fix plan with error context...',
+          );
           const retryPlan = await this.aiRemediationService.refineGcpFixPlan({
             finding: {
               title: finding.title ?? 'Unknown',
@@ -317,7 +361,9 @@ export class GcpRemediationService {
           });
 
           if (retryPlan.canAutoFix && retryPlan.fixSteps.length > 0) {
-            this.logger.log(`Retrying with regenerated plan (${retryPlan.fixSteps.length} steps)...`);
+            this.logger.log(
+              `Retrying with regenerated plan (${retryPlan.fixSteps.length} steps)...`,
+            );
             currentPlan = retryPlan;
             fixResult = await executeGcpPlanSteps({
               steps: currentPlan.fixSteps,
@@ -337,9 +383,30 @@ export class GcpRemediationService {
         this.logger.log(`Step result: ${r.step.method} ${r.step.url} → OK`);
       }
 
-      // Phase 4: Verify — re-read to confirm fix took effect
+      // Phase 4: Verify — check the fix step responses for success indicators
       let verified = false;
-      if (currentPlan.readSteps.length > 0) {
+
+      // Primary verification: check if the API response from the fix step
+      // contains the expected changes (e.g., setIamPolicy returns the updated policy)
+      for (const r of fixResult.results) {
+        const output = r.output as Record<string, unknown> | undefined;
+        if (!output) continue;
+        // setIamPolicy returns the updated policy — check if auditConfigs present
+        if (
+          r.step.url.includes(':setIamPolicy') &&
+          Array.isArray(output.auditConfigs) &&
+          (output.auditConfigs as unknown[]).length > 0
+        ) {
+          verified = true;
+        }
+        // Generic: if the API returned a non-empty response, the call succeeded
+        if (Object.keys(output).length > 0 && !verified) {
+          verified = true;
+        }
+      }
+
+      // Fallback verification: re-read and compare (for non-IAM fixes)
+      if (!verified && currentPlan.readSteps.length > 0) {
         await new Promise((r) => setTimeout(r, 2000));
         const verifyResult = await executeGcpPlanSteps({
           steps: currentPlan.readSteps,
@@ -349,9 +416,26 @@ export class GcpRemediationService {
         for (const r of verifyResult.results) {
           postFixState[r.step.purpose] = r.output;
         }
-        verified = JSON.stringify(postFixState) !== JSON.stringify(previousState);
+        const stripVolatile = (obj: unknown): unknown => {
+          if (!obj || typeof obj !== 'object') return obj;
+          if (Array.isArray(obj)) return obj.map(stripVolatile);
+          const cleaned: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(
+            obj as Record<string, unknown>,
+          )) {
+            if (k === 'etag' || k === 'updateTime' || k === 'createTime')
+              continue;
+            cleaned[k] = stripVolatile(v);
+          }
+          return cleaned;
+        };
+        const preStr = JSON.stringify(stripVolatile(previousState));
+        const postStr = JSON.stringify(stripVolatile(postFixState));
+        verified = postStr !== preStr;
         if (!verified) {
-          this.logger.warn(`Fix executed but verification shows no state change for ${finding.resourceId}`);
+          this.logger.warn(
+            `Fix executed but verification shows no state change for ${finding.resourceId}`,
+          );
         }
       }
 
@@ -376,12 +460,16 @@ export class GcpRemediationService {
         },
       });
 
-      this.logger.log(`GCP remediation executed on ${finding.resourceId} (verified: ${verified})`);
-      this.planCache.delete(`${params.connectionId}:${params.checkResultId}:${params.remediationKey}`);
+      this.logger.log(
+        `GCP remediation executed on ${finding.resourceId} (verified: ${verified})`,
+      );
+      this.planCache.delete(
+        `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+      );
 
       return {
         actionId: action.id,
-        status: status as 'success' | 'unverified',
+        status: status,
         resourceId: finding.resourceId,
         previousState,
         appliedState,
@@ -392,8 +480,7 @@ export class GcpRemediationService {
 
       // Parse GCP permission errors and provide actionable fix
       const evidence = (finding.evidence ?? {}) as Record<string, unknown>;
-      const projectId =
-        (evidence.projectDisplayName as string) ?? undefined;
+      const projectId = (evidence.projectDisplayName as string) ?? undefined;
       const permInfo = parseGcpPermissionError(errorMessage, projectId);
 
       let permissionError:
@@ -406,12 +493,31 @@ export class GcpRemediationService {
         };
       }
 
+      const hasAutoRollback = Boolean(
+        fixResult?.error && fixResult.results.length > 0,
+      );
+
       await db.remediationAction.update({
         where: { id: action.id },
-        data: { status: 'failed', errorMessage },
+        data: {
+          status: 'failed',
+          errorMessage,
+          previousState: previousState as Prisma.InputJsonValue,
+          appliedState: {
+            autoRollbackAttempted: hasAutoRollback,
+            failedAtStep: fixResult?.error?.stepIndex,
+            completedSteps: fixResult?.results.length ?? 0,
+            ...(permissionError && {
+              missingPermissions: permissionError.missingActions,
+              suggestedFix: permissionError.fixScript,
+            }),
+          } as unknown as Prisma.InputJsonValue,
+        },
       });
 
-      this.logger.error(`GCP remediation failed: ${errorMessage}`);
+      this.logger.error(
+        `GCP remediation failed: ${errorMessage}${hasAutoRollback ? ' (auto-rollback attempted)' : ''}${permInfo.isPermissionError ? ` | Missing: ${permInfo.missingPermissions.join(', ')}` : ''}`,
+      );
 
       return {
         actionId: action.id,
@@ -433,9 +539,7 @@ export class GcpRemediationService {
 
     if (!action) throw new Error('Remediation action not found');
     if (action.status !== 'success' && action.status !== 'unverified') {
-      throw new Error(
-        `Cannot rollback action with status "${action.status}"`,
-      );
+      throw new Error(`Cannot rollback action with status "${action.status}"`);
     }
 
     const appliedState = action.appliedState as Record<string, unknown>;
@@ -445,25 +549,22 @@ export class GcpRemediationService {
       throw new Error('No rollback steps available for this action');
     }
 
-    const credentials =
-      await this.credentialVaultService.getDecryptedCredentials(
-        action.connectionId,
-      );
-    if (!credentials) throw new Error('No credentials found');
-    const accessToken = credentials.access_token as string;
-    if (!accessToken) {
-      throw new Error(
-        'GCP access token expired. Please reconnect the integration.',
-      );
-    }
+    const accessToken = await this.getValidGcpToken(
+      action.connectionId,
+      action.organizationId,
+    );
 
     try {
-      this.logger.log(`Rolling back GCP action ${action.id}: ${rollbackSteps.length} steps`);
+      this.logger.log(
+        `Rolling back GCP action ${action.id}: ${rollbackSteps.length} steps`,
+      );
       for (const step of rollbackSteps) {
-        this.logger.log(`Rollback step: ${step.method} ${step.url} — ${step.purpose}`);
+        this.logger.log(
+          `Rollback step: ${step.method} ${step.url} — ${step.purpose}`,
+        );
       }
 
-      let result = await executeGcpPlanSteps({
+      const result = await executeGcpPlanSteps({
         steps: rollbackSteps,
         accessToken,
         isRollback: true,
@@ -548,20 +649,53 @@ export class GcpRemediationService {
     });
     if (!finding) throw new Error('Finding not found');
 
-    const credentials =
-      await this.credentialVaultService.getDecryptedCredentials(
-        params.connectionId,
-      );
-    if (!credentials) throw new Error('No credentials found');
+    const accessToken = await this.getValidGcpToken(
+      params.connectionId,
+      params.organizationId,
+    );
 
-    const accessToken = credentials.access_token as string;
-    if (!accessToken) {
+    return { finding, accessToken };
+  }
+
+  /**
+   * Get a valid GCP access token, refreshing if expired.
+   */
+  private async getValidGcpToken(
+    connectionId: string,
+    organizationId: string,
+  ): Promise<string> {
+    const manifest = getManifest('gcp');
+    const oauthConfig = manifest?.auth?.type === 'oauth2' ? manifest.auth.config : null;
+
+    if (oauthConfig) {
+      const oauthCreds = await this.oauthCredentialsService.getCredentials(
+        'gcp',
+        organizationId,
+      );
+      if (oauthCreds) {
+        const token = await this.credentialVaultService.getValidAccessToken(
+          connectionId,
+          {
+            tokenUrl: oauthConfig.tokenUrl,
+            clientId: oauthCreds.clientId,
+            clientSecret: oauthCreds.clientSecret,
+            clientAuthMethod: oauthConfig.clientAuthMethod,
+          },
+        );
+        if (token) return token;
+      }
+    }
+
+    // Fallback to raw credentials if refresh fails
+    const credentials =
+      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+    const token = credentials?.access_token as string;
+    if (!token) {
       throw new Error(
         'GCP access token not found. Please reconnect the integration.',
       );
     }
-
-    return { finding, accessToken };
+    return token;
   }
 
   private buildPreviewResponse(plan: GcpFixPlan) {

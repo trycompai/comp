@@ -1,7 +1,4 @@
-import {
-  RDSClient,
-  DescribeDBInstancesCommand,
-} from '@aws-sdk/client-rds';
+import { RDSClient, DescribeDBInstancesCommand } from '@aws-sdk/client-rds';
 import type { SecurityFinding } from '../../cloud-security.service';
 import type { AwsCredentials, AwsServiceAdapter } from './aws-service-adapter';
 
@@ -29,9 +26,7 @@ export class RdsAdapter implements AwsServiceAdapter {
 
       for (const db of resp.DBInstances || []) {
         if (!db.DBInstanceIdentifier) continue;
-        findings.push(
-          ...this.checkInstance(db, region, accountId),
-        );
+        findings.push(...this.checkInstance(db, region, accountId));
       }
 
       marker = resp.Marker;

@@ -55,7 +55,11 @@ export function parseAwsPermissionError(
   );
 
   if (!isPermissionError) {
-    return { isPermissionError: false, missingActions: [], rawMessage: errorMessage };
+    return {
+      isPermissionError: false,
+      missingActions: [],
+      rawMessage: errorMessage,
+    };
   }
 
   const actions = new Set<string>();
@@ -198,14 +202,20 @@ export function parseAzurePermissionError(
   const actionMatch = errorMessage.match(/perform action '([^']+)'/);
   const missingActions = actionMatch ? [actionMatch[1]] : [];
 
-  const fixScript = missingActions.length > 0
-    ? [
-        'az role assignment create \\',
-        "  --assignee '<app-registration-object-id>' \\",
-        "  --role 'Contributor' \\",
-        "  --scope '/subscriptions/<subscription-id>'",
-      ].join('\n')
-    : null;
+  const fixScript =
+    missingActions.length > 0
+      ? [
+          'az role assignment create \\',
+          "  --assignee '<app-registration-object-id>' \\",
+          "  --role 'Contributor' \\",
+          "  --scope '/subscriptions/<subscription-id>'",
+        ].join('\n')
+      : null;
 
-  return { isPermissionError: true, missingActions, fixScript, rawMessage: errorMessage };
+  return {
+    isPermissionError: true,
+    missingActions,
+    fixScript,
+    rawMessage: errorMessage,
+  };
 }

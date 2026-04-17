@@ -13,9 +13,13 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import { db } from '@db';
-import { AssumeRoleCommand, GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
+import {
+  AssumeRoleCommand,
+  GetCallerIdentityCommand,
+  STSClient,
+} from '@aws-sdk/client-sts';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -68,6 +72,7 @@ export class ConnectionsController {
    * List all available integration providers
    */
   @Get('providers')
+  @ApiOperation({ summary: 'List available integration providers' })
   @RequirePermission('integration', 'read')
   async listProviders(@Query('activeOnly') activeOnly?: string) {
     const manifests =
@@ -154,13 +159,14 @@ export class ConnectionsController {
         mappedTasks,
         requiredVariables: Array.from(requiredVariables),
         supportsMultipleConnections: m.supportsMultipleConnections ?? false,
-        services: m.services?.map((s) => ({
-          id: s.id,
-          name: s.name,
-          description: s.description,
-          enabledByDefault: s.enabledByDefault ?? true,
-          implemented: s.implemented ?? true,
-        })) ?? [],
+        services:
+          m.services?.map((s) => ({
+            id: s.id,
+            name: s.name,
+            description: s.description,
+            enabledByDefault: s.enabledByDefault ?? true,
+            implemented: s.implemented ?? true,
+          })) ?? [],
       };
     });
   }
@@ -169,6 +175,7 @@ export class ConnectionsController {
    * Get a specific provider's details
    */
   @Get('providers/:slug')
+  @ApiOperation({ summary: 'Get an integration provider by slug' })
   @RequirePermission('integration', 'read')
   async getProvider(@Param('slug') slug: string) {
     const manifest = getManifest(slug);
@@ -243,52 +250,61 @@ export class ConnectionsController {
       setupScript,
       mappedTasks,
       requiredVariables: Array.from(requiredVariables),
-      supportsMultipleConnections: manifest.supportsMultipleConnections ?? false,
-      services: manifest.services?.map((s) => ({
-        id: s.id,
-        name: s.name,
-        description: s.description,
-        enabledByDefault: s.enabledByDefault ?? true,
-        implemented: s.implemented ?? true,
-      })) ?? [],
+      supportsMultipleConnections:
+        manifest.supportsMultipleConnections ?? false,
+      services:
+        manifest.services?.map((s) => ({
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          enabledByDefault: s.enabledByDefault ?? true,
+          implemented: s.implemented ?? true,
+        })) ?? [],
     };
   }
 
   /**
-   * List connections for an organization
+   * List connections for an organization (excludes soft-deleted/disconnected)
    */
   @Get()
+  @ApiOperation({ summary: 'List integration connections' })
   @RequirePermission('integration', 'read')
   async listConnections(@OrganizationId() organizationId: string) {
     const connections =
       await this.connectionService.getOrganizationConnections(organizationId);
 
-    return connections.map((c) => ({
-      id: c.id,
-      providerId: c.providerId,
-      providerSlug: (c as any).provider?.slug,
-      providerName: (c as any).provider?.name,
-      status: c.status,
-      authStrategy: c.authStrategy,
-      lastSyncAt: c.lastSyncAt,
-      nextSyncAt: c.nextSyncAt,
-      errorMessage: c.errorMessage,
-      variables: c.variables,
-      metadata: c.metadata,
-      createdAt: c.createdAt,
-    }));
+    return connections
+      .filter((c) => c.status !== 'disconnected')
+      .map((c) => ({
+        id: c.id,
+        providerId: c.providerId,
+        providerSlug: (c as any).provider?.slug,
+        providerName: (c as any).provider?.name,
+        status: c.status,
+        authStrategy: c.authStrategy,
+        lastSyncAt: c.lastSyncAt,
+        nextSyncAt: c.nextSyncAt,
+        errorMessage: c.errorMessage,
+        variables: c.variables,
+        metadata: c.metadata,
+        createdAt: c.createdAt,
+      }));
   }
 
   /**
    * Get a specific connection
    */
   @Get(':id')
+  @ApiOperation({ summary: 'Get an integration connection by ID' })
   @RequirePermission('integration', 'read')
   async getConnection(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
   ) {
-    const connection = await this.connectionService.getConnectionForOrg(id, organizationId);
+    const connection = await this.connectionService.getConnectionForOrg(
+      id,
+      organizationId,
+    );
     const providerSlug = (connection as { provider?: { slug: string } })
       .provider?.slug;
 
@@ -317,12 +333,13 @@ export class ConnectionsController {
     let metadata = (connection.metadata ?? {}) as Record<string, unknown>;
     if (providerSlug === 'aws' && !metadata.accountId) {
       try {
-        const creds = await this.credentialVaultService.getDecryptedCredentials(id);
+        const creds =
+          await this.credentialVaultService.getDecryptedCredentials(id);
         if (creds) {
           const updates: Record<string, unknown> = {};
           if (typeof creds.roleArn === 'string') {
             updates.roleArn = creds.roleArn;
-            const m = (creds.roleArn as string).match(/^arn:aws:iam::(\d{12}):role\/.+$/);
+            const m = creds.roleArn.match(/^arn:aws:iam::(\d{12}):role\/.+$/);
             if (m) updates.accountId = m[1];
           }
           if (typeof creds.remediationRoleArn === 'string') {
@@ -369,6 +386,7 @@ export class ConnectionsController {
    * Create a new connection with API key credentials
    */
   @Post()
+  @ApiOperation({ summary: 'Create an integration connection' })
   @RequirePermission('integration', 'create')
   async createConnection(
     @OrganizationId() organizationId: string,
@@ -446,7 +464,10 @@ export class ConnectionsController {
       if (typeof credentials.externalId === 'string') {
         metadata.externalId = credentials.externalId;
       }
-      if (typeof credentials.remediationRoleArn === 'string' && credentials.remediationRoleArn) {
+      if (
+        typeof credentials.remediationRoleArn === 'string' &&
+        credentials.remediationRoleArn
+      ) {
         metadata.remediationRoleArn = credentials.remediationRoleArn;
       }
       // Store Azure tenant/subscription IDs in metadata for display and pre-filling
@@ -666,12 +687,16 @@ export class ConnectionsController {
    * Test a connection's credentials
    */
   @Post(':id/test')
+  @ApiOperation({ summary: 'Test an integration connection' })
   @RequirePermission('integration', 'update')
   async testConnection(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
   ) {
-    const connection = await this.connectionService.getConnectionForOrg(id, organizationId);
+    const connection = await this.connectionService.getConnectionForOrg(
+      id,
+      organizationId,
+    );
     const providerSlug = (connection as any).provider?.slug;
 
     if (!providerSlug) {
@@ -759,6 +784,7 @@ export class ConnectionsController {
    * Pause a connection
    */
   @Post(':id/pause')
+  @ApiOperation({ summary: 'Pause an integration connection' })
   @RequirePermission('integration', 'update')
   async pauseConnection(
     @Param('id') id: string,
@@ -773,6 +799,7 @@ export class ConnectionsController {
    * Resume a paused connection
    */
   @Post(':id/resume')
+  @ApiOperation({ summary: 'Resume an integration connection' })
   @RequirePermission('integration', 'update')
   async resumeConnection(
     @Param('id') id: string,
@@ -787,6 +814,7 @@ export class ConnectionsController {
    * Disconnect (soft delete) a connection
    */
   @Post(':id/disconnect')
+  @ApiOperation({ summary: 'Disconnect an integration' })
   @RequirePermission('integration', 'delete')
   async disconnectConnection(
     @Param('id') id: string,
@@ -801,6 +829,7 @@ export class ConnectionsController {
    * Delete a connection permanently
    */
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete an integration connection' })
   @RequirePermission('integration', 'delete')
   async deleteConnection(
     @Param('id') id: string,
@@ -815,13 +844,17 @@ export class ConnectionsController {
    * Update connection metadata (connectionName, regions, etc.)
    */
   @Patch(':id')
+  @ApiOperation({ summary: 'Update an integration connection' })
   @RequirePermission('integration', 'update')
   async updateConnection(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
     @Body() body: { metadata?: Record<string, unknown> },
   ) {
-    const connection = await this.connectionService.getConnectionForOrg(id, organizationId);
+    const connection = await this.connectionService.getConnectionForOrg(
+      id,
+      organizationId,
+    );
 
     if (body.metadata && Object.keys(body.metadata).length > 0) {
       // Merge with existing metadata
@@ -845,12 +878,16 @@ export class ConnectionsController {
    * Used by scheduled jobs to ensure tokens are valid before running checks.
    */
   @Post(':id/ensure-valid-credentials')
+  @ApiOperation({ summary: 'Ensure valid credentials for a connection' })
   @RequirePermission('integration', 'update')
   async ensureValidCredentials(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
   ) {
-    const connection = await this.connectionService.getConnectionForOrg(id, organizationId);
+    const connection = await this.connectionService.getConnectionForOrg(
+      id,
+      organizationId,
+    );
 
     if (connection.status !== 'active') {
       throw new HttpException(
@@ -1004,6 +1041,7 @@ export class ConnectionsController {
    * Update enabled services for a connection
    */
   @Put(':id/services')
+  @ApiOperation({ summary: 'Set services enabled on a connection' })
   @RequirePermission('integration', 'update')
   async updateConnectionServices(
     @Param('id') id: string,
@@ -1040,13 +1078,15 @@ export class ConnectionsController {
 
     // disabledServices = all manifest services MINUS what user sent as enabled
     const enabledSet = new Set(body.services);
-    const disabledServices = [...allManifestServices].filter((s) => !enabledSet.has(s));
+    const disabledServices = [...allManifestServices].filter(
+      (s) => !enabledSet.has(s),
+    );
 
     // Merge user-enabled services into detectedServices so the GET
     // logic treats them as "known" services (user intent > auto-detection)
     const currentDetected = new Set<string>(
       Array.isArray(existingVariables.detectedServices)
-        ? existingVariables.detectedServices as string[]
+        ? (existingVariables.detectedServices as string[])
         : [],
     );
     for (const id of body.services) {
@@ -1070,13 +1110,17 @@ export class ConnectionsController {
    * Update credentials for a custom auth connection
    */
   @Put(':id/credentials')
+  @ApiOperation({ summary: 'Update integration credentials' })
   @RequirePermission('integration', 'update')
   async updateCredentials(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
     @Body() body: { credentials: Record<string, string | string[]> },
   ) {
-    const connection = await this.connectionService.getConnectionForOrg(id, organizationId);
+    const connection = await this.connectionService.getConnectionForOrg(
+      id,
+      organizationId,
+    );
 
     const providerSlug = (connection as { provider?: { slug: string } })
       .provider?.slug;
@@ -1139,7 +1183,9 @@ export class ConnectionsController {
     const metaUpdates: Record<string, unknown> = {};
     if (typeof mergedCredentials.roleArn === 'string') {
       metaUpdates.roleArn = mergedCredentials.roleArn;
-      const arnMatch = mergedCredentials.roleArn.match(/^arn:aws:iam::(\d{12}):role\/.+$/);
+      const arnMatch = mergedCredentials.roleArn.match(
+        /^arn:aws:iam::(\d{12}):role\/.+$/,
+      );
       if (arnMatch) metaUpdates.accountId = arnMatch[1];
     }
     if (typeof mergedCredentials.remediationRoleArn === 'string') {
@@ -1148,8 +1194,13 @@ export class ConnectionsController {
     if (Array.isArray(mergedCredentials.regions)) {
       metaUpdates.regions = mergedCredentials.regions;
     }
+    // Mark cloud credential updates as reconnections so reconnect banners clear
+    if (manifest.category === 'Cloud') {
+      metaUpdates.reconnectedAt = new Date().toISOString();
+    }
     if (Object.keys(metaUpdates).length > 0) {
-      const existingMeta = (connection.metadata as Record<string, unknown>) ?? {};
+      const existingMeta =
+        (connection.metadata as Record<string, unknown>) ?? {};
       await this.connectionRepository.update(id, {
         metadata: { ...existingMeta, ...metaUpdates },
       });

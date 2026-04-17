@@ -28,7 +28,10 @@ interface StorageAccount {
 export class StorageAccountAdapter implements AzureServiceAdapter {
   readonly serviceId = 'storage-account';
 
-  async scan({ accessToken, subscriptionId }: {
+  async scan({
+    accessToken,
+    subscriptionId,
+  }: {
     accessToken: string;
     subscriptionId: string;
   }): Promise<SecurityFinding[]> {
@@ -46,61 +49,75 @@ export class StorageAccountAdapter implements AzureServiceAdapter {
 
       // Check 1: HTTPS-only
       if (props.supportsHttpsTrafficOnly === false) {
-        findings.push(this.finding(acct, {
-          key: 'https-disabled',
-          title: `HTTPS Not Enforced: ${acct.name}`,
-          description: `Storage account "${acct.name}" allows insecure HTTP traffic.`,
-          severity: 'high',
-          remediation: 'Enable "Secure transfer required" to enforce HTTPS-only access.',
-        }));
+        findings.push(
+          this.finding(acct, {
+            key: 'https-disabled',
+            title: `HTTPS Not Enforced: ${acct.name}`,
+            description: `Storage account "${acct.name}" allows insecure HTTP traffic.`,
+            severity: 'high',
+            remediation:
+              'Enable "Secure transfer required" to enforce HTTPS-only access.',
+          }),
+        );
       }
 
       // Check 2: TLS version
       if (!props.minimumTlsVersion || props.minimumTlsVersion < 'TLS1_2') {
-        findings.push(this.finding(acct, {
-          key: 'tls-outdated',
-          title: `Outdated TLS Version: ${acct.name}`,
-          description: `Storage account "${acct.name}" allows TLS versions below 1.2 (current: ${props.minimumTlsVersion || 'not set'}).`,
-          severity: 'medium',
-          remediation: 'Set minimum TLS version to TLS 1.2.',
-        }));
+        findings.push(
+          this.finding(acct, {
+            key: 'tls-outdated',
+            title: `Outdated TLS Version: ${acct.name}`,
+            description: `Storage account "${acct.name}" allows TLS versions below 1.2 (current: ${props.minimumTlsVersion || 'not set'}).`,
+            severity: 'medium',
+            remediation: 'Set minimum TLS version to TLS 1.2.',
+          }),
+        );
       }
 
       // Check 3: Public blob access
       if (props.allowBlobPublicAccess === true) {
-        findings.push(this.finding(acct, {
-          key: 'public-blob',
-          title: `Public Blob Access Enabled: ${acct.name}`,
-          description: `Storage account "${acct.name}" allows anonymous public access to blobs. This can expose sensitive data.`,
-          severity: 'high',
-          remediation: 'Disable "Allow Blob public access" unless explicitly required.',
-        }));
+        findings.push(
+          this.finding(acct, {
+            key: 'public-blob',
+            title: `Public Blob Access Enabled: ${acct.name}`,
+            description: `Storage account "${acct.name}" allows anonymous public access to blobs. This can expose sensitive data.`,
+            severity: 'high',
+            remediation:
+              'Disable "Allow Blob public access" unless explicitly required.',
+          }),
+        );
       }
 
       // Check 4: Network access
-      const isPublic = props.publicNetworkAccess === 'Enabled'
-        || props.networkAcls?.defaultAction === 'Allow';
+      const isPublic =
+        props.publicNetworkAccess === 'Enabled' ||
+        props.networkAcls?.defaultAction === 'Allow';
       if (isPublic) {
-        findings.push(this.finding(acct, {
-          key: 'public-network',
-          title: `Public Network Access: ${acct.name}`,
-          description: `Storage account "${acct.name}" allows access from all networks. Restrict to specific VNets or IP ranges.`,
-          severity: 'medium',
-          remediation: 'Configure network ACLs to deny public access and add specific VNet/IP rules.',
-        }));
+        findings.push(
+          this.finding(acct, {
+            key: 'public-network',
+            title: `Public Network Access: ${acct.name}`,
+            description: `Storage account "${acct.name}" allows access from all networks. Restrict to specific VNets or IP ranges.`,
+            severity: 'medium',
+            remediation:
+              'Configure network ACLs to deny public access and add specific VNet/IP rules.',
+          }),
+        );
       }
 
       // Check 5: Encryption
       const blobEncrypted = props.encryption?.services?.blob?.enabled !== false;
       const fileEncrypted = props.encryption?.services?.file?.enabled !== false;
       if (!blobEncrypted || !fileEncrypted) {
-        findings.push(this.finding(acct, {
-          key: 'encryption-disabled',
-          title: `Encryption Not Fully Enabled: ${acct.name}`,
-          description: `Storage account "${acct.name}" does not have encryption enabled for all services.`,
-          severity: 'high',
-          remediation: 'Enable encryption for blob and file services.',
-        }));
+        findings.push(
+          this.finding(acct, {
+            key: 'encryption-disabled',
+            title: `Encryption Not Fully Enabled: ${acct.name}`,
+            description: `Storage account "${acct.name}" does not have encryption enabled for all services.`,
+            severity: 'high',
+            remediation: 'Enable encryption for blob and file services.',
+          }),
+        );
       }
     }
 
@@ -113,7 +130,11 @@ export class StorageAccountAdapter implements AzureServiceAdapter {
         resourceType: 'storage-account',
         resourceId: subscriptionId,
         remediation: 'No action needed.',
-        evidence: { serviceId: this.serviceId, serviceName: 'Storage Accounts', findingKey: 'azure-storage-account-all-ok' },
+        evidence: {
+          serviceId: this.serviceId,
+          serviceName: 'Storage Accounts',
+          findingKey: 'azure-storage-account-all-ok',
+        },
         createdAt: new Date().toISOString(),
         passed: true,
       });
@@ -122,10 +143,16 @@ export class StorageAccountAdapter implements AzureServiceAdapter {
     return findings;
   }
 
-  private finding(acct: StorageAccount, opts: {
-    key: string; title: string; description: string;
-    severity: SecurityFinding['severity']; remediation: string;
-  }): SecurityFinding {
+  private finding(
+    acct: StorageAccount,
+    opts: {
+      key: string;
+      title: string;
+      description: string;
+      severity: SecurityFinding['severity'];
+      remediation: string;
+    },
+  ): SecurityFinding {
     return {
       id: `azure-sa-${opts.key}-${acct.name}`,
       title: opts.title,

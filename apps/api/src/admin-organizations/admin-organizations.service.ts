@@ -125,7 +125,14 @@ export class AdminOrganizationsService {
           createdAt: true,
           hasAccess: true,
           onboardingCompleted: true,
-          _count: { select: { members: true, tasks: true, policy: true, auditLog: true } },
+          _count: {
+            select: {
+              members: true,
+              tasks: true,
+              policy: true,
+              auditLog: true,
+            },
+          },
           members: {
             where: { deactivated: false },
             select: {
@@ -168,14 +175,20 @@ export class AdminOrganizationsService {
           lastSession = sess;
         }
         if (member.role?.includes('owner') && !owner) {
-          owner = { id: member.user.id, name: member.user.name, email: member.user.email };
+          owner = {
+            id: member.user.id,
+            name: member.user.name,
+            email: member.user.email,
+          };
         }
       }
 
       const lastAuditLog = org.auditLog?.[0]?.timestamp ?? null;
       const lastActivity = [lastSession, lastAuditLog]
         .filter(Boolean)
-        .sort((a, b) => (b as Date).getTime() - (a as Date).getTime())[0] as Date | undefined;
+        .sort((a, b) => (b as Date).getTime() - (a as Date).getTime())[0] as
+        | Date
+        | undefined;
 
       const isActive = lastActivity ? lastActivity >= cutoff : false;
 
@@ -191,7 +204,7 @@ export class AdminOrganizationsService {
         auditLogCount: org._count.auditLog,
         owner,
         lastSession: lastSession?.toISOString() ?? null,
-        lastAuditLog: lastAuditLog ? (lastAuditLog as Date).toISOString() : null,
+        lastAuditLog: lastAuditLog ? lastAuditLog.toISOString() : null,
         lastActivity: lastActivity?.toISOString() ?? null,
         isActive,
       };

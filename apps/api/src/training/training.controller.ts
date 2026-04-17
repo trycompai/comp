@@ -158,7 +158,10 @@ export class TrainingController {
   })
   @ApiProduces('application/pdf')
   @ApiResponse({ status: 200, description: 'PDF certificate file' })
-  @ApiResponse({ status: 400, description: 'HIPAA training not complete or member not found' })
+  @ApiResponse({
+    status: 400,
+    description: 'HIPAA training not complete or member not found',
+  })
   async generateHipaaCertificate(
     @OrganizationId() organizationId: string,
     @Body() dto: SendTrainingCompletionDto,

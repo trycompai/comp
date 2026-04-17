@@ -10,8 +10,9 @@ import {
   TabsTrigger,
 } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { InviteMembersModal } from '../all/components/InviteMembersModal';
 
 interface PeoplePageTabsProps {
@@ -27,6 +28,46 @@ interface PeoplePageTabsProps {
   organizationId: string;
 }
 
+/** ?tab= value → Radix tab value */
+function tabParamToInternal(
+  tabParam: string | null,
+  showEmployeeTasks: boolean,
+  showRoleMapping: boolean,
+): string {
+  if (!tabParam || tabParam === 'people') {
+    return 'people';
+  }
+  if (tabParam === 'tasks') {
+    return showEmployeeTasks ? 'employee-tasks' : 'people';
+  }
+  if (tabParam === 'devices') {
+    return 'devices';
+  }
+  if (tabParam === 'chart') {
+    return 'org-chart';
+  }
+  if (tabParam === 'role-mapping') {
+    return showRoleMapping ? 'role-mapping' : 'people';
+  }
+  return 'people';
+}
+
+/** Radix tab value → ?tab= query param */
+function internalValueToTabParam(value: string): string {
+  switch (value) {
+    case 'employee-tasks':
+      return 'tasks';
+    case 'org-chart':
+      return 'chart';
+    case 'people':
+    case 'devices':
+    case 'role-mapping':
+      return value;
+    default:
+      return 'people';
+  }
+}
+
 export function PeoplePageTabs({
   peopleContent,
   employeeTasksContent,
@@ -39,10 +80,34 @@ export function PeoplePageTabs({
   canManageMembers,
   organizationId,
 }: PeoplePageTabsProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
+  const activeTab = tabParamToInternal(
+    searchParams.get('tab'),
+    showEmployeeTasks,
+    showRoleMapping,
+  );
+
+  const handleTabChange = useCallback(
+    (value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const tabParam = internalValueToTabParam(value);
+      if (tabParam === 'people') {
+        params.delete('tab');
+      } else {
+        params.set('tab', tabParam);
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
   return (
-    <Tabs defaultValue="people">
+    <Tabs value={activeTab} onValueChange={handleTabChange}>
       <PageLayout
         header={
           <PageHeader

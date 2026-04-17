@@ -40,8 +40,16 @@ describe('FrameworksController', () => {
   describe('findAll', () => {
     it('should return framework instances with count', async () => {
       const mockData = [
-        { id: 'fi1', frameworkId: 'f1', framework: { id: 'f1', name: 'ISO 27001' } },
-        { id: 'fi2', frameworkId: 'f2', framework: { id: 'f2', name: 'SOC 2' } },
+        {
+          id: 'fi1',
+          frameworkId: 'f1',
+          framework: { id: 'f1', name: 'ISO 27001' },
+        },
+        {
+          id: 'fi2',
+          frameworkId: 'f2',
+          framework: { id: 'f2', name: 'SOC 2' },
+        },
       ];
       mockService.findAll.mockResolvedValue(mockData);
 

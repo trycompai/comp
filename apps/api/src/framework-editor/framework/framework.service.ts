@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  Logger,
+} from '@nestjs/common';
 import { db, Prisma } from '@db';
 import { CreateFrameworkDto } from './dto/create-framework.dto';
 import { UpdateFrameworkDto } from './dto/update-framework.dto';
@@ -186,9 +191,7 @@ export class FrameworkEditorFrameworkService {
       data: { requirements: { connect: requirementIds } },
     });
 
-    this.logger.log(
-      `Linked control ${controlId} to framework ${frameworkId}`,
-    );
+    this.logger.log(`Linked control ${controlId} to framework ${frameworkId}`);
     return { message: 'Control linked to framework' };
   }
 
@@ -238,9 +241,7 @@ export class FrameworkEditorFrameworkService {
       data: { controlTemplates: { connect: controlIds } },
     });
 
-    this.logger.log(
-      `Linked policy ${policyId} to framework ${frameworkId}`,
-    );
+    this.logger.log(`Linked policy ${policyId} to framework ${frameworkId}`);
     return { message: 'Policy linked to framework' };
   }
 }

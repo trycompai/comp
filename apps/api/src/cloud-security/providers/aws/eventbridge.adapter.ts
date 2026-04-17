@@ -70,7 +70,7 @@ export class EventBridgeAdapter implements AwsServiceAdapter {
           const hasCondition =
             stmt.Condition != null &&
             typeof stmt.Condition === 'object' &&
-            Object.keys(stmt.Condition as object).length > 0;
+            Object.keys(stmt.Condition).length > 0;
 
           const isPublic =
             principal === '*' ||

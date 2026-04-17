@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import {
+  ApiExcludeController,
   ApiOperation,
   ApiResponse,
   ApiSecurity,
@@ -12,6 +13,7 @@ import { RequirePermission } from '../auth/require-permission.decorator';
 import { SendEmailDto } from './dto/send-email.dto';
 import type { sendEmailTask } from '../trigger/email/send-email';
 
+@ApiExcludeController()
 @ApiTags('Internal - Email')
 @Controller({ path: 'internal/email', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)

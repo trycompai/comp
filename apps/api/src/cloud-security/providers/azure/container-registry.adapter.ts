@@ -29,7 +29,10 @@ interface ContainerRegistry {
 export class ContainerRegistryAdapter implements AzureServiceAdapter {
   readonly serviceId = 'container-registry';
 
-  async scan({ accessToken, subscriptionId }: {
+  async scan({
+    accessToken,
+    subscriptionId,
+  }: {
     accessToken: string;
     subscriptionId: string;
   }): Promise<SecurityFinding[]> {
@@ -47,59 +50,75 @@ export class ContainerRegistryAdapter implements AzureServiceAdapter {
 
       // Check 1: Admin user
       if (props.adminUserEnabled === true) {
-        findings.push(this.finding(reg, {
-          key: 'admin-enabled',
-          title: `Admin User Enabled: ${reg.name}`,
-          description: `Container Registry "${reg.name}" has the admin user enabled. Use service principals or managed identities instead.`,
-          severity: 'high',
-          remediation: 'Disable the admin user and use Azure AD service principals or managed identities for authentication.',
-        }));
+        findings.push(
+          this.finding(reg, {
+            key: 'admin-enabled',
+            title: `Admin User Enabled: ${reg.name}`,
+            description: `Container Registry "${reg.name}" has the admin user enabled. Use service principals or managed identities instead.`,
+            severity: 'high',
+            remediation:
+              'Disable the admin user and use Azure AD service principals or managed identities for authentication.',
+          }),
+        );
       }
 
       // Check 2: Public network access
-      const isPublic = props.publicNetworkAccess !== 'Disabled'
-        && props.networkRuleSet?.defaultAction !== 'Deny';
+      const isPublic =
+        props.publicNetworkAccess !== 'Disabled' &&
+        props.networkRuleSet?.defaultAction !== 'Deny';
       if (isPublic) {
-        findings.push(this.finding(reg, {
-          key: 'public-access',
-          title: `Public Network Access: ${reg.name}`,
-          description: `Container Registry "${reg.name}" is publicly accessible. Restrict to private endpoints or specific networks.`,
-          severity: 'medium',
-          remediation: 'Disable public network access and use private endpoints. Requires Premium SKU.',
-        }));
+        findings.push(
+          this.finding(reg, {
+            key: 'public-access',
+            title: `Public Network Access: ${reg.name}`,
+            description: `Container Registry "${reg.name}" is publicly accessible. Restrict to private endpoints or specific networks.`,
+            severity: 'medium',
+            remediation:
+              'Disable public network access and use private endpoints. Requires Premium SKU.',
+          }),
+        );
       }
 
       // Check 3: Content trust (image signing)
       if (props.policies?.trustPolicy?.status !== 'enabled') {
-        findings.push(this.finding(reg, {
-          key: 'no-content-trust',
-          title: `Content Trust Disabled: ${reg.name}`,
-          description: `Container Registry "${reg.name}" does not have content trust enabled. Images are not verified for integrity.`,
-          severity: 'medium',
-          remediation: 'Enable content trust policy to require signed images. Requires Premium SKU.',
-        }));
+        findings.push(
+          this.finding(reg, {
+            key: 'no-content-trust',
+            title: `Content Trust Disabled: ${reg.name}`,
+            description: `Container Registry "${reg.name}" does not have content trust enabled. Images are not verified for integrity.`,
+            severity: 'medium',
+            remediation:
+              'Enable content trust policy to require signed images. Requires Premium SKU.',
+          }),
+        );
       }
 
       // Check 4: Anonymous pull
       if (props.anonymousPullEnabled === true) {
-        findings.push(this.finding(reg, {
-          key: 'anonymous-pull',
-          title: `Anonymous Pull Enabled: ${reg.name}`,
-          description: `Container Registry "${reg.name}" allows anonymous (unauthenticated) image pulls.`,
-          severity: 'medium',
-          remediation: 'Disable anonymous pull unless the registry is intentionally public.',
-        }));
+        findings.push(
+          this.finding(reg, {
+            key: 'anonymous-pull',
+            title: `Anonymous Pull Enabled: ${reg.name}`,
+            description: `Container Registry "${reg.name}" allows anonymous (unauthenticated) image pulls.`,
+            severity: 'medium',
+            remediation:
+              'Disable anonymous pull unless the registry is intentionally public.',
+          }),
+        );
       }
 
       // Check 5: Retention policy
       if (props.policies?.retentionPolicy?.status !== 'enabled') {
-        findings.push(this.finding(reg, {
-          key: 'no-retention',
-          title: `No Retention Policy: ${reg.name}`,
-          description: `Container Registry "${reg.name}" has no retention policy for untagged manifests. Old images accumulate without cleanup.`,
-          severity: 'low',
-          remediation: 'Enable a retention policy to automatically purge untagged manifests. Requires Premium SKU.',
-        }));
+        findings.push(
+          this.finding(reg, {
+            key: 'no-retention',
+            title: `No Retention Policy: ${reg.name}`,
+            description: `Container Registry "${reg.name}" has no retention policy for untagged manifests. Old images accumulate without cleanup.`,
+            severity: 'low',
+            remediation:
+              'Enable a retention policy to automatically purge untagged manifests. Requires Premium SKU.',
+          }),
+        );
       }
     }
 
@@ -112,7 +131,11 @@ export class ContainerRegistryAdapter implements AzureServiceAdapter {
         resourceType: 'container-registry',
         resourceId: subscriptionId,
         remediation: 'No action needed.',
-        evidence: { serviceId: this.serviceId, serviceName: 'Container Registry', findingKey: 'azure-container-registry-all-ok' },
+        evidence: {
+          serviceId: this.serviceId,
+          serviceName: 'Container Registry',
+          findingKey: 'azure-container-registry-all-ok',
+        },
         createdAt: new Date().toISOString(),
         passed: true,
       });
@@ -121,10 +144,16 @@ export class ContainerRegistryAdapter implements AzureServiceAdapter {
     return findings;
   }
 
-  private finding(reg: ContainerRegistry, opts: {
-    key: string; title: string; description: string;
-    severity: SecurityFinding['severity']; remediation: string;
-  }): SecurityFinding {
+  private finding(
+    reg: ContainerRegistry,
+    opts: {
+      key: string;
+      title: string;
+      description: string;
+      severity: SecurityFinding['severity'];
+      remediation: string;
+    },
+  ): SecurityFinding {
     return {
       id: `azure-acr-${opts.key}-${reg.name}`,
       title: opts.title,

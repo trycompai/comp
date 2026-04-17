@@ -66,7 +66,7 @@ export function extractActionDescription(
 ): string | null {
   if (method !== 'POST') return null;
 
-  const pathWithoutQuery = path.split('?')[0]!;
+  const pathWithoutQuery = path.split('?')[0];
 
   if (/\/vendors\/[^/]+\/trigger-assessment\/?$/.test(pathWithoutQuery))
     return 'Triggered vendor risk assessment';
@@ -195,7 +195,9 @@ export function extractPolicyActionDescription(
 ): string | null {
   // POST /v1/policies/:id/regenerate or /v1/tasks/:id/regenerate
   if (/\/regenerate\/?$/.test(path) && method === 'POST') {
-    return path.includes('/tasks/') ? 'Regenerated evidence' : 'Regenerated policy';
+    return path.includes('/tasks/')
+      ? 'Regenerated evidence'
+      : 'Regenerated policy';
   }
 
   // POST /v1/tasks/:id/approve
@@ -227,11 +229,16 @@ export function extractPolicyActionDescription(
   }
 
   // Custom automation CRUD — /v1/tasks/:taskId/automations[/:automationId]
-  if (/\/tasks\/[^/]+\/automations(\/[^/]+)?\/?$/.test(path) && !/(runs|versions)/.test(path)) {
+  if (
+    /\/tasks\/[^/]+\/automations(\/[^/]+)?\/?$/.test(path) &&
+    !/(runs|versions)/.test(path)
+  ) {
     if (method === 'POST') return 'Created custom automation';
     if (method === 'PATCH') {
       if (requestBody && 'isEnabled' in requestBody) {
-        return requestBody.isEnabled ? 'Enabled custom automation' : 'Disabled custom automation';
+        return requestBody.isEnabled
+          ? 'Enabled custom automation'
+          : 'Disabled custom automation';
       }
       if (requestBody && 'evaluationCriteria' in requestBody) {
         return 'Updated automation evaluation criteria';
@@ -261,7 +268,12 @@ export function extractPolicyActionDescription(
   }
 
   // PATCH /v1/policies/:id with isArchived field
-  if (method === 'PATCH' && /\/policies\/[^/]+\/?$/.test(pathWithoutQuery) && requestBody && 'isArchived' in requestBody) {
+  if (
+    method === 'PATCH' &&
+    /\/policies\/[^/]+\/?$/.test(pathWithoutQuery) &&
+    requestBody &&
+    'isArchived' in requestBody
+  ) {
     return requestBody.isArchived ? 'Archived policy' : 'Restored policy';
   }
 

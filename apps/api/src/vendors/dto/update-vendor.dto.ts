@@ -8,12 +8,7 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import {
-  VendorCategory,
-  VendorStatus,
-  Likelihood,
-  Impact,
-} from '@db';
+import { VendorCategory, VendorStatus, Likelihood, Impact } from '@db';
 
 /**
  * DTO for PATCH /vendors/:id
@@ -46,7 +41,10 @@ export class UpdateVendorDto {
   @IsEnum(VendorStatus)
   status?: VendorStatus;
 
-  @ApiPropertyOptional({ description: 'Inherent probability', enum: Likelihood })
+  @ApiPropertyOptional({
+    description: 'Inherent probability',
+    enum: Likelihood,
+  })
   @IsOptional()
   @IsEnum(Likelihood)
   inherentProbability?: Likelihood;
@@ -56,7 +54,10 @@ export class UpdateVendorDto {
   @IsEnum(Impact)
   inherentImpact?: Impact;
 
-  @ApiPropertyOptional({ description: 'Residual probability', enum: Likelihood })
+  @ApiPropertyOptional({
+    description: 'Residual probability',
+    enum: Likelihood,
+  })
   @IsOptional()
   @IsEnum(Likelihood)
   residualProbability?: Likelihood;

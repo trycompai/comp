@@ -47,15 +47,42 @@ export class DynamoDbAdapter implements AwsServiceAdapter {
           const sse = table.SSEDescription;
           if (sse?.Status === 'ENABLED' && sse.SSEType === 'KMS') {
             findings.push(
-              this.makeFinding(resourceId, 'DynamoDB table uses CMK encryption', `Table "${tableName}" is encrypted with a customer-managed KMS key`, 'info', { tableName, sseType: sse.SSEType, sseStatus: sse.Status }, true),
+              this.makeFinding(
+                resourceId,
+                'DynamoDB table uses CMK encryption',
+                `Table "${tableName}" is encrypted with a customer-managed KMS key`,
+                'info',
+                { tableName, sseType: sse.SSEType, sseStatus: sse.Status },
+                true,
+              ),
             );
           } else if (sse?.Status === 'ENABLED') {
             findings.push(
-              this.makeFinding(resourceId, 'DynamoDB table uses default AWS-owned key', `Table "${tableName}" uses the default AWS-owned encryption key instead of a customer-managed KMS key`, 'low', { tableName, sseType: sse.SSEType ?? 'DEFAULT', sseStatus: sse.Status }, undefined, `Use dynamodb:UpdateTableCommand with TableName set to "${tableName}" and SSESpecification.SSEEnabled set to true and SSESpecification.SSEType set to 'KMS'. Optionally provide SSESpecification.KMSMasterKeyId for a specific CMK. Rollback by setting SSESpecification.SSEEnabled to false to revert to the default AWS-owned key.`),
+              this.makeFinding(
+                resourceId,
+                'DynamoDB table uses default AWS-owned key',
+                `Table "${tableName}" uses the default AWS-owned encryption key instead of a customer-managed KMS key`,
+                'low',
+                {
+                  tableName,
+                  sseType: sse.SSEType ?? 'DEFAULT',
+                  sseStatus: sse.Status,
+                },
+                undefined,
+                `Use dynamodb:UpdateTableCommand with TableName set to "${tableName}" and SSESpecification.SSEEnabled set to true and SSESpecification.SSEType set to 'KMS'. Optionally provide SSESpecification.KMSMasterKeyId for a specific CMK. Rollback by setting SSESpecification.SSEEnabled to false to revert to the default AWS-owned key.`,
+              ),
             );
           } else {
             findings.push(
-              this.makeFinding(resourceId, 'DynamoDB table uses default AWS-owned key', `Table "${tableName}" does not have customer-managed encryption configured`, 'medium', { tableName, sseStatus: sse?.Status ?? 'NOT_CONFIGURED' }, undefined, `Use dynamodb:UpdateTableCommand with TableName set to "${tableName}" and SSESpecification.SSEEnabled set to true and SSESpecification.SSEType set to 'KMS'. Optionally provide SSESpecification.KMSMasterKeyId for a specific CMK. Rollback by setting SSESpecification.SSEEnabled to false to revert to the default AWS-owned key.`),
+              this.makeFinding(
+                resourceId,
+                'DynamoDB table uses default AWS-owned key',
+                `Table "${tableName}" does not have customer-managed encryption configured`,
+                'medium',
+                { tableName, sseStatus: sse?.Status ?? 'NOT_CONFIGURED' },
+                undefined,
+                `Use dynamodb:UpdateTableCommand with TableName set to "${tableName}" and SSESpecification.SSEEnabled set to true and SSESpecification.SSEType set to 'KMS'. Optionally provide SSESpecification.KMSMasterKeyId for a specific CMK. Rollback by setting SSESpecification.SSEEnabled to false to revert to the default AWS-owned key.`,
+              ),
             );
           }
 
@@ -67,32 +94,60 @@ export class DynamoDbAdapter implements AwsServiceAdapter {
 
             const pitrStatus =
               backupRes.ContinuousBackupsDescription
-                ?.PointInTimeRecoveryDescription
-                ?.PointInTimeRecoveryStatus;
+                ?.PointInTimeRecoveryDescription?.PointInTimeRecoveryStatus;
 
             if (pitrStatus === 'ENABLED') {
               findings.push(
-                this.makeFinding(resourceId, 'DynamoDB point-in-time recovery is enabled', `Table "${tableName}" has point-in-time recovery enabled`, 'info', { tableName, pitrStatus }, true),
+                this.makeFinding(
+                  resourceId,
+                  'DynamoDB point-in-time recovery is enabled',
+                  `Table "${tableName}" has point-in-time recovery enabled`,
+                  'info',
+                  { tableName, pitrStatus },
+                  true,
+                ),
               );
             } else {
               findings.push(
-                this.makeFinding(resourceId, 'DynamoDB point-in-time recovery is disabled', `Table "${tableName}" does not have point-in-time recovery enabled`, 'medium', { tableName, pitrStatus: pitrStatus ?? 'DISABLED' }, undefined, `Use dynamodb:UpdateContinuousBackupsCommand with TableName set to "${tableName}" and PointInTimeRecoverySpecification.PointInTimeRecoveryEnabled set to true. Rollback by setting PointInTimeRecoveryEnabled to false.`),
+                this.makeFinding(
+                  resourceId,
+                  'DynamoDB point-in-time recovery is disabled',
+                  `Table "${tableName}" does not have point-in-time recovery enabled`,
+                  'medium',
+                  { tableName, pitrStatus: pitrStatus ?? 'DISABLED' },
+                  undefined,
+                  `Use dynamodb:UpdateContinuousBackupsCommand with TableName set to "${tableName}" and PointInTimeRecoverySpecification.PointInTimeRecoveryEnabled set to true. Rollback by setting PointInTimeRecoveryEnabled to false.`,
+                ),
               );
             }
           } catch (error: unknown) {
-            const msg =
-              error instanceof Error ? error.message : String(error);
+            const msg = error instanceof Error ? error.message : String(error);
             if (!msg.includes('AccessDenied')) throw error;
           }
 
           // Check Deletion Protection
           if (table.DeletionProtectionEnabled === true) {
             findings.push(
-              this.makeFinding(resourceId, 'DynamoDB deletion protection is enabled', `Table "${tableName}" has deletion protection enabled`, 'info', { tableName, deletionProtection: true }, true),
+              this.makeFinding(
+                resourceId,
+                'DynamoDB deletion protection is enabled',
+                `Table "${tableName}" has deletion protection enabled`,
+                'info',
+                { tableName, deletionProtection: true },
+                true,
+              ),
             );
           } else {
             findings.push(
-              this.makeFinding(resourceId, 'DynamoDB deletion protection is disabled', `Table "${tableName}" does not have deletion protection enabled`, 'medium', { tableName, deletionProtection: false }, undefined, `Use dynamodb:UpdateTableCommand with TableName set to "${tableName}" and DeletionProtectionEnabled set to true. Rollback by setting DeletionProtectionEnabled to false.`),
+              this.makeFinding(
+                resourceId,
+                'DynamoDB deletion protection is disabled',
+                `Table "${tableName}" does not have deletion protection enabled`,
+                'medium',
+                { tableName, deletionProtection: false },
+                undefined,
+                `Use dynamodb:UpdateTableCommand with TableName set to "${tableName}" and DeletionProtectionEnabled set to true. Rollback by setting DeletionProtectionEnabled to false.`,
+              ),
             );
           }
         }

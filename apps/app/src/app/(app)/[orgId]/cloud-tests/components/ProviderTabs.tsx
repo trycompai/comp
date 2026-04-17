@@ -1,5 +1,6 @@
 import { useApi } from '@/hooks/use-api';
 import { useConnectionServices } from '@/hooks/use-integration-platform';
+import { CLOUD_RECONNECT_CUTOFF_LABEL } from '@/lib/cloud-reconnect-policy';
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -22,10 +23,13 @@ interface ProviderTabsProps {
   onConnectionTabChange: (providerType: string, connectionId: string) => void;
   onRunScan: (connectionId?: string) => Promise<string | null>;
   onAddConnection: (providerType: string) => void;
+  onReconnect: (providerType: string) => void;
   onConfigure: (provider: Provider) => void;
   needsConfiguration: (provider: Provider) => boolean;
+  requiresReconnect: (provider: Provider) => boolean;
   canRunScan?: boolean;
   canAddConnection?: boolean;
+  isReconnecting?: boolean;
   orgId: string;
 }
 
@@ -86,7 +90,12 @@ function CloudConnectionContent({
   onScanComplete: () => void;
 }) {
   const api = useApi();
-  const { services, refresh: refreshServices, updateServices } = useConnectionServices(connection.id);
+  const {
+    services,
+    meta: servicesMeta,
+    refresh: refreshServices,
+    updateServices,
+  } = useConnectionServices(connection.id);
   const [togglingService, setTogglingService] = useState<string | null>(null);
   const detectedRef = useRef(false);
 
@@ -108,10 +117,13 @@ function CloudConnectionContent({
   }, [connection.id, connection.integrationId, api, refreshServices]);
 
   const handleToggleService = useCallback(
-    async (serviceId: string, enabled: boolean) => {
+    async (serviceId: string, enabled: boolean): Promise<boolean> => {
       setTogglingService(serviceId);
       try {
         await updateServices(serviceId, enabled);
+        return true;
+      } catch {
+        return false;
       } finally {
         setTogglingService(null);
       }
@@ -128,6 +140,8 @@ function CloudConnectionContent({
   }));
 
   const enabledCount = services.filter((s) => s.enabled).length;
+  const waitingForDetection = connection.integrationId === 'gcp' && servicesMeta.detectionReady === false;
+  const showEnabledCount = !waitingForDetection;
 
   return (
     <Tabs defaultValue="findings">
@@ -136,7 +150,7 @@ function CloudConnectionContent({
         <TabsTrigger value="activity">Activity</TabsTrigger>
         <TabsTrigger value="remediations">Remediations</TabsTrigger>
         <TabsTrigger value="services">
-          Services{enabledCount > 0 ? ` (${enabledCount})` : ''}
+          Services{showEnabledCount && enabledCount > 0 ? ` (${enabledCount})` : ''}
         </TabsTrigger>
       </TabsList>
 
@@ -186,7 +200,14 @@ function CloudConnectionContent({
               </span>
             </div>
           </div>
-          {manifestServices.length > 0 ? (
+          {waitingForDetection ? (
+            <div className="rounded-lg border bg-muted/20 px-4 py-3">
+              <p className="text-sm font-medium">Detecting active GCP services...</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                We&apos;ll show real service toggles as soon as detection completes.
+              </p>
+            </div>
+          ) : manifestServices.length > 0 ? (
             <ServicesGrid
               services={manifestServices}
               connectionServices={services}
@@ -216,10 +237,13 @@ export function ProviderTabs({
   onConnectionTabChange,
   onRunScan,
   onAddConnection,
+  onReconnect,
   onConfigure,
   needsConfiguration,
+  requiresReconnect,
   canRunScan,
   canAddConnection,
+  isReconnecting,
   orgId,
 }: ProviderTabsProps) {
   return (
@@ -293,9 +317,34 @@ export function ProviderTabs({
                 </div>
 
                 {connections.map((connection) => {
+                  const reconnectRequired = requiresReconnect(connection);
+
                   return (
                     <TabsContent key={connection.id} value={connection.id}>
                       <div className="mt-4">
+                        {reconnectRequired && (
+                          <div className="mb-4 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-medium">Reconnect this account</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  This connection was created before {CLOUD_RECONNECT_CUTOFF_LABEL}. Reconnect it to keep scans and remediation fully reliable.
+                                </p>
+                              </div>
+                              {canAddConnection !== false && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => onReconnect(providerType)}
+                                  disabled={isReconnecting}
+                                  loading={isReconnecting}
+                                >
+                                  Reconnect
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <ConnectionDetails connection={connection} />
 
                         {/* New platform connections get full tabbed UI */}

@@ -297,9 +297,7 @@ describe('QuestionnaireService', () => {
       const result = await service.saveAnswer(baseSaveDto as any);
 
       expect(result).toEqual({ success: true });
-      expect(
-        mockDb.questionnaireQuestionAnswer.update,
-      ).toHaveBeenCalledWith(
+      expect(mockDb.questionnaireQuestionAnswer.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'qa1' },
           data: expect.objectContaining({
@@ -397,9 +395,7 @@ describe('QuestionnaireService', () => {
       } as any);
 
       expect(result).toEqual({ success: true });
-      expect(
-        mockDb.questionnaireQuestionAnswer.update,
-      ).toHaveBeenCalledWith({
+      expect(mockDb.questionnaireQuestionAnswer.update).toHaveBeenCalledWith({
         where: { id: 'qa1' },
         data: expect.objectContaining({
           answer: null,

@@ -3,14 +3,8 @@ import {
   ListDetectorsCommand,
   GetDetectorCommand,
 } from '@aws-sdk/client-guardduty';
-import {
-  EC2Client,
-  DescribeInstancesCommand,
-} from '@aws-sdk/client-ec2';
-import {
-  LambdaClient,
-  ListFunctionsCommand,
-} from '@aws-sdk/client-lambda';
+import { EC2Client, DescribeInstancesCommand } from '@aws-sdk/client-ec2';
+import { LambdaClient, ListFunctionsCommand } from '@aws-sdk/client-lambda';
 import type { SecurityFinding } from '../../cloud-security.service';
 import type { AwsCredentials, AwsServiceAdapter } from './aws-service-adapter';
 
@@ -53,9 +47,7 @@ export class GuardDutyAdapter implements AwsServiceAdapter {
     }
 
     try {
-      const { DetectorIds } = await client.send(
-        new ListDetectorsCommand({}),
-      );
+      const { DetectorIds } = await client.send(new ListDetectorsCommand({}));
 
       if (!DetectorIds || DetectorIds.length === 0) {
         findings.push(
@@ -65,7 +57,8 @@ export class GuardDutyAdapter implements AwsServiceAdapter {
             description: `GuardDuty is not enabled in ${region}. No detectors found.`,
             severity: 'high',
             resourceId: `arn:aws:guardduty:${region}`,
-            remediation: 'Step 1: Ensure a service-linked role exists by calling iam:CreateServiceLinkedRoleCommand with AWSServiceName set to "guardduty.amazonaws.com" (skip if the role already exists). Step 2: Use guardduty:CreateDetectorCommand with Enable set to true. Rollback by calling guardduty:DeleteDetectorCommand with the DetectorId returned from creation.',
+            remediation:
+              'Step 1: Ensure a service-linked role exists by calling iam:CreateServiceLinkedRoleCommand with AWSServiceName set to "guardduty.amazonaws.com" (skip if the role already exists). Step 2: Use guardduty:CreateDetectorCommand with Enable set to true. Rollback by calling guardduty:DeleteDetectorCommand with the DetectorId returned from creation.',
           }),
         );
         return findings;

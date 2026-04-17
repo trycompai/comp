@@ -59,7 +59,9 @@ export class AiRemediationService {
       );
       return object;
     } catch (err) {
-      this.logger.error(`AI plan failed: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `AI plan failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
       return this.fallbackPlan(finding);
     }
   }
@@ -99,7 +101,9 @@ Generate the complete fix plan with EXACT values from the real AWS state.`,
       this.logger.log(`AI refined plan for ${params.finding.findingKey}`);
       return object;
     } catch (err) {
-      this.logger.error(`AI refine failed: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `AI refine failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
       // Fall back to original plan
       return params.originalPlan;
     }
@@ -111,15 +115,20 @@ Generate the complete fix plan with EXACT values from the real AWS state.`,
    */
   async analyzeRequiredPermissions(plan: FixPlan): Promise<string[]> {
     try {
-      const allSteps = [...plan.readSteps, ...plan.fixSteps, ...plan.rollbackSteps];
-      const stepsDescription = allSteps.map((s) =>
-        `${s.service}:${s.command} — ${s.purpose}`
-      ).join('\n');
+      const allSteps = [
+        ...plan.readSteps,
+        ...plan.fixSteps,
+        ...plan.rollbackSteps,
+      ];
+      const stepsDescription = allSteps
+        .map((s) => `${s.service}:${s.command} — ${s.purpose}`)
+        .join('\n');
 
       const { object } = await generateObject({
         model: MODEL,
         schema: completePermissionsSchema,
-        system: 'You are an AWS IAM permission expert. Given a list of AWS API calls, determine EVERY IAM permission needed. Be thorough — include all implicit permissions (iam:PassRole when roles are used, s3:PutBucketPolicy when buckets are created, etc.). It is critical that the list is COMPLETE because the customer will add these permissions once and should never need to add more.',
+        system:
+          'You are an AWS IAM permission expert. Given a list of AWS API calls, determine EVERY IAM permission needed. Be thorough — include all implicit permissions (iam:PassRole when roles are used, s3:PutBucketPolicy when buckets are created, etc.). It is critical that the list is COMPLETE because the customer will add these permissions once and should never need to add more.',
         prompt: `These are the exact AWS SDK commands that will be executed:
 
 ${stepsDescription}
@@ -137,10 +146,14 @@ OVERESTIMATE. Better to have 5 extra permissions than to miss one.`,
         temperature: 0,
       });
 
-      this.logger.log(`AI permission analysis: ${object.permissions.length} permissions identified`);
+      this.logger.log(
+        `AI permission analysis: ${object.permissions.length} permissions identified`,
+      );
       return object.permissions;
     } catch (err) {
-      this.logger.error(`AI permission analysis failed: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `AI permission analysis failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
       // Fallback to plan's requiredPermissions
       return plan.requiredPermissions;
     }
@@ -155,7 +168,8 @@ OVERESTIMATE. Better to have 5 extra permissions than to miss one.`,
       const { object } = await generateObject({
         model: MODEL,
         schema: permissionFixSchema,
-        system: 'You are an AWS IAM permission expert. Analyze the error and determine the exact missing IAM actions.',
+        system:
+          'You are an AWS IAM permission expert. Analyze the error and determine the exact missing IAM actions.',
         prompt: buildPermissionFixPrompt({
           errorMessage: params.errorMessage,
           failedStep: params.failedStep,
@@ -174,17 +188,23 @@ OVERESTIMATE. Better to have 5 extra permissions than to miss one.`,
         fixScript: `aws iam put-role-policy --role-name ${REMEDIATION_ROLE_NAME} --policy-name CompAI-AutoFix --policy-document '${policy}'`,
       };
     } catch (err) {
-      this.logger.error(`AI permission fix failed: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `AI permission fix failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
 
-      const actionMatch = params.errorMessage.match(
-        /not authorized to perform:\s*([\w:*]+)/i,
-      ) ?? params.errorMessage.match(/required\s+([\w:*]+)\s+permission/i);
+      const actionMatch =
+        params.errorMessage.match(/not authorized to perform:\s*([\w:*]+)/i) ??
+        params.errorMessage.match(/required\s+([\w:*]+)\s+permission/i);
 
       const actions = actionMatch?.[1] ? [actionMatch[1]] : [];
       if (actions.length === 0) {
         return {
           missingActions: [],
-          policyStatement: { Effect: 'Allow' as const, Action: [], Resource: '*' },
+          policyStatement: {
+            Effect: 'Allow' as const,
+            Action: [],
+            Resource: '*',
+          },
           fixScript: `# Could not determine the missing IAM action from the error. Check the error message and add the required permission manually to the ${REMEDIATION_ROLE_NAME} role.`,
         };
       }
@@ -195,7 +215,11 @@ OVERESTIMATE. Better to have 5 extra permissions than to miss one.`,
 
       return {
         missingActions: actions,
-        policyStatement: { Effect: 'Allow' as const, Action: actions, Resource: '*' },
+        policyStatement: {
+          Effect: 'Allow' as const,
+          Action: actions,
+          Resource: '*',
+        },
         fixScript: `aws iam put-role-policy --role-name ${REMEDIATION_ROLE_NAME} --policy-name CompAI-AutoFix --policy-document '${policy}'`,
       };
     }
@@ -204,25 +228,29 @@ OVERESTIMATE. Better to have 5 extra permissions than to miss one.`,
   // ─── GCP Methods ──────────────────────────────────────────────────────
 
   async generateGcpFixPlan(finding: FindingContext): Promise<GcpFixPlan> {
-    try {
-      const { object } = await generateObject({
-        model: MODEL,
-        schema: gcpFixPlanSchema,
-        system: GCP_SYSTEM_PROMPT,
-        prompt: buildGcpFixPlanPrompt(finding),
-        temperature: 0,
-      });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { object } = await generateObject({
+          model: MODEL,
+          schema: gcpFixPlanSchema,
+          system: GCP_SYSTEM_PROMPT,
+          prompt: buildGcpFixPlanPrompt(finding),
+          temperature: 0,
+        });
 
-      this.logger.log(
-        `GCP AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
-      );
-      return object;
-    } catch (err) {
-      this.logger.error(
-        `GCP AI plan failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
-      return this.fallbackGcpPlan(finding);
+        this.logger.log(
+          `GCP AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
+        );
+        return object;
+      } catch (err) {
+        this.logger.error(
+          `GCP AI plan failed (attempt ${attempt + 1}): ${err instanceof Error ? err.message : String(err)}`,
+        );
+        if (attempt === 0) continue;
+        return this.fallbackGcpPlan(finding);
+      }
     }
+    return this.fallbackGcpPlan(finding);
   }
 
   async refineGcpFixPlan(params: {
@@ -243,12 +271,15 @@ ${JSON.stringify(params.realGcpState, null, 2)}
 ORIGINAL FINDING:
 ${buildGcpFixPlanPrompt(params.finding)}
 
-IMPORTANT:
-1. Use the REAL GCP STATE above for ALL values in your fix steps. Do NOT guess or use defaults.
-2. For rollback steps, use the REAL values from the read steps to restore the previous configuration.
-3. Make sure all URLs are correct and complete.
+CRITICAL INSTRUCTIONS:
+1. The "body" field in each fix step must contain EXACT JSON that will be sent to the GCP API. No descriptions, no placeholders, no human-readable text — ONLY valid JSON objects.
+2. Use the REAL GCP STATE above for ALL values. Copy existing data structures exactly as they appear.
+3. For setIamPolicy: the body MUST be { "policy": { "bindings": [...ALL existing bindings from real state...], "etag": "...from real state...", "version": 3, "auditConfigs": [...existing plus your additions...] } }. Copy the ENTIRE policy from the read step, then add/modify only what's needed.
+4. For audit logging: add this to the policy's auditConfigs array: { "service": "allServices", "auditLogConfigs": [{"logType": "ADMIN_READ"}, {"logType": "DATA_READ"}, {"logType": "DATA_WRITE"}] }
+5. For rollback: the body must restore the EXACT original policy from the read step (copy it verbatim).
+6. The "body" field is sent directly as JSON to fetch(). If it contains strings like "enabled for all services" instead of actual JSON, the API will ignore it silently.
 
-Generate the complete fix plan with EXACT values from the real GCP state.`,
+Generate the complete fix plan with EXACT JSON values from the real GCP state.`,
         temperature: 0,
       });
 
@@ -344,11 +375,37 @@ Generate the complete fix plan with EXACT values from the real Azure state.`,
   }
 
   private fallbackGcpPlan(finding: FindingContext): GcpFixPlan {
+    const evidence = finding.evidence ?? {};
+    const externalUri = evidence.externalUri as string | undefined;
+    const projectName =
+      (evidence.projectDisplayName as string) ?? 'your project';
+
+    const steps: string[] = [];
+    if (externalUri) {
+      steps.push(
+        `Open the resource in GCP Console: ${externalUri}`,
+      );
+    }
+    if (finding.remediation) {
+      // Split SCC remediation text into separate steps if it contains "More info:" or multiple sentences
+      const parts = finding.remediation
+        .split(/(?:More info:|Compliance:)/i)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (parts[0]) steps.push(parts[0]);
+      if (parts[1]) steps.push(`Reference: ${parts[1]}`);
+    }
+    if (steps.length === 0) {
+      steps.push(
+        `Review the finding "${finding.title}" in the GCP Console for project ${projectName} and apply the recommended fix.`,
+      );
+    }
+
     return {
       canAutoFix: false,
       risk: (finding.severity as GcpFixPlan['risk']) ?? 'medium',
       description:
-        finding.remediation ?? finding.description ?? 'Check GCP Console.',
+        finding.description ?? finding.remediation ?? 'Check GCP Console.',
       currentState: {},
       proposedState: {},
       readSteps: [],
@@ -356,20 +413,22 @@ Generate the complete fix plan with EXACT values from the real Azure state.`,
       rollbackSteps: [],
       rollbackSupported: false,
       requiresAcknowledgment: false,
-      guidedSteps: finding.remediation
-        ? [finding.remediation]
-        : [
-            'Review the finding in GCP Console and apply the recommended fix.',
-          ],
-      reason: 'AI analysis unavailable. Follow the guided steps.',
+      guidedSteps: steps,
+      reason: 'This finding requires manual remediation in the GCP Console.',
     };
   }
 
   private fallbackPlan(finding: FindingContext): FixPlan {
     return {
       canAutoFix: false,
-      risk: (finding.severity === 'info' ? 'low' : finding.severity as FixPlan['risk']) ?? 'medium',
-      description: finding.remediation ?? finding.description ?? 'Check AWS documentation.',
+      risk:
+        (finding.severity === 'info'
+          ? 'low'
+          : (finding.severity as FixPlan['risk'])) ?? 'medium',
+      description:
+        finding.remediation ??
+        finding.description ??
+        'Check AWS documentation.',
       currentState: {},
       proposedState: {},
       requiredPermissions: [],

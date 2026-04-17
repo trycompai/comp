@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 export const azureApiStepSchema = z.object({
   method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
-  url: z.string().describe('Full HTTPS URL including api-version query parameter'),
+  url: z
+    .string()
+    .describe('Full HTTPS URL including api-version query parameter'),
   body: z.record(z.string(), z.unknown()).optional(),
   queryParams: z.record(z.string(), z.string()).optional(),
   purpose: z.string().describe('What this step does'),

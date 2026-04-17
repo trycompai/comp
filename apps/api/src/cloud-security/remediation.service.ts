@@ -6,14 +6,21 @@ import { AWSSecurityService } from './providers/aws-security.service';
 import { AiRemediationService } from './ai-remediation.service';
 import { GcpRemediationService } from './gcp-remediation.service';
 import { AzureRemediationService } from './azure-remediation.service';
-import { executeAwsCommand, executePlanSteps, validatePlanSteps } from './aws-command-executor';
+import {
+  executeAwsCommand,
+  executePlanSteps,
+  validatePlanSteps,
+} from './aws-command-executor';
 import type { FixPlan, AwsCommandStep } from './ai-remediation.prompt';
 
 @Injectable()
 export class RemediationService {
   private readonly logger = new Logger(RemediationService.name);
   /** Cache fix plans between preview and execute to avoid double AI calls. */
-  private readonly planCache = new Map<string, { plan: FixPlan; timestamp: number; permissionsList?: string[] }>();
+  private readonly planCache = new Map<
+    string,
+    { plan: FixPlan; timestamp: number; permissionsList?: string[] }
+  >();
   private readonly PLAN_CACHE_MAX = 100;
   private readonly PLAN_CACHE_TTL = 5 * 60 * 1000;
 
@@ -21,12 +28,14 @@ export class RemediationService {
     if (this.planCache.size <= this.PLAN_CACHE_MAX) return;
     const now = Date.now();
     for (const [key, entry] of this.planCache) {
-      if (now - entry.timestamp > this.PLAN_CACHE_TTL) this.planCache.delete(key);
+      if (now - entry.timestamp > this.PLAN_CACHE_TTL)
+        this.planCache.delete(key);
     }
     // If still over limit, delete oldest
     while (this.planCache.size > this.PLAN_CACHE_MAX) {
       const firstKey = this.planCache.keys().next().value;
-      if (firstKey) this.planCache.delete(firstKey); else break;
+      if (firstKey) this.planCache.delete(firstKey);
+      else break;
     }
   }
 
@@ -92,27 +101,44 @@ export class RemediationService {
     // RECHECK MODE: if frontend sends cachedPermissions, skip AI entirely
     // Just re-read the role and compare against the SAME list
     if (params.cachedPermissions && params.cachedPermissions.length > 0) {
-      this.logger.log(`Recheck mode: checking ${params.cachedPermissions.length} cached permissions: ${params.cachedPermissions.slice(0, 5).join(', ')}...`);
-      const remediationCreds = await this.awsSecurityService.assumeRemediationRole(credentials, region);
+      this.logger.log(
+        `Recheck mode: checking ${params.cachedPermissions.length} cached permissions: ${params.cachedPermissions.slice(0, 5).join(', ')}...`,
+      );
+      const remediationCreds =
+        await this.awsSecurityService.assumeRemediationRole(
+          credentials,
+          region,
+        );
       let missingPermissions: string[] | undefined;
       let permissionFixScript: string | undefined;
       try {
-        const existingActions = await this.getExistingRolePermissions(remediationCreds, region);
+        const existingActions = await this.getExistingRolePermissions(
+          remediationCreds,
+          region,
+        );
         this.logger.log(`Role has ${existingActions.size} actions`);
-        const missing = params.cachedPermissions.filter((p) => !this.isPermissionCovered(p, existingActions));
+        const missing = params.cachedPermissions.filter(
+          (p) => !this.isPermissionCovered(p, existingActions),
+        );
         if (missing.length > 0) {
           missingPermissions = missing;
           // Always include ALL cached permissions in script — not just missing ones
           // This prevents overwrite issues with IAM eventual consistency
-          permissionFixScript = this.buildStaticPermissionScript(params.cachedPermissions);
+          permissionFixScript = this.buildStaticPermissionScript(
+            params.cachedPermissions,
+          );
         }
       } catch (err) {
-        this.logger.warn(`Cannot read role policies on recheck: ${err instanceof Error ? err.message : String(err)}`);
+        this.logger.warn(
+          `Cannot read role policies on recheck: ${err instanceof Error ? err.message : String(err)}`,
+        );
         missingPermissions = params.cachedPermissions;
       }
 
       // Return cached plan data with updated permission status
-      const cached = this.planCache.get(`${params.connectionId}:${params.checkResultId}:${params.remediationKey}`);
+      const cached = this.planCache.get(
+        `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+      );
       const cachedPlan = cached?.plan;
 
       return {
@@ -124,12 +150,14 @@ export class RemediationService {
         guidedOnly: false,
         rollbackSupported: cachedPlan?.rollbackSupported ?? true,
         requiresAcknowledgment: 'checkbox' as const,
-        acknowledgmentMessage: 'This fix will modify your AWS infrastructure. Please review the changes above before proceeding.',
+        acknowledgmentMessage:
+          'This fix will modify your AWS infrastructure. Please review the changes above before proceeding.',
         allRequiredPermissions: params.cachedPermissions,
-        ...(missingPermissions && missingPermissions.length > 0 && {
-          missingPermissions,
-          permissionFixScript,
-        }),
+        ...(missingPermissions &&
+          missingPermissions.length > 0 && {
+            missingPermissions,
+            permissionFixScript,
+          }),
       };
     }
 
@@ -164,7 +192,10 @@ export class RemediationService {
       if (readErrors.length === 0) {
         try {
           const remediationCreds =
-            await this.awsSecurityService.assumeRemediationRole(credentials, region);
+            await this.awsSecurityService.assumeRemediationRole(
+              credentials,
+              region,
+            );
           const readResult = await executePlanSteps({
             steps: plan.readSteps,
             credentials: remediationCreds,
@@ -200,29 +231,49 @@ export class RemediationService {
               risk: refined.risk,
               apiCalls: [],
               guidedOnly: true,
-              guidedSteps: refined.guidedSteps ?? [refined.reason ?? refined.description],
+              guidedSteps: refined.guidedSteps ?? [
+                refined.reason ?? refined.description,
+              ],
               rollbackSupported: false,
               requiresAcknowledgment: undefined,
             };
           }
 
           // Build the COMPLETE permission list from ALL sources
-          const aiPermissions = await this.aiRemediationService.analyzeRequiredPermissions(refined);
+          const aiPermissions =
+            await this.aiRemediationService.analyzeRequiredPermissions(refined);
 
           // Merge: AI analysis + refined plan's requiredPermissions + derived from commands
-          const allPerms = new Set([...aiPermissions, ...refined.requiredPermissions]);
+          const allPerms = new Set([
+            ...aiPermissions,
+            ...refined.requiredPermissions,
+          ]);
 
           // Also derive from actual step commands
           const svcMap: Record<string, string> = {
-            's3': 's3', 'logs': 'logs', 'cloudwatch-logs': 'logs', 'cloudtrail': 'cloudtrail',
-            'cloudwatch': 'cloudwatch', 'iam': 'iam', 'sns': 'sns', 'ec2': 'ec2',
-            'rds': 'rds', 'kms': 'kms', 'config-service': 'config', 'guardduty': 'guardduty',
-            'lambda': 'lambda', 'dynamodb': 'dynamodb', 'cloudfront': 'cloudfront',
+            s3: 's3',
+            logs: 'logs',
+            'cloudwatch-logs': 'logs',
+            cloudtrail: 'cloudtrail',
+            cloudwatch: 'cloudwatch',
+            iam: 'iam',
+            sns: 'sns',
+            ec2: 'ec2',
+            rds: 'rds',
+            kms: 'kms',
+            'config-service': 'config',
+            guardduty: 'guardduty',
+            lambda: 'lambda',
+            dynamodb: 'dynamodb',
+            cloudfront: 'cloudfront',
           };
           for (const step of [...refined.readSteps, ...refined.fixSteps]) {
             const iamSvc = svcMap[step.service] ?? step.service;
             // Resolve the REAL command name from the SDK (handles AI fuzzy names)
-            const realAction = this.resolveRealActionName(step.service, step.command);
+            const realAction = this.resolveRealActionName(
+              step.service,
+              step.command,
+            );
             allPerms.add(`${iamSvc}:${realAction}`);
           }
           // Always add iam:PassRole if any role is being used
@@ -235,29 +286,47 @@ export class RemediationService {
           const dangerousActions = /Delete|Remove|Terminate|Deregister/i;
           const permissionsList = [...allPerms]
             .filter((p) => !dangerousActions.test(p.split(':')[1] ?? ''))
-            .filter((p) => p !== 'sts:GetCallerIdentity' && p !== 'sts:AssumeRole')
+            .filter(
+              (p) => p !== 'sts:GetCallerIdentity' && p !== 'sts:AssumeRole',
+            )
             .sort();
           // Check permissions by reading the ACTUAL policies on CompAI-Remediator
           let missingPermissions: string[] | undefined;
           let permissionFixScript: string | undefined;
           try {
-            const existingActions = await this.getExistingRolePermissions(remediationCreds, region);
-            this.logger.log(`CompAI-Remediator has ${existingActions.size} actions. Needed: ${permissionsList.length}`);
-            const missing = permissionsList.filter((p) => !this.isPermissionCovered(p, existingActions));
+            const existingActions = await this.getExistingRolePermissions(
+              remediationCreds,
+              region,
+            );
+            this.logger.log(
+              `CompAI-Remediator has ${existingActions.size} actions. Needed: ${permissionsList.length}`,
+            );
+            const missing = permissionsList.filter(
+              (p) => !this.isPermissionCovered(p, existingActions),
+            );
             if (missing.length > 0) {
-              this.logger.log(`Missing ${missing.length} permissions: ${missing.join(', ')}`);
+              this.logger.log(
+                `Missing ${missing.length} permissions: ${missing.join(', ')}`,
+              );
               missingPermissions = missing;
-              permissionFixScript = this.buildStaticPermissionScript(permissionsList);
+              permissionFixScript =
+                this.buildStaticPermissionScript(permissionsList);
             }
           } catch (err) {
-            this.logger.warn(`Cannot read role policies: ${err instanceof Error ? err.message : String(err)}`);
+            this.logger.warn(
+              `Cannot read role policies: ${err instanceof Error ? err.message : String(err)}`,
+            );
             missingPermissions = permissionsList;
-            permissionFixScript = this.buildStaticPermissionScript(permissionsList);
+            permissionFixScript =
+              this.buildStaticPermissionScript(permissionsList);
           }
 
           // Cache the refined plan + permissions for execute and Recheck
           this.evictStalePlans();
-          this.planCache.set(`${params.connectionId}:${params.checkResultId}:${params.remediationKey}`, { plan: refined, timestamp: Date.now(), permissionsList });
+          this.planCache.set(
+            `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+            { plan: refined, timestamp: Date.now(), permissionsList },
+          );
 
           return {
             currentState: refined.currentState,
@@ -268,12 +337,14 @@ export class RemediationService {
             guidedOnly: false,
             rollbackSupported: refined.rollbackSupported,
             requiresAcknowledgment: 'checkbox' as const,
-            acknowledgmentMessage: 'This fix will modify your AWS infrastructure. Please review the changes above before proceeding.',
+            acknowledgmentMessage:
+              'This fix will modify your AWS infrastructure. Please review the changes above before proceeding.',
             allRequiredPermissions: permissionsList,
-            ...(missingPermissions && missingPermissions.length > 0 && {
-              missingPermissions,
-              permissionFixScript,
-            }),
+            ...(missingPermissions &&
+              missingPermissions.length > 0 && {
+                missingPermissions,
+                permissionFixScript,
+              }),
           };
         } catch {
           // If read fails, fall through to show the AI's initial plan
@@ -283,7 +354,14 @@ export class RemediationService {
 
     // Fallback: show initial AI plan without real data
     this.evictStalePlans();
-    this.planCache.set(`${params.connectionId}:${params.checkResultId}:${params.remediationKey}`, { plan, timestamp: Date.now(), permissionsList: plan.requiredPermissions });
+    this.planCache.set(
+      `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+      {
+        plan,
+        timestamp: Date.now(),
+        permissionsList: plan.requiredPermissions,
+      },
+    );
 
     return {
       currentState: plan.currentState,
@@ -294,7 +372,8 @@ export class RemediationService {
       guidedOnly: false,
       rollbackSupported: plan.rollbackSupported,
       requiresAcknowledgment: 'checkbox' as const,
-      acknowledgmentMessage: 'This fix will modify your AWS infrastructure. Please review the changes above before proceeding.',
+      acknowledgmentMessage:
+        'This fix will modify your AWS infrastructure. Please review the changes above before proceeding.',
     };
   }
 
@@ -319,7 +398,9 @@ export class RemediationService {
 
     // Get plan from cache or regenerate
     let plan: FixPlan;
-    const cached = this.planCache.get(`${params.connectionId}:${params.checkResultId}:${params.remediationKey}`);
+    const cached = this.planCache.get(
+      `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+    );
     if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
       plan = cached.plan;
     } else {
@@ -337,7 +418,9 @@ export class RemediationService {
     }
 
     if (!plan.canAutoFix) {
-      throw new Error('This finding requires manual remediation and cannot be auto-fixed.');
+      throw new Error(
+        'This finding requires manual remediation and cannot be auto-fixed.',
+      );
     }
 
     // Universal plan validation — reject plans that would leave infra in a bad state
@@ -345,12 +428,16 @@ export class RemediationService {
       throw new Error('AI generated an empty fix plan. Cannot proceed.');
     }
     if (!plan.rollbackSteps || plan.rollbackSteps.length === 0) {
-      this.logger.warn(`No rollback steps for ${params.remediationKey} — fix is irreversible`);
+      this.logger.warn(
+        `No rollback steps for ${params.remediationKey} — fix is irreversible`,
+      );
     }
 
     // Always require acknowledgment — we're modifying cloud infrastructure
     if (!params.acknowledgment || params.acknowledgment !== 'acknowledged') {
-      throw new Error('Acknowledgment is required before executing any remediation.');
+      throw new Error(
+        'Acknowledgment is required before executing any remediation.',
+      );
     }
 
     // Create the action record
@@ -380,7 +467,10 @@ export class RemediationService {
       }
 
       const remediationCreds =
-        await this.awsSecurityService.assumeRemediationRole(credentials, region);
+        await this.awsSecurityService.assumeRemediationRole(
+          credentials,
+          region,
+        );
 
       // Phase 1: Execute read steps to get REAL AWS state
       const readResult = await executePlanSteps({
@@ -414,13 +504,18 @@ export class RemediationService {
         // AI found the fix can't be automated after seeing real state — return as failed with guidance
         await db.remediationAction.update({
           where: { id: action.id },
-          data: { status: 'failed', errorMessage: refinedPlan.reason ?? 'Cannot be auto-fixed.' },
+          data: {
+            status: 'failed',
+            errorMessage: refinedPlan.reason ?? 'Cannot be auto-fixed.',
+          },
         });
         return {
           actionId: action.id,
           status: 'failed' as const,
           resourceId: finding.resourceId,
-          error: refinedPlan.reason ?? 'This finding requires manual setup before auto-fix is possible.',
+          error:
+            refinedPlan.reason ??
+            'This finding requires manual setup before auto-fix is possible.',
           guidedSteps: refinedPlan.guidedSteps,
         };
       }
@@ -444,8 +539,12 @@ export class RemediationService {
       });
 
       if (fixResult.error) {
-        this.logger.error(`Fix step ${fixResult.error.stepIndex + 1} failed: ${fixResult.error.step.service}:${fixResult.error.step.command} — ${fixResult.error.message}`);
-        this.logger.error(`Step params: ${JSON.stringify(fixResult.error.step.params).slice(0, 500)}`);
+        this.logger.error(
+          `Fix step ${fixResult.error.stepIndex + 1} failed: ${fixResult.error.step.service}:${fixResult.error.step.command} — ${fixResult.error.message}`,
+        );
+        this.logger.error(
+          `Step params: ${JSON.stringify(fixResult.error.step.params).slice(0, 500)}`,
+        );
         throw new Error(fixResult.error.message);
       }
 
@@ -468,7 +567,9 @@ export class RemediationService {
       });
 
       this.logger.log(`Remediation executed on ${finding.resourceId}`);
-      this.planCache.delete(`${params.connectionId}:${params.checkResultId}:${params.remediationKey}`);
+      this.planCache.delete(
+        `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+      );
 
       return {
         actionId: action.id,
@@ -478,20 +579,26 @@ export class RemediationService {
         appliedState,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const permissionInfo = parseAwsPermissionError(errorMessage);
 
       // If permission error, build script with ALL needed permissions (not just the one that failed)
       // This prevents overwriting CompAI-AutoFix with a partial list
-      let permissionError: { missingActions: string[]; fixScript?: string } | undefined;
+      let permissionError:
+        | { missingActions: string[]; fixScript?: string }
+        | undefined;
       if (permissionInfo.isPermissionError && plan.fixSteps.length > 0) {
         try {
-          const suggestion = await this.aiRemediationService.suggestPermissionFix({
-            errorMessage,
-            failedStep: plan.fixSteps[0]!,
-          });
+          const suggestion =
+            await this.aiRemediationService.suggestPermissionFix({
+              errorMessage,
+              failedStep: plan.fixSteps[0],
+            });
           // Merge: cached permissions from preview + newly discovered missing ones
-          const cached = this.planCache.get(`${params.connectionId}:${params.checkResultId}:${params.remediationKey}`);
+          const cached = this.planCache.get(
+            `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+          );
           const allPerms = new Set([
             ...(cached?.permissionsList ?? plan.requiredPermissions),
             ...suggestion.missingActions,
@@ -548,17 +655,22 @@ export class RemediationService {
     }
 
     const appliedState = action.appliedState as Record<string, unknown>;
-    const rollbackSteps = (appliedState.rollbackSteps ?? []) as AwsCommandStep[];
+    const rollbackSteps = (appliedState.rollbackSteps ??
+      []) as AwsCommandStep[];
 
     if (rollbackSteps.length === 0) {
       throw new Error('No rollback steps available for this action');
     }
 
-    const credentials = await this.credentialVaultService.getDecryptedCredentials(action.connectionId);
+    const credentials =
+      await this.credentialVaultService.getDecryptedCredentials(
+        action.connectionId,
+      );
     if (!credentials) throw new Error('No credentials found');
 
     const region = this.getRegion(credentials);
-    const remediationCreds = await this.awsSecurityService.assumeRemediationRole(credentials, region);
+    const remediationCreds =
+      await this.awsSecurityService.assumeRemediationRole(credentials, region);
 
     try {
       const result = await executePlanSteps({
@@ -575,7 +687,9 @@ export class RemediationService {
         data: { status: 'rolled_back', rolledBackAt: new Date() },
       });
 
-      this.logger.log(`Rolled back ${action.remediationKey} on ${action.resourceId}`);
+      this.logger.log(
+        `Rolled back ${action.remediationKey} on ${action.resourceId}`,
+      );
 
       return {
         status: 'rolled_back' as const,
@@ -584,25 +698,32 @@ export class RemediationService {
         resourceId: action.resourceId,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const permissionInfo = parseAwsPermissionError(errorMessage);
 
       await db.remediationAction.update({
         where: { id: action.id },
-        data: { status: 'rollback_failed', errorMessage: `Rollback failed: ${errorMessage}` },
+        data: {
+          status: 'rollback_failed',
+          errorMessage: `Rollback failed: ${errorMessage}`,
+        },
       });
 
       // If permission error, include actionable info
       if (permissionInfo.isPermissionError) {
-        const missingActions = permissionInfo.missingActions.length > 0
-          ? permissionInfo.missingActions
-          : ['(could not determine specific action)'];
+        const missingActions =
+          permissionInfo.missingActions.length > 0
+            ? permissionInfo.missingActions
+            : ['(could not determine specific action)'];
         const script = this.buildStaticPermissionScript(missingActions);
-        throw new Error(JSON.stringify({
-          message: `Rollback failed: missing permissions`,
-          missingActions,
-          script,
-        }));
+        throw new Error(
+          JSON.stringify({
+            message: `Rollback failed: missing permissions`,
+            missingActions,
+            script,
+          }),
+        );
       }
 
       throw new Error(`Rollback failed: ${errorMessage}`);
@@ -611,26 +732,44 @@ export class RemediationService {
 
   async getActions(params: { connectionId: string; organizationId: string }) {
     const actions = await db.remediationAction.findMany({
-      where: { connectionId: params.connectionId, organizationId: params.organizationId },
+      where: {
+        connectionId: params.connectionId,
+        organizationId: params.organizationId,
+      },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
 
-    const userIds = [...new Set(actions.map((a) => a.initiatedById))].filter((id) => id !== 'system');
+    const userIds = [...new Set(actions.map((a) => a.initiatedById))].filter(
+      (id) => id !== 'system',
+    );
     const users = userIds.length
-      ? await db.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true } })
+      ? await db.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, name: true },
+        })
       : [];
     const userMap = new Map(users.map((u) => [u.id, u.name]));
     userMap.set('system', 'System');
 
-    return actions.map((a) => ({ ...a, initiatedByName: userMap.get(a.initiatedById) ?? null }));
+    return actions.map((a) => ({
+      ...a,
+      initiatedByName: userMap.get(a.initiatedById) ?? null,
+    }));
   }
 
   // ─── Private helpers ──────────────────────────────────────────────────
 
-  private async getConnection(params: { connectionId: string; organizationId: string }) {
+  private async getConnection(params: {
+    connectionId: string;
+    organizationId: string;
+  }) {
     const connection = await db.integrationConnection.findFirst({
-      where: { id: params.connectionId, organizationId: params.organizationId, status: 'active' },
+      where: {
+        id: params.connectionId,
+        organizationId: params.organizationId,
+        status: 'active',
+      },
       include: { provider: true },
     });
     if (!connection) throw new Error('Connection not found or inactive');
@@ -656,7 +795,10 @@ export class RemediationService {
     });
     if (!finding) throw new Error('Finding not found');
 
-    const credentials = await this.credentialVaultService.getDecryptedCredentials(params.connectionId);
+    const credentials =
+      await this.credentialVaultService.getDecryptedCredentials(
+        params.connectionId,
+      );
     if (!credentials) throw new Error('No credentials found');
 
     // Extract region from finding evidence or resourceId (not just first configured region)
@@ -697,8 +839,11 @@ export class RemediationService {
   private resolveRealActionName(service: string, command: string): string {
     // Import the SDK module statically (same as executor)
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-      const mod = require(`@aws-sdk/client-${service}`) as Record<string, unknown>;
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mod = require(`@aws-sdk/client-${service}`) as Record<
+        string,
+        unknown
+      >;
 
       // Exact match
       if (mod[command] && typeof mod[command] === 'function') {
@@ -708,10 +853,14 @@ export class RemediationService {
       // Fuzzy match — find closest command in the module
       const cmdBase = command.replace('Command', '');
       const match = Object.keys(mod).find((k) => {
-        if (!k.endsWith('Command') || typeof mod[k] !== 'function') return false;
+        if (!k.endsWith('Command') || typeof mod[k] !== 'function')
+          return false;
         const kBase = k.replace('Command', '');
-        return kBase.includes(cmdBase) || cmdBase.includes(kBase)
-          || kBase.replace('Bucket', '') === cmdBase.replace('Bucket', '');
+        return (
+          kBase.includes(cmdBase) ||
+          cmdBase.includes(kBase) ||
+          kBase.replace('Bucket', '') === cmdBase.replace('Bucket', '')
+        );
       });
 
       if (match) {
@@ -750,10 +899,15 @@ export class RemediationService {
    * a Set of all allowed actions. This is deterministic — no simulation.
    */
   private async getExistingRolePermissions(
-    credentials: { accessKeyId: string; secretAccessKey: string; sessionToken?: string },
+    credentials: {
+      accessKeyId: string;
+      secretAccessKey: string;
+      sessionToken?: string;
+    },
     region: string,
   ): Promise<Set<string>> {
-    const { IAMClient, ListRolePoliciesCommand, GetRolePolicyCommand } = await import('@aws-sdk/client-iam');
+    const { IAMClient, ListRolePoliciesCommand, GetRolePolicyCommand } =
+      await import('@aws-sdk/client-iam');
     const iam = new IAMClient({
       region,
       credentials: {
@@ -768,23 +922,35 @@ export class RemediationService {
 
     try {
       // List all inline policies
-      const listResp = await iam.send(new ListRolePoliciesCommand({ RoleName: roleName }));
+      const listResp = await iam.send(
+        new ListRolePoliciesCommand({ RoleName: roleName }),
+      );
       const policyNames = listResp.PolicyNames ?? [];
-      this.logger.log(`Role ${roleName} has ${policyNames.length} inline policies: ${policyNames.join(', ')}`);
+      this.logger.log(
+        `Role ${roleName} has ${policyNames.length} inline policies: ${policyNames.join(', ')}`,
+      );
 
       // Read each policy and extract actions
       for (const policyName of policyNames) {
         try {
-          const policyResp = await iam.send(new GetRolePolicyCommand({
-            RoleName: roleName,
-            PolicyName: policyName,
-          }));
-          const doc = JSON.parse(decodeURIComponent(policyResp.PolicyDocument ?? '{}'));
-          this.logger.log(`Policy ${policyName}: ${JSON.stringify(doc).slice(0, 200)}`);
+          const policyResp = await iam.send(
+            new GetRolePolicyCommand({
+              RoleName: roleName,
+              PolicyName: policyName,
+            }),
+          );
+          const doc = JSON.parse(
+            decodeURIComponent(policyResp.PolicyDocument ?? '{}'),
+          );
+          this.logger.log(
+            `Policy ${policyName}: ${JSON.stringify(doc).slice(0, 200)}`,
+          );
           const statements = Array.isArray(doc.Statement) ? doc.Statement : [];
           for (const stmt of statements) {
             if (stmt.Effect !== 'Allow') continue;
-            const stmtActions = Array.isArray(stmt.Action) ? stmt.Action : [stmt.Action];
+            const stmtActions = Array.isArray(stmt.Action)
+              ? stmt.Action
+              : [stmt.Action];
             for (const action of stmtActions) {
               if (typeof action === 'string') {
                 if (action === '*') {
@@ -799,10 +965,14 @@ export class RemediationService {
             }
           }
         } catch (policyErr) {
-          this.logger.warn(`Failed to read policy ${policyName}: ${policyErr instanceof Error ? policyErr.message : String(policyErr)}`);
+          this.logger.warn(
+            `Failed to read policy ${policyName}: ${policyErr instanceof Error ? policyErr.message : String(policyErr)}`,
+          );
         }
       }
-      this.logger.log(`Total actions found on role: ${actions.size}. Sample: ${[...actions].slice(0, 10).join(', ')}`);
+      this.logger.log(
+        `Total actions found on role: ${actions.size}. Sample: ${[...actions].slice(0, 10).join(', ')}`,
+      );
     } finally {
       iam.destroy?.();
     }
@@ -814,16 +984,25 @@ export class RemediationService {
    * Check if a required permission is covered by the existing policy.
    * Handles wildcards and common AI naming mistakes.
    */
-  private isPermissionCovered(required: string, existing: Set<string>): boolean {
+  private isPermissionCovered(
+    required: string,
+    existing: Set<string>,
+  ): boolean {
     if (existing.has('*')) return true;
     if (existing.has(required)) return true;
     // Check service wildcards: "s3:*" covers "s3:CreateBucket"
     const [svc] = required.split(':');
     if (svc && existing.has(`${svc}:*`)) return true;
     // AI sometimes adds "Bucket" in action names: s3:PutBucketPublicAccessBlock vs s3:PutPublicAccessBlock
-    const withoutBucket = required.replace(':PutBucket', ':Put').replace(':GetBucket', ':Get').replace(':DeleteBucket', ':Delete');
+    const withoutBucket = required
+      .replace(':PutBucket', ':Put')
+      .replace(':GetBucket', ':Get')
+      .replace(':DeleteBucket', ':Delete');
     if (withoutBucket !== required && existing.has(withoutBucket)) return true;
-    const withBucket = required.replace(':Put', ':PutBucket').replace(':Get', ':GetBucket').replace(':Delete', ':DeleteBucket');
+    const withBucket = required
+      .replace(':Put', ':PutBucket')
+      .replace(':Get', ':GetBucket')
+      .replace(':Delete', ':DeleteBucket');
     if (withBucket !== required && existing.has(withBucket)) return true;
     return false;
   }

@@ -11,8 +11,17 @@ import {
   StreamableFile,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
-import { AuthContext, OrganizationId, UserId } from '../auth/auth-context.decorator';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  AuthContext,
+  OrganizationId,
+  UserId,
+} from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { Public } from '../auth/public.decorator';
@@ -43,12 +52,14 @@ export class DeviceAgentController {
 
   @Post('exchange-code')
   @Public()
+  @ApiOperation({ summary: 'Exchange an auth code for device credentials' })
   async exchangeCode(@Body() dto: ExchangeCodeDto) {
     return this.deviceAgentAuthService.exchangeCode({ code: dto.code });
   }
 
   @Get('updates/:filename')
   @Public()
+  @ApiOperation({ summary: 'Download a device-agent update' })
   async getUpdateFile(
     @Param('filename') filename: string,
     @Response({ passthrough: true }) res: ExpressResponse,
@@ -68,6 +79,7 @@ export class DeviceAgentController {
 
   @Head('updates/:filename')
   @Public()
+  @ApiOperation({ summary: "Check a device-agent update's metadata" })
   async headUpdateFile(
     @Param('filename') filename: string,
     @Response({ passthrough: true }) res: ExpressResponse,
@@ -90,11 +102,12 @@ export class DeviceAgentController {
   @Post('auth-code')
   @UseGuards(HybridAuthGuard)
   @SkipOrgCheck()
+  @ApiOperation({ summary: 'Create a device-agent auth code' })
   async generateAuthCode(@Req() req: ExpressRequest, @Body() dto: AuthCodeDto) {
     // Construct Web API Headers from Express IncomingHttpHeaders
     const headers = new Headers();
     const authHeader = req.headers['authorization'];
-    if (authHeader) headers.set('authorization', authHeader as string);
+    if (authHeader) headers.set('authorization', authHeader);
     const cookieHeader = req.headers['cookie'];
     if (cookieHeader) headers.set('cookie', cookieHeader);
 
@@ -107,6 +120,7 @@ export class DeviceAgentController {
   @Get('my-organizations')
   @UseGuards(HybridAuthGuard)
   @SkipOrgCheck()
+  @ApiOperation({ summary: 'List organizations for the current device' })
   async getMyOrganizations(@UserId() userId: string) {
     return this.deviceAgentAuthService.getMyOrganizations({ userId });
   }
@@ -114,13 +128,18 @@ export class DeviceAgentController {
   @Post('register')
   @UseGuards(HybridAuthGuard)
   @SkipOrgCheck()
-  async registerDevice(@UserId() userId: string, @Body() dto: RegisterDeviceDto) {
+  @ApiOperation({ summary: 'Register a device agent' })
+  async registerDevice(
+    @UserId() userId: string,
+    @Body() dto: RegisterDeviceDto,
+  ) {
     return this.deviceAgentAuthService.registerDevice({ userId, dto });
   }
 
   @Post('check-in')
   @UseGuards(HybridAuthGuard)
   @SkipOrgCheck()
+  @ApiOperation({ summary: 'Submit a device check-in' })
   async checkIn(@UserId() userId: string, @Body() dto: CheckInDto) {
     return this.deviceAgentAuthService.checkIn({ userId, dto });
   }
@@ -128,6 +147,7 @@ export class DeviceAgentController {
   @Get('status')
   @UseGuards(HybridAuthGuard)
   @SkipOrgCheck()
+  @ApiOperation({ summary: 'Get device-agent status' })
   async getDeviceStatus(
     @UserId() userId: string,
     @Query('deviceId') deviceId?: string,

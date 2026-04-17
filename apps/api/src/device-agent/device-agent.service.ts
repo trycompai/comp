@@ -167,11 +167,11 @@ export class DeviceAgentService {
     }
   }
 
-  async getUpdateFile({
-    filename,
-  }: {
-    filename: string;
-  }): Promise<{ stream: Readable; contentType: string; contentLength?: number }> {
+  async getUpdateFile({ filename }: { filename: string }): Promise<{
+    stream: Readable;
+    contentType: string;
+    contentLength?: number;
+  }> {
     if (!isValidFilename(filename)) {
       throw new NotFoundException('Not found');
     }

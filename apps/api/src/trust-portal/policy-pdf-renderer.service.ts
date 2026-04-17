@@ -92,13 +92,27 @@ export class PolicyPdfRendererService {
       );
 
     const replacements: { [key: string]: string } = {
-      '\u2018': "'", '\u2019': "'", '\u201C': '"', '\u201D': '"',
-      '\u2013': '-', '\u2014': '-', '\u2026': '...',
-      '\u2265': '>=', '\u2264': '<=', '\u00B0': 'deg',
-      '\u00A9': '(c)', '\u00AE': '(R)', '\u2122': 'TM',
-      '\u00A0': ' ', '\u2022': '•', '\u00B1': '+/-',
-      '\u00D7': 'x', '\u00F7': '/', '\u2192': '->',
-      '\u2190': '<-', '\u2194': '<->',
+      '\u2018': "'",
+      '\u2019': "'",
+      '\u201C': '"',
+      '\u201D': '"',
+      '\u2013': '-',
+      '\u2014': '-',
+      '\u2026': '...',
+      '\u2265': '>=',
+      '\u2264': '<=',
+      '\u00B0': 'deg',
+      '\u00A9': '(c)',
+      '\u00AE': '(R)',
+      '\u2122': 'TM',
+      '\u00A0': ' ',
+      '\u2022': '•',
+      '\u00B1': '+/-',
+      '\u00D7': 'x',
+      '\u00F7': '/',
+      '\u2192': '->',
+      '\u2190': '<-',
+      '\u2194': '<->',
     };
 
     let cleanedText = strippedText;
@@ -113,14 +127,63 @@ export class PolicyPdfRendererService {
         return char;
       }
       const fallbacks: { [key: string]: string } = {
-        à: 'a', á: 'a', â: 'a', ã: 'a', ä: 'a', å: 'a', æ: 'ae',
-        è: 'e', é: 'e', ê: 'e', ë: 'e', ì: 'i', í: 'i', î: 'i', ï: 'i',
-        ò: 'o', ó: 'o', ô: 'o', õ: 'o', ö: 'o', ø: 'o',
-        ù: 'u', ú: 'u', û: 'u', ü: 'u', ñ: 'n', ç: 'c', ß: 'ss', ÿ: 'y',
-        À: 'A', Á: 'A', Â: 'A', Ã: 'A', Ä: 'A', Å: 'A', Æ: 'AE',
-        È: 'E', É: 'E', Ê: 'E', Ë: 'E', Ì: 'I', Í: 'I', Î: 'I', Ï: 'I',
-        Ò: 'O', Ó: 'O', Ô: 'O', Õ: 'O', Ö: 'O', Ø: 'O',
-        Ù: 'U', Ú: 'U', Û: 'U', Ü: 'U', Ñ: 'N', Ç: 'C', Ý: 'Y',
+        à: 'a',
+        á: 'a',
+        â: 'a',
+        ã: 'a',
+        ä: 'a',
+        å: 'a',
+        æ: 'ae',
+        è: 'e',
+        é: 'e',
+        ê: 'e',
+        ë: 'e',
+        ì: 'i',
+        í: 'i',
+        î: 'i',
+        ï: 'i',
+        ò: 'o',
+        ó: 'o',
+        ô: 'o',
+        õ: 'o',
+        ö: 'o',
+        ø: 'o',
+        ù: 'u',
+        ú: 'u',
+        û: 'u',
+        ü: 'u',
+        ñ: 'n',
+        ç: 'c',
+        ß: 'ss',
+        ÿ: 'y',
+        À: 'A',
+        Á: 'A',
+        Â: 'A',
+        Ã: 'A',
+        Ä: 'A',
+        Å: 'A',
+        Æ: 'AE',
+        È: 'E',
+        É: 'E',
+        Ê: 'E',
+        Ë: 'E',
+        Ì: 'I',
+        Í: 'I',
+        Î: 'I',
+        Ï: 'I',
+        Ò: 'O',
+        Ó: 'O',
+        Ô: 'O',
+        Õ: 'O',
+        Ö: 'O',
+        Ø: 'O',
+        Ù: 'U',
+        Ú: 'U',
+        Û: 'U',
+        Ü: 'U',
+        Ñ: 'N',
+        Ç: 'C',
+        Ý: 'Y',
       };
       return fallbacks[char] ?? char;
     });
@@ -338,12 +401,172 @@ export class PolicyPdfRendererService {
           config.yPosition += config.lineHeight;
           break;
 
+        case 'table':
+          this.renderTable(config, node);
+          break;
+
         default:
           if (node.content) {
             this.processContent(config, node.content);
           }
       }
     }
+  }
+
+  private renderTable(config: PDFConfig, tableNode: JSONContent): void {
+    const rows = tableNode.content;
+    if (!rows || rows.length === 0) return;
+
+    const firstRow = rows[0];
+    if (!firstRow.content || firstRow.content.length === 0) return;
+
+    // Count columns (including colspans) from the first row
+    let columnCount = 0;
+    for (const cell of firstRow.content) {
+      columnCount += cell.attrs?.colspan ?? 1;
+    }
+    if (columnCount === 0) return;
+
+    const colWidth = config.contentWidth / columnCount;
+    const cellPadding = 2;
+    const minCellHeight = config.lineHeight + cellPadding * 2;
+
+    config.doc.setFontSize(config.defaultFontSize);
+
+    for (const row of rows) {
+      if (row.type !== 'tableRow' || !row.content) continue;
+
+      // Pre-compute wrapped lines per cell to determine row height
+      const cellsInRow: Array<{
+        isHeader: boolean;
+        lines: string[];
+        width: number;
+      }> = [];
+
+      for (const cell of row.content) {
+        if (cell.type !== 'tableCell' && cell.type !== 'tableHeader') continue;
+        const isHeader = cell.type === 'tableHeader';
+        const colspan = cell.attrs?.colspan ?? 1;
+        const width = colWidth * colspan;
+        const rawText = this.extractCellText(cell.content ?? []);
+        const cleanText = this.cleanTextForPDF(rawText);
+        // splitTextToSize respects embedded \n, so multi-paragraph cells
+        // wrap into separate visual rows within the same cell.
+        const lines = config.doc.splitTextToSize(
+          cleanText || ' ',
+          width - cellPadding * 2,
+        ) as string[];
+        cellsInRow.push({ isHeader, lines, width });
+      }
+
+      if (cellsInRow.length === 0) continue;
+
+      const rowHeight = Math.max(
+        minCellHeight,
+        ...cellsInRow.map(
+          (c) => c.lines.length * config.lineHeight + cellPadding * 2,
+        ),
+      );
+
+      this.checkPageBreak(config, rowHeight);
+
+      const rowY = config.yPosition;
+      let xOffset = 0;
+      for (const cell of cellsInRow) {
+        const x = config.margin + xOffset;
+
+        if (cell.isHeader) {
+          config.doc.setFillColor(240, 240, 240);
+          config.doc.rect(x, rowY, cell.width, rowHeight, 'F');
+        }
+
+        config.doc.setDrawColor(180, 180, 180);
+        config.doc.setLineWidth(0.2);
+        config.doc.rect(x, rowY, cell.width, rowHeight);
+
+        config.doc.setFont('helvetica', cell.isHeader ? 'bold' : 'normal');
+        config.doc.setTextColor(0, 0, 0);
+        cell.lines.forEach((line, li) => {
+          config.doc.text(
+            line,
+            x + cellPadding,
+            rowY + cellPadding + config.lineHeight * (li + 0.75),
+          );
+        });
+
+        xOffset += cell.width;
+      }
+
+      config.doc.setFont('helvetica', 'normal');
+      config.yPosition = rowY + rowHeight;
+    }
+
+    config.yPosition += config.lineHeight * 0.5;
+  }
+
+  /**
+   * Extract display text from a table cell's block-level content.
+   *
+   * Tiptap cells wrap their content in block nodes — most commonly one
+   * `paragraph` per visual line, plus the occasional `hardBreak` inside a
+   * paragraph or a `bulletList`/`orderedList`. We need to preserve the visual
+   * line boundaries the user sees in the editor so that `splitTextToSize`
+   * wraps each intended line separately. Without this, a cell with two
+   * paragraphs "Retention Period" and "30 days" renders as the single
+   * concatenated string "Retention Period30 days".
+   *
+   * Block boundaries that insert a newline:
+   *  - top-level children of the cell (paragraph, bulletList, etc.)
+   *  - each list item inside a bulletList/orderedList
+   *  - `hardBreak` nodes
+   *
+   * Inline marks (bold, italic, link) are flattened to their text — we lose
+   * the formatting but the content is complete.
+   */
+  private extractCellText(cellContent: JSONContent[]): string {
+    return cellContent
+      .map((block) => this.blockText(block))
+      .filter((s) => s.length > 0)
+      .join('\n');
+  }
+
+  private blockText(node: JSONContent): string {
+    if (node.type === 'bulletList') {
+      if (!node.content) return '';
+      return node.content
+        .map((item) => this.renderListItem(item, '•'))
+        .filter((s) => s.length > 0)
+        .join('\n');
+    }
+    if (node.type === 'orderedList') {
+      if (!node.content) return '';
+      return node.content
+        .map((item, i) => this.renderListItem(item, `${i + 1}.`))
+        .filter((s) => s.length > 0)
+        .join('\n');
+    }
+    if (node.type === 'listItem') {
+      // Bare listItem without a parent list (unusual); render without prefix.
+      if (!node.content) return '';
+      return node.content
+        .map((child) => this.blockText(child))
+        .filter((s) => s.length > 0)
+        .join('\n');
+    }
+    if (node.type === 'hardBreak') return '\n';
+    if (node.text) return node.text;
+    if (!node.content) return '';
+    return node.content.map((child) => this.blockText(child)).join('');
+  }
+
+  private renderListItem(itemNode: JSONContent, prefix: string): string {
+    if (!itemNode.content) return '';
+    const body = itemNode.content
+      .map((child) => this.blockText(child))
+      .filter((s) => s.length > 0)
+      .join('\n');
+    if (!body) return '';
+    return `${prefix} ${body}`;
   }
 
   renderPoliciesPdfBuffer(

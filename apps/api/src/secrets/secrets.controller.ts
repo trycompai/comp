@@ -8,7 +8,13 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -86,7 +92,13 @@ export class SecretsController {
     },
   })
   async createSecret(
-    @Body() body: { name: string; value: string; description?: string; category?: string },
+    @Body()
+    body: {
+      name: string;
+      value: string;
+      description?: string;
+      category?: string;
+    },
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {

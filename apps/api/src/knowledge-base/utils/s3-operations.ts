@@ -4,7 +4,11 @@ import {
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
 import { randomBytes } from 'crypto';
-import { s3Client, APP_AWS_KNOWLEDGE_BASE_BUCKET, getSignedUrl } from '@/app/s3';
+import {
+  s3Client,
+  APP_AWS_KNOWLEDGE_BASE_BUCKET,
+  getSignedUrl,
+} from '@/app/s3';
 import {
   MAX_FILE_SIZE_BYTES,
   SIGNED_URL_EXPIRATION_SECONDS,

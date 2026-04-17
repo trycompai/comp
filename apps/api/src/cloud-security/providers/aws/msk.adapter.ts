@@ -1,7 +1,4 @@
-import {
-  KafkaClient,
-  ListClustersV2Command,
-} from '@aws-sdk/client-kafka';
+import { KafkaClient, ListClustersV2Command } from '@aws-sdk/client-kafka';
 
 import type { SecurityFinding } from '../../cloud-security.service';
 import type { AwsCredentials, AwsServiceAdapter } from './aws-service-adapter';
@@ -108,8 +105,7 @@ export class MskAdapter implements AwsServiceAdapter {
 
           // Check broker logging
           const brokerLogs = provisioned.LoggingInfo?.BrokerLogs;
-          const hasCloudWatch =
-            brokerLogs?.CloudWatchLogs?.Enabled === true;
+          const hasCloudWatch = brokerLogs?.CloudWatchLogs?.Enabled === true;
           const hasS3 = brokerLogs?.S3?.Enabled === true;
           const hasFirehose = brokerLogs?.Firehose?.Enabled === true;
 
@@ -120,7 +116,12 @@ export class MskAdapter implements AwsServiceAdapter {
                 'Broker logging configured',
                 `MSK cluster "${clusterName}" has broker logging enabled`,
                 'info',
-                { clusterName, cloudWatch: hasCloudWatch, s3: hasS3, firehose: hasFirehose },
+                {
+                  clusterName,
+                  cloudWatch: hasCloudWatch,
+                  s3: hasS3,
+                  firehose: hasFirehose,
+                },
                 true,
               ),
             );

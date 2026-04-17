@@ -37,7 +37,8 @@ export class RolesController {
   @RequirePermission('ac', 'create')
   @ApiOperation({
     summary: 'Create a custom role',
-    description: 'Create a new custom role with specified permissions. Only admins and owners can create roles.',
+    description:
+      'Create a new custom role with specified permissions. Only admins and owners can create roles.',
   })
   @ApiBody({ type: CreateRoleDto })
   @ApiResponse({
@@ -61,9 +62,15 @@ export class RolesController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Invalid role data or role already exists' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid role data or role already exists',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - cannot grant permissions you do not have' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - cannot grant permissions you do not have',
+  })
   async createRole(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
@@ -80,7 +87,8 @@ export class RolesController {
   @RequirePermission('ac', 'read')
   @ApiOperation({
     summary: 'List all roles',
-    description: 'List all roles for the organization, including built-in and custom roles.',
+    description:
+      'List all roles for the organization, including built-in and custom roles.',
   })
   @ApiResponse({
     status: 200,
@@ -153,16 +161,14 @@ export class RolesController {
       .split(',')
       .map((r) => r.trim())
       .filter(Boolean);
-    const permissions =
-      await this.rolesService.getPermissionsForRoles(
-        organizationId,
-        roleNames,
-      );
-    const obligations =
-      await this.rolesService.getObligationsForRoles(
-        organizationId,
-        roleNames,
-      );
+    const permissions = await this.rolesService.getPermissionsForRoles(
+      organizationId,
+      roleNames,
+    );
+    const obligations = await this.rolesService.getObligationsForRoles(
+      organizationId,
+      roleNames,
+    );
     return { permissions, obligations };
   }
 
@@ -201,7 +207,8 @@ export class RolesController {
   @RequirePermission('ac', 'update')
   @ApiOperation({
     summary: 'Update a custom role',
-    description: 'Update the name or permissions of a custom role. Cannot modify built-in roles.',
+    description:
+      'Update the name or permissions of a custom role. Cannot modify built-in roles.',
   })
   @ApiParam({ name: 'roleId', description: 'Role ID', example: 'rol_abc123' })
   @ApiBody({ type: UpdateRoleDto })
@@ -222,7 +229,10 @@ export class RolesController {
   })
   @ApiResponse({ status: 400, description: 'Invalid role data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - cannot grant permissions you do not have' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - cannot grant permissions you do not have',
+  })
   @ApiResponse({ status: 404, description: 'Role not found' })
   async updateRole(
     @OrganizationId() organizationId: string,
@@ -242,7 +252,8 @@ export class RolesController {
   @RequirePermission('ac', 'delete')
   @ApiOperation({
     summary: 'Delete a custom role',
-    description: 'Delete a custom role. Cannot delete if members are still assigned to it.',
+    description:
+      'Delete a custom role. Cannot delete if members are still assigned to it.',
   })
   @ApiParam({ name: 'roleId', description: 'Role ID', example: 'rol_abc123' })
   @ApiResponse({
@@ -256,7 +267,10 @@ export class RolesController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Cannot delete - members assigned to role' })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot delete - members assigned to role',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Role not found' })
   async deleteRole(

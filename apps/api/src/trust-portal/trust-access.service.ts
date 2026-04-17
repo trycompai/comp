@@ -986,10 +986,15 @@ export class TrustAccessService {
       organizationId: nda.organizationId,
       organizationName: nda.accessRequest.organization.name,
     });
+    const branding = await this.getTrustBrandingByOrganizationId(
+      nda.organizationId,
+    );
 
     const baseResponse = {
       id: nda.id,
       organizationName: nda.accessRequest.organization.name,
+      friendlyUrl: branding.friendlyUrl,
+      faviconUrl: branding.faviconUrl,
       requesterName: nda.accessRequest.name,
       requesterEmail: nda.accessRequest.email,
       expiresAt: nda.signTokenExpiresAt,
@@ -1434,13 +1439,52 @@ export class TrustAccessService {
     const ndaPdfUrl = grant.ndaAgreement?.pdfSignedKey
       ? await this.ndaPdfService.getSignedUrl(grant.ndaAgreement.pdfSignedKey)
       : null;
+    const branding = await this.getTrustBrandingByOrganizationId(
+      grant.accessRequest.organizationId,
+    );
 
     return {
       organizationName: grant.accessRequest.organization.name,
+      friendlyUrl: branding.friendlyUrl,
+      faviconUrl: branding.faviconUrl,
       expiresAt: grant.expiresAt,
       subjectEmail: grant.subjectEmail,
       ndaPdfUrl,
     };
+  }
+
+  private async getTrustBrandingByOrganizationId(
+    organizationId: string,
+  ): Promise<{ friendlyUrl: string; faviconUrl: string | null }> {
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+      select: { friendlyUrl: true, favicon: true },
+    });
+
+    const friendlyUrl = trust?.friendlyUrl ?? organizationId;
+    const faviconUrl = trust?.favicon
+      ? await this.getFaviconSignedUrl(trust.favicon)
+      : null;
+
+    return { friendlyUrl, faviconUrl };
+  }
+
+  private async getFaviconSignedUrl(
+    faviconKey: string,
+  ): Promise<string | null> {
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      return null;
+    }
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+        Key: faviconKey,
+      });
+      return await getSignedUrl(s3Client, command, { expiresIn: 86400 }); // 24 hours
+    } catch {
+      return null;
+    }
   }
 
   async validateAccessTokenAndGetOrganizationId(
@@ -2428,24 +2472,23 @@ export class TrustAccessService {
   }
 
   async getPublicFavicon(friendlyUrl: string): Promise<string | null> {
-    const trust = await db.trust.findUnique({
+    let trust = await db.trust.findUnique({
       where: { friendlyUrl },
       select: { favicon: true },
     });
 
-    if (!trust?.favicon || !s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+    if (!trust) {
+      trust = await db.trust.findUnique({
+        where: { organizationId: friendlyUrl },
+        select: { favicon: true },
+      });
+    }
+
+    if (!trust?.favicon) {
       return null;
     }
 
-    try {
-      const command = new GetObjectCommand({
-        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-        Key: trust.favicon,
-      });
-      return await getSignedUrl(s3Client, command, { expiresIn: 86400 }); // 24 hours
-    } catch {
-      return null;
-    }
+    return this.getFaviconSignedUrl(trust.favicon);
   }
 
   async getPublicVendors(friendlyUrl: string) {

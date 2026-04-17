@@ -163,7 +163,10 @@ export class TrainingService {
       return { sent: false, reason: 'training_not_complete' };
     }
 
-    const resolved = await this.resolveMemberForCertificate(memberId, organizationId);
+    const resolved = await this.resolveMemberForCertificate(
+      memberId,
+      organizationId,
+    );
     if ('reason' in resolved) return { sent: false, reason: resolved.reason };
 
     const completedAt = await this.getTrainingCompletionDate(memberId);
@@ -186,24 +189,35 @@ export class TrainingService {
     const isComplete = await this.hasCompletedAllTraining(memberId);
     if (!isComplete) return { error: 'training_not_complete' };
 
-    const resolved = await this.resolveMemberForCertificate(memberId, organizationId);
+    const resolved = await this.resolveMemberForCertificate(
+      memberId,
+      organizationId,
+    );
     if ('reason' in resolved) return { error: resolved.reason };
 
     const completedAt = await this.getTrainingCompletionDate(memberId);
     if (!completedAt) return { error: 'no_completion_date' };
 
-    const pdf = await this.trainingCertificatePdfService.generateTrainingCertificatePdf({
-      userName: resolved.userName,
-      organizationName: resolved.organizationName,
-      completedAt,
-    });
+    const pdf =
+      await this.trainingCertificatePdfService.generateTrainingCertificatePdf({
+        userName: resolved.userName,
+        organizationName: resolved.organizationName,
+        completedAt,
+      });
 
-    return { pdf, fileName: `training-certificate-${resolved.userName.replace(/\s+/g, '-').toLowerCase()}.pdf` };
+    return {
+      pdf,
+      fileName: `training-certificate-${resolved.userName.replace(/\s+/g, '-').toLowerCase()}.pdf`,
+    };
   }
 
   async getHipaaCompletionDate(memberId: string): Promise<Date | null> {
     const completion = await db.employeeTrainingVideoCompletion.findFirst({
-      where: { memberId, videoId: HIPAA_TRAINING_ID, completedAt: { not: null } },
+      where: {
+        memberId,
+        videoId: HIPAA_TRAINING_ID,
+        completedAt: { not: null },
+      },
     });
     return completion?.completedAt ?? null;
   }
@@ -213,9 +227,13 @@ export class TrainingService {
     organizationId: string,
   ): Promise<{ sent: boolean; reason?: string }> {
     const isComplete = await this.hasCompletedHipaaTraining(memberId);
-    if (!isComplete) return { sent: false, reason: 'hipaa_training_not_complete' };
+    if (!isComplete)
+      return { sent: false, reason: 'hipaa_training_not_complete' };
 
-    const resolved = await this.resolveMemberForCertificate(memberId, organizationId);
+    const resolved = await this.resolveMemberForCertificate(
+      memberId,
+      organizationId,
+    );
     if ('reason' in resolved) return { sent: false, reason: resolved.reason };
 
     const completedAt = await this.getHipaaCompletionDate(memberId);
@@ -227,7 +245,9 @@ export class TrainingService {
       organizationName: resolved.organizationName,
       completedAt,
     });
-    this.logger.log(`HIPAA training completion email sent to ${resolved.email}`);
+    this.logger.log(
+      `HIPAA training completion email sent to ${resolved.email}`,
+    );
     return { sent: true };
   }
 
@@ -238,19 +258,26 @@ export class TrainingService {
     const isComplete = await this.hasCompletedHipaaTraining(memberId);
     if (!isComplete) return { error: 'hipaa_training_not_complete' };
 
-    const resolved = await this.resolveMemberForCertificate(memberId, organizationId);
+    const resolved = await this.resolveMemberForCertificate(
+      memberId,
+      organizationId,
+    );
     if ('reason' in resolved) return { error: resolved.reason };
 
     const completedAt = await this.getHipaaCompletionDate(memberId);
     if (!completedAt) return { error: 'no_completion_date' };
 
-    const pdf = await this.trainingCertificatePdfService.generateHipaaCertificatePdf({
-      userName: resolved.userName,
-      organizationName: resolved.organizationName,
-      completedAt,
-    });
+    const pdf =
+      await this.trainingCertificatePdfService.generateHipaaCertificatePdf({
+        userName: resolved.userName,
+        organizationName: resolved.organizationName,
+        completedAt,
+      });
 
-    return { pdf, fileName: `hipaa-training-certificate-${resolved.userName.replace(/\s+/g, '-').toLowerCase()}.pdf` };
+    return {
+      pdf,
+      fileName: `hipaa-training-certificate-${resolved.userName.replace(/\s+/g, '-').toLowerCase()}.pdf`,
+    };
   }
 
   private async resolveMemberForCertificate(
@@ -270,7 +297,8 @@ export class TrainingService {
 
     if (!member?.user) return { reason: 'member_not_found' };
     if (!member.user.email) return { reason: 'no_email' };
-    if (member.organizationId !== organizationId) return { reason: 'organization_mismatch' };
+    if (member.organizationId !== organizationId)
+      return { reason: 'organization_mismatch' };
 
     return {
       userName: member.user.name || 'Team Member',

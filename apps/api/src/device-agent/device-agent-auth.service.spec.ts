@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { DeviceAgentAuthService } from './device-agent-auth.service';
 
 // Mock dependencies
@@ -42,7 +46,9 @@ import { deviceAgentRedisClient } from './device-agent-kv';
 
 const mockDb = db as jest.Mocked<typeof db>;
 const mockAuth = auth as jest.Mocked<typeof auth>;
-const mockKv = deviceAgentRedisClient as jest.Mocked<typeof deviceAgentRedisClient>;
+const mockKv = deviceAgentRedisClient as jest.Mocked<
+  typeof deviceAgentRedisClient
+>;
 
 describe('DeviceAgentAuthService', () => {
   let service: DeviceAgentAuthService;
@@ -62,7 +68,10 @@ describe('DeviceAgentAuthService', () => {
       const headers = new Headers();
       headers.set('cookie', 'session=abc');
 
-      const result = await service.generateAuthCode({ headers, state: 'test-state' });
+      const result = await service.generateAuthCode({
+        headers,
+        state: 'test-state',
+      });
 
       expect(result.code).toHaveLength(64); // 32 bytes hex
       expect(mockKv.set).toHaveBeenCalledWith(
@@ -137,7 +146,9 @@ describe('DeviceAgentAuthService', () => {
       });
       expect(mockDb.member.findMany).toHaveBeenCalledWith({
         where: { userId: 'user-1', deactivated: false },
-        include: { organization: { select: { id: true, name: true, slug: true } } },
+        include: {
+          organization: { select: { id: true, name: true, slug: true } },
+        },
       });
     });
   });
@@ -160,11 +171,16 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should create a new device without serial number', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'member-1' });
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'member-1',
+      });
       (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
       (mockDb.device.create as jest.Mock).mockResolvedValue({ id: 'dev-1' });
 
-      const result = await service.registerDevice({ userId: 'user-1', dto: baseDto });
+      const result = await service.registerDevice({
+        userId: 'user-1',
+        dto: baseDto,
+      });
 
       expect(result).toEqual({ deviceId: 'dev-1' });
       expect(mockDb.device.create).toHaveBeenCalledWith({
@@ -178,7 +194,9 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should create a new device with serial number', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'member-1' });
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'member-1',
+      });
       (mockDb.device.findUnique as jest.Mock).mockResolvedValue(null);
       (mockDb.device.create as jest.Mock).mockResolvedValue({ id: 'dev-2' });
 
@@ -189,12 +207,16 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should update existing device when same member re-registers', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'member-1' });
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'member-1',
+      });
       (mockDb.device.findUnique as jest.Mock).mockResolvedValue({
         id: 'dev-existing',
         memberId: 'member-1',
       });
-      (mockDb.device.update as jest.Mock).mockResolvedValue({ id: 'dev-existing' });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({
+        id: 'dev-existing',
+      });
 
       const dto = { ...baseDto, serialNumber: 'ABC123' };
       const result = await service.registerDevice({ userId: 'user-1', dto });
@@ -204,14 +226,18 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should use fallback serial when serial belongs to different member', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'member-2' });
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'member-2',
+      });
       (mockDb.device.findUnique as jest.Mock).mockResolvedValue({
         id: 'dev-other',
         memberId: 'member-1',
       });
       // No existing fallback
       (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
-      (mockDb.device.create as jest.Mock).mockResolvedValue({ id: 'dev-fallback' });
+      (mockDb.device.create as jest.Mock).mockResolvedValue({
+        id: 'dev-fallback',
+      });
 
       const dto = { ...baseDto, serialNumber: 'GENERIC-SERIAL' };
       const result = await service.registerDevice({ userId: 'user-1', dto });
@@ -235,17 +261,35 @@ describe('DeviceAgentAuthService', () => {
         screenLockEnabled: false,
         checkDetails: {},
       });
-      (mockDb.device.update as jest.Mock).mockResolvedValue({ isCompliant: true });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({
+        isCompliant: true,
+      });
 
       const result = await service.checkIn({
         userId: 'user-1',
         dto: {
           deviceId: 'dev-1',
           checks: [
-            { checkType: 'disk_encryption', passed: true, checkedAt: new Date().toISOString() },
-            { checkType: 'antivirus', passed: true, checkedAt: new Date().toISOString() },
-            { checkType: 'password_policy', passed: true, checkedAt: new Date().toISOString() },
-            { checkType: 'screen_lock', passed: true, checkedAt: new Date().toISOString() },
+            {
+              checkType: 'disk_encryption',
+              passed: true,
+              checkedAt: new Date().toISOString(),
+            },
+            {
+              checkType: 'antivirus',
+              passed: true,
+              checkedAt: new Date().toISOString(),
+            },
+            {
+              checkType: 'password_policy',
+              passed: true,
+              checkedAt: new Date().toISOString(),
+            },
+            {
+              checkType: 'screen_lock',
+              passed: true,
+              checkedAt: new Date().toISOString(),
+            },
           ],
         },
       });
@@ -273,7 +317,11 @@ describe('DeviceAgentAuthService', () => {
           dto: {
             deviceId: 'dev-missing',
             checks: [
-              { checkType: 'disk_encryption', passed: true, checkedAt: new Date().toISOString() },
+              {
+                checkType: 'disk_encryption',
+                passed: true,
+                checkedAt: new Date().toISOString(),
+              },
             ],
           },
         }),
@@ -289,15 +337,25 @@ describe('DeviceAgentAuthService', () => {
         screenLockEnabled: false,
         checkDetails: {},
       });
-      (mockDb.device.update as jest.Mock).mockResolvedValue({ isCompliant: false });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({
+        isCompliant: false,
+      });
 
       const result = await service.checkIn({
         userId: 'user-1',
         dto: {
           deviceId: 'dev-1',
           checks: [
-            { checkType: 'disk_encryption', passed: true, checkedAt: new Date().toISOString() },
-            { checkType: 'antivirus', passed: false, checkedAt: new Date().toISOString() },
+            {
+              checkType: 'disk_encryption',
+              passed: true,
+              checkedAt: new Date().toISOString(),
+            },
+            {
+              checkType: 'antivirus',
+              passed: false,
+              checkedAt: new Date().toISOString(),
+            },
           ],
         },
       });

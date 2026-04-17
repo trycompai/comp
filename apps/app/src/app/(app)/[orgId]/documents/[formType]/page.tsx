@@ -2,7 +2,6 @@ import { CompanyFormPageClient } from '@/app/(app)/[orgId]/documents/components/
 import { Breadcrumb, PageLayout } from '@trycompai/design-system';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
 import { evidenceFormDefinitions, evidenceFormTypeSchema } from '../forms';
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
@@ -43,13 +42,11 @@ export default async function CompanyFormDetailPage({
           { label: formDefinition.title, isCurrent: true },
         ]}
       />
-      <Suspense>
-        <CompanyFormPageClient
-          organizationId={orgId}
-          formType={parsedType.data}
-          isPlatformAdmin={isPlatformAdmin}
-        />
-      </Suspense>
+      <CompanyFormPageClient
+        organizationId={orgId}
+        formType={parsedType.data}
+        isPlatformAdmin={isPlatformAdmin}
+      />
     </PageLayout>
   );
 }

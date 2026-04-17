@@ -50,30 +50,50 @@ export async function executeGcpPlanSteps(params: {
   if (validationErrors.length > 0) {
     return {
       results: [],
-      error: { stepIndex: 0, step: (params.steps[0] ?? allSteps[0])!, message: `URL validation failed: ${validationErrors.join('; ')}` },
+      error: {
+        stepIndex: 0,
+        step: params.steps[0] ?? allSteps[0],
+        message: `URL validation failed: ${validationErrors.join('; ')}`,
+      },
     };
   }
 
   const results: GcpStepResult[] = [];
 
   for (let i = 0; i < params.steps.length; i++) {
-    const step = params.steps[i]!;
+    const step = params.steps[i];
     try {
-      const output = await executeWithRetry(step, params.accessToken, params.isRollback);
+      const output = await executeWithRetry(
+        step,
+        params.accessToken,
+        params.isRollback,
+      );
       results.push({ step, output });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      logger.error(`Step ${i + 1} failed: ${step.method} ${step.url} — ${message}`);
+      logger.error(
+        `Step ${i + 1} failed: ${step.method} ${step.url} — ${message}`,
+      );
 
       // Auto-rollback completed steps
       if (params.autoRollbackSteps && i > 0) {
         logger.log(`Auto-rolling back ${i} completed steps...`);
-        for (let j = Math.min(i - 1, params.autoRollbackSteps.length - 1); j >= 0; j--) {
+        for (
+          let j = Math.min(i - 1, params.autoRollbackSteps.length - 1);
+          j >= 0;
+          j--
+        ) {
           try {
-            await executeWithRetry(params.autoRollbackSteps[j]!, params.accessToken, true);
+            await executeWithRetry(
+              params.autoRollbackSteps[j],
+              params.accessToken,
+              true,
+            );
             logger.log(`Rollback step ${j} succeeded`);
           } catch (rbErr) {
-            logger.warn(`Rollback step ${j} failed: ${rbErr instanceof Error ? rbErr.message : String(rbErr)}`);
+            logger.warn(
+              `Rollback step ${j} failed: ${rbErr instanceof Error ? rbErr.message : String(rbErr)}`,
+            );
           }
         }
       }
@@ -93,7 +113,9 @@ async function executeWithRetry(
   isRollback?: boolean,
 ): Promise<Record<string, unknown>> {
   if (step.method === 'DELETE' && !isRollback) {
-    throw new Error(`DELETE operations are blocked for safety. Step: ${step.purpose}`);
+    throw new Error(
+      `DELETE operations are blocked for safety. Step: ${step.purpose}`,
+    );
   }
 
   for (let attempt = 0; attempt < MAX_STEP_RETRIES; attempt++) {
@@ -106,7 +128,9 @@ async function executeWithRetry(
       // 429 Throttled → wait and retry
       if (msg.includes('429') && canRetry) {
         const delay = 3000 * (attempt + 1);
-        logger.warn(`Throttled (429), waiting ${delay}ms before retry ${attempt + 1}`);
+        logger.warn(
+          `Throttled (429), waiting ${delay}ms before retry ${attempt + 1}`,
+        );
         await new Promise((r) => setTimeout(r, delay));
         continue;
       }
@@ -119,7 +143,12 @@ async function executeWithRetry(
       }
 
       // API not enabled → auto-enable and retry
-      if ((msg.includes('has not been used') || msg.includes('is not enabled') || msg.includes('SERVICE_DISABLED')) && canRetry) {
+      if (
+        (msg.includes('has not been used') ||
+          msg.includes('is not enabled') ||
+          msg.includes('SERVICE_DISABLED')) &&
+        canRetry
+      ) {
         const apiMatch = msg.match(/([\w.-]+\.googleapis\.com)/);
         if (apiMatch) {
           await enableGcpApi(accessToken, step.url, apiMatch[1]);
@@ -128,7 +157,12 @@ async function executeWithRetry(
       }
 
       // Resource in progress → wait and retry
-      if ((msg.includes('RESOURCE_IN_USE') || msg.includes('already being') || msg.includes('operation is in progress')) && canRetry) {
+      if (
+        (msg.includes('RESOURCE_IN_USE') ||
+          msg.includes('already being') ||
+          msg.includes('operation is in progress')) &&
+        canRetry
+      ) {
         logger.warn('Resource busy, waiting 10s...');
         await new Promise((r) => setTimeout(r, 10_000));
         continue;
@@ -149,12 +183,42 @@ async function executeOnce(
   accessToken: string,
 ): Promise<Record<string, unknown>> {
   let url = step.url;
+
+  // Auto-upgrade CRM v1 IAM policy URLs to v3 (v1 silently drops auditConfigs)
+  if (
+    url.includes('cloudresourcemanager.googleapis.com/v1/projects/') &&
+    (url.includes(':getIamPolicy') || url.includes(':setIamPolicy'))
+  ) {
+    url = url.replace(
+      'cloudresourcemanager.googleapis.com/v1/projects/',
+      'cloudresourcemanager.googleapis.com/v3/projects/',
+    );
+  }
+
   if (step.queryParams && Object.keys(step.queryParams).length > 0) {
     const qs = new URLSearchParams(step.queryParams);
     url += (url.includes('?') ? '&' : '?') + qs.toString();
   }
 
+  // Auto-inject requestedPolicyVersion: 3 for getIamPolicy calls
+  // Without this, GCP returns v1 policies that omit auditConfigs and conditions
+  let effectiveBody = step.body;
+  if (
+    step.method === 'POST' &&
+    step.url.includes(':getIamPolicy') &&
+    (!step.body || !(step.body as Record<string, unknown>).options)
+  ) {
+    effectiveBody = {
+      ...step.body,
+      options: { requestedPolicyVersion: 3 },
+    };
+  }
+
   logger.log(`${step.method} ${url} — ${step.purpose}`);
+  if (effectiveBody && (step.method === 'POST' || step.method === 'PUT' || step.method === 'PATCH')) {
+    const bodyStr = JSON.stringify(effectiveBody);
+    logger.debug(`  Body (${bodyStr.length} chars): ${bodyStr.substring(0, 2000)}${bodyStr.length > 2000 ? '...' : ''}`);
+  }
 
   const response = await fetch(url, {
     method: step.method,
@@ -162,7 +226,7 @@ async function executeOnce(
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
-    body: step.body ? JSON.stringify(step.body) : undefined,
+    body: effectiveBody ? JSON.stringify(effectiveBody) : undefined,
   });
 
   if (!response.ok) {
@@ -217,7 +281,9 @@ async function handleErrorResponse(
   }
 
   if (response.status === 401) {
-    throw new Error('GCP authentication failed. Access token may have expired. Please reconnect.');
+    throw new Error(
+      'GCP authentication failed. Access token may have expired. Please reconnect.',
+    );
   }
 
   if (response.status === 403 || errorStatus === 'PERMISSION_DENIED') {
@@ -262,7 +328,9 @@ async function enableGcpApi(
       logger.warn(`Failed to enable ${apiName}: ${resp.status}`);
     }
   } catch (err) {
-    logger.warn(`API enablement error: ${err instanceof Error ? err.message : String(err)}`);
+    logger.warn(
+      `API enablement error: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 }
 
@@ -337,9 +405,24 @@ async function waitForOperation(
 export function validateGcpPlanSteps(steps: GcpApiStep[]): string[] {
   const errors: string[] = [];
   for (let i = 0; i < steps.length; i++) {
-    const step = steps[i]!;
-    if (!step.url) { errors.push(`Step ${i + 1}: URL is required`); continue; }
+    const step = steps[i];
+    if (!step.url) {
+      errors.push(`Step ${i + 1}: URL is required`);
+      continue;
+    }
     if (!step.method) errors.push(`Step ${i + 1}: method is required`);
+    // POST/PUT/PATCH to mutation endpoints must have a body
+    if (
+      (step.method === 'POST' || step.method === 'PUT' || step.method === 'PATCH') &&
+      !step.url.includes(':getIamPolicy') &&
+      !step.url.includes('/stop') &&
+      !step.url.includes('/start') &&
+      (!step.body || Object.keys(step.body).length === 0)
+    ) {
+      errors.push(
+        `Step ${i + 1}: ${step.method} ${step.url.split('/').pop()} requires a request body but none was provided`,
+      );
+    }
     try {
       const parsed = new URL(step.url);
       if (parsed.protocol !== 'https:') {

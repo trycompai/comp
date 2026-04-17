@@ -45,9 +45,7 @@ export const gcpFixPlanSchema = z.object({
   readSteps: z
     .array(gcpApiStepSchema)
     .describe('GET requests to read current state before fixing'),
-  fixSteps: z
-    .array(gcpApiStepSchema)
-    .describe('Requests to apply the fix'),
+  fixSteps: z.array(gcpApiStepSchema).describe('Requests to apply the fix'),
   rollbackSteps: z
     .array(gcpApiStepSchema)
     .describe('Requests to reverse the fix'),
@@ -93,49 +91,101 @@ For each step, provide:
 - queryParams: URL query parameters (e.g., updateMask for PATCH)
 - purpose: Human-readable explanation
 
-## GCP API REFERENCE (COMMON ENDPOINTS)
+## GCP API REFERENCE
 
 ### Cloud Storage
 - Get bucket: GET https://storage.googleapis.com/storage/v1/b/{bucket}?projection=full
 - Update bucket: PATCH https://storage.googleapis.com/storage/v1/b/{bucket} + queryParams: { "updateMask": "field1,field2" }
 - Get bucket IAM: GET https://storage.googleapis.com/storage/v1/b/{bucket}/iam
 - Set bucket IAM: PUT https://storage.googleapis.com/storage/v1/b/{bucket}/iam
+- Enable uniform access: PATCH with body { "iamConfiguration": { "uniformBucketLevelAccess": { "enabled": true } } } + queryParams: { "updateMask": "iamConfiguration" }
+- Enable logging: PATCH with body { "logging": { "logBucket": "{log-bucket}", "logObjectPrefix": "{prefix}" } } + queryParams: { "updateMask": "logging" }
+- BUCKET_LOCK_DISABLED: canAutoFix=false — locking retention policy is IRREVERSIBLE
 
 ### Compute Engine (Firewall Rules)
 - Get firewall: GET https://compute.googleapis.com/compute/v1/projects/{project}/global/firewalls/{firewall}
 - Update firewall: PATCH https://compute.googleapis.com/compute/v1/projects/{project}/global/firewalls/{firewall}
+- Enable firewall logging: PATCH with body { "logConfig": { "enable": true } }
 - NOTE: Compute Engine operations are long-running — the executor polls automatically
 
 ### Compute Engine (Instances)
 - Get instance: GET https://compute.googleapis.com/compute/v1/projects/{project}/zones/{zone}/instances/{instance}
 - Set metadata: POST https://compute.googleapis.com/compute/v1/projects/{project}/zones/{zone}/instances/{instance}/setMetadata
 - Set project metadata: POST https://compute.googleapis.com/compute/v1/projects/{project}/setCommonInstanceMetadata
+- CANNOT change on running instance (canAutoFix=false): service account, IP forwarding, API scopes, shielded VM config
+- OS_LOGIN: set via project metadata { "items": [{ "key": "enable-oslogin", "value": "TRUE" }] }
 
 ### Cloud SQL
 - Get instance: GET https://sqladmin.googleapis.com/v1/projects/{project}/instances/{instance}
 - Update instance: PATCH https://sqladmin.googleapis.com/v1/projects/{project}/instances/{instance}
+- Set root password: PUT https://sqladmin.googleapis.com/v1/projects/{project}/instances/{instance}/users?name=root&host=%25 (body: { "password": "..." })
 - NOTE: Cloud SQL updates are long-running — the executor polls automatically
+- CRITICAL: databaseFlags is a REPLACE operation. You MUST read ALL existing flags first and include them ALL in the PATCH body plus the new flag. Sending only the new flag DELETES all others. Body: { "settings": { "databaseFlags": [...allExistingFlags, { "name": "new_flag", "value": "on" }] } }
+- SSL enforcement: PATCH with { "settings": { "ipConfiguration": { "requireSsl": true } } }
+- Disable public IP: PATCH with { "settings": { "ipConfiguration": { "ipv4Enabled": false } } } — WARNING: may break connectivity if no private IP exists
+- Enable backups: PATCH with { "settings": { "backupConfiguration": { "enabled": true, "pointInTimeRecoveryEnabled": true } } }
 
 ### Cloud KMS
 - Get crypto key: GET https://cloudkms.googleapis.com/v1/{keyName}
 - Update rotation: PATCH https://cloudkms.googleapis.com/v1/{keyName} + queryParams: { "updateMask": "rotationPeriod,nextRotationTime" }
+- rotationPeriod format: seconds with "s" suffix, e.g., "7776000s" for 90 days
+- nextRotationTime format: RFC3339 timestamp, e.g., "2024-01-01T00:00:00Z"
 
 ### Cloud Logging
 - Get sinks: GET https://logging.googleapis.com/v2/projects/{project}/sinks
 - Create sink: POST https://logging.googleapis.com/v2/projects/{project}/sinks
 - Update sink: PATCH https://logging.googleapis.com/v2/projects/{project}/sinks/{sinkId} + queryParams: { "updateMask": "destination,filter" }
+- Create log metric: POST https://logging.googleapis.com/v2/projects/{project}/metrics (body: { "name": "...", "filter": "...", "metricDescriptor": { "metricKind": "DELTA", "valueType": "INT64" } })
+- LOCKED_RETENTION_POLICY_NOT_SET: canAutoFix=false — locking is IRREVERSIBLE
+
+### Cloud Monitoring (Alert Policies)
+- Create alert policy: POST https://monitoring.googleapis.com/v3/projects/{project}/alertPolicies
+- List alert policies: GET https://monitoring.googleapis.com/v3/projects/{project}/alertPolicies
+- For "NOT_MONITORED" findings: first create a log-based metric via Cloud Logging API, then create an alert policy referencing it
+- Alert policy body example: { "displayName": "...", "conditions": [{ "displayName": "...", "conditionThreshold": { "filter": "metric.type=\"logging.googleapis.com/user/{metricName}\"", "comparison": "COMPARISON_GT", "thresholdValue": 0, "duration": "0s" } }], "combiner": "OR", "enabled": true, "notificationChannels": [] }
 
 ### Cloud DNS
 - Get managed zone: GET https://dns.googleapis.com/dns/v1/projects/{project}/managedZones/{zone}
 - Update managed zone: PATCH https://dns.googleapis.com/dns/v1/projects/{project}/managedZones/{zone}
+- Enable DNSSEC: PATCH with body { "dnssecConfig": { "state": "on" } }
+- RSASHA1_FOR_SIGNING: canAutoFix=false — changing DNSSEC algorithms can cause DNS resolution failures
 
 ### IAM / Resource Manager
-- Get IAM policy: POST https://cloudresourcemanager.googleapis.com/v1/projects/{project}:getIamPolicy (body: {})
-- Set IAM policy: POST https://cloudresourcemanager.googleapis.com/v1/projects/{project}:setIamPolicy (body: { "policy": {...} })
+- IMPORTANT: Use the v3 API for ALL IAM policy operations (v1 silently drops auditConfigs):
+- Get IAM policy: POST https://cloudresourcemanager.googleapis.com/v3/projects/{project}:getIamPolicy (body: { "options": { "requestedPolicyVersion": 3 } })
+- Set IAM policy: POST https://cloudresourcemanager.googleapis.com/v3/projects/{project}:setIamPolicy (body: { "policy": { ...fullExistingPolicy } })
+- CRITICAL: setIamPolicy REPLACES the entire policy. You MUST include ALL existing bindings, etag, version, and auditConfigs from getIamPolicy. Only ADD or MODIFY the specific field you need.
+- ALWAYS use requestedPolicyVersion: 3 in getIamPolicy — without it, auditConfigs and conditions are NOT returned.
+- For audit logging: merge into "auditConfigs" array. Example: { "service": "allServices", "auditLogConfigs": [{"logType": "ADMIN_READ"}, {"logType": "DATA_READ"}, {"logType": "DATA_WRITE"}] }
+- AUDIT_LOGGING_DISABLED: canAutoFix=false — auditConfigs cannot be set via setIamPolicy API. Direct user to: https://console.cloud.google.com/iam-admin/audit?project={projectId}
+- MFA_NOT_ENFORCED: canAutoFix=false — requires Google Workspace admin console
+- SERVICE_ACCOUNT_KEY_NOT_ROTATED: canAutoFix=false — key rotation requires distributing new keys
+- USER_MANAGED_SERVICE_ACCOUNT_KEY: canAutoFix=false — requires migration to workload identity
 
 ### VPC Network
 - Get subnetwork: GET https://compute.googleapis.com/compute/v1/projects/{project}/regions/{region}/subnetworks/{subnet}
 - Enable flow logs: PATCH https://compute.googleapis.com/compute/v1/projects/{project}/regions/{region}/subnetworks/{subnet} + body: { "logConfig": { "enable": true } }
+
+### BigQuery
+- Get dataset: GET https://bigquery.googleapis.com/bigquery/v2/projects/{project}/datasets/{dataset}
+- Update dataset: PATCH https://bigquery.googleapis.com/bigquery/v2/projects/{project}/datasets/{dataset}
+- Remove public access: PATCH to remove "allAuthenticatedUsers" or "allUsers" from the access array
+- Enable CMEK: PATCH with { "defaultEncryptionConfiguration": { "kmsKeyName": "..." } }
+
+### Cloud Armor / SSL Policies
+- Get SSL policy: GET https://compute.googleapis.com/compute/v1/projects/{project}/global/sslPolicies/{policy}
+- Update SSL policy: PATCH https://compute.googleapis.com/compute/v1/projects/{project}/global/sslPolicies/{policy}
+- Fix weak SSL: PATCH with { "minTlsVersion": "TLS_1_2", "profile": "MODERN" }
+
+### GKE (Kubernetes Engine)
+- Get cluster: GET https://container.googleapis.com/v1/projects/{project}/locations/{location}/clusters/{cluster}
+- Update cluster: PUT https://container.googleapis.com/v1/projects/{project}/locations/{location}/clusters/{cluster}
+- Most GKE findings are HIGH RISK. Set canAutoFix=false for: PRIVATE_CLUSTER_DISABLED, POD_SECURITY_POLICY_DISABLED, WORKLOAD_IDENTITY_DISABLED (require cluster recreation or significant downtime)
+- Safe to auto-fix: LEGACY_AUTHORIZATION_ENABLED (PUT with { "legacyAbac": { "enabled": false } }), MASTER_AUTHORIZED_NETWORKS_DISABLED, CLUSTER_SHIELDED_NODES_DISABLED
+- NOTE: GKE updates can take 10+ minutes and may cause brief control plane unavailability
+
+### Pub/Sub
+- PUBSUB_CMEK_DISABLED: canAutoFix=false — CMEK cannot be added to existing topics, requires recreation
 
 ## PARSING SCC FINDING EVIDENCE
 
@@ -174,12 +224,16 @@ To convert resourceName to API URL:
 - Enable key rotation
 - ALWAYS provide rollback steps
 
-## WHEN TO SET canAutoFix=false
+## WHEN TO SET canAutoFix=false (provide guidedSteps with gcloud commands instead)
 - Resource recreation required (encryption on existing disks, shielded VM on running instance)
-- Requires organizational policy changes (MFA enforcement)
-- Requires changing service accounts on running instances
-- Requires network architecture changes
-- Instance-level changes requiring restart with potential data impact
+- Requires organizational policy changes (MFA_NOT_ENFORCED)
+- Requires changing service accounts/scopes on running instances (DEFAULT_SERVICE_ACCOUNT_USED, FULL_API_ACCESS)
+- Requires network architecture changes (IP_FORWARDING_ENABLED, PRIVATE_CLUSTER_DISABLED)
+- Instance-level changes requiring restart (COMPUTE_SECURE_BOOT_DISABLED, SHIELDED_VM_DISABLED)
+- Irreversible operations (BUCKET_LOCK_DISABLED, LOCKED_RETENTION_POLICY_NOT_SET)
+- Key management lifecycle (SERVICE_ACCOUNT_KEY_NOT_ROTATED, USER_MANAGED_SERVICE_ACCOUNT_KEY)
+- Resource recreation needed (PUBSUB_CMEK_DISABLED, WORKLOAD_IDENTITY_DISABLED)
+- DNSSEC algorithm changes (RSASHA1_FOR_SIGNING — risk of DNS outage)
 - The resource in the finding doesn't exist or has been deleted
 
 ## RISK ASSESSMENT
@@ -194,13 +248,25 @@ To convert resourceName to API URL:
 - IAM changes: rollback by setting back the original policy (ALWAYS read first)
 - Use the readStep results to capture the exact previous state for rollback
 
+## GUIDED STEPS FORMAT (when canAutoFix=false)
+When you set canAutoFix=false, you MUST provide clear guidedSteps:
+- Each step should be SHORT and clear — one action per step
+- Start with opening the GCP Console link (use externalUri from evidence if available)
+- Include the specific GCP Console path: e.g., "Go to IAM & Admin > Audit Logs"
+- Include gcloud CLI commands when applicable, wrapped in triple backticks
+- Keep each step under 2-3 sentences + 1 command block
+- Reference the specific project name from the evidence
+- End with how to verify the fix was applied
+
 ## CRITICAL RULES
 1. ALWAYS use readSteps to get the CURRENT state before fixing
 2. NEVER use placeholder values — use concrete values from evidence
 3. For PATCH requests, ALWAYS specify updateMask in queryParams
 4. URLs must start with https:// and contain googleapis.com
 5. currentState and proposedState must use the SAME keys for comparison
-6. The fix must address the EXACT issue the SCC finding reports`;
+6. The fix must address the EXACT issue the SCC finding reports
+7. For getIamPolicy: ALWAYS include body { "options": { "requestedPolicyVersion": 3 } } — without this, auditConfigs and conditions are NOT returned
+8. For setIamPolicy: body MUST be { "policy": <FULL policy from getIamPolicy with modifications merged> }. Include etag, version, ALL bindings, and auditConfigs. A partial policy DELETES everything not included`;
 
 // ─── Prompt Builders ────────────────────────────────────────────────────────
 

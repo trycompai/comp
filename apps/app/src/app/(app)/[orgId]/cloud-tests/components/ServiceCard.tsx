@@ -103,7 +103,7 @@ interface ServiceCardProps {
   service: ServiceMeta;
   connectionId: string | null;
   isConnected: boolean;
-  onToggle?: (id: string, enabled: boolean) => void;
+  onToggle?: (id: string, enabled: boolean) => void | Promise<boolean | void>;
   toggling?: boolean;
 }
 
@@ -145,13 +145,25 @@ export function ServiceCard({
           <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
             {service.description}
           </p>
+          {liveService?.projects && liveService.projects.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {liveService.projects.map((pid) => (
+                <span
+                  key={pid}
+                  className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                >
+                  {pid}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         {showToggle && (
           <button
             role="switch"
             aria-checked={isEnabled}
             disabled={toggling}
-            onClick={() => onToggle(service.id, !isEnabled)}
+            onClick={() => void Promise.resolve(onToggle?.(service.id, !isEnabled)).catch(() => {})}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors disabled:opacity-50 ${
               isEnabled ? 'bg-primary' : 'bg-muted-foreground/30'
             }`}

@@ -9,7 +9,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import type { Prisma } from '@db';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
@@ -50,6 +50,7 @@ export class ChecksController {
    * List available checks for a provider
    */
   @Get('providers/:providerSlug')
+  @ApiOperation({ summary: 'List check definitions for a provider' })
   @RequirePermission('integration', 'read')
   async listProviderChecks(@Param('providerSlug') providerSlug: string) {
     const manifest = getManifest(providerSlug);
@@ -71,12 +72,16 @@ export class ChecksController {
    * List available checks for a connection
    */
   @Get('connections/:connectionId')
+  @ApiOperation({ summary: 'List checks for a connection' })
   @RequirePermission('integration', 'read')
   async listConnectionChecks(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
   ) {
-    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+    await this.connectionService.getConnectionForOrg(
+      connectionId,
+      organizationId,
+    );
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
@@ -110,13 +115,17 @@ export class ChecksController {
    * Run checks for a connection
    */
   @Post('connections/:connectionId/run')
+  @ApiOperation({ summary: 'Run all checks for a connection' })
   @RequirePermission('integration', 'update')
   async runConnectionChecks(
     @Param('connectionId') connectionId: string,
     @Body() body: RunChecksDto,
     @OrganizationId() organizationId: string,
   ) {
-    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+    await this.connectionService.getConnectionForOrg(
+      connectionId,
+      organizationId,
+    );
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
@@ -291,9 +300,10 @@ export class ChecksController {
         totalChecked: result.results.length,
         passedCount: result.totalPassing,
         failedCount: result.totalFindings,
-        logs: allLogs.length > 0
-          ? (allLogs as unknown as Prisma.InputJsonValue)
-          : undefined,
+        logs:
+          allLogs.length > 0
+            ? (allLogs as unknown as Prisma.InputJsonValue)
+            : undefined,
       });
 
       return {
@@ -305,7 +315,8 @@ export class ChecksController {
     } catch (error) {
       // Mark the check run as failed with error details
       const startTime = checkRun.startedAt?.getTime() || Date.now();
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
       await this.checkRunRepository.complete(checkRun.id, {
         status: 'failed',
@@ -314,13 +325,15 @@ export class ChecksController {
         passedCount: 0,
         failedCount: 0,
         errorMessage,
-        logs: [{
-          check: body.checkId || 'all',
-          level: 'error',
-          message: errorMessage,
-          ...(errorStack ? { data: { stack: errorStack } } : {}),
-          timestamp: new Date().toISOString(),
-        }] as unknown as Prisma.InputJsonValue,
+        logs: [
+          {
+            check: body.checkId || 'all',
+            level: 'error',
+            message: errorMessage,
+            ...(errorStack ? { data: { stack: errorStack } } : {}),
+            timestamp: new Date().toISOString(),
+          },
+        ] as unknown as Prisma.InputJsonValue,
       });
 
       this.logger.error(`Check execution failed: ${error}`);
@@ -335,6 +348,7 @@ export class ChecksController {
    * Run a specific check for a connection
    */
   @Post('connections/:connectionId/run/:checkId')
+  @ApiOperation({ summary: 'Run a single check on a connection' })
   @RequirePermission('integration', 'update')
   async runSingleCheck(
     @Param('connectionId') connectionId: string,

@@ -10,7 +10,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { randomBytes, createHash } from 'crypto';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
@@ -59,6 +59,7 @@ export class OAuthController {
    * Check if OAuth credentials are available for a provider
    */
   @Get('availability')
+  @ApiOperation({ summary: 'Check OAuth provider availability' })
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
   async checkAvailability(
@@ -82,6 +83,7 @@ export class OAuthController {
    * Start OAuth flow - returns authorization URL
    */
   @Post('start')
+  @ApiOperation({ summary: 'Start an OAuth authorization flow' })
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'create')
   async startOAuth(
@@ -213,6 +215,7 @@ export class OAuthController {
    * OAuth callback - exchanges code for tokens
    */
   @Get('callback')
+  @ApiOperation({ summary: 'Handle OAuth provider callback' })
   async oauthCallback(
     @Query() query: OAuthCallbackQuery,
     @Res() res: Response,
@@ -315,6 +318,23 @@ export class OAuthController {
 
       // Store tokens and mark connection as active
       await this.credentialVaultService.storeOAuthTokens(connection.id, tokens);
+
+      // Mark cloud OAuth reconnect completion so reconnect banners clear after successful OAuth.
+      if (manifest.category === 'Cloud') {
+        const metadata =
+          connection.metadata &&
+          typeof connection.metadata === 'object' &&
+          !Array.isArray(connection.metadata)
+            ? (connection.metadata as Record<string, unknown>)
+            : {};
+        connection = await this.connectionRepository.update(connection.id, {
+          metadata: {
+            ...metadata,
+            reconnectedAt: new Date().toISOString(),
+          },
+        });
+      }
+
       await this.connectionService.activateConnection(connection.id);
 
       // Provider-specific post-OAuth actions
@@ -346,6 +366,10 @@ export class OAuthController {
             `Failed to auto-run checks after OAuth: ${err.message}`,
           );
         });
+
+      // GCP: skip automatic service detection and scan after OAuth.
+      // The user must first select projects on the integrations page.
+      // Service detection and scanning run after project selection.
 
       // Redirect to success URL
       const successUrl = this.buildRedirectUrl(
@@ -510,4 +534,5 @@ export class OAuthController {
     }
     return url.toString();
   }
+
 }

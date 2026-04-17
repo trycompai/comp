@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { CloudSecurityController } from './cloud-security.controller';
 import { CloudSecurityService } from './cloud-security.service';
 import { CloudSecurityQueryService } from './cloud-security-query.service';
@@ -16,7 +16,7 @@ import { IntegrationPlatformModule } from '../integration-platform/integration-p
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [IntegrationPlatformModule, AuthModule],
+  imports: [forwardRef(() => IntegrationPlatformModule), AuthModule],
   controllers: [CloudSecurityController, RemediationController],
   providers: [
     CloudSecurityService,

@@ -1,6 +1,11 @@
 import { openai } from '@ai-sdk/openai';
 import { db } from '@db';
-import type { FrameworkEditorFramework, FrameworkEditorPolicyTemplate, Policy, Prisma } from '@db';
+import type {
+  FrameworkEditorFramework,
+  FrameworkEditorPolicyTemplate,
+  Policy,
+  Prisma,
+} from '@db';
 import { logger } from '@trigger.dev/sdk';
 import { generateObject, NoObjectGeneratedError } from 'ai';
 import { z } from 'zod';
@@ -10,7 +15,7 @@ import { generatePrompt } from './update-policy-prompts';
 const PLACEHOLDER_REGEX = /<<\s*TO\s*REVIEW\s*>>/gi;
 
 function extractText(node: Record<string, unknown>): string {
-  const text = node && typeof node['text'] === 'string' ? (node['text'] as string) : '';
+  const text = node && typeof node['text'] === 'string' ? node['text'] : '';
   const content = Array.isArray((node as any)?.content)
     ? ((node as any).content as Record<string, unknown>[])
     : null;
@@ -20,10 +25,12 @@ function extractText(node: Record<string, unknown>): string {
   return text || '';
 }
 
-function sanitizeNodePlaceholders(node: Record<string, unknown>): Record<string, unknown> {
+function sanitizeNodePlaceholders(
+  node: Record<string, unknown>,
+): Record<string, unknown> {
   const cloned: Record<string, unknown> = { ...node };
   if (typeof cloned['text'] === 'string') {
-    const replaced = (cloned['text'] as string)
+    const replaced = cloned['text']
       .replace(PLACEHOLDER_REGEX, '')
       .replace(/\s{2,}/g, ' ')
       .trim();
@@ -40,7 +47,10 @@ function sanitizeNodePlaceholders(node: Record<string, unknown>): Record<string,
 
 function shouldRemoveAuditorArtifactsHeading(headingText: string): boolean {
   const lower = headingText.trim().toLowerCase();
-  return lower.includes('auditor') && (lower.includes('artefact') || lower.includes('artifact'));
+  return (
+    lower.includes('auditor') &&
+    (lower.includes('artefact') || lower.includes('artifact'))
+  );
 }
 
 function removeAuditorArtifactsSection(
@@ -49,15 +59,16 @@ function removeAuditorArtifactsSection(
   const result: Record<string, unknown>[] = [];
   let i = 0;
   while (i < content.length) {
-    const node = content[i] as Record<string, unknown>;
-    const nodeType = typeof node['type'] === 'string' ? (node['type'] as string) : '';
+    const node = content[i];
+    const nodeType = typeof node['type'] === 'string' ? node['type'] : '';
     if (nodeType === 'heading') {
       const headingText = extractText(node);
       if (shouldRemoveAuditorArtifactsHeading(headingText)) {
         i += 1;
         while (i < content.length) {
-          const nextNode = content[i] as Record<string, unknown>;
-          const nextType = typeof nextNode['type'] === 'string' ? (nextNode['type'] as string) : '';
+          const nextNode = content[i];
+          const nextType =
+            typeof nextNode['type'] === 'string' ? nextNode['type'] : '';
           if (nextType === 'heading') break;
           i += 1;
         }
@@ -71,15 +82,17 @@ function removeAuditorArtifactsSection(
 }
 
 function extractHeadingText(node: Record<string, unknown>): string {
-  const type = typeof node['type'] === 'string' ? (node['type'] as string) : '';
+  const type = typeof node['type'] === 'string' ? node['type'] : '';
   if (type !== 'heading') return '';
   return extractText(node).trim();
 }
 
-function getAllowedTopLevelHeadings(originalContent: Record<string, unknown>[]): string[] {
+function getAllowedTopLevelHeadings(
+  originalContent: Record<string, unknown>[],
+): string[] {
   const allowed: string[] = [];
   for (const node of originalContent) {
-    const type = typeof node['type'] === 'string' ? (node['type'] as string) : '';
+    const type = typeof node['type'] === 'string' ? node['type'] : '';
     if (type === 'heading') {
       const level = (node as any)?.attrs?.level;
       if (typeof level === 'number' && level >= 1 && level <= 2) {
@@ -133,15 +146,18 @@ export async function fetchOrganizationAndPolicy(
     }),
   ]);
 
-  if (!organization) throw new Error(`Organization not found for ${organizationId}`);
+  if (!organization)
+    throw new Error(`Organization not found for ${organizationId}`);
   if (!policy) throw new Error(`Policy not found for ${policyId}`);
-  if (!policy.policyTemplateId) throw new Error(`Policy template not found for ${policyId}`);
+  if (!policy.policyTemplateId)
+    throw new Error(`Policy template not found for ${policyId}`);
 
   const policyTemplate = await db.frameworkEditorPolicyTemplate.findUnique({
     where: { id: policy.policyTemplateId },
   });
 
-  if (!policyTemplate) throw new Error(`Policy template not found for ${policy.policyTemplateId}`);
+  if (!policyTemplate)
+    throw new Error(`Policy template not found for ${policy.policyTemplateId}`);
 
   return { organization, policy, policyTemplate };
 }
@@ -193,10 +209,15 @@ Return the complete TipTap document following ALL the above requirements using p
 
     const parsed = object as { type?: string; content?: unknown };
     if (parsed?.type !== 'document' || !Array.isArray(parsed?.content)) {
-      throw new Error('AI response did not match expected TipTap document structure');
+      throw new Error(
+        'AI response did not match expected TipTap document structure',
+      );
     }
 
-    return { type: 'document' as const, content: parsed.content as Record<string, unknown>[] };
+    return {
+      type: 'document' as const,
+      content: parsed.content as Record<string, unknown>[],
+    };
   } catch (aiError) {
     logger.error(`Error generating AI content: ${aiError}`);
     if (NoObjectGeneratedError.isInstance(aiError)) {
@@ -233,7 +254,8 @@ export async function updatePolicyInDatabase(
 
     if (pdfUrlsToDelete.length > 0) {
       try {
-        const { S3Client, DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+        const { S3Client, DeleteObjectCommand } =
+          await import('@aws-sdk/client-s3');
         const bucketName = process.env.APP_AWS_BUCKET_NAME;
         if (bucketName) {
           const s3 = new S3Client({
@@ -241,7 +263,9 @@ export async function updatePolicyInDatabase(
           });
           await Promise.allSettled(
             pdfUrlsToDelete.map((pdfUrl) =>
-              s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: pdfUrl })),
+              s3.send(
+                new DeleteObjectCommand({ Bucket: bucketName, Key: pdfUrl }),
+              ),
             ),
           );
         }
@@ -290,11 +314,21 @@ export async function updatePolicyInDatabase(
   }
 }
 
-export async function processPolicyUpdate(params: UpdatePolicyParams): Promise<PolicyUpdateResult> {
+export async function processPolicyUpdate(
+  params: UpdatePolicyParams,
+): Promise<PolicyUpdateResult> {
   const { organizationId, policyId, contextHub, frameworks, memberId } = params;
 
-  const { organization, policyTemplate } = await fetchOrganizationAndPolicy(organizationId, policyId);
-  const prompt = await generatePolicyPrompt(policyTemplate, contextHub, organization, frameworks);
+  const { organization, policyTemplate } = await fetchOrganizationAndPolicy(
+    organizationId,
+    policyId,
+  );
+  const prompt = await generatePolicyPrompt(
+    policyTemplate,
+    contextHub,
+    organization,
+    frameworks,
+  );
   const updatedContent = await generatePolicyContent(prompt);
   await updatePolicyInDatabase(policyId, updatedContent.content, memberId);
 

@@ -121,8 +121,7 @@ export class SnsSqsAdapter implements AwsServiceAdapter {
             );
           }
         } catch (error) {
-          const msg =
-            error instanceof Error ? error.message : String(error);
+          const msg = error instanceof Error ? error.message : String(error);
           if (msg.includes('AccessDenied')) return;
         }
       }
@@ -155,7 +154,11 @@ export class SnsSqsAdapter implements AwsServiceAdapter {
           const attrsResp = await client.send(
             new GetQueueAttributesCommand({
               QueueUrl: queueUrl,
-              AttributeNames: ['Policy', 'KmsMasterKeyId', 'SqsManagedSseEnabled'],
+              AttributeNames: [
+                'Policy',
+                'KmsMasterKeyId',
+                'SqsManagedSseEnabled',
+              ],
             }),
           );
           const attrs = attrsResp.Attributes ?? {};
@@ -177,10 +180,7 @@ export class SnsSqsAdapter implements AwsServiceAdapter {
           }
 
           // Check for encryption
-          if (
-            !attrs.KmsMasterKeyId &&
-            attrs.SqsManagedSseEnabled !== 'true'
-          ) {
+          if (!attrs.KmsMasterKeyId && attrs.SqsManagedSseEnabled !== 'true') {
             findings.push(
               this.makeFinding({
                 resourceId: queueUrl,
@@ -198,8 +198,7 @@ export class SnsSqsAdapter implements AwsServiceAdapter {
             );
           }
         } catch (error) {
-          const msg =
-            error instanceof Error ? error.message : String(error);
+          const msg = error instanceof Error ? error.message : String(error);
           if (msg.includes('AccessDenied')) return;
         }
       }

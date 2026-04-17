@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Query, HttpCode, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Query,
+  HttpCode,
+  BadRequestException,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { db } from '@db';
 import { generateUnsubscribeToken } from '@trycompai/email';

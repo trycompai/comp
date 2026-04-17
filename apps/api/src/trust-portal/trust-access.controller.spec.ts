@@ -87,7 +87,11 @@ describe('TrustAccessController', () => {
       const req = mockRequest();
       mockService.createAccessRequest.mockResolvedValue({ id: 'req_1' });
 
-      const result = await controller.createAccessRequest('my-portal', dto, req);
+      const result = await controller.createAccessRequest(
+        'my-portal',
+        dto,
+        req,
+      );
 
       expect(result).toEqual({ id: 'req_1' });
       expect(service.createAccessRequest).toHaveBeenCalledWith(
@@ -134,7 +138,10 @@ describe('TrustAccessController', () => {
       const result = await controller.approveRequest(orgId, 'req_1', dto, req);
 
       expect(result).toEqual({ success: true });
-      expect(service.getMemberIdFromUserId).toHaveBeenCalledWith('user_1', orgId);
+      expect(service.getMemberIdFromUserId).toHaveBeenCalledWith(
+        'user_1',
+        orgId,
+      );
       expect(service.approveRequest).toHaveBeenCalledWith(
         orgId,
         'req_1',
@@ -163,7 +170,10 @@ describe('TrustAccessController', () => {
       const result = await controller.denyRequest(orgId, 'req_1', dto, req);
 
       expect(result).toEqual({ success: true });
-      expect(service.getMemberIdFromUserId).toHaveBeenCalledWith('user_1', orgId);
+      expect(service.getMemberIdFromUserId).toHaveBeenCalledWith(
+        'user_1',
+        orgId,
+      );
       expect(service.denyRequest).toHaveBeenCalledWith(
         orgId,
         'req_1',
@@ -204,7 +214,10 @@ describe('TrustAccessController', () => {
       const result = await controller.revokeGrant(orgId, 'grant_1', dto, req);
 
       expect(result).toEqual({ success: true });
-      expect(service.getMemberIdFromUserId).toHaveBeenCalledWith('user_1', orgId);
+      expect(service.getMemberIdFromUserId).toHaveBeenCalledWith(
+        'user_1',
+        orgId,
+      );
       expect(service.revokeGrant).toHaveBeenCalledWith(
         orgId,
         'grant_1',
@@ -230,7 +243,10 @@ describe('TrustAccessController', () => {
       const result = await controller.resendAccessEmail(orgId, 'grant_1');
 
       expect(result).toEqual({ success: true });
-      expect(service.resendAccessGrantEmail).toHaveBeenCalledWith(orgId, 'grant_1');
+      expect(service.resendAccessGrantEmail).toHaveBeenCalledWith(
+        orgId,
+        'grant_1',
+      );
     });
   });
 
@@ -314,7 +330,11 @@ describe('TrustAccessController', () => {
       const dto = { email: 'user@example.com' };
       mockService.reclaimAccess.mockResolvedValue({ success: true });
 
-      const result = await controller.reclaimAccess('my-portal', dto as any, 'security-questionnaire');
+      const result = await controller.reclaimAccess(
+        'my-portal',
+        dto as any,
+        'security-questionnaire',
+      );
 
       expect(result).toEqual({ success: true });
       expect(service.reclaimAccess).toHaveBeenCalledWith(
@@ -358,43 +378,58 @@ describe('TrustAccessController', () => {
       const result = await controller.getPoliciesByAccessToken('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.getPoliciesByAccessToken).toHaveBeenCalledWith('token_abc');
+      expect(service.getPoliciesByAccessToken).toHaveBeenCalledWith(
+        'token_abc',
+      );
     });
   });
 
   describe('downloadAllPolicies', () => {
     it('should call service.downloadAllPoliciesByAccessToken with token', async () => {
       const mockResult = { url: 'https://download-url' };
-      mockService.downloadAllPoliciesByAccessToken.mockResolvedValue(mockResult);
+      mockService.downloadAllPoliciesByAccessToken.mockResolvedValue(
+        mockResult,
+      );
 
       const result = await controller.downloadAllPolicies('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.downloadAllPoliciesByAccessToken).toHaveBeenCalledWith('token_abc');
+      expect(service.downloadAllPoliciesByAccessToken).toHaveBeenCalledWith(
+        'token_abc',
+      );
     });
   });
 
   describe('downloadAllPoliciesAsZip', () => {
     it('should call service.downloadAllPoliciesAsZipByAccessToken with token', async () => {
       const mockResult = { url: 'https://zip-url' };
-      mockService.downloadAllPoliciesAsZipByAccessToken.mockResolvedValue(mockResult);
+      mockService.downloadAllPoliciesAsZipByAccessToken.mockResolvedValue(
+        mockResult,
+      );
 
       const result = await controller.downloadAllPoliciesAsZip('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.downloadAllPoliciesAsZipByAccessToken).toHaveBeenCalledWith('token_abc');
+      expect(
+        service.downloadAllPoliciesAsZipByAccessToken,
+      ).toHaveBeenCalledWith('token_abc');
     });
   });
 
   describe('getComplianceResourcesByAccessToken', () => {
     it('should call service.getComplianceResourcesByAccessToken with token', async () => {
       const mockResult = [{ id: 'cr_1' }];
-      mockService.getComplianceResourcesByAccessToken.mockResolvedValue(mockResult);
+      mockService.getComplianceResourcesByAccessToken.mockResolvedValue(
+        mockResult,
+      );
 
-      const result = await controller.getComplianceResourcesByAccessToken('token_abc');
+      const result =
+        await controller.getComplianceResourcesByAccessToken('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.getComplianceResourcesByAccessToken).toHaveBeenCalledWith('token_abc');
+      expect(service.getComplianceResourcesByAccessToken).toHaveBeenCalledWith(
+        'token_abc',
+      );
     });
   });
 
@@ -403,46 +438,68 @@ describe('TrustAccessController', () => {
       const mockResult = [{ id: 'td_1' }];
       mockService.getTrustDocumentsByAccessToken.mockResolvedValue(mockResult);
 
-      const result = await controller.getTrustDocumentsByAccessToken('token_abc');
+      const result =
+        await controller.getTrustDocumentsByAccessToken('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.getTrustDocumentsByAccessToken).toHaveBeenCalledWith('token_abc');
+      expect(service.getTrustDocumentsByAccessToken).toHaveBeenCalledWith(
+        'token_abc',
+      );
     });
   });
 
   describe('downloadAllTrustDocuments', () => {
     it('should call service.downloadAllTrustDocumentsByAccessToken with token', async () => {
       const mockResult = { url: 'https://zip-url' };
-      mockService.downloadAllTrustDocumentsByAccessToken.mockResolvedValue(mockResult);
+      mockService.downloadAllTrustDocumentsByAccessToken.mockResolvedValue(
+        mockResult,
+      );
 
       const result = await controller.downloadAllTrustDocuments('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.downloadAllTrustDocumentsByAccessToken).toHaveBeenCalledWith('token_abc');
+      expect(
+        service.downloadAllTrustDocumentsByAccessToken,
+      ).toHaveBeenCalledWith('token_abc');
     });
   });
 
   describe('getTrustDocumentUrlByAccessToken', () => {
     it('should call service with token and documentId', async () => {
       const mockResult = { url: 'https://signed-url' };
-      mockService.getTrustDocumentUrlByAccessToken.mockResolvedValue(mockResult);
+      mockService.getTrustDocumentUrlByAccessToken.mockResolvedValue(
+        mockResult,
+      );
 
-      const result = await controller.getTrustDocumentUrlByAccessToken('token_abc', 'tdoc_1');
+      const result = await controller.getTrustDocumentUrlByAccessToken(
+        'token_abc',
+        'tdoc_1',
+      );
 
       expect(result).toEqual(mockResult);
-      expect(service.getTrustDocumentUrlByAccessToken).toHaveBeenCalledWith('token_abc', 'tdoc_1');
+      expect(service.getTrustDocumentUrlByAccessToken).toHaveBeenCalledWith(
+        'token_abc',
+        'tdoc_1',
+      );
     });
   });
 
   describe('getComplianceResourceUrlByAccessToken', () => {
     it('should call service with token and framework', async () => {
       const mockResult = { url: 'https://signed-url' };
-      mockService.getComplianceResourceUrlByAccessToken.mockResolvedValue(mockResult);
+      mockService.getComplianceResourceUrlByAccessToken.mockResolvedValue(
+        mockResult,
+      );
 
-      const result = await controller.getComplianceResourceUrlByAccessToken('token_abc', 'SOC2');
+      const result = await controller.getComplianceResourceUrlByAccessToken(
+        'token_abc',
+        'SOC2',
+      );
 
       expect(result).toEqual(mockResult);
-      expect(service.getComplianceResourceUrlByAccessToken).toHaveBeenCalledWith('token_abc', 'SOC2');
+      expect(
+        service.getComplianceResourceUrlByAccessToken,
+      ).toHaveBeenCalledWith('token_abc', 'SOC2');
     });
   });
 

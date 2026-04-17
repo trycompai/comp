@@ -9,12 +9,23 @@ interface ToolContext {
   permissions: Permissions;
 }
 
-function hasPermission(permissions: Permissions, resource: string, action: string): boolean {
+function hasPermission(
+  permissions: Permissions,
+  resource: string,
+  action: string,
+): boolean {
   return permissions[resource]?.includes(action) ?? false;
 }
 
 export function buildTools(ctx: ToolContext) {
-  const tools: Record<string, { description: string; inputSchema: z.ZodType; execute: (...args: any[]) => Promise<unknown> }> = {};
+  const tools: Record<
+    string,
+    {
+      description: string;
+      inputSchema: z.ZodType;
+      execute: (...args: any[]) => Promise<unknown>;
+    }
+  > = {};
 
   // Always available
   tools.findOrganization = {
@@ -25,7 +36,9 @@ export function buildTools(ctx: ToolContext) {
         where: { id: ctx.organizationId },
         select: { name: true },
       });
-      return org ? { organization: org } : { organization: null, message: 'Organization not found' };
+      return org
+        ? { organization: org }
+        : { organization: null, message: 'Organization not found' };
     },
   };
 
@@ -57,14 +70,17 @@ export function buildTools(ctx: ToolContext) {
     };
 
     tools.getPolicyContent = {
-      description: 'Get the content of a specific policy by id. Run getPolicies first to get ids.',
+      description:
+        'Get the content of a specific policy by id. Run getPolicies first to get ids.',
       inputSchema: z.object({ id: z.string() }),
       execute: async ({ id }: { id: string }) => {
         const policy = await db.policy.findUnique({
           where: { id, organizationId: ctx.organizationId },
           select: { content: true },
         });
-        return policy ? { content: policy.content } : { content: null, message: 'Policy not found' };
+        return policy
+          ? { content: policy.content }
+          : { content: null, message: 'Policy not found' };
       },
     };
   }
@@ -74,12 +90,25 @@ export function buildTools(ctx: ToolContext) {
     tools.getRisks = {
       description: 'Get risks for the organization',
       inputSchema: z.object({
-        status: z.enum(Object.values(RiskStatus) as [RiskStatus, ...RiskStatus[]]).optional(),
-        department: z.enum(Object.values(Departments) as [Departments, ...Departments[]]).optional(),
-        category: z.enum(Object.values(RiskCategory) as [RiskCategory, ...RiskCategory[]]).optional(),
+        status: z
+          .enum(Object.values(RiskStatus) as [RiskStatus, ...RiskStatus[]])
+          .optional(),
+        department: z
+          .enum(Object.values(Departments) as [Departments, ...Departments[]])
+          .optional(),
+        category: z
+          .enum(
+            Object.values(RiskCategory) as [RiskCategory, ...RiskCategory[]],
+          )
+          .optional(),
         owner: z.string().optional(),
       }),
-      execute: async (input: { status?: RiskStatus; department?: Departments; category?: RiskCategory; owner?: string }) => {
+      execute: async (input: {
+        status?: RiskStatus;
+        department?: Departments;
+        category?: RiskCategory;
+        owner?: string;
+      }) => {
         const risks = await db.risk.findMany({
           where: {
             organizationId: ctx.organizationId,

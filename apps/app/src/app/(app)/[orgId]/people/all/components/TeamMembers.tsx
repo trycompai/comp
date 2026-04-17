@@ -30,13 +30,22 @@ export interface TeamMembersProps {
   canManageMembers: boolean;
   canInviteUsers: boolean;
   isAuditor: boolean;
+  isPlatformAdmin: boolean;
   isCurrentUserOwner: boolean;
   organizationId: string;
   deviceStatusMap: Record<string, DeviceStatus>;
 }
 
 export async function TeamMembers(props: TeamMembersProps) {
-  const { canManageMembers, canInviteUsers, isAuditor, isCurrentUserOwner, organizationId, deviceStatusMap } = props;
+  const {
+    canManageMembers,
+    canInviteUsers,
+    isAuditor,
+    isPlatformAdmin,
+    isCurrentUserOwner,
+    organizationId,
+    deviceStatusMap,
+  } = props;
 
   if (!organizationId) {
     return null;
@@ -147,6 +156,7 @@ export async function TeamMembers(props: TeamMembersProps) {
       employeeSyncData={employeeSyncData}
       taskCompletionMap={taskCompletionMap}
       deviceStatusMap={deviceStatusMap}
+      isPlatformAdmin={isPlatformAdmin}
     />
   );
 }

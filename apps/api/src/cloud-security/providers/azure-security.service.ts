@@ -93,7 +93,9 @@ export class AzureSecurityService {
     }
 
     if (!token) {
-      throw new Error('Azure credentials missing. Please reconnect the integration.');
+      throw new Error(
+        'Azure credentials missing. Please reconnect the integration.',
+      );
     }
 
     if (!subscriptionId) {
@@ -112,17 +114,17 @@ export class AzureSecurityService {
     }
 
     // 2. Run service adapters in parallel
-    const adapterPromises = SERVICE_ADAPTERS
-      .filter((a) => !enabledServices || enabledServices.includes(a.serviceId))
-      .map(async (adapter) => {
-        try {
-          return await adapter.scan({ accessToken: token, subscriptionId });
-        } catch (error) {
-          const msg = error instanceof Error ? error.message : String(error);
-          this.logger.warn(`Azure ${adapter.serviceId} scan failed: ${msg}`);
-          return [];
-        }
-      });
+    const adapterPromises = SERVICE_ADAPTERS.filter(
+      (a) => !enabledServices || enabledServices.includes(a.serviceId),
+    ).map(async (adapter) => {
+      try {
+        return await adapter.scan({ accessToken: token, subscriptionId });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Azure ${adapter.serviceId} scan failed: ${msg}`);
+        return [];
+      }
+    });
 
     const adapterResults = await Promise.all(adapterPromises);
     for (const result of adapterResults) {
@@ -143,7 +145,9 @@ export class AzureSecurityService {
     // Alerts
     try {
       const alerts = await this.getSecurityAlerts(accessToken, subscriptionId);
-      const activeAlerts = alerts.filter((a) => a.properties.status === 'Active');
+      const activeAlerts = alerts.filter(
+        (a) => a.properties.status === 'Active',
+      );
       this.logger.log(`Found ${activeAlerts.length} active security alerts`);
 
       for (const alert of activeAlerts) {
@@ -170,27 +174,44 @@ export class AzureSecurityService {
         });
       }
     } catch (error) {
-      this.handlePermissionError(findings, error, 'Security Alerts', subscriptionId);
+      this.handlePermissionError(
+        findings,
+        error,
+        'Security Alerts',
+        subscriptionId,
+      );
     }
 
     // Assessments
     try {
-      const assessments = await this.getSecurityAssessments(accessToken, subscriptionId);
-      const unhealthy = assessments.filter((a) => a.properties.status.code === 'Unhealthy');
-      this.logger.log(`Found ${unhealthy.length} unhealthy security assessments`);
+      const assessments = await this.getSecurityAssessments(
+        accessToken,
+        subscriptionId,
+      );
+      const unhealthy = assessments.filter(
+        (a) => a.properties.status.code === 'Unhealthy',
+      );
+      this.logger.log(
+        `Found ${unhealthy.length} unhealthy security assessments`,
+      );
 
       for (const assessment of unhealthy.slice(0, 50)) {
         const category = assessment.properties.metadata?.category;
-        const serviceId = (category && AZURE_CATEGORY_TO_SERVICE[category]) || 'defender';
+        const serviceId =
+          (category && AZURE_CATEGORY_TO_SERVICE[category]) || 'defender';
 
         findings.push({
           id: assessment.name,
-          title: assessment.properties.displayName || 'Unhealthy security assessment',
+          title:
+            assessment.properties.displayName ||
+            'Unhealthy security assessment',
           description:
             assessment.properties.metadata?.description ||
             assessment.properties.status.description ||
             'Security assessment failed',
-          severity: this.mapSeverity(assessment.properties.metadata?.severity || 'Medium'),
+          severity: this.mapSeverity(
+            assessment.properties.metadata?.severity || 'Medium',
+          ),
           resourceType: 'security-assessment',
           resourceId: assessment.name,
           remediation:
@@ -207,7 +228,12 @@ export class AzureSecurityService {
         });
       }
     } catch (error) {
-      this.handlePermissionError(findings, error, 'Security Assessments', subscriptionId);
+      this.handlePermissionError(
+        findings,
+        error,
+        'Security Assessments',
+        subscriptionId,
+      );
     }
 
     return findings;
@@ -230,8 +256,13 @@ export class AzureSecurityService {
         severity: 'medium',
         resourceType: component.toLowerCase().replace(/\s/g, '-'),
         resourceId: subscriptionId,
-        remediation: 'Assign the "Security Reader" role to your App Registration on the subscription.',
-        evidence: { serviceId: 'defender', serviceName: 'Microsoft Defender', error: msg },
+        remediation:
+          'Assign the "Security Reader" role to your App Registration on the subscription.',
+        evidence: {
+          serviceId: 'defender',
+          serviceName: 'Microsoft Defender',
+          error: msg,
+        },
         createdAt: new Date().toISOString(),
       });
     }
@@ -311,7 +342,10 @@ export class AzureSecurityService {
     );
   }
 
-  private async getSecurityAssessments(accessToken: string, subscriptionId: string) {
+  private async getSecurityAssessments(
+    accessToken: string,
+    subscriptionId: string,
+  ) {
     return fetchAllPages<AzureSecurityAssessment>(
       accessToken,
       `https://management.azure.com/subscriptions/${subscriptionId}/providers/Microsoft.Security/assessments?api-version=2021-06-01`,

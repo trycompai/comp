@@ -1,76 +1,6 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/v1/auth/me": {
-      "get": {
-        "operationId": "AuthController_getMe_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Get current user info, organizations, and pending invitations",
-        "tags": [
-          "Auth"
-        ]
-      }
-    },
-    "/v1/auth/invitations": {
-      "get": {
-        "operationId": "AuthController_listInvitations_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "List pending invitations for the organization",
-        "tags": [
-          "Auth"
-        ]
-      }
-    },
-    "/v1/auth/invitations/{id}": {
-      "delete": {
-        "operationId": "AuthController_deleteInvitation_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Invitation ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Revoke a pending invitation",
-        "tags": [
-          "Auth"
-        ]
-      }
-    },
     "/v1/organization": {
       "get": {
         "description": "Returns detailed information about the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
@@ -515,6 +445,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get organization onboarding status",
         "tags": [
           "Organization"
         ]
@@ -4798,66 +4729,6 @@
         ]
       }
     },
-    "/v1/internal/vendors/risk-assessment/trigger-batch": {
-      "post": {
-        "operationId": "InternalVendorAutomationController_triggerVendorRiskAssessmentBatch_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TriggerVendorRiskAssessmentBatchDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Tasks triggered"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Trigger vendor risk assessment tasks for a batch of vendors (internal)",
-        "tags": [
-          "Internal - Vendors"
-        ]
-      }
-    },
-    "/v1/internal/vendors/risk-assessment/trigger-single": {
-      "post": {
-        "operationId": "InternalVendorAutomationController_triggerSingleVendorRiskAssessment_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TriggerSingleVendorRiskAssessmentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Task triggered with run info for real-time tracking"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Trigger vendor risk assessment for a single vendor and return run info (internal)",
-        "tags": [
-          "Internal - Vendors"
-        ]
-      }
-    },
     "/v1/context": {
       "get": {
         "description": "Returns all context entries for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
@@ -8000,6 +7871,7 @@
             "description": ""
           }
         },
+        "summary": "Exchange an auth code for device credentials",
         "tags": [
           "Device Agent"
         ]
@@ -8023,6 +7895,7 @@
             "description": ""
           }
         },
+        "summary": "Download a device-agent update",
         "tags": [
           "Device Agent"
         ]
@@ -8044,6 +7917,7 @@
             "description": ""
           }
         },
+        "summary": "Check a device-agent update's metadata",
         "tags": [
           "Device Agent"
         ]
@@ -8068,6 +7942,7 @@
             "description": ""
           }
         },
+        "summary": "Create a device-agent auth code",
         "tags": [
           "Device Agent"
         ]
@@ -8082,6 +7957,7 @@
             "description": ""
           }
         },
+        "summary": "List organizations for the current device",
         "tags": [
           "Device Agent"
         ]
@@ -8106,6 +7982,7 @@
             "description": ""
           }
         },
+        "summary": "Register a device agent",
         "tags": [
           "Device Agent"
         ]
@@ -8130,6 +8007,7 @@
             "description": ""
           }
         },
+        "summary": "Submit a device check-in",
         "tags": [
           "Device Agent"
         ]
@@ -8161,6 +8039,7 @@
             "description": ""
           }
         },
+        "summary": "Get device-agent status",
         "tags": [
           "Device Agent"
         ]
@@ -12379,6 +12258,7 @@
             "description": ""
           }
         },
+        "summary": "List control templates",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12410,6 +12290,7 @@
             "description": ""
           }
         },
+        "summary": "Create a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12433,6 +12314,7 @@
             "description": ""
           }
         },
+        "summary": "Get a control template by ID",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12464,6 +12346,7 @@
             "description": ""
           }
         },
+        "summary": "Update a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12485,6 +12368,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12516,6 +12400,7 @@
             "description": ""
           }
         },
+        "summary": "Link a requirement to a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12545,6 +12430,7 @@
             "description": ""
           }
         },
+        "summary": "Unlink a requirement from a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12576,6 +12462,7 @@
             "description": ""
           }
         },
+        "summary": "Link a policy template to a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12605,6 +12492,7 @@
             "description": ""
           }
         },
+        "summary": "Unlink a policy template from a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12636,6 +12524,7 @@
             "description": ""
           }
         },
+        "summary": "Link a task template to a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12665,6 +12554,7 @@
             "description": ""
           }
         },
+        "summary": "Unlink a task template from a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12696,6 +12586,7 @@
             "description": ""
           }
         },
+        "summary": "List frameworks",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12718,6 +12609,7 @@
             "description": ""
           }
         },
+        "summary": "Create a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12741,6 +12633,7 @@
             "description": ""
           }
         },
+        "summary": "Get a framework by ID",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12772,6 +12665,7 @@
             "description": ""
           }
         },
+        "summary": "Update a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12793,6 +12687,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12817,6 +12712,7 @@
             "description": ""
           }
         },
+        "summary": "Import a framework definition",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12840,6 +12736,7 @@
             "description": ""
           }
         },
+        "summary": "Export a framework definition",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12863,6 +12760,7 @@
             "description": ""
           }
         },
+        "summary": "List controls for a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12886,6 +12784,7 @@
             "description": ""
           }
         },
+        "summary": "List policy templates for a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12909,6 +12808,7 @@
             "description": ""
           }
         },
+        "summary": "List task templates for a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12932,6 +12832,7 @@
             "description": ""
           }
         },
+        "summary": "List documents for a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12963,6 +12864,7 @@
             "description": ""
           }
         },
+        "summary": "Link a control to a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12994,6 +12896,7 @@
             "description": ""
           }
         },
+        "summary": "Link a task template to a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -13025,6 +12928,7 @@
             "description": ""
           }
         },
+        "summary": "Link a policy template to a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -13064,6 +12968,7 @@
             "description": ""
           }
         },
+        "summary": "List policy templates",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13095,6 +13000,7 @@
             "description": ""
           }
         },
+        "summary": "Create a policy template",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13118,6 +13024,7 @@
             "description": ""
           }
         },
+        "summary": "Get a policy template by ID",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13149,6 +13056,7 @@
             "description": ""
           }
         },
+        "summary": "Update a policy template",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13170,6 +13078,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a policy template",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13203,6 +13112,7 @@
             "description": ""
           }
         },
+        "summary": "Update policy template content",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13234,6 +13144,7 @@
             "description": ""
           }
         },
+        "summary": "List requirements",
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13256,6 +13167,7 @@
             "description": ""
           }
         },
+        "summary": "Create a requirement",
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13289,6 +13201,7 @@
             "description": ""
           }
         },
+        "summary": "Update a requirement",
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13310,6 +13223,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a requirement",
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13910,6 +13824,21 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "name": "scope",
+            "required": false,
+            "in": "query",
+            "description": "People-area scope (e.g. people directory)",
+            "schema": {
+              "enum": [
+                "people",
+                "people_tasks",
+                "people_devices",
+                "people_chart"
+              ],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -14195,6 +14124,7 @@
             "apikey": []
           }
         ],
+        "summary": "List questionnaires",
         "tags": [
           "Questionnaire"
         ]
@@ -14223,6 +14153,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get a questionnaire by ID",
         "tags": [
           "Questionnaire"
         ]
@@ -14249,6 +14180,7 @@
             "apikey": []
           }
         ],
+        "summary": "Delete a questionnaire",
         "tags": [
           "Questionnaire"
         ]
@@ -14285,6 +14217,7 @@
             "apikey": []
           }
         ],
+        "summary": "Parse an uploaded questionnaire file",
         "tags": [
           "Questionnaire"
         ]
@@ -14351,6 +14284,7 @@
             "apikey": []
           }
         ],
+        "summary": "Answer a single questionnaire question",
         "tags": [
           "Questionnaire"
         ]
@@ -14396,6 +14330,7 @@
             "apikey": []
           }
         ],
+        "summary": "Save a questionnaire answer",
         "tags": [
           "Questionnaire"
         ]
@@ -14441,6 +14376,7 @@
             "apikey": []
           }
         ],
+        "summary": "Delete a questionnaire answer",
         "tags": [
           "Questionnaire"
         ]
@@ -14470,6 +14406,7 @@
             "apikey": []
           }
         ],
+        "summary": "Export a questionnaire",
         "tags": [
           "Questionnaire"
         ]
@@ -14514,6 +14451,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload and parse a questionnaire file",
         "tags": [
           "Questionnaire"
         ]
@@ -14582,6 +14520,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload a questionnaire file and parse its questions",
         "tags": [
           "Questionnaire"
         ]
@@ -14645,6 +14584,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload a questionnaire file and auto-answer with export",
         "tags": [
           "Questionnaire"
         ]
@@ -14704,6 +14644,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload and auto-answer a questionnaire via trust portal token",
         "tags": [
           "Questionnaire"
         ]
@@ -14733,6 +14674,7 @@
             "apikey": []
           }
         ],
+        "summary": "Export questionnaire answers",
         "tags": [
           "Questionnaire"
         ]
@@ -14787,6 +14729,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload a questionnaire file and export auto-generated answers",
         "tags": [
           "Questionnaire"
         ]
@@ -14816,6 +14759,7 @@
             "apikey": []
           }
         ],
+        "summary": "Auto-answer a questionnaire",
         "tags": [
           "Questionnaire"
         ]
@@ -15380,6 +15324,7 @@
             "apikey": []
           }
         ],
+        "summary": "Check OAuth provider availability",
         "tags": [
           "Integrations"
         ]
@@ -15399,6 +15344,7 @@
             "apikey": []
           }
         ],
+        "summary": "Start an OAuth authorization flow",
         "tags": [
           "Integrations"
         ]
@@ -15418,6 +15364,7 @@
             "apikey": []
           }
         ],
+        "summary": "Handle OAuth provider callback",
         "tags": [
           "Integrations"
         ]
@@ -15437,6 +15384,7 @@
             "apikey": []
           }
         ],
+        "summary": "List configured OAuth apps",
         "tags": [
           "Integrations"
         ]
@@ -15454,6 +15402,7 @@
             "apikey": []
           }
         ],
+        "summary": "Create an OAuth app configuration",
         "tags": [
           "Integrations"
         ]
@@ -15482,6 +15431,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get OAuth app setup details",
         "tags": [
           "Integrations"
         ]
@@ -15510,6 +15460,7 @@
             "apikey": []
           }
         ],
+        "summary": "Delete an OAuth app configuration",
         "tags": [
           "Integrations"
         ]
@@ -15538,6 +15489,7 @@
             "apikey": []
           }
         ],
+        "summary": "List available integration providers",
         "tags": [
           "Integrations"
         ]
@@ -15566,6 +15518,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get an integration provider by slug",
         "tags": [
           "Integrations"
         ]
@@ -15585,6 +15538,7 @@
             "apikey": []
           }
         ],
+        "summary": "List integration connections",
         "tags": [
           "Integrations"
         ]
@@ -15602,6 +15556,7 @@
             "apikey": []
           }
         ],
+        "summary": "Create an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15630,6 +15585,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get an integration connection by ID",
         "tags": [
           "Integrations"
         ]
@@ -15656,6 +15612,7 @@
             "apikey": []
           }
         ],
+        "summary": "Delete an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15682,6 +15639,7 @@
             "apikey": []
           }
         ],
+        "summary": "Update an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15710,6 +15668,7 @@
             "apikey": []
           }
         ],
+        "summary": "Test an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15738,6 +15697,7 @@
             "apikey": []
           }
         ],
+        "summary": "Pause an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15766,6 +15726,7 @@
             "apikey": []
           }
         ],
+        "summary": "Resume an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15794,6 +15755,7 @@
             "apikey": []
           }
         ],
+        "summary": "Disconnect an integration",
         "tags": [
           "Integrations"
         ]
@@ -15822,6 +15784,7 @@
             "apikey": []
           }
         ],
+        "summary": "Ensure valid credentials for a connection",
         "tags": [
           "Integrations"
         ]
@@ -15850,6 +15813,7 @@
             "apikey": []
           }
         ],
+        "summary": "Set services enabled on a connection",
         "tags": [
           "Integrations"
         ]
@@ -15876,6 +15840,7 @@
             "apikey": []
           }
         ],
+        "summary": "List services enabled on a connection",
         "tags": [
           "Integrations"
         ]
@@ -15904,300 +15869,9 @@
             "apikey": []
           }
         ],
+        "summary": "Update integration credentials",
         "tags": [
           "Integrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations": {
-      "put": {
-        "operationId": "DynamicIntegrationsController_upsert_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      },
-      "post": {
-        "operationId": "DynamicIntegrationsController_create_v1",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      },
-      "get": {
-        "operationId": "DynamicIntegrationsController_list_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/{id}": {
-      "get": {
-        "operationId": "DynamicIntegrationsController_getById_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      },
-      "patch": {
-        "operationId": "DynamicIntegrationsController_update_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      },
-      "delete": {
-        "operationId": "DynamicIntegrationsController_remove_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/{id}/checks": {
-      "post": {
-        "operationId": "DynamicIntegrationsController_addCheck_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/{id}/checks/{checkId}": {
-      "patch": {
-        "operationId": "DynamicIntegrationsController_updateCheck_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "checkId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      },
-      "delete": {
-        "operationId": "DynamicIntegrationsController_removeCheck_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "checkId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/{id}/activate": {
-      "post": {
-        "operationId": "DynamicIntegrationsController_activate_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/{id}/deactivate": {
-      "post": {
-        "operationId": "DynamicIntegrationsController_deactivate_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/validate": {
-      "post": {
-        "operationId": "DynamicIntegrationsController_validate_v1",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/{id}/check-runs": {
-      "get": {
-        "operationId": "DynamicIntegrationsController_getCheckRuns_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/check-runs/{runId}": {
-      "get": {
-        "operationId": "DynamicIntegrationsController_getCheckRunById_v1",
-        "parameters": [
-          {
-            "name": "runId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
         ]
       }
     },
@@ -16224,6 +15898,7 @@
             "apikey": []
           }
         ],
+        "summary": "List check definitions for a provider",
         "tags": [
           "Integrations"
         ]
@@ -16252,6 +15927,7 @@
             "apikey": []
           }
         ],
+        "summary": "List checks for a connection",
         "tags": [
           "Integrations"
         ]
@@ -16280,6 +15956,7 @@
             "apikey": []
           }
         ],
+        "summary": "Run all checks for a connection",
         "tags": [
           "Integrations"
         ]
@@ -16316,6 +15993,7 @@
             "apikey": []
           }
         ],
+        "summary": "Run a single check on a connection",
         "tags": [
           "Integrations"
         ]
@@ -16344,6 +16022,7 @@
             "apikey": []
           }
         ],
+        "summary": "List variable definitions for a provider",
         "tags": [
           "Integrations"
         ]
@@ -16372,6 +16051,7 @@
             "apikey": []
           }
         ],
+        "summary": "List connection variables",
         "tags": [
           "Integrations"
         ]
@@ -16398,6 +16078,7 @@
             "apikey": []
           }
         ],
+        "summary": "Update connection variables",
         "tags": [
           "Integrations"
         ]
@@ -16434,6 +16115,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get options for a connection variable",
         "tags": [
           "Integrations"
         ]
@@ -16462,6 +16144,7 @@
             "apikey": []
           }
         ],
+        "summary": "List checks for a task template",
         "tags": [
           "Integrations"
         ]
@@ -16490,6 +16173,7 @@
             "apikey": []
           }
         ],
+        "summary": "List checks attached to a task",
         "tags": [
           "Integrations"
         ]
@@ -16518,6 +16202,65 @@
             "apikey": []
           }
         ],
+        "summary": "Run a check for a task",
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/{taskId}/checks/disconnect": {
+      "post": {
+        "operationId": "TaskIntegrationsController_disconnectCheckFromTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Disconnect checks from a task",
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/{taskId}/checks/reconnect": {
+      "post": {
+        "operationId": "TaskIntegrationsController_reconnectCheckToTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Reconnect checks to a task",
         "tags": [
           "Integrations"
         ]
@@ -16610,6 +16353,7 @@
             "apikey": []
           }
         ],
+        "summary": "List check runs for a task",
         "tags": [
           "Integrations"
         ]
@@ -16641,6 +16385,7 @@
             "description": ""
           }
         },
+        "summary": "Receive a provider webhook event",
         "tags": [
           "Webhook"
         ]
@@ -16669,6 +16414,7 @@
             "apikey": []
           }
         ],
+        "summary": "Sync Google Workspace employees",
         "tags": [
           "Integrations"
         ]
@@ -16688,6 +16434,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get Google Workspace sync status",
         "tags": [
           "Integrations"
         ]
@@ -16716,6 +16463,7 @@
             "apikey": []
           }
         ],
+        "summary": "Sync Rippling employees",
         "tags": [
           "Integrations"
         ]
@@ -16735,6 +16483,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get Rippling sync status",
         "tags": [
           "Integrations"
         ]
@@ -16763,6 +16512,7 @@
             "apikey": []
           }
         ],
+        "summary": "Sync JumpCloud employees",
         "tags": [
           "Integrations"
         ]
@@ -16782,6 +16532,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get JumpCloud sync status",
         "tags": [
           "Integrations"
         ]
@@ -16801,6 +16552,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get the currently configured employee sync provider",
         "tags": [
           "Integrations"
         ]
@@ -16818,6 +16570,7 @@
             "apikey": []
           }
         ],
+        "summary": "Set the employee sync provider",
         "tags": [
           "Integrations"
         ]
@@ -16837,6 +16590,7 @@
             "apikey": []
           }
         ],
+        "summary": "List employee sync providers available to the org",
         "tags": [
           "Integrations"
         ]
@@ -16873,6 +16627,7 @@
             "apikey": []
           }
         ],
+        "summary": "Sync employees for a dynamic provider",
         "tags": [
           "Integrations"
         ]
@@ -16896,6 +16651,7 @@
             "description": ""
           }
         },
+        "summary": "List recent cloud security activity",
         "tags": [
           "CloudSecurity"
         ]
@@ -16910,6 +16666,7 @@
             "description": ""
           }
         },
+        "summary": "List supported cloud providers",
         "tags": [
           "CloudSecurity"
         ]
@@ -16924,6 +16681,7 @@
             "description": ""
           }
         },
+        "summary": "List cloud security findings",
         "tags": [
           "CloudSecurity"
         ]
@@ -16947,6 +16705,7 @@
             "description": ""
           }
         },
+        "summary": "Trigger a security scan for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -16970,6 +16729,7 @@
             "description": ""
           }
         },
+        "summary": "Detect available cloud services for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -16993,6 +16753,31 @@
             "description": ""
           }
         },
+        "summary": "Detect the GCP organization for a connection",
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/select-gcp-projects/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_selectGcpProjects_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Select GCP projects for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -17016,6 +16801,31 @@
             "description": ""
           }
         },
+        "summary": "Set up GCP for a connection",
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/setup-gcp/{connectionId}/resolve-step": {
+      "post": {
+        "operationId": "CloudSecurityController_resolveGcpSetupStep_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Resolve a GCP setup step",
         "tags": [
           "CloudSecurity"
         ]
@@ -17039,6 +16849,7 @@
             "description": ""
           }
         },
+        "summary": "Set up Azure for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -17062,6 +16873,7 @@
             "description": ""
           }
         },
+        "summary": "Validate Azure credentials for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -17085,6 +16897,7 @@
             "description": ""
           }
         },
+        "summary": "Trigger a cloud security run for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -17116,6 +16929,7 @@
             "description": ""
           }
         },
+        "summary": "Get a cloud security scan run by ID",
         "tags": [
           "CloudSecurity"
         ]
@@ -17130,6 +16944,7 @@
             "description": ""
           }
         },
+        "summary": "Create a legacy cloud integration",
         "tags": [
           "CloudSecurity"
         ]
@@ -17144,6 +16959,7 @@
             "description": ""
           }
         },
+        "summary": "Validate legacy AWS credentials",
         "tags": [
           "CloudSecurity"
         ]
@@ -17167,6 +16983,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a legacy cloud integration",
         "tags": [
           "CloudSecurity"
         ]
@@ -17190,6 +17007,7 @@
             "description": ""
           }
         },
+        "summary": "List remediation capabilities",
         "tags": [
           "Remediation"
         ]
@@ -17204,6 +17022,7 @@
             "description": ""
           }
         },
+        "summary": "Preview a remediation",
         "tags": [
           "Remediation"
         ]
@@ -17218,6 +17037,7 @@
             "description": ""
           }
         },
+        "summary": "Execute a remediation",
         "tags": [
           "Remediation"
         ]
@@ -17241,6 +17061,7 @@
             "description": ""
           }
         },
+        "summary": "Roll back a remediation action",
         "tags": [
           "Remediation"
         ]
@@ -17264,6 +17085,7 @@
             "description": ""
           }
         },
+        "summary": "List remediation actions",
         "tags": [
           "Remediation"
         ]
@@ -17287,6 +17109,7 @@
             "description": ""
           }
         },
+        "summary": "Get the active remediation batch",
         "tags": [
           "Remediation"
         ]
@@ -17301,6 +17124,7 @@
             "description": ""
           }
         },
+        "summary": "Create a remediation batch",
         "tags": [
           "Remediation"
         ]
@@ -17324,6 +17148,7 @@
             "description": ""
           }
         },
+        "summary": "Update a remediation batch",
         "tags": [
           "Remediation"
         ]
@@ -17355,6 +17180,7 @@
             "description": ""
           }
         },
+        "summary": "Skip a finding in a remediation batch",
         "tags": [
           "Remediation"
         ]
@@ -20056,33 +19882,35 @@
         ]
       }
     },
-    "/v1/internal/email/send": {
+    "/v1/email/unsubscribe": {
       "post": {
-        "operationId": "EmailController_sendEmail_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendEmailDto"
-              }
+        "operationId": "UnsubscribeController_unsubscribe_v1",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
-        },
+        ],
         "responses": {
           "200": {
-            "description": "Email task triggered"
+            "description": ""
           }
         },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Send an email via the centralized Trigger task (internal)",
+        "summary": "One-click unsubscribe (RFC 8058)",
         "tags": [
-          "Internal - Email"
+          "Email - Unsubscribe"
         ]
       }
     },
@@ -20721,10 +20549,6 @@
     {
       "url": "http://localhost:3333",
       "description": "Local API Server"
-    },
-    {
-      "url": "https://api.trycomp.ai",
-      "description": "API Server"
     }
   ],
   "components": {
@@ -21599,89 +21423,6 @@
             "description": "Assignee member ID"
           }
         }
-      },
-      "TriggerVendorRiskAssessmentVendorDto": {
-        "type": "object",
-        "properties": {
-          "vendorId": {
-            "type": "string",
-            "description": "Vendor ID",
-            "example": "vnd_abc123"
-          },
-          "vendorName": {
-            "type": "string",
-            "description": "Vendor name",
-            "example": "CloudTech Solutions"
-          },
-          "vendorWebsite": {
-            "type": "object",
-            "description": "Vendor website (optional)",
-            "example": "https://cloudtechsolutions.com"
-          }
-        },
-        "required": [
-          "vendorId",
-          "vendorName"
-        ]
-      },
-      "TriggerVendorRiskAssessmentBatchDto": {
-        "type": "object",
-        "properties": {
-          "organizationId": {
-            "type": "string",
-            "description": "Organization ID (deprecated — use auth context)",
-            "example": "org_abc123"
-          },
-          "withResearch": {
-            "type": "boolean",
-            "description": "If false, skips Firecrawl research (cheaper). Defaults to true.",
-            "default": true
-          },
-          "vendors": {
-            "description": "Vendors to trigger risk assessment for",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TriggerVendorRiskAssessmentVendorDto"
-            }
-          }
-        },
-        "required": [
-          "vendors"
-        ]
-      },
-      "TriggerSingleVendorRiskAssessmentDto": {
-        "type": "object",
-        "properties": {
-          "organizationId": {
-            "type": "string",
-            "description": "Organization ID (deprecated — use auth context)",
-            "example": "org_abc123"
-          },
-          "vendorId": {
-            "type": "string",
-            "description": "Vendor ID",
-            "example": "vnd_abc123"
-          },
-          "vendorName": {
-            "type": "string",
-            "description": "Vendor name",
-            "example": "CloudTech Solutions"
-          },
-          "vendorWebsite": {
-            "type": "string",
-            "description": "Vendor website",
-            "example": "https://cloudtechsolutions.com"
-          },
-          "createdByUserId": {
-            "type": "object",
-            "description": "User ID who triggered the assessment (optional)"
-          }
-        },
-        "required": [
-          "vendorId",
-          "vendorName",
-          "vendorWebsite"
-        ]
       },
       "CreateContextDto": {
         "type": "object",
@@ -23338,7 +23079,12 @@
           "cnameTarget": {
             "type": "string",
             "description": "The recommended CNAME target for this domain from Vercel",
-            "example": "cname.vercel-dns.com"
+            "example": "3a69a5bb27875189.vercel-dns-016.com"
+          },
+          "misconfigured": {
+            "type": "object",
+            "description": "Whether Vercel's /v6/domains/{d}/config call reports the domain as misconfigured. Null when Vercel could not be reached.",
+            "nullable": true
           }
         },
         "required": [
@@ -24152,6 +23898,16 @@
               "employee-performance-evaluation",
               "network-diagram",
               "tabletop-exercise"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "description": "People area scope (e.g. people directory) when not tied to a task or evidence",
+            "enum": [
+              "people",
+              "people_tasks",
+              "people_devices",
+              "people_chart"
             ]
           },
           "type": {
@@ -25183,51 +24939,6 @@
         "required": [
           "name",
           "description"
-        ]
-      },
-      "SendEmailDto": {
-        "type": "object",
-        "properties": {
-          "to": {
-            "type": "string",
-            "description": "Recipient email address"
-          },
-          "subject": {
-            "type": "string",
-            "description": "Email subject line"
-          },
-          "html": {
-            "type": "string",
-            "description": "Pre-rendered HTML content"
-          },
-          "from": {
-            "type": "string",
-            "description": "Explicit FROM address override"
-          },
-          "system": {
-            "type": "boolean",
-            "description": "Use system sender address (RESEND_FROM_SYSTEM)"
-          },
-          "cc": {
-            "type": "object",
-            "description": "CC recipients"
-          },
-          "scheduledAt": {
-            "type": "string",
-            "description": "Schedule email for later delivery"
-          },
-          "attachments": {
-            "description": "File attachments",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "to",
-          "subject",
-          "html"
         ]
       },
       "CreatePenetrationTestDto": {

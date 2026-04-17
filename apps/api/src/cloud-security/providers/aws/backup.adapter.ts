@@ -3,18 +3,9 @@ import {
   ListBackupPlansCommand,
   ListBackupSelectionsCommand,
 } from '@aws-sdk/client-backup';
-import {
-  RDSClient,
-  DescribeDBInstancesCommand,
-} from '@aws-sdk/client-rds';
-import {
-  DynamoDBClient,
-  ListTablesCommand,
-} from '@aws-sdk/client-dynamodb';
-import {
-  EC2Client,
-  DescribeVolumesCommand,
-} from '@aws-sdk/client-ec2';
+import { RDSClient, DescribeDBInstancesCommand } from '@aws-sdk/client-rds';
+import { DynamoDBClient, ListTablesCommand } from '@aws-sdk/client-dynamodb';
+import { EC2Client, DescribeVolumesCommand } from '@aws-sdk/client-ec2';
 
 import type { SecurityFinding } from '../../cloud-security.service';
 import type { AwsCredentials, AwsServiceAdapter } from './aws-service-adapter';
@@ -107,11 +98,26 @@ export class BackupAdapter implements AwsServiceAdapter {
 
           if (!hasSelections) {
             findings.push(
-              this.makeFinding(resourceId, 'Backup plan has no resource selections', `Backup plan "${plan.BackupPlanName ?? planId}" has no resources assigned for backup`, 'medium', { backupPlanId: planId, backupPlanName: plan.BackupPlanName }, false, `Use backup:CreateBackupSelectionCommand with BackupPlanId set to '${planId}' and BackupSelection containing SelectionName, IamRoleArn (for backup execution), and Resources (list of ARNs) or ListOfTags to select resources by tag. Rollback: use backup:DeleteBackupSelectionCommand with BackupPlanId and SelectionId.`),
+              this.makeFinding(
+                resourceId,
+                'Backup plan has no resource selections',
+                `Backup plan "${plan.BackupPlanName ?? planId}" has no resources assigned for backup`,
+                'medium',
+                { backupPlanId: planId, backupPlanName: plan.BackupPlanName },
+                false,
+                `Use backup:CreateBackupSelectionCommand with BackupPlanId set to '${planId}' and BackupSelection containing SelectionName, IamRoleArn (for backup execution), and Resources (list of ARNs) or ListOfTags to select resources by tag. Rollback: use backup:DeleteBackupSelectionCommand with BackupPlanId and SelectionId.`,
+              ),
             );
           } else {
             findings.push(
-              this.makeFinding(resourceId, 'Backup plan has resource selections', `Backup plan "${plan.BackupPlanName ?? planId}" has resources assigned`, 'info', { backupPlanId: planId, backupPlanName: plan.BackupPlanName }, true),
+              this.makeFinding(
+                resourceId,
+                'Backup plan has resource selections',
+                `Backup plan "${plan.BackupPlanName ?? planId}" has resources assigned`,
+                'info',
+                { backupPlanId: planId, backupPlanName: plan.BackupPlanName },
+                true,
+              ),
             );
           }
         }
@@ -121,7 +127,15 @@ export class BackupAdapter implements AwsServiceAdapter {
 
       if (!hasPlans) {
         findings.push(
-          this.makeFinding(`arn:aws:backup:${region}:no-plans`, 'No backup plans configured', 'No AWS Backup plans found in this region', 'medium', { region }, false, `Use backup:CreateBackupPlanCommand with BackupPlan containing BackupPlanName and Rules (array with ScheduleExpression e.g., 'cron(0 5 ? * * *)', TargetBackupVaultName, and Lifecycle.DeleteAfterDays set to 35). Then use backup:CreateBackupSelectionCommand to assign resources to the plan. Rollback: use backup:DeleteBackupPlanCommand with BackupPlanId.`),
+          this.makeFinding(
+            `arn:aws:backup:${region}:no-plans`,
+            'No backup plans configured',
+            'No AWS Backup plans found in this region',
+            'medium',
+            { region },
+            false,
+            `Use backup:CreateBackupPlanCommand with BackupPlan containing BackupPlanName and Rules (array with ScheduleExpression e.g., 'cron(0 5 ? * * *)', TargetBackupVaultName, and Lifecycle.DeleteAfterDays set to 35). Then use backup:CreateBackupSelectionCommand to assign resources to the plan. Rollback: use backup:DeleteBackupPlanCommand with BackupPlanId.`,
+          ),
         );
       }
     } catch (error: unknown) {

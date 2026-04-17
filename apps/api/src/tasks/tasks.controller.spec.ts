@@ -11,7 +11,15 @@ import { AttachmentsService } from '../attachments/attachments.service';
 jest.mock('@db', () => ({
   ...jest.requireActual('@prisma/client'),
   db: {},
-  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
+  Prisma: {
+    PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
+      code: string;
+      constructor(message: string, { code }: { code: string }) {
+        super(message);
+        this.code = code;
+      }
+    },
+  },
 }));
 
 jest.mock('../auth/auth.server', () => ({
@@ -265,9 +273,7 @@ describe('TasksController', () => {
         status: TaskStatus.done,
       });
 
-      expect(mockTasksService.getApiKeyActorUserId).toHaveBeenCalledWith(
-        orgId,
-      );
+      expect(mockTasksService.getApiKeyActorUserId).toHaveBeenCalledWith(orgId);
       expect(mockTasksService.updateTasksStatus).toHaveBeenCalledWith(
         orgId,
         ['tsk_1'],
@@ -623,9 +629,7 @@ describe('TasksController', () => {
         title: 'Updated',
       });
 
-      expect(mockTasksService.getApiKeyActorUserId).toHaveBeenCalledWith(
-        orgId,
-      );
+      expect(mockTasksService.getApiKeyActorUserId).toHaveBeenCalledWith(orgId);
     });
   });
 
@@ -845,7 +849,9 @@ describe('TasksController', () => {
         userId: 'usr_dto',
       };
       mockTasksService.verifyTaskAccess.mockResolvedValue(undefined);
-      mockAttachmentsService.uploadAttachment.mockResolvedValue({ id: 'att_1' });
+      mockAttachmentsService.uploadAttachment.mockResolvedValue({
+        id: 'att_1',
+      });
 
       await controller.uploadTaskAttachment(
         apiKeyAuth,

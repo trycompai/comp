@@ -8,12 +8,7 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import {
-  VendorCategory,
-  VendorStatus,
-  Likelihood,
-  Impact,
-} from '@db';
+import { VendorCategory, VendorStatus, Likelihood, Impact } from '@db';
 
 export class CreateVendorDto {
   @ApiProperty({

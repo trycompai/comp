@@ -3,13 +3,12 @@ import { Transform } from 'class-transformer';
 import {
   IsBase64,
   IsNotEmpty,
-  IsOptional,
   IsString,
   MaxLength,
-  Matches,
   IsEnum,
 } from 'class-validator';
 import { TaskItemEntityType } from '@db';
+import { IsMimeTypeField } from '../../utils/mime-type.validator';
 
 export class UploadTaskItemAttachmentDto {
   @ApiProperty({
@@ -27,11 +26,7 @@ export class UploadTaskItemAttachmentDto {
     description: 'MIME type of the file',
     example: 'application/pdf',
   })
-  @IsString()
-  @IsNotEmpty()
-  @Matches(/^[a-zA-Z0-9\-]+\/[a-zA-Z0-9\-\+\.]+$/, {
-    message: 'Invalid MIME type format',
-  })
+  @IsMimeTypeField()
   fileType: string;
 
   @ApiProperty({

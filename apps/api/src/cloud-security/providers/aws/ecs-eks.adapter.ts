@@ -83,8 +83,7 @@ export class EcsEksAdapter implements AwsServiceAdapter {
           new DescribeTaskDefinitionCommand({ taskDefinition: taskDefArn }),
         );
 
-        const containers =
-          resp.taskDefinition?.containerDefinitions ?? [];
+        const containers = resp.taskDefinition?.containerDefinitions ?? [];
 
         for (const container of containers) {
           if (container.privileged === true) {
@@ -96,7 +95,7 @@ export class EcsEksAdapter implements AwsServiceAdapter {
                 description: `ECS task definition ${taskDefArn} has container "${container.name}" running in privileged mode. Privileged containers have full access to the host.`,
                 severity: 'high',
                 remediation:
-                  '[MANUAL] Cannot be auto-fixed for existing running tasks. Register a new task definition revision using ecs:RegisterTaskDefinitionCommand with the container definition\'s privileged field set to false, then update the service using ecs:UpdateServiceCommand with the new taskDefinition ARN. Rollback: register another revision with privileged set to true and update the service.',
+                  "[MANUAL] Cannot be auto-fixed for existing running tasks. Register a new task definition revision using ecs:RegisterTaskDefinitionCommand with the container definition's privileged field set to false, then update the service using ecs:UpdateServiceCommand with the new taskDefinition ARN. Rollback: register another revision with privileged set to true and update the service.",
                 evidence: {
                   containerName: container.name,
                   privileged: true,
@@ -106,8 +105,7 @@ export class EcsEksAdapter implements AwsServiceAdapter {
           }
         }
       } catch (error) {
-        const msg =
-          error instanceof Error ? error.message : String(error);
+        const msg = error instanceof Error ? error.message : String(error);
         if (msg.includes('AccessDenied')) return;
       }
     }
@@ -127,9 +125,7 @@ export class EcsEksAdapter implements AwsServiceAdapter {
     let nextToken: string | undefined;
 
     do {
-      const resp = await client.send(
-        new ListClustersCommand({ nextToken }),
-      );
+      const resp = await client.send(new ListClustersCommand({ nextToken }));
 
       const clusterNames = resp.clusters ?? [];
 
@@ -168,8 +164,7 @@ export class EcsEksAdapter implements AwsServiceAdapter {
                 title: 'EKS cluster logging incomplete',
                 description: `EKS cluster ${clusterName} does not have all recommended log types enabled. Missing: ${disabledTypes.join(', ')}.`,
                 severity: 'medium',
-                remediation:
-                  `Use eks:UpdateClusterConfigCommand with name set to '${clusterName}' and logging.clusterLogging set to [{ types: ['api', 'audit', 'authenticator', 'controllerManager', 'scheduler'], enabled: true }]. Rollback: use eks:UpdateClusterConfigCommand with enabled set to false for the added log types.`,
+                remediation: `Use eks:UpdateClusterConfigCommand with name set to '${clusterName}' and logging.clusterLogging set to [{ types: ['api', 'audit', 'authenticator', 'controllerManager', 'scheduler'], enabled: true }]. Rollback: use eks:UpdateClusterConfigCommand with enabled set to false for the added log types.`,
                 evidence: {
                   enabledTypes: [...enabledTypes],
                   disabledTypes,
@@ -190,8 +185,7 @@ export class EcsEksAdapter implements AwsServiceAdapter {
                   title: 'EKS API publicly accessible',
                   description: `EKS cluster ${clusterName} has its API endpoint publicly accessible from any IP address (0.0.0.0/0).`,
                   severity: 'high',
-                  remediation:
-                    `Use eks:UpdateClusterConfigCommand with name set to '${clusterName}' and resourcesVpcConfig.endpointPublicAccess set to false (or keep true and set publicAccessCidrs to specific CIDR ranges instead of '0.0.0.0/0'). Ensure endpointPrivateAccess is set to true if disabling public access. Rollback: use eks:UpdateClusterConfigCommand with endpointPublicAccess set to true and publicAccessCidrs set to ['0.0.0.0/0'].`,
+                  remediation: `Use eks:UpdateClusterConfigCommand with name set to '${clusterName}' and resourcesVpcConfig.endpointPublicAccess set to false (or keep true and set publicAccessCidrs to specific CIDR ranges instead of '0.0.0.0/0'). Ensure endpointPrivateAccess is set to true if disabling public access. Rollback: use eks:UpdateClusterConfigCommand with endpointPublicAccess set to true and publicAccessCidrs set to ['0.0.0.0/0'].`,
                   evidence: {
                     endpointPublicAccess: true,
                     publicAccessCidrs: cidrs,
@@ -201,8 +195,7 @@ export class EcsEksAdapter implements AwsServiceAdapter {
             }
           }
         } catch (error) {
-          const msg =
-            error instanceof Error ? error.message : String(error);
+          const msg = error instanceof Error ? error.message : String(error);
           if (msg.includes('AccessDenied')) return;
         }
       }

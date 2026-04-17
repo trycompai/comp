@@ -4,7 +4,7 @@ import { Button } from '@trycompai/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { ScrollArea } from '@trycompai/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
-import { Finding, FindingStatus } from '@db';
+import { Finding, FindingScope, FindingStatus } from '@db';
 import { ArrowRight, CheckCircle2, FileWarning } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo } from 'react';
@@ -18,6 +18,56 @@ interface FindingWithTask extends Finding {
     id: string;
     formType: string;
   } | null;
+}
+
+function findingListTitle(finding: FindingWithTask): string {
+  if (finding.task?.title) {
+    return finding.task.title;
+  }
+  if (finding.evidenceFormType) {
+    return `Document: ${finding.evidenceFormType.replace(/-/g, ' ')}`;
+  }
+  if (finding.evidenceSubmission) {
+    return `Document: ${finding.evidenceSubmission.formType.replace(/-/g, ' ')}`;
+  }
+  switch (finding.scope) {
+    case FindingScope.people:
+      return 'People';
+    case FindingScope.people_tasks:
+      return 'People: Tasks';
+    case FindingScope.people_devices:
+      return 'People: Devices';
+    case FindingScope.people_chart:
+      return 'People: Chart';
+    default:
+      return 'Finding';
+  }
+}
+
+function findingHref(finding: FindingWithTask, organizationId: string): string {
+  if (finding.task) {
+    return `/${organizationId}/tasks/${finding.task.id}?tab=findings`;
+  }
+  if (finding.evidenceFormType) {
+    return `/${organizationId}/documents/${finding.evidenceFormType}?tab=findings`;
+  }
+  if (finding.evidenceSubmission) {
+    return `/${organizationId}/documents/${finding.evidenceSubmission.formType}?tab=findings`;
+  }
+  if (finding.scope) {
+    const peopleTab =
+      finding.scope === FindingScope.people
+        ? 'people'
+        : finding.scope === FindingScope.people_tasks
+          ? 'tasks'
+          : finding.scope === FindingScope.people_devices
+            ? 'devices'
+            : finding.scope === FindingScope.people_chart
+              ? 'chart'
+              : 'people';
+    return `/${organizationId}/people?tab=${peopleTab}`;
+  }
+  return `/${organizationId}/overview`;
 }
 
 function FindingsList({
@@ -40,12 +90,7 @@ function FindingsList({
                   </div>
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="text-sm font-medium text-foreground line-clamp-1">
-                      {finding.task?.title ??
-                        (finding.evidenceFormType
-                          ? `Document: ${finding.evidenceFormType.replace(/-/g, ' ')}`
-                          : finding.evidenceSubmission
-                            ? `Document: ${finding.evidenceSubmission.formType.replace(/-/g, ' ')}`
-                            : 'Finding')}
+                      {findingListTitle(finding)}
                     </span>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                       {finding.content}
@@ -53,17 +98,7 @@ function FindingsList({
                   </div>
                 </div>
                 <Button asChild size="icon" variant="outline" className="shrink-0 ml-2">
-                  <Link
-                    href={
-                      finding.task
-                        ? `/${organizationId}/tasks/${finding.task.id}?tab=findings`
-                        : finding.evidenceFormType
-                          ? `/${organizationId}/documents/${finding.evidenceFormType}?tab=findings`
-                          : finding.evidenceSubmission
-                            ? `/${organizationId}/documents/${finding.evidenceSubmission.formType}?tab=findings`
-                            : `/${organizationId}/overview`
-                    }
-                  >
+                  <Link href={findingHref(finding, organizationId)}>
                     <ArrowRight className="h-3 w-3" />
                   </Link>
                 </Button>

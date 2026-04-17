@@ -1,5 +1,6 @@
-import { IsNotEmpty, IsString, Matches } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsMimeTypeField } from '../../utils/mime-type.validator';
 
 export class UploadOrgChartDto {
   @ApiProperty({ description: 'Original file name' })
@@ -8,11 +9,7 @@ export class UploadOrgChartDto {
   fileName: string;
 
   @ApiProperty({ description: 'MIME type of the file (e.g. image/png)' })
-  @IsString()
-  @IsNotEmpty()
-  @Matches(/^[a-zA-Z0-9\-]+\/[a-zA-Z0-9\-\+\.]+$/, {
-    message: 'Invalid MIME type format',
-  })
+  @IsMimeTypeField()
   fileType: string;
 
   @ApiProperty({ description: 'Base64-encoded file data' })

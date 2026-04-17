@@ -6,25 +6,8 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-  Matches,
 } from 'class-validator';
-
-// Block dangerous MIME types that could execute code
-const BLOCKED_MIME_TYPES = [
-  'application/x-msdownload', // .exe
-  'application/x-msdos-program',
-  'application/x-executable',
-  'application/x-sh', // Shell scripts
-  'application/x-bat', // Batch files
-  'text/x-sh',
-  'text/x-python',
-  'text/x-perl',
-  'text/x-ruby',
-  'application/x-httpd-php', // PHP files
-  'application/x-javascript', // Executable JS (not JSON)
-  'application/javascript',
-  'text/javascript',
-];
+import { IsMimeTypeField } from '../utils/mime-type.validator';
 
 export class UploadAttachmentDto {
   @ApiProperty({
@@ -42,11 +25,7 @@ export class UploadAttachmentDto {
     description: 'MIME type of the file',
     example: 'application/pdf',
   })
-  @IsString()
-  @IsNotEmpty()
-  @Matches(/^[a-zA-Z0-9\-]+\/[a-zA-Z0-9\-\+\.]+$/, {
-    message: 'Invalid MIME type format',
-  })
+  @IsMimeTypeField()
   fileType: string;
 
   @ApiProperty({

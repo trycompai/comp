@@ -33,21 +33,19 @@ import { SecurityPenetrationTestsService } from './security-penetration-tests.se
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
-  description: 'Organization ID (required for session auth, optional for API key auth)',
+  description:
+    'Organization ID (required for session auth, optional for API key auth)',
   required: false,
 })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 export class SecurityPenetrationTestsController {
-  constructor(
-    private readonly service: SecurityPenetrationTestsService,
-  ) {}
+  constructor(private readonly service: SecurityPenetrationTestsService) {}
 
   @Get()
   @RequirePermission('pentest', 'read')
   @ApiOperation({
     summary: 'List penetration test runs',
-    description:
-      'Returns all penetration tests created for the organization.',
+    description: 'Returns all penetration tests created for the organization.',
   })
   @ApiResponse({
     status: 200,
@@ -126,7 +124,10 @@ export class SecurityPenetrationTestsController {
     status: 200,
     description: 'Progress returned',
   })
-  async getProgress(@OrganizationId() organizationId: string, @Param('id') id: string) {
+  async getProgress(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+  ) {
     return this.service.getReportProgress(organizationId, id);
   }
 
@@ -234,7 +235,10 @@ export class SecurityPenetrationTestsController {
     });
   }
 
-  private extractStringFromQuery(request: Request, key: string): string | undefined {
+  private extractStringFromQuery(
+    request: Request,
+    key: string,
+  ): string | undefined {
     const queryValue = request.query[key];
     if (Array.isArray(queryValue)) {
       return this.extractStringFromQueryValue(queryValue[0]);

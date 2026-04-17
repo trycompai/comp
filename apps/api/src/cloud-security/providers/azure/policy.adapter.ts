@@ -36,7 +36,10 @@ interface PolicySummaryResponse {
 export class PolicyAdapter implements AzureServiceAdapter {
   readonly serviceId = 'policy';
 
-  async scan({ accessToken, subscriptionId }: {
+  async scan({
+    accessToken,
+    subscriptionId,
+  }: {
     accessToken: string;
     subscriptionId: string;
   }): Promise<SecurityFinding[]> {
@@ -61,12 +64,18 @@ export class PolicyAdapter implements AzureServiceAdapter {
           findings.push({
             id: `azure-policy-permission-${subscriptionId}`,
             title: 'Unable to Access Policy Compliance',
-            description: 'The service principal does not have permission to read policy states.',
+            description:
+              'The service principal does not have permission to read policy states.',
             severity: 'medium',
             resourceType: 'policy',
             resourceId: subscriptionId,
-            remediation: 'Assign the "Reader" role to your App Registration on the subscription.',
-            evidence: { serviceId: this.serviceId, serviceName: 'Azure Policy', findingKey: 'azure-policy-permission' },
+            remediation:
+              'Assign the "Reader" role to your App Registration on the subscription.',
+            evidence: {
+              serviceId: this.serviceId,
+              serviceName: 'Azure Policy',
+              findingKey: 'azure-policy-permission',
+            },
             createdAt: new Date().toISOString(),
           });
           return findings;
@@ -74,7 +83,9 @@ export class PolicyAdapter implements AzureServiceAdapter {
         throw new Error(`Azure Policy API error: ${error}`);
       }
 
-      const data = (await response.json()) as { value: PolicySummaryResponse['value'] };
+      const data = (await response.json()) as {
+        value: PolicySummaryResponse['value'];
+      };
       const assignments = data.value ?? [];
 
       let totalNonCompliant = 0;
@@ -98,7 +109,8 @@ export class PolicyAdapter implements AzureServiceAdapter {
           severity: totalNonCompliant > 20 ? 'high' : 'medium',
           resourceType: 'policy-state',
           resourceId: subscriptionId,
-          remediation: 'Review non-compliant resources in Azure Policy and remediate or create exemptions for known exceptions.',
+          remediation:
+            'Review non-compliant resources in Azure Policy and remediate or create exemptions for known exceptions.',
           evidence: {
             serviceId: this.serviceId,
             serviceName: 'Azure Policy',
@@ -112,12 +124,17 @@ export class PolicyAdapter implements AzureServiceAdapter {
         findings.push({
           id: `azure-policy-compliant-${subscriptionId}`,
           title: 'Policy Compliance',
-          description: 'All resources are compliant with assigned Azure Policies.',
+          description:
+            'All resources are compliant with assigned Azure Policies.',
           severity: 'info',
           resourceType: 'policy-state',
           resourceId: subscriptionId,
           remediation: 'No action needed.',
-          evidence: { serviceId: this.serviceId, serviceName: 'Azure Policy', findingKey: 'azure-policy-compliant' },
+          evidence: {
+            serviceId: this.serviceId,
+            serviceName: 'Azure Policy',
+            findingKey: 'azure-policy-compliant',
+          },
           createdAt: new Date().toISOString(),
           passed: true,
         });
@@ -128,11 +145,13 @@ export class PolicyAdapter implements AzureServiceAdapter {
         findings.push({
           id: `azure-policy-none-${subscriptionId}`,
           title: 'No Azure Policies Assigned',
-          description: 'This subscription has no Azure Policy assignments. Consider applying security baseline policies.',
+          description:
+            'This subscription has no Azure Policy assignments. Consider applying security baseline policies.',
           severity: 'medium',
           resourceType: 'policy-state',
           resourceId: subscriptionId,
-          remediation: 'Assign the Azure Security Benchmark initiative or other security-focused policy sets.',
+          remediation:
+            'Assign the Azure Security Benchmark initiative or other security-focused policy sets.',
           evidence: {
             serviceId: this.serviceId,
             serviceName: 'Azure Policy',

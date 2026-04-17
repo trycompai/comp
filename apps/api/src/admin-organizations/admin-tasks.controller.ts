@@ -77,7 +77,10 @@ export class AdminTasksController {
   }
 
   @Get(':orgId/tasks/:taskId/details')
-  @ApiOperation({ summary: 'Get task details with comments, attachments, and evidence (admin)' })
+  @ApiOperation({
+    summary:
+      'Get task details with comments, attachments, and evidence (admin)',
+  })
   async getDetails(
     @Param('orgId') orgId: string,
     @Param('taskId') taskId: string,
@@ -87,11 +90,7 @@ export class AdminTasksController {
 
     const [comments, attachments, automationRuns, integrationRuns] =
       await Promise.all([
-        this.commentsService.getComments(
-          orgId,
-          taskId,
-          CommentEntityType.task,
-        ),
+        this.commentsService.getComments(orgId, taskId, CommentEntityType.task),
         this.attachmentsService.getAttachments(
           orgId,
           taskId,
@@ -174,9 +173,7 @@ export class AdminTasksController {
     if (body.frequency !== undefined) {
       if (
         body.frequency !== null &&
-        !Object.values(TaskFrequency).includes(
-          body.frequency as TaskFrequency,
-        )
+        !Object.values(TaskFrequency).includes(body.frequency as TaskFrequency)
       ) {
         throw new BadRequestException(
           `Invalid frequency. Must be one of: ${Object.values(TaskFrequency).join(', ')}`,

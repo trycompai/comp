@@ -124,11 +124,18 @@ export class CheckRunRepository {
   }
 
   /**
-   * Get check runs for a task
+   * Get check runs for a task.
+   *
+   * CS-166: excludes runs from disconnected connections so the task's UI
+   * panels don't render stale "failed" history after a user disconnects the
+   * integration. The rows remain in the DB for audit.
    */
   async findByTask(taskId: string, limit = 10) {
     return db.integrationCheckRun.findMany({
-      where: { taskId },
+      where: {
+        taskId,
+        connection: { status: { not: 'disconnected' } },
+      },
       include: {
         results: true,
         connection: {

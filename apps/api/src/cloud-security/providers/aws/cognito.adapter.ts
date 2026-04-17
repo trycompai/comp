@@ -111,8 +111,7 @@ export class CognitoAdapter implements AwsServiceAdapter {
       }
 
       // Check password policy
-      const minLength =
-        pool.Policies?.PasswordPolicy?.MinimumLength ?? 0;
+      const minLength = pool.Policies?.PasswordPolicy?.MinimumLength ?? 0;
       if (minLength < MIN_PASSWORD_LENGTH) {
         findings.push(
           this.makeFinding({

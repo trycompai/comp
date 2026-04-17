@@ -54,8 +54,7 @@ export class Route53Adapter implements AwsServiceAdapter {
                     title: 'DNSSEC not enabled',
                     description: `Hosted zone ${zoneName} (${zoneId}) does not have DNSSEC signing enabled. DNSSEC protects against DNS spoofing attacks.`,
                     severity: 'medium',
-                    remediation:
-                      `Use route53:CreateKeySigningKeyCommand with HostedZoneId set to '${zoneId}', Name set to a KSK name, KeyManagementServiceArn set to a KMS key ARN (must be in us-east-1, asymmetric ECC_NIST_P256). Then use route53:EnableHostedZoneDNSSECCommand with HostedZoneId set to '${zoneId}'. [MANUAL] You must also create a DS record in the parent zone. Rollback: use route53:DisableHostedZoneDNSSECCommand with HostedZoneId.`,
+                    remediation: `Use route53:CreateKeySigningKeyCommand with HostedZoneId set to '${zoneId}', Name set to a KSK name, KeyManagementServiceArn set to a KMS key ARN (must be in us-east-1, asymmetric ECC_NIST_P256). Then use route53:EnableHostedZoneDNSSECCommand with HostedZoneId set to '${zoneId}'. [MANUAL] You must also create a DS record in the parent zone. Rollback: use route53:DisableHostedZoneDNSSECCommand with HostedZoneId.`,
                     evidence: {
                       serveSignature:
                         dnssecResp.Status?.ServeSignature ?? 'not set',
@@ -77,8 +76,7 @@ export class Route53Adapter implements AwsServiceAdapter {
                     title: 'DNSSEC not enabled',
                     description: `Hosted zone ${zoneName} (${zoneId}) does not have DNSSEC configured.`,
                     severity: 'medium',
-                    remediation:
-                      `Use route53:CreateKeySigningKeyCommand with HostedZoneId set to '${zoneId}', Name set to a KSK name, KeyManagementServiceArn set to a KMS key ARN (must be in us-east-1, asymmetric ECC_NIST_P256). Then use route53:EnableHostedZoneDNSSECCommand with HostedZoneId set to '${zoneId}'. [MANUAL] You must also create a DS record in the parent zone. Rollback: use route53:DisableHostedZoneDNSSECCommand with HostedZoneId.`,
+                    remediation: `Use route53:CreateKeySigningKeyCommand with HostedZoneId set to '${zoneId}', Name set to a KSK name, KeyManagementServiceArn set to a KMS key ARN (must be in us-east-1, asymmetric ECC_NIST_P256). Then use route53:EnableHostedZoneDNSSECCommand with HostedZoneId set to '${zoneId}'. [MANUAL] You must also create a DS record in the parent zone. Rollback: use route53:DisableHostedZoneDNSSECCommand with HostedZoneId.`,
                     evidence: { error: msg },
                   }),
                 );
@@ -100,15 +98,13 @@ export class Route53Adapter implements AwsServiceAdapter {
                   title: 'Query logging not enabled',
                   description: `Hosted zone ${zoneName} (${zoneId}) does not have DNS query logging enabled.`,
                   severity: 'low',
-                  remediation:
-                    `Use route53:CreateQueryLoggingConfigCommand with HostedZoneId set to '${zoneId}' and CloudWatchLogsLogGroupArn set to a CloudWatch Logs log group ARN in us-east-1 (required region). The log group must have a resource policy allowing Route53 to write to it. Rollback: use route53:DeleteQueryLoggingConfigCommand with the Id returned from the create call.`,
+                  remediation: `Use route53:CreateQueryLoggingConfigCommand with HostedZoneId set to '${zoneId}' and CloudWatchLogsLogGroupArn set to a CloudWatch Logs log group ARN in us-east-1 (required region). The log group must have a resource policy allowing Route53 to write to it. Rollback: use route53:DeleteQueryLoggingConfigCommand with the Id returned from the create call.`,
                   evidence: { queryLoggingConfigs: 0 },
                 }),
               );
             }
           } catch (error) {
-            const msg =
-              error instanceof Error ? error.message : String(error);
+            const msg = error instanceof Error ? error.message : String(error);
             if (msg.includes('AccessDenied')) return [];
           }
         }

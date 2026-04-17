@@ -1,7 +1,4 @@
-import {
-  Macie2Client,
-  GetMacieSessionCommand,
-} from '@aws-sdk/client-macie2';
+import { Macie2Client, GetMacieSessionCommand } from '@aws-sdk/client-macie2';
 import { S3Client, ListBucketsCommand } from '@aws-sdk/client-s3';
 import type { SecurityFinding } from '../../cloud-security.service';
 import type { AwsCredentials, AwsServiceAdapter } from './aws-service-adapter';
@@ -52,8 +49,7 @@ export class MacieAdapter implements AwsServiceAdapter {
             description: `Amazon Macie is not enabled in ${region}.`,
             severity: 'medium',
             resourceId: `arn:aws:macie2:${region}`,
-            remediation:
-              `Use macie2:EnableMacieCommand with status set to 'ENABLED' and findingPublishingFrequency set to 'FIFTEEN_MINUTES' (or 'ONE_HOUR', 'SIX_HOURS'). Rollback: use macie2:DisableMacieCommand. Note: enabling Macie incurs costs based on data scanned.`,
+            remediation: `Use macie2:EnableMacieCommand with status set to 'ENABLED' and findingPublishingFrequency set to 'FIFTEEN_MINUTES' (or 'ONE_HOUR', 'SIX_HOURS'). Rollback: use macie2:DisableMacieCommand. Note: enabling Macie incurs costs based on data scanned.`,
           }),
         );
       }
@@ -69,8 +65,7 @@ export class MacieAdapter implements AwsServiceAdapter {
             description: `Amazon Macie is not enabled in ${region}.`,
             severity: 'medium',
             resourceId: `arn:aws:macie2:${region}`,
-            remediation:
-              `Use macie2:EnableMacieCommand with status set to 'ENABLED' and findingPublishingFrequency set to 'FIFTEEN_MINUTES' (or 'ONE_HOUR', 'SIX_HOURS'). Rollback: use macie2:DisableMacieCommand. Note: enabling Macie incurs costs based on data scanned.`,
+            remediation: `Use macie2:EnableMacieCommand with status set to 'ENABLED' and findingPublishingFrequency set to 'FIFTEEN_MINUTES' (or 'ONE_HOUR', 'SIX_HOURS'). Rollback: use macie2:DisableMacieCommand. Note: enabling Macie incurs costs based on data scanned.`,
           }),
         );
         return findings;

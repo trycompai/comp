@@ -51,9 +51,7 @@ export class ShieldAdapter implements AwsServiceAdapter {
         const cfResp = await cfClient.send(
           new ListDistributionsCommand({ MaxItems: 1 }),
         );
-        if (
-          (cfResp.DistributionList?.Items ?? []).length > 0
-        ) {
+        if ((cfResp.DistributionList?.Items ?? []).length > 0) {
           hasPublicResources = true;
         }
       }

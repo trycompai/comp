@@ -39,18 +39,12 @@ jest.mock('./utils/constants', () => ({
   isViewableInBrowser: jest.fn(),
 }));
 
-jest.mock(
-  '@/trigger/vector-store/process-knowledge-base-document',
-  () => ({}),
-);
+jest.mock('@/trigger/vector-store/process-knowledge-base-document', () => ({}));
 jest.mock(
   '@/trigger/vector-store/process-knowledge-base-documents-orchestrator',
   () => ({}),
 );
-jest.mock(
-  '@/trigger/vector-store/delete-knowledge-base-document',
-  () => ({}),
-);
+jest.mock('@/trigger/vector-store/delete-knowledge-base-document', () => ({}));
 jest.mock('@/trigger/vector-store/delete-manual-answer', () => ({}));
 jest.mock(
   '@/trigger/vector-store/delete-all-manual-answers-orchestrator',

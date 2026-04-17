@@ -228,7 +228,9 @@ export class MacedClient {
     );
   }
 
-  async createPentest(payload: MacedCreatePentestPayload): Promise<MacedCreatePentestRun> {
+  async createPentest(
+    payload: MacedCreatePentestPayload,
+  ): Promise<MacedCreatePentestRun> {
     const validatedPayload = macedCreatePentestPayloadSchema.safeParse(payload);
     if (!validatedPayload.success) {
       this.logger.error(

@@ -162,27 +162,48 @@ export class CloudSecurityService {
     // Get variables for the scan
     const variables = (connection.variables as Record<string, unknown>) || {};
 
-    // Security baseline: always scanned regardless of toggles.
-    // Every AWS account should have these configured.
-    const BASELINE_SERVICES = [
-      'cloudtrail', 'config', 'guardduty', 'iam-analyzer', 'cloudwatch', 'kms',
-    ];
+    // Provider baselines are always scanned regardless of toggles.
+    const BASELINE_SERVICES_BY_PROVIDER: Record<string, string[]> = {
+      aws: [
+        'cloudtrail',
+        'config',
+        'guardduty',
+        'iam-analyzer',
+        'cloudwatch',
+        'kms',
+      ],
+      gcp: ['security-command-center'],
+      azure: [],
+    };
+    const baselineServices = BASELINE_SERVICES_BY_PROVIDER[providerSlug] ?? [];
 
     // Smart service filtering: auto-detect is additive, user can only exclude.
     // Scan = (detectedServices MINUS disabledServices) UNION baselineServices.
     const disabledServices = new Set<string>(
-      Array.isArray(variables.disabledServices) ? variables.disabledServices as string[] : [],
+      Array.isArray(variables.disabledServices)
+        ? (variables.disabledServices as string[])
+        : [],
     );
     let enabledServices: string[] | undefined;
 
-    if (Array.isArray(variables.enabledServices) && (variables.enabledServices as string[]).length > 0) {
+    if (
+      Array.isArray(variables.enabledServices) &&
+      (variables.enabledServices as string[]).length > 0
+    ) {
       // Legacy format: explicit enabled list (backward compat) + baseline
-      const userEnabled = (variables.enabledServices as string[]).filter((s) => !disabledServices.has(s));
-      enabledServices = [...new Set([...userEnabled, ...BASELINE_SERVICES])];
-    } else if (Array.isArray(variables.detectedServices) && (variables.detectedServices as string[]).length > 0) {
+      const userEnabled = (variables.enabledServices as string[]).filter(
+        (s) => !disabledServices.has(s),
+      );
+      enabledServices = [...new Set([...userEnabled, ...baselineServices])];
+    } else if (
+      Array.isArray(variables.detectedServices) &&
+      (variables.detectedServices as string[]).length > 0
+    ) {
       // New smart format: detected minus disabled + baseline always included
-      const filtered = (variables.detectedServices as string[]).filter((s) => !disabledServices.has(s));
-      enabledServices = [...new Set([...filtered, ...BASELINE_SERVICES])];
+      const filtered = (variables.detectedServices as string[]).filter(
+        (s) => !disabledServices.has(s),
+      );
+      enabledServices = [...new Set([...filtered, ...baselineServices])];
     }
     // else: undefined = scan all adapters (no detection data at all)
 
@@ -190,7 +211,11 @@ export class CloudSecurityService {
       let findings: SecurityFinding[];
 
       // Auto-detect GCP org ID if not set
-      if (providerSlug === 'gcp' && !variables.organization_id && credentials.access_token) {
+      if (
+        providerSlug === 'gcp' &&
+        !variables.organization_id &&
+        credentials.access_token
+      ) {
         this.logger.log('GCP org ID missing — auto-detecting...');
         try {
           const orgs = await this.gcpService.detectOrganizations(
@@ -198,7 +223,9 @@ export class CloudSecurityService {
           );
           if (orgs.length > 0) {
             variables.organization_id = orgs[0].id;
-            this.logger.log(`Auto-detected GCP org: ${orgs[0].displayName} (${orgs[0].id})`);
+            this.logger.log(
+              `Auto-detected GCP org: ${orgs[0].displayName} (${orgs[0].id})`,
+            );
             // Save for future scans
             await db.integrationConnection.update({
               where: { id: connectionId },
@@ -210,7 +237,9 @@ export class CloudSecurityService {
             this.logger.warn('No GCP organizations found for this account');
           }
         } catch (err) {
-          this.logger.warn(`GCP org auto-detection failed: ${err instanceof Error ? err.message : String(err)}`);
+          this.logger.warn(
+            `GCP org auto-detection failed: ${err instanceof Error ? err.message : String(err)}`,
+          );
         }
       }
 
@@ -219,6 +248,7 @@ export class CloudSecurityService {
           findings = await this.gcpService.scanSecurityFindings(
             credentials,
             variables,
+            enabledServices,
           );
           break;
         case 'aws':
@@ -254,20 +284,25 @@ export class CloudSecurityService {
       }
 
       // GCP & Azure: auto-detect services from scan findings
-      if ((providerSlug === 'gcp' || providerSlug === 'azure') && findings.length > 0) {
+      if (
+        (providerSlug === 'gcp' || providerSlug === 'azure') &&
+        findings.length > 0
+      ) {
         const serviceIds = new Set<string>();
         for (const f of findings) {
-          const evidence = f.evidence as Record<string, unknown> | undefined;
+          const evidence = f.evidence;
           const serviceId = evidence?.serviceId as string | undefined;
           if (serviceId) serviceIds.add(serviceId);
         }
         if (serviceIds.size > 0) {
-          const currentVars = (variables ?? {}) as Record<string, unknown>;
+          const currentVars = variables ?? {};
           const existingDetected = Array.isArray(currentVars.detectedServices)
             ? new Set(currentVars.detectedServices as string[])
             : new Set<string>();
           const disabledSet = new Set(
-            Array.isArray(currentVars.disabledServices) ? currentVars.disabledServices as string[] : [],
+            Array.isArray(currentVars.disabledServices)
+              ? (currentVars.disabledServices as string[])
+              : [],
           );
           // Only auto-enable genuinely NEW services — don't override user's explicit disables
           for (const id of serviceIds) {
@@ -285,7 +320,9 @@ export class CloudSecurityService {
               } as unknown as Prisma.InputJsonValue,
             },
           });
-          this.logger.log(`${providerSlug.toUpperCase()}: detected ${serviceIds.size} service categories: ${[...serviceIds].join(', ')}`);
+          this.logger.log(
+            `${providerSlug.toUpperCase()}: detected ${serviceIds.size} service categories: ${[...serviceIds].join(', ')}`,
+          );
         }
       }
 
@@ -345,32 +382,65 @@ export class CloudSecurityService {
 
     const variables = (connection.variables as Record<string, unknown>) || {};
     let detected: string[];
+    let gcpServicesByProject: Record<string, string[]> | undefined;
 
     if (connection.provider.slug === 'gcp') {
       const accessToken = decrypted.access_token as string;
       if (!accessToken) throw new Error('GCP access token not found');
-      const projects = await this.gcpService.detectProjects(accessToken);
-      detected = await this.gcpService.detectServices(accessToken, projects);
+
+      // Use explicitly selected projects, otherwise detect all (cron fallback)
+      const selectedIds = Array.isArray(variables.project_ids)
+        ? (variables.project_ids as string[])
+        : [];
+
+      const projects =
+        selectedIds.length > 0
+          ? selectedIds.map((id) => ({ id }))
+          : await this.gcpService.detectProjects(accessToken);
+      const result = await this.gcpService.detectServices(
+        accessToken,
+        projects,
+      );
+      detected = result.services;
+      gcpServicesByProject = result.servicesByProject;
     } else if (connection.provider.slug === 'aws') {
-      detected = await this.awsService.detectActiveServices(decrypted, variables);
+      detected = await this.awsService.detectActiveServices(
+        decrypted,
+        variables,
+      );
     } else {
       // Azure and others: services are auto-detected from scan findings, not a separate API
       return [];
     }
 
-    // Save detected services and auto-enable them (remove from disabledServices)
-    const currentDisabled = Array.isArray(variables.disabledServices)
-      ? (variables.disabledServices as string[])
-      : [];
-    const updatedDisabled = currentDisabled.filter((s) => !detected.includes(s));
+    // Merge with existing detected services and only auto-enable genuinely NEW detections.
+    // This preserves explicit user toggles (both enabled and disabled).
+    const existingDetected = new Set<string>(
+      Array.isArray(variables.detectedServices)
+        ? (variables.detectedServices as string[])
+        : [],
+    );
+    const updatedDisabled = new Set<string>(
+      Array.isArray(variables.disabledServices)
+        ? (variables.disabledServices as string[])
+        : [],
+    );
+    for (const id of detected) {
+      if (!existingDetected.has(id)) {
+        updatedDisabled.delete(id);
+      }
+      existingDetected.add(id);
+    }
 
     await db.integrationConnection.update({
       where: { id: connectionId },
       data: {
         variables: {
           ...variables,
-          detectedServices: detected,
-          disabledServices: updatedDisabled,
+          detectedServices: [...existingDetected],
+          disabledServices: [...updatedDisabled],
+          serviceDetectionCompletedAt: new Date().toISOString(),
+          ...(gcpServicesByProject && { servicesByProject: gcpServicesByProject }),
         },
       },
     });
@@ -392,14 +462,20 @@ export class CloudSecurityService {
     });
     if (!connection) throw new ConnectionNotFoundError();
 
-    const credentials = await this.credentialVaultService.getDecryptedCredentials(connectionId);
+    const credentials =
+      await this.credentialVaultService.getDecryptedCredentials(connectionId);
     return { ...connection, credentials };
   }
 
   /**
    * Save a variable to a connection (e.g., organization_id after auto-detection).
    */
-  async saveConnectionVariable(connectionId: string, key: string, value: string, organizationId: string) {
+  async saveConnectionVariable(
+    connectionId: string,
+    key: string,
+    value: string | string[],
+    organizationId: string,
+  ) {
     const connection = await db.integrationConnection.findFirst({
       where: { id: connectionId, organizationId },
     });
@@ -408,7 +484,12 @@ export class CloudSecurityService {
     const variables = (connection.variables as Record<string, unknown>) || {};
     await db.integrationConnection.update({
       where: { id: connectionId },
-      data: { variables: { ...variables, [key]: value } as unknown as Prisma.InputJsonValue },
+      data: {
+        variables: {
+          ...variables,
+          [key]: value,
+        } as unknown as Prisma.InputJsonValue,
+      },
     });
   }
 
@@ -543,7 +624,10 @@ export class CloudSecurityService {
     // Find services where ALL findings pass
     const passingServices: string[] = [];
     for (const [serviceId, serviceFindings] of findingsByService) {
-      if (serviceFindings.length > 0 && serviceFindings.every((f) => f.passed)) {
+      if (
+        serviceFindings.length > 0 &&
+        serviceFindings.every((f) => f.passed)
+      ) {
         passingServices.push(serviceId);
       }
     }

@@ -62,7 +62,8 @@ export class ConfigAdapter implements AwsServiceAdapter {
           description: `No AWS Config recorder found in ${region}.`,
           severity: 'high',
           resourceId: `arn:aws:config:${region}`,
-          remediation: 'Step 1: Create a service-linked role using iam:CreateServiceLinkedRoleCommand with AWSServiceName set to "config.amazonaws.com" (skip if the role already exists). Step 2: Create a configuration recorder using config-service:PutConfigurationRecorderCommand with ConfigurationRecorder containing name "compai-config-recorder", roleARN set to the Config service role ARN, and recordingGroup with allSupported set to true. Step 3: Create a delivery channel using config-service:PutDeliveryChannelCommand with DeliveryChannel containing name "compai-delivery-channel" and s3BucketName set to the target bucket. Step 4: Start the recorder using config-service:StartConfigurationRecorderCommand with ConfigurationRecorderName "compai-config-recorder". Rollback by calling config-service:StopConfigurationRecorderCommand with ConfigurationRecorderName "compai-config-recorder".',
+          remediation:
+            'Step 1: Create a service-linked role using iam:CreateServiceLinkedRoleCommand with AWSServiceName set to "config.amazonaws.com" (skip if the role already exists). Step 2: Create a configuration recorder using config-service:PutConfigurationRecorderCommand with ConfigurationRecorder containing name "compai-config-recorder", roleARN set to the Config service role ARN, and recordingGroup with allSupported set to true. Step 3: Create a delivery channel using config-service:PutDeliveryChannelCommand with DeliveryChannel containing name "compai-delivery-channel" and s3BucketName set to the target bucket. Step 4: Start the recorder using config-service:StartConfigurationRecorderCommand with ConfigurationRecorderName "compai-config-recorder". Rollback by calling config-service:StopConfigurationRecorderCommand with ConfigurationRecorderName "compai-config-recorder".',
         }),
       );
       return findings;
@@ -75,8 +76,7 @@ export class ConfigAdapter implements AwsServiceAdapter {
     const status = ConfigurationRecordersStatus?.[0];
     const recorder = ConfigurationRecorders[0];
     const isRecording = status?.recording === true;
-    const allSupported =
-      recorder?.recordingGroup?.allSupported === true;
+    const allSupported = recorder?.recordingGroup?.allSupported === true;
 
     if (isRecording && allSupported) {
       findings.push(
@@ -158,7 +158,8 @@ export class ConfigAdapter implements AwsServiceAdapter {
           description: `Delivery channel in ${region} is missing an S3 bucket configuration.`,
           severity: 'medium',
           resourceId: channel?.name ?? `config-delivery-${region}`,
-          remediation: 'Use config-service:PutDeliveryChannelCommand with DeliveryChannel containing the existing channel name and s3BucketName set to the target logging bucket. Rollback by calling config-service:PutDeliveryChannelCommand with the original delivery channel settings.',
+          remediation:
+            'Use config-service:PutDeliveryChannelCommand with DeliveryChannel containing the existing channel name and s3BucketName set to the target logging bucket. Rollback by calling config-service:PutDeliveryChannelCommand with the original delivery channel settings.',
         }),
       );
     }

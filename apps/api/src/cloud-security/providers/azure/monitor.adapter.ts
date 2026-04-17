@@ -27,16 +27,31 @@ interface DiagnosticSetting {
 
 /** Critical operations that should have activity log alerts. */
 const RECOMMENDED_ALERTS = [
-  { operation: 'Microsoft.Authorization/policyAssignments/write', name: 'Policy assignment changes' },
-  { operation: 'Microsoft.Security/securitySolutions/write', name: 'Security solution changes' },
-  { operation: 'Microsoft.Network/networkSecurityGroups/write', name: 'NSG changes' },
-  { operation: 'Microsoft.Sql/servers/firewallRules/write', name: 'SQL firewall rule changes' },
+  {
+    operation: 'Microsoft.Authorization/policyAssignments/write',
+    name: 'Policy assignment changes',
+  },
+  {
+    operation: 'Microsoft.Security/securitySolutions/write',
+    name: 'Security solution changes',
+  },
+  {
+    operation: 'Microsoft.Network/networkSecurityGroups/write',
+    name: 'NSG changes',
+  },
+  {
+    operation: 'Microsoft.Sql/servers/firewallRules/write',
+    name: 'SQL firewall rule changes',
+  },
 ];
 
 export class MonitorAdapter implements AzureServiceAdapter {
   readonly serviceId = 'monitor';
 
-  async scan({ accessToken, subscriptionId }: {
+  async scan({
+    accessToken,
+    subscriptionId,
+  }: {
     accessToken: string;
     subscriptionId: string;
   }): Promise<SecurityFinding[]> {
@@ -93,7 +108,11 @@ export class MonitorAdapter implements AzureServiceAdapter {
           resourceType: 'activity-log-alert',
           resourceId: subscriptionId,
           remediation: 'No action needed.',
-          evidence: { serviceId: this.serviceId, serviceName: 'Azure Monitor', findingKey: 'azure-monitor-alerts-ok' },
+          evidence: {
+            serviceId: this.serviceId,
+            serviceName: 'Azure Monitor',
+            findingKey: 'azure-monitor-alerts-ok',
+          },
           createdAt: new Date().toISOString(),
           passed: true,
         });
@@ -104,12 +123,19 @@ export class MonitorAdapter implements AzureServiceAdapter {
         findings.push({
           id: `azure-monitor-permission-${subscriptionId}`,
           title: 'Unable to Access Activity Log Alerts',
-          description: 'The service principal does not have permission to read activity log alerts.',
+          description:
+            'The service principal does not have permission to read activity log alerts.',
           severity: 'medium',
           resourceType: 'activity-log-alert',
           resourceId: subscriptionId,
-          remediation: 'Assign the "Monitoring Reader" role to your App Registration.',
-          evidence: { serviceId: this.serviceId, serviceName: 'Azure Monitor', findingKey: 'azure-monitor-permission', error: msg },
+          remediation:
+            'Assign the "Monitoring Reader" role to your App Registration.',
+          evidence: {
+            serviceId: this.serviceId,
+            serviceName: 'Azure Monitor',
+            findingKey: 'azure-monitor-permission',
+            error: msg,
+          },
           createdAt: new Date().toISOString(),
         });
       }
@@ -134,25 +160,34 @@ export class MonitorAdapter implements AzureServiceAdapter {
         // Log what Azure returns so we can debug scan vs fix mismatches
         if (settings.length > 0) {
           for (const s of settings) {
-            console.log(`[AzureMonitor] Diagnostic setting "${s.name}": workspaceId=${s.properties.workspaceId ?? 'none'}, storageAccountId=${s.properties.storageAccountId ?? 'none'}, eventHub=${s.properties.eventHubAuthorizationRuleId ?? 'none'}, logs=${JSON.stringify(s.properties.logs?.filter((l) => l.enabled).map((l) => l.category))}`);
+            console.log(
+              `[AzureMonitor] Diagnostic setting "${s.name}": workspaceId=${s.properties.workspaceId ?? 'none'}, storageAccountId=${s.properties.storageAccountId ?? 'none'}, eventHub=${s.properties.eventHubAuthorizationRuleId ?? 'none'}, logs=${JSON.stringify(s.properties.logs?.filter((l) => l.enabled).map((l) => l.category))}`,
+            );
           }
         } else {
-          console.log('[AzureMonitor] No diagnostic settings found on subscription');
+          console.log(
+            '[AzureMonitor] No diagnostic settings found on subscription',
+          );
         }
 
-        const hasLogExport = settings.some((s) =>
-          s.properties.workspaceId || s.properties.storageAccountId || s.properties.eventHubAuthorizationRuleId,
+        const hasLogExport = settings.some(
+          (s) =>
+            s.properties.workspaceId ||
+            s.properties.storageAccountId ||
+            s.properties.eventHubAuthorizationRuleId,
         );
 
         if (!hasLogExport) {
           findings.push({
             id: `azure-monitor-no-diag-${subscriptionId}`,
             title: 'No Diagnostic Log Export Configured',
-            description: 'Subscription activity logs are not exported to a Log Analytics workspace, storage account, or event hub.',
+            description:
+              'Subscription activity logs are not exported to a Log Analytics workspace, storage account, or event hub.',
             severity: 'medium',
             resourceType: 'diagnostic-settings',
             resourceId: subscriptionId,
-            remediation: 'Configure a diagnostic setting to export activity logs to Log Analytics or a storage account.',
+            remediation:
+              'Configure a diagnostic setting to export activity logs to Log Analytics or a storage account.',
             evidence: {
               serviceId: this.serviceId,
               serviceName: 'Azure Monitor',
@@ -169,7 +204,11 @@ export class MonitorAdapter implements AzureServiceAdapter {
             resourceType: 'diagnostic-settings',
             resourceId: subscriptionId,
             remediation: 'No action needed.',
-            evidence: { serviceId: this.serviceId, serviceName: 'Azure Monitor', findingKey: 'azure-monitor-diagnostic-export-ok' },
+            evidence: {
+              serviceId: this.serviceId,
+              serviceName: 'Azure Monitor',
+              findingKey: 'azure-monitor-diagnostic-export-ok',
+            },
             createdAt: new Date().toISOString(),
             passed: true,
           });

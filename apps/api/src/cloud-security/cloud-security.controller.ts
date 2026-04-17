@@ -12,6 +12,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -25,7 +26,11 @@ import { CloudSecurityQueryService } from './cloud-security-query.service';
 import { CloudSecurityLegacyService } from './cloud-security-legacy.service';
 import { logCloudSecurityActivity } from './cloud-security-audit';
 import { CloudSecurityActivityService } from './cloud-security-activity.service';
-import { GCPSecurityService } from './providers/gcp-security.service';
+import {
+  GCPSecurityService,
+  type GcpSetupStep,
+  type GcpSetupStepId,
+} from './providers/gcp-security.service';
 import { AzureSecurityService } from './providers/azure-security.service';
 
 @Controller({ path: 'cloud-security', version: '1' })
@@ -45,6 +50,7 @@ export class CloudSecurityController {
   @SkipThrottle()
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'List recent cloud security activity' })
   async getActivity(
     @Query('connectionId') connectionId: string,
     @Query('take') take: string | undefined,
@@ -74,6 +80,7 @@ export class CloudSecurityController {
   @SkipThrottle()
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'List supported cloud providers' })
   async getProviders(@OrganizationId() organizationId: string) {
     const providers = await this.queryService.getProviders(organizationId);
     return { data: providers, count: providers.length };
@@ -83,6 +90,7 @@ export class CloudSecurityController {
   @SkipThrottle()
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'List cloud security findings' })
   async getFindings(@OrganizationId() organizationId: string) {
     const findings = await this.queryService.getFindings(organizationId);
     return { data: findings, count: findings.length };
@@ -91,12 +99,12 @@ export class CloudSecurityController {
   @Post('scan/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Trigger a security scan for a connection' })
   async scan(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
     @Req() req: { userId?: string; authType?: string },
   ) {
-
     this.logger.log(
       `Cloud security scan requested for connection ${connectionId}`,
     );
@@ -112,9 +120,7 @@ export class CloudSecurityController {
         result.error?.startsWith('SCC_NOT_ACTIVATED:') ||
         result.error?.startsWith('GCP_ORG_MISSING:');
       const errorStr = result.error ?? '';
-      const errorCode = isSetupError
-        ? errorStr.split(':')[0]
-        : undefined;
+      const errorCode = isSetupError ? errorStr.split(':')[0] : undefined;
       const message = isSetupError
         ? errorStr.substring(errorStr.indexOf(':') + 2)
         : result.error || 'Scan failed';
@@ -125,7 +131,9 @@ export class CloudSecurityController {
           provider: result.provider,
           ...(errorCode && { errorCode }),
         },
-        isSetupError ? HttpStatus.BAD_REQUEST : HttpStatus.INTERNAL_SERVER_ERROR,
+        isSetupError
+          ? HttpStatus.BAD_REQUEST
+          : HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
 
@@ -136,14 +144,20 @@ export class CloudSecurityController {
     // Only write audit log when we have a real userId (session auth).
     // API key auth has no user context, and auditLog.userId is a FK to User.
     const scanUserId = req.userId;
-    if (scanUserId) await logCloudSecurityActivity({
-      organizationId,
-      userId: scanUserId,
-      connectionId,
-      action: 'scan_completed',
-      description: `Ran cloud security scan — ${totalFindings} findings (${failedCount} failed, ${passedCount} passed)`,
-      metadata: { totalFindings, failedCount, passedCount, provider: result.provider },
-    });
+    if (scanUserId)
+      await logCloudSecurityActivity({
+        organizationId,
+        userId: scanUserId,
+        connectionId,
+        action: 'scan_completed',
+        description: `Ran cloud security scan — ${totalFindings} findings (${failedCount} failed, ${passedCount} passed)`,
+        metadata: {
+          totalFindings,
+          failedCount,
+          passedCount,
+          provider: result.provider,
+        },
+      });
 
     return {
       success: true,
@@ -156,6 +170,7 @@ export class CloudSecurityController {
   @Post('detect-services/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'Detect available cloud services for a connection' })
   async detectServices(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -179,6 +194,7 @@ export class CloudSecurityController {
   @Post('detect-gcp-org/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'Detect the GCP organization for a connection' })
   async detectGcpOrg(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -192,36 +208,285 @@ export class CloudSecurityController {
       const credentials = connection.credentials as Record<string, unknown>;
       const accessToken = credentials?.access_token as string;
       if (!accessToken) {
-        throw new Error('No access token found. Reconnect the GCP integration.');
+        throw new Error(
+          'No access token found. Reconnect the GCP integration.',
+        );
       }
 
-      const [organizations, projects] = await Promise.all([
-        this.gcpSecurityService.detectOrganizations(accessToken),
-        this.gcpSecurityService.detectProjects(accessToken),
-      ]);
+      const rawOrgs =
+        await this.gcpSecurityService.detectOrganizations(accessToken);
 
-      // If exactly 1 org found, auto-save it to the connection
-      if (organizations.length === 1) {
+      // Fetch projects per org in parallel
+      const orgsWithProjects = await Promise.all(
+        rawOrgs.map(async (org) => {
+          const projects =
+            await this.gcpSecurityService.detectProjectsForOrg(
+              accessToken,
+              org.id,
+            );
+          return {
+            id: org.id,
+            displayName: org.displayName,
+            projects: projects
+              .map((p) => ({ id: p.id, name: p.name, number: p.number }))
+              .sort((a, b) => a.name.localeCompare(b.name)),
+          };
+        }),
+      );
+
+      // If exactly 1 org found, auto-save it
+      if (rawOrgs.length === 1) {
         await this.cloudSecurityService.saveConnectionVariable(
           connectionId,
           'organization_id',
-          organizations[0].id,
+          rawOrgs[0].id,
           organizationId,
         );
       }
 
-      return { organizations, projects };
+      const variables = (connection.variables ?? {}) as Record<
+        string,
+        unknown
+      >;
+
+      // Return only explicitly selected projects — never auto-select
+      const existingProjectIds = this.readProjectIds(variables);
+
+      return {
+        organizations: orgsWithProjects,
+        selectedProjectIds: existingProjectIds,
+        selectedOrganizationId: variables.organization_id as string | undefined,
+      };
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to detect GCP organization';
+        error instanceof Error
+          ? error.message
+          : 'Failed to detect GCP organization';
       throw new HttpException(message, HttpStatus.BAD_REQUEST);
     }
+  }
+
+  @Post('select-gcp-projects/:connectionId')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Select GCP projects for a connection' })
+  async selectGcpProjects(
+    @Param('connectionId') connectionId: string,
+    @Body()
+    body: {
+      projectIds: string[];
+      projectNames?: Record<string, string>;
+      gcpOrganizationId?: string;
+    },
+    @OrganizationId() organizationId: string,
+  ) {
+    if (!body?.projectIds?.length) {
+      throw new HttpException(
+        'projectIds is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (body.gcpOrganizationId) {
+      await this.cloudSecurityService.saveConnectionVariable(
+        connectionId,
+        'organization_id',
+        body.gcpOrganizationId,
+        organizationId,
+      );
+    }
+    await this.cloudSecurityService.saveConnectionVariable(
+      connectionId,
+      'project_ids',
+      body.projectIds,
+      organizationId,
+    );
+    if (body.projectNames) {
+      await this.cloudSecurityService.saveConnectionVariable(
+        connectionId,
+        'project_names',
+        body.projectNames as unknown as string[],
+        organizationId,
+      );
+    }
+    return { projectIds: body.projectIds };
   }
 
   @Post('setup-gcp/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Set up GCP for a connection' })
   async setupGcp(
+    @Param('connectionId') connectionId: string,
+    @Body() body: { projectId?: string },
+    @OrganizationId() organizationId: string,
+  ) {
+    try {
+      const context = await this.resolveGcpSetupContext(
+        connectionId,
+        organizationId,
+        body?.projectId,
+      );
+
+      const result = await this.gcpSecurityService.autoSetup({
+        accessToken: context.accessToken,
+        organizationId: context.organizationId ?? '',
+        projectId: context.projectId,
+      });
+
+      return {
+        ...result,
+        steps: this.withGcpResolveActions(result.steps, connectionId),
+        organizationId: context.organizationId,
+        projectId: context.projectId,
+        projects: context.projects,
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'GCP setup failed';
+      throw new HttpException(message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Post('setup-gcp/:connectionId/resolve-step')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Resolve a GCP setup step' })
+  async resolveGcpSetupStep(
+    @Param('connectionId') connectionId: string,
+    @Body() body: { stepId: GcpSetupStepId },
+    @OrganizationId() organizationId: string,
+  ) {
+    try {
+      if (!body?.stepId) {
+        throw new Error('stepId is required');
+      }
+
+      const context = await this.resolveGcpSetupContext(
+        connectionId,
+        organizationId,
+      );
+      const result = await this.gcpSecurityService.resolveSetupStep({
+        stepId: body.stepId,
+        accessToken: context.accessToken,
+        organizationId: context.organizationId ?? '',
+        projectId: context.projectId,
+      });
+
+      return {
+        email: result.email,
+        step: this.withGcpResolveActions([result.step], connectionId)[0],
+        organizationId: context.organizationId,
+        projectId: context.projectId,
+        projects: context.projects,
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to resolve setup step';
+      throw new HttpException(message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  private withGcpResolveActions(
+    steps: GcpSetupStep[],
+    connectionId: string,
+  ): GcpSetupStep[] {
+    return steps.map((step) => {
+      if (step.success) return step;
+      return {
+        ...step,
+        resolveAction: {
+          label: 'Resolve this',
+          method: 'POST',
+          endpoint: `/v1/cloud-security/setup-gcp/${connectionId}/resolve-step`,
+          body: { stepId: step.id },
+        },
+      };
+    });
+  }
+
+  /**
+   * Read selected project IDs from connection variables.
+   * Only reads the new `project_ids` array — the old `project_id` string
+   * was auto-saved by previous code and does NOT represent user choice.
+   */
+  private readProjectIds(
+    variables: Record<string, unknown>,
+  ): string[] {
+    if (Array.isArray(variables.project_ids)) {
+      return variables.project_ids as string[];
+    }
+    return [];
+  }
+
+  private async resolveGcpSetupContext(
+    connectionId: string,
+    organizationId: string,
+    overrideProjectId?: string,
+  ) {
+    const connection = await this.cloudSecurityService.getConnectionForDetect(
+      connectionId,
+      organizationId,
+    );
+
+    const credentials = connection.credentials as Record<string, unknown>;
+    const accessToken = credentials?.access_token as string;
+    if (!accessToken) {
+      throw new Error('No access token found. Reconnect the GCP integration.');
+    }
+
+    const variables = (connection.variables ?? {}) as Record<string, unknown>;
+    let gcpOrgId = variables.organization_id as string | undefined;
+
+    if (!gcpOrgId) {
+      const orgs =
+        await this.gcpSecurityService.detectOrganizations(accessToken);
+      if (orgs.length > 0) {
+        gcpOrgId = orgs[0].id;
+        await this.cloudSecurityService.saveConnectionVariable(
+          connectionId,
+          'organization_id',
+          gcpOrgId,
+          organizationId,
+        );
+      }
+    }
+
+    // Fetch projects scoped to the org when available, else all
+    const projects = gcpOrgId
+      ? await this.gcpSecurityService.detectProjectsForOrg(
+          accessToken,
+          gcpOrgId,
+        )
+      : await this.gcpSecurityService.detectProjects(accessToken);
+
+    // For API enablement, use override or first selected project
+    const selectedIds = this.readProjectIds(variables);
+    const projectId =
+      overrideProjectId || selectedIds[0] || projects[0]?.id;
+
+    if (!projectId) {
+      throw new Error(
+        'No GCP projects found. Ensure your account has access to at least one project.',
+      );
+    }
+
+    return {
+      accessToken,
+      organizationId: gcpOrgId,
+      projectId,
+      projects: projects.map((p) => ({
+        id: p.id,
+        name: p.name,
+      })),
+      selectedProjectIds: selectedIds,
+    };
+  }
+
+  @Post('setup-azure/:connectionId')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Set up Azure for a connection' })
+  async setupAzure(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
   ) {
@@ -234,75 +499,21 @@ export class CloudSecurityController {
       const credentials = connection.credentials as Record<string, unknown>;
       const accessToken = credentials?.access_token as string;
       if (!accessToken) {
-        throw new Error('No access token found. Reconnect the GCP integration.');
-      }
-
-      const variables = (connection.variables ?? {}) as Record<string, unknown>;
-      const gcpOrgId = variables.organization_id as string | undefined;
-
-      // Auto-detect org if not set
-      let orgId = gcpOrgId;
-      if (!orgId) {
-        const orgs = await this.gcpSecurityService.detectOrganizations(accessToken);
-        if (orgs.length > 0) {
-          orgId = orgs[0].id;
-          await this.cloudSecurityService.saveConnectionVariable(connectionId, 'organization_id', orgId, organizationId);
-        }
-      }
-
-      // Auto-detect project if not known
-      const projects = await this.gcpSecurityService.detectProjects(accessToken);
-      const projectId = projects[0]?.id;
-      if (!projectId) {
-        throw new Error('No GCP projects found. Ensure your account has access to at least one project.');
-      }
-
-      const result = await this.gcpSecurityService.autoSetup({
-        accessToken,
-        organizationId: orgId ?? '',
-        projectId,
-      });
-
-      return {
-        ...result,
-        organizationId: orgId,
-        projectId,
-      };
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'GCP setup failed';
-      throw new HttpException(message, HttpStatus.BAD_REQUEST);
-    }
-  }
-
-  @Post('setup-azure/:connectionId')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
-  @RequirePermission('integration', 'update')
-  async setupAzure(
-    @Param('connectionId') connectionId: string,
-    @OrganizationId() organizationId: string,
-  ) {
-    try {
-      const connection =
-        await this.cloudSecurityService.getConnectionForDetect(
-          connectionId,
-          organizationId,
+        throw new Error(
+          'No access token found. Reconnect the Azure integration.',
         );
-
-      const credentials = connection.credentials as Record<string, unknown>;
-      const accessToken = credentials?.access_token as string;
-      if (!accessToken) {
-        throw new Error('No access token found. Reconnect the Azure integration.');
       }
 
       const variables = (connection.variables ?? {}) as Record<string, unknown>;
-      const steps: Array<{ name: string; success: boolean; error?: string }> = [];
+      const steps: Array<{ name: string; success: boolean; error?: string }> =
+        [];
 
       // Step 1: Detect subscriptions
       let subscriptionId = variables.subscription_id as string | undefined;
       let subscriptionName: string | undefined;
       try {
-        const subs = await this.azureSecurityService.detectSubscriptions(accessToken);
+        const subs =
+          await this.azureSecurityService.detectSubscriptions(accessToken);
         if (subs.length > 0) {
           subscriptionId = subs[0].id;
           subscriptionName = subs[0].displayName;
@@ -312,19 +523,26 @@ export class CloudSecurityController {
             subscriptionId,
             organizationId,
           );
-          steps.push({ name: `Subscription detected: ${subscriptionName}`, success: true });
+          steps.push({
+            name: `Subscription detected: ${subscriptionName}`,
+            success: true,
+          });
         } else {
           steps.push({
             name: 'Detect subscription',
             success: false,
-            error: 'No Azure subscriptions found. Ensure your account has an active subscription.',
+            error:
+              'No Azure subscriptions found. Ensure your account has an active subscription.',
           });
         }
       } catch (error) {
         steps.push({
           name: 'Detect subscription',
           success: false,
-          error: error instanceof Error ? error.message : 'Failed to detect subscriptions',
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Failed to detect subscriptions',
         });
       }
 
@@ -336,12 +554,16 @@ export class CloudSecurityController {
             { headers: { Authorization: `Bearer ${accessToken}` } },
           );
           if (resp.ok) {
-            steps.push({ name: 'Microsoft Defender for Cloud access verified', success: true });
+            steps.push({
+              name: 'Microsoft Defender for Cloud access verified',
+              success: true,
+            });
           } else {
             steps.push({
               name: 'Microsoft Defender for Cloud access',
               success: false,
-              error: 'Your account needs the "Security Reader" role on this subscription.',
+              error:
+                'Your account needs the "Security Reader" role on this subscription.',
             });
           }
         } catch {
@@ -359,16 +581,24 @@ export class CloudSecurityController {
             { headers: { Authorization: `Bearer ${accessToken}` } },
           );
           if (resp.ok) {
-            steps.push({ name: 'Resource read access verified', success: true });
+            steps.push({
+              name: 'Resource read access verified',
+              success: true,
+            });
           } else {
             steps.push({
               name: 'Resource read access',
               success: false,
-              error: 'Your account needs at least the "Reader" role on this subscription.',
+              error:
+                'Your account needs at least the "Reader" role on this subscription.',
             });
           }
         } catch {
-          steps.push({ name: 'Resource read access', success: false, error: 'Verification failed' });
+          steps.push({
+            name: 'Resource read access',
+            success: false,
+            error: 'Verification failed',
+          });
         }
 
         // Step 4: Check write permissions for auto-fix
@@ -386,12 +616,16 @@ export class CloudSecurityController {
             const allActions = permData.value?.flatMap((p) => p.actions) ?? [];
             canAutoFix = allActions.some((a) => a === '*' || a === '*/write');
             if (canAutoFix) {
-              steps.push({ name: 'Auto-fix capability: write access available', success: true });
+              steps.push({
+                name: 'Auto-fix capability: write access available',
+                success: true,
+              });
             } else {
               steps.push({
                 name: 'Auto-fix capability',
                 success: true,
-                error: 'Read-only access. Auto-fix requires Contributor role — you can still scan and view findings.',
+                error:
+                  'Read-only access. Auto-fix requires Contributor role — you can still scan and view findings.',
               });
             }
           }
@@ -415,41 +649,53 @@ export class CloudSecurityController {
   @Post('validate-azure/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'Validate Azure credentials for a connection' })
   async validateAzure(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
   ) {
     try {
-      const connection =
-        await this.cloudSecurityService.getConnectionForDetect(
-          connectionId,
-          organizationId,
-        );
+      const connection = await this.cloudSecurityService.getConnectionForDetect(
+        connectionId,
+        organizationId,
+      );
 
       const credentials = connection.credentials as Record<string, unknown>;
       const variables = (connection.variables ?? {}) as Record<string, unknown>;
       const tenantId = credentials?.tenantId as string;
       const clientId = credentials?.clientId as string;
       const clientSecret = credentials?.clientSecret as string;
-      const subscriptionId = (credentials?.subscriptionId ?? variables.subscription_id) as string | undefined;
+      const subscriptionId = (credentials?.subscriptionId ??
+        variables.subscription_id) as string | undefined;
 
-      const steps: Array<{ name: string; success: boolean; error?: string }> = [];
+      const steps: Array<{ name: string; success: boolean; error?: string }> =
+        [];
 
       if (!subscriptionId) {
-        steps.push({ name: 'Subscription ID', success: false, error: 'No subscription ID configured. Go to the Azure integration settings to auto-detect your subscription.' });
+        steps.push({
+          name: 'Subscription ID',
+          success: false,
+          error:
+            'No subscription ID configured. Go to the Azure integration settings to auto-detect your subscription.',
+        });
         return { steps, subscriptionId: null };
       }
 
       // Step 1: Validate credentials (token exchange)
       let accessToken: string | null = null;
       try {
-        accessToken = await this.azureSecurityService.getAccessToken(tenantId, clientId, clientSecret);
+        accessToken = await this.azureSecurityService.getAccessToken(
+          tenantId,
+          clientId,
+          clientSecret,
+        );
         steps.push({ name: 'Authenticate with Azure', success: true });
       } catch (error) {
         steps.push({
           name: 'Authenticate with Azure',
           success: false,
-          error: error instanceof Error ? error.message : 'Authentication failed',
+          error:
+            error instanceof Error ? error.message : 'Authentication failed',
         });
         return { steps, subscriptionId };
       }
@@ -471,7 +717,11 @@ export class CloudSecurityController {
           });
         }
       } catch {
-        steps.push({ name: 'Subscription access', success: false, error: 'Network error' });
+        steps.push({
+          name: 'Subscription access',
+          success: false,
+          error: 'Network error',
+        });
       }
 
       // Step 3: Verify Defender access
@@ -481,7 +731,10 @@ export class CloudSecurityController {
           { headers: { Authorization: `Bearer ${accessToken}` } },
         );
         if (resp.ok) {
-          steps.push({ name: 'Microsoft Defender for Cloud access', success: true });
+          steps.push({
+            name: 'Microsoft Defender for Cloud access',
+            success: true,
+          });
         } else {
           steps.push({
             name: 'Microsoft Defender for Cloud access',
@@ -508,6 +761,7 @@ export class CloudSecurityController {
   @Post('trigger/:connectionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Trigger a cloud security run for a connection' })
   async triggerScan(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -532,6 +786,7 @@ export class CloudSecurityController {
   @Get('runs/:runId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'Get a cloud security scan run by ID' })
   async getRunStatus(
     @Param('runId') runId: string,
     @Query('connectionId') connectionId: string,
@@ -563,9 +818,14 @@ export class CloudSecurityController {
   @Post('legacy/connect')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'create')
+  @ApiOperation({ summary: 'Create a legacy cloud integration' })
   async connectLegacy(
     @OrganizationId() organizationId: string,
-    @Body() body: { provider: 'aws' | 'gcp' | 'azure'; credentials: Record<string, string | string[]> },
+    @Body()
+    body: {
+      provider: 'aws' | 'gcp' | 'azure';
+      credentials: Record<string, string | string[]>;
+    },
   ) {
     const result = await this.legacyService.connectLegacy(
       organizationId,
@@ -578,6 +838,7 @@ export class CloudSecurityController {
   @Post('legacy/validate-aws')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'Validate legacy AWS credentials' })
   async validateAwsCredentials(
     @Body() body: { accessKeyId: string; secretAccessKey: string },
   ) {
@@ -585,12 +846,17 @@ export class CloudSecurityController {
       body.accessKeyId,
       body.secretAccessKey,
     );
-    return { success: true, accountId: result.accountId, regions: result.regions };
+    return {
+      success: true,
+      accountId: result.accountId,
+      regions: result.regions,
+    };
   }
 
   @Delete('legacy/:integrationId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'delete')
+  @ApiOperation({ summary: 'Delete a legacy cloud integration' })
   async disconnectLegacy(
     @Param('integrationId') integrationId: string,
     @OrganizationId() organizationId: string,

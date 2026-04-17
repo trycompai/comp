@@ -54,7 +54,8 @@ describe('FindingsController', () => {
   const authContext: AuthContext = {
     organizationId: 'org_123',
     authType: 'session',
-    isApiKey: false, isPlatformAdmin: false,
+    isApiKey: false,
+    isPlatformAdmin: false,
     userRoles: ['admin'],
     userId: 'usr_123',
     userEmail: 'admin@example.com',

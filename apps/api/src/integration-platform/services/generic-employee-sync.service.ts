@@ -8,12 +8,7 @@ import type { SyncEmployee } from '@trycompai/integration-platform';
 
 export interface SyncResultDetail {
   email: string;
-  status:
-    | 'imported'
-    | 'skipped'
-    | 'deactivated'
-    | 'reactivated'
-    | 'error';
+  status: 'imported' | 'skipped' | 'deactivated' | 'reactivated' | 'error';
   reason?: string;
 }
 
@@ -259,7 +254,9 @@ export class GenericEmployeeSyncService {
               : `User was removed from ${providerName}`,
           });
         } catch (error) {
-          this.logger.error(`Error deactivating member ${memberEmail}: ${error}`);
+          this.logger.error(
+            `Error deactivating member ${memberEmail}: ${error}`,
+          );
           results.errors++;
         }
       }

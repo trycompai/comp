@@ -93,7 +93,10 @@ export class TaskItemAssignmentNotifierService {
       }
 
       // Skip notifications for platform admin members unless they are an owner
-      const isOwner = assigneeMember.role?.split(',').map((r: string) => r.trim()).includes('owner');
+      const isOwner = assigneeMember.role
+        ?.split(',')
+        .map((r: string) => r.trim())
+        .includes('owner');
       if (assigneeUser.role === 'admin' && !isOwner) {
         this.logger.log(
           `Skipping assignment notification: assignee ${assigneeUser.email} is a platform admin (non-owner)`,

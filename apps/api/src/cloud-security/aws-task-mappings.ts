@@ -16,10 +16,7 @@ export const AWS_SERVICE_TASK_MAPPINGS: Record<string, string[]> = {
   // KMS, S3, RDS, DynamoDB → Encryption at Rest
   kms: ['frk_tt_68e52b26bf0e656af9e4e9c3'],
   s3: ['frk_tt_68e52b26bf0e656af9e4e9c3'],
-  rds: [
-    'frk_tt_68e52b26bf0e656af9e4e9c3',
-    'frk_tt_68e52b26b166e2c0a0d11956',
-  ],
+  rds: ['frk_tt_68e52b26bf0e656af9e4e9c3', 'frk_tt_68e52b26b166e2c0a0d11956'],
   // CloudTrail, CloudWatch → Monitoring & Alerting
   cloudtrail: ['frk_tt_68406af04a4acb93083413b9'],
   cloudwatch: ['frk_tt_68406af04a4acb93083413b9'],

@@ -8,10 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { AuditLogEntityType, db, Prisma } from '@db';
 import { Observable, from, switchMap, tap } from 'rxjs';
-import {
-  PERMISSIONS_KEY,
-  RequiredPermission,
-} from '../auth/permission.guard';
+import { PERMISSIONS_KEY, RequiredPermission } from '../auth/permission.guard';
 import { AuthenticatedRequest } from '../auth/types';
 import { AUDIT_READ_KEY, SKIP_AUDIT_LOG_KEY } from './skip-audit-log.decorator';
 import {
@@ -61,11 +58,9 @@ export class AuditLogInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    const requiredPermissions =
-      this.reflector.getAllAndOverride<RequiredPermission[]>(PERMISSIONS_KEY, [
-        context.getHandler(),
-        context.getClass(),
-      ]);
+    const requiredPermissions = this.reflector.getAllAndOverride<
+      RequiredPermission[]
+    >(PERMISSIONS_KEY, [context.getHandler(), context.getClass()]);
 
     if (!requiredPermissions?.length) {
       return next.handle();
@@ -108,8 +103,15 @@ export class AuditLogInterceptor implements NestInterceptor {
       entityId,
       isUpdate ? Object.keys(requestBody) : null,
     ).catch((err) => {
-      this.logger.error('Audit preflight failed, proceeding without pre-flight data', err);
-      return { previousValues: null, memberNames: {} as Record<string, string>, relationMappingResult: null };
+      this.logger.error(
+        'Audit preflight failed, proceeding without pre-flight data',
+        err,
+      );
+      return {
+        previousValues: null,
+        memberNames: {} as Record<string, string>,
+        relationMappingResult: null,
+      };
     });
 
     return from(safePreFlightPromise).pipe(
@@ -130,10 +132,7 @@ export class AuditLogInterceptor implements NestInterceptor {
                 responseBody,
                 requestBody,
               );
-              const actionDesc = extractActionDescription(
-                request.url,
-                method,
-              );
+              const actionDesc = extractActionDescription(request.url, method);
               const downloadDesc = extractDownloadDescription(
                 request.url,
                 method,
@@ -150,28 +149,62 @@ export class AuditLogInterceptor implements NestInterceptor {
                 (request as { userRoles?: string[] }).userRoles,
               );
               let descriptionOverride: string | null =
-                actionDesc ?? versionDesc ?? downloadDesc ?? policyActionDesc ?? findingDesc;
+                actionDesc ??
+                versionDesc ??
+                downloadDesc ??
+                policyActionDesc ??
+                findingDesc;
 
-              const isAutomationUpdate = policyActionDesc && /automations/.test(request.url) && method === 'PATCH';
-              const isAttachmentAction = policyActionDesc && /attachments/.test(request.url);
+              const isAutomationUpdate =
+                policyActionDesc &&
+                /automations/.test(request.url) &&
+                method === 'PATCH';
+              const isAttachmentAction =
+                policyActionDesc && /attachments/.test(request.url);
 
-              if (commentCtx || versionDesc || (policyActionDesc && !isAutomationUpdate && !isAttachmentAction)) {
+              if (
+                commentCtx ||
+                versionDesc ||
+                (policyActionDesc && !isAutomationUpdate && !isAttachmentAction)
+              ) {
                 // Comments and version operations don't produce meaningful diffs
                 // But preserve the comment/reason/changelog if provided in the request body
                 const note = requestBody?.comment || requestBody?.changelog;
-                const noteLabel = requestBody?.changelog ? 'changelog' : 'reason';
-                changes = note && typeof note === 'string'
-                  ? { [noteLabel]: { previous: null, current: note } }
-                  : null;
+                const noteLabel = requestBody?.changelog
+                  ? 'changelog'
+                  : 'reason';
+                changes =
+                  note && typeof note === 'string'
+                    ? { [noteLabel]: { previous: null, current: note } }
+                    : null;
               } else if (isAttachmentAction) {
                 // For attachments, show file details in the expandable section
                 // Upload: file info in request body. Delete: file info in response body.
                 const attachmentChanges: ChangesRecord = {};
-                const fileName = requestBody?.fileName || (responseBody && typeof responseBody === 'object' ? (responseBody as Record<string, unknown>).fileName : null);
-                const fileType = requestBody?.fileType || (responseBody && typeof responseBody === 'object' ? (responseBody as Record<string, unknown>).fileType : null);
-                if (fileName) attachmentChanges.file = { previous: null, current: fileName };
-                if (fileType) attachmentChanges.type = { previous: null, current: fileType };
-                changes = Object.keys(attachmentChanges).length > 0 ? attachmentChanges : null;
+                const fileName =
+                  requestBody?.fileName ||
+                  (responseBody && typeof responseBody === 'object'
+                    ? (responseBody as Record<string, unknown>).fileName
+                    : null);
+                const fileType =
+                  requestBody?.fileType ||
+                  (responseBody && typeof responseBody === 'object'
+                    ? (responseBody as Record<string, unknown>).fileType
+                    : null);
+                if (fileName)
+                  attachmentChanges.file = {
+                    previous: null,
+                    current: fileName,
+                  };
+                if (fileType)
+                  attachmentChanges.type = {
+                    previous: null,
+                    current: fileType,
+                  };
+                changes =
+                  Object.keys(attachmentChanges).length > 0
+                    ? attachmentChanges
+                    : null;
               } else if (relationMappingResult) {
                 changes = relationMappingResult.changes;
                 descriptionOverride ??= relationMappingResult.description;
@@ -264,7 +297,8 @@ export class AuditLogInterceptor implements NestInterceptor {
     const entityType =
       commentContext?.entityType ?? RESOURCE_TO_ENTITY_TYPE[resource] ?? null;
     const entityId =
-      commentContext?.entityId ?? extractEntityId(request, method, responseBody);
+      commentContext?.entityId ??
+      extractEntityId(request, method, responseBody);
     const description =
       commentContext?.description ??
       descriptionOverride ??

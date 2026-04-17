@@ -11,6 +11,7 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { db } from '@db';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
@@ -30,6 +31,7 @@ export class RemediationController {
   @Get('capabilities')
   @SkipThrottle()
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'List remediation capabilities' })
   async getCapabilities(
     @Query('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -55,6 +57,7 @@ export class RemediationController {
 
   @Post('preview')
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Preview a remediation' })
   async preview(
     @Body()
     body: {
@@ -74,8 +77,7 @@ export class RemediationController {
         cachedPermissions: body.cachedPermissions,
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Preview failed';
+      const message = error instanceof Error ? error.message : 'Preview failed';
       this.logger.error(`Remediation preview failed: ${message}`);
       throw new HttpException(message, HttpStatus.BAD_REQUEST);
     }
@@ -83,6 +85,7 @@ export class RemediationController {
 
   @Post('execute')
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Execute a remediation' })
   async execute(
     @Body()
     body: {
@@ -118,11 +121,13 @@ export class RemediationController {
             acknowledgmentText: body.acknowledgment,
             acknowledgedBy: userId,
             acknowledgedAt: new Date().toISOString(),
+            previousState: result.previousState,
             appliedState: result.appliedState,
-            verified: (result.appliedState as Record<string, unknown>)?.verified,
+            verified: (result.appliedState as Record<string, unknown>)
+              ?.verified,
           },
         });
-      } else {
+      } else if (result.status === 'failed') {
         await logCloudSecurityActivity({
           organizationId,
           userId,
@@ -138,6 +143,22 @@ export class RemediationController {
             error: result.error,
           },
         });
+      } else {
+        await logCloudSecurityActivity({
+          organizationId,
+          userId,
+          connectionId: body.connectionId,
+          action: 'remediation_failed',
+          description: `Auto-fix did not succeed: ${body.remediationKey} on ${result.resourceId} (status ${result.status})`,
+          metadata: {
+            remediationKey: body.remediationKey,
+            actionId: result.actionId,
+            resourceId: result.resourceId,
+            acknowledgmentText: body.acknowledgment,
+            acknowledgedBy: userId,
+            status: result.status,
+          },
+        });
       }
 
       return result;
@@ -151,6 +172,7 @@ export class RemediationController {
 
   @Post(':actionId/rollback')
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Roll back a remediation action' })
   async rollback(
     @Param('actionId') actionId: string,
     @OrganizationId() organizationId: string,
@@ -178,7 +200,9 @@ export class RemediationController {
           status: result.status,
           rolledBackBy: userId,
           rolledBackAt: new Date().toISOString(),
-          ...((result as { error?: string }).error && { error: (result as { error?: string }).error }),
+          ...((result as { error?: string }).error && {
+            error: (result as { error?: string }).error,
+          }),
         },
       });
 
@@ -201,11 +225,14 @@ export class RemediationController {
       try {
         const parsed = JSON.parse(raw);
         if (parsed.missingActions) {
-          throw new HttpException({
-            message: parsed.message,
-            missingActions: parsed.missingActions,
-            script: parsed.script,
-          }, HttpStatus.BAD_REQUEST);
+          throw new HttpException(
+            {
+              message: parsed.message,
+              missingActions: parsed.missingActions,
+              script: parsed.script,
+            },
+            HttpStatus.BAD_REQUEST,
+          );
         }
       } catch (parseErr) {
         if (parseErr instanceof HttpException) throw parseErr;
@@ -217,6 +244,7 @@ export class RemediationController {
 
   @Get('actions')
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'List remediation actions' })
   async getActions(
     @Query('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -246,6 +274,7 @@ export class RemediationController {
   /** Get active batch for a connection (if any). */
   @Get('batch/active')
   @RequirePermission('integration', 'read')
+  @ApiOperation({ summary: 'Get the active remediation batch' })
   async getActiveBatch(
     @Query('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -264,8 +293,10 @@ export class RemediationController {
   /** Create a new batch record (called before triggering the task). */
   @Post('batch')
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Create a remediation batch' })
   async createBatch(
-    @Body() body: {
+    @Body()
+    body: {
       connectionId: string;
       findings: Array<{ id: string; key: string; title: string }>;
     },
@@ -304,6 +335,7 @@ export class RemediationController {
   /** Update a batch (set triggerRunId after task starts). */
   @Patch('batch/:batchId')
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Update a remediation batch' })
   async updateBatch(
     @Param('batchId') batchId: string,
     @Body() body: { triggerRunId?: string; status?: string },
@@ -322,6 +354,7 @@ export class RemediationController {
   /** Skip a specific finding in an active batch. */
   @Post('batch/:batchId/skip/:findingId')
   @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Skip a finding in a remediation batch' })
   async skipFinding(
     @Param('batchId') batchId: string,
     @Param('findingId') findingId: string,

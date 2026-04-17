@@ -46,17 +46,25 @@ const RESOURCE_CONTROL_MODELS: Record<string, string> = {
   risks: 'risk',
 };
 
-async function fetchControlIds(resource: string, parentId: string): Promise<string[]> {
+async function fetchControlIds(
+  resource: string,
+  parentId: string,
+): Promise<string[]> {
   const modelName = RESOURCE_CONTROL_MODELS[resource];
   if (!modelName) return [];
   try {
-    const model = (db as unknown as Record<string, { findUnique?: Function }>)[modelName];
+    const model = (db as unknown as Record<string, { findUnique?: Function }>)[
+      modelName
+    ];
     if (!model?.findUnique) return [];
     const record = await model.findUnique({
       where: { id: parentId },
       select: { controls: { select: { id: true } } },
     });
-    return (record as { controls?: { id: string }[] })?.controls?.map((c) => c.id) ?? [];
+    return (
+      (record as { controls?: { id: string }[] })?.controls?.map((c) => c.id) ??
+      []
+    );
   } catch {
     return [];
   }
@@ -104,9 +112,7 @@ export async function buildRelationMappingChanges(
   }
 
   // DELETE /v1/<resource>/:id/controls/:controlId — unmapping
-  const unmapMatch = path.match(
-    /\/v1\/(\w+)\/([^/]+)\/controls\/([^/]+)\/?$/,
-  );
+  const unmapMatch = path.match(/\/v1\/(\w+)\/([^/]+)\/controls\/([^/]+)\/?$/);
   if (unmapMatch && method === 'DELETE') {
     const resource = unmapMatch[1];
     const parentId = unmapMatch[2];
@@ -145,7 +151,9 @@ export async function fetchCurrentValues(
   const modelName = RESOURCE_TO_PRISMA_MODEL[resource];
   if (!modelName) return null;
 
-  const model = (db as unknown as Record<string, { findUnique?: Function }>)[modelName];
+  const model = (db as unknown as Record<string, { findUnique?: Function }>)[
+    modelName
+  ];
   if (!model?.findUnique) return null;
 
   const select: Record<string, boolean> = {};

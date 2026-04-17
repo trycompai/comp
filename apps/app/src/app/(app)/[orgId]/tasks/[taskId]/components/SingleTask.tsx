@@ -2,6 +2,7 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
+import { MarkdownRenderer } from '../automation/[automationId]/components/markdown-renderer/markdown-renderer';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
@@ -172,6 +173,7 @@ export function SingleTask({
       await updateTask({
         status: updates.status,
         assigneeId: updates.assigneeId,
+        approverId: updates.approverId,
         frequency: updates.frequency,
         department: updates.department,
         reviewDate: updates.reviewDate ? String(updates.reviewDate) : undefined,
@@ -288,15 +290,21 @@ export function SingleTask({
             autoFocus
           />
         ) : (
-          <Text
-            size="sm"
-            variant="muted"
-            as="p"
+          // CS-98: descriptions authored in the Framework Editor use markdown
+          // (bullets, bold, headings). Plain-text rendering with whiteSpace:
+          // pre-line preserved newlines but showed raw "**" and "- " syntax.
+          // Render through the shared MarkdownRenderer so the app matches
+          // what admins see in the editor preview.
+          <div
             onClick={startEditingDescription}
-            style={{ cursor: 'pointer', whiteSpace: 'pre-line' }}
+            className="text-sm text-muted-foreground cursor-pointer"
           >
-            {task.description || 'Add a description...'}
-          </Text>
+            {task.description ? (
+              <MarkdownRenderer content={task.description} />
+            ) : (
+              'Add a description...'
+            )}
+          </div>
         )}
       </Stack>
 

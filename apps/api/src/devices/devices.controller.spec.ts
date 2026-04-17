@@ -8,7 +8,15 @@ import type { AuthContext as AuthContextType } from '../auth/types';
 jest.mock('@db', () => ({
   ...jest.requireActual('@prisma/client'),
   db: {},
-  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
+  Prisma: {
+    PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
+      code: string;
+      constructor(message: string, { code }: { code: string }) {
+        super(message);
+        this.code = code;
+      }
+    },
+  },
 }));
 
 jest.mock('../auth/auth.server', () => ({

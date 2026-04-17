@@ -18,7 +18,8 @@ describe('parseAwsPermissionError', () => {
   });
 
   it('detects AccessDeniedException', () => {
-    const msg = 'AccessDeniedException: User is not authorized to perform: kms:EnableKeyRotation';
+    const msg =
+      'AccessDeniedException: User is not authorized to perform: kms:EnableKeyRotation';
     const result = parseAwsPermissionError(msg);
     expect(result.isPermissionError).toBe(true);
     expect(result.missingActions).toContain('kms:EnableKeyRotation');

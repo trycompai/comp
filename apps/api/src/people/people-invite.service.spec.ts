@@ -129,7 +129,9 @@ describe('PeopleInviteService', () => {
       (mockDb.member.create as jest.Mock).mockResolvedValue({
         id: 'member_new',
       });
-      (mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock).mockResolvedValue({
+      (
+        mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock
+      ).mockResolvedValue({
         count: 5,
       });
 
@@ -195,7 +197,9 @@ describe('PeopleInviteService', () => {
       (mockDb.member.create as jest.Mock).mockResolvedValue({
         id: 'member_new',
       });
-      (mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock).mockResolvedValue({
+      (
+        mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock
+      ).mockResolvedValue({
         count: 5,
       });
 
@@ -224,7 +228,9 @@ describe('PeopleInviteService', () => {
       (mockDb.member.create as jest.Mock).mockResolvedValue({
         id: 'member_new',
       });
-      (mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock).mockResolvedValue({
+      (
+        mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock
+      ).mockResolvedValue({
         count: 5,
       });
 
@@ -254,7 +260,9 @@ describe('PeopleInviteService', () => {
       (mockDb.member.create as jest.Mock).mockResolvedValue({
         id: 'member_new',
       });
-      (mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock).mockResolvedValue({
+      (
+        mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock
+      ).mockResolvedValue({
         count: 5,
       });
       mockTriggerEmail.mockRejectedValueOnce(new Error('Email service down'));

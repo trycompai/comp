@@ -1,7 +1,7 @@
 'use client';
 
 import type { EvidenceAutomationRun, EvidenceAutomationVersion } from '@db';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface MetricsSectionProps {
   initialVersions: EvidenceAutomationVersion[];
@@ -29,6 +29,48 @@ export function MetricsSection({
   const successRateColor = successRate >= 90 ? 'text-primary' : successRate >= 60 ? 'text-warning' : 'text-destructive';
   const latestRun = initialRuns[0];
 
+  // Automations run daily at 09:00 UTC (see
+  // comp-private/apps/enterprise-api/src/trigger/automation/run-automations-schedule.ts).
+  // Render the schedule explicitly in UTC and the next run in the user's
+  // local timezone so the label matches when it actually fires.
+  //
+  // The next-run label is computed on the client only (useState + useEffect
+  // instead of useMemo) to avoid a hydration mismatch: Node.js renders in
+  // the server's timezone + locale (typically UTC) while the browser renders
+  // in the user's, and `new Date()` can also tick across 09:00 UTC between
+  // the two renders and produce a different weekday. We render `—` during
+  // SSR and fill it in once mounted.
+  const [nextRunLabel, setNextRunLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    const now = new Date();
+    const next = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        9,
+        0,
+        0,
+        0,
+      ),
+    );
+    if (next.getTime() <= now.getTime()) {
+      next.setUTCDate(next.getUTCDate() + 1);
+    }
+    // Include timeZoneName so the label is unambiguous alongside the UTC
+    // Schedule card — otherwise "Fri 12:00 PM" could be mistaken for UTC.
+    setNextRunLabel(
+      next.toLocaleString(undefined, {
+        weekday: 'short',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZoneName: 'short',
+      }),
+    );
+  }, []);
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 divide-x border-y py-4">
       <div className="px-4">
@@ -41,12 +83,12 @@ export function MetricsSection({
 
       <div className="px-4">
         <p className="text-xs text-muted-foreground mb-1">Schedule</p>
-        <p className="text-sm font-medium">Every Day 9:00 AM</p>
+        <p className="text-sm font-medium">Every day at 9:00 AM UTC</p>
       </div>
 
       <div className="px-4">
         <p className="text-xs text-muted-foreground mb-1">Next Run</p>
-        <p className="text-sm font-medium">Tomorrow 9:00 AM</p>
+        <p className="text-sm font-medium">{nextRunLabel ?? '—'}</p>
       </div>
 
       <div className="px-4">
