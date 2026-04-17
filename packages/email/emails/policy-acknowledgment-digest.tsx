@@ -32,7 +32,9 @@ export const PolicyAcknowledgmentDigestEmail = ({
 }: PolicyAcknowledgmentDigestEmailProps) => {
   if (policies.length === 0) return null;
 
-  const portalBase = process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai';
+  const portalBase = (
+    process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai'
+  ).replace(/\/+$/, '');
   const portalLink = `${portalBase}/${organizationId}`;
   const countLabel = policies.length === 1 ? '1 policy' : `${policies.length} policies`;
   const subjectText = `You have ${countLabel} to review at ${organizationName}`;
@@ -53,7 +55,9 @@ export const PolicyAcknowledgmentDigestEmail = ({
               {subjectText}
             </Heading>
 
-            <Text className="text-[14px] leading-[24px] text-[#121212]">Hi {userName},</Text>
+            <Text className="text-[14px] leading-[24px] text-[#121212]">
+              Hi {userName || 'there'},
+            </Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
               Your organization <strong>{organizationName}</strong> has {countLabel} awaiting your
