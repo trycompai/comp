@@ -35,9 +35,6 @@ jest.mock('@db', () => ({
   },
 }));
 
-jest.mock('../attachments/attachments.service');
-jest.mock('../trust-portal/policy-pdf-renderer.service');
-
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { db } = require('@db') as {
   db: {
