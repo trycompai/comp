@@ -330,4 +330,17 @@ export async function checkAutoCompletePhases({
       );
     }
   }
+
+  // After per-phase completion attempts, run the full org-level
+  // reconciliation so metric drops (regressions) also get picked up.
+  // Without this, only event-driven advances would apply — regressions
+  // previously happened in the GET /timelines read path, which is now pure.
+  await timelinesService
+    .reconcileAutoPhasesForOrganization(organizationId)
+    .catch((err) =>
+      logger.warn(
+        'reconcileAutoPhasesForOrganization failed',
+        err instanceof Error ? err.message : err,
+      ),
+    );
 }

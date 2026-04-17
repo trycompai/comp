@@ -34,107 +34,69 @@ export class TimelinesService {
   // Customer-facing queries
   // ---------------------------------------------------------------------------
 
-  async findAllForOrganization(
-    organizationId: string,
-    options: TimelinesQueryOptions = {},
-  ) {
+  /**
+   * Customer-facing read of timelines.
+   *
+   * Pure read (except for the one-time ensureTimelinesExist backfill). The
+   * AUTO_* phase advancement + regression sync lives in
+   * reconcileAutoPhasesForOrganization and fires from mutation event hooks
+   * (task/policy/people/findings updates) so GET /timelines is idempotent.
+   */
+  async findAllForOrganization(organizationId: string) {
     await this.ensureTimelinesExist(organizationId);
 
-    const fetchTimelines = async () =>
-      db.timelineInstance.findMany({
-        where: { organizationId },
-        include: {
-          phases: { orderBy: { orderIndex: 'asc' } },
-          frameworkInstance: { include: { framework: true } },
-          template: true,
-        },
-      });
+    const timelines = await db.timelineInstance.findMany({
+      where: { organizationId },
+      include: {
+        phases: { orderBy: { orderIndex: 'asc' } },
+        frameworkInstance: { include: { framework: true } },
+        template: true,
+      },
+    });
 
-    const enrichWithCompletionPercent = (
-      timelines: Awaited<ReturnType<typeof fetchTimelines>>,
-      pctMap: Record<string, number>,
-    ) => {
-      for (const timeline of timelines) {
-        if (timeline.status !== 'ACTIVE') continue;
-        for (const phase of timeline.phases) {
-          const livePct = pctMap[phase.completionType];
-          if (livePct !== undefined) {
-            (phase as any).completionPercent = livePct;
-          }
-        }
-      }
-    };
-
-    let timelines = await fetchTimelines();
-
-    // Compute live completion percentages for AUTO_* phases
+    // Enrich AUTO_* phases with live completion percentages in-memory.
     const scores = await getOverviewScores(organizationId).catch(() => null);
     if (!scores) return timelines;
 
-    const policyPct = scores.policies.total > 0
-      ? Math.round((scores.policies.published / scores.policies.total) * 100)
-      : 0;
-    const taskPct = scores.tasks.total > 0
-      ? Math.round((scores.tasks.done / scores.tasks.total) * 100)
-      : 0;
-    const peoplePct = scores.people.total > 0
-      ? Math.round((scores.people.completed / scores.people.total) * 100)
-      : 0;
+    const pctMap = this.buildAutoPctMap(scores);
 
-    const pctMap: Record<string, number> = {
-      AUTO_POLICIES: policyPct,
-      AUTO_TASKS: taskPct,
-      AUTO_PEOPLE: peoplePct,
-    };
-
-    const isTimelineLocked = (timeline: { status: string; lockedAt: Date | null }) =>
-      timeline.status === 'COMPLETED' || !!timeline.lockedAt;
-
-    const reopenFromRegressedPhase = async (
-      timelineId: string,
-      regressedOrderIndex: number,
-    ) => {
-      await db.$transaction(async (tx) => {
-        const freshPhases = await tx.timelinePhase.findMany({
-          where: { instanceId: timelineId },
-          orderBy: { orderIndex: 'asc' },
-        });
-
-        const affected = freshPhases.filter(
-          (p) => p.orderIndex >= regressedOrderIndex,
-        );
-        for (let i = 0; i < affected.length; i++) {
-          const phase = affected[i];
-          await tx.timelinePhase.update({
-            where: { id: phase.id },
-            data: {
-              status:
-                i === 0
-                  ? TimelinePhaseStatus.IN_PROGRESS
-                  : TimelinePhaseStatus.PENDING,
-              completedAt: null,
-              completedById: null,
-              readyForReview: false,
-              readyForReviewAt: null,
-              regressedAt: null,
-            },
-          });
+    for (const timeline of timelines) {
+      if (timeline.status !== 'ACTIVE') continue;
+      for (const phase of timeline.phases) {
+        const livePct = pctMap[phase.completionType];
+        if (livePct !== undefined) {
+          (phase as any).completionPercent = livePct;
         }
+      }
+    }
 
-        // If the timeline was COMPLETED, regression means it's no longer
-        // complete — flip it back to ACTIVE and clear completion metadata
-        // so status stays consistent with phase state.
-        await tx.timelineInstance.updateMany({
-          where: { id: timelineId, status: 'COMPLETED' },
-          data: { status: 'ACTIVE', completedAt: null },
-        });
+    return timelines;
+  }
+
+  /**
+   * Reconcile AUTO_* phase status with live metrics. Handles both directions:
+   * advances phases when metrics hit 100% and reverts completed phases whose
+   * metric dropped below 100% (respecting the regression grace period).
+   *
+   * Called from mutation hooks in tasks/policies/people/findings services
+   * after events that could shift the underlying scores.
+   */
+  async reconcileAutoPhasesForOrganization(
+    organizationId: string,
+    options: TimelinesQueryOptions = {},
+  ): Promise<void> {
+    const scores = await getOverviewScores(organizationId).catch(() => null);
+    if (!scores) return;
+
+    const pctMap = this.buildAutoPctMap(scores);
+
+    const fetchTimelines = () =>
+      db.timelineInstance.findMany({
+        where: { organizationId },
+        include: { phases: { orderBy: { orderIndex: 'asc' } } },
       });
-    };
 
-    // Sync AUTO_* phase statuses with live metrics until no further transition occurs.
-    // This ensures consecutive AUTO phases can complete in one request when metrics
-    // are already at 100% (common when starting a renewal cycle).
-    enrichWithCompletionPercent(timelines, pctMap);
+    let timelines = await fetchTimelines();
 
     const maxSyncPasses = 20;
     for (let pass = 0; pass < maxSyncPasses; pass++) {
@@ -145,17 +107,17 @@ export class TimelinesService {
           continue;
         }
 
-        const locked = isTimelineLocked(timeline);
+        const locked =
+          timeline.status === 'COMPLETED' || !!timeline.lockedAt;
         const canAutoTransition = timeline.status === 'ACTIVE' && !locked;
 
         for (const phase of timeline.phases) {
-          if (!AUTO_PHASE_TYPES.has(phase.completionType)) {
-            continue;
-          }
+          if (!AUTO_PHASE_TYPES.has(phase.completionType)) continue;
 
           const livePct = pctMap[phase.completionType];
           if (livePct === undefined) continue;
 
+          // Non-completed phase: clear regression flag if it somehow lingers.
           if (
             phase.status !== TimelinePhaseStatus.COMPLETED &&
             phase.regressedAt
@@ -175,7 +137,10 @@ export class TimelinesService {
                 (AUTO_PHASE_TYPES_NO_GRACE.has(phase.completionType) ||
                   options.bypassRegressionGrace === true)
               ) {
-                await reopenFromRegressedPhase(timeline.id, phase.orderIndex);
+                await this.reopenFromRegressedPhase(
+                  timeline.id,
+                  phase.orderIndex,
+                );
                 changed = true;
                 break;
               }
@@ -193,7 +158,10 @@ export class TimelinesService {
                 const elapsedMs =
                   Date.now() - new Date(phase.regressedAt).getTime();
                 if (elapsedMs >= REGRESSION_GRACE_MS) {
-                  await reopenFromRegressedPhase(timeline.id, phase.orderIndex);
+                  await this.reopenFromRegressedPhase(
+                    timeline.id,
+                    phase.orderIndex,
+                  );
                   changed = true;
                   break;
                 }
@@ -208,7 +176,6 @@ export class TimelinesService {
             }
           }
 
-          // Complete if in-progress and metric hit 100%
           if (
             canAutoTransition &&
             phase.status === TimelinePhaseStatus.IN_PROGRESS &&
@@ -223,7 +190,7 @@ export class TimelinesService {
               changed = true;
               break;
             } catch {
-              // Phase might not be completable (e.g., prior phases not done)
+              // Phase may not be completable (e.g., prior phases not done).
             }
           }
         }
@@ -231,15 +198,63 @@ export class TimelinesService {
         if (changed) break;
       }
 
-      if (!changed) {
-        break;
+      if (!changed) break;
+      timelines = await fetchTimelines();
+    }
+  }
+
+  private buildAutoPctMap(scores: {
+    policies: { total: number; published: number };
+    tasks: { total: number; done: number };
+    people: { total: number; completed: number };
+  }): Record<string, number> {
+    const pct = (num: number, den: number) =>
+      den > 0 ? Math.round((num / den) * 100) : 0;
+    return {
+      AUTO_POLICIES: pct(scores.policies.published, scores.policies.total),
+      AUTO_TASKS: pct(scores.tasks.done, scores.tasks.total),
+      AUTO_PEOPLE: pct(scores.people.completed, scores.people.total),
+    };
+  }
+
+  private async reopenFromRegressedPhase(
+    timelineId: string,
+    regressedOrderIndex: number,
+  ): Promise<void> {
+    await db.$transaction(async (tx) => {
+      const freshPhases = await tx.timelinePhase.findMany({
+        where: { instanceId: timelineId },
+        orderBy: { orderIndex: 'asc' },
+      });
+
+      const affected = freshPhases.filter(
+        (p) => p.orderIndex >= regressedOrderIndex,
+      );
+      for (let i = 0; i < affected.length; i++) {
+        const phase = affected[i];
+        await tx.timelinePhase.update({
+          where: { id: phase.id },
+          data: {
+            status:
+              i === 0
+                ? TimelinePhaseStatus.IN_PROGRESS
+                : TimelinePhaseStatus.PENDING,
+            completedAt: null,
+            completedById: null,
+            readyForReview: false,
+            readyForReviewAt: null,
+            regressedAt: null,
+          },
+        });
       }
 
-      timelines = await fetchTimelines();
-      enrichWithCompletionPercent(timelines, pctMap);
-    }
-
-    return timelines;
+      // If the timeline was COMPLETED, regression means it's no longer
+      // complete — flip it back to ACTIVE to stay consistent with phases.
+      await tx.timelineInstance.updateMany({
+        where: { id: timelineId, status: 'COMPLETED' },
+        data: { status: 'ACTIVE', completedAt: null },
+      });
+    });
   }
 
   /**
@@ -550,8 +565,12 @@ export class TimelinesService {
       }
     }
 
-    return this.findAllForOrganization(organizationId, {
+    // After a full recreate, immediately reconcile AUTO phases against live
+    // metrics (bypassing regression grace) so the returned state is fresh.
+    await this.reconcileAutoPhasesForOrganization(organizationId, {
       bypassRegressionGrace: true,
     });
+
+    return this.findAllForOrganization(organizationId);
   }
 }
