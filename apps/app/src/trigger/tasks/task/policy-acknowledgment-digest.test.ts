@@ -64,7 +64,7 @@ describe('policyAcknowledgmentDigest', () => {
       {
         id: 'org_1',
         name: 'Acme',
-        policies: [
+        policy: [
           {
             id: 'pol_a',
             name: 'Access Control',
@@ -116,7 +116,7 @@ describe('policyAcknowledgmentDigest', () => {
       {
         id: 'org_1',
         name: 'Acme',
-        policies: [
+        policy: [
           {
             id: 'pol_a',
             name: 'Access Control',
@@ -153,7 +153,7 @@ describe('policyAcknowledgmentDigest', () => {
       {
         id: 'org_1',
         name: 'Acme',
-        policies: [
+        policy: [
           {
             id: 'pol_a',
             name: 'Access Control',
@@ -191,7 +191,7 @@ describe('policyAcknowledgmentDigest', () => {
       {
         id: 'org_1',
         name: 'Acme',
-        policies: [
+        policy: [
           {
             id: 'pol_a',
             name: 'Access',
@@ -242,7 +242,7 @@ describe('policyAcknowledgmentDigest', () => {
       {
         id: 'org_1',
         name: 'Acme',
-        policies: [
+        policy: [
           {
             id: 'pol_a',
             name: 'Access',
@@ -296,7 +296,7 @@ describe('policyAcknowledgmentDigest', () => {
       {
         id: 'org_1',
         name: 'Acme',
-        policies: [
+        policy: [
           {
             id: 'pol_a',
             name: 'Access Control',
@@ -338,7 +338,7 @@ describe('policyAcknowledgmentDigest', () => {
       {
         id: 'org_1',
         name: 'Acme',
-        policies: [
+        policy: [
           {
             id: 'pol_a',
             name: 'A',
@@ -363,7 +363,7 @@ describe('policyAcknowledgmentDigest', () => {
       {
         id: 'org_2',
         name: 'Beta',
-        policies: [
+        policy: [
           {
             id: 'pol_b',
             name: 'B',
@@ -418,7 +418,7 @@ describe('policyAcknowledgmentDigest', () => {
       {
         id: 'org_big',
         name: 'BigCo',
-        policies: [
+        policy: [
           {
             id: 'pol_a',
             name: 'Policy A',

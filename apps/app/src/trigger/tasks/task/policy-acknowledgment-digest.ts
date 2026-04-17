@@ -39,7 +39,7 @@ export const policyAcknowledgmentDigest = schedules.task({
   run: async () => {
     const organizations = await db.organization.findMany({
       where: {
-        policies: {
+        policy: {
           some: {
             status: 'published',
             isArchived: false,
@@ -50,7 +50,7 @@ export const policyAcknowledgmentDigest = schedules.task({
       select: {
         id: true,
         name: true,
-        policies: {
+        policy: {
           where: {
             status: 'published',
             isArchived: false,
@@ -109,7 +109,7 @@ export const policyAcknowledgmentDigest = schedules.task({
       const emailsWithPending: string[] = [];
 
       for (const member of complianceMembers) {
-        const pendingPolicies = computePendingPolicies(member, org.policies);
+        const pendingPolicies = computePendingPolicies(member, org.policy);
         if (pendingPolicies.length === 0) continue;
 
         const policies = pendingPolicies.map((p) => ({
