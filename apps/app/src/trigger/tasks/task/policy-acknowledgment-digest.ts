@@ -8,7 +8,6 @@ import { sendEmailViaApi } from '../../lib/send-email-via-api';
 import {
   computePendingPolicies,
   type DigestMember,
-  type DigestPolicy,
 } from './policy-acknowledgment-digest-helpers';
 
 const getPortalBase = () =>
@@ -72,20 +71,17 @@ export const policyAcknowledgmentDigest = schedules.task({
 
     for (const org of organizations) {
       orgsProcessed += 1;
-      const complianceMembers = (await filterComplianceMembers(
+      const complianceMembers = await filterComplianceMembers<DigestMember>(
         org.members,
         org.id,
-      )) as unknown as DigestMember[];
+      );
 
       if (complianceMembers.length === 0) continue;
 
       const sends: Promise<unknown>[] = [];
 
       for (const member of complianceMembers) {
-        const pending = computePendingPolicies(
-          member,
-          org.policies as DigestPolicy[],
-        );
+        const pending = computePendingPolicies(member, org.policies);
         if (pending.length === 0) continue;
 
         const policies = pending.map((p) => ({
@@ -105,15 +101,12 @@ export const policyAcknowledgmentDigest = schedules.task({
           policies,
         });
 
-        // Guard is above: `pending.length === 0` exits early, so emailElement is never null here
-        if (!emailElement) continue;
-
         sends.push(
           sendEmailViaApi({
             to: member.user.email,
             subject,
             organizationId: org.id,
-            react: emailElement,
+            react: emailElement!,
           }),
         );
       }

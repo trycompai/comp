@@ -14,8 +14,9 @@ export interface DigestPolicy {
 
 export interface DigestMember {
   id: string;
+  role: string;
   department: Departments | null;
-  user: { id: string; name: string | null; email: string };
+  user: { id: string; name: string | null; email: string; role?: string | null };
 }
 
 export function computePendingPolicies(

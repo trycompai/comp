@@ -30,12 +30,8 @@ const mockDb = db as unknown as {
   organization: { findMany: ReturnType<typeof vi.fn> };
 };
 const mockFindMany = mockDb.organization.findMany;
-const mockFilterComplianceMembers = vi.mocked(
-  filterComplianceMembers as ReturnType<typeof vi.fn>,
-);
-const mockSendEmailViaApi = vi.mocked(
-  sendEmailViaApi as ReturnType<typeof vi.fn>,
-);
+const mockFilterComplianceMembers = vi.mocked(filterComplianceMembers);
+const mockSendEmailViaApi = vi.mocked(sendEmailViaApi);
 
 // The mock replaces schedules.task with a passthrough that returns the config
 // directly, so `.run` is available on the exported constant at runtime.
@@ -51,9 +47,7 @@ const taskUnderTest = policyAcknowledgmentDigest as unknown as {
 describe('policyAcknowledgmentDigest', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFilterComplianceMembers.mockImplementation(
-      async (members: unknown[]) => members,
-    );
+    mockFilterComplianceMembers.mockImplementation(async (members) => members);
     mockSendEmailViaApi.mockResolvedValue({ taskId: 'run_fake' });
   });
 

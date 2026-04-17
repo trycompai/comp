@@ -8,11 +8,13 @@ import {
 
 const alice: DigestMember = {
   id: 'mem_alice',
+  role: 'employee',
   department: 'it',
   user: { id: 'usr_alice', name: 'Alice', email: 'alice@example.com' },
 };
 const bob: DigestMember = {
   id: 'mem_bob',
+  role: 'employee',
   department: 'hr',
   user: { id: 'usr_bob', name: 'Bob', email: 'bob@example.com' },
 };
