@@ -5,15 +5,7 @@ import { auth } from '@/utils/auth';
 import type { EmployeeTrainingVideoCompletion, Member, Organization, Policy, User } from '@db';
 import { db } from '@db/server';
 import { headers } from 'next/headers';
-import { FindingScope } from '@db';
-import { PeopleFindings } from '../../all/components/PeopleFindings';
 import { EmployeeCompletionChart } from './EmployeeCompletionChart';
-
-interface EmployeesOverviewProps {
-  isAuditor: boolean;
-  isPlatformAdmin: boolean;
-  isAdminOrOwner: boolean;
-}
 
 // Define EmployeeWithUser type similar to EmployeesList
 interface EmployeeWithUser extends Member {
@@ -35,11 +27,7 @@ interface ProcessedTrainingVideo {
   };
 }
 
-export async function EmployeesOverview({
-  isAuditor,
-  isPlatformAdmin,
-  isAdminOrOwner,
-}: EmployeesOverviewProps) {
+export async function EmployeesOverview() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -134,12 +122,6 @@ export async function EmployeesOverview({
         securityTrainingStepEnabled={organization?.securityTrainingStepEnabled ?? true}
         hasHipaaFramework={hasHipaaFramework}
         hipaaCompletions={hipaaCompletions}
-      />
-      <PeopleFindings
-        scope={FindingScope.people_tasks}
-        isAuditor={isAuditor}
-        isPlatformAdmin={isPlatformAdmin}
-        isAdminOrOwner={isAdminOrOwner}
       />
     </div>
   );

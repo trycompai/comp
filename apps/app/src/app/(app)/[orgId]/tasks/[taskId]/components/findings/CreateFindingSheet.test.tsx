@@ -56,6 +56,12 @@ vi.mock('@db', () => ({
     soc2: 'soc2',
     iso27001: 'iso27001',
   },
+  FindingScope: {
+    people: 'people',
+    people_tasks: 'people_tasks',
+    people_devices: 'people_devices',
+    people_chart: 'people_chart',
+  },
 }));
 
 // Mock @trycompai/ui components

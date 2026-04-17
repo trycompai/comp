@@ -5,6 +5,7 @@ export * from './emails/invite-portal';
 export * from './emails/magic-link';
 export * from './emails/marketing/welcome';
 export * from './emails/otp';
+export * from './emails/policy-acknowledgment-digest';
 export * from './emails/policy-notification';
 export * from './emails/reminders/task-status-notification';
 export * from './emails/training-completed';
