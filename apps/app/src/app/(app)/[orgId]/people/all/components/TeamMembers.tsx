@@ -29,22 +29,18 @@ export type DeviceStatus = 'compliant' | 'non-compliant' | 'not-installed';
 export interface TeamMembersProps {
   canManageMembers: boolean;
   canInviteUsers: boolean;
-  isAuditor: boolean;
-  isPlatformAdmin: boolean;
   isCurrentUserOwner: boolean;
   organizationId: string;
-  deviceStatusMap: Record<string, DeviceStatus>;
+  complianceMemberIds: string[];
 }
 
 export async function TeamMembers(props: TeamMembersProps) {
   const {
     canManageMembers,
     canInviteUsers,
-    isAuditor,
-    isPlatformAdmin,
     isCurrentUserOwner,
     organizationId,
-    deviceStatusMap,
+    complianceMemberIds,
   } = props;
 
   if (!organizationId) {
@@ -151,12 +147,10 @@ export async function TeamMembers(props: TeamMembersProps) {
       organizationId={organizationId}
       canManageMembers={canManageMembers}
       canInviteUsers={canInviteUsers}
-      isAuditor={isAuditor}
       isCurrentUserOwner={isCurrentUserOwner}
       employeeSyncData={employeeSyncData}
       taskCompletionMap={taskCompletionMap}
-      deviceStatusMap={deviceStatusMap}
-      isPlatformAdmin={isPlatformAdmin}
+      complianceMemberIds={complianceMemberIds}
     />
   );
 }

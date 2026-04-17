@@ -46,13 +46,25 @@ const createFindingSchema = z.object({
   content: z.string().min(1, {
     message: 'Finding content is required',
   }),
+  scope: z.nativeEnum(FindingScope).optional(),
 });
+
+export interface FindingScopeOption {
+  value: FindingScope;
+  label: string;
+}
 
 interface CreateFindingSheetProps {
   taskId?: string;
   evidenceSubmissionId?: string;
   evidenceFormType?: EvidenceFormType;
   scope?: FindingScope;
+  /**
+   * When provided, renders a scope picker inside the form instead of using
+   * the static `scope` prop. The first option is the default.
+   */
+  scopeOptions?: FindingScopeOption[];
+  scopeLabel?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -63,6 +75,8 @@ export function CreateFindingSheet({
   evidenceSubmissionId,
   evidenceFormType,
   scope,
+  scopeOptions,
+  scopeLabel = 'Area',
   open,
   onOpenChange,
   onSuccess,
@@ -82,6 +96,7 @@ export function CreateFindingSheet({
       type: FindingType.soc2,
       templateId: null,
       content: '',
+      scope: scopeOptions?.[0]?.value ?? scope,
     },
   });
 
@@ -117,7 +132,7 @@ export function CreateFindingSheet({
           taskId,
           evidenceSubmissionId,
           evidenceFormType,
-          scope,
+          scope: data.scope ?? scope,
           type: data.type,
           templateId: templateId || undefined,
           content: data.content,
@@ -158,9 +173,45 @@ export function CreateFindingSheet({
     }, {});
   }, [templates]);
 
+  const scopeLabelMap = useMemo(() => {
+    const map: Partial<Record<FindingScope, string>> = {};
+    for (const opt of scopeOptions ?? []) map[opt.value] = opt.label;
+    return map;
+  }, [scopeOptions]);
+
   const findingForm = (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full max-w-none">
+        {scopeOptions && scopeOptions.length > 0 && (
+          <FormField
+            control={form.control}
+            name="scope"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>{scopeLabel}</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={(value) => field.onChange(value as FindingScope)}
+                >
+                  <SelectTrigger>
+                    {field.value
+                      ? scopeLabelMap[field.value as FindingScope] ?? field.value
+                      : `Select ${scopeLabel.toLowerCase()}...`}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {scopeOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
         <FormField
           control={form.control}
           name="type"
