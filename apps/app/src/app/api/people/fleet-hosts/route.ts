@@ -93,7 +93,7 @@ export async function GET() {
                 {
                   id: MDM_POLICY_ID,
                   name: 'MDM Enabled',
-                  response: host.mdm.connected_to_fleet ? 'pass' : 'fail',
+                  response: host.mdm?.connected_to_fleet ? 'pass' : 'fail',
                 },
               ]
             : []),
