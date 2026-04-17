@@ -70,6 +70,8 @@ model PolicyVersion {
   publishedBy   Member? @relation("PolicyVersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
   changelog     String?
 
+  acknowledgments PolicyAcknowledgment[]
+
   @@unique([policyId, version])
   @@index([policyId])
   @@index([createdAt])

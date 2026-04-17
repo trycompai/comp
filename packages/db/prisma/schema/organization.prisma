@@ -32,6 +32,7 @@ model Organization {
   invitations                        Invitation[]
   members                            Member[]
   policy                             Policy[]
+  policyAcknowledgments              PolicyAcknowledgment[]
   risk                               Risk[]
   vendors                            Vendor[]
   tasks                              Task[]
