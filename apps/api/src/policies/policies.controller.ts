@@ -214,6 +214,7 @@ export class PoliciesController {
   @ApiParam(POLICY_PARAMS.policyId)
   @ApiResponse(GET_POLICY_ACKNOWLEDGMENTS_RESPONSES[200])
   @ApiResponse(GET_POLICY_ACKNOWLEDGMENTS_RESPONSES[401])
+  @ApiResponse(GET_POLICY_ACKNOWLEDGMENTS_RESPONSES[403])
   @ApiResponse(GET_POLICY_ACKNOWLEDGMENTS_RESPONSES[404])
   async getPolicyAcknowledgments(
     @Param('id') id: string,

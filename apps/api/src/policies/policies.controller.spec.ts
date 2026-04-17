@@ -654,5 +654,23 @@ describe('PoliciesController', () => {
         authenticatedUser: { id: 'usr_123', email: 'test@example.com' },
       });
     });
+
+    it('omits authenticatedUser when userId is not present (e.g., API-key auth)', async () => {
+      const noUserContext: AuthContext = {
+        ...mockAuthContext,
+        userId: undefined,
+        userEmail: undefined,
+      };
+      mockPoliciesService.findAcknowledgments.mockResolvedValue([]);
+
+      const result = await controller.getPolicyAcknowledgments(
+        'pol_1',
+        orgId,
+        noUserContext,
+      );
+
+      expect(result).toEqual({ data: [], authType: 'session' });
+      expect(result).not.toHaveProperty('authenticatedUser');
+    });
   });
 });
