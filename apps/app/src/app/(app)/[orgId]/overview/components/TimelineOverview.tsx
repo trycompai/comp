@@ -144,26 +144,31 @@ function TimelineCard({
     timeline.frameworkInstance?.framework.name ?? 'Unknown Framework';
   const nextCycle = getNextCycleDate(timeline);
 
-  return (
-    <Link href={`/${orgId}/frameworks/${timeline.frameworkInstanceId}`}>
-      <Card className={`p-5 transition-colors hover:bg-muted/30 ${isDraft ? 'opacity-60' : ''}`}>
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2 min-w-0">
-            <Text size="base" weight="semibold">
-              {timeline.template?.name ?? frameworkName}
-            </Text>
-            {cycleLabel && (
-              <div>
-                <Badge variant="outline">{cycleLabel}</Badge>
-              </div>
-            )}
-          </div>
-          <Badge variant={STATUS_VARIANT[timeline.status]}>
-            {isCompleted && <Checkmark size={12} />}
-            {STATUS_LABEL[timeline.status]}
-          </Badge>
-        </div>
+  const titleContent = (
+    <div className="flex items-center gap-2">
+      <Text size="base" weight="semibold">
+        {timeline.template?.name ?? frameworkName}
+      </Text>
+      {cycleLabel && <Badge variant="outline">{cycleLabel}</Badge>}
+    </div>
+  );
 
+  const statusBadge = (
+    <Badge variant={STATUS_VARIANT[timeline.status]}>
+      {isCompleted && <Checkmark size={12} />}
+      {STATUS_LABEL[timeline.status]}
+    </Badge>
+  );
+
+  return (
+    <Link
+      href={`/${orgId}/frameworks/${timeline.frameworkInstanceId}`}
+      className={`block transition-opacity hover:opacity-90 ${isDraft ? 'opacity-60' : ''}`}
+    >
+      <Card
+        title={titleContent}
+        headerAction={statusBadge}
+      >
         <TimelinePhaseBar phases={timeline.phases} showDates />
 
         {isDraft && (

@@ -14,7 +14,6 @@ import {
 } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { ApiExcludeController } from '@nestjs/swagger';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { PlatformCredentialRepository } from '../repositories/platform-credential.repository';
 import { getAllManifests, getManifest } from '@trycompai/integration-platform';

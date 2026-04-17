@@ -16266,62 +16266,6 @@
         ]
       }
     },
-    "/v1/integrations/tasks/{taskId}/checks/disconnect": {
-      "post": {
-        "operationId": "TaskIntegrationsController_disconnectCheckFromTask_v1",
-        "parameters": [
-          {
-            "name": "taskId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "tags": [
-          "Integrations"
-        ]
-      }
-    },
-    "/v1/integrations/tasks/{taskId}/checks/reconnect": {
-      "post": {
-        "operationId": "TaskIntegrationsController_reconnectCheckToTask_v1",
-        "parameters": [
-          {
-            "name": "taskId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "tags": [
-          "Integrations"
-        ]
-      }
-    },
     "/v1/integrations/tasks/{taskId}/runs": {
       "get": {
         "operationId": "TaskIntegrationsController_getTaskCheckRuns_v1",
@@ -19879,38 +19823,6 @@
         "summary": "Delete a control",
         "tags": [
           "Controls"
-        ]
-      }
-    },
-    "/v1/email/unsubscribe": {
-      "post": {
-        "operationId": "UnsubscribeController_unsubscribe_v1",
-        "parameters": [
-          {
-            "name": "email",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "token",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "One-click unsubscribe (RFC 8058)",
-        "tags": [
-          "Email - Unsubscribe"
         ]
       }
     },
