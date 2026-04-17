@@ -61,6 +61,7 @@ export function TemplateMetadataForm({
     register,
     handleSubmit,
     control,
+    reset,
     formState: { errors, isDirty },
   } = useForm<MetadataFormValues>({
     resolver: zodResolver(metadataSchema),
@@ -73,17 +74,22 @@ export function TemplateMetadataForm({
 
   const handleSave = async (values: MetadataFormValues) => {
     setSaving(true);
-    const res = await api.patch(
-      `/v1/admin/timeline-templates/${template.id}`,
-      values,
-    );
-    setSaving(false);
-    if (res.error) {
-      toast.error(res.error);
-      return;
+    try {
+      const res = await api.patch(
+        `/v1/admin/timeline-templates/${template.id}`,
+        values,
+      );
+      if (res.error) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success('Template updated');
+      // Reset form defaults so isDirty flips back to false after a save.
+      reset(values);
+      onMutate();
+    } finally {
+      setSaving(false);
     }
-    toast.success('Template updated');
-    onMutate();
   };
 
   return (

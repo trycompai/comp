@@ -11,10 +11,7 @@ import {
   computeFrameworkComplianceScore,
 } from './frameworks-scores.helper';
 import { upsertOrgFrameworkStructure } from './frameworks-upsert.helper';
-import {
-  checkAutoCompletePhases,
-  createTimelinesForFrameworks,
-} from './frameworks-timeline.helper';
+import { createTimelinesForFrameworks } from './frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
 
 @Injectable()
@@ -192,14 +189,10 @@ export class FrameworksService {
       userId ? getCurrentMember(organizationId, userId) : Promise.resolve(null),
     ]);
 
-    // Fire-and-forget: auto-complete timeline phases when tasks hit 100%
-    checkAutoCompletePhases({
-      organizationId,
-      timelinesService: this.timelinesService,
-    }).catch((err) => {
-      this.logger.warn('Auto-complete phase check failed', err);
-    });
-
+    // checkAutoCompletePhases is driven from mutation hooks in
+    // tasks/policies/people/findings/evidence-forms services (it also triggers
+    // regression reconciliation via reconcileAutoPhasesForOrganization), so
+    // the dashboard read path no longer needs to fire it on every call.
     return { ...scores, currentMember };
   }
 

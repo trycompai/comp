@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsInt, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateTemplateDto {
@@ -20,7 +20,7 @@ export class CreateTemplateDto {
     minimum: 1,
     example: 1,
   })
-  @IsNumber()
+  @IsInt()
   @Min(1)
   cycleNumber: number;
 }

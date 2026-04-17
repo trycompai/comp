@@ -28,19 +28,25 @@ export function TimelineActivateForm({
     }
 
     setLoading(true);
-    const res = await api.post(
-      `/v1/admin/organizations/${orgId}/timelines/${timelineId}/activate`,
-      { startDate: new Date(startDate).toISOString() },
-    );
-    setLoading(false);
-
-    if (res.error) {
-      toast.error(res.error);
-      return;
+    try {
+      const parsed = new Date(startDate);
+      if (Number.isNaN(parsed.getTime())) {
+        toast.error('Invalid start date');
+        return;
+      }
+      const res = await api.post(
+        `/v1/admin/organizations/${orgId}/timelines/${timelineId}/activate`,
+        { startDate: parsed.toISOString() },
+      );
+      if (res.error) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success('Timeline activated');
+      onMutate();
+    } finally {
+      setLoading(false);
     }
-
-    toast.success('Timeline activated');
-    onMutate();
   };
 
   return (

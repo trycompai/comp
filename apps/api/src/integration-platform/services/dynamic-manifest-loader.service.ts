@@ -68,9 +68,12 @@ export class DynamicManifestLoaderService
     if (error instanceof Prisma.PrismaClientInitializationError) {
       return true;
     }
+    // Prisma known-request errors use P-prefixed codes — P1001 is
+    // "Can't reach database server". System-level codes like ECONNREFUSED
+    // only appear in the underlying Error.message, handled below.
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'ECONNREFUSED'
+      error.code === 'P1001'
     ) {
       return true;
     }

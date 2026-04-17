@@ -7,7 +7,6 @@ import {
   Param,
   Body,
   UseGuards,
-  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';

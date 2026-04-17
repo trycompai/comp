@@ -105,7 +105,9 @@ export class PeopleInviteService {
       checkAutoCompletePhases({
         organizationId,
         timelinesService: this.timelinesService,
-      }).catch(() => {});
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
     }
 
     return results;

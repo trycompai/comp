@@ -23,7 +23,8 @@ export function TemplateEditorPage({
   orgId,
   templateId,
 }: TemplateEditorPageProps) {
-  const { template, isLoading, mutate } = useAdminTimelineTemplate(templateId);
+  const { template, isLoading, error, mutate } =
+    useAdminTimelineTemplate(templateId);
 
   const phasesForBar =
     template?.phases
@@ -48,6 +49,25 @@ export function TemplateEditorPage({
       <PageLayout header={<PageHeader title="Loading..." />}>
         <div className="flex items-center justify-center py-12 text-muted-foreground">
           Loading template...
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageLayout header={<PageHeader title="Error" />}>
+        <div className="flex flex-col items-center gap-4 py-12">
+          <Text variant="muted">
+            Failed to load template:{' '}
+            {error instanceof Error ? error.message : 'Unknown error'}
+          </Text>
+          <Link
+            href={`/${orgId}/admin/timeline-templates`}
+            className="text-sm text-primary underline"
+          >
+            Back to templates
+          </Link>
         </div>
       </PageLayout>
     );

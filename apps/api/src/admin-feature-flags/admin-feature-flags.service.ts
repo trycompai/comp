@@ -124,15 +124,25 @@ export class AdminFeatureFlagsService {
       throw new BadRequestException('PostHog is not configured on this environment');
     }
 
-    client.groupIdentify({
-      groupType: 'organization',
-      groupKey: orgId,
-      properties: {
-        ...(orgName ? { name: orgName } : {}),
-        [flagKey]: enabled,
-      },
-    });
-    await client.flush();
+    try {
+      client.groupIdentify({
+        groupType: 'organization',
+        groupKey: orgId,
+        properties: {
+          ...(orgName ? { name: orgName } : {}),
+          [flagKey]: enabled,
+        },
+      });
+      await client.flush();
+    } catch (err) {
+      this.logger.error(
+        `Failed to set flag ${flagKey}=${enabled} for org ${orgId}`,
+        err,
+      );
+      throw new BadRequestException(
+        'Unable to update feature flag via PostHog. Please try again.',
+      );
+    }
 
     return { key: flagKey, enabled };
   }

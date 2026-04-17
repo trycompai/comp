@@ -44,7 +44,13 @@ export class AdminFeatureFlagsController {
   @ApiOperation({
     summary: 'Enable or disable a feature flag for an organization',
   })
-  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
   async update(
     @Param('orgId') orgId: string,
     @Body() dto: UpdateFeatureFlagDto,

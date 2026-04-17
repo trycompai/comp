@@ -10,15 +10,21 @@ function adminTimelineUrl(orgId: string) {
   return `${appUrl()}/${orgId}/admin/organizations/${orgId}`;
 }
 
-async function sendSlack(blocks: unknown[], fallbackText: string) {
+async function sendSlack(blocks: unknown[], fallbackText: string): Promise<void> {
   const webhookUrl = process.env.SLACK_CX_WEBHOOK_URL;
   if (!webhookUrl) return;
   try {
-    await fetch(webhookUrl, {
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: fallbackText, blocks }),
     });
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      logger.warn(
+        `Slack webhook returned ${response.status}: ${body.slice(0, 200)}`,
+      );
+    }
   } catch (err) {
     logger.warn('Failed to send Slack notification', err);
   }
@@ -49,9 +55,9 @@ export function notifyReadyForReview({
   orgName: string;
   frameworkName: string;
   phaseName: string;
-}) {
+}): Promise<void> {
   const link = adminTimelineUrl(orgId);
-  sendSlack(
+  return sendSlack(
     [
       section(`:bell:  *Ready for Review*`),
       section(
@@ -77,7 +83,7 @@ export function notifyPhaseCompleted({
   frameworkName: string;
   phaseName: string;
   completionType: string;
-}) {
+}): Promise<void> {
   const typeLabel =
     completionType === 'AUTO_TASKS' ? ':clipboard:  All evidence tasks completed' :
     completionType === 'AUTO_POLICIES' ? ':page_facing_up:  All policies published' :
@@ -87,7 +93,7 @@ export function notifyPhaseCompleted({
     ':pencil:  Manually completed';
 
   const link = adminTimelineUrl(orgId);
-  sendSlack(
+  return sendSlack(
     [
       section(`:white_check_mark:  *Phase Completed*`),
       section(
@@ -109,9 +115,9 @@ export function notifyTimelineCompleted({
   orgId: string;
   orgName: string;
   frameworkName: string;
-}) {
+}): Promise<void> {
   const link = adminTimelineUrl(orgId);
-  sendSlack(
+  return sendSlack(
     [
       section(`:tada:  *Timeline Completed*`),
       section(

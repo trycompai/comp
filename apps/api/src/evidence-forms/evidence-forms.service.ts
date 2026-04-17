@@ -8,6 +8,7 @@ import {
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -130,6 +131,8 @@ function normalizeSubmissionFormType<
 
 @Injectable()
 export class EvidenceFormsService {
+  private readonly logger = new Logger(EvidenceFormsService.name);
+
   constructor(
     private readonly attachmentsService: AttachmentsService,
     private readonly timelinesService: TimelinesService,
@@ -416,7 +419,9 @@ export class EvidenceFormsService {
     checkAutoCompletePhases({
       organizationId: params.organizationId,
       timelinesService: this.timelinesService,
-    }).catch(() => {});
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
     return { success: true, id: params.submissionId };
   }
@@ -499,7 +504,9 @@ export class EvidenceFormsService {
     checkAutoCompletePhases({
       organizationId: params.organizationId,
       timelinesService: this.timelinesService,
-    }).catch(() => {});
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
     return submission;
   }
@@ -626,7 +633,9 @@ export class EvidenceFormsService {
     checkAutoCompletePhases({
       organizationId: params.organizationId,
       timelinesService: this.timelinesService,
-    }).catch(() => {});
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
     return submission;
   }
