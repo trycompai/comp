@@ -15,7 +15,7 @@ vi.mock('../../lib/send-email-via-api', () => ({
 }));
 
 vi.mock('@trycompai/email/lib/check-unsubscribe', () => ({
-  isUserUnsubscribed: vi.fn(),
+  getUnsubscribedEmails: vi.fn(),
 }));
 
 vi.mock('@trigger.dev/sdk', () => ({
@@ -28,7 +28,7 @@ vi.mock('@trigger.dev/sdk', () => ({
 import { db } from '@db/server';
 import { filterComplianceMembers } from '@/lib/compliance';
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
-import { isUserUnsubscribed } from '@trycompai/email/lib/check-unsubscribe';
+import { getUnsubscribedEmails } from '@trycompai/email/lib/check-unsubscribe';
 import { policyAcknowledgmentDigest } from './policy-acknowledgment-digest';
 
 const mockDb = db as unknown as {
@@ -37,7 +37,7 @@ const mockDb = db as unknown as {
 const mockFindMany = mockDb.organization.findMany;
 const mockFilterComplianceMembers = vi.mocked(filterComplianceMembers);
 const mockSendEmailViaApi = vi.mocked(sendEmailViaApi);
-const mockIsUserUnsubscribed = vi.mocked(isUserUnsubscribed);
+const mockGetUnsubscribedEmails = vi.mocked(getUnsubscribedEmails);
 
 // The mock replaces schedules.task with a passthrough that returns the config
 // directly, so `.run` is available on the exported constant at runtime.
@@ -47,6 +47,7 @@ const taskUnderTest = policyAcknowledgmentDigest as unknown as {
     emailsSent: number;
     emailsFailed: number;
     orgsProcessed: number;
+    emailsSkippedUnsubscribed: number;
   }>;
 };
 
@@ -55,7 +56,7 @@ describe('policyAcknowledgmentDigest', () => {
     vi.clearAllMocks();
     mockFilterComplianceMembers.mockImplementation(async (members) => members);
     mockSendEmailViaApi.mockResolvedValue({ taskId: 'run_fake' });
-    mockIsUserUnsubscribed.mockResolvedValue(false);
+    mockGetUnsubscribedEmails.mockResolvedValue(new Set<string>());
   });
 
   it('sends one email per member with their pending policies', async () => {
@@ -103,7 +104,11 @@ describe('policyAcknowledgmentDigest', () => {
     expect(call.to).toBe('alice@example.com');
     expect(call.subject).toBe('You have 1 policy to review at Acme');
     expect(call.organizationId).toBe('org_1');
-    expect(result).toMatchObject({ success: true, emailsSent: 1 });
+    expect(result).toMatchObject({
+      success: true,
+      emailsSent: 1,
+      emailsSkippedUnsubscribed: 0,
+    });
   });
 
   it('skips members with zero pending policies', async () => {
@@ -314,12 +319,18 @@ describe('policyAcknowledgmentDigest', () => {
         ],
       },
     ]);
-    mockIsUserUnsubscribed.mockResolvedValueOnce(true);
+    mockGetUnsubscribedEmails.mockResolvedValueOnce(
+      new Set(['alice@example.com']),
+    );
 
     const result = await taskUnderTest.run({ timestamp: new Date() } as never);
 
     expect(mockSendEmailViaApi).not.toHaveBeenCalled();
-    expect(result).toMatchObject({ success: true, emailsSent: 0 });
+    expect(result).toMatchObject({
+      success: true,
+      emailsSent: 0,
+      emailsSkippedUnsubscribed: 1,
+    });
   });
 
   it('sends a separate email per org when a user belongs to multiple orgs', async () => {
@@ -383,6 +394,49 @@ describe('policyAcknowledgmentDigest', () => {
       .map((c) => (c[0] as { organizationId: string }).organizationId)
       .sort();
     expect(orgs).toEqual(['org_1', 'org_2']);
-    expect(result).toMatchObject({ success: true, orgsProcessed: 2, emailsSent: 2 });
+    expect(result).toMatchObject({
+      success: true,
+      orgsProcessed: 2,
+      emailsSent: 2,
+    });
+  });
+
+  it('sends emails in batches of up to 25', async () => {
+    // Create 60 members in one org, all with pending policies, all subscribed.
+    const members = Array.from({ length: 60 }, (_, i) => ({
+      id: `mem_${i}`,
+      department: 'it',
+      user: {
+        id: `usr_${i}`,
+        name: `User ${i}`,
+        email: `user${i}@example.com`,
+        role: null,
+      },
+    }));
+
+    mockFindMany.mockResolvedValueOnce([
+      {
+        id: 'org_big',
+        name: 'BigCo',
+        policies: [
+          {
+            id: 'pol_a',
+            name: 'Policy A',
+            signedBy: [],
+            visibility: 'ALL',
+            visibleToDepartments: [],
+          },
+        ],
+        members,
+      },
+    ]);
+
+    // All subscribed
+    mockGetUnsubscribedEmails.mockResolvedValueOnce(new Set<string>());
+
+    const result = await taskUnderTest.run({ timestamp: new Date() } as never);
+
+    expect(mockSendEmailViaApi).toHaveBeenCalledTimes(60);
+    expect(result).toMatchObject({ success: true, emailsSent: 60 });
   });
 });

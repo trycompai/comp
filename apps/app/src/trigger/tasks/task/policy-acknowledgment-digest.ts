@@ -3,7 +3,7 @@ import { logger, schedules } from '@trigger.dev/sdk';
 
 import { filterComplianceMembers } from '@/lib/compliance';
 import { PolicyAcknowledgmentDigestEmail } from '@trycompai/email';
-import { isUserUnsubscribed } from '@trycompai/email/lib/check-unsubscribe';
+import { getUnsubscribedEmails } from '@trycompai/email/lib/check-unsubscribe';
 
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
 import {
@@ -16,6 +16,20 @@ const getPortalBase = () =>
     /\/+$/,
     '',
   );
+
+const EMAIL_BATCH_SIZE = 25;
+
+async function sendInBatches<T>(
+  sends: Array<() => Promise<T>>,
+): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = [];
+  for (let i = 0; i < sends.length; i += EMAIL_BATCH_SIZE) {
+    const chunk = sends.slice(i, i + EMAIL_BATCH_SIZE);
+    const chunkResults = await Promise.allSettled(chunk.map((fn) => fn()));
+    results.push(...chunkResults);
+  }
+  return results;
+}
 
 export const policyAcknowledgmentDigest = schedules.task({
   id: 'policy-acknowledgment-digest',
@@ -71,6 +85,7 @@ export const policyAcknowledgmentDigest = schedules.task({
     const portalBase = getPortalBase();
     let emailsSent = 0;
     let emailsFailed = 0;
+    let emailsSkippedUnsubscribed = 0;
     let orgsProcessed = 0;
 
     for (const org of organizations) {
@@ -82,27 +97,22 @@ export const policyAcknowledgmentDigest = schedules.task({
 
       if (complianceMembers.length === 0) continue;
 
-      const sends: Promise<unknown>[] = [];
+      // Compute pending policies for each member first (no sends yet)
+      type PendingEntry = {
+        member: DigestMember;
+        policies: Array<{ id: string; name: string; url: string }>;
+        subject: string;
+        emailElement: ReturnType<typeof PolicyAcknowledgmentDigestEmail>;
+      };
+
+      const pending: PendingEntry[] = [];
+      const emailsWithPending: string[] = [];
 
       for (const member of complianceMembers) {
-        const unsubscribed = await isUserUnsubscribed(
-          db,
-          member.user.email,
-          'policyNotifications',
-          org.id,
-        );
-        if (unsubscribed) {
-          logger.debug('User unsubscribed from policy notifications, skipping', {
-            email: member.user.email,
-            orgId: org.id,
-          });
-          continue;
-        }
+        const pendingPolicies = computePendingPolicies(member, org.policies);
+        if (pendingPolicies.length === 0) continue;
 
-        const pending = computePendingPolicies(member, org.policies);
-        if (pending.length === 0) continue;
-
-        const policies = pending.map((p) => ({
+        const policies = pendingPolicies.map((p) => ({
           id: p.id,
           name: p.name,
           url: `${portalBase}/${org.id}/policy/${p.id}`,
@@ -119,17 +129,44 @@ export const policyAcknowledgmentDigest = schedules.task({
           policies,
         });
 
-        sends.push(
+        emailsWithPending.push(member.user.email);
+        pending.push({ member, policies, subject, emailElement });
+      }
+
+      if (pending.length === 0) continue;
+
+      // Batch unsubscribe check — 3 DB queries total for this org
+      const unsubscribedEmails = await getUnsubscribedEmails(
+        db,
+        emailsWithPending,
+        'policyNotifications',
+        org.id,
+      );
+
+      // Build thunks for subscribed members only
+      const sends: Array<() => Promise<unknown>> = [];
+
+      for (const entry of pending) {
+        if (unsubscribedEmails.has(entry.member.user.email)) {
+          logger.debug(
+            'User unsubscribed from policy notifications, skipping',
+            { email: entry.member.user.email, orgId: org.id },
+          );
+          emailsSkippedUnsubscribed += 1;
+          continue;
+        }
+
+        sends.push(() =>
           sendEmailViaApi({
-            to: member.user.email,
-            subject,
+            to: entry.member.user.email,
+            subject: entry.subject,
             organizationId: org.id,
-            react: emailElement!,
+            react: entry.emailElement!,
           }),
         );
       }
 
-      const results = await Promise.allSettled(sends);
+      const results = await sendInBatches(sends);
       for (const r of results) {
         if (r.status === 'fulfilled') emailsSent += 1;
         else {
@@ -143,8 +180,19 @@ export const policyAcknowledgmentDigest = schedules.task({
       }
     }
 
-    logger.info('Digest complete', { orgsProcessed, emailsSent, emailsFailed });
+    logger.info('Digest complete', {
+      orgsProcessed,
+      emailsSent,
+      emailsFailed,
+      emailsSkippedUnsubscribed,
+    });
 
-    return { success: true, orgsProcessed, emailsSent, emailsFailed };
+    return {
+      success: true,
+      orgsProcessed,
+      emailsSent,
+      emailsFailed,
+      emailsSkippedUnsubscribed,
+    };
   },
 });
