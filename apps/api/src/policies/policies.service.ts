@@ -10,6 +10,7 @@ import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
 import { filterComplianceMembers } from '../utils/compliance-filters';
 import type { CreatePolicyDto } from './dto/create-policy.dto';
+import type { PolicyAcknowledgmentItemDto } from './dto/policy-acknowledgment.dto';
 import type { UpdatePolicyDto } from './dto/update-policy.dto';
 import type {
   CreateVersionDto,
@@ -233,7 +234,10 @@ export class PoliciesService {
     }
   }
 
-  async findAcknowledgments(policyId: string, organizationId: string) {
+  async findAcknowledgments(
+    policyId: string,
+    organizationId: string,
+  ): Promise<PolicyAcknowledgmentItemDto[]> {
     const policy = await db.policy.findFirst({
       where: { id: policyId, organizationId },
       select: { id: true },
