@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Finding, FrameworkEditorFramework, Policy, Task } from '@db';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
+import { useFeatureFlag } from '@trycompai/analytics';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import type { Timeline } from '@/hooks/use-timelines';
 import { ComplianceOverview } from './ComplianceOverview';
@@ -78,6 +79,7 @@ export const Overview = ({
   timelines,
 }: OverviewProps) => {
   const [activeTab, setActiveTab] = useState('overview');
+  const isTimelineEnabled = useFeatureFlag('is-timeline-enabled');
 
   const overallComplianceScore = calculateOverallComplianceScore({
     publishedPolicies: publishedPoliciesScore.publishedPolicies,
@@ -94,7 +96,7 @@ export const Overview = ({
     <Tabs value={activeTab} onValueChange={setActiveTab}>
       <TabsList variant="underline">
         <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="timeline">Timeline</TabsTrigger>
+        {isTimelineEnabled && <TabsTrigger value="timeline">Timeline</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="overview">
@@ -138,11 +140,13 @@ export const Overview = ({
         </div>
       </TabsContent>
 
-      <TabsContent value="timeline">
-        <div className="pt-4">
-          <TimelineOverview initialData={timelines} />
-        </div>
-      </TabsContent>
+      {isTimelineEnabled && (
+        <TabsContent value="timeline">
+          <div className="pt-4">
+            <TimelineOverview initialData={timelines} />
+          </div>
+        </TabsContent>
+      )}
     </Tabs>
   );
 };

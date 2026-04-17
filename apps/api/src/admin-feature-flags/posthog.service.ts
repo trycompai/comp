@@ -1,0 +1,36 @@
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { PostHog } from 'posthog-node';
+
+@Injectable()
+export class PostHogService implements OnModuleDestroy {
+  private readonly logger = new Logger(PostHogService.name);
+  private client: PostHog | null = null;
+
+  getClient(): PostHog | null {
+    if (this.client) return this.client;
+
+    const apiKey = process.env.NEXT_PUBLIC_POSTHOG_KEY || process.env.POSTHOG_API_KEY;
+    const apiHost =
+      process.env.POSTHOG_HOST ||
+      process.env.NEXT_PUBLIC_POSTHOG_HOST ||
+      'https://us.i.posthog.com';
+
+    if (!apiKey) {
+      this.logger.warn('PostHog API key not configured; feature flag operations will be no-ops');
+      return null;
+    }
+
+    this.client = new PostHog(apiKey, {
+      host: apiHost,
+      flushAt: 1,
+      flushInterval: 0,
+    });
+    return this.client;
+  }
+
+  async onModuleDestroy() {
+    if (this.client) {
+      await this.client.shutdown();
+    }
+  }
+}

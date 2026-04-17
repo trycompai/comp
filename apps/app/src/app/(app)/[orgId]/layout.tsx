@@ -8,6 +8,7 @@ import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@/lib/s3-presigner';
+import { OrganizationIdentifier } from '@trycompai/analytics';
 import { db, Role } from '@db/server';
 import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
@@ -141,7 +142,9 @@ export default async function Layout({
   let isWebAutomationsEnabled = false;
   let isSecurityEnabled = false;
   if (session?.user?.id) {
-    const flags = await getFeatureFlags(session.user.id);
+    const flags = await getFeatureFlags(session.user.id, {
+      groups: { organization: organization.id },
+    });
     isQuestionnaireEnabled = flags['ai-vendor-questionnaire'] === true;
     isTrustNdaEnabled =
       flags['is-trust-nda-enabled'] === true || flags['is-trust-nda-enabled'] === 'true';
@@ -168,6 +171,7 @@ export default async function Layout({
       triggerJobId={onboarding?.triggerJobId || undefined}
       initialToken={publicAccessToken || undefined}
     >
+      <OrganizationIdentifier orgId={organization.id} orgName={organization.name} />
       <AppShellWrapper
         organization={organization}
         organizations={organizations}

@@ -46,10 +46,15 @@ export async function identify(distinctId: string, properties?: Properties) {
   });
 }
 
-export async function getFeatureFlags(distinctId: string) {
+export async function getFeatureFlags(
+  distinctId: string,
+  options?: { groups?: Record<string, string> },
+) {
   const client = await getPostHogClient();
   if (!client) return {};
 
-  const flags = await client.getAllFlags(distinctId);
+  const flags = await client.getAllFlags(distinctId, {
+    groups: options?.groups,
+  });
   return flags;
 }
