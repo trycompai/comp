@@ -91,6 +91,7 @@ describe('PoliciesController', () => {
     submitForApproval: jest.fn(),
     acceptChanges: jest.fn(),
     denyChanges: jest.fn(),
+    findAcknowledgments: jest.fn(),
   };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
@@ -620,6 +621,38 @@ describe('PoliciesController', () => {
         body,
       );
       expect(result.data).toEqual(mockResult);
+    });
+  });
+
+  describe('getPolicyAcknowledgments', () => {
+    it('calls policiesService.findAcknowledgments and returns the list with auth metadata', async () => {
+      const acks = [
+        {
+          memberId: 'mem_a',
+          memberName: 'Alice',
+          memberEmail: 'alice@x',
+          policyVersionId: 'pv_1',
+          policyVersion: 1,
+          signedAt: '2026-04-10T00:00:00.000Z',
+        },
+      ];
+      mockPoliciesService.findAcknowledgments.mockResolvedValue(acks);
+
+      const result = await controller.getPolicyAcknowledgments(
+        'pol_1',
+        orgId,
+        mockAuthContext,
+      );
+
+      expect(policiesService.findAcknowledgments).toHaveBeenCalledWith(
+        'pol_1',
+        orgId,
+      );
+      expect(result).toEqual({
+        data: acks,
+        authType: 'session',
+        authenticatedUser: { id: 'usr_123', email: 'test@example.com' },
+      });
     });
   });
 });

@@ -49,6 +49,7 @@ import {
   UpdateVersionContentDto,
 } from './dto/version.dto';
 import { PoliciesService } from './policies.service';
+import { GET_POLICY_ACKNOWLEDGMENTS_RESPONSES } from './schemas/get-policy-acknowledgments.responses';
 import { GET_ALL_POLICIES_RESPONSES } from './schemas/get-all-policies.responses';
 import { GET_POLICY_BY_ID_RESPONSES } from './schemas/get-policy-by-id.responses';
 import { CREATE_POLICY_RESPONSES } from './schemas/create-policy.responses';
@@ -197,6 +198,35 @@ export class PoliciesController {
     return {
       mappedControls: policy?.controls ?? [],
       allControls,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Get(':id/acknowledgments')
+  @RequirePermission('policy', 'read')
+  @ApiOperation({ summary: 'List acknowledgments for a policy across all versions' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiResponse(GET_POLICY_ACKNOWLEDGMENTS_RESPONSES[200])
+  @ApiResponse(GET_POLICY_ACKNOWLEDGMENTS_RESPONSES[401])
+  @ApiResponse(GET_POLICY_ACKNOWLEDGMENTS_RESPONSES[404])
+  async getPolicyAcknowledgments(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.findAcknowledgments(
+      id,
+      organizationId,
+    );
+
+    return {
+      data,
       authType: authContext.authType,
       ...(authContext.userId && {
         authenticatedUser: {
