@@ -6,9 +6,13 @@ vi.mock('@db/server', () => ({
   },
 }));
 
-vi.mock('@/lib/compliance', () => ({
-  filterComplianceMembers: vi.fn(),
-}));
+vi.mock('./policy-acknowledgment-digest-helpers', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('./policy-acknowledgment-digest-helpers')>();
+  return {
+    ...mod,
+    filterDigestMembersByCompliance: vi.fn().mockImplementation(async (_db: unknown, members: unknown[]) => members),
+  };
+});
 
 vi.mock('../../lib/send-email-via-api', () => ({
   sendEmailViaApi: vi.fn(),
@@ -26,7 +30,7 @@ vi.mock('@trigger.dev/sdk', () => ({
 }));
 
 import { db } from '@db/server';
-import { filterComplianceMembers } from '@/lib/compliance';
+import { filterDigestMembersByCompliance } from './policy-acknowledgment-digest-helpers';
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
 import { getUnsubscribedEmails } from '@trycompai/email/lib/check-unsubscribe';
 import { policyAcknowledgmentDigest } from './policy-acknowledgment-digest';
@@ -35,7 +39,7 @@ const mockDb = db as unknown as {
   organization: { findMany: ReturnType<typeof vi.fn> };
 };
 const mockFindMany = mockDb.organization.findMany;
-const mockFilterComplianceMembers = vi.mocked(filterComplianceMembers);
+const mockFilterDigestMembersByCompliance = vi.mocked(filterDigestMembersByCompliance);
 const mockSendEmailViaApi = vi.mocked(sendEmailViaApi);
 const mockGetUnsubscribedEmails = vi.mocked(getUnsubscribedEmails);
 
@@ -54,7 +58,7 @@ const taskUnderTest = policyAcknowledgmentDigest as unknown as {
 describe('policyAcknowledgmentDigest', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFilterComplianceMembers.mockImplementation(async (members) => members);
+    mockFilterDigestMembersByCompliance.mockImplementation(async (_db, members) => members);
     mockSendEmailViaApi.mockResolvedValue({ taskId: 'run_fake' });
     mockGetUnsubscribedEmails.mockResolvedValue(new Set<string>());
   });
@@ -176,7 +180,7 @@ describe('policyAcknowledgmentDigest', () => {
         ],
       },
     ]);
-    mockFilterComplianceMembers.mockResolvedValueOnce([]);
+    mockFilterDigestMembersByCompliance.mockResolvedValueOnce([]);
 
     const result = await taskUnderTest.run({
       timestamp: new Date(),
