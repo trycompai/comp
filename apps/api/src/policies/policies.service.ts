@@ -300,9 +300,10 @@ export class PoliciesService {
       // Prepare update data with special handling for status changes
       const updatePayload: Record<string, unknown> = { ...updateData };
 
-      // If status is being changed to published, update lastPublishedAt
+      // If status is being changed to published, update lastPublishedAt and clear signedBy
       if (updateData.status === 'published') {
         updatePayload.lastPublishedAt = new Date();
+        updatePayload.signedBy = [];
       }
 
       // If isArchived is being set to true, update lastArchivedAt

@@ -3,6 +3,7 @@ import { logger, schedules } from '@trigger.dev/sdk';
 
 import { filterComplianceMembers } from '@/lib/compliance';
 import { PolicyAcknowledgmentDigestEmail } from '@trycompai/email';
+import { isUserUnsubscribed } from '@trycompai/email/lib/check-unsubscribe';
 
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
 import {
@@ -81,6 +82,20 @@ export const policyAcknowledgmentDigest = schedules.task({
       const sends: Promise<unknown>[] = [];
 
       for (const member of complianceMembers) {
+        const unsubscribed = await isUserUnsubscribed(
+          db,
+          member.user.email,
+          'policyNotifications',
+          org.id,
+        );
+        if (unsubscribed) {
+          logger.debug('User unsubscribed from policy notifications, skipping', {
+            email: member.user.email,
+            orgId: org.id,
+          });
+          continue;
+        }
+
         const pending = computePendingPolicies(member, org.policies);
         if (pending.length === 0) continue;
 

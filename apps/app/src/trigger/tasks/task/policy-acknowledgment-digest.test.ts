@@ -14,8 +14,12 @@ vi.mock('../../lib/send-email-via-api', () => ({
   sendEmailViaApi: vi.fn(),
 }));
 
+vi.mock('@trycompai/email/lib/check-unsubscribe', () => ({
+  isUserUnsubscribed: vi.fn(),
+}));
+
 vi.mock('@trigger.dev/sdk', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
   schedules: {
     task: (config: { run: (payload: unknown) => Promise<unknown> }) => config,
   },
@@ -24,6 +28,7 @@ vi.mock('@trigger.dev/sdk', () => ({
 import { db } from '@db/server';
 import { filterComplianceMembers } from '@/lib/compliance';
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
+import { isUserUnsubscribed } from '@trycompai/email/lib/check-unsubscribe';
 import { policyAcknowledgmentDigest } from './policy-acknowledgment-digest';
 
 const mockDb = db as unknown as {
@@ -32,6 +37,7 @@ const mockDb = db as unknown as {
 const mockFindMany = mockDb.organization.findMany;
 const mockFilterComplianceMembers = vi.mocked(filterComplianceMembers);
 const mockSendEmailViaApi = vi.mocked(sendEmailViaApi);
+const mockIsUserUnsubscribed = vi.mocked(isUserUnsubscribed);
 
 // The mock replaces schedules.task with a passthrough that returns the config
 // directly, so `.run` is available on the exported constant at runtime.
@@ -49,6 +55,7 @@ describe('policyAcknowledgmentDigest', () => {
     vi.clearAllMocks();
     mockFilterComplianceMembers.mockImplementation(async (members) => members);
     mockSendEmailViaApi.mockResolvedValue({ taskId: 'run_fake' });
+    mockIsUserUnsubscribed.mockResolvedValue(false);
   });
 
   it('sends one email per member with their pending policies', async () => {
@@ -277,5 +284,105 @@ describe('policyAcknowledgmentDigest', () => {
       emailsSent: 1,
       emailsFailed: 1,
     });
+  });
+
+  it('skips members who have unsubscribed from policy notifications', async () => {
+    mockFindMany.mockResolvedValueOnce([
+      {
+        id: 'org_1',
+        name: 'Acme',
+        policies: [
+          {
+            id: 'pol_a',
+            name: 'Access Control',
+            signedBy: [],
+            visibility: 'ALL',
+            visibleToDepartments: [],
+          },
+        ],
+        members: [
+          {
+            id: 'mem_alice',
+            department: 'it',
+            user: {
+              id: 'usr_alice',
+              name: 'Alice',
+              email: 'alice@example.com',
+              role: null,
+            },
+          },
+        ],
+      },
+    ]);
+    mockIsUserUnsubscribed.mockResolvedValueOnce(true);
+
+    const result = await taskUnderTest.run({ timestamp: new Date() } as never);
+
+    expect(mockSendEmailViaApi).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ success: true, emailsSent: 0 });
+  });
+
+  it('sends a separate email per org when a user belongs to multiple orgs', async () => {
+    mockFindMany.mockResolvedValueOnce([
+      {
+        id: 'org_1',
+        name: 'Acme',
+        policies: [
+          {
+            id: 'pol_a',
+            name: 'A',
+            signedBy: [],
+            visibility: 'ALL',
+            visibleToDepartments: [],
+          },
+        ],
+        members: [
+          {
+            id: 'mem_1',
+            department: 'it',
+            user: {
+              id: 'usr_alice',
+              name: 'Alice',
+              email: 'alice@example.com',
+              role: null,
+            },
+          },
+        ],
+      },
+      {
+        id: 'org_2',
+        name: 'Beta',
+        policies: [
+          {
+            id: 'pol_b',
+            name: 'B',
+            signedBy: [],
+            visibility: 'ALL',
+            visibleToDepartments: [],
+          },
+        ],
+        members: [
+          {
+            id: 'mem_2',
+            department: 'hr',
+            user: {
+              id: 'usr_alice',
+              name: 'Alice',
+              email: 'alice@example.com',
+              role: null,
+            },
+          },
+        ],
+      },
+    ]);
+
+    const result = await taskUnderTest.run({ timestamp: new Date() } as never);
+
+    expect(sendEmailViaApi).toHaveBeenCalledTimes(2);
+    const orgs = mockSendEmailViaApi.mock.calls
+      .map((c) => (c[0] as { organizationId: string }).organizationId)
+      .sort();
+    expect(orgs).toEqual(['org_1', 'org_2']);
+    expect(result).toMatchObject({ success: true, orgsProcessed: 2, emailsSent: 2 });
   });
 });
