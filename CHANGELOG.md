@@ -1,3 +1,10 @@
+## [3.23.4](https://github.com/trycompai/comp/compare/v3.23.3...v3.23.4) (2026-04-17)
+
+
+### Bug Fixes
+
+* **people:** address review feedback on devices and export button ([#2587](https://github.com/trycompai/comp/issues/2587)) ([ca71fa8](https://github.com/trycompai/comp/commit/ca71fa87f9da3d1c26104e6015a262666c83991b))
+
 ## [3.23.3](https://github.com/trycompai/comp/compare/v3.23.2...v3.23.3) (2026-04-16)
 
 
