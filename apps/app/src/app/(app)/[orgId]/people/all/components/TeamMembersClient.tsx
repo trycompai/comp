@@ -68,8 +68,9 @@ export function TeamMembersClient({
   taskCompletionMap,
   complianceMemberIds,
 }: TeamMembersClientProps) {
-  const { agentDevices } = useAgentDevices();
-  const { fleetHosts } = useFleetHosts();
+  const { agentDevices, isLoading: isAgentDevicesLoading } = useAgentDevices();
+  const { fleetHosts, isLoading: isFleetHostsLoading } = useFleetHosts();
+  const isDeviceStatusLoading = isAgentDevicesLoading || isFleetHostsLoading;
 
   const deviceStatusMap = useMemo(() => {
     const map: Record<string, 'compliant' | 'non-compliant' | 'not-installed'> =
@@ -504,6 +505,7 @@ export function TeamMembersClient({
                   customRoles={customRoles}
                   taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}
                   deviceStatus={deviceStatusMap[(item as MemberWithUser).id]}
+                  isDeviceStatusLoading={isDeviceStatusLoading}
                 />
               ) : (
                 <PendingInvitationRow

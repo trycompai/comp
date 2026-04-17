@@ -1,5 +1,6 @@
 'use client';
 
+import { Skeleton } from '@trycompai/design-system';
 import { useMemo } from 'react';
 import { useAgentDevices } from '../hooks/useAgentDevices';
 import { useFleetHosts } from '../hooks/useFleetHosts';
@@ -12,8 +13,16 @@ interface DevicesTabContentProps {
 }
 
 export function DevicesTabContent({ isCurrentUserOwner }: DevicesTabContentProps) {
-  const { agentDevices } = useAgentDevices();
-  const { fleetHosts } = useFleetHosts();
+  const {
+    agentDevices,
+    isLoading: isAgentLoading,
+    error: agentError,
+  } = useAgentDevices();
+  const {
+    fleetHosts,
+    isLoading: isFleetLoading,
+    error: fleetError,
+  } = useFleetHosts();
 
   // Filter out Fleet hosts for members who already have device-agent devices.
   // Device agent takes priority over Fleet.
@@ -25,6 +34,27 @@ export function DevicesTabContent({ isCurrentUserOwner }: DevicesTabContentProps
       (host) => !host.member_id || !memberIdsWithAgent.has(host.member_id),
     );
   }, [agentDevices, fleetHosts]);
+
+  const isLoading = isAgentLoading || isFleetLoading;
+  const error = agentError ?? fleetError;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="my-6 h-[360px] w-full">
+          <Skeleton style={{ height: '100%', width: '100%' }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="my-6 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+        Failed to load device data. Please try again.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
