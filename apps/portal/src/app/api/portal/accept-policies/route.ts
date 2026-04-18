@@ -1,5 +1,5 @@
 import { auth } from '@/app/lib/auth';
-import { db } from '@db/server';
+import { Prisma, db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -10,6 +10,18 @@ const schema = z.object({
   policyIds: z.array(z.string()).min(1),
   memberId: z.string().min(1),
 });
+
+async function loadMemberForAck(
+  tx: Prisma.TransactionClient,
+  memberId: string,
+): Promise<{ id: string; name: string | null; email: string } | null> {
+  const member = await tx.member.findUnique({
+    where: { id: memberId },
+    select: { id: true, user: { select: { name: true, email: true } } },
+  });
+  if (!member) return null;
+  return { id: member.id, name: member.user.name ?? null, email: member.user.email };
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: req.headers });
@@ -44,25 +56,47 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const updatePromises = policyIds.map(async (policyId) => {
-      const policy = await db.policy.findUnique({
-        where: { id: policyId },
-      });
+    await db.$transaction(async (tx) => {
+      const ackMember = await loadMemberForAck(tx, memberId);
+      if (!ackMember) throw new Error('Member not found for ack');
 
-      if (policy && !policy.signedBy.includes(memberId)) {
-        return db.policy.update({
+      for (const policyId of policyIds) {
+        const policy = await tx.policy.findUnique({
           where: { id: policyId },
-          data: {
-            signedBy: {
-              push: memberId,
-            },
+          select: {
+            id: true,
+            currentVersionId: true,
+            organizationId: true,
+            signedBy: true,
           },
         });
-      }
-      return null;
-    });
+        if (!policy || !policy.currentVersionId) continue;
 
-    await Promise.all(updatePromises);
+        await tx.policyAcknowledgment.upsert({
+          where: {
+            policyVersionId_memberId: {
+              policyVersionId: policy.currentVersionId,
+              memberId: ackMember.id,
+            },
+          },
+          create: {
+            policyVersionId: policy.currentVersionId,
+            memberId: ackMember.id,
+            memberName: ackMember.name,
+            memberEmail: ackMember.email,
+            organizationId: policy.organizationId,
+          },
+          update: {},
+        });
+
+        if (!policy.signedBy.includes(ackMember.id)) {
+          await tx.policy.update({
+            where: { id: policyId },
+            data: { signedBy: { push: ackMember.id } },
+          });
+        }
+      }
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
