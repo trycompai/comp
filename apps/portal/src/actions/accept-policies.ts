@@ -1,18 +1,7 @@
 'use server';
 
-import { Prisma, db } from '@db/server';
-
-async function loadMemberForAck(
-  tx: Prisma.TransactionClient,
-  memberId: string,
-): Promise<{ id: string; name: string | null; email: string } | null> {
-  const member = await tx.member.findUnique({
-    where: { id: memberId },
-    select: { id: true, user: { select: { name: true, email: true } } },
-  });
-  if (!member) return null;
-  return { id: member.id, name: member.user.name ?? null, email: member.user.email };
-}
+import { db } from '@db/server';
+import { loadMemberForAck } from '@/lib/policy-acknowledgment';
 
 export async function acceptPolicy(policyId: string, memberId: string) {
   try {

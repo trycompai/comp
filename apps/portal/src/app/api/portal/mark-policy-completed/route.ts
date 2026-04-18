@@ -1,5 +1,6 @@
 import { auth } from '@/app/lib/auth';
-import { Prisma, db } from '@db/server';
+import { loadMemberForAck } from '@/lib/policy-acknowledgment';
+import { db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -10,17 +11,7 @@ const schema = z.object({
   policyId: z.string().min(1),
 });
 
-async function loadMemberForAck(
-  tx: Prisma.TransactionClient,
-  memberId: string,
-): Promise<{ id: string; name: string | null; email: string } | null> {
-  const member = await tx.member.findUnique({
-    where: { id: memberId },
-    select: { id: true, user: { select: { name: true, email: true } } },
-  });
-  if (!member) return null;
-  return { id: member.id, name: member.user.name ?? null, email: member.user.email };
-}
+const POLICY_NOT_FOUND = 'POLICY_NOT_FOUND';
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: req.headers });
@@ -63,7 +54,7 @@ export async function POST(req: NextRequest) {
           signedBy: true,
         },
       });
-      if (!policy) throw new Error('Policy not found');
+      if (!policy) throw new Error(POLICY_NOT_FOUND);
       if (!policy.currentVersionId) throw new Error('Policy has no current version');
 
       const ackMember = await loadMemberForAck(tx, member.id);
@@ -96,6 +87,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof Error && error.message === POLICY_NOT_FOUND) {
+      return NextResponse.json({ error: 'Policy not found' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Failed to mark policy as completed' }, { status: 500 });
   }
 }

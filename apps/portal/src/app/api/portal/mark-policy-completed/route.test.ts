@@ -116,6 +116,18 @@ describe('POST /api/portal/mark-policy-completed', () => {
     expect(mockDb.policy.update).not.toHaveBeenCalled();
   });
 
+  it('returns 404 when the policy does not exist', async () => {
+    mockDb.member.findUnique.mockResolvedValue({
+      id: 'mem_alice',
+      user: { name: 'Alice', email: 'alice@example.com' },
+    });
+    mockDb.policy.findUnique.mockResolvedValue(null);
+
+    const res = await POST(makeRequest({ policyId: 'pol_missing' }));
+
+    expect(res.status).toBe(404);
+  });
+
   it('returns 500 when policy has no currentVersionId', async () => {
     mockDb.member.findUnique.mockResolvedValue({
       id: 'mem_alice',

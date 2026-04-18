@@ -95,6 +95,27 @@ describe('POST /api/portal/accept-policies', () => {
     });
   });
 
+  it('does not push signedBy when member already signed (upsert still fires, idempotent)', async () => {
+    mockDb.member.findUnique.mockResolvedValue({
+      id: 'mem_alice',
+      user: { name: 'Alice', email: 'alice@example.com' },
+    });
+    mockDb.policy.findUnique.mockResolvedValue({
+      id: 'pol_1',
+      currentVersionId: 'pv_1',
+      organizationId: 'org_abc',
+      signedBy: ['mem_alice'],
+    });
+
+    const res = await POST(
+      makeRequest({ policyIds: ['pol_1'], memberId: 'mem_alice' }),
+    );
+
+    expect(await res.json()).toEqual({ success: true });
+    expect(mockDb.policyAcknowledgment.upsert).toHaveBeenCalledTimes(1);
+    expect(mockDb.policy.update).not.toHaveBeenCalled();
+  });
+
   it('skips a policy with null currentVersionId and continues the batch', async () => {
     mockDb.member.findUnique.mockResolvedValue({
       id: 'mem_alice',
