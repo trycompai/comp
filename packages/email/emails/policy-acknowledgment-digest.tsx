@@ -44,8 +44,9 @@ export const computePolicyAcknowledgmentDigestSubject = (
   orgs: PolicyAcknowledgmentDigestOrg[],
 ): string => {
   const totalPolicies = orgs.reduce((sum, o) => sum + o.policies.length, 0);
-  if (orgs.length === 1) {
-    return `You have ${pluralizePolicies(totalPolicies)} to review at ${orgs[0].name}`;
+  const [firstOrg] = orgs;
+  if (orgs.length === 1 && firstOrg) {
+    return `You have ${pluralizePolicies(totalPolicies)} to review at ${firstOrg.name}`;
   }
   return `You have ${pluralizePolicies(totalPolicies)} to review across ${orgs.length} organizations`;
 };
@@ -56,7 +57,8 @@ export const PolicyAcknowledgmentDigestEmail = ({
   orgs,
 }: PolicyAcknowledgmentDigestEmailProps) => {
   const orgsWithPolicies = orgs.filter((o) => o.policies.length > 0);
-  if (orgsWithPolicies.length === 0) return null;
+  const [firstOrg] = orgsWithPolicies;
+  if (!firstOrg) return null;
 
   const portalBase = (
     process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai'
@@ -92,8 +94,8 @@ export const PolicyAcknowledgmentDigestEmail = ({
             ) : (
               <Text className="text-[14px] leading-[24px] text-[#121212]">
                 Your organization{' '}
-                <strong>{orgsWithPolicies[0].name}</strong> has{' '}
-                {pluralizePolicies(orgsWithPolicies[0].policies.length)} awaiting
+                <strong>{firstOrg.name}</strong> has{' '}
+                {pluralizePolicies(firstOrg.policies.length)} awaiting
                 your review and acknowledgment:
               </Text>
             )}
