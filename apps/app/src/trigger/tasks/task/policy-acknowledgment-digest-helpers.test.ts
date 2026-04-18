@@ -37,14 +37,21 @@ const itOnlyPolicy: DigestPolicy = {
 
 describe('computePendingPolicies', () => {
   it('returns no pending policies when member has signed all applicable policies', () => {
-    const policies: DigestPolicy[] = [{ ...allPolicy, signedBy: ['usr_alice'] }];
+    const policies: DigestPolicy[] = [{ ...allPolicy, signedBy: ['mem_alice'] }];
     expect(computePendingPolicies(alice, policies)).toEqual([]);
   });
 
   it('returns policies where the member id is missing from signedBy[]', () => {
     const policies: DigestPolicy[] = [
-      { ...allPolicy, signedBy: ['usr_bob'] },
-      { ...itOnlyPolicy, id: 'pol_2', name: 'Second', signedBy: ['usr_alice'] },
+      { ...allPolicy, signedBy: ['mem_bob'] },
+      { ...itOnlyPolicy, id: 'pol_2', name: 'Second', signedBy: ['mem_alice'] },
+    ];
+    expect(computePendingPolicies(alice, policies).map((p) => p.id)).toEqual(['pol_all']);
+  });
+
+  it('does not treat the member user id as a signature (signedBy stores member ids, not user ids)', () => {
+    const policies: DigestPolicy[] = [
+      { ...allPolicy, signedBy: ['usr_alice'] },
     ];
     expect(computePendingPolicies(alice, policies).map((p) => p.id)).toEqual(['pol_all']);
   });

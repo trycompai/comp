@@ -51,7 +51,8 @@ const taskUnderTest = policyAcknowledgmentDigest as unknown as {
     emailsSent: number;
     emailsFailed: number;
     orgsProcessed: number;
-    emailsSkippedUnsubscribed: number;
+    recipients: number;
+    orgsSkippedUnsubscribed: number;
   }>;
 };
 
@@ -79,7 +80,7 @@ describe('policyAcknowledgmentDigest', () => {
           {
             id: 'pol_b',
             name: 'Backup',
-            signedBy: ['usr_alice'],
+            signedBy: ['mem_alice'],
             visibility: 'ALL',
             visibleToDepartments: [],
           },
@@ -111,7 +112,7 @@ describe('policyAcknowledgmentDigest', () => {
     expect(result).toMatchObject({
       success: true,
       emailsSent: 1,
-      emailsSkippedUnsubscribed: 0,
+      orgsSkippedUnsubscribed: 0,
     });
   });
 
@@ -124,7 +125,7 @@ describe('policyAcknowledgmentDigest', () => {
           {
             id: 'pol_a',
             name: 'Access Control',
-            signedBy: ['usr_alice'],
+            signedBy: ['mem_alice'],
             visibility: 'ALL',
             visibleToDepartments: [],
           },
@@ -333,11 +334,94 @@ describe('policyAcknowledgmentDigest', () => {
     expect(result).toMatchObject({
       success: true,
       emailsSent: 0,
-      emailsSkippedUnsubscribed: 1,
+      orgsSkippedUnsubscribed: 1,
     });
   });
 
-  it('sends a separate email per org when a user belongs to multiple orgs', async () => {
+  it('rolls up pending policies across orgs into a single email when a user belongs to multiple orgs', async () => {
+    mockFindMany.mockResolvedValueOnce([
+      {
+        id: 'org_1',
+        name: 'Acme',
+        policy: [
+          {
+            id: 'pol_a',
+            name: 'Access Control',
+            signedBy: [],
+            visibility: 'ALL',
+            visibleToDepartments: [],
+          },
+        ],
+        members: [
+          {
+            id: 'mem_1',
+            department: 'it',
+            user: {
+              id: 'usr_alice',
+              name: 'Alice',
+              email: 'alice@example.com',
+              role: null,
+            },
+          },
+        ],
+      },
+      {
+        id: 'org_2',
+        name: 'Beta',
+        policy: [
+          {
+            id: 'pol_b',
+            name: 'Backup',
+            signedBy: [],
+            visibility: 'ALL',
+            visibleToDepartments: [],
+          },
+          {
+            id: 'pol_c',
+            name: 'Change Mgmt',
+            signedBy: [],
+            visibility: 'ALL',
+            visibleToDepartments: [],
+          },
+        ],
+        members: [
+          {
+            id: 'mem_2',
+            department: 'hr',
+            user: {
+              id: 'usr_alice',
+              name: 'Alice',
+              email: 'alice@example.com',
+              role: null,
+            },
+          },
+        ],
+      },
+    ]);
+
+    const result = await taskUnderTest.run({ timestamp: new Date() } as never);
+
+    expect(mockSendEmailViaApi).toHaveBeenCalledTimes(1);
+    const call = mockSendEmailViaApi.mock.calls[0][0] as {
+      to: string;
+      subject: string;
+      organizationId: string;
+    };
+    expect(call.to).toBe('alice@example.com');
+    expect(call.subject).toBe(
+      'You have 3 policies to review across 2 organizations',
+    );
+    // x-organization-id falls back to the first org the user had policies in.
+    expect(call.organizationId).toBe('org_1');
+    expect(result).toMatchObject({
+      success: true,
+      orgsProcessed: 2,
+      recipients: 1,
+      emailsSent: 1,
+    });
+  });
+
+  it('drops a single org from the rollup when the user is unsubscribed there, but still emails about other orgs', async () => {
     mockFindMany.mockResolvedValueOnce([
       {
         id: 'org_1',
@@ -390,19 +474,135 @@ describe('policyAcknowledgmentDigest', () => {
         ],
       },
     ]);
+    // Alice is unsubscribed from policy notifications in org_1 only.
+    mockGetUnsubscribedEmails.mockImplementation(
+      async (_db, _emails, _pref, orgId) =>
+        orgId === 'org_1'
+          ? new Set<string>(['alice@example.com'])
+          : new Set<string>(),
+    );
 
     const result = await taskUnderTest.run({ timestamp: new Date() } as never);
 
-    expect(sendEmailViaApi).toHaveBeenCalledTimes(2);
-    const orgs = mockSendEmailViaApi.mock.calls
-      .map((c) => (c[0] as { organizationId: string }).organizationId)
-      .sort();
-    expect(orgs).toEqual(['org_1', 'org_2']);
+    expect(mockSendEmailViaApi).toHaveBeenCalledTimes(1);
+    const call = mockSendEmailViaApi.mock.calls[0][0] as {
+      subject: string;
+      organizationId: string;
+    };
+    expect(call.subject).toBe('You have 1 policy to review at Beta');
+    expect(call.organizationId).toBe('org_2');
     expect(result).toMatchObject({
       success: true,
       orgsProcessed: 2,
-      emailsSent: 2,
+      recipients: 1,
+      emailsSent: 1,
+      orgsSkippedUnsubscribed: 1,
     });
+  });
+
+  it('does not send any email to a user who is unsubscribed in every org they belong to', async () => {
+    mockFindMany.mockResolvedValueOnce([
+      {
+        id: 'org_1',
+        name: 'Acme',
+        policy: [
+          {
+            id: 'pol_a',
+            name: 'A',
+            signedBy: [],
+            visibility: 'ALL',
+            visibleToDepartments: [],
+          },
+        ],
+        members: [
+          {
+            id: 'mem_1',
+            department: 'it',
+            user: {
+              id: 'usr_alice',
+              name: 'Alice',
+              email: 'alice@example.com',
+              role: null,
+            },
+          },
+        ],
+      },
+      {
+        id: 'org_2',
+        name: 'Beta',
+        policy: [
+          {
+            id: 'pol_b',
+            name: 'B',
+            signedBy: [],
+            visibility: 'ALL',
+            visibleToDepartments: [],
+          },
+        ],
+        members: [
+          {
+            id: 'mem_2',
+            department: 'hr',
+            user: {
+              id: 'usr_alice',
+              name: 'Alice',
+              email: 'alice@example.com',
+              role: null,
+            },
+          },
+        ],
+      },
+    ]);
+    mockGetUnsubscribedEmails.mockResolvedValue(
+      new Set<string>(['alice@example.com']),
+    );
+
+    const result = await taskUnderTest.run({ timestamp: new Date() } as never);
+
+    expect(mockSendEmailViaApi).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      success: true,
+      recipients: 0,
+      emailsSent: 0,
+      orgsSkippedUnsubscribed: 2,
+    });
+  });
+
+  it('does not email a multi-role member (e.g. owner,employee) who has already signed every policy', async () => {
+    // Regression: signedBy stores member ids (from the portal accept action),
+    // not user ids. The digest must compare against member.id, otherwise
+    // every compliance-obligated member looks "pending" on every policy.
+    mockFindMany.mockResolvedValueOnce([
+      {
+        id: 'org_1',
+        name: 'Acme',
+        policy: Array.from({ length: 10 }, (_, i) => ({
+          id: `pol_${i}`,
+          name: `Policy ${i}`,
+          signedBy: ['mem_owner_employee'],
+          visibility: 'ALL',
+          visibleToDepartments: [],
+        })),
+        members: [
+          {
+            id: 'mem_owner_employee',
+            role: 'owner,employee',
+            department: 'eng',
+            user: {
+              id: 'usr_owner_employee',
+              name: 'Owner Employee',
+              email: 'multi@example.com',
+              role: null,
+            },
+          },
+        ],
+      },
+    ]);
+
+    const result = await taskUnderTest.run({ timestamp: new Date() } as never);
+
+    expect(mockSendEmailViaApi).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ success: true, emailsSent: 0 });
   });
 
   it('sends emails in batches of up to 25', async () => {
@@ -442,5 +642,41 @@ describe('policyAcknowledgmentDigest', () => {
 
     expect(mockSendEmailViaApi).toHaveBeenCalledTimes(60);
     expect(result).toMatchObject({ success: true, emailsSent: 60 });
+  });
+
+  it('filters out dead orgs at the DB query (hasAccess, onboardingCompleted, 90-day session activity)', async () => {
+    mockFindMany.mockResolvedValueOnce([]);
+
+    await taskUnderTest.run({ timestamp: new Date() } as never);
+
+    expect(mockFindMany).toHaveBeenCalledTimes(1);
+    const args = mockFindMany.mock.calls[0][0] as {
+      where: {
+        hasAccess?: boolean;
+        onboardingCompleted?: boolean;
+        members?: {
+          some?: {
+            deactivated?: boolean;
+            user?: {
+              sessions?: { some?: { updatedAt?: { gte?: Date } } };
+            };
+          };
+        };
+      };
+    };
+
+    expect(args.where.hasAccess).toBe(true);
+    expect(args.where.onboardingCompleted).toBe(true);
+    expect(args.where.members?.some?.deactivated).toBe(false);
+    const gte = args.where.members?.some?.user?.sessions?.some?.updatedAt?.gte;
+    expect(gte).toBeInstanceOf(Date);
+
+    // Mirror the task's local-time setDate(-90) so the assertion survives
+    // DST transitions during the 90-day window.
+    const expected = new Date();
+    expected.setDate(expected.getDate() - 90);
+    expect(Math.abs((gte as Date).getTime() - expected.getTime())).toBeLessThan(
+      5_000,
+    );
   });
 });
