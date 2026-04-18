@@ -1,11 +1,9 @@
 'use server';
 
-import { db } from '@db/server';
-
-type TransactionClient = Parameters<Parameters<(typeof db)['$transaction']>[0]>[0];
+import { Prisma, db } from '@db/server';
 
 async function loadMemberForAck(
-  tx: TransactionClient,
+  tx: Prisma.TransactionClient,
   memberId: string,
 ): Promise<{ id: string; name: string | null; email: string } | null> {
   const member = await tx.member.findUnique({
@@ -64,7 +62,7 @@ export async function acceptPolicy(policyId: string, memberId: string) {
     return result;
   } catch (error) {
     console.error('Error accepting policy:', error);
-    return { success: false, error: 'Failed to accept policy' };
+    return { success: false as const, error: 'Failed to accept policy' };
   }
 }
 
@@ -112,9 +110,9 @@ export async function acceptAllPolicies(policyIds: string[], memberId: string) {
       }
     });
 
-    return { success: true };
+    return { success: true as const };
   } catch (error) {
     console.error('Error accepting all policies:', error);
-    return { success: false, error: 'Failed to accept all policies' };
+    return { success: false as const, error: 'Failed to accept all policies' };
   }
 }

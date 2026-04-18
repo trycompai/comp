@@ -45,7 +45,9 @@
         "eslint-config-next": "15.5.2",
         "postcss": "^8.5.4",
         "tailwindcss": "^4.1.8",
-        "typescript": "^5.8.3"
+        "typescript": "^5.8.3",
+        "vite-tsconfig-paths": "^5.1.4",
+        "vitest": "^3.2.4"
     },
     "peerDependencies": {
         "react": "^19.1.1",
@@ -61,6 +63,7 @@
         "dev": "next dev --turbopack -p 3002",
         "lint": "eslint . && prettier --check .",
         "prebuild": "bun run db:generate",
-        "start": "next start"
+        "start": "next start",
+        "test": "vitest run"
     }
 }
