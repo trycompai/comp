@@ -56,6 +56,15 @@ export default async function SignedPoliciesPage({
         name: true,
         description: true,
         updatedAt: true,
+        currentVersion: {
+          select: {
+            acknowledgments: {
+              where: { memberId: member.id },
+              select: { signedAt: true },
+              take: 1,
+            },
+          },
+        },
       },
     }),
   );
@@ -103,7 +112,13 @@ export default async function SignedPoliciesPage({
                         )}
                       </div>
                       <Text variant="muted" size="sm">
-                        {new Date(policy.updatedAt).toLocaleDateString()}
+                        {(() => {
+                          const signedAt =
+                            policy.currentVersion?.acknowledgments[0]
+                              ?.signedAt;
+                          const display = signedAt ?? policy.updatedAt;
+                          return new Date(display).toLocaleDateString();
+                        })()}
                       </Text>
                     </div>
                   </CardContent>
