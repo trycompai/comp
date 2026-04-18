@@ -1,5 +1,5 @@
 import { auth } from '@/app/lib/auth';
-import { db } from '@db/server';
+import { Prisma, db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -9,6 +9,18 @@ export const dynamic = 'force-dynamic';
 const schema = z.object({
   policyId: z.string().min(1),
 });
+
+async function loadMemberForAck(
+  tx: Prisma.TransactionClient,
+  memberId: string,
+): Promise<{ id: string; name: string | null; email: string } | null> {
+  const member = await tx.member.findUnique({
+    where: { id: memberId },
+    select: { id: true, user: { select: { name: true, email: true } } },
+  });
+  if (!member) return null;
+  return { id: member.id, name: member.user.name ?? null, email: member.user.email };
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: req.headers });
@@ -40,25 +52,50 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Member not found' }, { status: 404 });
   }
 
-  const policy = await db.policy.findUnique({
-    where: { id: policyId },
-  });
+  try {
+    await db.$transaction(async (tx) => {
+      const policy = await tx.policy.findUnique({
+        where: { id: policyId },
+        select: {
+          id: true,
+          currentVersionId: true,
+          organizationId: true,
+          signedBy: true,
+        },
+      });
+      if (!policy) throw new Error('Policy not found');
+      if (!policy.currentVersionId) throw new Error('Policy has no current version');
 
-  if (!policy) {
-    return NextResponse.json({ error: 'Policy not found' }, { status: 404 });
+      const ackMember = await loadMemberForAck(tx, member.id);
+      if (!ackMember) throw new Error('Member not found for ack');
+
+      await tx.policyAcknowledgment.upsert({
+        where: {
+          policyVersionId_memberId: {
+            policyVersionId: policy.currentVersionId,
+            memberId: ackMember.id,
+          },
+        },
+        create: {
+          policyVersionId: policy.currentVersionId,
+          memberId: ackMember.id,
+          memberName: ackMember.name,
+          memberEmail: ackMember.email,
+          organizationId: policy.organizationId,
+        },
+        update: {},
+      });
+
+      if (!policy.signedBy.includes(ackMember.id)) {
+        await tx.policy.update({
+          where: { id: policyId },
+          data: { signedBy: { push: ackMember.id } },
+        });
+      }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to mark policy as completed' }, { status: 500 });
   }
-
-  // Check if user has already signed this policy
-  if (policy.signedBy.includes(member.id)) {
-    return NextResponse.json({ success: true, alreadySigned: true });
-  }
-
-  await db.policy.update({
-    where: { id: policyId },
-    data: {
-      signedBy: [...policy.signedBy, member.id],
-    },
-  });
-
-  return NextResponse.json({ success: true });
 }
