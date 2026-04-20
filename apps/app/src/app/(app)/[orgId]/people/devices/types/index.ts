@@ -1,3 +1,5 @@
+import type { DeviceComplianceStatus } from '@trycompai/utils/devices';
+
 export type CheckDetailEntry = {
   method?: string;
   raw?: string;
@@ -33,6 +35,10 @@ export interface DeviceWithChecks {
   };
   /** Indicates which system reported this device */
   source: 'device_agent' | 'fleet';
+  /** Derived on the server; 'stale' = no check-in for >= 7 days. */
+  complianceStatus: DeviceComplianceStatus;
+  /** Whole days since last check-in, or null when never synced. */
+  daysSinceLastCheckIn: number | null;
 }
 
 export interface FleetPolicy {

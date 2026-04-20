@@ -11,6 +11,10 @@ import { db } from '@db/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
+import {
+  daysSinceCheckIn,
+  getDeviceComplianceStatus,
+} from '@trycompai/utils/devices';
 import type { CheckDetails, DeviceWithChecks } from '../devices/types';
 import { Employee } from './components/Employee';
 
@@ -287,6 +291,11 @@ const getMemberDevice = async (
     return null;
   }
 
+  const complianceStatus = getDeviceComplianceStatus({
+    isCompliant: device.isCompliant,
+    lastCheckIn: device.lastCheckIn,
+  });
+
   return {
     id: device.id,
     name: device.name,
@@ -309,5 +318,7 @@ const getMemberDevice = async (
       email: device.member.user.email,
     },
     source: 'device_agent' as const,
+    complianceStatus,
+    daysSinceLastCheckIn: daysSinceCheckIn(device.lastCheckIn),
   };
 };

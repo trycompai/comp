@@ -48,6 +48,8 @@ function makeAgentDevice(overrides: Partial<DeviceWithChecks> = {}): DeviceWithC
     installedAt: new Date().toISOString(),
     user: { name: 'Test User', email: 'test@example.com' },
     source: 'device_agent',
+    complianceStatus: 'compliant',
+    daysSinceLastCheckIn: 0,
     ...overrides,
   };
 }
