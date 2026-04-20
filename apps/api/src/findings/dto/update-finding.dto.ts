@@ -6,34 +6,25 @@ import {
   IsNotEmpty,
   MaxLength,
 } from 'class-validator';
-import { FindingStatus, FindingType } from '@db';
+import { FindingSeverity, FindingStatus, FindingType } from '@db';
 
 export class UpdateFindingDto {
-  @ApiProperty({
-    description: 'Finding status',
-    enum: FindingStatus,
-    required: false,
-  })
+  @ApiProperty({ description: 'Finding status', enum: FindingStatus, required: false })
   @IsEnum(FindingStatus)
   @IsOptional()
   status?: FindingStatus;
 
-  @ApiProperty({
-    description: 'Type of finding (SOC 2 or ISO 27001)',
-    enum: FindingType,
-    required: false,
-  })
+  @ApiProperty({ description: 'Finding type', enum: FindingType, required: false })
   @IsEnum(FindingType)
   @IsOptional()
   type?: FindingType;
 
-  @ApiProperty({
-    description: 'Finding content/message',
-    example:
-      'The uploaded evidence does not clearly show the Organization Name or URL.',
-    maxLength: 5000,
-    required: false,
-  })
+  @ApiProperty({ description: 'Severity', enum: FindingSeverity, required: false })
+  @IsEnum(FindingSeverity)
+  @IsOptional()
+  severity?: FindingSeverity;
+
+  @ApiProperty({ description: 'Finding content/message', maxLength: 5000, required: false })
   @IsString()
   @IsOptional()
   @IsNotEmpty({ message: 'Content cannot be empty if provided' })
@@ -41,9 +32,7 @@ export class UpdateFindingDto {
   content?: string;
 
   @ApiProperty({
-    description:
-      'Auditor note when requesting revision (only for needs_revision status)',
-    example: 'Please provide clearer screenshots showing the timestamp.',
+    description: 'Auditor note when requesting revision',
     maxLength: 2000,
     required: false,
     nullable: true,

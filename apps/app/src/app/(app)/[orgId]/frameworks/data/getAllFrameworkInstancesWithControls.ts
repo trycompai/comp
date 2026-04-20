@@ -15,6 +15,7 @@ export async function getAllFrameworkInstancesWithControls({
     },
     include: {
       framework: true,
+      customFramework: true,
       requirementsMapped: {
         include: {
           control: {

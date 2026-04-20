@@ -98,6 +98,7 @@ export function FrameworkRequirements({
     return items.filter(
       (item) =>
         item.name.toLowerCase().includes(lowerSearch) ||
+        item.identifier?.toLowerCase().includes(lowerSearch) ||
         item.description?.toLowerCase().includes(lowerSearch),
     );
   }, [items, searchTerm]);
@@ -106,15 +107,9 @@ export function FrameworkRequirements({
     router.push(`/${orgId}/frameworks/${frameworkInstanceId}/requirements/${requirementId}`);
   };
 
-  if (!items?.length) {
-    return null;
-  }
-
   return (
     <div className="space-y-4">
-      <Heading level="2">
-        Requirements ({filteredItems.length})
-      </Heading>
+      <Heading level="2">Requirements ({filteredItems.length})</Heading>
       <div className="w-full max-w-sm">
         <InputGroup>
           <InputGroupAddon>
@@ -130,6 +125,7 @@ export function FrameworkRequirements({
       <Table variant="bordered">
         <TableHeader>
           <TableRow>
+            <TableHead>Identifier</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
             <TableHead>Controls</TableHead>
@@ -140,7 +136,7 @@ export function FrameworkRequirements({
         <TableBody>
           {filteredItems.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5}>
+              <TableCell colSpan={6}>
                 <Text size="sm" variant="muted">
                   No requirements found.
                 </Text>
@@ -149,6 +145,7 @@ export function FrameworkRequirements({
           ) : (
             filteredItems.map((item) => {
               const status = getRequirementStatus(item.satisfiedControlsCount, item.mappedControlsCount);
+              const identifier = item.identifier?.trim();
 
               return (
                 <TableRow
@@ -165,14 +162,23 @@ export function FrameworkRequirements({
                   style={{ cursor: 'pointer' }}
                 >
                   <TableCell>
-                    <span className="line-clamp-2">{item.name}</span>
+                    <span className="text-sm">{identifier || '—'}</span>
                   </TableCell>
                   <TableCell>
-                    <div className="line-clamp-2">
-                      <Text size="sm" variant="muted">
-                        {item.description}
-                      </Text>
-                    </div>
+                    <span
+                      className="block max-w-[280px] truncate text-sm"
+                      title={item.name}
+                    >
+                      {item.name}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className="block max-w-[420px] truncate text-sm"
+                      title={item.description || ''}
+                    >
+                      {item.description || '—'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="tabular-nums">

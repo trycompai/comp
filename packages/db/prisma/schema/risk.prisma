@@ -23,6 +23,7 @@ model Risk {
   assigneeId     String?
   assignee       Member?      @relation(fields: [assigneeId], references: [id])
   tasks          Task[]
+  findings       Finding[]
 
   @@index([organizationId])
   @@index([category])

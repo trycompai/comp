@@ -9,15 +9,17 @@ interface ControlsApiResponse {
   pageCount: number;
 }
 
+type RequirementMappingPayload =
+  | { requirementId: string; customRequirementId?: never; frameworkInstanceId: string }
+  | { requirementId?: never; customRequirementId: string; frameworkInstanceId: string };
+
 interface CreateControlPayload {
   name: string;
   description: string;
   policyIds?: string[];
   taskIds?: string[];
-  requirementMappings?: {
-    requirementId: string;
-    frameworkInstanceId: string;
-  }[];
+  requirementMappings?: RequirementMappingPayload[];
+  documentTypes?: string[];
 }
 
 export const controlsKey = () => ['/v1/controls'] as const;

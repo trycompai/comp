@@ -26,6 +26,7 @@ model Vendor {
   assignee       Member?         @relation(fields: [assigneeId], references: [id], onDelete: Cascade)
   contacts       VendorContact[]
   tasks          Task[]
+  findings       Finding[]
 
   @@index([organizationId])
   @@index([assigneeId])

@@ -24,7 +24,11 @@ export interface FrameworksOverviewProps {
 }
 
 export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
-  const frameworkName = framework.framework.name.trim();
+  const frameworkName = (
+    framework.framework?.name ??
+    framework.customFramework?.name ??
+    ''
+  ).trim();
   const normalizedName = frameworkName.toLowerCase();
 
   if (frameworkName === 'SOC 2') {
@@ -78,7 +82,12 @@ export function FrameworksOverview({
   );
 
   const availableFrameworksToAdd = allFrameworks.filter(
-    (framework) => !frameworksWithControls.some((fc) => fc.framework.id === framework.id),
+    (framework) =>
+      !frameworksWithControls.some(
+        (fc) =>
+          fc.framework?.id === framework.id ||
+          fc.customFramework?.id === framework.id,
+      ),
   );
 
   return (
@@ -104,6 +113,14 @@ export function FrameworksOverview({
               {frameworksWithControls.map((framework, index) => {
                 const complianceScore = complianceMap.get(framework.id) ?? 0;
                 const badgeSrc = mapFrameworkToBadge(framework);
+                const displayName =
+                  framework.framework?.name ??
+                  framework.customFramework?.name ??
+                  '';
+                const displayDescription =
+                  framework.framework?.description ??
+                  framework.customFramework?.description ??
+                  '';
 
                 return (
                   <div key={framework.id}>
@@ -117,7 +134,7 @@ export function FrameworksOverview({
                             {badgeSrc ? (
                               <Image
                                 src={badgeSrc}
-                                alt={framework.framework.name}
+                                alt={displayName}
                                 width={32}
                                 height={32}
                                 className="rounded-full w-8 h-8"
@@ -126,16 +143,16 @@ export function FrameworksOverview({
                             ) : (
                               <div className="rounded-full w-8 h-8 bg-muted flex items-center justify-center">
                                 <span className="text-xs text-muted-foreground">
-                                  {framework.framework.name.charAt(0)}
+                                  {displayName.charAt(0)}
                                 </span>
                               </div>
                             )}
                           </div>
                           <div className="flex flex-col flex-1 min-w-0">
                             <span className="text-sm font-medium text-foreground flex flex-col">
-                              {framework.framework.name}
+                              {displayName}
                               <span className="text-xs text-muted-foreground font-normal">
-                                {framework.framework.description?.trim()}
+                                {displayDescription?.trim()}
                               </span>
                             </span>
 

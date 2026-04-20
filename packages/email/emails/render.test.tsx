@@ -6,6 +6,7 @@ import { InvitePortalEmail } from './invite-portal';
 import { MagicLinkEmail } from './magic-link';
 import { WelcomeEmail } from './marketing/welcome';
 import { OTPVerificationEmail } from './otp';
+import { PolicyAcknowledgmentDigestEmail } from './policy-acknowledgment-digest';
 import { PolicyNotificationEmail } from './policy-notification';
 import { TaskReminderEmail } from './reminders/task-reminder';
 import { TaskStatusNotificationEmail } from './reminders/task-status-notification';
@@ -37,12 +38,7 @@ const cases = [
   {
     name: 'task-reminder',
     el: (
-      <TaskReminderEmail
-        email="user@example.com"
-        name="User"
-        dueDate="2026-04-20"
-        recordId="r1"
-      />
+      <TaskReminderEmail email="user@example.com" name="User" dueDate="2026-04-20" recordId="r1" />
     ),
   },
   {
@@ -140,6 +136,71 @@ const cases = [
         organizationId="org_123"
         removedMemberName="Former"
         unassignedItems={[{ type: 'task', id: 't1', name: 'Task' }]}
+      />
+    ),
+  },
+  {
+    name: 'policy-acknowledgment-digest-single-org',
+    el: (
+      <PolicyAcknowledgmentDigestEmail
+        email="user@example.com"
+        userName="User"
+        orgs={[
+          {
+            id: 'org_123',
+            name: 'Acme',
+            policies: [
+              {
+                id: 'p1',
+                name: 'Acceptable Use Policy',
+                url: 'https://portal.trycomp.ai/org_123/policy/p1',
+              },
+              {
+                id: 'p2',
+                name: 'Security Policy',
+                url: 'https://portal.trycomp.ai/org_123/policy/p2',
+              },
+            ],
+          },
+        ]}
+      />
+    ),
+  },
+  {
+    name: 'policy-acknowledgment-digest-multi-org',
+    el: (
+      <PolicyAcknowledgmentDigestEmail
+        email="user@example.com"
+        userName="User"
+        orgs={[
+          {
+            id: 'org_1',
+            name: 'Acme',
+            policies: [
+              {
+                id: 'p1',
+                name: 'Acceptable Use Policy',
+                url: 'https://portal.trycomp.ai/org_1/policy/p1',
+              },
+            ],
+          },
+          {
+            id: 'org_2',
+            name: 'Beta',
+            policies: [
+              {
+                id: 'p2',
+                name: 'Security Policy',
+                url: 'https://portal.trycomp.ai/org_2/policy/p2',
+              },
+              {
+                id: 'p3',
+                name: 'Data Retention',
+                url: 'https://portal.trycomp.ai/org_2/policy/p3',
+              },
+            ],
+          },
+        ]}
       />
     ),
   },

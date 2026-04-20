@@ -10,11 +10,27 @@ enum FindingStatus {
   closed
 }
 
-enum FindingScope {
+enum FindingSeverity {
+  low
+  medium
+  high
+  critical
+}
+
+enum FindingArea {
   people
-  people_tasks
-  people_devices
-  people_chart
+  documents
+  compliance
+  // "General" buckets for cases where an auditor wants to log something like
+  // "no risks are tracked" or "the policy for X is missing" without picking a
+  // specific Risk/Vendor/Policy row.
+  risks
+  vendors
+  policies
+  // Legacy/unclassified bucket for rows backfilled from the old FindingScope
+  // enum (see migration 20260419120000). Not surfaced as a primary target
+  // option in the Create Finding sheet.
+  other
 }
 
 model FindingTemplate {
@@ -30,33 +46,53 @@ model FindingTemplate {
 }
 
 model Finding {
-  id           String        @id @default(dbgenerated("generate_prefixed_cuid('fnd'::text)"))
-  type         FindingType   @default(soc2)
-  status       FindingStatus @default(open)
+  id           String          @id @default(dbgenerated("generate_prefixed_cuid('fnd'::text)"))
+  type         FindingType     @default(soc2)
+  status       FindingStatus   @default(open)
+  severity     FindingSeverity @default(medium)
   content      String // Custom message or copied from template
   revisionNote String? // Auditor's note when requesting revision
-  scope        FindingScope?
+  area         FindingArea? // Used when the finding is not tied to a specific item
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relationships
+  // Target relationships — exactly one target link should be set (task, evidenceSubmission,
+  // evidenceFormType, policy, vendor, risk, member, device) OR the `area` field for non-item findings.
   taskId               String?
   task                 Task?               @relation(fields: [taskId], references: [id], onDelete: Cascade)
   evidenceSubmissionId String?
   evidenceSubmission   EvidenceSubmission? @relation(fields: [evidenceSubmissionId], references: [id], onDelete: Cascade)
   evidenceFormType     EvidenceFormType?
-  templateId           String?
-  template             FindingTemplate?    @relation(fields: [templateId], references: [id])
-  createdById          String?
-  createdBy            Member?             @relation("FindingCreatedBy", fields: [createdById], references: [id])
-  createdByAdminId     String?
-  createdByAdmin       User?               @relation("AdminFindingCreator", fields: [createdByAdminId], references: [id])
-  organizationId       String
-  organization         Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  policyId             String?
+  policy               Policy?             @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  vendorId             String?
+  vendor               Vendor?             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  riskId               String?
+  risk                 Risk?               @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  memberId             String?
+  member               Member?             @relation("FindingSubject", fields: [memberId], references: [id], onDelete: Cascade)
+  deviceId             String?
+  device               Device?             @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  templateId       String?
+  template         FindingTemplate? @relation(fields: [templateId], references: [id])
+  createdById      String?
+  createdBy        Member?          @relation("FindingCreatedBy", fields: [createdById], references: [id])
+  createdByAdminId String?
+  createdByAdmin   User?            @relation("AdminFindingCreator", fields: [createdByAdminId], references: [id])
+  organizationId   String
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([taskId])
   @@index([evidenceSubmissionId])
   @@index([evidenceFormType])
+  @@index([policyId])
+  @@index([vendorId])
+  @@index([riskId])
+  @@index([memberId])
+  @@index([deviceId])
   @@index([organizationId, status])
+  @@index([organizationId, severity])
 }

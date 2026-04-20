@@ -24,6 +24,8 @@ model Device {
   installedAt  DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  findings Finding[]
+
   @@unique([serialNumber, organizationId])
   @@index([memberId])
   @@index([organizationId])

@@ -45,7 +45,9 @@ export class AdminFindingsController {
       validatedStatus = status as FindingStatus;
     }
 
-    return this.findingsService.findByOrganizationId(orgId, validatedStatus);
+    return this.findingsService.listForOrganization(orgId, {
+      status: validatedStatus,
+    });
   }
 
   @Post(':orgId/findings')

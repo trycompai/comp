@@ -81,5 +81,9 @@ model Organization {
   organizationRoles          OrganizationRole[]
   roleNotificationSettings   RoleNotificationSetting[]
 
+  // Custom frameworks / requirements authored by this org
+  customFrameworks   CustomFramework[]
+  customRequirements CustomRequirement[]
+
   @@index([slug])
 }

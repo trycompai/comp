@@ -28,6 +28,7 @@ import {
   Badge,
   HStack,
   Label,
+  Skeleton,
   TableCell,
   TableRow,
   Text,
@@ -52,6 +53,7 @@ interface MemberRowProps {
   customRoles?: CustomRoleOption[];
   taskCompletion?: TaskCompletion;
   deviceStatus?: 'compliant' | 'non-compliant' | 'not-installed';
+  isDeviceStatusLoading?: boolean;
 }
 
 function getInitials(name?: string | null, email?: string | null): string {
@@ -96,6 +98,7 @@ export function MemberRow({
   customRoles = [],
   taskCompletion,
   deviceStatus,
+  isDeviceStatusLoading = false,
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -233,7 +236,15 @@ export function MemberRow({
 
         {/* DEVICE */}
         <TableCell>
-          {isPlatformAdmin || isDeactivated || !deviceStatus ? (
+          {isPlatformAdmin || isDeactivated ? (
+            <Text size="sm" variant="muted">
+              —
+            </Text>
+          ) : isDeviceStatusLoading ? (
+            <div className="h-4 w-24">
+              <Skeleton style={{ height: '100%', width: '100%' }} />
+            </div>
+          ) : !deviceStatus ? (
             <Text size="sm" variant="muted">
               —
             </Text>

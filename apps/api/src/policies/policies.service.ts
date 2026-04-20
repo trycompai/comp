@@ -8,6 +8,7 @@ import { db, Frequency, PolicyStatus, Prisma } from '@db';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
+import { filterComplianceMembers } from '../utils/compliance-filters';
 import type { CreatePolicyDto } from './dto/create-policy.dto';
 import type { UpdatePolicyDto } from './dto/update-policy.dto';
 import type {
@@ -117,12 +118,13 @@ export class PoliciesService {
             status: 'published',
             lastPublishedAt: now,
             reviewDate: computeNextReviewDate(p.frequency),
+            // Clear signatures — employees must re-acknowledge new content
+            signedBy: [],
           },
         }),
       ),
     );
 
-    // Create audit log entry for each published policy
     if (userId) {
       await db.auditLog.createMany({
         data: draftPolicies.map((p) => ({
@@ -143,23 +145,23 @@ export class PoliciesService {
       });
     }
 
-    // Fetch employee/contractor members for email notifications
-    const members = await db.member.findMany({
-      where: {
-        organizationId,
-        deactivated: false,
-        role: { in: ['employee', 'contractor'] },
-      },
+    const allMembers = await db.member.findMany({
+      where: { organizationId, deactivated: false },
       include: {
-        user: { select: { email: true, name: true } },
+        user: { select: { email: true, name: true, role: true } },
         organization: { select: { name: true, id: true } },
       },
     });
 
+    const complianceMembers = await filterComplianceMembers(
+      allMembers,
+      organizationId,
+    );
+
     return {
       success: true,
       publishedCount: draftPolicies.length,
-      members: members.map((m) => ({
+      members: complianceMembers.map((m) => ({
         email: m.user.email,
         userName: m.user.name || '',
         organizationName: m.organization.name || '',
@@ -321,11 +323,6 @@ export class PoliciesService {
       // Prepare update data with special handling for status changes
       const updatePayload: Record<string, unknown> = { ...updateData };
 
-      // If status is being changed to published, update lastPublishedAt
-      if (updateData.status === 'published') {
-        updatePayload.lastPublishedAt = new Date();
-      }
-
       // If isArchived is being set to true, update lastArchivedAt
       if (updateData.isArchived === true) {
         updatePayload.lastArchivedAt = new Date();
@@ -358,6 +355,16 @@ export class PoliciesService {
           throw new BadRequestException(
             'Cannot update content of a published policy. Create a new version to make changes.',
           );
+        }
+
+        // Only clear signatures when actually transitioning to published.
+        // Re-sending the full object for an already-published policy must not wipe acknowledgments.
+        if (
+          updateData.status === 'published' &&
+          existingPolicy.status !== 'published'
+        ) {
+          updatePayload.lastPublishedAt = new Date();
+          updatePayload.signedBy = [];
         }
 
         const policy = await tx.policy.update({

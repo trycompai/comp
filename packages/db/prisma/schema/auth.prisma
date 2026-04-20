@@ -128,6 +128,7 @@ model Member {
   updatedTaskItems        TaskItem[]           @relation("TaskItemUpdater")
   assignedTaskItems       TaskItem[]           @relation("TaskItemAssignee")
   createdFindings         Finding[]            @relation("FindingCreatedBy")
+  subjectFindings         Finding[]            @relation("FindingSubject")
   publishedPolicyVersions PolicyVersion[]      @relation("PolicyVersionPublisher")
   approvedTasks           Task[]               @relation("TaskApprover")
   devices                 Device[]

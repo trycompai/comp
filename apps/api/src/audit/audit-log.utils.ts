@@ -281,29 +281,26 @@ export function extractPolicyActionDescription(
 }
 
 /**
- * Detects finding-specific actions and builds a description
- * that includes the actor's role (auditor vs platform admin).
+ * Detects finding-specific actions and builds a human-readable description.
+ * (Role prefix intentionally omitted — the activity entry already shows the
+ * actor's name, so "Admin" / "Auditor" labels looked redundant and noisy.)
  */
 export function extractFindingDescription(
   path: string,
   method: string,
   resource: string,
-  userRoles?: string[],
+  _userRoles?: string[],
 ): string | null {
   if (resource !== 'finding') return null;
 
-  const isAuditor = userRoles?.includes('auditor');
-  const actor = isAuditor ? 'Auditor' : 'Admin';
-
   switch (method) {
     case 'POST':
-      return `${actor} created a finding`;
+      return 'created a finding';
     case 'PATCH':
-    case 'PUT': {
-      return `${actor} updated a finding`;
-    }
+    case 'PUT':
+      return 'updated a finding';
     case 'DELETE':
-      return `${actor} deleted a finding`;
+      return 'deleted a finding';
     default:
       return null;
   }

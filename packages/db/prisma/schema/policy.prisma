@@ -48,6 +48,7 @@ model Policy {
   currentVersion   PolicyVersion?                 @relation("PolicyCurrentVersion", fields: [currentVersionId], references: [id])
   pendingVersionId String?
   versions         PolicyVersion[]                @relation("PolicyVersions")
+  findings         Finding[]
 
   @@index([organizationId])
 }

@@ -20,6 +20,7 @@ interface PeoplePageTabsProps {
   employeeTasksContent: ReactNode | null;
   devicesContent: ReactNode;
   orgChartContent: ReactNode;
+  findingsContent?: ReactNode | null;
   roleMappingContent: ReactNode | null;
   showRoleMapping: boolean;
   showEmployeeTasks: boolean;
@@ -73,6 +74,7 @@ export function PeoplePageTabs({
   employeeTasksContent,
   devicesContent,
   orgChartContent,
+  findingsContent,
   roleMappingContent,
   showRoleMapping,
   showEmployeeTasks,

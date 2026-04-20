@@ -13693,16 +13693,44 @@
     },
     "/v1/findings": {
       "get": {
-        "description": "Retrieve all findings for a specific task",
-        "operationId": "FindingsController_getFindingsByTask_v1",
+        "operationId": "FindingsController_listFindings_v1",
         "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "open",
+                "ready_for_review",
+                "needs_revision",
+                "closed"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "area",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "people",
+                "documents",
+                "compliance",
+                "risks",
+                "vendors",
+                "policies",
+                "other"
+              ],
+              "type": "string"
+            }
+          },
           {
             "name": "taskId",
             "required": false,
             "in": "query",
-            "description": "Task ID to get findings for",
             "schema": {
-              "example": "tsk_abc123",
               "type": "string"
             }
           },
@@ -13710,9 +13738,7 @@
             "name": "evidenceSubmissionId",
             "required": false,
             "in": "query",
-            "description": "Evidence submission ID to get findings for",
             "schema": {
-              "example": "evs_abc123",
               "type": "string"
             }
           },
@@ -13720,7 +13746,6 @@
             "name": "evidenceFormType",
             "required": false,
             "in": "query",
-            "description": "Evidence form type to get findings for",
             "schema": {
               "enum": [
                 "board-meeting",
@@ -13740,30 +13765,49 @@
             }
           },
           {
-            "name": "scope",
+            "name": "policyId",
             "required": false,
             "in": "query",
-            "description": "People-area scope (e.g. people directory)",
             "schema": {
-              "enum": [
-                "people",
-                "people_tasks",
-                "people_devices",
-                "people_chart"
-              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "vendorId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "riskId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "memberId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "deviceId",
+            "required": false,
+            "in": "query",
+            "schema": {
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "List of findings"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "404": {
-            "description": "Target not found"
+            "description": ""
           }
         },
         "security": [
@@ -13771,18 +13815,16 @@
             "apikey": []
           }
         ],
-        "summary": "Get findings for a task",
+        "summary": "List findings for organization (optionally filtered)",
         "tags": [
           "Findings"
         ]
       },
       "post": {
-        "description": "Create a new finding for a task (Auditor or Platform Admin only)",
         "operationId": "FindingsController_createFinding_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Finding data",
           "content": {
             "application/json": {
               "schema": {
@@ -13793,16 +13835,7 @@
         },
         "responses": {
           "201": {
-            "description": "The created finding"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden - Auditor or Platform Admin required"
-          },
-          "404": {
-            "description": "Task not found"
+            "description": ""
           }
         },
         "security": [
@@ -13810,7 +13843,7 @@
             "apikey": []
           }
         ],
-        "summary": "Create a finding",
+        "summary": "Create a finding (auditor or platform admin only)",
         "tags": [
           "Findings"
         ]
@@ -13818,14 +13851,12 @@
     },
     "/v1/findings/organization": {
       "get": {
-        "description": "Retrieve all findings for the organization",
         "operationId": "FindingsController_getOrganizationFindings_v1",
         "parameters": [
           {
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Filter by status",
             "schema": {
               "enum": [
                 "open",
@@ -13839,13 +13870,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of all findings for the organization"
-          },
-          "400": {
-            "description": "Invalid status value"
-          },
-          "401": {
-            "description": "Unauthorized"
+            "description": ""
           }
         },
         "security": [
@@ -13853,7 +13878,7 @@
             "apikey": []
           }
         ],
-        "summary": "Get all findings for organization",
+        "summary": "List all findings for the organization",
         "tags": [
           "Findings"
         ]
@@ -13861,7 +13886,6 @@
     },
     "/v1/findings/{id}": {
       "get": {
-        "description": "Retrieve a specific finding by its ID",
         "operationId": "FindingsController_getFindingById_v1",
         "parameters": [
           {
@@ -13870,20 +13894,13 @@
             "in": "path",
             "description": "Finding ID",
             "schema": {
-              "example": "fnd_abc123",
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "The finding"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "404": {
-            "description": "Finding not found"
+            "description": ""
           }
         },
         "security": [
@@ -13897,7 +13914,6 @@
         ]
       },
       "patch": {
-        "description": "Update a finding. Status transition rules apply based on user role.",
         "operationId": "FindingsController_updateFinding_v1",
         "parameters": [
           {
@@ -13906,14 +13922,12 @@
             "in": "path",
             "description": "Finding ID",
             "schema": {
-              "example": "fnd_abc123",
               "type": "string"
             }
           }
         ],
         "requestBody": {
           "required": true,
-          "description": "Finding update data",
           "content": {
             "application/json": {
               "schema": {
@@ -13924,16 +13938,7 @@
         },
         "responses": {
           "200": {
-            "description": "The updated finding"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden - Insufficient permissions for status transition"
-          },
-          "404": {
-            "description": "Finding not found"
+            "description": ""
           }
         },
         "security": [
@@ -13941,13 +13946,12 @@
             "apikey": []
           }
         ],
-        "summary": "Update a finding",
+        "summary": "Update a finding (status transition rules apply)",
         "tags": [
           "Findings"
         ]
       },
       "delete": {
-        "description": "Delete a finding (Auditor or Platform Admin only)",
         "operationId": "FindingsController_deleteFinding_v1",
         "parameters": [
           {
@@ -13956,23 +13960,13 @@
             "in": "path",
             "description": "Finding ID",
             "schema": {
-              "example": "fnd_abc123",
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Finding deleted successfully"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden - Auditor or Platform Admin required"
-          },
-          "404": {
-            "description": "Finding not found"
+            "description": ""
           }
         },
         "security": [
@@ -13980,7 +13974,7 @@
             "apikey": []
           }
         ],
-        "summary": "Delete a finding",
+        "summary": "Delete a finding (auditor or platform admin only)",
         "tags": [
           "Findings"
         ]
@@ -13988,7 +13982,6 @@
     },
     "/v1/findings/{id}/history": {
       "get": {
-        "description": "Retrieve the activity history for a specific finding",
         "operationId": "FindingsController_getFindingHistory_v1",
         "parameters": [
           {
@@ -13997,20 +13990,13 @@
             "in": "path",
             "description": "Finding ID",
             "schema": {
-              "example": "fnd_abc123",
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "List of audit log entries for the finding"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "404": {
-            "description": "Finding not found"
+            "description": ""
           }
         },
         "security": [
@@ -14018,7 +14004,7 @@
             "apikey": []
           }
         ],
-        "summary": "Get finding history",
+        "summary": "Get activity history for a finding",
         "tags": [
           "Findings"
         ]
@@ -19515,6 +19501,161 @@
         ]
       }
     },
+    "/v1/frameworks/custom": {
+      "post": {
+        "operationId": "FrameworksController_createCustom_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a custom framework for this organization",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/requirements": {
+      "post": {
+        "operationId": "FrameworksController_createRequirement_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomRequirementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a custom requirement to a framework instance",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/requirements/link": {
+      "post": {
+        "operationId": "FrameworksController_linkRequirements_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkRequirementsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link (clone) existing requirements from another framework into this one",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/requirements/{requirementKey}/controls/link": {
+      "post": {
+        "operationId": "FrameworksController_linkControls_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requirementKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkControlsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link existing org controls to a requirement",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
     "/v1/audit-logs": {
       "get": {
         "operationId": "AuditLogController_getAuditLogs_v1",
@@ -19735,6 +19876,199 @@
           }
         ],
         "summary": "Delete a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/policies/link": {
+      "post": {
+        "operationId": "ControlsController_linkPolicies_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkPoliciesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link existing policies to a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/tasks/link": {
+      "post": {
+        "operationId": "ControlsController_linkTasks_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkTasksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link existing tasks to a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/requirements/link": {
+      "post": {
+        "operationId": "ControlsController_linkRequirements_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkRequirementsToControlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link existing requirements to a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/document-types/link": {
+      "post": {
+        "operationId": "ControlsController_linkDocumentTypes_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkDocumentTypesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link required document types to a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/document-types/{formType}": {
+      "delete": {
+        "operationId": "ControlsController_unlinkDocumentType_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a required document type from a control",
         "tags": [
           "Controls"
         ]
@@ -23699,18 +24033,15 @@
         "properties": {
           "taskId": {
             "type": "string",
-            "description": "Task ID this finding is associated with",
-            "example": "tsk_abc123"
+            "description": "Task ID"
           },
           "evidenceSubmissionId": {
             "type": "string",
-            "description": "Evidence submission ID this finding is associated with",
-            "example": "evs_abc123"
+            "description": "Evidence submission ID"
           },
           "evidenceFormType": {
             "type": "string",
-            "description": "Evidence form type this finding is associated with (e.g., access-request, whistleblower-report)",
-            "example": "access-request",
+            "description": "Evidence form type",
             "enum": [
               "board-meeting",
               "it-leadership-meeting",
@@ -23726,14 +24057,37 @@
               "tabletop-exercise"
             ]
           },
-          "scope": {
+          "policyId": {
             "type": "string",
-            "description": "People area scope (e.g. people directory) when not tied to a task or evidence",
+            "description": "Policy ID"
+          },
+          "vendorId": {
+            "type": "string",
+            "description": "Vendor ID"
+          },
+          "riskId": {
+            "type": "string",
+            "description": "Risk ID"
+          },
+          "memberId": {
+            "type": "string",
+            "description": "Member ID (person this finding targets)"
+          },
+          "deviceId": {
+            "type": "string",
+            "description": "Device ID"
+          },
+          "area": {
+            "type": "string",
+            "description": "Broad area when the finding is not tied to a specific item",
             "enum": [
               "people",
-              "people_tasks",
-              "people_devices",
-              "people_chart"
+              "documents",
+              "compliance",
+              "risks",
+              "vendors",
+              "policies",
+              "other"
             ]
           },
           "type": {
@@ -23745,15 +24099,24 @@
             ],
             "default": "soc2"
           },
+          "severity": {
+            "type": "string",
+            "description": "Severity",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "default": "medium"
+          },
           "templateId": {
             "type": "string",
-            "description": "Finding template ID (optional)",
-            "example": "fnd_t_abc123"
+            "description": "Finding template ID"
           },
           "content": {
             "type": "string",
             "description": "Finding content/message",
-            "example": "The uploaded evidence does not clearly show the Organization Name or URL.",
             "maxLength": 5000
           }
         },
@@ -23777,22 +24140,30 @@
           },
           "type": {
             "type": "string",
-            "description": "Type of finding (SOC 2 or ISO 27001)",
+            "description": "Finding type",
             "enum": [
               "soc2",
               "iso27001"
             ]
           },
+          "severity": {
+            "type": "string",
+            "description": "Severity",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
           "content": {
             "type": "string",
             "description": "Finding content/message",
-            "example": "The uploaded evidence does not clearly show the Organization Name or URL.",
             "maxLength": 5000
           },
           "revisionNote": {
             "type": "object",
-            "description": "Auditor note when requesting revision (only for needs_revision status)",
-            "example": "Please provide clearer screenshots showing the timestamp.",
+            "description": "Auditor note when requesting revision",
             "maxLength": 2000,
             "nullable": true
           }
@@ -24710,12 +25081,93 @@
           "frameworkIds"
         ]
       },
+      "CreateCustomFrameworkDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Framework name",
+            "example": "Internal Controls"
+          },
+          "description": {
+            "type": "string",
+            "description": "Framework description"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version",
+            "example": "1.0"
+          }
+        },
+        "required": [
+          "name",
+          "description"
+        ]
+      },
+      "CreateCustomRequirementDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Requirement name",
+            "example": "Access Review"
+          },
+          "identifier": {
+            "type": "string",
+            "description": "Identifier",
+            "example": "10.3"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description"
+          }
+        },
+        "required": [
+          "name",
+          "identifier",
+          "description"
+        ]
+      },
+      "LinkRequirementsDto": {
+        "type": "object",
+        "properties": {
+          "requirementIds": {
+            "description": "IDs of existing FrameworkEditorRequirement rows to clone into this framework",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "requirementIds"
+        ]
+      },
+      "LinkControlsDto": {
+        "type": "object",
+        "properties": {
+          "controlIds": {
+            "description": "Existing org Control IDs to map to the requirement on this framework instance",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "controlIds"
+        ]
+      },
       "RequirementMappingDto": {
         "type": "object",
         "properties": {
           "requirementId": {
             "type": "string",
-            "description": "Requirement ID"
+            "description": "Platform requirement ID (exactly one of requirementId / customRequirementId must be set)"
+          },
+          "customRequirementId": {
+            "type": "string",
+            "description": "Org-custom requirement ID (exactly one of requirementId / customRequirementId must be set)"
           },
           "frameworkInstanceId": {
             "type": "string",
@@ -24723,7 +25175,6 @@
           }
         },
         "required": [
-          "requirementId",
           "frameworkInstanceId"
         ]
       },
@@ -24760,11 +25211,126 @@
             "items": {
               "$ref": "#/components/schemas/RequirementMappingDto"
             }
+          },
+          "documentTypes": {
+            "type": "array",
+            "description": "Evidence form types to require on this control",
+            "items": {
+              "type": "string",
+              "enum": [
+                "board_meeting",
+                "it_leadership_meeting",
+                "risk_committee_meeting",
+                "meeting",
+                "access_request",
+                "whistleblower_report",
+                "penetration_test",
+                "rbac_matrix",
+                "infrastructure_inventory",
+                "employee_performance_evaluation",
+                "network_diagram",
+                "tabletop_exercise"
+              ]
+            }
           }
         },
         "required": [
           "name",
           "description"
+        ]
+      },
+      "LinkPoliciesDto": {
+        "type": "object",
+        "properties": {
+          "policyIds": {
+            "description": "Policy IDs to link to the control",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "policyIds"
+        ]
+      },
+      "LinkTasksDto": {
+        "type": "object",
+        "properties": {
+          "taskIds": {
+            "description": "Task IDs to link to the control",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "taskIds"
+        ]
+      },
+      "LinkRequirementMappingDto": {
+        "type": "object",
+        "properties": {
+          "requirementId": {
+            "type": "string",
+            "description": "Platform requirement ID"
+          },
+          "customRequirementId": {
+            "type": "string",
+            "description": "Org-custom requirement ID"
+          },
+          "frameworkInstanceId": {
+            "type": "string",
+            "description": "Framework instance ID"
+          }
+        },
+        "required": [
+          "frameworkInstanceId"
+        ]
+      },
+      "LinkRequirementsToControlDto": {
+        "type": "object",
+        "properties": {
+          "requirements": {
+            "description": "Requirement + framework instance pairs to link",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkRequirementMappingDto"
+            }
+          }
+        },
+        "required": [
+          "requirements"
+        ]
+      },
+      "LinkDocumentTypesDto": {
+        "type": "object",
+        "properties": {
+          "formTypes": {
+            "type": "array",
+            "description": "Evidence form types to require for this control",
+            "items": {
+              "type": "string",
+              "enum": [
+                "board_meeting",
+                "it_leadership_meeting",
+                "risk_committee_meeting",
+                "meeting",
+                "access_request",
+                "whistleblower_report",
+                "penetration_test",
+                "rbac_matrix",
+                "infrastructure_inventory",
+                "employee_performance_evaluation",
+                "network_diagram",
+                "tabletop_exercise"
+              ]
+            }
+          }
+        },
+        "required": [
+          "formTypes"
         ]
       },
       "CreatePenetrationTestDto": {
