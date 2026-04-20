@@ -243,6 +243,97 @@ describe('PoliciesService', () => {
   });
 
   describe('acceptChanges', () => {
+    const buildPendingPolicy = (overrides: Record<string, unknown> = {}) => ({
+      id: 'pol_1',
+      organizationId: 'org_abc',
+      pendingVersionId: 'ver_1',
+      approverId: 'mem_approver',
+      frequency: 'yearly',
+      ...overrides,
+    });
+
+    const mockTransactionTx = () => {
+      db.$transaction.mockImplementation(
+        async (callback: (tx: unknown) => Promise<unknown>) => {
+          const tx = {
+            policyVersion: { update: db.policyVersion.update },
+            policy: { update: db.policy.update },
+          };
+          return callback(tx);
+        },
+      );
+    };
+
+    it('publishes the pending version on a successful approve', async () => {
+      const pendingVersion = {
+        id: 'ver_1',
+        version: 2,
+        content: [{ type: 'paragraph' }],
+      };
+      db.policy.findUnique.mockResolvedValueOnce(buildPendingPolicy());
+      db.policyVersion.findUnique.mockResolvedValueOnce(pendingVersion);
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      mockTransactionTx();
+
+      const result = await service.acceptChanges(
+        'pol_1',
+        'org_abc',
+        { approverId: 'mem_approver' },
+        'usr_caller',
+      );
+
+      expect(result).toEqual({ versionId: 'ver_1', version: 2 });
+      expect(db.policyVersion.update).toHaveBeenCalledWith({
+        where: { id: 'ver_1' },
+        data: { publishedById: 'mem_caller' },
+      });
+      const policyUpdateArg = db.policy.update.mock.calls[0][0];
+      expect(policyUpdateArg.data.status).toBe('published');
+      expect(policyUpdateArg.data.currentVersionId).toBe('ver_1');
+      expect(policyUpdateArg.data.pendingVersionId).toBeNull();
+      expect(policyUpdateArg.data.approverId).toBeNull();
+      expect(policyUpdateArg.data.signedBy).toEqual([]);
+    });
+
+    it('succeeds when called via session impersonation — caller userId differs from approverId', async () => {
+      // Simulates an admin impersonating the assigned approver:
+      // the impersonated session's userId belongs to the approver, but
+      // the authorization check only requires the body-supplied approverId
+      // to match policy.approverId — which it does.
+      const pendingVersion = {
+        id: 'ver_1',
+        version: 2,
+        content: [],
+      };
+      db.policy.findUnique.mockResolvedValueOnce(buildPendingPolicy());
+      db.policyVersion.findUnique.mockResolvedValueOnce(pendingVersion);
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_impersonated' });
+      mockTransactionTx();
+
+      const result = await service.acceptChanges(
+        'pol_1',
+        'org_abc',
+        { approverId: 'mem_approver' },
+        'usr_impersonated',
+      );
+
+      expect(result).toEqual({ versionId: 'ver_1', version: 2 });
+      expect(db.policyVersion.update).toHaveBeenCalledWith({
+        where: { id: 'ver_1' },
+        data: { publishedById: 'mem_impersonated' },
+      });
+    });
+
+    it('rejects when the body approverId does not match the assigned approver', async () => {
+      db.policy.findUnique.mockResolvedValueOnce(buildPendingPolicy());
+
+      await expect(
+        service.acceptChanges('pol_1', 'org_abc', { approverId: 'mem_wrong' }),
+      ).rejects.toThrow(/only the assigned approver/i);
+
+      expect(db.$transaction).not.toHaveBeenCalled();
+    });
+
     it('self-heals stale approverId when no pending version exists', async () => {
       const orgId = 'org_abc';
       const approverId = 'mem_approver';
@@ -285,6 +376,48 @@ describe('PoliciesService', () => {
   });
 
   describe('denyChanges', () => {
+    it('reverts to draft on a successful deny when never published', async () => {
+      db.policy.findUnique.mockResolvedValueOnce({
+        id: 'pol_1',
+        organizationId: 'org_abc',
+        pendingVersionId: 'ver_1',
+        approverId: 'mem_approver',
+        lastPublishedAt: null,
+      });
+      db.policy.update.mockResolvedValueOnce({});
+
+      const result = await service.denyChanges('pol_1', 'org_abc', {
+        approverId: 'mem_approver',
+      });
+
+      expect(result).toEqual({ status: 'draft' });
+      expect(db.policy.update).toHaveBeenCalledWith({
+        where: { id: 'pol_1' },
+        data: {
+          status: 'draft',
+          pendingVersionId: null,
+          approverId: null,
+        },
+      });
+    });
+
+    it('reverts to published on a successful deny when previously published', async () => {
+      db.policy.findUnique.mockResolvedValueOnce({
+        id: 'pol_1',
+        organizationId: 'org_abc',
+        pendingVersionId: 'ver_2',
+        approverId: 'mem_approver',
+        lastPublishedAt: new Date('2026-01-01'),
+      });
+      db.policy.update.mockResolvedValueOnce({});
+
+      const result = await service.denyChanges('pol_1', 'org_abc', {
+        approverId: 'mem_approver',
+      });
+
+      expect(result).toEqual({ status: 'published' });
+    });
+
     it('self-heals stale approverId when no pending version exists', async () => {
       const orgId = 'org_abc';
       const approverId = 'mem_approver';
