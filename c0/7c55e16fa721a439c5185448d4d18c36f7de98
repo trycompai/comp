@@ -1,0 +1,29 @@
+apps/app/src/trigger/tasks/task/policy-acknowledgment-digest.test.ts
+  65d8a25ea2dc2ce8 34-45
+apps/app/src/lib/stripe.test.ts
+  65d8a25ea2dc2ce8 26,124-161
+apps/app/src/lib/stripe.ts
+  65d8a25ea2dc2ce8 233-247
+apps/app/src/trigger/tasks/task/policy-acknowledgment-digest.ts
+  65d8a25ea2dc2ce8 11,159-161
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "c07c55e16fa721a439c5185448d4d18c36f7de98",
+  "prompts": {
+    "65d8a25ea2dc2ce8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "42ecccd4-f855-4d39-b1f3-b2c7fa390155",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 80,
+      "total_deletions": 23,
+      "accepted_lines": 73,
+      "overriden_lines": 0
+    }
+  }
+}
