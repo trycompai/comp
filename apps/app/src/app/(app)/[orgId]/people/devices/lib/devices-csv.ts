@@ -47,10 +47,13 @@ export function buildDevicesCsv(devices: DeviceWithChecks[]): string {
       escapeCell(yesNo(d.screenLockEnabled)),
     ].join(','),
   );
-  return [DEVICES_CSV_HEADER, ...rows].join('\n') + '\n';
+  // RFC 4180: records separated by CRLF; trailing CRLF after the final record.
+  // Prepend a UTF-8 BOM so Excel correctly detects UTF-8 encoding for non-ASCII data.
+  return '\uFEFF' + [DEVICES_CSV_HEADER, ...rows].join('\r\n') + '\r\n';
 }
 
 export function downloadDevicesCsv(filename: string, contents: string): void {
+  if (typeof document === 'undefined') return;
   const blob = new Blob([contents], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -59,7 +62,12 @@ export function downloadDevicesCsv(filename: string, contents: string): void {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  // Defer revoke so the browser can finish dispatching the download first.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function sanitizeFilenamePart(value: string): string {
+  return value.replace(/[^a-zA-Z0-9_-]+/g, '-');
 }
 
 export function devicesCsvFilename({
@@ -72,6 +80,7 @@ export function devicesCsvFilename({
   now?: Date;
 }): string {
   const date = now.toISOString().slice(0, 10);
-  const slug = orgSlug && orgSlug.length > 0 ? orgSlug : orgId;
-  return `devices-${slug}-${date}.csv`;
+  const raw = orgSlug && orgSlug.length > 0 ? orgSlug : orgId;
+  const safe = sanitizeFilenamePart(raw);
+  return `devices-${safe}-${date}.csv`;
 }
