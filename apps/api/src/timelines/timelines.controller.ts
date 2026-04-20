@@ -47,12 +47,17 @@ export class TimelinesController {
       organizationId,
     );
 
-    notifyReadyForReview({
-      orgId: organizationId,
-      orgName: result.organization.name,
-      frameworkName: result.framework?.name ?? 'Unknown framework',
-      phaseName: result.phase.name,
-    });
+    // Only notify Slack on the first transition — service returns
+    // alreadyReady=true on retries / double-clicks so the CX channel
+    // doesn't get pinged repeatedly for the same phase.
+    if (!result.alreadyReady) {
+      notifyReadyForReview({
+        orgId: organizationId,
+        orgName: result.organization.name,
+        frameworkName: result.framework?.name ?? 'Unknown framework',
+        phaseName: result.phase.name,
+      });
+    }
 
     return result;
   }

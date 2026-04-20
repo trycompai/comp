@@ -3,11 +3,25 @@ import { Logger } from '@nestjs/common';
 const logger = new Logger('TimelinesSlack');
 
 function appUrl() {
-  return process.env.APP_URL ?? 'https://app.trycomp.ai';
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.BETTER_AUTH_URL ??
+    process.env.APP_URL ??
+    'https://app.trycomp.ai'
+  );
 }
 
 function adminTimelineUrl(orgId: string) {
   return `${appUrl()}/${orgId}/admin/organizations/${orgId}`;
+}
+
+/**
+ * Escape dynamic user-supplied text before interpolating into Slack mrkdwn.
+ * Prevents org names containing `<`, `>`, `&`, `|` from breaking link
+ * syntax like `<url|text>` or rendering as unintended markup.
+ */
+function escapeMrkdwn(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 async function sendSlack(blocks: unknown[], fallbackText: string): Promise<void> {
@@ -57,12 +71,15 @@ export function notifyReadyForReview({
   phaseName: string;
 }): Promise<void> {
   const link = adminTimelineUrl(orgId);
+  const safeOrg = escapeMrkdwn(orgName);
+  const safePhase = escapeMrkdwn(phaseName);
+  const safeFramework = escapeMrkdwn(frameworkName);
   return sendSlack(
     [
       section(`:bell:  *Ready for Review*`),
       section(
-        `*<${link}|${orgName}>*  (\`${orgId}\`)\n` +
-        `Marked *${phaseName}* as ready  ·  _${frameworkName}_`,
+        `*<${link}|${safeOrg}>*  (\`${orgId}\`)\n` +
+        `Marked *${safePhase}* as ready  ·  _${safeFramework}_`,
       ),
       context(':arrow_right:  Customer is waiting for CX to begin the next phase'),
       divider(),
@@ -93,12 +110,15 @@ export function notifyPhaseCompleted({
     ':pencil:  Manually completed';
 
   const link = adminTimelineUrl(orgId);
+  const safeOrg = escapeMrkdwn(orgName);
+  const safePhase = escapeMrkdwn(phaseName);
+  const safeFramework = escapeMrkdwn(frameworkName);
   return sendSlack(
     [
       section(`:white_check_mark:  *Phase Completed*`),
       section(
-        `*<${link}|${orgName}>*  (\`${orgId}\`)\n` +
-        `Phase: *${phaseName}*  ·  _${frameworkName}_`,
+        `*<${link}|${safeOrg}>*  (\`${orgId}\`)\n` +
+        `Phase: *${safePhase}*  ·  _${safeFramework}_`,
       ),
       context(typeLabel),
       divider(),
@@ -117,11 +137,13 @@ export function notifyTimelineCompleted({
   frameworkName: string;
 }): Promise<void> {
   const link = adminTimelineUrl(orgId);
+  const safeOrg = escapeMrkdwn(orgName);
+  const safeFramework = escapeMrkdwn(frameworkName);
   return sendSlack(
     [
       section(`:tada:  *Timeline Completed*`),
       section(
-        `*<${link}|${orgName}>*  (\`${orgId}\`) has completed all phases for *${frameworkName}*`,
+        `*<${link}|${safeOrg}>*  (\`${orgId}\`) has completed all phases for *${safeFramework}*`,
       ),
       context(':checkered_flag:  Ready for final report delivery'),
       divider(),

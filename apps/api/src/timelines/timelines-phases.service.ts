@@ -57,14 +57,16 @@ export class TimelinesPhasesService {
       }
     }
 
-    // Pin dates when the caller explicitly sets any date field. An explicit
-    // datesPinned in the DTO always wins so the user can un-pin on demand.
+    // Pin dates when the caller explicitly sets any date field. If the user
+    // sets a date AND explicitly asks to unpin, the pin wins — storing a
+    // specific date with datesPinned=false would desynchronize this phase
+    // from the downstream recalc anchor and allow the next refresh to
+    // overwrite it. An explicit un-pin is only honored when no date field
+    // is provided in the same call.
     const datesPinned =
-      data.datesPinned !== undefined
-        ? data.datesPinned
-        : data.startDate !== undefined || data.endDate !== undefined
-          ? true
-          : undefined;
+      data.startDate !== undefined || data.endDate !== undefined
+        ? true
+        : data.datesPinned;
 
     const updated = await db.timelinePhase.update({
       where: { id: phaseId },

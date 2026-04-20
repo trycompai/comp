@@ -2,6 +2,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { PoliciesService } from './policies.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
+import { TimelinesService } from '../timelines/timelines.service';
 
 jest.mock('@db', () => ({
   db: {
@@ -68,6 +69,9 @@ describe('PoliciesService', () => {
         PoliciesService,
         { provide: AttachmentsService, useValue: {} },
         { provide: PolicyPdfRendererService, useValue: {} },
+        // TimelinesService is injected for timeline auto-completion hooks;
+        // tests don't exercise that path so a bare stub is enough.
+        { provide: TimelinesService, useValue: {} },
       ],
     }).compile();
     service = module.get<PoliciesService>(PoliciesService);

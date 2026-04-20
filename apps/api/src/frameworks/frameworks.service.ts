@@ -456,8 +456,9 @@ export class FrameworksService {
 
     // Auto-create timeline instances from templates for newly added
     // frameworks. Fire-and-forget so a timeline-creation failure never masks
-    // the primary transaction's success — the user has their frameworks, and
-    // timelines are backfilled on the next /timelines read.
+    // the primary transaction's success — partial state (e.g. only one SOC 2
+    // track created) is repaired on the next /timelines read because
+    // ensureTimelinesExist now always calls backfill (idempotent per track).
     createTimelinesForFrameworks({
       organizationId,
       frameworkEditorIds: result.finalIds,

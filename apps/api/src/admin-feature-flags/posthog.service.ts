@@ -10,7 +10,10 @@ export class PostHogService implements OnModuleDestroy {
   getClient(): PostHog | null {
     if (this.initialized) return this.client;
 
-    const apiKey = process.env.NEXT_PUBLIC_POSTHOG_KEY || process.env.POSTHOG_API_KEY;
+    // Prefer POSTHOG_API_KEY (explicit backend config) over the
+    // NEXT_PUBLIC_* fallback so frontend env wiring can't accidentally
+    // override the server key if both happen to be present.
+    const apiKey = process.env.POSTHOG_API_KEY || process.env.NEXT_PUBLIC_POSTHOG_KEY;
     const apiHost =
       process.env.POSTHOG_HOST ||
       process.env.NEXT_PUBLIC_POSTHOG_HOST ||

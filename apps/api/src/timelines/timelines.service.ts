@@ -269,10 +269,11 @@ export class TimelinesService {
     });
 
     for (const fi of frameworkInstances) {
-      if (fi.timelineInstances.length > 0) continue;
       // Custom frameworks don't have a platform Framework record, so there's
       // no template to backfill from — skip them.
       if (!fi.frameworkId || !fi.framework) continue;
+      // Always call backfillTimeline — it's idempotent per-track and repairs
+      // partial state (e.g. SOC 2 with only Type 1 created, missing Type 2).
       try {
         await backfillTimeline({
           organizationId,
@@ -339,6 +340,18 @@ export class TimelinesService {
       );
     }
 
+    // If already marked ready, return idempotently so retries / double-clicks
+    // don't re-ping Slack for the same transition. Caller checks
+    // `alreadyReady` to decide whether to fire the notification.
+    if (phase.readyForReview) {
+      return {
+        organization: instance.organization,
+        framework: instance.frameworkInstance.framework,
+        phase,
+        alreadyReady: true,
+      };
+    }
+
     const updated = await db.timelinePhase.update({
       where: { id: phaseId },
       data: { readyForReview: true, readyForReviewAt: new Date() },
@@ -348,6 +361,7 @@ export class TimelinesService {
       organization: instance.organization,
       framework: instance.frameworkInstance.framework,
       phase: updated,
+      alreadyReady: false,
     };
   }
 

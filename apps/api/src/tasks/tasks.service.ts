@@ -857,9 +857,15 @@ export class TasksService {
         },
       });
 
-      // Intentionally no checkAutoCompletePhases here: new tasks default to
-      // todo, which can't advance an AUTO_TASKS phase and has no bearing on
-      // AUTO_POLICIES / AUTO_PEOPLE / AUTO_FINDINGS criteria.
+      // Task creation drops the AUTO_TASKS completion % (denominator up,
+      // numerator unchanged), so reconciliation can regress a COMPLETED
+      // phase back to IN_PROGRESS if we're now under 100%.
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
 
       return {
         id: task.id,

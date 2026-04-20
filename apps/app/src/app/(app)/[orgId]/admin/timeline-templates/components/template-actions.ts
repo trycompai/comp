@@ -49,20 +49,33 @@ export async function createNewTemplate(values: TemplateFormValues) {
   if (res.error) throw new Error(res.error);
 
   const created = res.data as { id: string };
-  for (const [index, phase] of values.phases.entries()) {
-    const phaseRes = await api.post(
-      `/v1/admin/timeline-templates/${created.id}/phases`,
-      {
-        name: phase.name,
-        description: phase.description || undefined,
-        orderIndex: index,
-        defaultDurationWeeks: phase.defaultDurationWeeks,
-        completionType: phase.completionType,
-        locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,
-      },
-    );
-    if (phaseRes.error) throw new Error(phaseRes.error);
+
+  // If any phase create fails, delete the template so we don't leave an
+  // orphan with zero phases sitting in the framework's template list.
+  try {
+    for (const [index, phase] of values.phases.entries()) {
+      const phaseRes = await api.post(
+        `/v1/admin/timeline-templates/${created.id}/phases`,
+        {
+          name: phase.name,
+          description: phase.description || undefined,
+          orderIndex: index,
+          defaultDurationWeeks: phase.defaultDurationWeeks,
+          completionType: phase.completionType,
+          locksTimelineOnComplete: phase.locksTimelineOnComplete ?? false,
+        },
+      );
+      if (phaseRes.error) throw new Error(phaseRes.error);
+    }
+  } catch (err) {
+    await api
+      .delete(`/v1/admin/timeline-templates/${created.id}`)
+      .catch(() => {
+        // Rollback best-effort; the original error is what matters.
+      });
+    throw err;
   }
+
   toast.success('Template created');
 }
 
