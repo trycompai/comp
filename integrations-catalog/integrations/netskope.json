@@ -1,0 +1,75 @@
+{
+  "slug": "netskope",
+  "name": "Netskope",
+  "description": "Cloud Access Security Broker (CASB) and Secure Access Service Edge (SASE) platform providing cloud security, data protection, and network security services.",
+  "category": "Security",
+  "logoUrl": "https://img.logo.dev/netskope.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ",
+  "docsUrl": "https://docs.netskope.com/en/rest-api-v2-overview-312207/",
+  "baseUrl": "https://{{credentials.tenant_name}}.goskope.com/api/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Tenant Name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true
+        },
+        {
+          "label": "API Token",
+          "type": "secret",
+          "required": true,
+          "helpText": "API token from admin settings"
+        },
+        {
+          "label": "Tenant Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your tenant name"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "alert_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verify that security alerts are being generated and monitored for threats and policy violations",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "policy_enforcement",
+      "name": "Production Firewall",
+      "description": "Verify that security policies are configured and enforced to protect against unauthorized access",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "device_management",
+      "name": "Device List",
+      "description": "Verify that connected client devices are being tracked and managed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "audit_logging",
+      "name": "Access Review Log",
+      "description": "Verify that audit logs are being generated and retained for compliance and security monitoring",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

@@ -1,0 +1,40 @@
+name: Sync Integrations Catalog
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Run sync
+        env:
+          COMPAI_INTERNAL_TOKEN: ${{ secrets.COMPAI_INTERNAL_TOKEN }}
+        run: bun run integrations-catalog/scripts/sync.mjs
+
+      - name: Regenerate README
+        run: bun run integrations-catalog/scripts/generate-readme.mjs
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "integrations-bot"
+          git config user.email "noreply@trycomp.ai"
+          git add integrations-catalog/integrations integrations-catalog/index.json integrations-catalog/README.md
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(integrations-catalog): sync $(date -u +%Y-%m-%d)"
+            git push
+          fi
