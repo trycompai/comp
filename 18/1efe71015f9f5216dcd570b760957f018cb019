@@ -1,0 +1,35 @@
+apps/api/src/policies/policies.service.spec.ts
+  6a3d59e7a21c5c35 11-15,54-60,230-295
+apps/app/src/app/(app)/[orgId]/policies/[policyId]/components/PolicyPageTabs.tsx
+  6a3d59e7a21c5c35 131-136
+apps/app/src/app/(app)/[orgId]/policies/[policyId]/page.tsx
+  6a3d59e7a21c5c35 81
+apps/api/src/trigger/policies/update-policy-helpers.ts
+  6a3d59e7a21c5c35 278-281,285-289
+apps/api/src/policies/policies.service.ts
+  6a3d59e7a21c5c35 1036-1044,1106-1114
+apps/app/src/app/(app)/[orgId]/policies/[policyId]/components/PolicyPageTabs.test.tsx
+  6a3d59e7a21c5c35 71-83,253-315
+apps/app/src/app/(app)/[orgId]/policies/[policyId]/components/PolicyAlerts.test.tsx
+  6a3d59e7a21c5c35 131,142-157,183
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "181efe71015f9f5216dcd570b760957f018cb019",
+  "prompts": {
+    "6a3d59e7a21c5c35": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2135df6b-15a0-4c86-aa62-09a0702202c8",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 1491,
+      "total_deletions": 72,
+      "accepted_lines": 815,
+      "overriden_lines": 0
+    }
+  }
+}
