@@ -1,0 +1,25 @@
+packages/integration-platform/src/manifests/vercel/variables.ts
+  d1699f7e66917603 1-79
+packages/integration-platform/src/manifests/vercel/__tests__/variables.test.ts
+  d1699f7e66917603 1-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "6c09482e7a179b4977a74671cb8de1c6d2af14f1",
+  "prompts": {
+    "d1699f7e66917603": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d9886971-927b-4296-b7f0-9b27fec72ac2",
+        "model": "unknown"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 1057,
+      "total_deletions": 0,
+      "accepted_lines": 1057,
+      "overriden_lines": 0
+    }
+  }
+}
