@@ -1,0 +1,58 @@
+apps/api/src/timelines/timelines.service.ts
+  fccde9deaca22d8f 275-276
+  6a3d59e7a21c5c35 343-354,364
+apps/api/src/policies/policies.service.spec.ts
+  fccde9deaca22d8f 5,72-74
+apps/api/src/timelines/timelines-slack.helper.ts
+  fccde9deaca22d8f 6-11,18-26,74-76,81-82,113-115,120-121,140-141,146
+apps/api/src/tasks/tasks.service.ts
+  fccde9deaca22d8f 860-868
+apps/app/src/app/(app)/[orgId]/admin/timeline-templates/components/template-actions.ts
+  fccde9deaca22d8f 52-76,78
+apps/api/src/frameworks/frameworks.service.ts
+  fccde9deaca22d8f 459-461
+apps/api/src/admin-feature-flags/posthog.service.ts
+  fccde9deaca22d8f 13-16
+apps/api/src/timelines/timelines-phases.service.ts
+  fccde9deaca22d8f 60-65,67-69
+apps/api/src/timelines/timelines.controller.ts
+  fccde9deaca22d8f 50-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "85cd439eebb82a9fccc7216a91e07759abdce535",
+  "prompts": {
+    "6a3d59e7a21c5c35": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2135df6b-15a0-4c86-aa62-09a0702202c8",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 13,
+      "total_deletions": 0,
+      "accepted_lines": 13,
+      "overriden_lines": 0
+    },
+    "fccde9deaca22d8f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36768a54-5467-42bc-beae-f693a338266e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 116,
+      "total_deletions": 188,
+      "accepted_lines": 209464,
+      "overriden_lines": 0
+    }
+  },
+  "humans": {
+    "h_937aed68e194c2": {
+      "author": "Mariano Fuentes"
+    }
+  }
+}
