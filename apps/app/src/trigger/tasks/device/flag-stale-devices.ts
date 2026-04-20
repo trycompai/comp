@@ -8,7 +8,12 @@ export const flagStaleDevices = schedules.task({
   id: 'flag-stale-devices',
   cron: '0 6 * * *', // Daily at 06:00 UTC (~01:00 US/Eastern)
   maxDuration: 1000 * 60 * 5, // 5 minutes
-  run: async () => {
+  run: async (): Promise<{
+    success: boolean;
+    flaggedCount: number;
+    threshold: Date;
+    error?: string;
+  }> => {
     const threshold = new Date(
       Date.now() - STALE_DEVICE_THRESHOLD_DAYS * MS_PER_DAY,
     );
@@ -32,13 +37,14 @@ export const flagStaleDevices = schedules.task({
         threshold,
       };
     } catch (error) {
-      logger.error(
-        `flag-stale-devices failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      logger.error('flag-stale-devices failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return {
         success: false,
         flaggedCount: 0,
         threshold,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   },

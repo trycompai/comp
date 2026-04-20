@@ -25,6 +25,7 @@ const task = flagStaleDevices as unknown as {
     success: boolean;
     flaggedCount: number;
     threshold: Date;
+    error?: string;
   }>;
 };
 
@@ -95,5 +96,6 @@ describe('flagStaleDevices', () => {
 
     expect(result.success).toBe(false);
     expect(result.flaggedCount).toBe(0);
+    expect(result.error).toBe('db down');
   });
 });
