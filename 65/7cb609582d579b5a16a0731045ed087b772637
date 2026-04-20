@@ -1,0 +1,25 @@
+apps/app/src/app/(app)/[orgId]/people/[employeeId]/page.tsx
+  65d8a25ea2dc2ce8 58,66,70
+apps/app/src/app/(app)/[orgId]/layout.tsx
+  65d8a25ea2dc2ce8 48,52,57-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "657cb609582d579b5a16a0731045ed087b772637",
+  "prompts": {
+    "65d8a25ea2dc2ce8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "42ecccd4-f855-4d39-b1f3-b2c7fa390155",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 524,
+      "overriden_lines": 0
+    }
+  }
+}
