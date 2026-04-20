@@ -1,0 +1,29 @@
+apps/api/src/framework-editor/control-template/control-template.service.spec.ts
+  dec7f0fb0a38f563 1-85
+apps/api/src/framework-editor/control-template/control-template.service.ts
+  dec7f0fb0a38f563 57
+apps/api/src/framework-editor/control-template/control-template.controller.ts
+  dec7f0fb0a38f563 47-48
+apps/framework-editor/app/(pages)/controls/ControlsClientPage.tsx
+  dec7f0fb0a38f563 94-95,98,112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "9981888aca68739a9e993582fcdaac3be235eed3",
+  "prompts": {
+    "dec7f0fb0a38f563": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "61a5612f-c9ee-4349-b854-31512223de01",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 199,
+      "total_deletions": 406,
+      "accepted_lines": 92,
+      "overriden_lines": 0
+    }
+  }
+}
