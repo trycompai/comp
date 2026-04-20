@@ -36,6 +36,11 @@ model TimelineTemplate {
   instances TimelineInstance[]
 
   @@unique([frameworkId, trackKey, cycleNumber])
+  // Note: Postgres treats NULLs as distinct in unique indexes, so this
+  // constraint only enforces uniqueness among rows where templateKey is set.
+  // That's intentional — frameworks without explicit keys (legacy defaults)
+  // are uniquely identified by the (frameworkId, trackKey, cycleNumber)
+  // constraint above, so multiple NULL templateKey rows are permitted.
   @@unique([frameworkId, templateKey])
 }
 

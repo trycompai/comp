@@ -108,14 +108,7 @@ export class AdminOrgTimelinesController {
       description: dto.description,
       orderIndex: dto.orderIndex,
       durationWeeks: dto.durationWeeks,
-      completionType: dto.completionType as
-        | 'AUTO_TASKS'
-        | 'AUTO_POLICIES'
-        | 'AUTO_PEOPLE'
-        | 'AUTO_FINDINGS'
-        | 'AUTO_UPLOAD'
-        | 'MANUAL'
-        | undefined,
+      completionType: dto.completionType as PhaseCompletionType | undefined,
     });
   }
 

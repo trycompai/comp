@@ -42,14 +42,35 @@ export class AdminFeatureFlagsService {
     if (!config) return [];
 
     const results: PostHogFlagListItem[] = [];
-    const baseUrl = `${config.apiHost.replace(/\/$/, '')}/api/projects/${config.projectId}/feature_flags/`;
+    const apiHost = config.apiHost.replace(/\/$/, '');
+    const baseUrl = `${apiHost}/api/projects/${config.projectId}/feature_flags/`;
     let nextUrl: string | null = `${baseUrl}?limit=200`;
     // Hard cap so a misbehaving cursor can't loop forever.
     const maxPages = 25;
 
+    // Only follow `next` links that point back to the configured PostHog
+    // host. Without this check, a malicious PostHog response could redirect
+    // pagination to an attacker-controlled host and leak the Authorization
+    // header (which carries the personal API key) via SSRF.
+    const expectedOrigin = new URL(apiHost).origin;
+
     try {
       for (let page = 0; page < maxPages && nextUrl; page++) {
-        const response: Response = await fetch(nextUrl, {
+        let parsedNext: URL;
+        try {
+          parsedNext = new URL(nextUrl);
+        } catch {
+          this.logger.error(`Invalid PostHog pagination URL: ${nextUrl}`);
+          break;
+        }
+        if (parsedNext.origin !== expectedOrigin) {
+          this.logger.error(
+            `Refusing to follow PostHog pagination to foreign origin: ${parsedNext.origin}`,
+          );
+          break;
+        }
+
+        const response: Response = await fetch(parsedNext.toString(), {
           headers: {
             Authorization: `Bearer ${config.apiKey}`,
             'Content-Type': 'application/json',

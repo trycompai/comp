@@ -341,6 +341,18 @@ export class FindingsService {
       actorName,
     });
 
+    // A new open finding lowers the AUTO_FINDINGS completion ratio, which
+    // can regress a previously COMPLETED phase back to IN_PROGRESS.
+    void checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((error) => {
+      this.logger.warn(
+        `Failed to reconcile AUTO_FINDINGS phases after finding ${finding.id} create`,
+        error instanceof Error ? error.message : String(error),
+      );
+    });
+
     this.logger.log(`Created finding ${finding.id} for ${target.kind}`);
     return this.normalizeFindingFormTypes(finding);
   }
@@ -483,6 +495,18 @@ export class FindingsService {
     // Deletion is already logged by the global AuditLogInterceptor via
     // `extractFindingDescription`. No explicit call here to avoid a
     // duplicate activity entry.
+
+    // Removing a finding shifts the AUTO_FINDINGS completion ratio and can
+    // advance a phase whose only remaining open finding was deleted.
+    void checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((error) => {
+      this.logger.warn(
+        `Failed to reconcile AUTO_FINDINGS phases after finding ${findingId} delete`,
+        error instanceof Error ? error.message : String(error),
+      );
+    });
 
     this.logger.log(`Deleted finding ${findingId}`);
     return {

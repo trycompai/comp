@@ -17,17 +17,23 @@ export function recalculatePhaseDates<T extends PhaseForRecalculation>(
   timelineStartDate: Date,
 ): (T & { startDate: Date; endDate: Date })[] {
   const sorted = [...phases].sort((a, b) => a.orderIndex - b.orderIndex);
-  let currentDate = timelineStartDate;
+  // Defensively copy the caller's start date so downstream mutation of any
+  // returned startDate/endDate can't write back into the input.
+  let currentDate = new Date(timelineStartDate);
 
   return sorted.map((phase) => {
     if (phase.datesPinned && phase.startDate && phase.endDate) {
-      currentDate = phase.endDate;
-      return { ...phase, startDate: phase.startDate, endDate: phase.endDate };
+      // Also defensively copy the pinned dates so the returned objects don't
+      // alias the input phase rows.
+      const pinnedStart = new Date(phase.startDate);
+      const pinnedEnd = new Date(phase.endDate);
+      currentDate = new Date(pinnedEnd);
+      return { ...phase, startDate: pinnedStart, endDate: pinnedEnd };
     }
 
-    const startDate = currentDate;
+    const startDate = new Date(currentDate);
     const endDate = addWeeks(startDate, phase.durationWeeks);
-    currentDate = endDate;
+    currentDate = new Date(endDate);
 
     return { ...phase, startDate, endDate };
   });

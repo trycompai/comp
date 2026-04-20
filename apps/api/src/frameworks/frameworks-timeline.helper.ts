@@ -70,20 +70,23 @@ export async function createTimelinesForFrameworks({
           ]
         : [{ cycleNumber: 1, trackKey: 'primary' }];
 
-    try {
-      for (const timeline of timelinesToCreate) {
+    // Try each track independently so a failure on one track (e.g.
+    // soc2_type1) doesn't silently skip the other (soc2_type2). Partial
+    // state is also repaired on the next /timelines read via backfill.
+    for (const timeline of timelinesToCreate) {
+      try {
         await timelinesService.createFromTemplate({
           organizationId,
           frameworkInstanceId: instance.id,
           cycleNumber: timeline.cycleNumber,
           trackKey: timeline.trackKey,
         });
+      } catch (err) {
+        logger.warn(
+          `Failed to create ${timeline.trackKey} timeline for framework instance ${instance.id}`,
+          err instanceof Error ? err.message : err,
+        );
       }
-    } catch (err) {
-      logger.warn(
-        `Failed to create timeline for framework instance ${instance.id}`,
-        err instanceof Error ? err.message : err,
-      );
     }
   }
 }
