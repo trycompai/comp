@@ -55,8 +55,8 @@ describe('AdminFeatureFlagsService', () => {
       posthog.getClient.mockReturnValue(client);
 
       fetchSpy.mockImplementation((url) => {
-        const u = String(url);
-        if (u.includes('us.posthog.com') && !u.includes('evil')) {
+        const host = new URL(String(url)).host;
+        if (host === 'us.posthog.com') {
           return Promise.resolve(
             new Response(
               JSON.stringify({
@@ -69,7 +69,7 @@ describe('AdminFeatureFlagsService', () => {
             ),
           );
         }
-        throw new Error(`fetch should not be called with ${u}`);
+        throw new Error(`fetch should not be called with ${url}`);
       });
 
       const result = await service.listForOrganization('org_1');
