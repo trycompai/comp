@@ -48,6 +48,11 @@ describe('daysSinceCheckIn', () => {
   it('accepts ISO strings', () => {
     expect(daysSinceCheckIn(daysAgo(3).toISOString())).toBe(3);
   });
+
+  it('returns null for invalid date strings', () => {
+    expect(daysSinceCheckIn('not-a-date')).toBeNull();
+    expect(daysSinceCheckIn('')).toBeNull();
+  });
 });
 
 describe('isDeviceStale', () => {
@@ -65,6 +70,10 @@ describe('isDeviceStale', () => {
 
   it('is true for a check-in 51 days ago', () => {
     expect(isDeviceStale(daysAgo(51))).toBe(true);
+  });
+
+  it('treats invalid date strings as stale', () => {
+    expect(isDeviceStale('not-a-date')).toBe(true);
   });
 });
 
@@ -98,5 +107,14 @@ describe('getDeviceComplianceStatus', () => {
       'compliant',
     );
     expect(getDeviceComplianceStatus({ isCompliant: true, lastCheckIn: daysAgo(7) })).toBe('stale');
+  });
+
+  it('returns "stale" for invalid date strings regardless of isCompliant', () => {
+    expect(getDeviceComplianceStatus({ isCompliant: true, lastCheckIn: 'not-a-date' })).toBe(
+      'stale',
+    );
+    expect(getDeviceComplianceStatus({ isCompliant: false, lastCheckIn: 'not-a-date' })).toBe(
+      'stale',
+    );
   });
 });

@@ -52,6 +52,7 @@ function toDate(value: Date | string): Date {
 export function daysSinceCheckIn(lastCheckIn: Date | string | null): number | null {
   if (lastCheckIn === null) return null;
   const then = toDate(lastCheckIn).getTime();
+  if (Number.isNaN(then)) return null;
   return Math.floor((Date.now() - then) / MS_PER_DAY);
 }
 

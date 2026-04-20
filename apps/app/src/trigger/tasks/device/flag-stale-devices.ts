@@ -7,7 +7,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export const flagStaleDevices = schedules.task({
   id: 'flag-stale-devices',
   cron: '0 6 * * *', // Daily at 06:00 UTC (~01:00 US/Eastern)
-  maxDuration: 1000 * 60 * 5, // 5 minutes
+  maxDuration: 60 * 5, // 5 minutes (trigger.dev expects seconds)
   run: async (): Promise<{
     success: boolean;
     flaggedCount: number;

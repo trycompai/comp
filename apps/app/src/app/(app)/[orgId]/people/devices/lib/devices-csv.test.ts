@@ -133,6 +133,41 @@ describe('buildDevicesCsv', () => {
     expect(lines[1].startsWith('Alpha,')).toBe(true);
     expect(lines[2].startsWith('Beta,')).toBe(true);
   });
+
+  describe('formula injection neutralization', () => {
+    function firstCell(csv: string): string {
+      const body = stripBom(csv);
+      const row = body.slice(0, -2).split('\r\n')[1];
+      return row.split(',')[0];
+    }
+
+    it('prefixes cells starting with "=" with an apostrophe', () => {
+      const csv = buildDevicesCsv([makeDevice({ name: '=CMD(A1)' })]);
+      expect(firstCell(csv)).toBe("'=CMD(A1)");
+    });
+
+    it('prefixes cells starting with "+" with an apostrophe', () => {
+      const csv = buildDevicesCsv([makeDevice({ name: '+1234' })]);
+      expect(firstCell(csv)).toBe("'+1234");
+    });
+
+    it('prefixes cells starting with "-" with an apostrophe', () => {
+      const csv = buildDevicesCsv([makeDevice({ name: '-5' })]);
+      expect(firstCell(csv)).toBe("'-5");
+    });
+
+    it('prefixes cells starting with "@" with an apostrophe', () => {
+      const csv = buildDevicesCsv([makeDevice({ name: '@somewhere' })]);
+      expect(firstCell(csv)).toBe("'@somewhere");
+    });
+
+    it('prefixes and double-quotes cells with a leading trigger AND an embedded comma', () => {
+      const csv = buildDevicesCsv([makeDevice({ name: '=EVIL,' })]);
+      const body = stripBom(csv);
+      const rowsPart = body.slice(0, -2).split('\r\n').slice(1).join('\r\n');
+      expect(rowsPart.startsWith('"\'=EVIL,"')).toBe(true);
+    });
+  });
 });
 
 describe('devicesCsvFilename', () => {

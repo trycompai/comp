@@ -16,9 +16,14 @@ export const DEVICES_CSV_HEADER = [
   'Screen Lock',
 ].join(',');
 
+const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
+
 function escapeCell(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return '';
-  const str = String(value);
+  let str = String(value);
+  if (FORMULA_TRIGGER.test(str)) {
+    str = `'${str}`;
+  }
   if (/[",\r\n]/.test(str)) {
     return `"${str.replace(/"/g, '""')}"`;
   }
