@@ -199,8 +199,7 @@ export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps)
             />
           </InputGroup>
         </div>
-        <Button variant="outline" onClick={handleExport}>
-          <Download size={16} />
+        <Button variant="outline" iconLeft={<Download />} onClick={handleExport}>
           Export CSV
         </Button>
       </div>
