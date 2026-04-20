@@ -128,6 +128,7 @@ describe('PolicyAlerts', () => {
       const pendingPolicy = {
         ...basePolicy,
         approverId: 'other-member',
+        pendingVersionId: 'ver-1',
         approver: {
           id: 'other-member',
           user: { name: 'Other User', email: 'other@test.com' },
@@ -137,6 +138,22 @@ describe('PolicyAlerts', () => {
         <PolicyAlerts policy={pendingPolicy} isPendingApproval={true} />,
       );
       expect(screen.getByText('Pending approval')).toBeInTheDocument();
+    });
+
+    it('does not render pending approval notice when pendingVersionId is null (stale approverId)', () => {
+      const stalePolicy = {
+        ...basePolicy,
+        approverId: 'other-member',
+        pendingVersionId: null,
+        approver: {
+          id: 'other-member',
+          user: { name: 'Other User', email: 'other@test.com' },
+        },
+      };
+      const { container } = render(
+        <PolicyAlerts policy={stalePolicy} isPendingApproval={true} />,
+      );
+      expect(container.innerHTML).toBe('');
     });
   });
 
@@ -163,6 +180,7 @@ describe('PolicyAlerts', () => {
       const pendingPolicy = {
         ...basePolicy,
         approverId: 'other-member',
+        pendingVersionId: 'ver-1',
         approver: {
           id: 'other-member',
           user: { name: 'Other User', email: 'other@test.com' },
