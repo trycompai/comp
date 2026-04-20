@@ -52,7 +52,15 @@ export class AdminFeatureFlagsService {
     // host. Without this check, a malicious PostHog response could redirect
     // pagination to an attacker-controlled host and leak the Authorization
     // header (which carries the personal API key) via SSRF.
-    const expectedOrigin = new URL(apiHost).origin;
+    let expectedOrigin: string;
+    try {
+      expectedOrigin = new URL(apiHost).origin;
+    } catch {
+      this.logger.error(
+        `POSTHOG_HOST is not a valid URL: "${apiHost}". Skipping flag fetch.`,
+      );
+      return [];
+    }
 
     try {
       for (let page = 0; page < maxPages && nextUrl; page++) {
