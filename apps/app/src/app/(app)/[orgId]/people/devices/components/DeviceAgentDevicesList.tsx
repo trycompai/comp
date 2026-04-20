@@ -72,9 +72,7 @@ function staleLabel(daysSinceLastCheckIn: number | null): string {
   return daysSinceLastCheckIn === null ? 'Stale' : `Stale (${daysSinceLastCheckIn}d)`;
 }
 
-function UserNameCell({ device }: { device: DeviceWithChecks }) {
-  const params = useParams();
-  const orgId = params?.orgId as string;
+function UserNameCell({ device, orgId }: { device: DeviceWithChecks; orgId: string }) {
   const memberId = device.memberId;
 
   if (!memberId) {
@@ -102,7 +100,18 @@ function UserNameCell({ device }: { device: DeviceWithChecks }) {
 
 function CompliantBadge({ device }: { device: DeviceWithChecks }) {
   if (device.complianceStatus === 'stale') {
-    return <Badge variant="secondary">{staleLabel(device.daysSinceLastCheckIn)}</Badge>;
+    return (
+      <Badge
+        variant="secondary"
+        title={
+          device.daysSinceLastCheckIn === null
+            ? 'No check-ins recorded'
+            : `No check-in in ${device.daysSinceLastCheckIn} days`
+        }
+      >
+        {staleLabel(device.daysSinceLastCheckIn)}
+      </Badge>
+    );
   }
   if (device.complianceStatus === 'compliant') {
     return <Badge variant="default">Yes</Badge>;
@@ -251,7 +260,7 @@ export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps)
                   </div>
                 </TableCell>
                 <TableCell>
-                  <UserNameCell device={device} />
+                  <UserNameCell device={device} orgId={orgId} />
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
