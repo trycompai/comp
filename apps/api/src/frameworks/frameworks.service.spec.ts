@@ -9,6 +9,25 @@ jest.mock('@db', () => ({
       findUnique: jest.fn(),
       delete: jest.fn(),
     },
+    frameworkEditorRequirement: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+    },
+    customRequirement: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+    },
+    requirementMap: {
+      findMany: jest.fn(),
+      createMany: jest.fn(),
+    },
+    task: {
+      findMany: jest.fn(),
+    },
+    evidenceSubmission: {
+      findMany: jest.fn(),
+    },
   },
 }));
 
@@ -58,7 +77,7 @@ describe('FrameworksService', () => {
       expect(result).toEqual(mockInstances);
       expect(mockDb.frameworkInstance.findMany).toHaveBeenCalledWith({
         where: { organizationId: 'org_1' },
-        include: { framework: true },
+        include: { framework: true, customFramework: true },
       });
     });
 
@@ -133,6 +152,87 @@ describe('FrameworksService', () => {
         ...mockScores,
         currentMember: null,
       });
+    });
+  });
+
+  // Regression coverage for the cross-tenant leak that existed on this branch
+  // before the split: previously both findOne and findRequirement read from
+  // FrameworkEditorRequirement without filtering by organizationId, so an org's
+  // request could surface another org's custom requirements sharing a framework.
+  // With the split, a custom framework instance reads from `customRequirement`
+  // (which is always org-scoped) and a platform framework instance reads from
+  // the global `frameworkEditorRequirement`. There is no shared table to leak.
+  describe('custom-framework isolation', () => {
+    it('findOne on a custom FI reads only that org\'s custom requirements', async () => {
+      (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue({
+        id: 'fi_custom',
+        organizationId: 'org_A',
+        frameworkId: null,
+        customFrameworkId: 'cfrm_A',
+        customFramework: { id: 'cfrm_A', name: 'A Custom' },
+        framework: null,
+        requirementsMapped: [],
+      });
+      (mockDb.customRequirement.findMany as jest.Mock).mockResolvedValue([
+        { id: 'creq_1', name: 'R1', identifier: 'R1', description: '' },
+      ]);
+      (mockDb.task.findMany as jest.Mock).mockResolvedValue([]);
+      (mockDb.requirementMap.findMany as jest.Mock).mockResolvedValue([]);
+      (mockDb.evidenceSubmission.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.findOne('fi_custom', 'org_A');
+
+      expect(mockDb.customRequirement.findMany).toHaveBeenCalledWith({
+        where: { customFrameworkId: 'cfrm_A' },
+        orderBy: { name: 'asc' },
+      });
+      expect(
+        mockDb.frameworkEditorRequirement.findMany,
+      ).not.toHaveBeenCalled();
+      expect(result.requirementDefinitions).toHaveLength(1);
+    });
+
+    it('findOne on a platform FI reads only FrameworkEditorRequirement', async () => {
+      (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue({
+        id: 'fi_platform',
+        organizationId: 'org_A',
+        frameworkId: 'frk_soc2',
+        customFrameworkId: null,
+        framework: { id: 'frk_soc2', name: 'SOC 2' },
+        customFramework: null,
+        requirementsMapped: [],
+      });
+      (
+        mockDb.frameworkEditorRequirement.findMany as jest.Mock
+      ).mockResolvedValue([
+        { id: 'frk_rq_1', name: 'CC1', identifier: 'cc1-1', description: '' },
+      ]);
+      (mockDb.task.findMany as jest.Mock).mockResolvedValue([]);
+      (mockDb.requirementMap.findMany as jest.Mock).mockResolvedValue([]);
+      (mockDb.evidenceSubmission.findMany as jest.Mock).mockResolvedValue([]);
+
+      await service.findOne('fi_platform', 'org_A');
+
+      expect(mockDb.frameworkEditorRequirement.findMany).toHaveBeenCalledWith({
+        where: { frameworkId: 'frk_soc2' },
+        orderBy: { name: 'asc' },
+      });
+      expect(mockDb.customRequirement.findMany).not.toHaveBeenCalled();
+    });
+
+    it('createRequirement rejects a platform framework instance', async () => {
+      (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue({
+        customFrameworkId: null,
+      });
+
+      await expect(
+        service.createRequirement('fi_platform', 'org_A', {
+          name: 'x',
+          identifier: 'x',
+          description: 'x',
+        }),
+      ).rejects.toThrow(/Cannot add custom requirements/);
+      expect(mockDb.customRequirement.create).not.toHaveBeenCalled();
     });
   });
 });

@@ -19501,6 +19501,161 @@
         ]
       }
     },
+    "/v1/frameworks/custom": {
+      "post": {
+        "operationId": "FrameworksController_createCustom_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a custom framework for this organization",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/requirements": {
+      "post": {
+        "operationId": "FrameworksController_createRequirement_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomRequirementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a custom requirement to a framework instance",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/requirements/link": {
+      "post": {
+        "operationId": "FrameworksController_linkRequirements_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkRequirementsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link (clone) existing requirements from another framework into this one",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/requirements/{requirementKey}/controls/link": {
+      "post": {
+        "operationId": "FrameworksController_linkControls_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requirementKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkControlsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link existing org controls to a requirement",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
     "/v1/audit-logs": {
       "get": {
         "operationId": "AuditLogController_getAuditLogs_v1",
@@ -19721,6 +19876,199 @@
           }
         ],
         "summary": "Delete a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/policies/link": {
+      "post": {
+        "operationId": "ControlsController_linkPolicies_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkPoliciesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link existing policies to a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/tasks/link": {
+      "post": {
+        "operationId": "ControlsController_linkTasks_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkTasksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link existing tasks to a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/requirements/link": {
+      "post": {
+        "operationId": "ControlsController_linkRequirements_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkRequirementsToControlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link existing requirements to a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/document-types/link": {
+      "post": {
+        "operationId": "ControlsController_linkDocumentTypes_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkDocumentTypesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link required document types to a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/document-types/{formType}": {
+      "delete": {
+        "operationId": "ControlsController_unlinkDocumentType_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a required document type from a control",
         "tags": [
           "Controls"
         ]
@@ -24733,12 +25081,93 @@
           "frameworkIds"
         ]
       },
+      "CreateCustomFrameworkDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Framework name",
+            "example": "Internal Controls"
+          },
+          "description": {
+            "type": "string",
+            "description": "Framework description"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version",
+            "example": "1.0"
+          }
+        },
+        "required": [
+          "name",
+          "description"
+        ]
+      },
+      "CreateCustomRequirementDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Requirement name",
+            "example": "Access Review"
+          },
+          "identifier": {
+            "type": "string",
+            "description": "Identifier",
+            "example": "10.3"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description"
+          }
+        },
+        "required": [
+          "name",
+          "identifier",
+          "description"
+        ]
+      },
+      "LinkRequirementsDto": {
+        "type": "object",
+        "properties": {
+          "requirementIds": {
+            "description": "IDs of existing FrameworkEditorRequirement rows to clone into this framework",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "requirementIds"
+        ]
+      },
+      "LinkControlsDto": {
+        "type": "object",
+        "properties": {
+          "controlIds": {
+            "description": "Existing org Control IDs to map to the requirement on this framework instance",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "controlIds"
+        ]
+      },
       "RequirementMappingDto": {
         "type": "object",
         "properties": {
           "requirementId": {
             "type": "string",
-            "description": "Requirement ID"
+            "description": "Platform requirement ID (exactly one of requirementId / customRequirementId must be set)"
+          },
+          "customRequirementId": {
+            "type": "string",
+            "description": "Org-custom requirement ID (exactly one of requirementId / customRequirementId must be set)"
           },
           "frameworkInstanceId": {
             "type": "string",
@@ -24746,7 +25175,6 @@
           }
         },
         "required": [
-          "requirementId",
           "frameworkInstanceId"
         ]
       },
@@ -24783,11 +25211,126 @@
             "items": {
               "$ref": "#/components/schemas/RequirementMappingDto"
             }
+          },
+          "documentTypes": {
+            "type": "array",
+            "description": "Evidence form types to require on this control",
+            "items": {
+              "type": "string",
+              "enum": [
+                "board_meeting",
+                "it_leadership_meeting",
+                "risk_committee_meeting",
+                "meeting",
+                "access_request",
+                "whistleblower_report",
+                "penetration_test",
+                "rbac_matrix",
+                "infrastructure_inventory",
+                "employee_performance_evaluation",
+                "network_diagram",
+                "tabletop_exercise"
+              ]
+            }
           }
         },
         "required": [
           "name",
           "description"
+        ]
+      },
+      "LinkPoliciesDto": {
+        "type": "object",
+        "properties": {
+          "policyIds": {
+            "description": "Policy IDs to link to the control",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "policyIds"
+        ]
+      },
+      "LinkTasksDto": {
+        "type": "object",
+        "properties": {
+          "taskIds": {
+            "description": "Task IDs to link to the control",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "taskIds"
+        ]
+      },
+      "LinkRequirementMappingDto": {
+        "type": "object",
+        "properties": {
+          "requirementId": {
+            "type": "string",
+            "description": "Platform requirement ID"
+          },
+          "customRequirementId": {
+            "type": "string",
+            "description": "Org-custom requirement ID"
+          },
+          "frameworkInstanceId": {
+            "type": "string",
+            "description": "Framework instance ID"
+          }
+        },
+        "required": [
+          "frameworkInstanceId"
+        ]
+      },
+      "LinkRequirementsToControlDto": {
+        "type": "object",
+        "properties": {
+          "requirements": {
+            "description": "Requirement + framework instance pairs to link",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkRequirementMappingDto"
+            }
+          }
+        },
+        "required": [
+          "requirements"
+        ]
+      },
+      "LinkDocumentTypesDto": {
+        "type": "object",
+        "properties": {
+          "formTypes": {
+            "type": "array",
+            "description": "Evidence form types to require for this control",
+            "items": {
+              "type": "string",
+              "enum": [
+                "board_meeting",
+                "it_leadership_meeting",
+                "risk_committee_meeting",
+                "meeting",
+                "access_request",
+                "whistleblower_report",
+                "penetration_test",
+                "rbac_matrix",
+                "infrastructure_inventory",
+                "employee_performance_evaluation",
+                "network_diagram",
+                "tabletop_exercise"
+              ]
+            }
+          }
+        },
+        "required": [
+          "formTypes"
         ]
       },
       "CreatePenetrationTestDto": {

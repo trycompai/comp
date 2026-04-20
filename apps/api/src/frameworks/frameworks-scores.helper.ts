@@ -206,11 +206,14 @@ export async function getCurrentMember(organizationId: string, userId: string) {
   return member;
 }
 
+interface ControlForScoring {
+  id: string;
+  policies: { id: string; status: string }[];
+  controlDocumentTypes?: { formType: string }[];
+}
+
 interface FrameworkWithControlsForScoring {
-  controls: {
-    id: string;
-    policies: { id: string; status: string }[];
-  }[];
+  controls: ControlForScoring[];
 }
 
 interface TaskWithControls {
@@ -219,40 +222,79 @@ interface TaskWithControls {
   controls: { id: string }[];
 }
 
+interface EvidenceSubmissionForScoring {
+  formType: string;
+  submittedAt: Date | string;
+}
+
+function hasAnyArtifact(
+  control: ControlForScoring,
+  tasks: TaskWithControls[],
+): boolean {
+  const policies = control.policies ?? [];
+  const documentTypes = control.controlDocumentTypes ?? [];
+  const controlTasks = tasks.filter((t) =>
+    t.controls.some((c) => c.id === control.id),
+  );
+  return (
+    policies.length > 0 || controlTasks.length > 0 || documentTypes.length > 0
+  );
+}
+
+function isControlCompleted(
+  control: ControlForScoring,
+  tasks: TaskWithControls[],
+  evidenceSubmissions: EvidenceSubmissionForScoring[],
+): boolean {
+  const policies = control.policies ?? [];
+  const documentTypes = control.controlDocumentTypes ?? [];
+  const controlTasks = tasks.filter((t) =>
+    t.controls.some((c) => c.id === control.id),
+  );
+
+  const policiesComplete =
+    policies.length === 0 ||
+    policies.every((p) => p.status === 'published');
+
+  const tasksComplete =
+    controlTasks.length === 0 ||
+    controlTasks.every(
+      (t) => t.status === 'done' || t.status === 'not_relevant',
+    );
+
+  let documentsComplete = true;
+  if (documentTypes.length > 0) {
+    const sorted = [...evidenceSubmissions].sort(
+      (a, b) =>
+        new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
+    );
+    const now = Date.now();
+    for (const dt of documentTypes) {
+      const latest = sorted.find((es) => es.formType === dt.formType);
+      if (
+        !latest ||
+        now - new Date(latest.submittedAt).getTime() > SIX_MONTHS_MS
+      ) {
+        documentsComplete = false;
+        break;
+      }
+    }
+  }
+
+  return policiesComplete && tasksComplete && documentsComplete;
+}
+
 export function computeFrameworkComplianceScore(
   framework: FrameworkWithControlsForScoring,
   tasks: TaskWithControls[],
+  evidenceSubmissions: EvidenceSubmissionForScoring[] = [],
 ): number {
-  const controls = framework.controls ?? [];
-
-  // Deduplicate policies by id across all controls
-  const uniquePoliciesMap = new Map<string, { id: string; status: string }>();
-  for (const c of controls) {
-    for (const p of c.policies || []) {
-      uniquePoliciesMap.set(p.id, p);
-    }
-  }
-  const uniquePolicies = Array.from(uniquePoliciesMap.values());
-
-  const totalPolicies = uniquePolicies.length;
-  const publishedPolicies = uniquePolicies.filter(
-    (p) => p.status === 'published',
+  const controls = (framework.controls ?? []).filter((c) =>
+    hasAnyArtifact(c, tasks),
+  );
+  if (controls.length === 0) return 0;
+  const completed = controls.filter((c) =>
+    isControlCompleted(c, tasks, evidenceSubmissions),
   ).length;
-  const policyRatio = totalPolicies > 0 ? publishedPolicies / totalPolicies : 0;
-
-  const controlIds = controls.map((c) => c.id);
-  const uniqueTaskMap = new Map<string, TaskWithControls>();
-  for (const t of tasks) {
-    if (t.controls.some((c) => controlIds.includes(c.id))) {
-      uniqueTaskMap.set(t.id, t);
-    }
-  }
-  const uniqueTasks = Array.from(uniqueTaskMap.values());
-  const totalTasks = uniqueTasks.length;
-  const doneTasks = uniqueTasks.filter(
-    (t) => t.status === 'done' || t.status === 'not_relevant',
-  ).length;
-  const taskRatio = totalTasks > 0 ? doneTasks / totalTasks : 1;
-
-  return Math.round(((policyRatio + taskRatio) / 2) * 100);
+  return Math.round((completed / controls.length) * 100);
 }

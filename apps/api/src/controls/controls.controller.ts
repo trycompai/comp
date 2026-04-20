@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseEnumPipe,
   Post,
   Query,
   UseGuards,
@@ -20,6 +21,11 @@ import { RequirePermission } from '../auth/require-permission.decorator';
 import { OrganizationId } from '../auth/auth-context.decorator';
 import { ControlsService } from './controls.service';
 import { CreateControlDto } from './dto/create-control.dto';
+import { LinkPoliciesDto } from './dto/link-policies.dto';
+import { LinkTasksDto } from './dto/link-tasks.dto';
+import { LinkRequirementsToControlDto } from './dto/link-requirements.dto';
+import { LinkDocumentTypesDto } from './dto/link-document-types.dto';
+import { EvidenceFormType } from '@db';
 
 @ApiTags('Controls')
 @ApiBearerAuth()
@@ -90,6 +96,78 @@ export class ControlsController {
     @Body() dto: CreateControlDto,
   ) {
     return this.controlsService.create(organizationId, dto);
+  }
+
+  @Post(':id/policies/link')
+  @RequirePermission('control', 'update')
+  @ApiOperation({ summary: 'Link existing policies to a control' })
+  async linkPolicies(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Body() dto: LinkPoliciesDto,
+  ) {
+    return this.controlsService.linkPolicies(
+      id,
+      organizationId,
+      dto.policyIds,
+    );
+  }
+
+  @Post(':id/tasks/link')
+  @RequirePermission('control', 'update')
+  @ApiOperation({ summary: 'Link existing tasks to a control' })
+  async linkTasks(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Body() dto: LinkTasksDto,
+  ) {
+    return this.controlsService.linkTasks(id, organizationId, dto.taskIds);
+  }
+
+  @Post(':id/requirements/link')
+  @RequirePermission('control', 'update')
+  @ApiOperation({ summary: 'Link existing requirements to a control' })
+  async linkRequirements(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Body() dto: LinkRequirementsToControlDto,
+  ) {
+    return this.controlsService.linkRequirements(
+      id,
+      organizationId,
+      dto.requirements,
+    );
+  }
+
+  @Post(':id/document-types/link')
+  @RequirePermission('control', 'update')
+  @ApiOperation({ summary: 'Link required document types to a control' })
+  async linkDocumentTypes(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Body() dto: LinkDocumentTypesDto,
+  ) {
+    return this.controlsService.linkDocumentTypes(
+      id,
+      organizationId,
+      dto.formTypes,
+    );
+  }
+
+  @Delete(':id/document-types/:formType')
+  @RequirePermission('control', 'update')
+  @ApiOperation({ summary: 'Remove a required document type from a control' })
+  async unlinkDocumentType(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Param('formType', new ParseEnumPipe(EvidenceFormType))
+    formType: EvidenceFormType,
+  ) {
+    return this.controlsService.unlinkDocumentType(
+      id,
+      organizationId,
+      formType,
+    );
   }
 
   @Delete(':id')

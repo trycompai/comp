@@ -3,12 +3,20 @@ model FrameworkInstance {
   id             String @id @default(dbgenerated("generate_prefixed_cuid('frm'::text)"))
   organizationId String
 
-  frameworkId String
-  framework   FrameworkEditorFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  // Exactly one of frameworkId / customFrameworkId is set (enforced by DB CHECK constraint).
+  frameworkId String?
+  framework   FrameworkEditorFramework? @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  customFrameworkId String?
+  // Composite FK onto (id, organizationId) so an FI can only reference a
+  // CustomFramework in its own org. Enforced at the DB level.
+  customFramework   CustomFramework? @relation(fields: [customFrameworkId, organizationId], references: [id, organizationId], onDelete: Cascade)
 
   // Relationships
   organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   requirementsMapped RequirementMap[]
 
   @@unique([organizationId, frameworkId])
+  @@unique([organizationId, customFrameworkId])
+  @@index([customFrameworkId])
 }

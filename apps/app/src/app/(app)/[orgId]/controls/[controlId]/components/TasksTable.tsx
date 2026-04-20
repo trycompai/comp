@@ -89,9 +89,21 @@ export function TasksTable({ tasks, orgId }: TasksTableProps) {
                   }
                 }}
               >
-                <TableCell>{task.title}</TableCell>
                 <TableCell>
-                  <span className="line-clamp-1 capitalize">{task.description}</span>
+                  <span
+                    className="block max-w-[280px] truncate text-sm"
+                    title={task.title}
+                  >
+                    {task.title}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span
+                    className="block max-w-[420px] truncate text-sm"
+                    title={task.description}
+                  >
+                    {task.description}
+                  </span>
                 </TableCell>
                 <TableCell>
                   <StatusIndicator status={task.status} />

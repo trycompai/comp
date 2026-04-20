@@ -22,6 +22,10 @@ import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { FrameworksService } from './frameworks.service';
 import { AddFrameworksDto } from './dto/add-frameworks.dto';
+import { CreateCustomFrameworkDto } from './dto/create-custom-framework.dto';
+import { CreateCustomRequirementDto } from './dto/create-custom-requirement.dto';
+import { LinkRequirementsDto } from './dto/link-requirements.dto';
+import { LinkControlsDto } from './dto/link-controls.dto';
 
 @ApiTags('Frameworks')
 @ApiBearerAuth()
@@ -53,8 +57,8 @@ export class FrameworksController {
     summary:
       'List available frameworks (requires session, no active org needed — used during onboarding)',
   })
-  async findAvailable() {
-    const data = await this.frameworksService.findAvailable();
+  async findAvailable(@OrganizationId() organizationId?: string) {
+    const data = await this.frameworksService.findAvailable(organizationId);
     return { data, count: data.length };
   }
 
@@ -103,6 +107,64 @@ export class FrameworksController {
     return this.frameworksService.addFrameworks(
       organizationId,
       dto.frameworkIds,
+    );
+  }
+
+  @Post('custom')
+  @RequirePermission('framework', 'create')
+  @ApiOperation({ summary: 'Create a custom framework for this organization' })
+  async createCustom(
+    @OrganizationId() organizationId: string,
+    @Body() dto: CreateCustomFrameworkDto,
+  ) {
+    return this.frameworksService.createCustom(organizationId, dto);
+  }
+
+  @Post(':id/requirements')
+  @RequirePermission('framework', 'update')
+  @ApiOperation({ summary: 'Add a custom requirement to a framework instance' })
+  async createRequirement(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Body() dto: CreateCustomRequirementDto,
+  ) {
+    return this.frameworksService.createRequirement(id, organizationId, dto);
+  }
+
+  @Post(':id/requirements/link')
+  @RequirePermission('framework', 'update')
+  @ApiOperation({
+    summary:
+      'Link (clone) existing requirements from another framework into this one',
+  })
+  async linkRequirements(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Body() dto: LinkRequirementsDto,
+  ) {
+    return this.frameworksService.linkRequirements(
+      id,
+      organizationId,
+      dto.requirementIds,
+    );
+  }
+
+  @Post(':id/requirements/:requirementKey/controls/link')
+  @RequirePermission('framework', 'update')
+  @ApiOperation({
+    summary: 'Link existing org controls to a requirement',
+  })
+  async linkControls(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Param('requirementKey') requirementKey: string,
+    @Body() dto: LinkControlsDto,
+  ) {
+    return this.frameworksService.linkControlsToRequirement(
+      id,
+      requirementKey,
+      organizationId,
+      dto.controlIds,
     );
   }
 

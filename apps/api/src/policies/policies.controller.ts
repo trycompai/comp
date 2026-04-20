@@ -225,20 +225,43 @@ export class PoliciesController {
 
     const instances = await db.frameworkInstance.findMany({
       where: { organizationId },
-      include: { framework: true },
+      include: { framework: true, customFramework: true },
     });
 
+    // Normalize platform + org-custom frameworks into a single shape so the AI
+    // context reflects every framework the org has enabled, not just platform.
+    const normalized = instances.map((fi) => {
+      if (fi.framework) {
+        return {
+          id: fi.framework.id,
+          name: fi.framework.name,
+          version: fi.framework.version,
+          description: fi.framework.description,
+          visible: fi.framework.visible,
+          createdAt: fi.framework.createdAt,
+          updatedAt: fi.framework.updatedAt,
+        };
+      }
+      if (fi.customFramework) {
+        return {
+          id: fi.customFramework.id,
+          name: fi.customFramework.name,
+          version: fi.customFramework.version,
+          description: fi.customFramework.description,
+          visible: true,
+          createdAt: fi.customFramework.createdAt,
+          updatedAt: fi.customFramework.updatedAt,
+        };
+      }
+      return null;
+    });
     const uniqueFrameworks = Array.from(
-      new Map(instances.map((fi) => [fi.framework.id, fi.framework])).values(),
-    ).map((f) => ({
-      id: f.id,
-      name: f.name,
-      version: f.version,
-      description: f.description,
-      visible: f.visible,
-      createdAt: f.createdAt,
-      updatedAt: f.updatedAt,
-    }));
+      new Map(
+        normalized
+          .filter((f): f is NonNullable<typeof f> => f !== null)
+          .map((f) => [f.id, f]),
+      ).values(),
+    );
 
     const contextEntries = await db.context.findMany({
       where: { organizationId },

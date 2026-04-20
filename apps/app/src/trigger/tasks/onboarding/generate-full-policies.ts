@@ -32,7 +32,9 @@ export const generateFullPolicies = task({
       const frameworks = await db.frameworkEditorFramework.findMany({
         where: {
           id: {
-            in: frameworkInstances.map((instance) => instance.frameworkId),
+            in: frameworkInstances
+              .map((instance) => instance.frameworkId)
+              .filter((id): id is string => Boolean(id)),
           },
         },
       });

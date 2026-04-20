@@ -67,7 +67,11 @@ export function RequirementControlsTable({
     if (!searchTerm.trim()) return controls;
 
     const searchLower = searchTerm.toLowerCase();
-    return controls.filter((control) => control.name.toLowerCase().includes(searchLower));
+    return controls.filter(
+      (control) =>
+        control.name.toLowerCase().includes(searchLower) ||
+        control.description?.toLowerCase().includes(searchLower),
+    );
   }, [controls, searchTerm]);
 
   const getControlHref = (controlId: string) =>
@@ -103,7 +107,8 @@ export function RequirementControlsTable({
       <Table variant="bordered">
         <TableHeader>
           <TableRow>
-            <TableHead>Control</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Description</TableHead>
             <TableHead>Policies</TableHead>
             <TableHead>Tasks</TableHead>
             <TableHead>Status</TableHead>
@@ -112,7 +117,7 @@ export function RequirementControlsTable({
         <TableBody>
           {filteredControls.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4}>
+              <TableCell colSpan={5}>
                 <Text size="sm" variant="muted">
                   No controls found.
                 </Text>
@@ -148,14 +153,25 @@ export function RequirementControlsTable({
                       onClick={(e) => e.stopPropagation()}
                       className="group flex items-center gap-2"
                     >
-                      <Text size="sm" weight="medium">
+                      <span
+                        className="block max-w-[280px] truncate text-sm"
+                        title={control.name}
+                      >
                         {control.name}
-                      </Text>
+                      </span>
                       <Launch
                         size={14}
                         className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
                       />
                     </Link>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className="block max-w-[420px] truncate text-sm"
+                      title={control.description || ''}
+                    >
+                      {control.description || '—'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="tabular-nums">

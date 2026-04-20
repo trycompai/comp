@@ -29,6 +29,14 @@ interface FrameworksTableProps {
   organizationId: string;
 }
 
+function frameworkName(fw: FrameworkInstanceWithControls): string {
+  return fw.framework?.name ?? fw.customFramework?.name ?? '';
+}
+
+function frameworkDescription(fw: FrameworkInstanceWithControls): string {
+  return fw.framework?.description ?? fw.customFramework?.description ?? '';
+}
+
 const FRAMEWORK_BADGES: Record<string, string> = {
   'SOC 2': '/badges/soc2.svg',
   'ISO 27001': '/badges/iso27001.svg',
@@ -107,8 +115,8 @@ export function FrameworksTable({
       const lower = searchTerm.toLowerCase();
       items = items.filter(
         (fw) =>
-          fw.framework.name.toLowerCase().includes(lower) ||
-          fw.framework.description?.toLowerCase().includes(lower),
+          frameworkName(fw).toLowerCase().includes(lower) ||
+          frameworkDescription(fw).toLowerCase().includes(lower),
       );
     }
 
@@ -116,7 +124,7 @@ export function FrameworksTable({
       const dir = sortDirection === 'asc' ? 1 : -1;
       switch (sortColumn) {
         case 'name':
-          return dir * a.framework.name.localeCompare(b.framework.name);
+          return dir * frameworkName(a).localeCompare(frameworkName(b));
         case 'compliance': {
           const scoreA = complianceMap[a.id] ?? 0;
           const scoreB = complianceMap[b.id] ?? 0;
@@ -209,7 +217,9 @@ export function FrameworksTable({
               const score = complianceMap[fw.id] ?? 0;
               const roundedScore = Math.round(score);
               const status = getFrameworkStatus(score);
-              const badgeSrc = getFrameworkBadge(fw.framework.name);
+              const name = frameworkName(fw);
+              const description = frameworkDescription(fw);
+              const badgeSrc = getFrameworkBadge(name);
 
               return (
                 <TableRow
@@ -222,30 +232,34 @@ export function FrameworksTable({
                       {badgeSrc ? (
                         <Image
                           src={badgeSrc}
-                          alt={fw.framework.name}
+                          alt={name}
                           width={24}
                           height={24}
-                          className="rounded-full"
+                          className="rounded-full shrink-0"
                           unoptimized
                         />
                       ) : (
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted">
                           <span className="text-[10px] text-muted-foreground">
-                            {fw.framework.name.charAt(0)}
+                            {name.charAt(0)}
                           </span>
                         </div>
                       )}
-                      <Text size="sm" weight="medium">
-                        {fw.framework.name}
-                      </Text>
+                      <span
+                        className="block max-w-[260px] truncate text-sm font-medium"
+                        title={name}
+                      >
+                        {name}
+                      </span>
                     </HStack>
                   </TableCell>
                   <TableCell>
-                    <div className="line-clamp-2">
-                      <Text size="sm" variant="muted">
-                        {fw.framework.description?.trim() || '—'}
-                      </Text>
-                    </div>
+                    <span
+                      className="block max-w-[420px] truncate text-sm"
+                      title={description.trim() || ''}
+                    >
+                      {description.trim() || '—'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3 min-w-[120px]">

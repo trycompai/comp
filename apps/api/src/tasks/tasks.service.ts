@@ -75,9 +75,12 @@ export class TasksService {
       where: { organizationId },
       include: {
         framework: { select: { name: true } },
+        customFramework: { select: { name: true } },
       },
     });
-    return instances.map((fi) => fi.framework.name);
+    return instances
+      .map((fi) => fi.framework?.name ?? fi.customFramework?.name)
+      .filter((name): name is string => Boolean(name));
   }
 
   /**
@@ -315,6 +318,7 @@ export class TasksService {
           where: { organizationId },
           include: {
             framework: { select: { id: true, name: true } },
+            customFramework: { select: { id: true, name: true } },
             requirementsMapped: { select: { controlId: true } },
           },
         }),

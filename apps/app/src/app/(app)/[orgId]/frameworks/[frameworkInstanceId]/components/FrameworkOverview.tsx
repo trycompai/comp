@@ -19,6 +19,8 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { getControlStatus } from '@/lib/control-compliance';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import { FrameworkDeleteDialog } from './FrameworkDeleteDialog';
+import { AddCustomRequirementSheet } from './AddCustomRequirementSheet';
+import { LinkRequirementSheet } from './LinkRequirementSheet';
 
 interface EvidenceSubmissionInfo {
   id: string;
@@ -65,38 +67,55 @@ export function FrameworkOverview({
 
   const inProgressControls = totalControls - compliantControls;
 
+  const frameworkDisplayName =
+    frameworkInstanceWithControls.framework?.name ??
+    frameworkInstanceWithControls.customFramework?.name ??
+    'Framework';
+  const frameworkDisplayDescription =
+    frameworkInstanceWithControls.framework?.description ??
+    frameworkInstanceWithControls.customFramework?.description ??
+    '';
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title={frameworkInstanceWithControls.framework.name}
+        title={frameworkDisplayName}
         actions={
-          hasPermission('framework', 'delete') ? (
-            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="ghost">
-                  <OverflowMenuVertical size={16} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => {
-                    setDropdownOpen(false);
-                    setDeleteDialogOpen(true);
-                  }}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <TrashCan size={16} className="mr-2" />
-                  Delete Framework
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : undefined
+          <>
+            <LinkRequirementSheet
+              frameworkInstanceId={frameworkInstanceWithControls.id}
+            />
+            <AddCustomRequirementSheet
+              frameworkInstanceId={frameworkInstanceWithControls.id}
+            />
+            {hasPermission('framework', 'delete') ? (
+              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="ghost">
+                    <OverflowMenuVertical size={16} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      setDeleteDialogOpen(true);
+                    }}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <TrashCan size={16} className="mr-2" />
+                    Delete Framework
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+          </>
         }
       />
-      {frameworkInstanceWithControls.framework.description && (
+      {frameworkDisplayDescription && (
         <div className="max-w-2xl">
           <Text size="sm" variant="muted">
-            {frameworkInstanceWithControls.framework.description}
+            {frameworkDisplayDescription}
           </Text>
         </div>
       )}

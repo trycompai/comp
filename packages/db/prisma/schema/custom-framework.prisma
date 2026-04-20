@@ -1,0 +1,40 @@
+model CustomFramework {
+  id          String @id @default(dbgenerated("generate_prefixed_cuid('cfrm'::text)"))
+  name        String
+  description String
+  version     String @default("1.0.0")
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  requirements CustomRequirement[]
+  instances    FrameworkInstance[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([id, organizationId])
+  @@index([organizationId])
+}
+
+model CustomRequirement {
+  id          String @id @default(dbgenerated("generate_prefixed_cuid('creq'::text)"))
+  name        String
+  description String
+  identifier  String
+
+  organizationId    String
+  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customFrameworkId String
+  // Composite FK onto (id, organizationId) so tenant consistency with the
+  // referenced CustomFramework is enforced at the DB level.
+  customFramework   CustomFramework @relation(fields: [customFrameworkId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  requirementMaps RequirementMap[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([customFrameworkId, identifier])
+  @@index([organizationId])
+}
