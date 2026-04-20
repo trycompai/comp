@@ -1,3 +1,10 @@
+## [3.25.1](https://github.com/trycompai/comp/compare/v3.25.0...v3.25.1) (2026-04-20)
+
+
+### Bug Fixes
+
+* allow creating new version of policy even if empty or if using pdf ([a78d96b](https://github.com/trycompai/comp/commit/a78d96bc342858b4bc04b5c7d0d6fd362363f8f2))
+
 # [3.25.0](https://github.com/trycompai/comp/compare/v3.24.0...v3.25.0) (2026-04-20)
 
 
