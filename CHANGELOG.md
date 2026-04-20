@@ -1,3 +1,24 @@
+# [3.25.0](https://github.com/trycompai/comp/compare/v3.24.0...v3.25.0) (2026-04-20)
+
+
+### Bug Fixes
+
+* **app:** hide policy alerts if pending version is cleared ([#2604](https://github.com/trycompai/comp/issues/2604)) ([a7389a1](https://github.com/trycompai/comp/commit/a7389a1cf0388c58ede6ebbcad55688b079962be))
+* **controls:** dedupe policyIds/taskIds before validating length ([5de8a67](https://github.com/trycompai/comp/commit/5de8a67c550883cad5d7e6a5bc2de37a455fd031))
+* **controls:** scope FK inputs to caller org in create() ([2b8991f](https://github.com/trycompai/comp/commit/2b8991f0f87867dbef9ba86c5a2533df6258c3ea))
+* **framework-editor:** stop auto-linking all framework requirements on control create ([#2605](https://github.com/trycompai/comp/issues/2605)) ([3f681e5](https://github.com/trycompai/comp/commit/3f681e5596a120477dd8f2a26a7c4c3a1beddd94))
+* **frameworks:** address PR review feedback ([e3b58bc](https://github.com/trycompai/comp/commit/e3b58bcf5c4b2b987954f3b896f30b2c309d9ea9))
+* **frameworks:** address review feedback — tenant-FK hardening + custom-framework parity ([d296e2a](https://github.com/trycompai/comp/commit/d296e2a5309a33e61a630c843f99618d82778e8a))
+* **frameworks:** dedupe linked requirements and scope lookups by org ([c39a7c5](https://github.com/trycompai/comp/commit/c39a7c583e375c7c84625ad30ccddb904ee50be5))
+* **frameworks:** remove debug log and return DB-reported link counts ([409be26](https://github.com/trycompai/comp/commit/409be2623d153cf9b7619ffb61890405370057ff))
+* **onboarding:** set default value for organizationId in updatePolicy schema ([c3a50db](https://github.com/trycompai/comp/commit/c3a50dbd05278ab88ebc896d05d7de0ddf836f9a))
+
+
+### Features
+
+* **controls:** add endpoints to link policies, tasks, and requirements to controls ([0380ff7](https://github.com/trycompai/comp/commit/0380ff71c4525f4e29ae9412046ca59cad542974))
+* **frameworks:** add custom framework and requirement management endpoints ([a81af3e](https://github.com/trycompai/comp/commit/a81af3efb7e0b69cfbec9c4c2160dee198e6e01c))
+
 # [3.24.0](https://github.com/trycompai/comp/compare/v3.23.6...v3.24.0) (2026-04-19)
 
 
