@@ -55,6 +55,7 @@
         "docker:down": "docker compose down",
         "docker:up": "docker compose up -d",
         "lint": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json}' 'prisma/**/*.prisma' && tsc --noEmit",
+        "postinstall": "node scripts/generate-prisma-client-js.js || true",
         "prepublishOnly": "bun run build"
     }
 }
