@@ -8,6 +8,11 @@ jest.mock('@db', () => ({
     policy: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+    policyVersion: {
+      findUnique: jest.fn(),
       update: jest.fn(),
     },
     member: {
@@ -46,7 +51,13 @@ jest.mock('../utils/compliance-filters', () => ({
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { db } = require('@db') as {
   db: {
-    policy: { findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
+    policy: {
+      findMany: jest.Mock;
+      findFirst: jest.Mock;
+      findUnique: jest.Mock;
+      update: jest.Mock;
+    };
+    policyVersion: { findUnique: jest.Mock; update: jest.Mock };
     member: { findMany: jest.Mock };
     auditLog: { createMany: jest.Mock };
     $transaction: jest.Mock;
@@ -214,6 +225,72 @@ describe('PoliciesService', () => {
           organizationId: orgId,
         },
       ]);
+    });
+  });
+
+  describe('acceptChanges', () => {
+    it('self-heals stale approverId when no pending version exists', async () => {
+      const orgId = 'org_abc';
+      const approverId = 'mem_approver';
+      const stalePolicy = {
+        id: 'pol_1',
+        organizationId: orgId,
+        pendingVersionId: null,
+        approverId,
+      };
+      db.policy.findUnique.mockResolvedValueOnce(stalePolicy);
+      db.policy.update.mockResolvedValueOnce({ ...stalePolicy, approverId: null });
+
+      await expect(
+        service.acceptChanges('pol_1', orgId, { approverId }),
+      ).rejects.toThrow(/no pending changes/i);
+
+      expect(db.policy.update).toHaveBeenCalledWith({
+        where: { id: 'pol_1' },
+        data: { approverId: null },
+      });
+      expect(db.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('throws without mutating when the policy has no approval state at all', async () => {
+      const orgId = 'org_abc';
+      const cleanPolicy = {
+        id: 'pol_1',
+        organizationId: orgId,
+        pendingVersionId: null,
+        approverId: null,
+      };
+      db.policy.findUnique.mockResolvedValueOnce(cleanPolicy);
+
+      await expect(
+        service.acceptChanges('pol_1', orgId, { approverId: 'mem_x' }),
+      ).rejects.toThrow(/no pending version/i);
+
+      expect(db.policy.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('denyChanges', () => {
+    it('self-heals stale approverId when no pending version exists', async () => {
+      const orgId = 'org_abc';
+      const approverId = 'mem_approver';
+      const stalePolicy = {
+        id: 'pol_1',
+        organizationId: orgId,
+        pendingVersionId: null,
+        approverId,
+      };
+      db.policy.findUnique.mockResolvedValueOnce(stalePolicy);
+      db.policy.update.mockResolvedValueOnce({ ...stalePolicy, approverId: null });
+
+      await expect(
+        service.denyChanges('pol_1', orgId, { approverId }),
+      ).rejects.toThrow(/no pending changes/i);
+
+      expect(db.policy.update).toHaveBeenCalledWith({
+        where: { id: 'pol_1' },
+        data: { approverId: null },
+      });
     });
   });
 });
