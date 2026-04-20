@@ -99,7 +99,6 @@ export async function Sidebar({
             isCollapsed={isCollapsed}
             isQuestionnaireEnabled={isQuestionnaireEnabled}
             isTrustNdaEnabled={isTrustNdaEnabled}
-            hasAuditorRole={hasAuditorRole}
             isOnlyAuditor={isOnlyAuditor}
           />
         </div>

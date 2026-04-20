@@ -2,8 +2,15 @@ import { getFeatureFlags } from '@/app/posthog';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
 import { serverApi } from '@/lib/api-server';
-import { canAccessApp, parseRolesString } from '@/lib/permissions';
-import { resolveUserPermissions } from '@/lib/permissions.server';
+import {
+  canAccessApp,
+  canAccessAuditorView,
+  parseRolesString,
+} from '@/lib/permissions';
+import {
+  resolveCustomRolePermissions,
+  resolveUserPermissions,
+} from '@/lib/permissions.server';
 import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -156,6 +163,19 @@ export default async function Layout({
   const hasAuditorRole = roles.includes(Role.auditor);
   const isOnlyAuditor = hasAuditorRole && roles.length === 1;
 
+  // CS-189: the Auditor View tab follows a stricter rule than bare
+  // audit:read — built-in `auditor` role OR a custom role with explicit
+  // audit:read. Resolve the custom-role permissions once so we don't
+  // second-guess the owner/admin's implicit all-permissions in the UI.
+  const customRolePermissions = await resolveCustomRolePermissions(
+    member.role,
+    requestedOrgId,
+  );
+  const auditorViewVisible = canAccessAuditorView(
+    member.role,
+    customRolePermissions,
+  );
+
   // User data for navbar
   const user = {
     name: session.user.name,
@@ -180,6 +200,7 @@ export default async function Layout({
         isSecurityEnabled={isSecurityEnabled}
         hasAuditorRole={hasAuditorRole}
         isOnlyAuditor={isOnlyAuditor}
+        canAccessAuditorView={auditorViewVisible}
         permissions={permissions}
         user={user}
         isAdmin={isUserAdmin}

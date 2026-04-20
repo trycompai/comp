@@ -19,6 +19,13 @@ interface AppSidebarProps {
   hasAuditorRole: boolean;
   isOnlyAuditor: boolean;
   permissions: UserPermissions;
+  /**
+   * CS-189: Whether this user should see the Auditor View tab. Computed
+   * server-side (see resolveAuditorViewAccess) because it needs to
+   * distinguish owner/admin's implicit audit:read from a custom role's
+   * explicit audit:read.
+   */
+  canAccessAuditorView: boolean;
 }
 
 export function AppSidebar({
@@ -27,6 +34,7 @@ export function AppSidebar({
   hasAuditorRole,
   isOnlyAuditor,
   permissions,
+  canAccessAuditorView,
 }: AppSidebarProps) {
   const pathname = usePathname() ?? '';
 
@@ -47,7 +55,11 @@ export function AppSidebar({
       id: 'auditor',
       path: `/${organization.id}/auditor`,
       name: 'Auditor View',
-      hidden: !hasAuditorRole || !canAccessRoute(permissions, 'auditor'),
+      // CS-189: visibility is scoped to built-in `auditor` role or a custom
+      // org role that explicitly grants audit:read. Owner/admin's implicit
+      // permissions alone are not enough — see `canAccessAuditorView` in
+      // lib/permissions.ts for the full rule.
+      hidden: !canAccessAuditorView,
     },
     {
       id: 'policies',

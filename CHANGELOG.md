@@ -1,3 +1,10 @@
+# [3.26.0](https://github.com/trycompai/comp/compare/v3.25.1...v3.26.0) (2026-04-20)
+
+
+### Features
+
+* **vercel:** add project filter variables and parser helper ([9718d87](https://github.com/trycompai/comp/commit/9718d8704a91afd60a17f74335258e8b5dc89ca7))
+
 ## [3.25.1](https://github.com/trycompai/comp/compare/v3.25.0...v3.25.1) (2026-04-20)
 
 

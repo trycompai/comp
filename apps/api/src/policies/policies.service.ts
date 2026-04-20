@@ -1043,7 +1043,6 @@ export class PoliciesService {
           'This policy has no pending changes to approve. The stale approval request has been cleared — please ask the policy owner to re-submit if a new approval is needed.',
         );
       }
-      }
       throw new BadRequestException('No pending version to approve');
     }
 
