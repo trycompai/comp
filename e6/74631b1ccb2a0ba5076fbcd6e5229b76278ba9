@@ -1,0 +1,25 @@
+apps/api/src/policies/policies.service.spec.ts
+  ad16a9a71ebc3cfa 2-9,12,14-21,23-24,28-37,48,53,75,80,82-89,91-94,96-100,122,145,162-164,193-194,243-244,306-307,344,348,353-354
+apps/api/src/policies/policies.service.ts
+  ad16a9a71ebc3cfa 602,604
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "e674631b1ccb2a0ba5076fbcd6e5229b76278ba9",
+  "prompts": {
+    "ad16a9a71ebc3cfa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6d025b10-bb02-4b2d-a661-71d7e82a3bfe",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 170,
+      "total_deletions": 6,
+      "accepted_lines": 22,
+      "overriden_lines": 0
+    }
+  }
+}
