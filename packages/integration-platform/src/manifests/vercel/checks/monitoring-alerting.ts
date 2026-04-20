@@ -140,7 +140,7 @@ export const monitoringAlertingCheck: IntegrationCheck = {
         resourceId: 'recent-failures',
         description: 'No failed or canceled deployments detected in the reviewed projects.',
         evidence: {
-          reviewedProjects: projects.length,
+          reviewedProjects: scopedProjects.length,
         },
       });
     }
