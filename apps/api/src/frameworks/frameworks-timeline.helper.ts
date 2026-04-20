@@ -60,8 +60,10 @@ export async function createTimelinesForFrameworks({
   });
 
   for (const instance of instances) {
+    // Custom frameworks don't have a platform Framework record; fall back to
+    // the single primary track.
     const timelinesToCreate =
-      instance.framework.name === 'SOC 2'
+      instance.framework?.name === 'SOC 2'
         ? [
             { cycleNumber: 1, trackKey: 'soc2_type1' },
             { cycleNumber: 1, trackKey: 'soc2_type2' },
@@ -264,11 +266,10 @@ async function runPhaseAdvancement({
             (phase) =>
               phase.completionType === PhaseCompletionType.AUTO_FINDINGS,
           )
-          .map(
-            (phase) =>
-              getFindingTypeForFrameworkName(
-                phase.instance.frameworkInstance.framework.name,
-              ),
+          .map((phase) =>
+            getFindingTypeForFrameworkName(
+              phase.instance.frameworkInstance.framework?.name,
+            ),
           )
           .filter((t): t is FindingType => !!t),
       ),
@@ -322,7 +323,7 @@ async function runPhaseAdvancement({
 
       const phaseStartTime = phase.startDate.getTime();
       const findingType = getFindingTypeForFrameworkName(
-        phase.instance.frameworkInstance.framework.name,
+        phase.instance.frameworkInstance.framework?.name,
       );
 
       if (!findingType) continue;

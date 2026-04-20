@@ -16,6 +16,7 @@ async function fetchFleetHosts(): Promise<Host[]> {
     throw new Error(`Failed to fetch fleet hosts: ${res.status}`);
   }
   const body = (await res.json()) as FleetHostsResponse;
+  
   return Array.isArray(body.data) ? body.data : [];
 }
 

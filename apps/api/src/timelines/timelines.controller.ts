@@ -50,7 +50,7 @@ export class TimelinesController {
     notifyReadyForReview({
       orgId: organizationId,
       orgName: result.organization.name,
-      frameworkName: result.framework.name,
+      frameworkName: result.framework?.name ?? 'Unknown framework',
       phaseName: result.phase.name,
     });
 

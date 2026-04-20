@@ -35,10 +35,12 @@ export function DevicesTabContent({ isCurrentUserOwner }: DevicesTabContentProps
     );
   }, [agentDevices, fleetHosts]);
 
-  const isLoading = isAgentLoading || isFleetLoading;
   const error = agentError ?? fleetError;
 
-  if (isLoading) {
+  // Show a skeleton only while the fast agent-devices fetch is in flight; the
+  // slower Fleet call (hosted elsewhere) streams in separately so the page
+  // doesn't block on it.
+  if (isAgentLoading) {
     return (
       <div className="space-y-6">
         <div className="my-6 h-[360px] w-full">
@@ -67,11 +69,18 @@ export function DevicesTabContent({ isCurrentUserOwner }: DevicesTabContentProps
         <DeviceAgentDevicesList devices={agentDevices} />
       )}
 
-      {filteredFleetDevices.length > 0 && (
-        <EmployeeDevicesList
-          devices={filteredFleetDevices}
-          isCurrentUserOwner={isCurrentUserOwner}
-        />
+      {isFleetLoading ? (
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
+          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-muted-foreground/70" />
+          Loading devices from Fleet…
+        </div>
+      ) : (
+        filteredFleetDevices.length > 0 && (
+          <EmployeeDevicesList
+            devices={filteredFleetDevices}
+            isCurrentUserOwner={isCurrentUserOwner}
+          />
+        )
       )}
     </div>
   );

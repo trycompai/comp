@@ -1,7 +1,11 @@
 import { db } from '@db/server';
 import { logger, schedules } from '@trigger.dev/sdk';
 
-import { PolicyAcknowledgmentDigestEmail } from '@trycompai/email';
+import {
+  PolicyAcknowledgmentDigestEmail,
+  computePolicyAcknowledgmentDigestSubject,
+  type PolicyAcknowledgmentDigestOrg,
+} from '@trycompai/email';
 import { getUnsubscribedEmails } from '@trycompai/email/lib/check-unsubscribe';
 
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
@@ -19,6 +23,9 @@ const getPortalBase = () =>
   );
 
 const EMAIL_BATCH_SIZE = 25;
+// Skip orgs that look abandoned — same threshold weekly-task-reminder uses so
+// we don't keep hitting dead addresses and burning domain reputation.
+const ORG_INACTIVITY_DAYS = 90;
 
 async function sendInBatches<T>(
   sends: Array<() => Promise<T>>,
@@ -32,19 +39,45 @@ async function sendInBatches<T>(
   return results;
 }
 
+interface RollupEntry {
+  email: string;
+  userName: string;
+  // First org (in iteration order) a policy was added for this user — used
+  // as the x-organization-id header when sending. The body lists all orgs.
+  primaryOrgId: string;
+  orgs: PolicyAcknowledgmentDigestOrg[];
+}
+
 export const policyAcknowledgmentDigest = schedules.task({
   id: 'policy-acknowledgment-digest',
   machine: 'large-1x',
   cron: '0 14 * * *', // Once daily at 14:00 UTC
   maxDuration: 1000 * 60 * 15, // 15 minutes
   run: async () => {
+    const inactivityCutoff = new Date();
+    inactivityCutoff.setDate(
+      inactivityCutoff.getDate() - ORG_INACTIVITY_DAYS,
+    );
+
     const organizations = await db.organization.findMany({
       where: {
+        hasAccess: true,
+        onboardingCompleted: true,
         policy: {
           some: {
             status: 'published',
             isArchived: false,
             isRequiredToSign: true,
+          },
+        },
+        members: {
+          some: {
+            deactivated: false,
+            user: {
+              sessions: {
+                some: { updatedAt: { gte: inactivityCutoff } },
+              },
+            },
           },
         },
       },
@@ -80,14 +113,18 @@ export const policyAcknowledgmentDigest = schedules.task({
     });
 
     logger.info(
-      `Checking ${organizations.length} orgs for pending acknowledgments`,
+      `Checking ${organizations.length} active orgs for pending acknowledgments (skipped orgs with no sessions in ${ORG_INACTIVITY_DAYS} days)`,
     );
 
     const portalBase = getPortalBase();
-    let emailsSent = 0;
-    let emailsFailed = 0;
-    let emailsSkippedUnsubscribed = 0;
     let orgsProcessed = 0;
+    // Per-org drops from the unsubscribe filter. A user opted-out in 2 orgs
+    // counts 2 — same semantic as the pre-rollup implementation.
+    let orgsSkippedUnsubscribed = 0;
+
+    // Rollup across orgs, keyed by user id so one person = one email even
+    // when they hold separate member records in multiple organizations.
+    const rollup = new Map<string, RollupEntry>();
 
     for (const org of organizations) {
       orgsProcessed += 1;
@@ -99,45 +136,31 @@ export const policyAcknowledgmentDigest = schedules.task({
 
       if (complianceMembers.length === 0) continue;
 
-      // Compute pending policies for each member first (no sends yet)
-      type PendingEntry = {
+      const pendingByMember: Array<{
         member: DigestMember;
-        policies: Array<{ id: string; name: string; url: string }>;
-        subject: string;
-        emailElement: ReturnType<typeof PolicyAcknowledgmentDigestEmail>;
-      };
-
-      const pending: PendingEntry[] = [];
-      const emailsWithPending: string[] = [];
+        policies: PolicyAcknowledgmentDigestOrg['policies'];
+      }> = [];
 
       for (const member of complianceMembers) {
         const pendingPolicies = computePendingPolicies(member, org.policy);
         if (pendingPolicies.length === 0) continue;
 
-        const policies = pendingPolicies.map((p) => ({
-          id: p.id,
-          name: p.name,
-          url: `${portalBase}/${org.id}/policy/${p.id}`,
-        }));
-        const countLabel =
-          policies.length === 1 ? '1 policy' : `${policies.length} policies`;
-        const subject = `You have ${countLabel} to review at ${org.name}`;
-
-        const emailElement = PolicyAcknowledgmentDigestEmail({
-          email: member.user.email,
-          userName: member.user.name ?? '',
-          organizationName: org.name,
-          organizationId: org.id,
-          policies,
+        pendingByMember.push({
+          member,
+          policies: pendingPolicies.map((p) => ({
+            id: p.id,
+            name: p.name,
+            url: `${portalBase}/${org.id}/policy/${p.id}`,
+          })),
         });
-
-        emailsWithPending.push(member.user.email);
-        pending.push({ member, policies, subject, emailElement });
       }
 
-      if (pending.length === 0) continue;
+      if (pendingByMember.length === 0) continue;
 
-      // Batch unsubscribe check — 3 DB queries total for this org
+      // One unsubscribe query per org, batched across members.
+      const emailsWithPending = pendingByMember.map(
+        (p) => p.member.user.email,
+      );
       const unsubscribedEmails = await getUnsubscribedEmails(
         db,
         emailsWithPending,
@@ -145,56 +168,80 @@ export const policyAcknowledgmentDigest = schedules.task({
         org.id,
       );
 
-      // Build thunks for subscribed members only
-      const sends: Array<() => Promise<unknown>> = [];
-
-      for (const entry of pending) {
-        if (unsubscribedEmails.has(entry.member.user.email)) {
+      for (const { member, policies } of pendingByMember) {
+        if (unsubscribedEmails.has(member.user.email)) {
           logger.debug(
-            'User unsubscribed from policy notifications, skipping',
-            { email: entry.member.user.email, orgId: org.id },
+            'User unsubscribed from policy notifications for this org, omitting from digest',
+            { email: member.user.email, orgId: org.id },
           );
-          emailsSkippedUnsubscribed += 1;
+          orgsSkippedUnsubscribed += 1;
           continue;
         }
 
-        sends.push(() =>
-          sendEmailViaApi({
-            to: entry.member.user.email,
-            subject: entry.subject,
-            organizationId: org.id,
-            react: entry.emailElement!,
-          }),
-        );
-      }
-
-      const results = await sendInBatches(sends);
-      for (const r of results) {
-        if (r.status === 'fulfilled') emailsSent += 1;
-        else {
-          emailsFailed += 1;
-          logger.warn('Digest email failed', {
-            orgId: org.id,
-            error:
-              r.reason instanceof Error ? r.reason.message : String(r.reason),
+        const existing = rollup.get(member.user.id);
+        if (existing) {
+          existing.orgs.push({ id: org.id, name: org.name, policies });
+        } else {
+          rollup.set(member.user.id, {
+            email: member.user.email,
+            userName: member.user.name ?? '',
+            primaryOrgId: org.id,
+            orgs: [{ id: org.id, name: org.name, policies }],
           });
         }
       }
     }
 
+    // Build one send per user.
+    const sends: Array<() => Promise<unknown>> = [];
+    for (const entry of rollup.values()) {
+      const subject = computePolicyAcknowledgmentDigestSubject(entry.orgs);
+      const emailElement = PolicyAcknowledgmentDigestEmail({
+        email: entry.email,
+        userName: entry.userName,
+        orgs: entry.orgs,
+      });
+      if (!emailElement) continue;
+
+      sends.push(() =>
+        sendEmailViaApi({
+          to: entry.email,
+          subject,
+          organizationId: entry.primaryOrgId,
+          react: emailElement,
+        }),
+      );
+    }
+
+    const results = await sendInBatches(sends);
+    let emailsSent = 0;
+    let emailsFailed = 0;
+    for (const r of results) {
+      if (r.status === 'fulfilled') emailsSent += 1;
+      else {
+        emailsFailed += 1;
+        logger.warn('Digest email failed', {
+          error:
+            r.reason instanceof Error ? r.reason.message : String(r.reason),
+        });
+      }
+    }
+
     logger.info('Digest complete', {
       orgsProcessed,
+      recipients: rollup.size,
       emailsSent,
       emailsFailed,
-      emailsSkippedUnsubscribed,
+      orgsSkippedUnsubscribed,
     });
 
     return {
       success: true,
       orgsProcessed,
+      recipients: rollup.size,
       emailsSent,
       emailsFailed,
-      emailsSkippedUnsubscribed,
+      orgsSkippedUnsubscribed,
     };
   },
 });

@@ -77,7 +77,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR, { useSWRConfig } from 'swr';
-import { DocumentFindingsSection } from './DocumentFindingsSection';
 import { StatusBadge, formatSubmissionDate } from './submission-utils';
 
 // ─── Types ───────────────────────────────────────────────────
@@ -421,7 +420,6 @@ export function CompanyFormPageClient({
         <Stack gap="lg">
           <TabsList variant="underline">
             <TabsTrigger value="submissions">Submissions</TabsTrigger>
-            <TabsTrigger value="findings">Findings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="submissions">
@@ -579,9 +577,6 @@ export function CompanyFormPageClient({
           </div>
           </TabsContent>
 
-          <TabsContent value="findings">
-            <DocumentFindingsSection formType={formType} isPlatformAdmin={isPlatformAdmin} />
-          </TabsContent>
         </Stack>
       </Tabs>
 

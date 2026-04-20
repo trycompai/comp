@@ -1,3 +1,39 @@
+# [3.24.0](https://github.com/trycompai/comp/compare/v3.23.6...v3.24.0) (2026-04-19)
+
+
+### Bug Fixes
+
+* **findings:** accept new FindingArea values regardless of client regen ([fa234fb](https://github.com/trycompai/comp/commit/fa234fbe7ae080401b1213a9f656a5761647ced4))
+* **findings:** address review feedback (routes, DTO, notifier, admin pickers) ([f41a096](https://github.com/trycompai/comp/commit/f41a09665312fa63817c6a48bb068212fd7496e0))
+* **findings:** drop className on SelectTrigger (type error) ([32a98b7](https://github.com/trycompai/comp/commit/32a98b76e9ce38c2a2f8ec8cb8de9b4d9f2d3cdf))
+* **findings:** expose evidence submission target + complete test mock ([320d053](https://github.com/trycompai/comp/commit/320d0530d62e2f0b4dd67f1399b7d7a76615219a))
+* **findings:** match API's literal auditor-role check in status gating ([9f2ccdd](https://github.com/trycompai/comp/commit/9f2ccdd6f1339a8e01e8142308636dd5aaaa0fee))
+* **findings:** reclassify legacy-backfilled rows to area='other' ([e689c95](https://github.com/trycompai/comp/commit/e689c95ca3f6cfd3717b652d960fd5850b924ba7))
+* **findings:** role-gated status options, severity filter, admin picker ([00a3350](https://github.com/trycompai/comp/commit/00a335042e126320f4982f3d1248e95a09807eb6))
+* **findings:** scope task-finding notifications to stakeholders ([2db2f7b](https://github.com/trycompai/comp/commit/2db2f7b79fd7cb8cf1c6bd3da7a34b78ea435fc4))
+* **findings:** support general risk/vendor/policy findings + dedupe activity ([4ebcc10](https://github.com/trycompai/comp/commit/4ebcc109a5376c467f7cf60030b96a532317eb14))
+* **findings:** truncate long labels in Create Finding select triggers ([96976a9](https://github.com/trycompai/comp/commit/96976a9543065380b4886aa3198a8229a542f854))
+* **findings:** use AuditLog findingScope to drive legacy reclass + preserve origin ([ba9e970](https://github.com/trycompai/comp/commit/ba9e970356f41827019d6913897570fa39d07110))
+
+
+### Features
+
+* **findings:** add confirmation dialog for finding deletion and link sharing functionality ([0d49475](https://github.com/trycompai/comp/commit/0d4947547860c85026f60794ae2652d4710a9fdc))
+* **findings:** surface legacy scope in UI, drop destructive reclass migration ([30c312f](https://github.com/trycompai/comp/commit/30c312f7bddf819f12c913a8e787c4267c95d38f))
+* **findings:** unify findings into a single overview surface ([3b5418a](https://github.com/trycompai/comp/commit/3b5418a25cdd0a28de867675afec591db1e949dc))
+
+
+### Performance Improvements
+
+* **people:** move compliance queries out of page shell ([6b8e4c6](https://github.com/trycompai/comp/commit/6b8e4c6bc4353b86da17cd01f0af61dbbe2c9d73))
+
+## [3.23.6](https://github.com/trycompai/comp/compare/v3.23.5...v3.23.6) (2026-04-18)
+
+
+### Bug Fixes
+
+* **digest:** correct signedBy check, rollup per user, skip dead orgs ([7269f59](https://github.com/trycompai/comp/commit/7269f5903aaf7cee18ae4b20ff5022f5455852b1))
+
 ## [3.23.5](https://github.com/trycompai/comp/compare/v3.23.4...v3.23.5) (2026-04-17)
 
 

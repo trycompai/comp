@@ -12,52 +12,6 @@ export interface FindingAuditParams {
 export class FindingAuditService {
   private readonly logger = new Logger(FindingAuditService.name);
 
-  /**
-   * Log finding creation
-   */
-  async logFindingCreated(
-    params: FindingAuditParams & {
-      taskId?: string;
-      taskTitle?: string;
-      evidenceSubmissionId?: string;
-      evidenceSubmissionFormType?: string;
-      findingScope?: string;
-      content: string;
-      type: FindingType;
-    },
-  ): Promise<void> {
-    try {
-      await db.auditLog.create({
-        data: {
-          organizationId: params.organizationId,
-          userId: params.userId,
-          memberId: params.memberId,
-          entityType: 'finding',
-          entityId: params.findingId,
-          description: 'created this finding',
-          data: {
-            action: 'created',
-            findingId: params.findingId,
-            taskId: params.taskId,
-            taskTitle: params.taskTitle,
-            evidenceSubmissionId: params.evidenceSubmissionId,
-            evidenceSubmissionFormType: params.evidenceSubmissionFormType,
-            findingScope: params.findingScope,
-            content: params.content,
-            type: params.type,
-            status: FindingStatus.open,
-          },
-        },
-      });
-    } catch (error) {
-      this.logger.error('Failed to log finding creation:', error);
-      // Don't throw - audit log failures should not block operations
-    }
-  }
-
-  /**
-   * Log finding status change
-   */
   async logFindingStatusChanged(
     params: FindingAuditParams & {
       previousStatus: FindingStatus;
@@ -86,9 +40,6 @@ export class FindingAuditService {
     }
   }
 
-  /**
-   * Log finding content update
-   */
   async logFindingContentUpdated(
     params: FindingAuditParams & {
       previousContent: string;
@@ -117,9 +68,6 @@ export class FindingAuditService {
     }
   }
 
-  /**
-   * Log finding type change
-   */
   async logFindingTypeChanged(
     params: FindingAuditParams & {
       previousType: FindingType;
@@ -148,18 +96,8 @@ export class FindingAuditService {
     }
   }
 
-  /**
-   * Log finding deletion
-   */
   async logFindingDeleted(
-    params: FindingAuditParams & {
-      taskId?: string;
-      taskTitle?: string;
-      evidenceSubmissionId?: string;
-      evidenceSubmissionFormType?: string;
-      findingScope?: string;
-      content: string;
-    },
+    params: FindingAuditParams & { content: string },
   ): Promise<void> {
     try {
       await db.auditLog.create({
@@ -173,11 +111,6 @@ export class FindingAuditService {
           data: {
             action: 'deleted',
             findingId: params.findingId,
-            taskId: params.taskId,
-            taskTitle: params.taskTitle,
-            evidenceSubmissionId: params.evidenceSubmissionId,
-            evidenceSubmissionFormType: params.evidenceSubmissionFormType,
-            findingScope: params.findingScope,
             content: params.content,
           },
         },
@@ -187,9 +120,6 @@ export class FindingAuditService {
     }
   }
 
-  /**
-   * Get activity logs for a finding
-   */
   async getFindingActivity(findingId: string, organizationId: string) {
     try {
       return await db.auditLog.findMany({
@@ -200,17 +130,10 @@ export class FindingAuditService {
         },
         include: {
           user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-            },
+            select: { id: true, name: true, email: true, image: true },
           },
         },
-        orderBy: {
-          timestamp: 'desc', // Newest first
-        },
+        orderBy: { timestamp: 'desc' },
       });
     } catch (error) {
       this.logger.error('Failed to fetch finding activity:', error);

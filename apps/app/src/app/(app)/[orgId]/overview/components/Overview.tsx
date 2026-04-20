@@ -1,15 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { Finding, FrameworkEditorFramework, Policy, Task } from '@db';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
-import { useFeatureFlag } from '@trycompai/analytics';
+import { FrameworkEditorFramework, Policy, Task } from '@db';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
-import type { Timeline } from '@/hooks/use-timelines';
 import { ComplianceOverview } from './ComplianceOverview';
-import { FindingsOverview } from './FindingsOverview';
 import { FrameworksOverview } from './FrameworksOverview';
-import { TimelineOverview } from './TimelineOverview';
 import { ToDoOverview } from './ToDoOverview';
 import { FrameworkInstanceWithComplianceScore } from './types';
 
@@ -38,17 +32,6 @@ export interface DocumentsScore {
   outstandingDocuments: number;
 }
 
-export interface FindingWithTarget extends Finding {
-  task: {
-    id: string;
-    title: string;
-  } | null;
-  evidenceSubmission: {
-    id: string;
-    formType: string;
-  } | null;
-}
-
 export interface OverviewProps {
   frameworksWithControls: FrameworkInstanceWithControls[];
   frameworksWithCompliance: FrameworkInstanceWithComplianceScore[];
@@ -60,8 +43,6 @@ export interface OverviewProps {
   peopleScore: PeopleScore;
   currentMember: { id: string; role: string } | null;
   onboardingTriggerJobId: string | null;
-  findings: FindingWithTarget[];
-  timelines: Timeline[];
 }
 
 export const Overview = ({
@@ -75,12 +56,7 @@ export const Overview = ({
   peopleScore,
   currentMember,
   onboardingTriggerJobId,
-  findings,
-  timelines,
 }: OverviewProps) => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const isTimelineEnabled = useFeatureFlag('is-timeline-enabled');
-
   const overallComplianceScore = calculateOverallComplianceScore({
     publishedPolicies: publishedPoliciesScore.publishedPolicies,
     totalPolicies: publishedPoliciesScore.totalPolicies,
@@ -93,61 +69,41 @@ export const Overview = ({
   });
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab}>
-      <TabsList variant="underline">
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        {isTimelineEnabled && <TabsTrigger value="timeline">Timeline</TabsTrigger>}
-      </TabsList>
-
-      <TabsContent value="overview">
-        <div className="flex flex-col gap-6 pt-4">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <ComplianceOverview
-              organizationId={organizationId}
-              overallComplianceScore={overallComplianceScore}
-              totalPolicies={publishedPoliciesScore.totalPolicies}
-              publishedPolicies={publishedPoliciesScore.publishedPolicies}
-              totalTasks={doneTasksScore.totalTasks}
-              doneTasks={doneTasksScore.doneTasks}
-              totalDocuments={documentsScore.totalDocuments}
-              completedDocuments={documentsScore.completedDocuments}
-              totalMembers={peopleScore.totalMembers}
-              completedMembers={peopleScore.completedMembers}
-            />
-            <FrameworksOverview
-              frameworksWithControls={frameworksWithControls}
-              frameworksWithCompliance={frameworksWithCompliance}
-              overallComplianceScore={overallComplianceScore}
-              allFrameworks={allFrameworks}
-              organizationId={organizationId}
-            />
-            <ToDoOverview
-              totalPolicies={publishedPoliciesScore.totalPolicies}
-              totalTasks={doneTasksScore.totalTasks}
-              remainingPolicies={
-                publishedPoliciesScore.totalPolicies - publishedPoliciesScore.publishedPolicies
-              }
-              remainingTasks={doneTasksScore.totalTasks - doneTasksScore.doneTasks}
-              unpublishedPolicies={publishedPoliciesScore.unpublishedPolicies}
-              incompleteTasks={doneTasksScore.incompleteTasks}
-              policiesInReview={publishedPoliciesScore.policiesInReview}
-              organizationId={organizationId}
-              currentMember={currentMember}
-              onboardingTriggerJobId={onboardingTriggerJobId}
-            />
-            <FindingsOverview findings={findings} organizationId={organizationId} />
-          </div>
-        </div>
-      </TabsContent>
-
-      {isTimelineEnabled && (
-        <TabsContent value="timeline">
-          <div className="pt-4">
-            <TimelineOverview initialData={timelines} />
-          </div>
-        </TabsContent>
-      )}
-    </Tabs>
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <ComplianceOverview
+        organizationId={organizationId}
+        overallComplianceScore={overallComplianceScore}
+        totalPolicies={publishedPoliciesScore.totalPolicies}
+        publishedPolicies={publishedPoliciesScore.publishedPolicies}
+        totalTasks={doneTasksScore.totalTasks}
+        doneTasks={doneTasksScore.doneTasks}
+        totalDocuments={documentsScore.totalDocuments}
+        completedDocuments={documentsScore.completedDocuments}
+        totalMembers={peopleScore.totalMembers}
+        completedMembers={peopleScore.completedMembers}
+      />
+      <FrameworksOverview
+        frameworksWithControls={frameworksWithControls}
+        frameworksWithCompliance={frameworksWithCompliance}
+        overallComplianceScore={overallComplianceScore}
+        allFrameworks={allFrameworks}
+        organizationId={organizationId}
+      />
+      <ToDoOverview
+        totalPolicies={publishedPoliciesScore.totalPolicies}
+        totalTasks={doneTasksScore.totalTasks}
+        remainingPolicies={
+          publishedPoliciesScore.totalPolicies - publishedPoliciesScore.publishedPolicies
+        }
+        remainingTasks={doneTasksScore.totalTasks - doneTasksScore.doneTasks}
+        unpublishedPolicies={publishedPoliciesScore.unpublishedPolicies}
+        incompleteTasks={doneTasksScore.incompleteTasks}
+        policiesInReview={publishedPoliciesScore.policiesInReview}
+        organizationId={organizationId}
+        currentMember={currentMember}
+        onboardingTriggerJobId={onboardingTriggerJobId}
+      />
+    </div>
   );
 };
 

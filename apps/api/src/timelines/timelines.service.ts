@@ -270,10 +270,17 @@ export class TimelinesService {
 
     for (const fi of frameworkInstances) {
       if (fi.timelineInstances.length > 0) continue;
+      // Custom frameworks don't have a platform Framework record, so there's
+      // no template to backfill from — skip them.
+      if (!fi.frameworkId || !fi.framework) continue;
       try {
         await backfillTimeline({
           organizationId,
-          frameworkInstance: fi,
+          frameworkInstance: {
+            id: fi.id,
+            frameworkId: fi.frameworkId,
+            framework: fi.framework,
+          },
         });
       } catch {
         // Non-blocking — don't fail the list if one timeline can't be created
@@ -366,6 +373,12 @@ export class TimelinesService {
 
     if (!frameworkInstance) {
       throw new NotFoundException('Framework instance not found');
+    }
+
+    // Timelines are only created for platform frameworks; custom frameworks
+    // don't have pre-built templates.
+    if (!frameworkInstance.frameworkId || !frameworkInstance.framework) {
+      return null;
     }
 
     const template = await resolveTemplate(
@@ -554,10 +567,16 @@ export class TimelinesService {
     });
 
     for (const fi of frameworkInstances) {
+      // Skip custom frameworks — no template to backfill from.
+      if (!fi.frameworkId || !fi.framework) continue;
       try {
         await backfillTimeline({
           organizationId,
-          frameworkInstance: fi,
+          frameworkInstance: {
+            id: fi.id,
+            frameworkId: fi.frameworkId,
+            framework: fi.framework,
+          },
           forceRefresh: true,
         });
       } catch {

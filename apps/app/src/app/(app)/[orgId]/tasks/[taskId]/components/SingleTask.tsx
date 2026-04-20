@@ -47,8 +47,6 @@ import { Comments } from '../../../../../../components/comments/Comments';
 import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 import { BrowserAutomations } from './BrowserAutomations';
-import { FindingHistoryPanel } from './findings/FindingHistoryPanel';
-import { FindingsList } from './findings/FindingsList';
 import { TaskAutomations } from './TaskAutomations';
 import { TaskAutomationStatusBadge } from './TaskAutomationStatusBadge';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
@@ -109,7 +107,6 @@ export function SingleTask({
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
-  const [selectedFindingIdForHistory, setSelectedFindingIdForHistory] = useState<string | null>(null);
   const [requestApprovalDialogOpen, setRequestApprovalDialogOpen] = useState(false);
   const [selectedApproverId, setSelectedApproverId] = useState<string | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -325,7 +322,6 @@ export function SingleTask({
           <TabsList variant="underline">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             {task.automationStatus !== 'MANUAL' && <TabsTrigger value="automations">Automations</TabsTrigger>}
-            <TabsTrigger value="findings">Findings</TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -360,22 +356,6 @@ export function SingleTask({
                 />
               )}
             </Stack>
-          </TabsContent>
-
-          <TabsContent value="findings">
-            <FindingsList
-              taskId={task.id}
-              isAuditor={isAuditor}
-              isPlatformAdmin={isPlatformAdmin}
-              isAdminOrOwner={isAdminOrOwner}
-              onViewHistory={setSelectedFindingIdForHistory}
-            />
-            {selectedFindingIdForHistory && (
-              <FindingHistoryPanel
-                findingId={selectedFindingIdForHistory}
-                onClose={() => setSelectedFindingIdForHistory(null)}
-              />
-            )}
           </TabsContent>
 
           <TabsContent value="comments">

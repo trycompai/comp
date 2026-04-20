@@ -22,7 +22,13 @@ import {
   ApiTags,
   ApiSecurity,
 } from '@nestjs/swagger';
-import { FindingScope, FindingStatus } from '@db';
+import {
+  db,
+  EvidenceFormType as DbEvidenceFormType,
+  FindingArea,
+  FindingSeverity,
+  FindingStatus,
+} from '@db';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -32,7 +38,7 @@ import { FindingsService } from './findings.service';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { ValidateFindingIdPipe } from './pipes/validate-finding-id.pipe';
-import { db } from '@db';
+import { toDbEvidenceFormType } from '@trycompai/company';
 import { evidenceFormTypeSchema } from '@/evidence-forms/evidence-forms.definitions';
 
 @ApiTags('Findings')
@@ -42,182 +48,134 @@ import { evidenceFormTypeSchema } from '@/evidence-forms/evidence-forms.definiti
 export class FindingsController {
   constructor(private readonly findingsService: FindingsService) {}
 
+  /**
+   * List findings for the organization. Supports optional target/status filters.
+   * Replaces the previous per-target and per-form-type GET endpoints.
+   */
   @Get()
   @UseGuards(PermissionGuard)
   @RequirePermission('finding', 'read')
-  @ApiOperation({
-    summary: 'Get findings for a task',
-    description: 'Retrieve all findings for a specific task',
-  })
-  @ApiQuery({
-    name: 'taskId',
-    required: false,
-    description: 'Task ID to get findings for',
-    example: 'tsk_abc123',
-  })
-  @ApiQuery({
-    name: 'evidenceSubmissionId',
-    required: false,
-    description: 'Evidence submission ID to get findings for',
-    example: 'evs_abc123',
-  })
+  @ApiOperation({ summary: 'List findings for organization (optionally filtered)' })
+  @ApiQuery({ name: 'status', required: false, enum: FindingStatus })
+  @ApiQuery({ name: 'severity', required: false, enum: FindingSeverity })
+  @ApiQuery({ name: 'area', required: false, enum: FindingArea })
+  @ApiQuery({ name: 'taskId', required: false })
+  @ApiQuery({ name: 'evidenceSubmissionId', required: false })
   @ApiQuery({
     name: 'evidenceFormType',
     required: false,
-    description: 'Evidence form type to get findings for',
-    example: 'access-request',
     enum: evidenceFormTypeSchema.options,
   })
-  @ApiQuery({
-    name: 'scope',
-    required: false,
-    description: 'People-area scope (e.g. people directory)',
-    enum: FindingScope,
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'List of findings',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Target not found',
-  })
-  async getFindingsByTask(
-    @Query('taskId') taskId: string,
-    @Query('evidenceSubmissionId') evidenceSubmissionId: string,
-    @Query('evidenceFormType') evidenceFormType: string,
-    @Query('scope') scope: string,
+  @ApiQuery({ name: 'policyId', required: false })
+  @ApiQuery({ name: 'vendorId', required: false })
+  @ApiQuery({ name: 'riskId', required: false })
+  @ApiQuery({ name: 'memberId', required: false })
+  @ApiQuery({ name: 'deviceId', required: false })
+  async listFindings(
     @AuthContext() authContext: AuthContextType,
+    @Query('status') status?: string,
+    @Query('severity') severity?: string,
+    @Query('area') area?: string,
+    @Query('taskId') taskId?: string,
+    @Query('evidenceSubmissionId') evidenceSubmissionId?: string,
+    @Query('evidenceFormType') evidenceFormType?: string,
+    @Query('policyId') policyId?: string,
+    @Query('vendorId') vendorId?: string,
+    @Query('riskId') riskId?: string,
+    @Query('memberId') memberId?: string,
+    @Query('deviceId') deviceId?: string,
   ) {
-    const targets = [taskId, evidenceSubmissionId, evidenceFormType, scope].filter(
-      Boolean,
-    );
-    if (targets.length === 0) {
-      throw new BadRequestException(
-        'One of taskId, evidenceSubmissionId, evidenceFormType, or scope query parameter is required',
-      );
-    }
-    if (targets.length > 1) {
-      throw new BadRequestException(
-        'Provide only one target: taskId, evidenceSubmissionId, evidenceFormType, or scope',
-      );
-    }
-
-    const parsedEvidenceFormType = evidenceFormType
-      ? evidenceFormTypeSchema.safeParse(evidenceFormType)
-      : null;
-    if (parsedEvidenceFormType && !parsedEvidenceFormType.success) {
-      throw new BadRequestException(
-        `Invalid evidenceFormType value. Must be one of: ${evidenceFormTypeSchema.options.join(', ')}`,
-      );
-    }
-
-    if (scope) {
-      if (!Object.values(FindingScope).includes(scope as FindingScope)) {
-        throw new BadRequestException(
-          `Invalid scope value. Must be one of: ${Object.values(FindingScope).join(', ')}`,
-        );
-      }
-      return await this.findingsService.findByScope(
-        authContext.organizationId,
-        scope as FindingScope,
-      );
-    }
-
-    if (taskId) {
-      return await this.findingsService.findByTaskId(
-        authContext.organizationId,
-        taskId,
-      );
-    }
-
-    if (evidenceFormType && parsedEvidenceFormType?.success) {
-      return await this.findingsService.findByEvidenceFormType(
-        authContext.organizationId,
-        parsedEvidenceFormType.data,
-      );
-    }
-
-    return await this.findingsService.findByEvidenceSubmissionId(
-      authContext.organizationId,
-      evidenceSubmissionId,
-    );
-  }
-
-  @Get('organization')
-  @UseGuards(PermissionGuard)
-  @RequirePermission('finding', 'read')
-  @ApiOperation({
-    summary: 'Get all findings for organization',
-    description: 'Retrieve all findings for the organization',
-  })
-  @ApiQuery({
-    name: 'status',
-    required: false,
-    enum: FindingStatus,
-    description: 'Filter by status',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'List of all findings for the organization',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid status value',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-  })
-  async getOrganizationFindings(
-    @Query('status') status: string | undefined,
-    @AuthContext() authContext: AuthContextType,
-  ) {
-    // Validate status enum if provided
     let validatedStatus: FindingStatus | undefined;
     if (status) {
       if (!Object.values(FindingStatus).includes(status as FindingStatus)) {
         throw new BadRequestException(
-          `Invalid status value. Must be one of: ${Object.values(FindingStatus).join(', ')}`,
+          `Invalid status. Must be one of: ${Object.values(FindingStatus).join(', ')}`,
         );
       }
       validatedStatus = status as FindingStatus;
     }
 
-    return await this.findingsService.findByOrganizationId(
+    let validatedSeverity: FindingSeverity | undefined;
+    if (severity) {
+      if (
+        !Object.values(FindingSeverity).includes(severity as FindingSeverity)
+      ) {
+        throw new BadRequestException(
+          `Invalid severity. Must be one of: ${Object.values(FindingSeverity).join(', ')}`,
+        );
+      }
+      validatedSeverity = severity as FindingSeverity;
+    }
+
+    let validatedArea: FindingArea | undefined;
+    if (area) {
+      if (!Object.values(FindingArea).includes(area as FindingArea)) {
+        throw new BadRequestException(
+          `Invalid area. Must be one of: ${Object.values(FindingArea).join(', ')}`,
+        );
+      }
+      validatedArea = area as FindingArea;
+    }
+
+    let dbFormType: DbEvidenceFormType | undefined = undefined;
+    if (evidenceFormType) {
+      const parsed = evidenceFormTypeSchema.safeParse(evidenceFormType);
+      if (!parsed.success) {
+        throw new BadRequestException(
+          `Invalid evidenceFormType. Must be one of: ${evidenceFormTypeSchema.options.join(', ')}`,
+        );
+      }
+      dbFormType = toDbEvidenceFormType(parsed.data);
+    }
+
+    return await this.findingsService.listForOrganization(
       authContext.organizationId,
-      validatedStatus,
+      {
+        status: validatedStatus,
+        severity: validatedSeverity,
+        area: validatedArea,
+        taskId,
+        evidenceSubmissionId,
+        evidenceFormType: dbFormType,
+        policyId,
+        vendorId,
+        riskId,
+        memberId,
+        deviceId,
+      },
+    );
+  }
+
+  /** Kept for backwards compatibility — same behavior as GET /findings. */
+  @Get('organization')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('finding', 'read')
+  @ApiOperation({ summary: 'List all findings for the organization' })
+  @ApiQuery({ name: 'status', required: false, enum: FindingStatus })
+  async getOrganizationFindings(
+    @Query('status') status: string | undefined,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    let validatedStatus: FindingStatus | undefined;
+    if (status) {
+      if (!Object.values(FindingStatus).includes(status as FindingStatus)) {
+        throw new BadRequestException(
+          `Invalid status. Must be one of: ${Object.values(FindingStatus).join(', ')}`,
+        );
+      }
+      validatedStatus = status as FindingStatus;
+    }
+    return await this.findingsService.listForOrganization(
+      authContext.organizationId,
+      { status: validatedStatus },
     );
   }
 
   @Get(':id')
   @UseGuards(PermissionGuard)
   @RequirePermission('finding', 'read')
-  @ApiOperation({
-    summary: 'Get finding by ID',
-    description: 'Retrieve a specific finding by its ID',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Finding ID',
-    example: 'fnd_abc123',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'The finding',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Finding not found',
-  })
+  @ApiOperation({ summary: 'Get finding by ID' })
+  @ApiParam({ name: 'id', description: 'Finding ID' })
   async getFindingById(
     @Param('id', ValidateFindingIdPipe) id: string,
     @AuthContext() authContext: AuthContextType,
@@ -228,31 +186,8 @@ export class FindingsController {
   @Post()
   @UseGuards(PermissionGuard)
   @RequirePermission('finding', 'create')
-  @ApiOperation({
-    summary: 'Create a finding',
-    description:
-      'Create a new finding for a task (Auditor or Platform Admin only)',
-  })
-  @ApiBody({
-    type: CreateFindingDto,
-    description: 'Finding data',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'The created finding',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Auditor or Platform Admin required',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Task not found',
-  })
+  @ApiOperation({ summary: 'Create a finding (auditor or platform admin only)' })
+  @ApiBody({ type: CreateFindingDto })
   @UsePipes(
     new ValidationPipe({
       whitelist: true,
@@ -264,12 +199,10 @@ export class FindingsController {
     @Body() createDto: CreateFindingDto,
     @AuthContext() authContext: AuthContextType,
   ) {
-    // Validate userId first (required for session auth)
     if (!authContext.userId) {
       throw new BadRequestException('User ID is required');
     }
 
-    // Verify user has auditor role or is platform admin
     const isAuditor = authContext.userRoles?.includes('auditor');
     const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
 
@@ -279,7 +212,6 @@ export class FindingsController {
       );
     }
 
-    // Get member ID for the user
     const member = await db.member.findFirst({
       where: {
         userId: authContext.userId,
@@ -306,35 +238,10 @@ export class FindingsController {
   @UseGuards(PermissionGuard)
   @RequirePermission('finding', 'update')
   @ApiOperation({
-    summary: 'Update a finding',
-    description:
-      'Update a finding. Status transition rules apply based on user role.',
+    summary: 'Update a finding (status transition rules apply)',
   })
-  @ApiParam({
-    name: 'id',
-    description: 'Finding ID',
-    example: 'fnd_abc123',
-  })
-  @ApiBody({
-    type: UpdateFindingDto,
-    description: 'Finding update data',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'The updated finding',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Insufficient permissions for status transition',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Finding not found',
-  })
+  @ApiParam({ name: 'id', description: 'Finding ID' })
+  @ApiBody({ type: UpdateFindingDto })
   @UsePipes(
     new ValidationPipe({
       whitelist: true,
@@ -347,14 +254,12 @@ export class FindingsController {
     @Body() updateDto: UpdateFindingDto,
     @AuthContext() authContext: AuthContextType,
   ) {
-    // Validate userId first (required for session auth)
     if (!authContext.userId) {
       throw new BadRequestException('User ID is required');
     }
 
     const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
 
-    // Get member ID for audit logging
     const member = await db.member.findFirst({
       where: {
         userId: authContext.userId,
@@ -383,41 +288,16 @@ export class FindingsController {
   @Delete(':id')
   @UseGuards(PermissionGuard)
   @RequirePermission('finding', 'delete')
-  @ApiOperation({
-    summary: 'Delete a finding',
-    description: 'Delete a finding (Auditor or Platform Admin only)',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Finding ID',
-    example: 'fnd_abc123',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Finding deleted successfully',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Auditor or Platform Admin required',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Finding not found',
-  })
+  @ApiOperation({ summary: 'Delete a finding (auditor or platform admin only)' })
+  @ApiParam({ name: 'id', description: 'Finding ID' })
   async deleteFinding(
     @Param('id', ValidateFindingIdPipe) id: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    // Validate userId first (required for session auth)
     if (!authContext.userId) {
       throw new BadRequestException('User ID is required');
     }
 
-    // Verify user has auditor role or is platform admin
     const isAuditor = authContext.userRoles?.includes('auditor');
     const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
 
@@ -427,7 +307,6 @@ export class FindingsController {
       );
     }
 
-    // Get member ID for audit logging
     const member = await db.member.findFirst({
       where: {
         userId: authContext.userId,
@@ -453,27 +332,8 @@ export class FindingsController {
   @Get(':id/history')
   @UseGuards(PermissionGuard)
   @RequirePermission('finding', 'read')
-  @ApiOperation({
-    summary: 'Get finding history',
-    description: 'Retrieve the activity history for a specific finding',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Finding ID',
-    example: 'fnd_abc123',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'List of audit log entries for the finding',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Finding not found',
-  })
+  @ApiOperation({ summary: 'Get activity history for a finding' })
+  @ApiParam({ name: 'id', description: 'Finding ID' })
   async getFindingHistory(
     @Param('id', ValidateFindingIdPipe) id: string,
     @AuthContext() authContext: AuthContextType,
@@ -484,17 +344,12 @@ export class FindingsController {
     );
   }
 
-  /**
-   * Check if the user is a platform admin
-   */
   private async checkPlatformAdmin(userId?: string): Promise<boolean> {
     if (!userId) return false;
-
     const user = await db.user.findUnique({
       where: { id: userId },
       select: { role: true },
     });
-
     return user?.role === 'admin';
   }
 }

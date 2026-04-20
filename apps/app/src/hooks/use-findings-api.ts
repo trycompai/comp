@@ -3,49 +3,69 @@
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
 import type { EvidenceFormType } from '@trycompai/company';
-import type { FindingStatus, FindingType, FindingScope } from '@db';
+import type {
+  FindingArea,
+  FindingSeverity,
+  FindingStatus,
+  FindingType,
+} from '@db';
 import { useCallback } from 'react';
 
-// Types for findings
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
 export interface Finding {
   id: string;
   type: FindingType;
   status: FindingStatus;
+  severity: FindingSeverity;
   content: string;
   revisionNote: string | null;
+  area: FindingArea | null;
   createdAt: string;
   updatedAt: string;
+
+  // Targets — exactly one of these (or `area`) is populated for any finding
   taskId: string | null;
   evidenceSubmissionId: string | null;
   evidenceFormType: EvidenceFormType | null;
-  scope?: FindingScope | null;
+  policyId: string | null;
+  vendorId: string | null;
+  riskId: string | null;
+  memberId: string | null;
+  deviceId: string | null;
+
   templateId: string | null;
-  createdById: string;
+  createdById: string | null;
   organizationId: string;
+
   createdBy: {
     id: string;
-    user: {
-      id: string;
-      name: string;
-      email: string;
-      image: string | null;
-    };
-  };
-  template: {
-    id: string;
-    category: string;
-    title: string;
+    user: { id: string; name: string; email: string; image: string | null };
   } | null;
-  task: {
+  createdByAdmin: {
     id: string;
-    title: string;
+    name: string;
+    email: string;
+    image: string | null;
   } | null;
+  template: { id: string; category: string; title: string } | null;
+  task: { id: string; title: string } | null;
   evidenceSubmission: {
     id: string;
     formType: EvidenceFormType;
     submittedAt: string;
     submittedById: string | null;
   } | null;
+  policy: { id: string; name: string } | null;
+  vendor: { id: string; name: string } | null;
+  risk: { id: string; title: string } | null;
+  member: {
+    id: string;
+    user: { id: string; name: string; email: string; image: string | null };
+  } | null;
+  device: { id: string; name: string; hostname: string } | null;
 }
 
 export interface FindingTemplate {
@@ -58,19 +78,27 @@ export interface FindingTemplate {
   updatedAt: string;
 }
 
-interface CreateFindingData {
+/** Payload for creating a finding — exactly one target (or area) must be set. */
+export interface CreateFindingData {
   taskId?: string;
   evidenceSubmissionId?: string;
   evidenceFormType?: EvidenceFormType;
-  scope?: FindingScope;
+  policyId?: string;
+  vendorId?: string;
+  riskId?: string;
+  memberId?: string;
+  deviceId?: string;
+  area?: FindingArea;
   type?: FindingType;
+  severity?: FindingSeverity;
   templateId?: string;
   content: string;
 }
 
-interface UpdateFindingData {
+export interface UpdateFindingData {
   status?: FindingStatus;
   type?: FindingType;
+  severity?: FindingSeverity;
   content?: string;
   revisionNote?: string | null;
 }
@@ -88,107 +116,71 @@ export interface FindingHistoryEntry {
     newType?: FindingType;
     previousContent?: string;
     newContent?: string;
-    taskId?: string;
-    taskTitle?: string;
+    targetKind?: string;
+    targetId?: string | null;
+    targetLabel?: string | null;
+    // Legacy: present on creation entries written before the unified-findings
+    // migration. Values: 'people' | 'people_tasks' | 'people_devices' | 'people_chart'.
+    findingScope?: string;
     content?: string;
     type?: FindingType;
     status?: FindingStatus;
   };
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    image: string | null;
-  };
+  user: { id: string; name: string; email: string; image: string | null };
 }
 
-// Default polling interval for real-time updates
+// ---------------------------------------------------------------------------
+// Hooks
+// ---------------------------------------------------------------------------
+
 const DEFAULT_FINDINGS_POLLING_INTERVAL = 10000;
 
-export interface UseFindingsOptions extends UseApiSWROptions<Finding[]> {
-  organizationId?: string;
+export interface UseFindingsOptions extends UseApiSWROptions<Finding[]> {}
+
+export interface OrganizationFindingsFilters {
+  status?: FindingStatus;
+  area?: FindingArea;
+  taskId?: string;
+  evidenceSubmissionId?: string;
+  evidenceFormType?: EvidenceFormType;
+  policyId?: string;
+  vendorId?: string;
+  riskId?: string;
+  memberId?: string;
+  deviceId?: string;
 }
 
-/**
- * Hook to fetch findings for a specific task
- */
-export function useTaskFindings(taskId: string | null, options: UseFindingsOptions = {}) {
-  const endpoint = taskId ? `/v1/findings?taskId=${taskId}` : null;
-
-  return useApiSWR<Finding[]>(endpoint, {
-    ...options,
-    refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
-  });
+function buildFindingsQuery(filters: OrganizationFindingsFilters): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== null && value !== '') {
+      params.set(key, String(value));
+    }
+  }
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
 }
 
-/**
- * Hook to fetch findings for a specific evidence submission
- */
-export function useSubmissionFindings(
-  evidenceSubmissionId: string | null,
+/** Fetch findings for the organization (optionally filtered by status/target). */
+export function useOrganizationFindings(
+  filters: OrganizationFindingsFilters = {},
   options: UseFindingsOptions = {},
 ) {
-  const endpoint = evidenceSubmissionId
-    ? `/v1/findings?evidenceSubmissionId=${evidenceSubmissionId}`
-    : null;
+  const endpoint = `/v1/findings${buildFindingsQuery(filters)}`;
 
   return useApiSWR<Finding[]>(endpoint, {
     ...options,
-    refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
+    refreshInterval:
+      options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
   });
 }
 
-/**
- * Hook to fetch findings for a specific evidence form type
- */
-export function useFormTypeFindings(
-  evidenceFormType: EvidenceFormType | null,
-  options: UseFindingsOptions = {},
+export function useFindingTemplates(
+  options: UseApiSWROptions<FindingTemplate[]> = {},
 ) {
-  const endpoint = evidenceFormType ? `/v1/findings?evidenceFormType=${evidenceFormType}` : null;
-
-  return useApiSWR<Finding[]>(endpoint, {
-    ...options,
-    refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
-  });
-}
-
-/**
- * Hook to fetch findings for a People-area scope (directory, devices, etc.)
- */
-export function useScopeFindings(scope: FindingScope | null, options: UseFindingsOptions = {}) {
-  const endpoint = scope ? `/v1/findings?scope=${encodeURIComponent(scope)}` : null;
-
-  return useApiSWR<Finding[]>(endpoint, {
-    ...options,
-    refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
-  });
-}
-
-/**
- * Hook to fetch all findings for an organization
- */
-export function useOrganizationFindings(status?: FindingStatus, options: UseFindingsOptions = {}) {
-  const endpoint = status
-    ? `/v1/findings/organization?status=${status}`
-    : '/v1/findings/organization';
-
-  return useApiSWR<Finding[]>(endpoint, {
-    ...options,
-    refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
-  });
-}
-
-/**
- * Hook to fetch all finding templates
- */
-export function useFindingTemplates(options: UseApiSWROptions<FindingTemplate[]> = {}) {
   return useApiSWR<FindingTemplate[]>('/v1/finding-template', options);
 }
 
-/**
- * Hook to fetch finding history/activity log
- */
 export function useFindingHistory(
   findingId: string | null,
   options: UseApiSWROptions<FindingHistoryEntry[]> = {},
@@ -197,22 +189,18 @@ export function useFindingHistory(
 
   return useApiSWR<FindingHistoryEntry[]>(endpoint, {
     ...options,
-    refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
+    refreshInterval:
+      options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
   });
 }
 
-/**
- * Hook for finding CRUD operations
- */
 export function useFindingActions() {
   const api = useApi();
 
   const createFinding = useCallback(
     async (data: CreateFindingData) => {
       const response = await api.post<Finding>('/v1/findings', data);
-      if (response.error) {
-        throw new Error(response.error);
-      }
+      if (response.error) throw new Error(response.error);
       return response.data!;
     },
     [api],
@@ -220,10 +208,11 @@ export function useFindingActions() {
 
   const updateFinding = useCallback(
     async (findingId: string, data: UpdateFindingData) => {
-      const response = await api.patch<Finding>(`/v1/findings/${findingId}`, data);
-      if (response.error) {
-        throw new Error(response.error);
-      }
+      const response = await api.patch<Finding>(
+        `/v1/findings/${findingId}`,
+        data,
+      );
+      if (response.error) throw new Error(response.error);
       return response.data!;
     },
     [api],
@@ -232,32 +221,23 @@ export function useFindingActions() {
   const deleteFinding = useCallback(
     async (findingId: string) => {
       const response = await api.delete(`/v1/findings/${findingId}`);
-      if (response.error) {
-        throw new Error(response.error);
-      }
+      if (response.error) throw new Error(response.error);
       return { success: true };
     },
     [api],
   );
 
-  return {
-    createFinding,
-    updateFinding,
-    deleteFinding,
-  };
+  return { createFinding, updateFinding, deleteFinding };
 }
 
-/**
- * Grouped finding templates by category
- */
-export function useGroupedFindingTemplates(options: UseApiSWROptions<FindingTemplate[]> = {}) {
+export function useGroupedFindingTemplates(
+  options: UseApiSWROptions<FindingTemplate[]> = {},
+) {
   const { data, ...rest } = useFindingTemplates(options);
 
   const groupedTemplates = data?.data?.reduce(
     (acc, template) => {
-      if (!acc[template.category]) {
-        acc[template.category] = [];
-      }
+      if (!acc[template.category]) acc[template.category] = [];
       acc[template.category].push(template);
       return acc;
     },
@@ -270,9 +250,10 @@ export function useGroupedFindingTemplates(options: UseApiSWROptions<FindingTemp
   };
 }
 
-/**
- * Category labels for display
- */
+// ---------------------------------------------------------------------------
+// Display constants
+// ---------------------------------------------------------------------------
+
 export const FINDING_CATEGORY_LABELS: Record<string, string> = {
   evidence_issue: 'Issue with uploaded evidence',
   further_evidence: 'Further evidence needed',
@@ -280,9 +261,60 @@ export const FINDING_CATEGORY_LABELS: Record<string, string> = {
   na_incorrect: 'Marked N/A incorrectly',
 };
 
-/**
- * Built-in default templates (used when no database templates exist)
- */
+export const FINDING_STATUS_CONFIG: Record<
+  FindingStatus,
+  { label: string; color: string; bgColor: string; icon: string }
+> = {
+  open: { label: 'Open', color: 'text-red-600', bgColor: 'bg-red-100', icon: '🔴' },
+  ready_for_review: {
+    label: 'Ready for Review',
+    color: 'text-yellow-600',
+    bgColor: 'bg-yellow-100',
+    icon: '🟡',
+  },
+  needs_revision: {
+    label: 'Needs Revision',
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-100',
+    icon: '🟠',
+  },
+  closed: {
+    label: 'Closed',
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
+    icon: '✓',
+  },
+};
+
+export const FINDING_SEVERITY_CONFIG: Record<
+  FindingSeverity,
+  { label: string; color: string; bgColor: string }
+> = {
+  low: { label: 'Low', color: 'text-muted-foreground', bgColor: 'bg-muted' },
+  medium: {
+    label: 'Medium',
+    color: 'text-yellow-700',
+    bgColor: 'bg-yellow-100',
+  },
+  high: { label: 'High', color: 'text-orange-700', bgColor: 'bg-orange-100' },
+  critical: { label: 'Critical', color: 'text-red-700', bgColor: 'bg-red-100' },
+};
+
+export const FINDING_TYPE_FRAMEWORK_OPTIONS = [
+  { value: 'soc2', label: 'SOC 2' },
+  { value: 'iso27001', label: 'ISO 27001' },
+  { value: 'pci_dss', label: 'PCI DSS' },
+  { value: 'hipaa', label: 'HIPAA' },
+  { value: 'gdpr', label: 'GDPR' },
+  { value: 'iso9001', label: 'ISO 9001' },
+  { value: 'iso42001', label: 'ISO 42001' },
+] as const;
+
+export const FINDING_TYPE_LABELS: Record<FindingType, string> = {
+  soc2: 'SOC 2',
+  iso27001: 'ISO 27001',
+};
+
 export const DEFAULT_FINDING_TEMPLATES: FindingTemplate[] = [
   {
     id: 'default_evidence_issue_01',
@@ -375,57 +407,3 @@ export const DEFAULT_FINDING_TEMPLATES: FindingTemplate[] = [
     updatedAt: '',
   },
 ];
-
-/**
- * Status labels and colors for display
- */
-export const FINDING_STATUS_CONFIG: Record<
-  FindingStatus,
-  { label: string; color: string; bgColor: string; icon: string }
-> = {
-  open: {
-    label: 'Open',
-    color: 'text-red-600',
-    bgColor: 'bg-red-100',
-    icon: '🔴',
-  },
-  ready_for_review: {
-    label: 'Ready for Review',
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-100',
-    icon: '🟡',
-  },
-  needs_revision: {
-    label: 'Needs Revision',
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-100',
-    icon: '🟠',
-  },
-  closed: {
-    label: 'Closed',
-    color: 'text-primary',
-    bgColor: 'bg-primary/10',
-    icon: '✓',
-  },
-};
-
-/**
- * Framework options shown in finding type selectors
- */
-export const FINDING_TYPE_FRAMEWORK_OPTIONS = [
-  { value: 'soc2', label: 'SOC 2' },
-  { value: 'iso27001', label: 'ISO 27001' },
-  { value: 'pci_dss', label: 'PCI DSS' },
-  { value: 'hipaa', label: 'HIPAA' },
-  { value: 'gdpr', label: 'GDPR' },
-  { value: 'iso9001', label: 'ISO 9001' },
-  { value: 'iso42001', label: 'ISO 42001' },
-] as const;
-
-/**
- * Finding type labels
- */
-export const FINDING_TYPE_LABELS: Record<FindingType, string> = {
-  soc2: 'SOC 2',
-  iso27001: 'ISO 27001',
-};

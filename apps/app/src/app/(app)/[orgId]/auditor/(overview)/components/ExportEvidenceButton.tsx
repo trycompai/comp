@@ -3,13 +3,15 @@
 import { downloadAllEvidenceZip } from '@/lib/evidence-download';
 import {
   Button,
-  Popover,
-  PopoverContent,
-  PopoverDescription,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
+  HStack,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  Stack,
   Switch,
+  Text,
 } from '@trycompai/design-system';
 import { ArrowDown } from '@trycompai/design-system/icons';
 import { useState } from 'react';
@@ -39,26 +41,55 @@ export function ExportEvidenceButton({ organizationName }: ExportEvidenceButtonP
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger render={<Button variant="outline">Export All Evidence</Button>} />
-      <PopoverContent align="end" side="bottom" sideOffset={8}>
-        <PopoverHeader>
-          <PopoverTitle>Export Options</PopoverTitle>
-          <PopoverDescription>Download all task evidence as ZIP</PopoverDescription>
-        </PopoverHeader>
-        <div className="flex items-center justify-between gap-3 py-1">
-          <span className="text-sm">Include raw JSON files</span>
-          <Switch checked={includeJson} onCheckedChange={setIncludeJson} />
-        </div>
-        <Button
-          iconLeft={<ArrowDown />}
-          onClick={handleDownload}
-          disabled={isDownloading}
-          width="full"
-        >
-          {isDownloading ? 'Preparing…' : 'Export'}
-        </Button>
-      </PopoverContent>
-    </Popover>
+    <>
+      <Button onClick={() => setIsOpen(true)}>Export All Evidence</Button>
+
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Export All Evidence</SheetTitle>
+          </SheetHeader>
+          <SheetBody>
+            <Stack gap="lg">
+              <Text size="sm" variant="muted">
+                Download every task&apos;s uploaded evidence as a single ZIP so
+                you can hand it to your auditor or keep an offline snapshot.
+              </Text>
+
+              <HStack justify="between" align="center">
+                <Stack gap="none">
+                  <Text size="sm" weight="medium">
+                    Include raw JSON files
+                  </Text>
+                  <Text size="xs" variant="muted">
+                    Adds machine-readable metadata alongside the evidence
+                    files.
+                  </Text>
+                </Stack>
+                <Switch checked={includeJson} onCheckedChange={setIncludeJson} />
+              </HStack>
+
+              <HStack justify="end">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsOpen(false)}
+                  disabled={isDownloading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  iconLeft={<ArrowDown size={16} />}
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  loading={isDownloading}
+                >
+                  {isDownloading ? 'Preparing…' : 'Export'}
+                </Button>
+              </HStack>
+            </Stack>
+          </SheetBody>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

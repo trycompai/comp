@@ -78,6 +78,7 @@ export function usePermissions() {
   return {
     permissions,
     obligations,
+    roles: roleNames,
     hasPermission: (resource: string, action: string) =>
       hasPermission(permissions, resource, action),
   };

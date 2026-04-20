@@ -31,7 +31,6 @@ export interface TeamMembersProps {
   canInviteUsers: boolean;
   isCurrentUserOwner: boolean;
   organizationId: string;
-  complianceMemberIds: string[];
 }
 
 export async function TeamMembers(props: TeamMembersProps) {
@@ -40,7 +39,6 @@ export async function TeamMembers(props: TeamMembersProps) {
     canInviteUsers,
     isCurrentUserOwner,
     organizationId,
-    complianceMemberIds,
   } = props;
 
   if (!organizationId) {
@@ -71,6 +69,7 @@ export async function TeamMembers(props: TeamMembersProps) {
   const taskCompletionMap: Record<string, TaskCompletion> = {};
 
   const employeeMembers = await filterComplianceMembers(members, organizationId);
+  const complianceMemberIds = employeeMembers.map((m) => m.id);
 
   if (employeeMembers.length > 0) {
     const [org, hipaaInstance] = await Promise.all([
