@@ -2,6 +2,7 @@
 
 import {
   Badge,
+  Button,
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -18,11 +19,16 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Search } from '@trycompai/design-system/icons';
+import { Download, Search } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import type { DeviceWithChecks } from '../types';
+import {
+  buildDevicesCsv,
+  devicesCsvFilename,
+  downloadDevicesCsv,
+} from '../lib/devices-csv';
 import { DeviceDetails } from './DeviceDetails';
 
 export interface DeviceAgentDevicesListProps {
@@ -62,9 +68,11 @@ function isDeviceOnline(lastCheckIn: string | null): boolean {
   return diffMs < 2 * 60 * 60 * 1000;
 }
 
-function UserNameCell({ device }: { device: DeviceWithChecks }) {
-  const params = useParams();
-  const orgId = params?.orgId as string;
+function staleLabel(daysSinceLastCheckIn: number | null): string {
+  return daysSinceLastCheckIn === null ? 'Stale' : `Stale (${daysSinceLastCheckIn}d)`;
+}
+
+function UserNameCell({ device, orgId }: { device: DeviceWithChecks; orgId: string }) {
   const memberId = device.memberId;
 
   if (!memberId) {
@@ -90,7 +98,52 @@ function UserNameCell({ device }: { device: DeviceWithChecks }) {
   );
 }
 
+function CompliantBadge({ device }: { device: DeviceWithChecks }) {
+  if (device.complianceStatus === 'stale') {
+    return (
+      <Badge
+        variant="secondary"
+        title={
+          device.daysSinceLastCheckIn === null
+            ? 'No check-ins recorded'
+            : `No check-in in ${device.daysSinceLastCheckIn} days`
+        }
+      >
+        {staleLabel(device.daysSinceLastCheckIn)}
+      </Badge>
+    );
+  }
+  if (device.complianceStatus === 'compliant') {
+    return <Badge variant="default">Yes</Badge>;
+  }
+  return <Badge variant="destructive">No</Badge>;
+}
+
+function CheckBadges({ device }: { device: DeviceWithChecks }) {
+  if (device.complianceStatus === 'stale') {
+    return (
+      <div className="flex flex-wrap gap-1">
+        {CHECK_FIELDS.map(({ key, label }) => (
+          <Badge key={key} variant="secondary" title={`${label} — unknown (device is stale)`}>
+            —
+          </Badge>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {CHECK_FIELDS.map(({ key, label }) => (
+        <Badge key={key} variant={device[key] ? 'default' : 'destructive'}>
+          {label}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
 export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps) => {
+  const { orgId } = useParams<{ orgId: string }>();
   const [selectedDevice, setSelectedDevice] = useState<DeviceWithChecks | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -114,6 +167,12 @@ export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps)
     return filteredDevices.slice(start, start + perPage);
   }, [filteredDevices, page, perPage]);
 
+  function handleExport() {
+    const contents = buildDevicesCsv(devices);
+    const filename = devicesCsvFilename({ orgId });
+    downloadDevicesCsv(filename, contents);
+  }
+
   if (selectedDevice) {
     return <DeviceDetails device={selectedDevice} onClose={() => setSelectedDevice(null)} />;
   }
@@ -124,20 +183,25 @@ export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps)
 
   return (
     <Stack gap="4">
-      <div className="w-full md:max-w-[300px]">
-        <InputGroup>
-          <InputGroupAddon>
-            <Search size={16} />
-          </InputGroupAddon>
-          <InputGroupInput
-            placeholder="Search devices..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
-            }}
-          />
-        </InputGroup>
+      <div className="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="w-full md:max-w-[300px]">
+          <InputGroup>
+            <InputGroupAddon>
+              <Search size={16} />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search devices..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
+            />
+          </InputGroup>
+        </div>
+        <Button variant="outline" iconLeft={<Download />} onClick={handleExport}>
+          Export CSV
+        </Button>
       </div>
 
       {filteredDevices.length === 0 ? (
@@ -195,7 +259,7 @@ export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps)
                   </div>
                 </TableCell>
                 <TableCell>
-                  <UserNameCell device={device} />
+                  <UserNameCell device={device} orgId={orgId} />
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
@@ -209,21 +273,10 @@ export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps)
                   <Text size="sm">{formatTimeAgo(device.lastCheckIn)}</Text>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {CHECK_FIELDS.map(({ key, label }) => (
-                      <Badge
-                        key={key}
-                        variant={device[key] ? 'default' : 'destructive'}
-                      >
-                        {label}
-                      </Badge>
-                    ))}
-                  </div>
+                  <CheckBadges device={device} />
                 </TableCell>
                 <TableCell>
-                  <Badge variant={device.isCompliant ? 'default' : 'destructive'}>
-                    {device.isCompliant ? 'Yes' : 'No'}
-                  </Badge>
+                  <CompliantBadge device={device} />
                 </TableCell>
               </TableRow>
             ))}

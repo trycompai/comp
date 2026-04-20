@@ -148,6 +148,7 @@
         "@trycompai/db": "workspace:*",
         "@trycompai/email": "workspace:*",
         "@trycompai/integration-platform": "workspace:*",
+        "@trycompai/utils": "workspace:*",
         "@upstash/ratelimit": "^2.0.8",
         "@upstash/redis": "^1.34.2",
         "@upstash/vector": "^1.2.2",

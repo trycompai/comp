@@ -31,9 +31,10 @@ export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComp
     let compliantCount = 0;
     let nonCompliantCount = 0;
 
-    // Count device-agent devices
+    // Count device-agent devices. Stale devices (no check-in for >= 7 days)
+    // count as non-compliant to match the table's three-state rendering.
     for (const device of agentDevices ?? []) {
-      if (device.isCompliant) {
+      if (device.complianceStatus === 'compliant') {
         compliantCount++;
       } else {
         nonCompliantCount++;
