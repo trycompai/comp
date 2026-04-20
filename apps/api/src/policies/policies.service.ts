@@ -599,14 +599,10 @@ export class PoliciesService {
       sourceVersion = requestedVersion;
     }
 
-    const contentForVersion = sourceVersion
+    const contentForVersion = (sourceVersion
       ? (sourceVersion.content as Prisma.InputJsonValue[])
-      : (policy.content as Prisma.InputJsonValue[]);
+      : (policy.content as Prisma.InputJsonValue[])) ?? [];
     const sourcePdfUrl = sourceVersion?.pdfUrl ?? policy.pdfUrl;
-
-    if (!contentForVersion || contentForVersion.length === 0) {
-      throw new BadRequestException('No content to create version from');
-    }
 
     // S3 copy is done AFTER the transaction to prevent orphaned files on retry
     let createdVersion: { versionId: string; version: number } | null = null;
@@ -1033,6 +1029,15 @@ export class PoliciesService {
     }
 
     if (!policy.pendingVersionId) {
+      if (policy.approverId) {
+        await db.policy.update({
+          where: { id: policyId },
+          data: { approverId: null },
+        });
+        throw new BadRequestException(
+          'This policy has no pending changes to approve. The stale approval request has been cleared — please ask the policy owner to re-submit if a new approval is needed.',
+        );
+      }
       throw new BadRequestException('No pending version to approve');
     }
 
@@ -1094,6 +1099,15 @@ export class PoliciesService {
     }
 
     if (!policy.pendingVersionId) {
+      if (policy.approverId) {
+        await db.policy.update({
+          where: { id: policyId },
+          data: { approverId: null },
+        });
+        throw new BadRequestException(
+          'This policy has no pending changes to deny. The stale approval request has been cleared — please ask the policy owner to re-submit if a new approval is needed.',
+        );
+      }
       throw new BadRequestException('No pending version to deny');
     }
 

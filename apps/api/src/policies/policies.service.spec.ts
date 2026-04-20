@@ -1,4 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { PoliciesService } from './policies.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
@@ -8,10 +9,18 @@ jest.mock('@db', () => ({
     policy: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+    policyVersion: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
       update: jest.fn(),
     },
     member: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
     },
     auditLog: {
       createMany: jest.fn(),
@@ -46,8 +55,19 @@ jest.mock('../utils/compliance-filters', () => ({
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { db } = require('@db') as {
   db: {
-    policy: { findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
-    member: { findMany: jest.Mock };
+    policy: {
+      findMany: jest.Mock;
+      findFirst: jest.Mock;
+      findUnique: jest.Mock;
+      update: jest.Mock;
+    };
+    policyVersion: {
+      findUnique: jest.Mock;
+      findFirst: jest.Mock;
+      create: jest.Mock;
+      update: jest.Mock;
+    };
+    member: { findMany: jest.Mock; findFirst: jest.Mock };
     auditLog: { createMany: jest.Mock };
     $transaction: jest.Mock;
   };
@@ -61,12 +81,17 @@ const { filterComplianceMembers: mockedFilterComplianceMembers } = require('../u
 describe('PoliciesService', () => {
   let service: PoliciesService;
 
+  const mockAttachmentsService = {
+    copyPolicyVersionPdf: jest.fn(),
+    deletePolicyVersionPdf: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PoliciesService,
-        { provide: AttachmentsService, useValue: {} },
+        { provide: AttachmentsService, useValue: mockAttachmentsService },
         { provide: PolicyPdfRendererService, useValue: {} },
       ],
     }).compile();
@@ -214,6 +239,315 @@ describe('PoliciesService', () => {
           organizationId: orgId,
         },
       ]);
+    });
+  });
+
+  describe('acceptChanges', () => {
+    const buildPendingPolicy = (overrides: Record<string, unknown> = {}) => ({
+      id: 'pol_1',
+      organizationId: 'org_abc',
+      pendingVersionId: 'ver_1',
+      approverId: 'mem_approver',
+      frequency: 'yearly',
+      ...overrides,
+    });
+
+    const mockTransactionTx = () => {
+      db.$transaction.mockImplementation(
+        async (callback: (tx: unknown) => Promise<unknown>) => {
+          const tx = {
+            policyVersion: { update: db.policyVersion.update },
+            policy: { update: db.policy.update },
+          };
+          return callback(tx);
+        },
+      );
+    };
+
+    it('publishes the pending version on a successful approve', async () => {
+      const pendingVersion = {
+        id: 'ver_1',
+        version: 2,
+        content: [{ type: 'paragraph' }],
+      };
+      db.policy.findUnique.mockResolvedValueOnce(buildPendingPolicy());
+      db.policyVersion.findUnique.mockResolvedValueOnce(pendingVersion);
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      mockTransactionTx();
+
+      const result = await service.acceptChanges(
+        'pol_1',
+        'org_abc',
+        { approverId: 'mem_approver' },
+        'usr_caller',
+      );
+
+      expect(result).toEqual({ versionId: 'ver_1', version: 2 });
+      expect(db.policyVersion.update).toHaveBeenCalledWith({
+        where: { id: 'ver_1' },
+        data: { publishedById: 'mem_caller' },
+      });
+      const policyUpdateArg = db.policy.update.mock.calls[0][0];
+      expect(policyUpdateArg.data.status).toBe('published');
+      expect(policyUpdateArg.data.currentVersionId).toBe('ver_1');
+      expect(policyUpdateArg.data.pendingVersionId).toBeNull();
+      expect(policyUpdateArg.data.approverId).toBeNull();
+      expect(policyUpdateArg.data.signedBy).toEqual([]);
+    });
+
+    it('succeeds when called via session impersonation — caller userId differs from approverId', async () => {
+      // Simulates an admin impersonating the assigned approver:
+      // the impersonated session's userId belongs to the approver, but
+      // the authorization check only requires the body-supplied approverId
+      // to match policy.approverId — which it does.
+      const pendingVersion = {
+        id: 'ver_1',
+        version: 2,
+        content: [],
+      };
+      db.policy.findUnique.mockResolvedValueOnce(buildPendingPolicy());
+      db.policyVersion.findUnique.mockResolvedValueOnce(pendingVersion);
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_impersonated' });
+      mockTransactionTx();
+
+      const result = await service.acceptChanges(
+        'pol_1',
+        'org_abc',
+        { approverId: 'mem_approver' },
+        'usr_impersonated',
+      );
+
+      expect(result).toEqual({ versionId: 'ver_1', version: 2 });
+      expect(db.policyVersion.update).toHaveBeenCalledWith({
+        where: { id: 'ver_1' },
+        data: { publishedById: 'mem_impersonated' },
+      });
+    });
+
+    it('rejects when the body approverId does not match the assigned approver', async () => {
+      db.policy.findUnique.mockResolvedValueOnce(buildPendingPolicy());
+
+      await expect(
+        service.acceptChanges('pol_1', 'org_abc', { approverId: 'mem_wrong' }),
+      ).rejects.toThrow(/only the assigned approver/i);
+
+      expect(db.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('self-heals stale approverId when no pending version exists', async () => {
+      const orgId = 'org_abc';
+      const approverId = 'mem_approver';
+      const stalePolicy = {
+        id: 'pol_1',
+        organizationId: orgId,
+        pendingVersionId: null,
+        approverId,
+      };
+      db.policy.findUnique.mockResolvedValueOnce(stalePolicy);
+      db.policy.update.mockResolvedValueOnce({ ...stalePolicy, approverId: null });
+
+      await expect(
+        service.acceptChanges('pol_1', orgId, { approverId }),
+      ).rejects.toThrow(/no pending changes/i);
+
+      expect(db.policy.update).toHaveBeenCalledWith({
+        where: { id: 'pol_1' },
+        data: { approverId: null },
+      });
+      expect(db.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('throws without mutating when the policy has no approval state at all', async () => {
+      const orgId = 'org_abc';
+      const cleanPolicy = {
+        id: 'pol_1',
+        organizationId: orgId,
+        pendingVersionId: null,
+        approverId: null,
+      };
+      db.policy.findUnique.mockResolvedValueOnce(cleanPolicy);
+
+      await expect(
+        service.acceptChanges('pol_1', orgId, { approverId: 'mem_x' }),
+      ).rejects.toThrow(/no pending version/i);
+
+      expect(db.policy.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('denyChanges', () => {
+    it('reverts to draft on a successful deny when never published', async () => {
+      db.policy.findUnique.mockResolvedValueOnce({
+        id: 'pol_1',
+        organizationId: 'org_abc',
+        pendingVersionId: 'ver_1',
+        approverId: 'mem_approver',
+        lastPublishedAt: null,
+      });
+      db.policy.update.mockResolvedValueOnce({});
+
+      const result = await service.denyChanges('pol_1', 'org_abc', {
+        approverId: 'mem_approver',
+      });
+
+      expect(result).toEqual({ status: 'draft' });
+      expect(db.policy.update).toHaveBeenCalledWith({
+        where: { id: 'pol_1' },
+        data: {
+          status: 'draft',
+          pendingVersionId: null,
+          approverId: null,
+        },
+      });
+    });
+
+    it('reverts to published on a successful deny when previously published', async () => {
+      db.policy.findUnique.mockResolvedValueOnce({
+        id: 'pol_1',
+        organizationId: 'org_abc',
+        pendingVersionId: 'ver_2',
+        approverId: 'mem_approver',
+        lastPublishedAt: new Date('2026-01-01'),
+      });
+      db.policy.update.mockResolvedValueOnce({});
+
+      const result = await service.denyChanges('pol_1', 'org_abc', {
+        approverId: 'mem_approver',
+      });
+
+      expect(result).toEqual({ status: 'published' });
+    });
+
+    it('self-heals stale approverId when no pending version exists', async () => {
+      const orgId = 'org_abc';
+      const approverId = 'mem_approver';
+      const stalePolicy = {
+        id: 'pol_1',
+        organizationId: orgId,
+        pendingVersionId: null,
+        approverId,
+      };
+      db.policy.findUnique.mockResolvedValueOnce(stalePolicy);
+      db.policy.update.mockResolvedValueOnce({ ...stalePolicy, approverId: null });
+
+      await expect(
+        service.denyChanges('pol_1', orgId, { approverId }),
+      ).rejects.toThrow(/no pending changes/i);
+
+      expect(db.policy.update).toHaveBeenCalledWith({
+        where: { id: 'pol_1' },
+        data: { approverId: null },
+      });
+    });
+  });
+
+  describe('createVersion', () => {
+    const organizationId = 'org_123';
+    const policyId = 'pol_1';
+    const userId = 'usr_1';
+
+    const setupHappyPath = ({
+      policyContent,
+      currentVersionContent,
+      policyPdfUrl,
+      currentVersionPdfUrl,
+    }: {
+      policyContent: unknown[];
+      currentVersionContent: unknown[] | null;
+      policyPdfUrl: string | null;
+      currentVersionPdfUrl: string | null;
+    }) => {
+      db.member.findFirst.mockResolvedValue({ id: 'mem_1' });
+      db.policy.findUnique.mockResolvedValue({
+        id: policyId,
+        organizationId,
+        content: policyContent,
+        pdfUrl: policyPdfUrl,
+        currentVersion: currentVersionContent
+          ? {
+              id: 'pv_1',
+              content: currentVersionContent,
+              pdfUrl: currentVersionPdfUrl,
+            }
+          : null,
+        versions: [],
+      });
+      db.$transaction.mockImplementation(async (cb: (tx: unknown) => unknown) =>
+        cb({
+          policyVersion: {
+            findFirst: jest.fn().mockResolvedValue({ version: 1 }),
+            create: jest.fn().mockResolvedValue({ id: 'pv_2' }),
+          },
+        }),
+      );
+    };
+
+    it('creates a version when editor content is empty but a PDF exists', async () => {
+      setupHappyPath({
+        policyContent: [],
+        currentVersionContent: [],
+        policyPdfUrl: 's3://bucket/policy.pdf',
+        currentVersionPdfUrl: 's3://bucket/policy.pdf',
+      });
+      mockAttachmentsService.copyPolicyVersionPdf.mockResolvedValue(
+        's3://bucket/new.pdf',
+      );
+
+      const result = await service.createVersion(
+        policyId,
+        organizationId,
+        {},
+        userId,
+      );
+
+      expect(result).toEqual({ versionId: 'pv_2', version: 2 });
+      expect(mockAttachmentsService.copyPolicyVersionPdf).toHaveBeenCalled();
+    });
+
+    it('creates a version when both editor content is empty and no PDF exists', async () => {
+      setupHappyPath({
+        policyContent: [],
+        currentVersionContent: [],
+        policyPdfUrl: null,
+        currentVersionPdfUrl: null,
+      });
+
+      const result = await service.createVersion(
+        policyId,
+        organizationId,
+        {},
+        userId,
+      );
+
+      expect(result).toEqual({ versionId: 'pv_2', version: 2 });
+      expect(mockAttachmentsService.copyPolicyVersionPdf).not.toHaveBeenCalled();
+    });
+
+    it('creates a version with non-empty editor content', async () => {
+      setupHappyPath({
+        policyContent: [{ type: 'paragraph' }],
+        currentVersionContent: [{ type: 'paragraph' }],
+        policyPdfUrl: null,
+        currentVersionPdfUrl: null,
+      });
+
+      const result = await service.createVersion(
+        policyId,
+        organizationId,
+        {},
+        userId,
+      );
+
+      expect(result).toEqual({ versionId: 'pv_2', version: 2 });
+    });
+
+    it('throws NotFound when the policy does not exist', async () => {
+      db.member.findFirst.mockResolvedValue({ id: 'mem_1' });
+      db.policy.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.createVersion(policyId, organizationId, {}, userId),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });
