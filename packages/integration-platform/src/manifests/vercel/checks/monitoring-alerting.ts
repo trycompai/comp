@@ -1,5 +1,11 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
+import {
+  applyVercelProjectFilter,
+  filteredProjectsVariable,
+  parseVercelProjectFilter,
+  projectFilterModeVariable,
+} from '../variables';
 import type {
   VercelDeployment,
   VercelDeploymentsResponse,
@@ -19,7 +25,7 @@ export const monitoringAlertingCheck: IntegrationCheck = {
   name: 'Monitoring & Alerting Review',
   description: 'Verify webhooks and notifications are configured for deployment monitoring',
   taskMapping: TASK_TEMPLATES.monitoringAlerting,
-  variables: [],
+  variables: [projectFilterModeVariable, filteredProjectsVariable],
 
   run: async (ctx: CheckContext) => {
     ctx.log('Starting Vercel Monitoring & Alerting check');
@@ -62,12 +68,46 @@ export const monitoringAlertingCheck: IntegrationCheck = {
       return;
     }
 
+    const filter = parseVercelProjectFilter(ctx.variables);
+    const scopedProjects = applyVercelProjectFilter(projects, filter);
+    if (filter.mode !== 'all' && scopedProjects.length === 0) {
+      ctx.fail({
+        title: 'Project filter matched no projects',
+        resourceType: 'vercel',
+        resourceId: 'project-filter',
+        severity: 'medium',
+        description: `Filter mode "${filter.mode}" with ${filter.selectedIds.size} selected project(s) resolved to zero projects in scope. This may indicate deleted or renamed projects.`,
+        remediation: 'Open the Configure sheet for this automation and review the selected projects.',
+        evidence: {
+          filterMode: filter.mode,
+          selectedProjectIds: Array.from(filter.selectedIds),
+          availableProjectIds: projects.map((p) => p.id),
+        },
+      });
+      return;
+    }
+    ctx.log(
+      `Project filter mode=${filter.mode}, scoped ${scopedProjects.length} of ${projects.length} projects`,
+    );
+    ctx.pass({
+      title: 'Project filter applied',
+      resourceType: 'vercel',
+      resourceId: 'project-filter',
+      description: `Mode: ${filter.mode}. Projects in scope: ${scopedProjects.length}/${projects.length}.`,
+      evidence: {
+        filterMode: filter.mode,
+        selectedProjectIds: Array.from(filter.selectedIds),
+        scopedProjectIds: scopedProjects.map((p) => p.id),
+        totalProjectCount: projects.length,
+      },
+    });
+
     // Check recent deployments for failures
     ctx.log('Checking recent deployments...');
     const recentDeployments: VercelDeployment[] = [];
     const failedDeployments: VercelDeployment[] = [];
 
-    for (const project of projects.slice(0, 10)) {
+    for (const project of scopedProjects.slice(0, 10)) {
       // Check first 10 projects
       try {
         const params = new URLSearchParams({ projectId: project.id, limit: '10' });
@@ -116,7 +156,7 @@ export const monitoringAlertingCheck: IntegrationCheck = {
         resourceId: 'recent-failures',
         description: 'No failed or canceled deployments detected in the reviewed projects.',
         evidence: {
-          reviewedProjects: projects.length,
+          reviewedProjects: scopedProjects.length,
         },
       });
     }
@@ -136,7 +176,8 @@ export const monitoringAlertingCheck: IntegrationCheck = {
         },
         projects: {
           total: projects.length,
-          names: projects.map((p) => p.name),
+          scoped: scopedProjects.length,
+          names: scopedProjects.map((p) => p.name),
         },
         deployments: {
           recentTotal: recentDeployments.length,
