@@ -1,7 +1,6 @@
 'use client';
 
-import { apiClient } from '@/lib/api-client';
-import useSWR from 'swr';
+import { useApiSWR } from '@/hooks/use-api-swr';
 
 interface PolicyOption {
   id: string;
@@ -31,26 +30,17 @@ interface ControlOptionsResponse {
 }
 
 export function useControlOptions(enabled: boolean) {
-  const { data, isLoading, mutate } = useSWR<ControlOptionsResponse>(
-    enabled ? '/v1/controls/options' : null,
-    async (url: string) => {
-      const res = await apiClient.get<ControlOptionsResponse>(url);
-      if (res.error) throw new Error(res.error);
-      return (
-        res.data ?? {
-          policies: [],
-          tasks: [],
-          requirements: [],
-        }
-      );
-    },
-    { revalidateOnFocus: false },
+  const { data, isLoading, mutate } = useApiSWR<ControlOptionsResponse>(
+    '/v1/controls/options',
+    { enabled },
   );
 
+  const options = data?.data;
+
   return {
-    policies: data?.policies ?? [],
-    tasks: data?.tasks ?? [],
-    requirements: data?.requirements ?? [],
+    policies: options?.policies ?? [],
+    tasks: options?.tasks ?? [],
+    requirements: options?.requirements ?? [],
     isLoading,
     mutate,
   };

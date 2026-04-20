@@ -227,6 +227,20 @@ interface EvidenceSubmissionForScoring {
   submittedAt: Date | string;
 }
 
+function hasAnyArtifact(
+  control: ControlForScoring,
+  tasks: TaskWithControls[],
+): boolean {
+  const policies = control.policies ?? [];
+  const documentTypes = control.controlDocumentTypes ?? [];
+  const controlTasks = tasks.filter((t) =>
+    t.controls.some((c) => c.id === control.id),
+  );
+  return (
+    policies.length > 0 || controlTasks.length > 0 || documentTypes.length > 0
+  );
+}
+
 function isControlCompleted(
   control: ControlForScoring,
   tasks: TaskWithControls[],
@@ -267,12 +281,7 @@ function isControlCompleted(
     }
   }
 
-  const hasAnyArtifact =
-    policies.length > 0 || controlTasks.length > 0 || documentTypes.length > 0;
-
-  return (
-    hasAnyArtifact && policiesComplete && tasksComplete && documentsComplete
-  );
+  return policiesComplete && tasksComplete && documentsComplete;
 }
 
 export function computeFrameworkComplianceScore(
@@ -280,7 +289,9 @@ export function computeFrameworkComplianceScore(
   tasks: TaskWithControls[],
   evidenceSubmissions: EvidenceSubmissionForScoring[] = [],
 ): number {
-  const controls = framework.controls ?? [];
+  const controls = (framework.controls ?? []).filter((c) =>
+    hasAnyArtifact(c, tasks),
+  );
   if (controls.length === 0) return 0;
   const completed = controls.filter((c) =>
     isControlCompleted(c, tasks, evidenceSubmissions),

@@ -91,13 +91,11 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         name: string | null;
         description: string | null;
         documentTypes: string[];
-      }) => {
-        const queryParam = frameworkId ? `?frameworkId=${frameworkId}` : '';
-        return apiClient<{ id: string }>(`/control-template${queryParam}`, {
+      }) =>
+        apiClient<{ id: string }>('/control-template', {
           method: 'POST',
           body: JSON.stringify(data),
-        });
-      },
+        }),
       updateControl: (
         id: string,
         data: { name: string; description: string; documentTypes: string[] },
@@ -111,7 +109,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
           method: 'DELETE',
         }),
     }),
-    [frameworkId],
+    [],
   );
   const initialGridData: ControlsPageGridData[] = useMemo(
     () =>

@@ -215,10 +215,11 @@ export function PolicyVersionsTab({
               const isDraft = !isPublished && !isPendingVersion;
               
               const canDelete = canDeletePolicy && !isCurrentVersion && !isPendingVersion;
+              const hasPendingVersion = Boolean(policy.pendingVersionId) && isPendingApproval;
               // Can publish other versions (not current, not pending)
-              const canPublishOther = canPublishPolicy && !isCurrentVersion && !isPendingVersion && !isPendingApproval;
+              const canPublishOther = canPublishPolicy && !isCurrentVersion && !isPendingVersion && !hasPendingVersion;
               // Can publish current version if it's in draft or needs_review status
-              const canPublishCurrent = canPublishPolicy && isCurrentVersion && (policy.status === PolicyStatus.draft || policy.status === PolicyStatus.needs_review) && !isPendingApproval;
+              const canPublishCurrent = canPublishPolicy && isCurrentVersion && (policy.status === PolicyStatus.draft || policy.status === PolicyStatus.needs_review) && !hasPendingVersion;
               const canPublish = canPublishOther || canPublishCurrent;
               const publisher = version.publishedBy?.user;
 

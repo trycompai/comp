@@ -23,7 +23,7 @@ import { Input } from '@trycompai/ui/input';
 import { Textarea } from '@trycompai/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -51,6 +51,12 @@ export function AddCustomRequirementSheet({
     defaultValues: { identifier: '', name: '', description: '' },
     mode: 'onChange',
   });
+
+  useEffect(() => {
+    if (!isOpen) {
+      form.reset({ identifier: '', name: '', description: '' });
+    }
+  }, [isOpen, form]);
 
   if (!hasPermission('framework', 'update')) return null;
 
