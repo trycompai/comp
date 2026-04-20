@@ -1,0 +1,51 @@
+{
+  "slug": "socket",
+  "name": "Socket Security",
+  "description": "Monitor Socket supply chain security scanning for npm package vulnerability compliance",
+  "category": "Security",
+  "docsUrl": "https://docs.socket.dev/reference/authentication",
+  "baseUrl": "https://api.socket.dev/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Socket at https://socket.dev\n2. Go to Settings → API Keys to generate a key\n3. Base64 encode 'api_key:' (with colon, empty password)\n4. Find your org slug in the dashboard URL\n5. Enter both below",
+      "credentialFields": [
+        {
+          "label": "Encoded API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'api_key:' (api_key with empty password). Command: echo -n 'your_api_key:' | base64"
+        },
+        {
+          "label": "Organization Slug",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Socket organization slug (from the dashboard URL)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "socket_secure_code",
+      "name": "Secure Code",
+      "description": "Verifies Socket is scanning npm packages for supply chain vulnerabilities",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "socket_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies Socket monitors code changes for newly introduced vulnerable packages",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

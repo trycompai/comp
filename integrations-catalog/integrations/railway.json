@@ -1,0 +1,45 @@
+{
+  "slug": "railway",
+  "name": "Railway",
+  "description": "Railway cloud deployment platform for apps and databases",
+  "category": "Infrastructure",
+  "docsUrl": "https://docs.railway.com/integrations/api",
+  "baseUrl": "https://backboard.railway.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Railway\n2. Go to Account Settings → Tokens\n3. Create a new token (choose Account token for full access)\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Railway → Account Settings → Tokens → Create a new token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "railway_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Railway is connected and confirms the authenticated user identity",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "railway_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Railway platform is accessible and lists projects",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

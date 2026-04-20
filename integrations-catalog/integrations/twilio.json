@@ -1,0 +1,51 @@
+{
+  "slug": "twilio",
+  "name": "Twilio",
+  "description": "Monitor Twilio account configuration and communication resources for compliance",
+  "category": "Communication",
+  "docsUrl": "https://www.twilio.com/docs/usage/api",
+  "baseUrl": "https://api.twilio.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to https://console.twilio.com — copy your Account SID and Auth Token\n2. Encode credentials: base64('AccountSID:AuthToken')\n3. Enter both the encoded value and raw Account SID below",
+      "credentialFields": [
+        {
+          "label": "Encoded Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode your Account SID and Auth Token: base64('AccountSID:AuthToken'). Use https://www.base64encode.org/"
+        },
+        {
+          "label": "Account SID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Twilio Account SID from the console dashboard"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "twilio_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Twilio account is active and properly configured",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "twilio_contact_information",
+      "name": "Contact Information",
+      "description": "Lists Twilio phone numbers for communication infrastructure inventory",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

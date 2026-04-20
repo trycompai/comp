@@ -1,0 +1,45 @@
+{
+  "slug": "confluence",
+  "name": "Confluence",
+  "description": "Monitor Confluence spaces and user access for documentation and policy publishing compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.atlassian.com/cloud/confluence/rest/v1/",
+  "baseUrl": "https://atlassian.net/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to id.atlassian.com/manage-profile/security/api-tokens\n2. Click 'Create API token'\n3. Base64-encode 'your_email:api_token'\n4. Paste the encoded string below",
+      "credentialFields": [
+        {
+          "label": "Base64 Encoded Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64-encode 'email@example.com:api_token'. Create an API token at id.atlassian.com/manage-profile/security/api-tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "spaces",
+      "name": "Publish Policies",
+      "description": "Verifies Confluence spaces exist for policy publishing",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "members",
+      "name": "Employee Access",
+      "description": "Reviews Confluence group members for employee access management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

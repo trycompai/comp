@@ -1,0 +1,45 @@
+{
+  "slug": "statsig",
+  "name": "Statsig",
+  "description": "Feature flags and experimentation platform. Monitor feature gates and experiments.",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.statsig.com/console-api/introduction",
+  "baseUrl": "https://statsigapi.net",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Statsig at https://console.statsig.com\n2. Go to Project Settings → API Keys\n3. Create or copy a Console API Key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "Console API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Project Settings → API Keys → Console API Key on console.statsig.com"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "statsig_app_availability",
+      "name": "Statsig App Availability",
+      "description": "Checks that the Statsig Console API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "statsig_employee_access",
+      "name": "Statsig Employee Access",
+      "description": "Verifies employee access to Statsig.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

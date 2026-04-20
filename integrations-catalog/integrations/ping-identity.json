@@ -1,0 +1,58 @@
+{
+  "slug": "ping-identity",
+  "name": "Ping Identity",
+  "description": "Identity and access management platform. Monitor user access and authentication.",
+  "category": "Identity & Access",
+  "docsUrl": "https://apidocs.pingidentity.com/pingone/platform/v1/api/",
+  "baseUrl": "https://api.pingone.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to PingOne admin console\n2. Go to Applications → add a Worker application\n3. Enable it and copy the Access Token\n4. Go to Settings → Environment → Properties for your Environment ID\n5. Paste both values below",
+      "credentialFields": [
+        {
+          "label": "Environment ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in PingOne admin → Settings → Environment → Properties."
+        },
+        {
+          "label": "API Key (Worker App Token)",
+          "type": "password",
+          "required": true,
+          "helpText": "From a PingOne Worker application client credentials."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "ping_identity_app_availability",
+      "name": "Ping Identity App Availability",
+      "description": "Verifies PingOne API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "ping_identity_employee_access",
+      "name": "Ping Identity Employee Access",
+      "description": "Verifies user directory access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "ping_identity_mfa",
+      "name": "Ping Identity MFA",
+      "description": "Verifies MFA policies are configured.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

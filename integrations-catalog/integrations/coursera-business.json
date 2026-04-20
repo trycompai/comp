@@ -1,0 +1,55 @@
+{
+  "slug": "coursera-business",
+  "name": "Coursera for Business",
+  "description": "Coursera for Business provides enterprise learning and compliance training, enabling organizations to upskill employees with courses from top universities and industry leaders.",
+  "category": "Security",
+  "docsUrl": "https://dev.coursera.com/get-started",
+  "baseUrl": "https://api.coursera.com/ent",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log into the Coursera Developer Portal at dev.coursera.com\n2. Click Sign In and authenticate via your Coursera account\n3. Register a new app and enable the Coursera For Business API\n4. Copy your App Key, App Secret from the app credentials page\n5. Find your Organization ID on the admin settings page at coursera.org/business/admin",
+      "credentialFields": [
+        {
+          "label": "API Key (App Key)",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "API Secret (App Secret)",
+          "type": "secret",
+          "required": true
+        },
+        {
+          "label": "Organization ID",
+          "type": "text",
+          "required": true
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "coursera_business_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies that employees have access to Coursera for Business by listing users in the organization.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "coursera_business_employee_verification",
+      "name": "Employee Verification",
+      "description": "Verifies employee training enrollment and completion status in Coursera for Business.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

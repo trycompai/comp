@@ -1,0 +1,45 @@
+{
+  "slug": "envoy",
+  "name": "Envoy",
+  "description": "Verify workplace security through Envoy visitor management - review employee access, visitor sign-in flows, and location configurations.",
+  "category": "Security",
+  "docsUrl": "https://developers.envoy.com/hub/reference",
+  "baseUrl": "https://api.envoy.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to the Envoy Dev Dashboard at https://dashboard.envoy.com\n2. Navigate to Integrations > Dev Dashboard\n3. Click 'Create New'\n4. Provide a name for your integration (e.g., 'CompAI')\n5. Under API Scopes, add: employees.read, locations.read, flows.read\n6. Save the integration\n7. Copy your Client API Key from the integration settings\n8. Paste it below"
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "envoy_employee_access",
+      "name": "Envoy Employee Access",
+      "description": "Lists all employees registered in Envoy to verify user access and directory completeness.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "envoy_visitor_sign_in_flows",
+      "name": "Envoy Visitor Sign-In Flows",
+      "description": "Verifies that visitor and employee sign-in flows are configured and enabled in Envoy locations.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "envoy_location_configuration",
+      "name": "Envoy Location Configuration",
+      "description": "Verifies that company locations are configured and active in Envoy.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

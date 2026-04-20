@@ -1,0 +1,45 @@
+{
+  "slug": "descope",
+  "name": "Descope",
+  "description": "Descope authentication and user management platform with no-code flows",
+  "category": "Identity & Access",
+  "docsUrl": "https://docs.descope.com/api/management",
+  "baseUrl": "https://api.descope.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Descope\n2. Go to Settings → Company → Management API Keys\n3. Create or copy a management key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "Management Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Descope → Settings → Company → Management API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "descope_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Descope authentication platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "descope_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Descope users to verify identity platform access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

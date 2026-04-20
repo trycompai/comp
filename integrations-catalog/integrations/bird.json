@@ -1,0 +1,45 @@
+{
+  "slug": "bird",
+  "name": "Bird",
+  "description": "Bird omnichannel communications platform for WhatsApp, email, SMS, and voice",
+  "category": "Communication",
+  "docsUrl": "https://docs.bird.com",
+  "baseUrl": "https://api.bird.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Bird\n2. Go to Developers → API Keys\n3. Create a new API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Bird → Developers → API Keys → Create API Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "bird_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Bird communications platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "bird_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Bird organization access and team membership",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

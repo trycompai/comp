@@ -1,0 +1,45 @@
+{
+  "slug": "storyblok",
+  "name": "Storyblok",
+  "description": "Monitor Storyblok headless CMS spaces for content management and team access compliance",
+  "category": "Productivity",
+  "docsUrl": "https://www.storyblok.com/docs/api/management",
+  "baseUrl": "https://mapi.storyblok.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Storyblok at https://app.storyblok.com\n2. Click your avatar → My Account\n3. Go to Personal Access Tokens\n4. Generate a new token and enter it below",
+      "credentialFields": [
+        {
+          "label": "Personal Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Storyblok → My Account → Personal Access Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "storyblok_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Storyblok spaces for content infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "storyblok_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Storyblok space collaborators and their content access roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

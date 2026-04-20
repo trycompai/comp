@@ -1,0 +1,45 @@
+{
+  "slug": "flagsmith",
+  "name": "Flagsmith",
+  "description": "Open-source feature flag and remote config platform. Monitor organizations and feature states.",
+  "category": "Development",
+  "docsUrl": "https://docs.flagsmith.com",
+  "baseUrl": "https://api.flagsmith.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Flagsmith at https://app.flagsmith.com\n2. Go to Organisation Settings → API Keys\n3. Copy the Master API Key\n4. Paste it below\n\nNote: Server-side and Client-side keys won't work — you need the Master API Key.",
+      "credentialFields": [
+        {
+          "label": "Master API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Flagsmith → Organisation Settings → API Keys → Master API Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "flagsmith_app_availability",
+      "name": "Flagsmith App Availability",
+      "description": "Checks that the Flagsmith API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "flagsmith_employee_access",
+      "name": "Flagsmith Employee Access",
+      "description": "Verifies employee access to Flagsmith.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

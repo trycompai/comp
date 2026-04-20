@@ -1,0 +1,64 @@
+{
+  "slug": "sap-successfactors",
+  "name": "SAP SuccessFactors",
+  "description": "Monitor employee access, role-based permissions, and sync employee records from SAP SuccessFactors HCM platform",
+  "category": "HR & People",
+  "docsUrl": "https://help.sap.com/docs/successfactors-platform/sap-successfactors-api-reference-guide-odata-v2",
+  "baseUrl": "https://api.successfactors.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. In Admin Center, go to Manage OAuth2 Client Applications or ensure OData API Basic Authentication is enabled for your company\n2. Create or identify a technical API user\n3. Grant the user Role-Based Permissions: View Users, Employee Central HRIS OData API, Manage Permission Roles (read)\n4. Find your Company ID from the login page (the company field)\n5. Find your API URL based on your data center:\n   - US DC4: https://api4.successfactors.com\n   - EU DC2: https://api2.successfactors.eu\n   - DC8: https://api8.successfactors.com\n   - DC10: https://api10.successfactors.com\n   - See SAP Note 2215682 for all data center URLs",
+      "credentialFields": [
+        {
+          "label": "API Base URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your SuccessFactors API URL for your data center. Examples: US DC4 = https://api4.successfactors.com, EU DC2 = https://api2.successfactors.eu, DC8 = https://api8.successfactors.com. Find in Admin Center > Company Settings."
+        },
+        {
+          "label": "Company ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your SuccessFactors Company ID (visible on the login page or in Admin Center)."
+        },
+        {
+          "label": "API Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Technical user with OData API access and RBP permissions for User entity and RBP roles."
+        },
+        {
+          "label": "Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Password for the API user."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Verifies active employees in SAP SuccessFactors have complete profiles with email and name fields",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "role_based_access_controls",
+      "name": "Role-based Access Controls",
+      "description": "Verifies that Role-Based Permission (RBP) roles are configured in SAP SuccessFactors to enforce least-privilege access controls",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

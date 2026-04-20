@@ -1,0 +1,35 @@
+{
+  "slug": "gitbook",
+  "name": "GitBook",
+  "description": "Monitor GitBook documentation spaces and team access for knowledge management compliance",
+  "category": "Development",
+  "docsUrl": "https://developer.gitbook.com/",
+  "baseUrl": "https://api.gitbook.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "gitbook_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews GitBook organization members and their roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "gitbook_access_review",
+      "name": "Access Review Log",
+      "description": "Reviews GitBook spaces for documentation organization",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

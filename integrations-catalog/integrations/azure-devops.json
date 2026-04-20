@@ -1,0 +1,52 @@
+{
+  "slug": "azure-devops",
+  "name": "Azure DevOps",
+  "description": "Monitor Azure DevOps repositories, projects, and teams for development and access compliance",
+  "category": "Development",
+  "docsUrl": "https://learn.microsoft.com/en-us/rest/api/azure/devops/",
+  "baseUrl": "https://dev.azure.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Azure DevOps > User Settings (top right) > Personal access tokens\n2. Create a new token with Read permissions for Code, Project and Team\n3. Paste the token below",
+      "credentialFields": [
+        {
+          "label": "Personal Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Create a PAT in Azure DevOps > User Settings > Personal access tokens. No encoding needed - just paste the token."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "repos",
+      "name": "Code Changes",
+      "description": "Lists Azure DevOps Git repositories to verify code changes are tracked",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "projects",
+      "name": "Separation of Environments",
+      "description": "Verifies Azure DevOps projects exist for environment separation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "teams",
+      "name": "Access Review Log",
+      "description": "Reviews Azure DevOps teams for access review log",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

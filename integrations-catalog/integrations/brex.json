@@ -1,0 +1,28 @@
+{
+  "slug": "brex",
+  "name": "Brex",
+  "description": "Monitor Brex corporate card users and accounts for financial compliance",
+  "category": "Cloud",
+  "docsUrl": "https://developer.brex.com/docs/authentication/",
+  "baseUrl": "https://platform.brexapis.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "brex_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Brex users with corporate card access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

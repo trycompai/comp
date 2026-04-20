@@ -1,0 +1,35 @@
+{
+  "slug": "hashicorp-vault",
+  "name": "HashiCorp Vault",
+  "description": "Monitor HashiCorp Vault health, secrets engines, and policies for secrets management compliance",
+  "category": "Security",
+  "docsUrl": "https://developer.hashicorp.com/vault/api-docs",
+  "baseUrl": "https://vault.example.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "vault_secure_secrets",
+      "name": "Secure Secrets",
+      "description": "Verifies HashiCorp Vault is initialized, unsealed, and healthy",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "vault_encryption",
+      "name": "Encryption at Rest",
+      "description": "Verifies Vault has secrets engines configured for encryption at rest",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "tailscale",
+  "name": "Tailscale",
+  "description": "Monitor Tailscale network devices and ACL configuration for zero-trust network compliance",
+  "category": "Infrastructure",
+  "docsUrl": "https://tailscale.com/api",
+  "baseUrl": "https://api.tailscale.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "tailscale_secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies Tailscale network devices are authorized and recently seen",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "tailscale_infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all Tailscale network nodes for infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

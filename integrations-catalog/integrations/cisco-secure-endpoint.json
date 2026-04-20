@@ -1,0 +1,63 @@
+{
+  "slug": "cisco-secure-endpoint",
+  "name": "Cisco Secure Endpoint",
+  "description": "Monitor Cisco Secure Endpoint (formerly AMP for Endpoints) for device security, malware detection, and security policy compliance",
+  "category": "Security",
+  "docsUrl": "https://developer.cisco.com/docs/secure-endpoint/",
+  "baseUrl": "https://api.amp.cisco.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Region",
+          "type": "text",
+          "required": true,
+          "helpText": "API region - use 'api.amp.cisco.com' for North America, 'api.eu.amp.cisco.com' for Europe, or 'api.apjc.amp.cisco.com' for Asia Pacific"
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "3rd Party API Client ID from Cisco Secure Endpoint console"
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "API Key from Cisco Secure Endpoint console"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies that endpoint devices are properly protected and monitored by Cisco Secure Endpoint",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Reviews endpoint device inventory and connection status in Cisco Secure Endpoint",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies security event monitoring and policy enforcement across managed endpoints",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

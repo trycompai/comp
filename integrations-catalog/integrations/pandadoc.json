@@ -1,0 +1,45 @@
+{
+  "slug": "pandadoc",
+  "name": "PandaDoc",
+  "description": "PandaDoc document automation and e-signature platform",
+  "category": "Productivity",
+  "docsUrl": "https://developers.pandadoc.com/",
+  "baseUrl": "https://api.pandadoc.com/public/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to PandaDoc\n2. Go to Settings → Integrations → API\n3. Generate an API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "PandaDoc → Settings → Integrations → API → Generate API key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "pandadoc_employee_access",
+      "name": "Employee Access",
+      "description": "Lists PandaDoc workspace members to verify access is managed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "pandadoc_app_availability",
+      "name": "App Availability",
+      "description": "Verifies PandaDoc is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

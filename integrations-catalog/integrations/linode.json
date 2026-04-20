@@ -1,0 +1,35 @@
+{
+  "slug": "linode",
+  "name": "Linode",
+  "description": "Monitor Linode cloud instances and user access for infrastructure compliance",
+  "category": "Cloud",
+  "docsUrl": "https://www.linode.com/docs/api/",
+  "baseUrl": "https://api.linode.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "linode_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Linode cloud instances for infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "linode_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Linode account users and their access permissions",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

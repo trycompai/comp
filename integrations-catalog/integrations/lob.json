@@ -1,0 +1,45 @@
+{
+  "slug": "lob",
+  "name": "Lob",
+  "description": "Monitor Lob direct mail platform for address verification and postal compliance",
+  "category": "Productivity",
+  "docsUrl": "https://docs.lob.com/",
+  "baseUrl": "https://api.lob.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Lob at https://dashboard.lob.com\n2. Go to Settings → API Keys\n3. Copy your Live API key\n4. Base64 encode 'live_api_key:' (with trailing colon, no password)\n5. Enter the encoded value below",
+      "credentialFields": [
+        {
+          "label": "Encoded API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'live_api_key:' (with trailing colon). Found in Lob Dashboard → Settings → API Keys. Command: echo -n 'live_xxxx:' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "lob_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Lob API key access is active for direct mail operations",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "lob_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Lob platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

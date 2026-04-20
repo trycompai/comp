@@ -1,0 +1,35 @@
+{
+  "slug": "logdna",
+  "name": "Mezmo (LogDNA)",
+  "description": "Log management and observability platform.",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.mezmo.com/reference",
+  "baseUrl": "https://api.mezmo.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "logdna_app_availability",
+      "name": "Mezmo (LogDNA) App Availability",
+      "description": "Checks Mezmo (LogDNA) app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "logdna_employee_access",
+      "name": "Mezmo (LogDNA) Employee Access",
+      "description": "Checks Mezmo (LogDNA) employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

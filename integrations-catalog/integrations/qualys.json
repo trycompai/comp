@@ -1,0 +1,70 @@
+{
+  "slug": "qualys",
+  "name": "Qualys VMDR",
+  "description": "Vulnerability management, detection, and response platform. Monitor vulnerability scans, asset inventory, and security compliance.",
+  "category": "Security",
+  "docsUrl": "https://docs.qualys.com/en/vm/api/index.htm",
+  "baseUrl": "https://{{credentials.region}}/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Qualys account username"
+        },
+        {
+          "label": "Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Qualys account password"
+        },
+        {
+          "label": "API URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your service region (e.g., us, eu, ap)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "vulnerability_scan_coverage",
+      "name": "Vulnerability Scan Coverage",
+      "description": "Verify that vulnerability scans are being performed regularly on all assets",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "asset_inventory_completeness",
+      "name": "Asset Inventory Completeness",
+      "description": "Ensure all network assets are properly inventoried and tracked in Qualys",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "critical_vulnerability_response",
+      "name": "Critical Vulnerability Response",
+      "description": "Monitor response time and remediation status for critical vulnerabilities",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "security_audit_logging",
+      "name": "Security Audit Logging",
+      "description": "Ensure security events and administrative actions are properly logged and audited",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

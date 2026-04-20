@@ -1,0 +1,45 @@
+{
+  "slug": "terraform-cloud",
+  "name": "Terraform Cloud",
+  "description": "Monitor Terraform Cloud workspaces for infrastructure environment separation and inventory compliance",
+  "category": "Infrastructure",
+  "docsUrl": "https://developer.hashicorp.com/terraform/cloud-docs/api-docs",
+  "baseUrl": "https://app.terraform.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Terraform Cloud (app.terraform.io)\n2. Go to User Settings > Tokens\n3. Create an API token\n4. Paste the token below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Create a user or team API token in Terraform Cloud > User Settings > Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "workspaces_sep",
+      "name": "Separation of Environments",
+      "description": "Lists Terraform Cloud workspaces to verify environment separation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "workspaces_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Retrieves Terraform Cloud workspace inventory for infrastructure tracking",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

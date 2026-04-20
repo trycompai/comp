@@ -1,0 +1,38 @@
+{
+  "slug": "bonusly",
+  "name": "Bonusly",
+  "description": "Bonusly employee recognition and rewards platform",
+  "category": "HR & People",
+  "docsUrl": "https://bonusly.docs.apiary.io/",
+  "baseUrl": "https://bonus.ly/api/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Bonusly\n2. Go to Account Settings → API\n3. Generate an API token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Bonusly → Account Settings → API → Generate token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "bonusly_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Bonusly users to verify recognition platform access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

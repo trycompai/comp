@@ -1,0 +1,52 @@
+{
+  "slug": "auth0",
+  "name": "Auth0",
+  "description": "Monitor Auth0 MFA configuration, user access, and authentication logs for identity compliance",
+  "category": "Identity & Access",
+  "docsUrl": "https://auth0.com/docs/api/management/v2",
+  "baseUrl": "https://auth0.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Auth0 Dashboard > Applications > Create Application\n2. Select Machine to Machine\n3. Authorize the Auth0 Management API with read:users, read:logs, read:guardian_factors permissions\n4. Deploy and copy the access token\n5. Paste it below",
+      "credentialFields": [
+        {
+          "label": "Management API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Create a Machine-to-Machine app authorized for the Auth0 Management API"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "mfa_factors",
+      "name": "2FA",
+      "description": "Verifies that at least one MFA factor is enabled in Auth0 Guardian",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "user_access",
+      "name": "Employee Access",
+      "description": "Reviews Auth0 users to verify employee access is managed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "auth_logs",
+      "name": "Access Review Log",
+      "description": "Verifies Auth0 authentication logs are available for access review",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

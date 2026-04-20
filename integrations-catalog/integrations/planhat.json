@@ -1,0 +1,45 @@
+{
+  "slug": "planhat",
+  "name": "Planhat",
+  "description": "Monitor Planhat customer success platform for user access and account management compliance",
+  "category": "Productivity",
+  "docsUrl": "https://docs.planhat.com/",
+  "baseUrl": "https://api.planhat.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Planhat at https://app.planhat.com\n2. Go to Settings → Integrations → API\n3. Copy your API access token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Planhat Settings → Integrations → API"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "planhat_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Planhat team members and their customer success platform access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "planhat_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Planhat customer accounts are being tracked",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

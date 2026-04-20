@@ -1,0 +1,35 @@
+{
+  "slug": "adyen",
+  "name": "Adyen",
+  "description": "Global payment platform. Monitor API credential access and merchant configuration.",
+  "category": "Productivity",
+  "docsUrl": "https://docs.adyen.com/api-explorer/Management/3/overview",
+  "baseUrl": "https://management-live.adyen.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "adyen_app_availability",
+      "name": "Adyen App Availability",
+      "description": "Checks that the Adyen API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "adyen_employee_access",
+      "name": "Adyen Employee Access",
+      "description": "Verifies employee access to Adyen via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

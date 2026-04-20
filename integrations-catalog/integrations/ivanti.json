@@ -1,0 +1,69 @@
+{
+  "slug": "ivanti",
+  "name": "Ivanti Neurons",
+  "description": "Monitor managed device compliance, device inventory, and user access in Ivanti Neurons platform",
+  "category": "Security",
+  "docsUrl": "https://help.ivanti.com/ht/help/en_US/CLOUD/api/Shared-Content/welcome.htm",
+  "baseUrl": "https://www.ivanticloud.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Neurons Hostname",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Ivanti Neurons hostname from the Auth URL (e.g. nvuprd-sfc.ivanticloud.com). Found in Admin > App Registrations."
+        },
+        {
+          "label": "Tenant ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Ivanti Neurons Tenant ID from the Auth URL. Found in Admin > App Registrations."
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Client ID from your Ivanti Neurons App Registration."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Client Secret from your Ivanti Neurons App Registration. Only shown once during registration."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies that endpoint devices are managed and discovered by Ivanti Neurons",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Retrieves a complete inventory of all endpoint devices discovered by Ivanti Neurons",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all users discovered in Ivanti Neurons and flags disabled accounts",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

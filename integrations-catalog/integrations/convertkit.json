@@ -1,0 +1,35 @@
+{
+  "slug": "convertkit",
+  "name": "Kit (ConvertKit)",
+  "description": "Email marketing platform for creators. Monitor account access and subscriber management.",
+  "category": "Communication",
+  "docsUrl": "https://developers.kit.com/v4",
+  "baseUrl": "https://api.convertkit.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "convertkit_app_availability",
+      "name": "Kit (ConvertKit) App Availability",
+      "description": "Checks that the Kit (ConvertKit) API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "convertkit_employee_access",
+      "name": "Kit (ConvertKit) Employee Access",
+      "description": "Verifies employee access to Kit (ConvertKit) via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

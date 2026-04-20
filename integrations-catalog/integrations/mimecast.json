@@ -1,0 +1,71 @@
+{
+  "slug": "mimecast",
+  "name": "Mimecast",
+  "description": "Email security platform that protects organizations from email-based threats including phishing, malware, and spam",
+  "category": "Communication",
+  "docsUrl": "https://developer.services.mimecast.com/",
+  "baseUrl": "https://api.services.mimecast.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Mimecast Administration Console\n2. Navigate to Administration > Services > API and Platform Integrations\n3. Create a new API 2.0 Application\n4. Select required scopes: user/read, account/read\n5. Copy Client ID and Client Secret\n6. Enter your region (found in your Admin Console URL, e.g., 'US' for us1.mimecast.com)",
+      "credentialFields": [
+        {
+          "label": "Region",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Mimecast region (US, EU, DE, AU, ZA, etc.). Found in your Mimecast Admin Console URL."
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "OAuth Application Client ID from Mimecast Administration Console > Services > API and Platform Integrations"
+        },
+        {
+          "label": "Client Secret",
+          "type": "text",
+          "required": true,
+          "helpText": "OAuth Application Client Secret from your API application"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "domain_configuration",
+      "name": "Contact Information",
+      "description": "Verifies domain configuration and contact information for email security compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "user_access",
+      "name": "Employee Access",
+      "description": "Reviews Mimecast user accounts and access controls for employee verification",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "security_policies",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies anti-malware policies and security monitoring configurations are in place",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "security_awareness",
+      "name": "Employee Verification",
+      "description": "Checks security awareness training data for employee verification compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

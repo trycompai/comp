@@ -1,0 +1,38 @@
+{
+  "slug": "lumigo",
+  "name": "Lumigo",
+  "description": "Lumigo serverless and microservices monitoring platform",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.lumigo.io/",
+  "baseUrl": "https://api.lumigo.io/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Lumigo\n2. Go to Settings → Token\n3. Copy your API token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Lumigo → Settings → Token → Copy your token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "lumigo_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Lumigo serverless monitoring is active",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

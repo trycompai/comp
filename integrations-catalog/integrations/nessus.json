@@ -1,0 +1,58 @@
+{
+  "slug": "nessus",
+  "name": "Nessus / Tenable Vulnerability Management",
+  "description": "Cloud-based vulnerability scanning platform. Monitor scan status, track asset inventory, and review vulnerabilities by severity.",
+  "category": "Security",
+  "docsUrl": "https://developer.tenable.com/reference/navigate",
+  "baseUrl": "https://cloud.tenable.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Tenable.io at https://cloud.tenable.com\n2. Click your name in the upper-right corner\n3. Go to My Account > API Keys\n4. Click Generate to create a new key pair\n5. Copy the Access Key and Secret Key and paste them below",
+      "credentialFields": [
+        {
+          "label": "Access Key",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Tenable.io API access key. Found in Settings > My Account > API Keys."
+        },
+        {
+          "label": "Secret Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Tenable.io API secret key. Generated alongside the access key."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "nessus_scan_monitoring",
+      "name": "Tenable Scan Monitoring",
+      "description": "Verifies vulnerability scans are configured and reports their current status.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "nessus_asset_inventory",
+      "name": "Tenable Asset Inventory",
+      "description": "Verifies assets are tracked and scanned in Tenable Vulnerability Management.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "nessus_vulnerability_status",
+      "name": "Tenable Vulnerability Status",
+      "description": "Lists vulnerabilities by severity and flags critical and high findings.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

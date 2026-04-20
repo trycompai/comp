@@ -1,0 +1,45 @@
+{
+  "slug": "apollo",
+  "name": "Apollo.io",
+  "description": "Monitor Apollo.io sales intelligence platform for API access and contact data compliance",
+  "category": "Productivity",
+  "docsUrl": "https://apolloio.github.io/apollo-api-docs/",
+  "baseUrl": "https://api.apollo.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Apollo.io at https://app.apollo.io\n2. Go to Settings → Integrations → API\n3. Copy your API key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Apollo.io Settings → Integrations → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "apollo_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Apollo.io API credentials are active for sales intelligence access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "apollo_data_masking",
+      "name": "Data Masking",
+      "description": "Verifies Apollo.io contact data access is controlled via scoped API keys",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

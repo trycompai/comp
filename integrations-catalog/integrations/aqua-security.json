@@ -1,0 +1,45 @@
+{
+  "slug": "aqua-security",
+  "name": "Aqua Security",
+  "description": "Aqua Security cloud-native security platform",
+  "category": "Security",
+  "docsUrl": "https://docs.aquasec.com/",
+  "baseUrl": "https://api.cloudsploit.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to cloud.aquasec.com\n2. Settings → API Keys\n3. Create an API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Aqua Platform → Settings → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "aqua_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Aqua Security users",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "aqua_infra_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Verifies Aqua Security has scanned your infrastructure",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

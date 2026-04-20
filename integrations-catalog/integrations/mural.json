@@ -1,0 +1,45 @@
+{
+  "slug": "mural",
+  "name": "MURAL",
+  "description": "MURAL digital whiteboard for visual collaboration and brainstorming",
+  "category": "Productivity",
+  "docsUrl": "https://developers.mural.co",
+  "baseUrl": "https://app.mural.co",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to MURAL\n2. Go to My Account → Apps\n3. Create an app and generate an API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "MURAL → My Account → Apps → Create App → Generate API Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "mural_app_availability",
+      "name": "App Availability",
+      "description": "Verifies MURAL platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mural_employee_access",
+      "name": "Employee Access",
+      "description": "Lists MURAL workspace members",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

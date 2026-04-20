@@ -1,0 +1,51 @@
+{
+  "slug": "knowbe4",
+  "name": "KnowBe4",
+  "description": "Monitor KnowBe4 security awareness training campaigns and phishing simulation results for compliance.",
+  "category": "Security",
+  "docsUrl": "https://developer.knowbe4.com/rest/reporting",
+  "baseUrl": "https://us.api.knowbe4.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to KnowBe4 KSAT at https://training.knowbe4.com\n2. Go to Account Settings → API\n3. Click 'Generate New API Key' (Reporting API)\n4. Copy the key\n5. Determine your region from your KnowBe4 URL:\n   - US: us\n   - EU: eu\n   - Canada: ca\n   - UK: uk\n   - Germany: de\n6. Enter both values below\n\nNote: The Reporting API requires a Platinum or Diamond subscription. The User Event API key will NOT work.",
+      "credentialFields": [
+        {
+          "label": "Reporting API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in KnowBe4 KSAT console → Account Settings → API → Generate New API Key. Requires Platinum or Diamond subscription."
+        },
+        {
+          "label": "Region",
+          "type": "text",
+          "required": true,
+          "helpText": "Your KnowBe4 region prefix: 'us' for United States, 'eu' for Europe, 'ca' for Canada, 'uk' for United Kingdom, 'de' for Germany. Found in your KnowBe4 login URL."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "knowbe4_app_availability",
+      "name": "KnowBe4 App Availability",
+      "description": "Verifies that the KnowBe4 Reporting API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "knowbe4_employee_access",
+      "name": "KnowBe4 Employee Access",
+      "description": "Verifies employee access to KnowBe4 by checking account info and user count.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

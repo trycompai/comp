@@ -1,0 +1,70 @@
+{
+  "slug": "sonatype-nexus",
+  "name": "Sonatype Nexus Repository",
+  "description": "Monitor user access, role-based access controls, repository inventory, and security scanning configuration in Sonatype Nexus Repository Manager",
+  "category": "Development",
+  "docsUrl": "https://help.sonatype.com/en/automation.html",
+  "baseUrl": "https://nexus.example.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Server URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Full URL to your Nexus Repository instance (e.g., https://nexus.example.com)"
+        },
+        {
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Username with admin or nx-admin role for read access to security and repository APIs"
+        },
+        {
+          "label": "Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Password or user token for the above username"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "user_access",
+      "name": "Employee Access",
+      "description": "Lists all users in Nexus Repository and verifies each active user has roles assigned for proper access control",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "rbac",
+      "name": "Role-based Access Controls",
+      "description": "Reviews all roles configured in Nexus Repository and verifies each role has privileges or nested roles defined",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "repository_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all repositories configured in Nexus Repository Manager to provide a complete inventory of artifact stores",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "secure_code",
+      "name": "Secure Code",
+      "description": "Checks whether Sonatype IQ Server (Repository Firewall) is configured and enabled for vulnerability scanning of components, and verifies audit status on proxy repositories",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

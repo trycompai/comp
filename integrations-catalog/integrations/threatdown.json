@@ -1,0 +1,77 @@
+{
+  "slug": "threatdown",
+  "name": "ThreatDown (Malwarebytes)",
+  "description": "Endpoint security platform providing malware detection, ransomware protection, and device management capabilities",
+  "category": "Security",
+  "docsUrl": "https://api.malwarebytes.com/nebula/v1/docs",
+  "baseUrl": "https://api.malwarebytes.com/nebula/v1/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ThreatDown OAuth2 application client ID from the Integrate page in Nebula console"
+        },
+        {
+          "label": "Client Secret",
+          "type": "secret",
+          "required": true,
+          "helpText": "Your ThreatDown OAuth2 application client secret"
+        },
+        {
+          "label": "Account ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Nebula account ID (UUID format)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies that all endpoints have security agents installed and are reporting status",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Maintains an inventory of all managed endpoints",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that threat detection monitoring is active and recent detections are being tracked",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "encryption_at_rest",
+      "name": "Encryption at Rest",
+      "description": "Verifies device encryption policies are configured and enforced",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "incident_response",
+      "name": "Incident Response",
+      "description": "Verifies that security incidents are being detected and properly responded to",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

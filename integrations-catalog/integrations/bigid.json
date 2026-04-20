@@ -1,0 +1,63 @@
+{
+  "slug": "bigid",
+  "name": "BigID",
+  "description": "Monitor BigID data privacy and discovery platform for data source inventory, user access, and scan status",
+  "category": "Security",
+  "docsUrl": "https://docs.bigid.com",
+  "baseUrl": "https://bigid.example.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "BigID Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Full URL of your BigID instance (e.g., https://your-company.bigid.cloud)"
+        },
+        {
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "helpText": "BigID admin username for API access"
+        },
+        {
+          "label": "Password",
+          "type": "password",
+          "required": true,
+          "helpText": "BigID password for the admin user"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "data_source_inventory",
+      "name": "Systems Description",
+      "description": "Retrieves data source connections from BigID to verify data source inventory and classification coverage",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "platform_users",
+      "name": "Employee Access",
+      "description": "Retrieves BigID platform users to verify access controls and user management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "scan_status",
+      "name": "Monitoring & Alerting",
+      "description": "Retrieves BigID scan status to verify data discovery scans are running and completing successfully",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

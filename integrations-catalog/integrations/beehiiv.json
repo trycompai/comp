@@ -1,0 +1,35 @@
+{
+  "slug": "beehiiv",
+  "name": "beehiiv",
+  "description": "Newsletter platform for creators. Monitor publication access and management.",
+  "category": "Communication",
+  "docsUrl": "https://developers.beehiiv.com/docs/v2",
+  "baseUrl": "https://api.beehiiv.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "beehiiv_app_availability",
+      "name": "beehiiv App Availability",
+      "description": "Checks that the beehiiv API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "beehiiv_employee_access",
+      "name": "beehiiv Employee Access",
+      "description": "Verifies employee access to beehiiv via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

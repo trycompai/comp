@@ -1,0 +1,35 @@
+{
+  "slug": "checkr",
+  "name": "Checkr",
+  "description": "Monitor Checkr background check candidates for HR verification compliance",
+  "category": "HR & People",
+  "docsUrl": "https://docs.checkr.com/reference",
+  "baseUrl": "https://api.checkr.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "checkr_employee_verification",
+      "name": "Employee Verification",
+      "description": "Verifies Checkr is being used for background check screening",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "checkr_employee_descriptions",
+      "name": "Employee Descriptions",
+      "description": "Verifies Checkr screening packages are configured for role-based checks",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

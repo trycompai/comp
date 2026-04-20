@@ -1,0 +1,63 @@
+{
+  "slug": "delinea",
+  "name": "Delinea Secret Server",
+  "description": "Monitor privileged access management with Delinea Secret Server - verify secure secrets storage, user access controls, and role-based permissions",
+  "category": "Security",
+  "docsUrl": "https://docs.delinea.com/online-help/secret-server/api-scripting/rest-api/index.htm",
+  "baseUrl": "https://placeholder.secretservercloud.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Secret Server URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Secret Server base URL, e.g. https://mycompany.secretservercloud.com or https://ss.mycompany.com/SecretServer"
+        },
+        {
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "helpText": "API user account username with View permissions on secrets, users, roles, and groups"
+        },
+        {
+          "label": "Password",
+          "type": "password",
+          "required": true,
+          "helpText": "API user account password"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "secure_secrets",
+      "name": "Secure Secrets",
+      "description": "Verifies that secrets in Delinea Secret Server are actively managed and healthy",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "user_access",
+      "name": "Employee Access",
+      "description": "Reviews user accounts in Delinea Secret Server for proper access controls",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "rbac",
+      "name": "Role-based Access Controls",
+      "description": "Reviews roles and groups in Delinea Secret Server for proper role-based access controls",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

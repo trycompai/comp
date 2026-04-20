@@ -1,0 +1,35 @@
+{
+  "slug": "fastly",
+  "name": "Fastly",
+  "description": "Monitor Fastly CDN and WAF services for TLS configuration and availability compliance",
+  "category": "Infrastructure",
+  "docsUrl": "https://developer.fastly.com/reference/api/",
+  "baseUrl": "https://api.fastly.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "fastly_tls",
+      "name": "TLS / HTTPS",
+      "description": "Verifies Fastly services are active and serving traffic over TLS",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "fastly_app_availability",
+      "name": "App Availability",
+      "description": "Reviews Fastly service health and version configuration",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

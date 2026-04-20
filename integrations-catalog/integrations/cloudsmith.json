@@ -1,0 +1,35 @@
+{
+  "slug": "cloudsmith",
+  "name": "Cloudsmith",
+  "description": "Monitor Cloudsmith artifact repository access and package security for software supply chain compliance",
+  "category": "Development",
+  "docsUrl": "https://help.cloudsmith.io/docs/api",
+  "baseUrl": "https://api.cloudsmith.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "cloudsmith_secure_code",
+      "name": "Secure Code",
+      "description": "Verifies Cloudsmith organizations are configured for secure package distribution",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "cloudsmith_secure_secrets",
+      "name": "Secure Secrets",
+      "description": "Verifies Cloudsmith account is active and artifact signing is configured",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

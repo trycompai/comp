@@ -1,0 +1,57 @@
+{
+  "slug": "duo",
+  "name": "Duo Security",
+  "description": "Multi-factor authentication platform. Monitor MFA enrollment, user access, and authentication policies.",
+  "category": "Identity & Access",
+  "docsUrl": "https://duo.com/docs/adminapi",
+  "baseUrl": "https://api.duosecurity.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Duo Admin Panel\n2. Go to Applications → Protect an Application\n3. Find 'Admin API' and click 'Protect'\n4. Grant 'Read' permission for the integration\n5. Copy the API Hostname, Integration Key, and Secret Key\n6. Paste all values below",
+      "credentialFields": [
+        {
+          "label": "API Hostname",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Duo Admin Panel → Applications → your Admin API app. Format: api-XXXXXXXX.duosecurity.com"
+        },
+        {
+          "label": "Integration Key",
+          "type": "text",
+          "required": true,
+          "helpText": "From the Admin API application in Duo Admin Panel."
+        },
+        {
+          "label": "Secret Key",
+          "type": "password",
+          "required": true,
+          "helpText": "From the Admin API application in Duo Admin Panel."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "duo_app_availability",
+      "name": "Duo Security App Availability",
+      "description": "Verifies Duo Admin API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "duo_mfa_compliance",
+      "name": "Duo MFA Compliance",
+      "description": "Verifies MFA enrollment status across users.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

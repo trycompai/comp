@@ -1,0 +1,35 @@
+{
+  "slug": "lattice",
+  "name": "Lattice",
+  "description": "Monitor Lattice users and team structure for HR and people management compliance",
+  "category": "HR & People",
+  "docsUrl": "https://developers.latticehq.com/",
+  "baseUrl": "https://api.latticehq.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "lattice_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Lattice users and verifies active employee access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "lattice_employee_descriptions",
+      "name": "Employee Descriptions",
+      "description": "Verifies Lattice employees have job titles and departments defined",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

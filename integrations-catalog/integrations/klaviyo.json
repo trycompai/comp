@@ -1,0 +1,35 @@
+{
+  "slug": "klaviyo",
+  "name": "Klaviyo",
+  "description": "Monitor Klaviyo lists and profile data handling for marketing data compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.klaviyo.com/en/reference/api_overview",
+  "baseUrl": "https://a.klaviyo.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "klaviyo_contact_information",
+      "name": "Contact Information",
+      "description": "Verifies Klaviyo lists are configured for subscriber management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "klaviyo_data_masking",
+      "name": "Data Masking",
+      "description": "Verifies Klaviyo profile data is properly managed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

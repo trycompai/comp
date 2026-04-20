@@ -1,0 +1,51 @@
+{
+  "slug": "vonage",
+  "name": "Vonage",
+  "description": "Vonage (Nexmo) Communications APIs for SMS, voice, video, and messaging",
+  "category": "Communication",
+  "docsUrl": "https://developer.vonage.com",
+  "baseUrl": "https://rest.nexmo.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to dashboard.nexmo.com\n2. Go to API Settings\n3. Copy your API Key and API Secret\n4. Paste them below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "text",
+          "required": true,
+          "helpText": "Vonage API Dashboard → API Settings → API Key"
+        },
+        {
+          "label": "API Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Vonage API Dashboard → API Settings → API Secret"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "vonage_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Vonage Communications API account is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "vonage_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Vonage account credentials are valid and access is managed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

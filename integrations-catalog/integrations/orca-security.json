@@ -1,0 +1,45 @@
+{
+  "slug": "orca-security",
+  "name": "Orca Security",
+  "description": "Monitor Orca Security cloud security posture management for vulnerability and compliance findings",
+  "category": "Security",
+  "docsUrl": "https://docs.orcasecurity.io/reference/introduction",
+  "baseUrl": "https://app.us.orcasecurity.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Orca Security at https://app.us.orcasecurity.io\n2. Go to Settings → API Tokens\n3. Create a new token with read access\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Orca Security Settings → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "orca_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Orca Security is actively scanning cloud environments for threats",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "orca_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Orca Security users with access to cloud security findings",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

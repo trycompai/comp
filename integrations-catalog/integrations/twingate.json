@@ -1,0 +1,65 @@
+{
+  "slug": "twingate",
+  "name": "Twingate",
+  "description": "Monitor Twingate zero-trust network access: user access, device trust, groups, remote networks, and security policies",
+  "category": "Security",
+  "docsUrl": "https://www.twingate.com/docs/api-overview",
+  "baseUrl": "https://placeholder.twingate.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Twingate Network Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Twingate network subdomain. If your URL is https://mycompany.twingate.com, enter 'mycompany'."
+        },
+        {
+          "label": "API Key",
+          "type": "text",
+          "required": true,
+          "helpText": "Generate an API key in the Twingate Admin Console: Settings > API > Generate Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "twingate_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all Twingate users and their access status. Flags disabled or inactive accounts that still exist.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "twingate_rbac",
+      "name": "Role-based Access Controls",
+      "description": "Verifies that Twingate groups are configured with proper access controls. Lists group types, active status, and member counts.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "twingate_secure_devices",
+      "name": "Secure Devices",
+      "description": "Checks device trust status and active state across all Twingate devices.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "twingate_infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all Twingate remote networks with connector and resource counts for infrastructure inventory evidence.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

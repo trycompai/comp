@@ -1,0 +1,35 @@
+{
+  "slug": "digitalocean",
+  "name": "DigitalOcean",
+  "description": "Monitor DigitalOcean droplets and infrastructure resources for cloud compliance",
+  "category": "Cloud",
+  "docsUrl": "https://docs.digitalocean.com/reference/api/api-reference/",
+  "baseUrl": "https://api.digitalocean.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "do_app_availability",
+      "name": "App Availability",
+      "description": "Verifies DigitalOcean droplets are active and running",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "do_infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all DigitalOcean projects for infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

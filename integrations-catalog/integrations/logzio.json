@@ -1,0 +1,51 @@
+{
+  "slug": "logzio",
+  "name": "Logz.io",
+  "description": "Monitor Logz.io log management and SIEM for observability and security compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.logz.io/api/",
+  "baseUrl": "https://api.logz.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Logz.io\n2. Go to Settings → Manage tokens → API tokens\n3. Create a new API token\n4. Select your region and enter the token below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Logz.io Settings → Manage tokens → API tokens"
+        },
+        {
+          "label": "Region Base URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Logz.io API base URL: api.logz.io (US), api-eu.logz.io (EU), api-nl.logz.io (EU2), api-ca.logz.io (CA)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "logzio_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Logz.io alerts are configured for log-based monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "logzio_utility_monitoring",
+      "name": "Utility Monitoring",
+      "description": "Verifies Logz.io is actively receiving log data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

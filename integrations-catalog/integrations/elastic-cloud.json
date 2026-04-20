@@ -1,0 +1,45 @@
+{
+  "slug": "elastic-cloud",
+  "name": "Elastic Cloud",
+  "description": "Managed Elasticsearch and Kibana. Monitor deployments and cluster health.",
+  "category": "Cloud",
+  "docsUrl": "https://www.elastic.co/docs/api/doc/cloud",
+  "baseUrl": "https://api.elastic-cloud.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Elastic Cloud at https://cloud.elastic.co\n2. Go to Organization → API keys\n3. Click 'Create API key'\n4. Select 'Organization viewer' role (minimum)\n5. Copy the generated key and paste below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Elastic Cloud console → Organization → API keys. Create an API key with at least 'Organization viewer' role."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "elastic_cloud_app_availability",
+      "name": "Elastic Cloud App Availability",
+      "description": "Checks that the Elastic Cloud API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "elastic_cloud_employee_access",
+      "name": "Elastic Cloud Employee Access",
+      "description": "Verifies employee access to Elastic Cloud.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

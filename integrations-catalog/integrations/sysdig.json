@@ -1,0 +1,51 @@
+{
+  "slug": "sysdig",
+  "name": "Sysdig",
+  "description": "Monitor Sysdig cloud security platform for container and cloud workload security compliance",
+  "category": "Security",
+  "docsUrl": "https://docs.sysdig.com/en/docs/developer-tools/rest-api/",
+  "baseUrl": "https://app.sysdigcloud.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Sysdig\n2. Go to Settings → User Profile\n3. Copy your Sysdig API Token\n4. Find your region URL from the Sysdig docs\n5. Enter both below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Sysdig → Settings → User Profile → Sysdig API Token"
+        },
+        {
+          "label": "API URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Sysdig regional API URL. US East: https://us2.app.sysdig.com, US West: https://app.sysdigcloud.com, EU: https://eu1.app.sysdig.com"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "sysdig_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Sysdig account is active for cloud security monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sysdig_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Sysdig alert policies are configured for cloud security events",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

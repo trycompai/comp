@@ -1,0 +1,4879 @@
+{
+  "generatedAt": "2026-04-20T21:22:12.175Z",
+  "total": 540,
+  "sourceCount": 540,
+  "uniqueSlugs": 540,
+  "byCategory": {
+    "HR & People": 61,
+    "Security": 120,
+    "Productivity": 111,
+    "Infrastructure": 29,
+    "Communication": 46,
+    "Cloud": 53,
+    "Development": 52,
+    "Monitoring": 48,
+    "Identity & Access": 20
+  },
+  "integrations": [
+    {
+      "slug": "15five",
+      "name": "15Five",
+      "category": "HR & People",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/15five.json"
+    },
+    {
+      "slug": "1password",
+      "name": "1Password",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/1password.json"
+    },
+    {
+      "slug": "360learning",
+      "name": "360Learning",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/360learning.json"
+    },
+    {
+      "slug": "abnormal-security",
+      "name": "Abnormal Security",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/abnormal-security.json"
+    },
+    {
+      "slug": "absolute",
+      "name": "Absolute",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/absolute.json"
+    },
+    {
+      "slug": "absorb-lms",
+      "name": "Absorb LMS",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/absorb-lms.json"
+    },
+    {
+      "slug": "acronis-cyber-protect-cloud",
+      "name": "Acronis Cyber Protect Cloud",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/acronis-cyber-protect-cloud.json"
+    },
+    {
+      "slug": "action1",
+      "name": "Action1",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/action1.json"
+    },
+    {
+      "slug": "activecampaign",
+      "name": "ActiveCampaign",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/activecampaign.json"
+    },
+    {
+      "slug": "addigy",
+      "name": "Addigy",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/addigy.json"
+    },
+    {
+      "slug": "adp",
+      "name": "ADP",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/adp.json"
+    },
+    {
+      "slug": "adyen",
+      "name": "Adyen",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/adyen.json"
+    },
+    {
+      "slug": "affinity",
+      "name": "Affinity",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/affinity.json"
+    },
+    {
+      "slug": "aha",
+      "name": "Aha!",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/aha.json"
+    },
+    {
+      "slug": "aikido",
+      "name": "Aikido Security",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/aikido.json"
+    },
+    {
+      "slug": "airbyte",
+      "name": "Airbyte",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/airbyte.json"
+    },
+    {
+      "slug": "aircall",
+      "name": "Aircall",
+      "category": "Communication",
+      "authType": "basic",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/aircall.json"
+    },
+    {
+      "slug": "airtable",
+      "name": "Airtable",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/airtable.json"
+    },
+    {
+      "slug": "aiven",
+      "name": "Aiven",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/aiven.json"
+    },
+    {
+      "slug": "akamai",
+      "name": "Akamai",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/akamai.json"
+    },
+    {
+      "slug": "alexishr",
+      "name": "AlexisHR",
+      "category": "HR & People",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/alexishr.json"
+    },
+    {
+      "slug": "algolia",
+      "name": "Algolia",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/algolia.json"
+    },
+    {
+      "slug": "amplitude",
+      "name": "Amplitude",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/amplitude.json"
+    },
+    {
+      "slug": "anodot",
+      "name": "Anodot",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/anodot.json"
+    },
+    {
+      "slug": "anthropic",
+      "name": "Anthropic",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/anthropic.json"
+    },
+    {
+      "slug": "apiiro",
+      "name": "Apiiro",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/apiiro.json"
+    },
+    {
+      "slug": "apollo",
+      "name": "Apollo.io",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/apollo.json"
+    },
+    {
+      "slug": "apple-business-manager",
+      "name": "Apple Business Manager",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/apple-business-manager.json"
+    },
+    {
+      "slug": "aqua-security",
+      "name": "Aqua Security",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/aqua-security.json"
+    },
+    {
+      "slug": "asana",
+      "name": "Asana",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/asana.json"
+    },
+    {
+      "slug": "ashby",
+      "name": "Ashby",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/ashby.json"
+    },
+    {
+      "slug": "atera",
+      "name": "Atera",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/atera.json"
+    },
+    {
+      "slug": "attio",
+      "name": "Attio",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/attio.json"
+    },
+    {
+      "slug": "auth0",
+      "name": "Auth0",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/auth0.json"
+    },
+    {
+      "slug": "automox",
+      "name": "Automox",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/automox.json"
+    },
+    {
+      "slug": "auvik",
+      "name": "Auvik",
+      "category": "Monitoring",
+      "authType": "basic",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/auvik.json"
+    },
+    {
+      "slug": "axiom",
+      "name": "Axiom",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/axiom.json"
+    },
+    {
+      "slug": "axonius",
+      "name": "Axonius",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": true,
+      "file": "integrations/axonius.json"
+    },
+    {
+      "slug": "azure-devops",
+      "name": "Azure DevOps",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/azure-devops.json"
+    },
+    {
+      "slug": "backblaze",
+      "name": "Backblaze B2",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/backblaze.json"
+    },
+    {
+      "slug": "bamboohr",
+      "name": "BambooHR",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/bamboohr.json"
+    },
+    {
+      "slug": "baremetrics",
+      "name": "Baremetrics",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/baremetrics.json"
+    },
+    {
+      "slug": "barracuda-email-gateway-defense",
+      "name": "Barracuda Email Gateway Defense",
+      "category": "Communication",
+      "authType": "oauth2",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/barracuda-email-gateway-defense.json"
+    },
+    {
+      "slug": "basecamp",
+      "name": "Basecamp",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/basecamp.json"
+    },
+    {
+      "slug": "baseten",
+      "name": "Baseten",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/baseten.json"
+    },
+    {
+      "slug": "beamer",
+      "name": "Beamer",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/beamer.json"
+    },
+    {
+      "slug": "beehiiv",
+      "name": "beehiiv",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/beehiiv.json"
+    },
+    {
+      "slug": "better-uptime",
+      "name": "Better Stack",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/better-uptime.json"
+    },
+    {
+      "slug": "betterstack",
+      "name": "BetterStack",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/betterstack.json"
+    },
+    {
+      "slug": "beyond-trust",
+      "name": "BeyondTrust",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/beyond-trust.json"
+    },
+    {
+      "slug": "bigid",
+      "name": "BigID",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/bigid.json"
+    },
+    {
+      "slug": "bird",
+      "name": "Bird",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/bird.json"
+    },
+    {
+      "slug": "bitbucket",
+      "name": "Bitbucket",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/bitbucket.json"
+    },
+    {
+      "slug": "bitdefender-gravityzone",
+      "name": "Bitdefender GravityZone",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/bitdefender-gravityzone.json"
+    },
+    {
+      "slug": "bitsight",
+      "name": "Bitsight",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/bitsight.json"
+    },
+    {
+      "slug": "bitwarden",
+      "name": "Bitwarden",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/bitwarden.json"
+    },
+    {
+      "slug": "bonusly",
+      "name": "Bonusly",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/bonusly.json"
+    },
+    {
+      "slug": "box",
+      "name": "Box",
+      "category": "Cloud",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/box.json"
+    },
+    {
+      "slug": "braze",
+      "name": "Braze",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/braze.json"
+    },
+    {
+      "slug": "breathe-hr",
+      "name": "Breathe HR",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/breathe-hr.json"
+    },
+    {
+      "slug": "brevo",
+      "name": "Brevo",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/brevo.json"
+    },
+    {
+      "slug": "brex",
+      "name": "Brex",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/brex.json"
+    },
+    {
+      "slug": "browserstack",
+      "name": "BrowserStack",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/browserstack.json"
+    },
+    {
+      "slug": "buddy",
+      "name": "Buddy",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/buddy.json"
+    },
+    {
+      "slug": "bugsnag",
+      "name": "Bugsnag",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/bugsnag.json"
+    },
+    {
+      "slug": "buildkite",
+      "name": "Buildkite",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/buildkite.json"
+    },
+    {
+      "slug": "bunny-net",
+      "name": "Bunny.net",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/bunny-net.json"
+    },
+    {
+      "slug": "cal-com",
+      "name": "Cal.com",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/cal-com.json"
+    },
+    {
+      "slug": "calendly",
+      "name": "Calendly",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/calendly.json"
+    },
+    {
+      "slug": "canny",
+      "name": "Canny",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/canny.json"
+    },
+    {
+      "slug": "canva",
+      "name": "Canva",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/canva.json"
+    },
+    {
+      "slug": "carbon-black",
+      "name": "Carbon Black",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/carbon-black.json"
+    },
+    {
+      "slug": "cato-networks",
+      "name": "Cato Networks",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/cato-networks.json"
+    },
+    {
+      "slug": "census",
+      "name": "Census",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/census.json"
+    },
+    {
+      "slug": "ceridian-dayforce",
+      "name": "Ceridian Dayforce",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/ceridian-dayforce.json"
+    },
+    {
+      "slug": "certn",
+      "name": "Certn",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/certn.json"
+    },
+    {
+      "slug": "chainguard",
+      "name": "Chainguard",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/chainguard.json"
+    },
+    {
+      "slug": "chameleon",
+      "name": "Chameleon",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/chameleon.json"
+    },
+    {
+      "slug": "chargebee",
+      "name": "Chargebee",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/chargebee.json"
+    },
+    {
+      "slug": "charthop",
+      "name": "ChartHop",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/charthop.json"
+    },
+    {
+      "slug": "chartmogul",
+      "name": "ChartMogul",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/chartmogul.json"
+    },
+    {
+      "slug": "checkly",
+      "name": "Checkly",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/checkly.json"
+    },
+    {
+      "slug": "checkmarx",
+      "name": "Checkmarx",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/checkmarx.json"
+    },
+    {
+      "slug": "checkr",
+      "name": "Checkr",
+      "category": "HR & People",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/checkr.json"
+    },
+    {
+      "slug": "circleci",
+      "name": "CircleCI",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/circleci.json"
+    },
+    {
+      "slug": "cisco-meraki",
+      "name": "Cisco Meraki",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/cisco-meraki.json"
+    },
+    {
+      "slug": "cisco-secure-endpoint",
+      "name": "Cisco Secure Endpoint",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/cisco-secure-endpoint.json"
+    },
+    {
+      "slug": "cisco-umbrella",
+      "name": "Cisco Umbrella",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/cisco-umbrella.json"
+    },
+    {
+      "slug": "civo",
+      "name": "Civo",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/civo.json"
+    },
+    {
+      "slug": "clearbit",
+      "name": "Clearbit",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/clearbit.json"
+    },
+    {
+      "slug": "clerk",
+      "name": "Clerk",
+      "category": "Identity & Access",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/clerk.json"
+    },
+    {
+      "slug": "clickhouse",
+      "name": "ClickHouse Cloud",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/clickhouse.json"
+    },
+    {
+      "slug": "clickup",
+      "name": "ClickUp",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/clickup.json"
+    },
+    {
+      "slug": "clockify",
+      "name": "Clockify",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/clockify.json"
+    },
+    {
+      "slug": "close",
+      "name": "Close",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/close.json"
+    },
+    {
+      "slug": "close-crm",
+      "name": "Close CRM",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/close-crm.json"
+    },
+    {
+      "slug": "cloudflare",
+      "name": "Cloudflare",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/cloudflare.json"
+    },
+    {
+      "slug": "cloudinary",
+      "name": "Cloudinary",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/cloudinary.json"
+    },
+    {
+      "slug": "cloudsmith",
+      "name": "Cloudsmith",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/cloudsmith.json"
+    },
+    {
+      "slug": "cobalt",
+      "name": "Cobalt",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/cobalt.json"
+    },
+    {
+      "slug": "cockroachdb",
+      "name": "CockroachDB",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/cockroachdb.json"
+    },
+    {
+      "slug": "coda",
+      "name": "Coda",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/coda.json"
+    },
+    {
+      "slug": "codacy",
+      "name": "Codacy",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/codacy.json"
+    },
+    {
+      "slug": "code42-incydr",
+      "name": "Code42 Incydr",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/code42-incydr.json"
+    },
+    {
+      "slug": "codecov",
+      "name": "Codecov",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/codecov.json"
+    },
+    {
+      "slug": "codefresh",
+      "name": "Codefresh",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/codefresh.json"
+    },
+    {
+      "slug": "cohere",
+      "name": "Cohere",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/cohere.json"
+    },
+    {
+      "slug": "cohesity",
+      "name": "Cohesity",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/cohesity.json"
+    },
+    {
+      "slug": "commvault",
+      "name": "Commvault",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/commvault.json"
+    },
+    {
+      "slug": "conductorone",
+      "name": "ConductorOne",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": true,
+      "file": "integrations/conductorone.json"
+    },
+    {
+      "slug": "confluence",
+      "name": "Confluence",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/confluence.json"
+    },
+    {
+      "slug": "confluent-cloud",
+      "name": "Confluent Cloud",
+      "category": "Infrastructure",
+      "authType": "basic",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/confluent-cloud.json"
+    },
+    {
+      "slug": "connectwise-manage",
+      "name": "ConnectWise Manage",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/connectwise-manage.json"
+    },
+    {
+      "slug": "contentful",
+      "name": "Contentful",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/contentful.json"
+    },
+    {
+      "slug": "contentstack",
+      "name": "Contentstack",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/contentstack.json"
+    },
+    {
+      "slug": "contrast-security",
+      "name": "Contrast Security",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/contrast-security.json"
+    },
+    {
+      "slug": "convex",
+      "name": "Convex",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/convex.json"
+    },
+    {
+      "slug": "coolify",
+      "name": "Coolify",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/coolify.json"
+    },
+    {
+      "slug": "copper",
+      "name": "Copper CRM",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/copper.json"
+    },
+    {
+      "slug": "coralogix",
+      "name": "Coralogix",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/coralogix.json"
+    },
+    {
+      "slug": "cornerstone",
+      "name": "Cornerstone OnDemand",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/cornerstone.json"
+    },
+    {
+      "slug": "cortex-xdr",
+      "name": "Cortex XDR",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/cortex-xdr.json"
+    },
+    {
+      "slug": "coupa",
+      "name": "Coupa",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/coupa.json"
+    },
+    {
+      "slug": "courier",
+      "name": "Courier",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/courier.json"
+    },
+    {
+      "slug": "coursera-business",
+      "name": "Coursera for Business",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/coursera-business.json"
+    },
+    {
+      "slug": "cronitor",
+      "name": "Cronitor",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/cronitor.json"
+    },
+    {
+      "slug": "crowdstrike",
+      "name": "CrowdStrike Falcon",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/crowdstrike.json"
+    },
+    {
+      "slug": "logscale",
+      "name": "CrowdStrike LogScale",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/logscale.json"
+    },
+    {
+      "slug": "customer-io",
+      "name": "Customer.io",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/customer-io.json"
+    },
+    {
+      "slug": "cyberark",
+      "name": "CyberArk",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/cyberark.json"
+    },
+    {
+      "slug": "cyberark-identity",
+      "name": "CyberArk Identity",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/cyberark-identity.json"
+    },
+    {
+      "slug": "cycode",
+      "name": "Cycode",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/cycode.json"
+    },
+    {
+      "slug": "daily-co",
+      "name": "Daily",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/daily-co.json"
+    },
+    {
+      "slug": "darktrace",
+      "name": "Darktrace",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/darktrace.json"
+    },
+    {
+      "slug": "darwinbox",
+      "name": "Darwinbox",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/darwinbox.json"
+    },
+    {
+      "slug": "databricks",
+      "name": "Databricks",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/databricks.json"
+    },
+    {
+      "slug": "datadog",
+      "name": "Datadog",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/datadog.json"
+    },
+    {
+      "slug": "datto",
+      "name": "Datto",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/datto.json"
+    },
+    {
+      "slug": "datto-rmm",
+      "name": "Datto RMM",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/datto-rmm.json"
+    },
+    {
+      "slug": "dbt-cloud",
+      "name": "dbt Cloud",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/dbt-cloud.json"
+    },
+    {
+      "slug": "deel",
+      "name": "Deel",
+      "category": "HR & People",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/deel.json"
+    },
+    {
+      "slug": "deepgram",
+      "name": "Deepgram",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/deepgram.json"
+    },
+    {
+      "slug": "delinea",
+      "name": "Delinea Secret Server",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/delinea.json"
+    },
+    {
+      "slug": "deputy",
+      "name": "Deputy",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/deputy.json"
+    },
+    {
+      "slug": "descope",
+      "name": "Descope",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/descope.json"
+    },
+    {
+      "slug": "detectify",
+      "name": "Detectify",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/detectify.json"
+    },
+    {
+      "slug": "dialpad",
+      "name": "Dialpad",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/dialpad.json"
+    },
+    {
+      "slug": "digitalocean",
+      "name": "DigitalOcean",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/digitalocean.json"
+    },
+    {
+      "slug": "discord",
+      "name": "Discord",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/discord.json"
+    },
+    {
+      "slug": "dixa",
+      "name": "Dixa",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/dixa.json"
+    },
+    {
+      "slug": "docebo",
+      "name": "Docebo",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/docebo.json"
+    },
+    {
+      "slug": "docker-hub",
+      "name": "Docker Hub",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/docker-hub.json"
+    },
+    {
+      "slug": "docusign",
+      "name": "DocuSign",
+      "category": "Productivity",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/docusign.json"
+    },
+    {
+      "slug": "domo",
+      "name": "Domo",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/domo.json"
+    },
+    {
+      "slug": "doppler",
+      "name": "Doppler",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/doppler.json"
+    },
+    {
+      "slug": "drift",
+      "name": "Drift",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/drift.json"
+    },
+    {
+      "slug": "drip",
+      "name": "Drip",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/drip.json"
+    },
+    {
+      "slug": "dropbox-business",
+      "name": "Dropbox Business",
+      "category": "Productivity",
+      "authType": "oauth2",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/dropbox-business.json"
+    },
+    {
+      "slug": "dropbox-sign",
+      "name": "Dropbox Sign",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/dropbox-sign.json"
+    },
+    {
+      "slug": "hellosign",
+      "name": "Dropbox Sign",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/hellosign.json"
+    },
+    {
+      "slug": "druva",
+      "name": "Druva",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/druva.json"
+    },
+    {
+      "slug": "dub",
+      "name": "Dub.co",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/dub.json"
+    },
+    {
+      "slug": "duo-security",
+      "name": "Duo Security",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/duo-security.json"
+    },
+    {
+      "slug": "duo",
+      "name": "Duo Security",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/duo.json"
+    },
+    {
+      "slug": "dynamics-365",
+      "name": "Dynamics 365",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/dynamics-365.json"
+    },
+    {
+      "slug": "dynatrace",
+      "name": "Dynatrace",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/dynatrace.json"
+    },
+    {
+      "slug": "egnyte",
+      "name": "Egnyte",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/egnyte.json"
+    },
+    {
+      "slug": "elastic-cloud",
+      "name": "Elastic Cloud",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/elastic-cloud.json"
+    },
+    {
+      "slug": "elastic",
+      "name": "Elastic Cloud",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/elastic.json"
+    },
+    {
+      "slug": "employment-hero",
+      "name": "Employment Hero",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/employment-hero.json"
+    },
+    {
+      "slug": "endor-labs",
+      "name": "Endor Labs",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/endor-labs.json"
+    },
+    {
+      "slug": "env0",
+      "name": "env0",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/env0.json"
+    },
+    {
+      "slug": "envoy",
+      "name": "Envoy",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/envoy.json"
+    },
+    {
+      "slug": "eset-protect",
+      "name": "ESET Protect",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/eset-protect.json"
+    },
+    {
+      "slug": "expensify",
+      "name": "Expensify",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/expensify.json"
+    },
+    {
+      "slug": "factorial",
+      "name": "Factorial",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/factorial.json"
+    },
+    {
+      "slug": "fastly",
+      "name": "Fastly",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/fastly.json"
+    },
+    {
+      "slug": "fibery",
+      "name": "Fibery",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/fibery.json"
+    },
+    {
+      "slug": "figma",
+      "name": "Figma",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/figma.json"
+    },
+    {
+      "slug": "firebase",
+      "name": "Firebase",
+      "category": "Cloud",
+      "authType": "oauth2",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/firebase.json"
+    },
+    {
+      "slug": "firehydrant",
+      "name": "FireHydrant",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/firehydrant.json"
+    },
+    {
+      "slug": "fireworks-ai",
+      "name": "Fireworks AI",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/fireworks-ai.json"
+    },
+    {
+      "slug": "fivetran",
+      "name": "Fivetran",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/fivetran.json"
+    },
+    {
+      "slug": "flagsmith",
+      "name": "Flagsmith",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/flagsmith.json"
+    },
+    {
+      "slug": "fleetdm",
+      "name": "FleetDM",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/fleetdm.json"
+    },
+    {
+      "slug": "fly",
+      "name": "Fly.io",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/fly.json"
+    },
+    {
+      "slug": "forescout",
+      "name": "Forescout",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/forescout.json"
+    },
+    {
+      "slug": "fortinet-fortigate",
+      "name": "Fortinet FortiGate",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/fortinet-fortigate.json"
+    },
+    {
+      "slug": "frame-io",
+      "name": "Frame.io",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/frame-io.json"
+    },
+    {
+      "slug": "freshbooks",
+      "name": "FreshBooks",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/freshbooks.json"
+    },
+    {
+      "slug": "freshdesk",
+      "name": "Freshdesk",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/freshdesk.json"
+    },
+    {
+      "slug": "freshsales",
+      "name": "Freshsales",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/freshsales.json"
+    },
+    {
+      "slug": "freshservice",
+      "name": "Freshservice",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/freshservice.json"
+    },
+    {
+      "slug": "freshteam",
+      "name": "Freshteam",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/freshteam.json"
+    },
+    {
+      "slug": "front",
+      "name": "Front",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/front.json"
+    },
+    {
+      "slug": "frontegg",
+      "name": "Frontegg",
+      "category": "Identity & Access",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/frontegg.json"
+    },
+    {
+      "slug": "fullstory",
+      "name": "FullStory",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/fullstory.json"
+    },
+    {
+      "slug": "fusionauth",
+      "name": "FusionAuth",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": true,
+      "file": "integrations/fusionauth.json"
+    },
+    {
+      "slug": "gitbook",
+      "name": "GitBook",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/gitbook.json"
+    },
+    {
+      "slug": "gitguardian",
+      "name": "GitGuardian",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/gitguardian.json"
+    },
+    {
+      "slug": "github",
+      "name": "GitHub",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/github.json"
+    },
+    {
+      "slug": "github-copilot",
+      "name": "GitHub Copilot",
+      "category": "Development",
+      "authType": "oauth2",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/github-copilot.json"
+    },
+    {
+      "slug": "gitlab",
+      "name": "GitLab",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/gitlab.json"
+    },
+    {
+      "slug": "go1",
+      "name": "Go1",
+      "category": "Security",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/go1.json"
+    },
+    {
+      "slug": "gong",
+      "name": "Gong",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/gong.json"
+    },
+    {
+      "slug": "goodhire",
+      "name": "GoodHire",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/goodhire.json"
+    },
+    {
+      "slug": "google-cloud",
+      "name": "Google Cloud",
+      "category": "Cloud",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/google-cloud.json"
+    },
+    {
+      "slug": "google-workspace-admin",
+      "name": "Google Workspace",
+      "category": "Productivity",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/google-workspace-admin.json"
+    },
+    {
+      "slug": "gorgias",
+      "name": "Gorgias",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/gorgias.json"
+    },
+    {
+      "slug": "grafana-cloud",
+      "name": "Grafana Cloud",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/grafana-cloud.json"
+    },
+    {
+      "slug": "greenhouse",
+      "name": "Greenhouse",
+      "category": "HR & People",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/greenhouse.json"
+    },
+    {
+      "slug": "groq",
+      "name": "Groq",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/groq.json"
+    },
+    {
+      "slug": "guru",
+      "name": "Guru",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/guru.json"
+    },
+    {
+      "slug": "gusto",
+      "name": "Gusto",
+      "category": "HR & People",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/gusto.json"
+    },
+    {
+      "slug": "hackerone",
+      "name": "HackerOne",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/hackerone.json"
+    },
+    {
+      "slug": "harness",
+      "name": "Harness",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/harness.json"
+    },
+    {
+      "slug": "harvest",
+      "name": "Harvest",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/harvest.json"
+    },
+    {
+      "slug": "hashicorp-vault",
+      "name": "HashiCorp Vault",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/hashicorp-vault.json"
+    },
+    {
+      "slug": "helpscout",
+      "name": "Help Scout",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/helpscout.json"
+    },
+    {
+      "slug": "heroku",
+      "name": "Heroku",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/heroku.json"
+    },
+    {
+      "slug": "hetzner",
+      "name": "Hetzner Cloud",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/hetzner.json"
+    },
+    {
+      "slug": "hex",
+      "name": "Hex",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/hex.json"
+    },
+    {
+      "slug": "hexnode",
+      "name": "Hexnode",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": true,
+      "file": "integrations/hexnode.json"
+    },
+    {
+      "slug": "bob",
+      "name": "HiBob",
+      "category": "HR & People",
+      "authType": "basic",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/bob.json"
+    },
+    {
+      "slug": "hibob",
+      "name": "HiBob",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/hibob.json"
+    },
+    {
+      "slug": "highlight-io",
+      "name": "Highlight",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/highlight-io.json"
+    },
+    {
+      "slug": "hightouch",
+      "name": "Hightouch",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/hightouch.json"
+    },
+    {
+      "slug": "hireright",
+      "name": "HireRight",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/hireright.json"
+    },
+    {
+      "slug": "hive",
+      "name": "Hive",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/hive.json"
+    },
+    {
+      "slug": "honeybadger",
+      "name": "Honeybadger",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/honeybadger.json"
+    },
+    {
+      "slug": "honeycomb",
+      "name": "Honeycomb",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/honeycomb.json"
+    },
+    {
+      "slug": "hoxhunt",
+      "name": "Hoxhunt",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/hoxhunt.json"
+    },
+    {
+      "slug": "hubspot",
+      "name": "HubSpot",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/hubspot.json"
+    },
+    {
+      "slug": "huggingface",
+      "name": "Hugging Face",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/huggingface.json"
+    },
+    {
+      "slug": "humaans",
+      "name": "Humaans",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/humaans.json"
+    },
+    {
+      "slug": "hunter",
+      "name": "Hunter",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/hunter.json"
+    },
+    {
+      "slug": "huntress",
+      "name": "Huntress",
+      "category": "Security",
+      "authType": "basic",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/huntress.json"
+    },
+    {
+      "slug": "hyperproof",
+      "name": "Hyperproof",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/hyperproof.json"
+    },
+    {
+      "slug": "incident-io",
+      "name": "Incident.io",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/incident-io.json"
+    },
+    {
+      "slug": "infisical",
+      "name": "Infisical",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/infisical.json"
+    },
+    {
+      "slug": "inngest",
+      "name": "Inngest",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/inngest.json"
+    },
+    {
+      "slug": "instatus",
+      "name": "Instatus",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/instatus.json"
+    },
+    {
+      "slug": "intercom",
+      "name": "Intercom",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/intercom.json"
+    },
+    {
+      "slug": "ionos",
+      "name": "IONOS Cloud",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/ionos.json"
+    },
+    {
+      "slug": "ironclad",
+      "name": "Ironclad",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/ironclad.json"
+    },
+    {
+      "slug": "it-glue",
+      "name": "IT Glue",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/it-glue.json"
+    },
+    {
+      "slug": "iterable",
+      "name": "Iterable",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/iterable.json"
+    },
+    {
+      "slug": "ivanti",
+      "name": "Ivanti Neurons",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/ivanti.json"
+    },
+    {
+      "slug": "jamf",
+      "name": "Jamf Pro",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/jamf.json"
+    },
+    {
+      "slug": "jenkins",
+      "name": "Jenkins",
+      "category": "Development",
+      "authType": "basic",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/jenkins.json"
+    },
+    {
+      "slug": "jfrog",
+      "name": "JFrog Artifactory",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/jfrog.json"
+    },
+    {
+      "slug": "jira",
+      "name": "Jira",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/jira.json"
+    },
+    {
+      "slug": "jotform",
+      "name": "JotForm",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/jotform.json"
+    },
+    {
+      "slug": "jumpcloud",
+      "name": "JumpCloud",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/jumpcloud.json"
+    },
+    {
+      "slug": "juro",
+      "name": "Juro",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/juro.json"
+    },
+    {
+      "slug": "justworks",
+      "name": "Justworks",
+      "category": "HR & People",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/justworks.json"
+    },
+    {
+      "slug": "kandji",
+      "name": "Kandji",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/kandji.json"
+    },
+    {
+      "slug": "kaseya-vsa",
+      "name": "Kaseya VSA",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/kaseya-vsa.json"
+    },
+    {
+      "slug": "keeper-security",
+      "name": "Keeper Security",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/keeper-security.json"
+    },
+    {
+      "slug": "keka",
+      "name": "Keka",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": true,
+      "file": "integrations/keka.json"
+    },
+    {
+      "slug": "kenjo",
+      "name": "Kenjo",
+      "category": "HR & People",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/kenjo.json"
+    },
+    {
+      "slug": "keycdn",
+      "name": "KeyCDN",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/keycdn.json"
+    },
+    {
+      "slug": "convertkit",
+      "name": "Kit (ConvertKit)",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/convertkit.json"
+    },
+    {
+      "slug": "klaviyo",
+      "name": "Klaviyo",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/klaviyo.json"
+    },
+    {
+      "slug": "knock",
+      "name": "Knock",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/knock.json"
+    },
+    {
+      "slug": "knowbe4",
+      "name": "KnowBe4",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/knowbe4.json"
+    },
+    {
+      "slug": "kolide",
+      "name": "Kolide",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/kolide.json"
+    },
+    {
+      "slug": "kombo",
+      "name": "Kombo",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/kombo.json"
+    },
+    {
+      "slug": "kong",
+      "name": "Kong Konnect",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/kong.json"
+    },
+    {
+      "slug": "koyeb",
+      "name": "Koyeb",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/koyeb.json"
+    },
+    {
+      "slug": "kustomer",
+      "name": "Kustomer",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/kustomer.json"
+    },
+    {
+      "slug": "lacework",
+      "name": "Lacework",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/lacework.json"
+    },
+    {
+      "slug": "lago",
+      "name": "Lago",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/lago.json"
+    },
+    {
+      "slug": "lambdatest",
+      "name": "LambdaTest",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/lambdatest.json"
+    },
+    {
+      "slug": "lastpass",
+      "name": "LastPass Business",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/lastpass.json"
+    },
+    {
+      "slug": "lattice",
+      "name": "Lattice",
+      "category": "HR & People",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/lattice.json"
+    },
+    {
+      "slug": "launchdarkly",
+      "name": "LaunchDarkly",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/launchdarkly.json"
+    },
+    {
+      "slug": "lever",
+      "name": "Lever",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/lever.json"
+    },
+    {
+      "slug": "linear",
+      "name": "Linear",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/linear.json"
+    },
+    {
+      "slug": "linode",
+      "name": "Linode",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/linode.json"
+    },
+    {
+      "slug": "litmos",
+      "name": "Litmos",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/litmos.json"
+    },
+    {
+      "slug": "liveblocks",
+      "name": "Liveblocks",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/liveblocks.json"
+    },
+    {
+      "slug": "lob",
+      "name": "Lob",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/lob.json"
+    },
+    {
+      "slug": "logrocket",
+      "name": "LogRocket",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/logrocket.json"
+    },
+    {
+      "slug": "logzio",
+      "name": "Logz.io",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/logzio.json"
+    },
+    {
+      "slug": "loops",
+      "name": "Loops",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/loops.json"
+    },
+    {
+      "slug": "lucid",
+      "name": "Lucid",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/lucid.json"
+    },
+    {
+      "slug": "lucidchart",
+      "name": "Lucidchart",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/lucidchart.json"
+    },
+    {
+      "slug": "lumigo",
+      "name": "Lumigo",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/lumigo.json"
+    },
+    {
+      "slug": "mabl",
+      "name": "Mabl",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/mabl.json"
+    },
+    {
+      "slug": "mailchimp",
+      "name": "Mailchimp",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/mailchimp.json"
+    },
+    {
+      "slug": "make",
+      "name": "Make",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/make.json"
+    },
+    {
+      "slug": "malwarebytes",
+      "name": "Malwarebytes",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/malwarebytes.json"
+    },
+    {
+      "slug": "manageengine-endpoint-central",
+      "name": "ManageEngine Endpoint Central",
+      "category": "Security",
+      "authType": "oauth2",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/manageengine-endpoint-central.json"
+    },
+    {
+      "slug": "manageengine-log360-cloud",
+      "name": "ManageEngine Log360 Cloud",
+      "category": "Security",
+      "authType": "oauth2",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/manageengine-log360-cloud.json"
+    },
+    {
+      "slug": "mattermost",
+      "name": "Mattermost",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/mattermost.json"
+    },
+    {
+      "slug": "mend-io",
+      "name": "Mend.io",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/mend-io.json"
+    },
+    {
+      "slug": "mercury",
+      "name": "Mercury",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/mercury.json"
+    },
+    {
+      "slug": "merge-dev",
+      "name": "Merge",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/merge-dev.json"
+    },
+    {
+      "slug": "messagebird",
+      "name": "MessageBird",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/messagebird.json"
+    },
+    {
+      "slug": "metronome",
+      "name": "Metronome",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/metronome.json"
+    },
+    {
+      "slug": "mezmo",
+      "name": "Mezmo",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/mezmo.json"
+    },
+    {
+      "slug": "logdna",
+      "name": "Mezmo (LogDNA)",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/logdna.json"
+    },
+    {
+      "slug": "microsoft-365",
+      "name": "Microsoft 365",
+      "category": "Productivity",
+      "authType": "oauth2",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/microsoft-365.json"
+    },
+    {
+      "slug": "microsoft-defender",
+      "name": "Microsoft Defender for Endpoint",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/microsoft-defender.json"
+    },
+    {
+      "slug": "entra-id",
+      "name": "Microsoft Entra ID",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": true,
+      "file": "integrations/entra-id.json"
+    },
+    {
+      "slug": "intune",
+      "name": "Microsoft Intune",
+      "category": "Security",
+      "authType": "oauth2",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/intune.json"
+    },
+    {
+      "slug": "microsoft-teams",
+      "name": "Microsoft Teams",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/microsoft-teams.json"
+    },
+    {
+      "slug": "mimecast",
+      "name": "Mimecast",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/mimecast.json"
+    },
+    {
+      "slug": "mintlify",
+      "name": "Mintlify",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/mintlify.json"
+    },
+    {
+      "slug": "miro",
+      "name": "Miro",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/miro.json"
+    },
+    {
+      "slug": "mistral",
+      "name": "Mistral AI",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/mistral.json"
+    },
+    {
+      "slug": "mixpanel",
+      "name": "Mixpanel",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/mixpanel.json"
+    },
+    {
+      "slug": "monday",
+      "name": "Monday.com",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/monday.json"
+    },
+    {
+      "slug": "mongodb-atlas",
+      "name": "MongoDB Atlas",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/mongodb-atlas.json"
+    },
+    {
+      "slug": "monte-carlo",
+      "name": "Monte Carlo",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/monte-carlo.json"
+    },
+    {
+      "slug": "mosyle",
+      "name": "Mosyle",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/mosyle.json"
+    },
+    {
+      "slug": "motherduck",
+      "name": "MotherDuck",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/motherduck.json"
+    },
+    {
+      "slug": "mural",
+      "name": "MURAL",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/mural.json"
+    },
+    {
+      "slug": "n-able-n-sight",
+      "name": "N-able N-sight RMM",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/n-able-n-sight.json"
+    },
+    {
+      "slug": "namely",
+      "name": "Namely",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/namely.json"
+    },
+    {
+      "slug": "navan",
+      "name": "Navan",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/navan.json"
+    },
+    {
+      "slug": "nectar-hr",
+      "name": "Nectar",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/nectar-hr.json"
+    },
+    {
+      "slug": "neon",
+      "name": "Neon",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/neon.json"
+    },
+    {
+      "slug": "nessus",
+      "name": "Nessus / Tenable Vulnerability Management",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/nessus.json"
+    },
+    {
+      "slug": "netlify",
+      "name": "Netlify",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/netlify.json"
+    },
+    {
+      "slug": "netskope",
+      "name": "Netskope",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/netskope.json"
+    },
+    {
+      "slug": "netsuite",
+      "name": "NetSuite",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/netsuite.json"
+    },
+    {
+      "slug": "new-relic",
+      "name": "New Relic",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/new-relic.json"
+    },
+    {
+      "slug": "ngrok",
+      "name": "ngrok",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/ngrok.json"
+    },
+    {
+      "slug": "nightfall-ai",
+      "name": "Nightfall AI",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/nightfall-ai.json"
+    },
+    {
+      "slug": "ninjaone",
+      "name": "NinjaOne (NinjaRMM)",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/ninjaone.json"
+    },
+    {
+      "slug": "nordpass",
+      "name": "NordPass",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/nordpass.json"
+    },
+    {
+      "slug": "northflank",
+      "name": "Northflank",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/northflank.json"
+    },
+    {
+      "slug": "notion",
+      "name": "Notion",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/notion.json"
+    },
+    {
+      "slug": "novu",
+      "name": "Novu",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/novu.json"
+    },
+    {
+      "slug": "ns1",
+      "name": "NS1",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/ns1.json"
+    },
+    {
+      "slug": "okta",
+      "name": "Okta",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/okta.json"
+    },
+    {
+      "slug": "omnisend",
+      "name": "Omnisend",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/omnisend.json"
+    },
+    {
+      "slug": "onelogin",
+      "name": "OneLogin",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/onelogin.json"
+    },
+    {
+      "slug": "onetrust",
+      "name": "OneTrust",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/onetrust.json"
+    },
+    {
+      "slug": "openai",
+      "name": "OpenAI",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/openai.json"
+    },
+    {
+      "slug": "openphone",
+      "name": "OpenPhone",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/openphone.json"
+    },
+    {
+      "slug": "opsgenie",
+      "name": "Opsgenie",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/opsgenie.json"
+    },
+    {
+      "slug": "optimizely",
+      "name": "Optimizely",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/optimizely.json"
+    },
+    {
+      "slug": "oracle-cloud",
+      "name": "Oracle Cloud Infrastructure",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/oracle-cloud.json"
+    },
+    {
+      "slug": "orca-security",
+      "name": "Orca Security",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/orca-security.json"
+    },
+    {
+      "slug": "outreach",
+      "name": "Outreach",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/outreach.json"
+    },
+    {
+      "slug": "oyster-hr",
+      "name": "Oyster HR",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/oyster-hr.json"
+    },
+    {
+      "slug": "paddle",
+      "name": "Paddle",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/paddle.json"
+    },
+    {
+      "slug": "pagerduty",
+      "name": "PagerDuty",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/pagerduty.json"
+    },
+    {
+      "slug": "palo-alto",
+      "name": "Palo Alto Networks SASE",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/palo-alto.json"
+    },
+    {
+      "slug": "pandadoc",
+      "name": "PandaDoc",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/pandadoc.json"
+    },
+    {
+      "slug": "papertrail",
+      "name": "Papertrail",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/papertrail.json"
+    },
+    {
+      "slug": "pave",
+      "name": "Pave",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/pave.json"
+    },
+    {
+      "slug": "paychex",
+      "name": "Paychex",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/paychex.json"
+    },
+    {
+      "slug": "paycom",
+      "name": "Paycom",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/paycom.json"
+    },
+    {
+      "slug": "paycor",
+      "name": "Paycor",
+      "category": "HR & People",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/paycor.json"
+    },
+    {
+      "slug": "payfit",
+      "name": "PayFit",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/payfit.json"
+    },
+    {
+      "slug": "payhawk",
+      "name": "Payhawk",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/payhawk.json"
+    },
+    {
+      "slug": "paylocity",
+      "name": "Paylocity",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/paylocity.json"
+    },
+    {
+      "slug": "pendo",
+      "name": "Pendo",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/pendo.json"
+    },
+    {
+      "slug": "permit-io",
+      "name": "Permit.io",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/permit-io.json"
+    },
+    {
+      "slug": "persona",
+      "name": "Persona",
+      "category": "Identity & Access",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/persona.json"
+    },
+    {
+      "slug": "personio",
+      "name": "Personio",
+      "category": "HR & People",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/personio.json"
+    },
+    {
+      "slug": "ping-identity",
+      "name": "Ping Identity",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/ping-identity.json"
+    },
+    {
+      "slug": "pingboard",
+      "name": "Pingboard",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/pingboard.json"
+    },
+    {
+      "slug": "pipedream",
+      "name": "Pipedream",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/pipedream.json"
+    },
+    {
+      "slug": "pipedrive",
+      "name": "Pipedrive",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/pipedrive.json"
+    },
+    {
+      "slug": "plain",
+      "name": "Plain",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/plain.json"
+    },
+    {
+      "slug": "planetscale",
+      "name": "PlanetScale",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/planetscale.json"
+    },
+    {
+      "slug": "planhat",
+      "name": "Planhat",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/planhat.json"
+    },
+    {
+      "slug": "plausible",
+      "name": "Plausible Analytics",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/plausible.json"
+    },
+    {
+      "slug": "pleo",
+      "name": "Pleo",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/pleo.json"
+    },
+    {
+      "slug": "port-io",
+      "name": "Port",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/port-io.json"
+    },
+    {
+      "slug": "posthog",
+      "name": "PostHog",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/posthog.json"
+    },
+    {
+      "slug": "postman",
+      "name": "Postman",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/postman.json"
+    },
+    {
+      "slug": "postmark",
+      "name": "Postmark",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/postmark.json"
+    },
+    {
+      "slug": "prefect",
+      "name": "Prefect",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/prefect.json"
+    },
+    {
+      "slug": "prisma-cloud",
+      "name": "Prisma Cloud",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/prisma-cloud.json"
+    },
+    {
+      "slug": "probely",
+      "name": "Probely",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/probely.json"
+    },
+    {
+      "slug": "productboard",
+      "name": "Productboard",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/productboard.json"
+    },
+    {
+      "slug": "proofpoint",
+      "name": "Proofpoint",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/proofpoint.json"
+    },
+    {
+      "slug": "proofpoint-tap",
+      "name": "Proofpoint TAP",
+      "category": "Security",
+      "authType": "basic",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/proofpoint-tap.json"
+    },
+    {
+      "slug": "pulumi",
+      "name": "Pulumi",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/pulumi.json"
+    },
+    {
+      "slug": "pulumi-cloud",
+      "name": "Pulumi Cloud",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/pulumi-cloud.json"
+    },
+    {
+      "slug": "pylon",
+      "name": "Pylon",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/pylon.json"
+    },
+    {
+      "slug": "qase",
+      "name": "Qase",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/qase.json"
+    },
+    {
+      "slug": "qonto",
+      "name": "Qonto",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/qonto.json"
+    },
+    {
+      "slug": "qovery",
+      "name": "Qovery",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/qovery.json"
+    },
+    {
+      "slug": "qualtrics",
+      "name": "Qualtrics",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/qualtrics.json"
+    },
+    {
+      "slug": "qualys",
+      "name": "Qualys VMDR",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/qualys.json"
+    },
+    {
+      "slug": "quave-cloud",
+      "name": "Quave Cloud",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/quave-cloud.json"
+    },
+    {
+      "slug": "quickbooks-online",
+      "name": "QuickBooks Online",
+      "category": "Productivity",
+      "authType": "oauth2",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/quickbooks-online.json"
+    },
+    {
+      "slug": "railway",
+      "name": "Railway",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/railway.json"
+    },
+    {
+      "slug": "ramp",
+      "name": "Ramp",
+      "category": "Productivity",
+      "authType": "oauth2",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/ramp.json"
+    },
+    {
+      "slug": "rapid7",
+      "name": "Rapid7",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/rapid7.json"
+    },
+    {
+      "slug": "readme",
+      "name": "ReadMe",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/readme.json"
+    },
+    {
+      "slug": "recurly",
+      "name": "Recurly",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/recurly.json"
+    },
+    {
+      "slug": "redis-cloud",
+      "name": "Redis Cloud",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/redis-cloud.json"
+    },
+    {
+      "slug": "remote",
+      "name": "Remote",
+      "category": "HR & People",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/remote.json"
+    },
+    {
+      "slug": "render",
+      "name": "Render",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/render.json"
+    },
+    {
+      "slug": "replicate",
+      "name": "Replicate",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/replicate.json"
+    },
+    {
+      "slug": "resend",
+      "name": "Resend",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/resend.json"
+    },
+    {
+      "slug": "retool",
+      "name": "Retool",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/retool.json"
+    },
+    {
+      "slug": "ringcentral",
+      "name": "RingCentral",
+      "category": "Communication",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/ringcentral.json"
+    },
+    {
+      "slug": "rippling",
+      "name": "Rippling",
+      "category": "HR & People",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/rippling.json"
+    },
+    {
+      "slug": "roboflow",
+      "name": "Roboflow",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/roboflow.json"
+    },
+    {
+      "slug": "rollbar",
+      "name": "Rollbar",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/rollbar.json"
+    },
+    {
+      "slug": "rootly",
+      "name": "Rootly",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/rootly.json"
+    },
+    {
+      "slug": "rubrik",
+      "name": "Rubrik",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/rubrik.json"
+    },
+    {
+      "slug": "rudderstack",
+      "name": "RudderStack",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/rudderstack.json"
+    },
+    {
+      "slug": "sage-accounting",
+      "name": "Sage Accounting",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sage-accounting.json"
+    },
+    {
+      "slug": "sage-hr",
+      "name": "Sage HR",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/sage-hr.json"
+    },
+    {
+      "slug": "sailpoint",
+      "name": "SailPoint IdentityNow",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/sailpoint.json"
+    },
+    {
+      "slug": "salesforce",
+      "name": "Salesforce",
+      "category": "Productivity",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/salesforce.json"
+    },
+    {
+      "slug": "salesloft",
+      "name": "Salesloft",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/salesloft.json"
+    },
+    {
+      "slug": "sanity",
+      "name": "Sanity",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sanity.json"
+    },
+    {
+      "slug": "sap-concur",
+      "name": "SAP Concur",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": true,
+      "file": "integrations/sap-concur.json"
+    },
+    {
+      "slug": "sap-successfactors",
+      "name": "SAP SuccessFactors",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/sap-successfactors.json"
+    },
+    {
+      "slug": "saviynt",
+      "name": "Saviynt",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/saviynt.json"
+    },
+    {
+      "slug": "scalefusion",
+      "name": "Scalefusion",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/scalefusion.json"
+    },
+    {
+      "slug": "scaleway",
+      "name": "Scaleway",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/scaleway.json"
+    },
+    {
+      "slug": "secureframe",
+      "name": "Secureframe",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/secureframe.json"
+    },
+    {
+      "slug": "securityscorecard",
+      "name": "SecurityScorecard",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/securityscorecard.json"
+    },
+    {
+      "slug": "segment",
+      "name": "Segment",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/segment.json"
+    },
+    {
+      "slug": "semgrep",
+      "name": "Semgrep",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/semgrep.json"
+    },
+    {
+      "slug": "sendgrid",
+      "name": "SendGrid",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sendgrid.json"
+    },
+    {
+      "slug": "sentinelone",
+      "name": "SentinelOne",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sentinelone.json"
+    },
+    {
+      "slug": "sentry",
+      "name": "Sentry",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sentry.json"
+    },
+    {
+      "slug": "servicenow",
+      "name": "ServiceNow",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/servicenow.json"
+    },
+    {
+      "slug": "shopify",
+      "name": "Shopify",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/shopify.json"
+    },
+    {
+      "slug": "shortcut",
+      "name": "Shortcut",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/shortcut.json"
+    },
+    {
+      "slug": "sigma-computing",
+      "name": "Sigma Computing",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sigma-computing.json"
+    },
+    {
+      "slug": "signnow",
+      "name": "SignNow",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/signnow.json"
+    },
+    {
+      "slug": "signoz",
+      "name": "SigNoz",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/signoz.json"
+    },
+    {
+      "slug": "slack",
+      "name": "Slack",
+      "category": "Communication",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/slack.json"
+    },
+    {
+      "slug": "smartsheet",
+      "name": "Smartsheet",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/smartsheet.json"
+    },
+    {
+      "slug": "snipeit",
+      "name": "Snipe-IT",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/snipeit.json"
+    },
+    {
+      "slug": "snowflake",
+      "name": "Snowflake",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/snowflake.json"
+    },
+    {
+      "slug": "snyk",
+      "name": "Snyk",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/snyk.json"
+    },
+    {
+      "slug": "socket-dev",
+      "name": "Socket",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/socket-dev.json"
+    },
+    {
+      "slug": "socket",
+      "name": "Socket Security",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/socket.json"
+    },
+    {
+      "slug": "sonarqube-cloud",
+      "name": "SonarCloud",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sonarqube-cloud.json"
+    },
+    {
+      "slug": "sonarcloud",
+      "name": "SonarCloud",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sonarcloud.json"
+    },
+    {
+      "slug": "sonarqube-server",
+      "name": "SonarQube Server",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/sonarqube-server.json"
+    },
+    {
+      "slug": "sonatype-nexus",
+      "name": "Sonatype Nexus Repository",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/sonatype-nexus.json"
+    },
+    {
+      "slug": "sonicwall",
+      "name": "SonicWall",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sonicwall.json"
+    },
+    {
+      "slug": "sophos-central",
+      "name": "Sophos Central",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/sophos-central.json"
+    },
+    {
+      "slug": "speakeasy",
+      "name": "Speakeasy",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/speakeasy.json"
+    },
+    {
+      "slug": "split",
+      "name": "Split",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/split.json"
+    },
+    {
+      "slug": "splunk",
+      "name": "Splunk",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/splunk.json"
+    },
+    {
+      "slug": "victorops",
+      "name": "Splunk On-Call",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/victorops.json"
+    },
+    {
+      "slug": "sprig",
+      "name": "Sprig",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sprig.json"
+    },
+    {
+      "slug": "square",
+      "name": "Square",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/square.json"
+    },
+    {
+      "slug": "stackhawk",
+      "name": "StackHawk",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/stackhawk.json"
+    },
+    {
+      "slug": "statsig",
+      "name": "Statsig",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/statsig.json"
+    },
+    {
+      "slug": "statuscake",
+      "name": "StatusCake",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/statuscake.json"
+    },
+    {
+      "slug": "statuspage",
+      "name": "Statuspage",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/statuspage.json"
+    },
+    {
+      "slug": "sterling",
+      "name": "Sterling",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/sterling.json"
+    },
+    {
+      "slug": "stitch",
+      "name": "Stitch",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/stitch.json"
+    },
+    {
+      "slug": "stoplight",
+      "name": "Stoplight",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/stoplight.json"
+    },
+    {
+      "slug": "storyblok",
+      "name": "Storyblok",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/storyblok.json"
+    },
+    {
+      "slug": "stripe",
+      "name": "Stripe",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/stripe.json"
+    },
+    {
+      "slug": "strongdm",
+      "name": "StrongDM",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/strongdm.json"
+    },
+    {
+      "slug": "stytch",
+      "name": "Stytch",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/stytch.json"
+    },
+    {
+      "slug": "sumo-logic",
+      "name": "Sumo Logic",
+      "category": "Monitoring",
+      "authType": "basic",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sumo-logic.json"
+    },
+    {
+      "slug": "sumologic",
+      "name": "Sumo Logic",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sumologic.json"
+    },
+    {
+      "slug": "supabase",
+      "name": "Supabase",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 10,
+      "syncSupported": false,
+      "file": "integrations/supabase.json"
+    },
+    {
+      "slug": "surveymonkey",
+      "name": "SurveyMonkey",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/surveymonkey.json"
+    },
+    {
+      "slug": "surveysparrow",
+      "name": "SurveySparrow",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/surveysparrow.json"
+    },
+    {
+      "slug": "sysdig",
+      "name": "Sysdig",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sysdig.json"
+    },
+    {
+      "slug": "tailscale",
+      "name": "Tailscale",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/tailscale.json"
+    },
+    {
+      "slug": "talent-lms",
+      "name": "TalentLMS",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/talent-lms.json"
+    },
+    {
+      "slug": "tanium",
+      "name": "Tanium",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/tanium.json"
+    },
+    {
+      "slug": "teamcity",
+      "name": "TeamCity",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/teamcity.json"
+    },
+    {
+      "slug": "teamsupport",
+      "name": "TeamSupport",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/teamsupport.json"
+    },
+    {
+      "slug": "teamwork",
+      "name": "Teamwork",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/teamwork.json"
+    },
+    {
+      "slug": "teleport",
+      "name": "Teleport",
+      "category": "Infrastructure",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/teleport.json"
+    },
+    {
+      "slug": "telnyx",
+      "name": "Telnyx",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/telnyx.json"
+    },
+    {
+      "slug": "tenable-cloud",
+      "name": "Tenable Cloud",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/tenable-cloud.json"
+    },
+    {
+      "slug": "tenable",
+      "name": "Tenable.io",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/tenable.json"
+    },
+    {
+      "slug": "terraform-cloud",
+      "name": "Terraform Cloud",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/terraform-cloud.json"
+    },
+    {
+      "slug": "testrail",
+      "name": "TestRail",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/testrail.json"
+    },
+    {
+      "slug": "threatdown",
+      "name": "ThreatDown (Malwarebytes)",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/threatdown.json"
+    },
+    {
+      "slug": "tines",
+      "name": "Tines",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/tines.json"
+    },
+    {
+      "slug": "together-ai",
+      "name": "Together AI",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/together-ai.json"
+    },
+    {
+      "slug": "toggl",
+      "name": "Toggl Track",
+      "category": "Productivity",
+      "authType": "basic",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/toggl.json"
+    },
+    {
+      "slug": "torq",
+      "name": "Torq",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/torq.json"
+    },
+    {
+      "slug": "totango",
+      "name": "Totango",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/totango.json"
+    },
+    {
+      "slug": "transcend",
+      "name": "Transcend",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/transcend.json"
+    },
+    {
+      "slug": "travis-ci",
+      "name": "Travis CI",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/travis-ci.json"
+    },
+    {
+      "slug": "trellix",
+      "name": "Trellix",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/trellix.json"
+    },
+    {
+      "slug": "trello",
+      "name": "Trello",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/trello.json"
+    },
+    {
+      "slug": "trend-micro-vision-one",
+      "name": "Trend Micro Vision One",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/trend-micro-vision-one.json"
+    },
+    {
+      "slug": "trigger-dev",
+      "name": "Trigger.dev",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/trigger-dev.json"
+    },
+    {
+      "slug": "trinet",
+      "name": "TriNet",
+      "category": "HR & People",
+      "authType": "api_key",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/trinet.json"
+    },
+    {
+      "slug": "turso",
+      "name": "Turso",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/turso.json"
+    },
+    {
+      "slug": "twilio",
+      "name": "Twilio",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/twilio.json"
+    },
+    {
+      "slug": "twingate",
+      "name": "Twingate",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": true,
+      "file": "integrations/twingate.json"
+    },
+    {
+      "slug": "typeform",
+      "name": "Typeform",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/typeform.json"
+    },
+    {
+      "slug": "ukg-ready",
+      "name": "UKG Ready",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/ukg-ready.json"
+    },
+    {
+      "slug": "upcloud",
+      "name": "UpCloud",
+      "category": "Cloud",
+      "authType": "basic",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/upcloud.json"
+    },
+    {
+      "slug": "updown",
+      "name": "Updown.io",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/updown.json"
+    },
+    {
+      "slug": "upstash",
+      "name": "Upstash",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/upstash.json"
+    },
+    {
+      "slug": "userflow",
+      "name": "Userflow",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/userflow.json"
+    },
+    {
+      "slug": "veeam",
+      "name": "Veeam Backup & Replication",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/veeam.json"
+    },
+    {
+      "slug": "veracode",
+      "name": "Veracode",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/veracode.json"
+    },
+    {
+      "slug": "vercel",
+      "name": "Vercel",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/vercel.json"
+    },
+    {
+      "slug": "vitally",
+      "name": "Vitally",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/vitally.json"
+    },
+    {
+      "slug": "vmware-workspace-one",
+      "name": "VMware Workspace ONE",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/vmware-workspace-one.json"
+    },
+    {
+      "slug": "vonage",
+      "name": "Vonage",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/vonage.json"
+    },
+    {
+      "slug": "vulncheck",
+      "name": "VulnCheck",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/vulncheck.json"
+    },
+    {
+      "slug": "vultr",
+      "name": "Vultr",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/vultr.json"
+    },
+    {
+      "slug": "watchguard",
+      "name": "WatchGuard",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/watchguard.json"
+    },
+    {
+      "slug": "webex",
+      "name": "Webex",
+      "category": "Communication",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/webex.json"
+    },
+    {
+      "slug": "webflow",
+      "name": "Webflow",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/webflow.json"
+    },
+    {
+      "slug": "wandb",
+      "name": "Weights & Biases",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/wandb.json"
+    },
+    {
+      "slug": "when-i-work",
+      "name": "When I Work",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/when-i-work.json"
+    },
+    {
+      "slug": "wistia",
+      "name": "Wistia",
+      "category": "Communication",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/wistia.json"
+    },
+    {
+      "slug": "wiz",
+      "name": "Wiz",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/wiz.json"
+    },
+    {
+      "slug": "workable",
+      "name": "Workable",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/workable.json"
+    },
+    {
+      "slug": "workato",
+      "name": "Workato",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/workato.json"
+    },
+    {
+      "slug": "workday",
+      "name": "Workday",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/workday.json"
+    },
+    {
+      "slug": "workos",
+      "name": "WorkOS",
+      "category": "Identity & Access",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/workos.json"
+    },
+    {
+      "slug": "workramp",
+      "name": "WorkRamp",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/workramp.json"
+    },
+    {
+      "slug": "wrike",
+      "name": "Wrike",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/wrike.json"
+    },
+    {
+      "slug": "xata",
+      "name": "Xata",
+      "category": "Cloud",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/xata.json"
+    },
+    {
+      "slug": "xero",
+      "name": "Xero",
+      "category": "Productivity",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/xero.json"
+    },
+    {
+      "slug": "zapier",
+      "name": "Zapier",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/zapier.json"
+    },
+    {
+      "slug": "zelt",
+      "name": "Zelt",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/zelt.json"
+    },
+    {
+      "slug": "zendesk",
+      "name": "Zendesk",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/zendesk.json"
+    },
+    {
+      "slug": "zenefits",
+      "name": "Zenefits",
+      "category": "HR & People",
+      "authType": "api_key",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/zenefits.json"
+    },
+    {
+      "slug": "zerotier",
+      "name": "ZeroTier",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/zerotier.json"
+    },
+    {
+      "slug": "zoho-crm",
+      "name": "Zoho CRM",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/zoho-crm.json"
+    },
+    {
+      "slug": "zoho-people",
+      "name": "Zoho People",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/zoho-people.json"
+    },
+    {
+      "slug": "zoom",
+      "name": "Zoom",
+      "category": "Communication",
+      "authType": "oauth2",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/zoom.json"
+    },
+    {
+      "slug": "zscaler-zia",
+      "name": "Zscaler Internet Access",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/zscaler-zia.json"
+    },
+    {
+      "slug": "zscaler-zpa",
+      "name": "Zscaler Private Access",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/zscaler-zpa.json"
+    },
+    {
+      "slug": "zuora",
+      "name": "Zuora",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/zuora.json"
+    }
+  ]
+}

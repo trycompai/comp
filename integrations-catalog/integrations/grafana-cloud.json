@@ -1,0 +1,65 @@
+{
+  "slug": "grafana-cloud",
+  "name": "Grafana Cloud",
+  "description": "Observability platform for metrics, logs, and traces. Verifies monitoring configuration, app availability, and user access in Grafana Cloud.",
+  "category": "Monitoring",
+  "docsUrl": "https://grafana.com/docs/grafana-cloud/developer-resources/api-reference/",
+  "baseUrl": "https://grafana.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Grafana Cloud instance (e.g. https://mycompany.grafana.net)\n2. Go to Administration > Service Accounts\n3. Create a service account with Admin role (required for user access checks)\n4. Generate a service account token (starts with glsa_)\n5. Enter your stack URL and the token below",
+      "credentialFields": [
+        {
+          "label": "Grafana Stack URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Grafana Cloud stack URL, e.g. https://mycompany.grafana.net"
+        },
+        {
+          "label": "Service Account Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Create a service account with Admin role in your Grafana instance: Administration > Service Accounts > create a token."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "grafana_cloud_app_availability",
+      "name": "Grafana Cloud App Availability",
+      "description": "Verifies Grafana Cloud is accessible and the service account token is valid",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "grafana_cloud_employee_access",
+      "name": "Grafana Cloud Employee Access",
+      "description": "Lists Grafana Cloud users to verify access controls are in place",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "grafana_cloud_alert_rules",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that Grafana Cloud alert rules are configured for monitoring",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "grafana_cloud_datasources",
+      "name": "Utility Monitoring",
+      "description": "Verifies that Grafana Cloud datasources are configured for monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

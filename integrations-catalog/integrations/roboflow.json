@@ -1,0 +1,35 @@
+{
+  "slug": "roboflow",
+  "name": "Roboflow",
+  "description": "Computer vision AI platform for building and deploying models. Monitor workspace access.",
+  "category": "Cloud",
+  "docsUrl": "https://docs.roboflow.com",
+  "baseUrl": "https://api.roboflow.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "roboflow_app_availability",
+      "name": "Roboflow App Availability",
+      "description": "Checks that the Roboflow API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "roboflow_employee_access",
+      "name": "Roboflow Employee Access",
+      "description": "Verifies employee access to Roboflow via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

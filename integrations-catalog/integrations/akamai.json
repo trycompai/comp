@@ -1,0 +1,70 @@
+{
+  "slug": "akamai",
+  "name": "Akamai",
+  "description": "Monitor Akamai CDN configurations, edge security policies, and API client access",
+  "category": "Infrastructure",
+  "docsUrl": "https://techdocs.akamai.com/developer/docs/edgegrid",
+  "baseUrl": "https://placeholder.luna.akamaiapis.net",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Akamai Control Center\n2. Go to Identity and Access Management\n3. Click Create API client\n4. Select Quick for basic access or Advanced for specific API permissions\n5. Download the .edgerc file\n6. Copy the host, client_token, client_secret, and access_token values\n\nRequired API permissions:\n- Identity Management: read access (for Employee Access check)\n- Property Manager: read access (for Infrastructure Inventory check)\n- Application Security: read access (for Production Firewall check)",
+      "credentialFields": [
+        {
+          "label": "API Host",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Akamai API host from the .edgerc file (e.g., akab-xxxxx.luna.akamaiapis.net). Do NOT include https://"
+        },
+        {
+          "label": "Client Token",
+          "type": "text",
+          "required": true,
+          "helpText": "Client token from your .edgerc file (starts with akab-)"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Client secret from your .edgerc file"
+        },
+        {
+          "label": "Access Token",
+          "type": "text",
+          "required": true,
+          "helpText": "Access token from your .edgerc file (starts with akab-)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Verifies API client authentication and retrieves the current user profile to confirm access controls are in place",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all Akamai property configurations to provide an inventory of CDN and edge delivery assets",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "production_firewall",
+      "name": "Production Firewall",
+      "description": "Lists Akamai Application Security configurations to verify WAF and edge security policies are in place",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

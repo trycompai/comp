@@ -1,0 +1,35 @@
+{
+  "slug": "wandb",
+  "name": "Weights & Biases",
+  "description": "ML experiment tracking and model management. Monitor project access and team collaboration.",
+  "category": "Cloud",
+  "docsUrl": "https://docs.wandb.ai/ref/python/public-api/",
+  "baseUrl": "https://api.wandb.ai",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "wandb_app_availability",
+      "name": "Weights & Biases App Availability",
+      "description": "Checks that the W&B API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "wandb_employee_access",
+      "name": "Weights & Biases Employee Access",
+      "description": "Verifies employee access to W&B.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

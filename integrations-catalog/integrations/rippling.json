@@ -1,0 +1,35 @@
+{
+  "slug": "rippling",
+  "name": "Rippling",
+  "description": "Monitor Rippling employee records and workforce data for HR compliance",
+  "category": "HR & People",
+  "docsUrl": "https://developer.rippling.com/docs",
+  "baseUrl": "https://api.rippling.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "rippling_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Rippling employees and verifies active workforce records",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "rippling_employee_verification",
+      "name": "Employee Verification",
+      "description": "Verifies Rippling employee records are complete",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

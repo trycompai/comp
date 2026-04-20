@@ -1,0 +1,58 @@
+{
+  "slug": "litmos",
+  "name": "Litmos",
+  "description": "Monitor SAP Litmos LMS for user access, team-based role controls, and security training compliance",
+  "category": "Productivity",
+  "docsUrl": "https://support.litmos.com/hc/en-us/articles/227734667-Overview-Developer-API",
+  "baseUrl": "https://api.litmos.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Litmos admin account\n2. Go to Account Settings > Manage API Key\n3. Generate or copy your API key\n4. Enter your API key, source name (your Litmos domain), and select the correct regional base URL",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Litmos Admin > Account Settings > Manage API Key. Generate or copy your API key."
+        },
+        {
+          "label": "Source (App Name)",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Litmos company domain or app name, e.g. 'yourcompany.litmos.com'. Used as the 'source' query parameter."
+        },
+        {
+          "label": "API Base URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Litmos API base URL. US: https://api.litmos.com, AU: https://api.litmos.com.au, EU: https://api.litmoseu.com"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "litmos_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Litmos LMS users to verify active accounts and employee access to the learning management platform",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "litmos_role_based_access",
+      "name": "Role-based Access Controls",
+      "description": "Reviews Litmos teams to verify team-based role structure and organizational access controls",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

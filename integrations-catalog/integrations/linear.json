@@ -1,0 +1,45 @@
+{
+  "slug": "linear",
+  "name": "Linear",
+  "description": "Linear project and issue tracking for software teams",
+  "category": "Development",
+  "docsUrl": "https://developers.linear.app/docs",
+  "baseUrl": "https://api.linear.app",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Linear\n2. Go to Settings → API\n3. Create a Personal API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Linear → Settings → API → Personal API keys → Create key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "linear_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Linear is connected and lists workspace members",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "linear_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Linear platform is operational",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

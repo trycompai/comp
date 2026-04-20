@@ -1,0 +1,45 @@
+{
+  "slug": "omnisend",
+  "name": "Omnisend",
+  "description": "Omnisend ecommerce email and SMS marketing automation platform",
+  "category": "Communication",
+  "docsUrl": "https://api-docs.omnisend.com",
+  "baseUrl": "https://api.omnisend.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Omnisend\n2. Go to Store Settings → API Keys\n3. Generate a new API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Omnisend → Store Settings → API Keys → Generate Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "omnisend_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Omnisend platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "omnisend_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Omnisend contacts to verify marketing platform access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

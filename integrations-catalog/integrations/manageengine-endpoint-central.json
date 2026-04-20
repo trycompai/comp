@@ -1,0 +1,58 @@
+{
+  "slug": "manageengine-endpoint-central",
+  "name": "ManageEngine Endpoint Central",
+  "description": "Monitor device compliance, patch management status, and managed endpoint inventory in ManageEngine Endpoint Central Cloud (UEM)",
+  "category": "Security",
+  "docsUrl": "https://www.manageengine.com/products/desktop-central/api/cloud_index.html",
+  "baseUrl": "https://endpointcentral.manageengine.com",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "scopes": [
+        "DesktopCentralCloud.Common.READ",
+        "DesktopCentralCloud.SOM.READ",
+        "DesktopCentralCloud.Inventory.READ",
+        "DesktopCentralCloud.PatchMgmt.READ"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_health",
+      "name": "Secure Devices",
+      "description": "Checks health and patch compliance status of all devices managed by Endpoint Central. Devices are rated Healthy, Vulnerable, or Highly Vulnerable based on missing patches.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "managed_devices",
+      "name": "Device List",
+      "description": "Lists all devices under Endpoint Central management (Scope of Management) with agent installation status, OS info, and network details.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "patch_status",
+      "name": "Monitoring & Alerting",
+      "description": "Monitors missing patches across managed devices, highlighting critical and important severity patches that need deployment.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "device_users",
+      "name": "Employee Access",
+      "description": "Lists users with active sessions on managed devices, providing evidence of who has access to endpoints managed by Endpoint Central.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

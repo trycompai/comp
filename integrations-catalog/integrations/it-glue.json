@@ -1,0 +1,35 @@
+{
+  "slug": "it-glue",
+  "name": "IT Glue",
+  "description": "IT Glue is a documentation platform designed for managed service providers (MSPs) and IT departments to store and organize IT documentation",
+  "category": "Productivity",
+  "docsUrl": null,
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Verify access to users in IT Glue",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Verify access to configurations and assets in IT Glue",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

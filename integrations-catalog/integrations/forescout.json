@@ -1,0 +1,63 @@
+{
+  "slug": "forescout",
+  "name": "Forescout",
+  "description": "Monitor Forescout eyeSight network access control for device compliance, managed device inventory, and active policies/alerts",
+  "category": "Security",
+  "docsUrl": "https://docs.forescout.com/bundle/web-api-1-5-16-h/page/gitdoc-eyeextend/eyeExtend/conmod-webapi-plugin-h/about-web-api.html",
+  "baseUrl": "https://placeholder.forescout.local",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Enterprise Manager URL",
+          "type": "text",
+          "required": true,
+          "helpText": "The HTTPS URL of your Forescout Enterprise Manager (e.g. https://em.yourcompany.com)"
+        },
+        {
+          "label": "Web API Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Username configured in the Forescout Web API plugin settings"
+        },
+        {
+          "label": "Web API Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Password configured in the Forescout Web API plugin settings"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Retrieves all managed devices from Forescout and checks their compliance status based on policy matching",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Retrieves the full inventory of managed devices from Forescout for compliance evidence",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that Forescout has active policies configured for network monitoring and alerting",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

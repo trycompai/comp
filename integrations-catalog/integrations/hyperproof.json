@@ -1,0 +1,35 @@
+{
+  "slug": "hyperproof",
+  "name": "Hyperproof",
+  "description": "Compliance operations platform. Monitor compliance programs and evidence collection.",
+  "category": "Security",
+  "docsUrl": "https://developer.hyperproof.app/",
+  "baseUrl": "https://api.hyperproof.app",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "hyperproof_app_availability",
+      "name": "Hyperproof App Availability",
+      "description": "Checks that the Hyperproof API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hyperproof_employee_access",
+      "name": "Hyperproof Employee Access",
+      "description": "Verifies access to Hyperproof.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

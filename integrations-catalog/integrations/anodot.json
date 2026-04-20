@@ -1,0 +1,45 @@
+{
+  "slug": "anodot",
+  "name": "Anodot",
+  "description": "Anodot AI-powered monitoring and anomaly detection",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.anodot.com/",
+  "baseUrl": "https://app.anodot.com/api/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Anodot\n2. Settings → Access Tokens\n3. Create a new token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Anodot → Settings → Access Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "anodot_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Anodot has active anomaly detection alerts",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "anodot_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Anodot users",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

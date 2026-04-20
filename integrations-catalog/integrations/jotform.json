@@ -1,0 +1,45 @@
+{
+  "slug": "jotform",
+  "name": "JotForm",
+  "description": "JotForm online form builder for data collection and workflow automation",
+  "category": "Productivity",
+  "docsUrl": "https://api.jotform.com/docs",
+  "baseUrl": "https://api.jotform.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to JotForm\n2. Go to Account Settings → API\n3. Create a new API key with appropriate permissions\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "JotForm → Account Settings → API → Create API Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "jotform_app_availability",
+      "name": "App Availability",
+      "description": "Verifies JotForm platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "jotform_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies JotForm account access and user management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

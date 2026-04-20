@@ -1,0 +1,52 @@
+{
+  "slug": "sage-hr",
+  "name": "Sage HR",
+  "description": "HR management platform (formerly CakeHR) for employee records, leave management, and team organization.",
+  "category": "HR & People",
+  "docsUrl": "https://sagehr.docs.apiary.io/",
+  "baseUrl": "https://example.sage.hr",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Sage HR\n2. Go to Settings > Integrations > API\n3. Click 'Enable API Access' to generate your API key\n4. Enter your subdomain (from your Sage HR URL) and API key below",
+      "credentialFields": [
+        {
+          "label": "Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Sage HR subdomain. If your URL is https://acme.sage.hr, enter 'acme'."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Sage HR > Settings > Integrations > API > Enable API Access."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "sage_hr_employee_access",
+      "name": "Sage HR Employee Access",
+      "description": "Verifies that employee records can be accessed via the Sage HR API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sage_hr_role_based_access",
+      "name": "Sage HR Role-based Access Controls",
+      "description": "Verifies that teams and positions are assigned to employees for role-based access controls.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

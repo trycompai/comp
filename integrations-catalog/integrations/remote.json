@@ -1,0 +1,35 @@
+{
+  "slug": "remote",
+  "name": "Remote",
+  "description": "Global HR platform for distributed teams. Monitor employee records.",
+  "category": "HR & People",
+  "docsUrl": "https://gateway.remote.com/v1/docs",
+  "baseUrl": "https://gateway.remote.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "remote_app_availability",
+      "name": "Remote App Availability",
+      "description": "Checks Remote app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "remote_employee_access",
+      "name": "Remote Employee Access",
+      "description": "Checks Remote employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

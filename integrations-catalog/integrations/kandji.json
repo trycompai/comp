@@ -1,0 +1,35 @@
+{
+  "slug": "kandji",
+  "name": "Kandji",
+  "description": "Monitor Kandji MDM device compliance and management for endpoint security",
+  "category": "Security",
+  "docsUrl": "https://support.kandji.io/support/solutions/articles/72000560541",
+  "baseUrl": "https://yoursubdomain.api.kandji.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "kandji_secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies Kandji-managed devices are compliant and have agents installed",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "kandji_device_list",
+      "name": "Device List",
+      "description": "Lists all Kandji-managed devices for device inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

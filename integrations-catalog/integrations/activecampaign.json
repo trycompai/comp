@@ -1,0 +1,51 @@
+{
+  "slug": "activecampaign",
+  "name": "ActiveCampaign",
+  "description": "Monitor ActiveCampaign marketing automation for contact list access and campaign compliance",
+  "category": "Communication",
+  "docsUrl": "https://developers.activecampaign.com/reference/overview",
+  "baseUrl": "https://app.activecampaign.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to ActiveCampaign\n2. Go to Settings → Developer → API Access\n3. Copy your API URL and API Key\n4. Enter both below",
+      "credentialFields": [
+        {
+          "label": "API URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ActiveCampaign API URL. Found in Settings → Developer → API Access (e.g. https://myaccount.api-us1.com)"
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in ActiveCampaign Settings → Developer → API Access"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "activecampaign_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews ActiveCampaign users with access to marketing automation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "activecampaign_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies ActiveCampaign automations are running for campaign delivery",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

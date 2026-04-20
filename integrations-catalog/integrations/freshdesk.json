@@ -1,0 +1,45 @@
+{
+  "slug": "freshdesk",
+  "name": "Freshdesk",
+  "description": "Monitor Freshdesk agents and group configuration for customer support compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.freshdesk.com/api/",
+  "baseUrl": "https://yoursubdomain.freshdesk.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Freshdesk Profile Settings (top-right avatar > Profile Settings)\n2. Copy your API Key\n3. Encode it: base64('your_api_key:X') — note the literal ':X' suffix\n4. Enter the encoded value below along with your subdomain",
+      "credentialFields": [
+        {
+          "label": "Encoded API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode your API key followed by ':X'. Example: base64('your_api_key:X'). Use https://www.base64encode.org/"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "freshdesk_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Freshdesk agents and their access levels",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "freshdesk_contact_information",
+      "name": "Contact Information",
+      "description": "Verifies Freshdesk groups are configured for support team organization",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

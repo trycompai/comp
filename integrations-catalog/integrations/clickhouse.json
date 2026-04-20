@@ -1,0 +1,35 @@
+{
+  "slug": "clickhouse",
+  "name": "ClickHouse Cloud",
+  "description": "Cloud-native analytical database. Monitor organizations and service deployments.",
+  "category": "Cloud",
+  "docsUrl": "https://clickhouse.com/docs/en/cloud/manage/api/api-overview",
+  "baseUrl": "https://api.clickhouse.cloud",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "clickhouse_app_availability",
+      "name": "ClickHouse Cloud App Availability",
+      "description": "Checks that the ClickHouse Cloud API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "clickhouse_employee_access",
+      "name": "ClickHouse Cloud Employee Access",
+      "description": "Verifies employee access to ClickHouse Cloud via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

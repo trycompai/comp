@@ -1,0 +1,35 @@
+{
+  "slug": "zapier",
+  "name": "Zapier",
+  "description": "Workflow automation platform. Monitor connected Zaps and integration access.",
+  "category": "Productivity",
+  "docsUrl": "https://platform.zapier.com/reference/api",
+  "baseUrl": "https://api.zapier.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "zapier_app_availability",
+      "name": "Zapier App Availability",
+      "description": "Checks that the Zapier API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "zapier_employee_access",
+      "name": "Zapier Employee Access",
+      "description": "Verifies employee access to Zapier via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

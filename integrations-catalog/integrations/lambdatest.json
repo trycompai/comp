@@ -1,0 +1,45 @@
+{
+  "slug": "lambdatest",
+  "name": "LambdaTest",
+  "description": "Monitor LambdaTest automated testing platform for cross-browser test coverage compliance",
+  "category": "Development",
+  "docsUrl": "https://www.lambdatest.com/support/api-doc/",
+  "baseUrl": "https://api.lambdatest.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to LambdaTest at https://accounts.lambdatest.com\n2. Go to Profile → Access Key\n3. Note your Username and Access Key\n4. Base64 encode 'username:access_key'\n5. Enter the encoded value below",
+      "credentialFields": [
+        {
+          "label": "Encoded Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'username:access_key'. Found in LambdaTest → Profile → Access Key. Command: echo -n 'username:access_key' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "lambdatest_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies LambdaTest automated testing is configured for cross-browser validation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "lambdatest_secure_code",
+      "name": "Secure Code",
+      "description": "Verifies LambdaTest builds are running to validate code quality across browsers",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

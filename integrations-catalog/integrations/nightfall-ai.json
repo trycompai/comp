@@ -1,0 +1,51 @@
+{
+  "slug": "nightfall-ai",
+  "name": "Nightfall AI",
+  "description": "Monitor Nightfall AI cloud DLP policies, data violations, scan capabilities, and detection rules to ensure sensitive data is identified and protected across Slack, GitHub, Jira, and other SaaS applications.",
+  "category": "Security",
+  "docsUrl": "https://help.nightfall.ai/developer-api/introduction/overview",
+  "baseUrl": "https://api.nightfall.ai",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to the Nightfall Dashboard at https://app.nightfall.ai\n2. Go to Settings (gear icon) > API Keys, or navigate to https://app.nightfall.ai/developer-platform/api-keys\n3. Click 'Create API Key' and give it a descriptive name\n4. Copy the API key (starts with 'NF-')\n5. Paste the API key below\n\nNote: The API key must be kept secret. Do not share it in publicly accessible areas."
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "nightfall_dlp_scan_capability",
+      "name": "Data Masking",
+      "description": "Verifies that the Nightfall AI DLP scan endpoint is accessible and can detect sensitive data types (PII, PCI, secrets) with redaction capabilities configured",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "nightfall_secret_detection",
+      "name": "Secure Secrets",
+      "description": "Verifies that Nightfall AI can detect exposed secrets such as API keys, cryptographic keys, database connection strings, and passwords in scanned content",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "nightfall_violation_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that the Nightfall violation monitoring API is accessible and checks for active DLP violations across connected SaaS applications (Slack, GitHub, Jira, Google Drive, etc.)",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "nightfall_code_secrets_scanning",
+      "name": "Secure Code",
+      "description": "Verifies that Nightfall can detect secrets and sensitive data patterns commonly found in source code, including API keys, passwords in code, and connection strings",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

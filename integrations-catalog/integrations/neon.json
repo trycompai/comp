@@ -1,0 +1,35 @@
+{
+  "slug": "neon",
+  "name": "Neon",
+  "description": "Monitor Neon serverless Postgres projects for database infrastructure compliance",
+  "category": "Cloud",
+  "docsUrl": "https://api-docs.neon.tech/reference/getting-started-with-neon-api",
+  "baseUrl": "https://console.neon.tech/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "neon_infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Neon projects for database infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "neon_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Neon platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "cato-networks",
+  "name": "Cato Networks",
+  "description": "SASE platform providing SD-WAN and security services through a global cloud network",
+  "category": "Security",
+  "docsUrl": null,
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "production_firewall",
+      "name": "Production Firewall",
+      "description": "Verify firewall policies and rules are properly configured for production environments",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verify security events monitoring and alerting configurations are in place",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

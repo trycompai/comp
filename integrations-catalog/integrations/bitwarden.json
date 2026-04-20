@@ -1,0 +1,64 @@
+{
+  "slug": "bitwarden",
+  "name": "Bitwarden",
+  "description": "Bitwarden open-source password manager and credential vault for teams",
+  "category": "Security",
+  "docsUrl": "https://bitwarden.com/help/public-api",
+  "baseUrl": "https://api.bitwarden.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Bitwarden Web Vault\n2. Go to your Organization > Settings > API Key\n3. Copy the Client ID and Client Secret\n4. For Server Region: enter bitwarden.com (US), bitwarden.eu (EU), or your self-hosted domain",
+      "credentialFields": [
+        {
+          "label": "Server Region",
+          "type": "combobox",
+          "required": true,
+          "helpText": "Select US or EU, or type your self-hosted domain (e.g. bitwarden.company.com)"
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Organization API client ID from Bitwarden Web Vault > Organization > Settings > API Key."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Organization API client secret."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "bitwarden_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Bitwarden organization members to verify credential vault access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "bitwarden_secure_secrets",
+      "name": "Secure Secrets",
+      "description": "Verifies Bitwarden credential vault is active and accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "bitwarden_2fa",
+      "name": "2FA",
+      "description": "Verifies all Bitwarden organization members have two-factor authentication enabled",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

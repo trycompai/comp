@@ -1,0 +1,70 @@
+{
+  "slug": "vmware-workspace-one",
+  "name": "VMware Workspace ONE",
+  "description": "Monitor device compliance, enrollment status, and user access in VMware Workspace ONE UEM (Unified Endpoint Management).",
+  "category": "Security",
+  "docsUrl": null,
+  "baseUrl": "https://as1234.awmdm.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Workspace ONE UEM console\n2. Go to Groups & Settings > All Settings > System > Advanced > API > REST API\n3. Enable API access if not already enabled\n4. Copy the API Key (aw-tenant-code) from the General tab\n5. Create or use an admin account with API role access\n6. Enter the console URL (e.g. https://as1234.awmdm.com), username, password, and API key below",
+      "credentialFields": [
+        {
+          "label": "Tenant URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Workspace ONE UEM console URL (e.g. https://as1234.awmdm.com)"
+        },
+        {
+          "label": "API Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Admin username with REST API access in Workspace ONE UEM"
+        },
+        {
+          "label": "API Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Password for the API admin user"
+        },
+        {
+          "label": "API Key (aw-tenant-code)",
+          "type": "password",
+          "required": true,
+          "helpText": "REST API key from Groups & Settings > All Settings > System > Advanced > API > REST API"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Verify enrolled devices are compliant and not compromised in Workspace ONE UEM",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Retrieve and verify all enrolled devices in Workspace ONE UEM for asset inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Verify user accounts and their enrollment status in Workspace ONE UEM",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

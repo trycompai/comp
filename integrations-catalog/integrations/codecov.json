@@ -1,0 +1,35 @@
+{
+  "slug": "codecov",
+  "name": "Codecov",
+  "description": "Monitor Codecov code coverage reports to verify tests cover code changes",
+  "category": "Development",
+  "docsUrl": "https://docs.codecov.com/reference/overview",
+  "baseUrl": "https://codecov.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "codecov_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies Codecov is tracking code coverage to ensure changes are tested",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "codecov_secure_code",
+      "name": "Secure Code",
+      "description": "Verifies repositories are linked to Codecov for continuous coverage monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

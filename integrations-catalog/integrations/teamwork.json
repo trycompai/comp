@@ -1,0 +1,35 @@
+{
+  "slug": "teamwork",
+  "name": "Teamwork",
+  "description": "Project management and team collaboration platform.",
+  "category": "Productivity",
+  "docsUrl": "https://developer.teamwork.com/",
+  "baseUrl": "https://api.teamwork.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "teamwork_app_availability",
+      "name": "Teamwork App Availability",
+      "description": "Checks Teamwork app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "teamwork_employee_access",
+      "name": "Teamwork Employee Access",
+      "description": "Checks Teamwork employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

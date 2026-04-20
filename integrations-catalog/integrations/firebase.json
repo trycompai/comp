@@ -1,0 +1,51 @@
+{
+  "slug": "firebase",
+  "name": "Firebase",
+  "description": "Monitor Firebase Authentication MFA settings, user access, and security rules for Firestore and Cloud Storage",
+  "category": "Cloud",
+  "docsUrl": "https://firebase.google.com/docs/reference/rest",
+  "baseUrl": "https://identitytoolkit.googleapis.com/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "Use your existing Google OAuth app or create one at Google Cloud Console > APIs & Credentials. Enable the Identity Toolkit API and Firebase Rules API. Add scopes: identitytoolkit and firebase.readonly.",
+      "createAppUrl": "https://console.cloud.google.com/apis/credentials",
+      "scopes": [
+        "https://www.googleapis.com/auth/identitytoolkit",
+        "https://www.googleapis.com/auth/firebase.readonly"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "mfa_config",
+      "name": "2FA",
+      "description": "Verifies that multi-factor authentication is enabled at the Firebase project level",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "user_access",
+      "name": "Employee Access",
+      "description": "Reviews Firebase Authentication users, their sign-in providers, MFA enrollment, and last activity",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "security_rules",
+      "name": "Security Rules",
+      "description": "Checks that Firestore and Cloud Storage security rules are deployed and not using wide-open defaults",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

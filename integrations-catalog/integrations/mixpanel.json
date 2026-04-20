@@ -1,0 +1,45 @@
+{
+  "slug": "mixpanel",
+  "name": "Mixpanel",
+  "description": "Monitor Mixpanel product analytics for user data access and privacy compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://developer.mixpanel.com/reference/overview",
+  "baseUrl": "https://mixpanel.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Mixpanel at https://mixpanel.com\n2. Go to Organization Settings → Service Accounts\n3. Create a new Service Account\n4. Copy the username and secret\n5. Base64 encode 'username:secret'\n6. Enter the encoded value below",
+      "credentialFields": [
+        {
+          "label": "Encoded Service Account",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'username:secret' of your Mixpanel Service Account. Create one in Mixpanel → Organization Settings → Service Accounts. Command: echo -n 'username:secret' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "mixpanel_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Mixpanel service account credentials are active for analytics access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mixpanel_data_masking",
+      "name": "Data Masking",
+      "description": "Verifies Mixpanel projects handle user data with appropriate privacy controls",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,51 @@
+{
+  "slug": "monte-carlo",
+  "name": "Monte Carlo",
+  "description": "Monitor Monte Carlo data observability platform for pipeline reliability and data quality compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://apidocs.getmontecarlo.com/",
+  "baseUrl": "https://api.getmontecarlo.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Monte Carlo at https://getmontecarlo.com\n2. Go to Settings → API\n3. Click Create Key\n4. Copy the Key ID and Token\n5. Enter both below",
+      "credentialFields": [
+        {
+          "label": "API Key ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Monte Carlo Settings → API → Create Key"
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Monte Carlo Settings → API → Create Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "montecarlo_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Monte Carlo is monitoring data pipelines for quality issues",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "montecarlo_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Monte Carlo users with access to data observability platform",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,37 @@
+{
+  "slug": "toggl",
+  "name": "Toggl Track",
+  "description": "Time tracking and productivity platform.",
+  "category": "Productivity",
+  "docsUrl": "https://engineering.toggl.com/docs/",
+  "baseUrl": "https://api.track.toggl.com",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to Toggl Track\n2. Go to Profile Settings → API Token\n3. Copy your API token\n4. Use the token as username and 'api_token' as password"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "toggl_app_availability",
+      "name": "Toggl Track App Availability",
+      "description": "Checks Toggl Track app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "toggl_employee_access",
+      "name": "Toggl Track Employee Access",
+      "description": "Checks Toggl Track employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

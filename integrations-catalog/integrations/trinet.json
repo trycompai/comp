@@ -1,0 +1,38 @@
+{
+  "slug": "trinet",
+  "name": "TriNet",
+  "description": "TriNet HR platform for payroll, benefits, and HR management",
+  "category": "HR & People",
+  "docsUrl": "https://developers.zenefits.com/reference/getting-started",
+  "baseUrl": "https://api.zenefits.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to TriNet at https://secure.zenefits.com\n2. Click the menu icon (☰) → Company Profile\n3. Click Custom Integrations\n4. Under REST API Access, click Add Token\n5. Grant People read access and save\n6. Copy the token and paste it below\n\nNote: Do NOT look under Integrated Apps — that is the vendor marketplace. The API token is under Company Profile → Custom Integrations.",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "TriNet → Admin Apps → Custom Integrations → REST API Access → Add Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "trinet_employee_access",
+      "name": "Employee Access",
+      "description": "Lists TriNet employees to verify HR access is active",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

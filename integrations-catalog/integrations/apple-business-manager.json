@@ -1,0 +1,70 @@
+{
+  "slug": "apple-business-manager",
+  "name": "Apple Business Manager",
+  "description": "Verify device enrollment, MDM assignment, and profile status in Apple Business Manager (DEP)",
+  "category": "Security",
+  "docsUrl": "https://developer.apple.com/documentation/devicemanagement/device-assignment",
+  "baseUrl": "https://mdmenrollment.apple.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log into Apple Business (business.apple.com) as an Administrator\n2. Go to Settings > MDM Server > your MDM server name\n3. Click 'Download Token' to get the server token file (.p7m)\n4. Decrypt the S/MIME token using your MDM server's private key\n5. The decrypted JSON contains: consumer_key, consumer_secret, access_token, access_secret\n6. Enter those 4 values below\n\nNote: Your MDM server must be registered in Apple Business before you can download a token.",
+      "credentialFields": [
+        {
+          "label": "Consumer Key",
+          "type": "text",
+          "required": true,
+          "helpText": "The consumer_key from your decrypted DEP server token"
+        },
+        {
+          "label": "Consumer Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The consumer_secret from your decrypted DEP server token"
+        },
+        {
+          "label": "Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "The access_token from your decrypted DEP server token"
+        },
+        {
+          "label": "Access Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The access_secret from your decrypted DEP server token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "abm_connectivity",
+      "name": "App Availability",
+      "description": "Verifies connectivity to Apple Business Manager DEP API by establishing an OAuth 1.0a session",
+      "defaultSeverity": "critical",
+      "enabled": true
+    },
+    {
+      "slug": "abm_device_enrollment",
+      "name": "Secure Devices",
+      "description": "Checks that devices are registered in Apple Business Manager and assigned to an MDM server with enrollment profiles",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "abm_device_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Maintains an inventory of all devices registered in Apple Business Manager with their details",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

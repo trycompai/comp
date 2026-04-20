@@ -1,0 +1,35 @@
+{
+  "slug": "checkly",
+  "name": "Checkly",
+  "description": "Monitor Checkly synthetic tests and alert channels for endpoint availability compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://developers.checklyhq.com/reference/",
+  "baseUrl": "https://api.checklyhq.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "checkly_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Checkly synthetic checks are configured and monitoring endpoints",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "checkly_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Checkly alert channels are configured to receive failure notifications",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

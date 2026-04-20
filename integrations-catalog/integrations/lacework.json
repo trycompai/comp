@@ -1,0 +1,51 @@
+{
+  "slug": "lacework",
+  "name": "Lacework",
+  "description": "Monitor Lacework cloud security platform for threat detection and compliance posture",
+  "category": "Security",
+  "docsUrl": "https://docs.lacework.net/api/v2/docs/",
+  "baseUrl": "https://api.lacework.net/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Lacework at https://YOUR_ACCOUNT.lacework.net\n2. Go to Settings → API Keys → Create New API Key\n3. Download the JSON with keyId and secret\n4. Generate an access token: POST /api/v2/access/tokens with keyId and secret\n5. Enter your account name and access token below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Access Token generated via Lacework API. Use your keyId and secret to get a token from POST /api/v2/access/tokens"
+        },
+        {
+          "label": "Account Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Lacework account subdomain (e.g. mycompany from mycompany.lacework.net)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "lacework_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Lacework is actively monitoring cloud environments for threats",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "lacework_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Lacework users with access to cloud security data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,58 @@
+{
+  "slug": "statuscake",
+  "name": "StatusCake",
+  "description": "Monitor StatusCake uptime checks, SSL monitoring, and alert contact group configurations for compliance evidence.",
+  "category": "Monitoring",
+  "docsUrl": "https://developers.statuscake.com/api/",
+  "baseUrl": "https://api.statuscake.com/v1/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in StatusCake dashboard under Integrations & API > API."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "statuscake_monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that StatusCake has active uptime monitoring checks configured and running.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "statuscake_tls_https",
+      "name": "TLS / HTTPS",
+      "description": "Verifies that SSL monitoring checks are configured in StatusCake to track certificate validity.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "statuscake_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies that alert contact groups are configured in StatusCake so monitoring alerts reach the right people.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "statuscake_app_availability",
+      "name": "App Availability",
+      "description": "Verifies overall uptime performance across all StatusCake uptime checks.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

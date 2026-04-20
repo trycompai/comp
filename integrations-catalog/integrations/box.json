@@ -1,0 +1,43 @@
+{
+  "slug": "box",
+  "name": "Box",
+  "description": "Monitor Box enterprise users and metadata templates for access management and encryption compliance",
+  "category": "Cloud",
+  "docsUrl": "https://developer.box.com/reference/",
+  "baseUrl": "https://api.box.com/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Go to Box Developer Console (app.box.com/developers/console)\n2. Create a new Custom App with OAuth 2.0 authentication\n3. Add redirect URL: https://api.trycomp.ai/v1/integrations/oauth/callback\n4. Set scopes: Manage Groups, Manage Enterprise Properties\n5. Copy Client ID and Client Secret",
+      "scopes": [
+        "manage_groups",
+        "manage_enterprise_properties"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "user_access",
+      "name": "Employee Access",
+      "description": "Reviews Box managed users for employee access management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "metadata_templates",
+      "name": "Encryption at Rest",
+      "description": "Verifies that Box enterprise metadata templates are configured for data classification",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

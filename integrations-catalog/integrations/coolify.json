@@ -1,0 +1,35 @@
+{
+  "slug": "coolify",
+  "name": "Coolify",
+  "description": "Self-hosted PaaS for deploying applications. Monitor servers and service access.",
+  "category": "Infrastructure",
+  "docsUrl": "https://coolify.io/docs/api-reference",
+  "baseUrl": "https://app.coolify.io",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "coolify_app_availability",
+      "name": "Coolify App Availability",
+      "description": "Checks that the Coolify API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "coolify_employee_access",
+      "name": "Coolify Employee Access",
+      "description": "Verifies employee access to Coolify via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

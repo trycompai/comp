@@ -1,0 +1,35 @@
+{
+  "slug": "smartsheet",
+  "name": "Smartsheet",
+  "description": "Monitor Smartsheet users and project sheets for compliance",
+  "category": "Productivity",
+  "docsUrl": "https://smartsheet.com/developers/api-docs",
+  "baseUrl": "https://api.smartsheet.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "smartsheet_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Smartsheet users and their access levels",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "smartsheet_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies Smartsheet sheets and workspaces are organized",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

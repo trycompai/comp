@@ -1,0 +1,76 @@
+{
+  "slug": "axonius",
+  "name": "Axonius",
+  "description": "Axonius cybersecurity asset management platform integration for asset discovery, device compliance, and user visibility",
+  "category": "Security",
+  "docsUrl": "https://docs.axonius.com/docs/axonius-rest-api",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Axonius instance\n2. For Axonius v6.1.74 and later: go to System Settings > Managing Users and Roles > Managing Service Accounts, create a service account, and copy its API Key and API Secret\n3. For older versions (pre-6.1.74): click your user icon > User Settings and copy your API Key and API Secret\n4. Enter your full instance URL (e.g. https://mycompany.axonius.com), API Key, and API Secret above\n5. More details: https://docs.axonius.com/docs/manage-service-accounts",
+      "credentialFields": [
+        {
+          "label": "Instance URL",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true
+        },
+        {
+          "label": "API Secret",
+          "type": "password",
+          "required": true
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "axonius_device_inventory",
+      "name": "Device List",
+      "description": "Retrieve and verify all discovered device assets from Axonius",
+      "defaultSeverity": "info",
+      "enabled": true
+    },
+    {
+      "slug": "axonius_adapter_coverage",
+      "name": "Infrastructure Inventory",
+      "description": "Verify adapter connections and data source coverage in Axonius",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "axonius_user_assets",
+      "name": "Employee Access",
+      "description": "Verify user asset discovery and access visibility in Axonius",
+      "defaultSeverity": "info",
+      "enabled": true
+    },
+    {
+      "slug": "axonius_system_health",
+      "name": "Monitoring & Alerting",
+      "description": "Verify Axonius system health, instance status, and discovery cycle",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "axonius_security_settings",
+      "name": "Secure Devices",
+      "description": "Check Axonius security settings and feature flags for security enforcement",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

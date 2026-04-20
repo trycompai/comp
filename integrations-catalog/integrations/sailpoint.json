@@ -1,0 +1,58 @@
+{
+  "slug": "sailpoint",
+  "name": "SailPoint IdentityNow",
+  "description": "Identity governance and administration platform. Monitor user access, roles, and compliance.",
+  "category": "Identity & Access",
+  "docsUrl": "https://developer.sailpoint.com/docs/api/",
+  "baseUrl": "https://tenant.api.identitynow.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to SailPoint IdentityNow\n2. Go to Preferences → Personal Access Tokens\n3. Create a new token with appropriate scope (sp:scopes:all for full access)\n4. Copy the Client ID and Client Secret\n5. Enter your tenant name from your URL\n6. Paste all values below",
+      "credentialFields": [
+        {
+          "label": "Tenant Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your SailPoint tenant name from your URL: https://{tenant}.identitynow.com"
+        },
+        {
+          "label": "PAT Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "From a Personal Access Token in SailPoint → Preferences → Personal Access Tokens."
+        },
+        {
+          "label": "PAT Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Shown once when creating the Personal Access Token."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "sailpoint_app_availability",
+      "name": "SailPoint App Availability",
+      "description": "Verifies SailPoint IdentityNow API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sailpoint_employee_access",
+      "name": "SailPoint Identity Access",
+      "description": "Verifies identity directory access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "slack",
+  "name": "Slack",
+  "description": "Monitor Slack workspace members and admin access for communication security compliance",
+  "category": "Communication",
+  "docsUrl": "https://api.slack.com/methods",
+  "baseUrl": "https://slack.com/api/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Go to https://api.slack.com/apps and create a new Slack app\n2. Under 'OAuth & Permissions', add Bot Token Scopes: users:read, users:read.email, team:read\n3. Install the app to your workspace\n4. Set redirect URI to https://api.trycomp.ai/v1/integrations/oauth/callback\n5. Enter Client ID and Client Secret below",
+      "createAppUrl": "https://api.slack.com/apps",
+      "scopes": [
+        "users:read",
+        "users:read.email",
+        "team:read"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": false
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "slack_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews all active Slack workspace members and flags deactivated accounts that retain workspace access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "slack_access_review",
+      "name": "Access Review Log",
+      "description": "Audits Slack workspace admin and owner accounts to ensure privileged access is limited and accounted for",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

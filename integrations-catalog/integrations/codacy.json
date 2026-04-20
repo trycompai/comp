@@ -1,0 +1,45 @@
+{
+  "slug": "codacy",
+  "name": "Codacy",
+  "description": "Automated code quality and security analysis platform.",
+  "category": "Development",
+  "docsUrl": "https://api.codacy.com/api/v3/docs",
+  "baseUrl": "https://api.codacy.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Codacy\n2. Go to Account → API tokens\n3. Generate a new token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Codacy → Account → API tokens → Generate."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "codacy_app_availability",
+      "name": "Codacy App Availability",
+      "description": "Checks Codacy app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "codacy_employee_access",
+      "name": "Codacy Employee Access",
+      "description": "Checks Codacy employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

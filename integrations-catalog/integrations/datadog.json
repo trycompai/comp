@@ -1,0 +1,58 @@
+{
+  "slug": "datadog",
+  "name": "Datadog",
+  "description": "Monitor Datadog observability configuration including active monitors, synthetic tests, and alerting setup for compliance evidence",
+  "category": "Cloud",
+  "docsUrl": "https://docs.datadoghq.com/api/latest/",
+  "baseUrl": "https://api.datadoghq.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Datadog > Organization Settings > API Keys and copy your API Key.\n2. Go to Organization Settings > Application Keys, create a key with scopes: monitors_read + synthetics_read.\n3. Enter your Datadog site (e.g. datadoghq.com for US, datadoghq.eu for EU).",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Datadog > Organization Settings > API Keys"
+        },
+        {
+          "label": "Application Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Datadog > Organization Settings > Application Keys. Requires scopes: monitors_read, synthetics_read"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "monitors_active",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that Datadog monitors are configured and actively monitoring your infrastructure",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "synthetic_tests",
+      "name": "Utility Monitoring",
+      "description": "Verifies that Datadog synthetic tests are configured for uptime and availability monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "alerting_channels",
+      "name": "Incident Response",
+      "description": "Verifies that Datadog monitors have notification channels configured for alerting",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

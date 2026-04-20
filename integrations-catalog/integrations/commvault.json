@@ -1,0 +1,63 @@
+{
+  "slug": "commvault",
+  "name": "Commvault",
+  "description": "Enterprise backup, recovery, and data management platform for cloud, virtual, and physical environments",
+  "category": "Security",
+  "docsUrl": null,
+  "baseUrl": "https://commvault.example.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Commvault Server URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Commvault Web Console or Command Center URL (e.g., https://commvault.company.com)"
+        },
+        {
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Commvault admin username with REST API access"
+        },
+        {
+          "label": "Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Password for the Commvault user"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "backup_jobs",
+      "name": "Backup Logs",
+      "description": "Reviews recent backup jobs to identify failures, warnings, and overall backup health across the Commvault environment",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all clients and servers registered in Commvault for backup and data protection coverage",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerts",
+      "name": "Monitoring & Alerting",
+      "description": "Checks for active alerts and alert rule configurations in Commvault to ensure monitoring is in place",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

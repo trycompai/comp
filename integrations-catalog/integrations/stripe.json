@@ -1,0 +1,38 @@
+{
+  "slug": "stripe",
+  "name": "Stripe",
+  "description": "Verify Stripe payment data masking and PCI compliance",
+  "category": "Productivity",
+  "docsUrl": "https://docs.stripe.com/api",
+  "baseUrl": "https://api.stripe.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Stripe at https://dashboard.stripe.com\n2. Go to Developers > API keys\n3. Click '+ Create restricted key'\n4. Under 'All core resources', set Charges to 'Read'\n5. Save and copy the key (rk_live_...)\n6. Paste the key below",
+      "credentialFields": [
+        {
+          "label": "Secret or Restricted API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Stripe Dashboard > Developers > API keys. Create a Restricted Key with Charges > Read permission."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "stripe_data_masking",
+      "name": "Data Masking",
+      "description": "Verifies Stripe payment data is properly masked and not exposing raw card data",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

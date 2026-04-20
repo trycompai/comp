@@ -1,0 +1,58 @@
+{
+  "slug": "jamf",
+  "name": "Jamf Pro",
+  "description": "Monitor Jamf Pro device management including computer enrollment, MDM compliance, and disk encryption status",
+  "category": "Security",
+  "docsUrl": "https://developer.jamf.com/jamf-pro/docs",
+  "baseUrl": "https://placeholder.jamfcloud.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Jamf Pro as an administrator.\n2. Go to Settings > System > API Roles and Clients.\n3. Create an API Role with 'Read Computers', 'Read Mobile Devices', and 'Read Computer Inventory Collection' permissions.\n4. Create an API Client, assign the role, and copy the Client ID and Client Secret.\n5. Run this command to get your access token:\n   curl -X POST 'https://YOUR_DOMAIN/api/oauth/token' -H 'Content-Type: application/x-www-form-urlencoded' -d 'grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET'\n6. Copy the access_token value from the response and paste it below.\nNote: Tokens expire — regenerate if you see authentication errors.",
+      "credentialFields": [
+        {
+          "label": "Jamf Pro URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Jamf Pro server URL, e.g. company.jamfcloud.com (without https://)"
+        },
+        {
+          "label": "Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Bearer token obtained by exchanging your API client credentials. Run: curl -X POST 'https://YOUR_DOMAIN/api/oauth/token' -H 'Content-Type: application/x-www-form-urlencoded' -d 'grant_type=client_credentials&client_id=CLIENT_ID&client_secret=CLIENT_SECRET'"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies that computers are enrolled in Jamf Pro MDM management",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Lists all mobile devices enrolled in Jamf Pro MDM",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "encryption_at_rest",
+      "name": "Encryption at Rest",
+      "description": "Verifies that computers enrolled in Jamf Pro have FileVault/disk encryption enabled",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "heroku",
+  "name": "Heroku",
+  "description": "Monitor Heroku applications for app availability and environment separation compliance",
+  "category": "Cloud",
+  "docsUrl": "https://devcenter.heroku.com/articles/platform-api-reference",
+  "baseUrl": "https://api.heroku.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Heroku Dashboard\n2. Go to Account Settings\n3. Scroll to API Key > Reveal\n4. Copy and paste the API key below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Heroku Account Settings > API Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "apps_available",
+      "name": "App Availability",
+      "description": "Verifies that Heroku applications are deployed and available",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "env_separation",
+      "name": "Separation of Environments",
+      "description": "Verifies that multiple Heroku apps exist for environment separation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "split",
+  "name": "Split",
+  "description": "Monitor Split feature flag platform for deployment control and access compliance",
+  "category": "Development",
+  "docsUrl": "https://docs.split.io/reference/introduction",
+  "baseUrl": "https://api.split.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Split at https://app.split.io\n2. Go to Admin Settings → API Keys\n3. Create a new Admin API key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "Admin API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Split Admin Settings → API Keys (Admin key type)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "split_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies Split feature flags are configured to safely manage code changes",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "split_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Split workspace members with access to feature flag management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

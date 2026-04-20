@@ -1,0 +1,58 @@
+{
+  "slug": "lastpass",
+  "name": "LastPass Business",
+  "description": "Monitor LastPass Business user access, MFA enrollment, and role-based access controls",
+  "category": "Security",
+  "docsUrl": "https://support.lastpass.com/help/use-the-lastpass-provisioning-api-lp010068",
+  "baseUrl": "https://lastpass.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to the LastPass Admin Console at admin.lastpass.com\n2. Find your Account Number (CID) at the top of the Dashboard page\n3. Go to Advanced > Enterprise API\n4. Click 'Create provisioning hash' (or 'Reset your provisioning hash' if one already exists)\n5. Copy the CID and Provisioning Hash into the fields below",
+      "credentialFields": [
+        {
+          "label": "Company ID (CID)",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in the LastPass Admin Console Dashboard, labeled 'Account number' at the top of the page"
+        },
+        {
+          "label": "Provisioning Hash",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate in LastPass Admin Console: Advanced > Enterprise API > Create provisioning hash"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Reviews all LastPass Business users, their login status, and account activity",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mfa_enrollment",
+      "name": "2FA",
+      "description": "Verifies that all active LastPass Business users have multi-factor authentication enabled",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "rbac",
+      "name": "Role-based Access Controls",
+      "description": "Reviews LastPass Business user groups and admin roles to verify role-based access controls are in place",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "zscaler-zpa",
+  "name": "Zscaler Private Access",
+  "description": "Zero trust network access platform. Monitor application access and policies.",
+  "category": "Security",
+  "docsUrl": "https://help.zscaler.com/zpa/api",
+  "baseUrl": "https://config.private.zscaler.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "zscaler_zpa_app_availability",
+      "name": "Zscaler ZPA App Availability",
+      "description": "Checks that the Zscaler ZPA API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "zscaler_zpa_employee_access",
+      "name": "Zscaler ZPA Employee Access",
+      "description": "Verifies access to Zscaler ZPA.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

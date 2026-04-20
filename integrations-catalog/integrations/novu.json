@@ -1,0 +1,45 @@
+{
+  "slug": "novu",
+  "name": "Novu",
+  "description": "Monitor Novu notification infrastructure for environment separation and access compliance",
+  "category": "Communication",
+  "docsUrl": "https://docs.novu.co/api-reference/overview",
+  "baseUrl": "https://api.novu.co/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Novu at https://web.novu.co\n2. Go to Settings → API Keys\n3. Copy your API Key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Novu Settings → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "novu_separation",
+      "name": "Separation of Environments",
+      "description": "Verifies Novu has separate environments for development and production notifications",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "novu_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Novu team members and their access to notification infrastructure",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

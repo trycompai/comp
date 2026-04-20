@@ -1,0 +1,45 @@
+{
+  "slug": "lago",
+  "name": "Lago",
+  "description": "Monitor Lago open source billing platform for access and subscription data compliance",
+  "category": "Productivity",
+  "docsUrl": "https://doc.getlago.com/api-reference/intro",
+  "baseUrl": "https://api.getlago.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Lago at https://app.getlago.com\n2. Go to Settings → API Keys\n3. Copy your API key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Lago Settings → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "lago_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Lago billing platform access and subscription data exposure",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "lago_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Lago billing platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

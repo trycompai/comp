@@ -1,0 +1,43 @@
+{
+  "slug": "sterling",
+  "name": "Sterling",
+  "description": "Monitor Sterling background check screenings for HR verification compliance",
+  "category": "HR & People",
+  "docsUrl": "https://apidocs.sterlingcheck.app/",
+  "baseUrl": "https://api.kennect.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Sterling API Client ID, provided by Sterling"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Sterling API Client Secret, provided by Sterling"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "sterling_employee_verification",
+      "name": "Employee Verification",
+      "description": "Verifies Sterling is being used for background check screenings by checking for active candidates and packages",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

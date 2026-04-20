@@ -1,0 +1,51 @@
+{
+  "slug": "victorops",
+  "name": "Splunk On-Call",
+  "description": "Incident management and on-call platform.",
+  "category": "Monitoring",
+  "docsUrl": "https://portal.victorops.com/public/api-docs.html",
+  "baseUrl": "https://api.victorops.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Splunk On-Call\n2. Go to Integrations → API\n3. Copy the API ID and API Key\n4. Paste both below",
+      "credentialFields": [
+        {
+          "label": "API ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Splunk On-Call → Integrations → API."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Splunk On-Call → Integrations → API."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "victorops_app_availability",
+      "name": "Splunk On-Call App Availability",
+      "description": "Checks Splunk On-Call app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "victorops_employee_access",
+      "name": "Splunk On-Call Employee Access",
+      "description": "Checks Splunk On-Call employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

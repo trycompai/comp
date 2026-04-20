@@ -1,0 +1,44 @@
+{
+  "slug": "guru",
+  "name": "Guru",
+  "description": "Guru knowledge management platform for teams",
+  "category": "Productivity",
+  "docsUrl": "https://developer.getguru.com/",
+  "baseUrl": "https://api.getguru.com/api/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Guru as admin\n2. Settings → Integrations → Guru API\n3. Copy your User Token\n4. Enter your email and token below",
+      "credentialFields": [
+        {
+          "label": "User Email",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Guru admin email"
+        },
+        {
+          "label": "User Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Guru → Settings → Integrations → Guru API → User Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "guru_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Guru team members to verify knowledge base access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

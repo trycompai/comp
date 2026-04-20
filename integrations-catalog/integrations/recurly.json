@@ -1,0 +1,51 @@
+{
+  "slug": "recurly",
+  "name": "Recurly",
+  "description": "Monitor Recurly subscription billing platform for account access and payment data compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.recurly.com/api/v2021-02-25/",
+  "baseUrl": "https://v3.recurly.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Recurly at https://app.recurly.com\n2. Go to Admin → Integrations → API Credentials\n3. Copy your Private API Key\n4. Base64 encode 'api_key:' (with trailing colon): echo -n 'apikey:' | base64\n5. Enter your subdomain and encoded key below",
+      "credentialFields": [
+        {
+          "label": "Encoded API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'your_api_key:' (with trailing colon). Found in Recurly Admin → Integrations → API Credentials. Command: echo -n 'apikey:' | base64"
+        },
+        {
+          "label": "Site Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Recurly site subdomain (e.g. mycompany)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "recurly_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Recurly users with access to subscription billing data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "recurly_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Recurly platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

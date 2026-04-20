@@ -1,0 +1,45 @@
+{
+  "slug": "go1",
+  "name": "Go1",
+  "description": "Go1 is a learning content aggregator and training platform used for compliance training, L&D, and security awareness. Connect Go1 to verify employee access and training enrollment status.",
+  "category": "Security",
+  "docsUrl": null,
+  "baseUrl": null,
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "Create a Developer App in Go1 Developer Portal (https://developers.go1.com). Copy the Client ID and Client Secret. Ensure the app has user.read, enrollment.read, and lo.read scopes enabled.",
+      "scopes": [
+        "user.read",
+        "enrollment.read",
+        "lo.read"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "go1_employee_access",
+      "name": "Go1 Employee Access",
+      "description": "Verifies that employees have active accounts in Go1 for security training access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "go1_training_enrollment",
+      "name": "Go1 Training Enrollment Verification",
+      "description": "Verifies that training enrollments exist in Go1, confirming employees are assigned and completing required training content.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

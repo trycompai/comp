@@ -1,0 +1,51 @@
+{
+  "slug": "tenable-cloud",
+  "name": "Tenable Cloud",
+  "description": "Vulnerability management and scanning platform. Monitor scan results and security posture.",
+  "category": "Security",
+  "docsUrl": "https://developer.tenable.com/",
+  "baseUrl": "https://cloud.tenable.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Tenable.io\n2. Go to Settings → My Account → API Keys\n3. Click Generate to create a new key pair\n4. Copy the Access Key and Secret Key\n5. Paste both values below",
+      "credentialFields": [
+        {
+          "label": "Access Key",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Tenable.io → Settings → My Account → API Keys."
+        },
+        {
+          "label": "Secret Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Shown once when generating API keys."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "tenable_cloud_app_availability",
+      "name": "Tenable Cloud App Availability",
+      "description": "Verifies Tenable.io API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "tenable_cloud_vulnerability_scanning",
+      "name": "Tenable Cloud Vulnerability Scanning",
+      "description": "Verifies vulnerability scans are configured.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

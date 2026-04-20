@@ -1,0 +1,35 @@
+{
+  "slug": "databricks",
+  "name": "Databricks",
+  "description": "Monitor Databricks workspace clusters and access for data platform compliance",
+  "category": "Cloud",
+  "docsUrl": "https://docs.databricks.com/api/",
+  "baseUrl": "https://yourworkspace.azuredatabricks.net/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "databricks_infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Databricks clusters for data infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "databricks_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Databricks workspace users and groups",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

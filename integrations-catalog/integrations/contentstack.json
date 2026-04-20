@@ -1,0 +1,45 @@
+{
+  "slug": "contentstack",
+  "name": "Contentstack",
+  "description": "Monitor Contentstack enterprise headless CMS for team access and content delivery compliance",
+  "category": "Productivity",
+  "docsUrl": "https://www.contentstack.com/docs/developers/apis/content-management-api/",
+  "baseUrl": "https://api.contentstack.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Contentstack at https://app.contentstack.com\n2. Go to Account Settings → Tokens → Auth Tokens\n3. Generate a new auth token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "Auth Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Contentstack Account → Tokens → Auth Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "contentstack_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Contentstack organization users with access to content management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "contentstack_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Contentstack CMS platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

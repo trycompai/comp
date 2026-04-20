@@ -1,0 +1,45 @@
+{
+  "slug": "jira",
+  "name": "Jira",
+  "description": "Monitor Jira Cloud project access, user roles, and permission schemes for compliance",
+  "category": "Development",
+  "docsUrl": "https://developer.atlassian.com/cloud/jira/platform/rest/v3/",
+  "baseUrl": "https://api.atlassian.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to https://id.atlassian.com/manage-profile/security/api-tokens\n2. Create an API token\n3. Encode: echo -n your@email.com:YOUR_API_TOKEN | base64\n4. Enter the result and your subdomain below",
+      "credentialFields": [
+        {
+          "label": "Encoded API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode your credentials: run echo -n your@email.com:YOUR_API_TOKEN | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "user_access",
+      "name": "Access Review Log",
+      "description": "Reviews active Jira users and their access for compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "project_rbac",
+      "name": "Role-based Access Controls",
+      "description": "Verifies that Jira projects have proper type and access configurations",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

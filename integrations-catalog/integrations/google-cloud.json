@@ -1,0 +1,42 @@
+{
+  "slug": "google-cloud",
+  "name": "Google Cloud",
+  "description": "Monitor GCP projects and infrastructure for cloud compliance",
+  "category": "Cloud",
+  "docsUrl": "https://cloud.google.com/apis/docs/overview",
+  "baseUrl": "https://cloudresourcemanager.googleapis.com/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Go to Google Cloud Console > APIs & Services > Credentials\n2. Create an OAuth 2.0 Client ID (Web application)\n3. Add redirect URI: https://api.trycomp.ai/v1/integrations/oauth/callback\n4. Enable Cloud Resource Manager API\n5. Copy Client ID and Client Secret",
+      "scopes": [
+        "https://www.googleapis.com/auth/cloudplatformprojects.readonly"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "gcp_infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists GCP projects for cloud infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "gcp_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies GCP has separate projects per environment",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

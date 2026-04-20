@@ -1,0 +1,51 @@
+{
+  "slug": "gorgias",
+  "name": "Gorgias",
+  "description": "Monitor Gorgias e-commerce helpdesk for agent access and customer support compliance",
+  "category": "Communication",
+  "docsUrl": "https://developers.gorgias.com/reference/introduction",
+  "baseUrl": "https://app.gorgias.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Gorgias at https://yourstore.gorgias.com\n2. Go to Settings → REST API\n3. Generate an API key\n4. Base64 encode 'your_email:api_key'\n5. Enter your subdomain and encoded credentials below",
+      "credentialFields": [
+        {
+          "label": "Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Gorgias subdomain (e.g. mystore from mystore.gorgias.com)"
+        },
+        {
+          "label": "Encoded Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'email:api_key'. Found in Gorgias Settings → REST API. Command: echo -n 'email@company.com:api_key' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "gorgias_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Gorgias agent accounts with access to customer conversations",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "gorgias_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Gorgias helpdesk is active for customer support",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

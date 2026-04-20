@@ -1,0 +1,51 @@
+{
+  "slug": "logscale",
+  "name": "CrowdStrike LogScale",
+  "description": "Log management and observability platform (formerly Humio). Monitor data repositories and log ingestion.",
+  "category": "Monitoring",
+  "docsUrl": "https://library.humio.com/falcon-logscale/api.html",
+  "baseUrl": "https://cloud.community.humio.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to LogScale (Humio)\n2. Go to Settings → API Tokens\n3. Create a new token with read permissions\n4. Enter your LogScale URL and the token below",
+      "credentialFields": [
+        {
+          "label": "LogScale URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your LogScale instance URL (e.g. https://cloud.community.humio.com or your self-hosted URL). No trailing slash."
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in LogScale → Settings → API Tokens."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "logscale_app_availability",
+      "name": "LogScale App Availability",
+      "description": "Verifies CrowdStrike LogScale API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "logscale_monitoring",
+      "name": "LogScale Monitoring",
+      "description": "Verifies log repositories are configured for monitoring.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

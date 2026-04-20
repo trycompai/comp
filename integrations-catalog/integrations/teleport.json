@@ -1,0 +1,35 @@
+{
+  "slug": "teleport",
+  "name": "Teleport",
+  "description": "Monitor Teleport privileged access management — audit users, roles, and server access for zero-trust compliance",
+  "category": "Infrastructure",
+  "docsUrl": "https://goteleport.com/docs/api/",
+  "baseUrl": "https://yourteleport.example.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "teleport_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Teleport users with privileged infrastructure access",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "teleport_rbac",
+      "name": "Role-based Access Controls",
+      "description": "Audits Teleport roles to ensure least-privilege access to infrastructure",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

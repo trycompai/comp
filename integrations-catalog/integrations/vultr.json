@@ -1,0 +1,35 @@
+{
+  "slug": "vultr",
+  "name": "Vultr",
+  "description": "Monitor Vultr cloud instances for infrastructure inventory and separation of environments",
+  "category": "Cloud",
+  "docsUrl": "https://www.vultr.com/api/",
+  "baseUrl": "https://api.vultr.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "vultr_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Vultr cloud instances for infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "vultr_separation",
+      "name": "Separation of Environments",
+      "description": "Verifies Vultr uses multiple regions/VPC configs for environment separation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

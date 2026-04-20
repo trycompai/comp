@@ -1,0 +1,45 @@
+{
+  "slug": "kong",
+  "name": "Kong Konnect",
+  "description": "Monitor Kong API gateway for team access and role-based API management compliance",
+  "category": "Infrastructure",
+  "docsUrl": "https://docs.konghq.com/konnect/api/",
+  "baseUrl": "https://global.api.konghq.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Kong Konnect at https://cloud.konghq.com\n2. Go to Personal Access Tokens\n3. Generate a new token\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "Personal Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Kong Konnect → Personal Access Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "kong_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Kong Konnect organization members and their roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "kong_rbac",
+      "name": "Role-based Access Controls",
+      "description": "Verifies Kong Konnect API gateway has role-based access configured",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

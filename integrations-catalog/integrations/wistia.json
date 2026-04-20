@@ -1,0 +1,45 @@
+{
+  "slug": "wistia",
+  "name": "Wistia",
+  "description": "Wistia video hosting and analytics platform for businesses",
+  "category": "Communication",
+  "docsUrl": "https://wistia.com/support/developers/data-api",
+  "baseUrl": "https://api.wistia.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Wistia\n2. Go to Account → API Access\n3. Copy the API Password\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Wistia → Account → API Access → API Password"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "wistia_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Wistia platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "wistia_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Wistia account access is active",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

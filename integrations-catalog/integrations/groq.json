@@ -1,0 +1,35 @@
+{
+  "slug": "groq",
+  "name": "Groq",
+  "description": "AI inference platform with LPU hardware. Monitor API access.",
+  "category": "Cloud",
+  "docsUrl": "https://console.groq.com/docs/api-reference",
+  "baseUrl": "https://api.groq.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "groq_app_availability",
+      "name": "Groq App Availability",
+      "description": "Checks that the Groq API is accessible with the provided credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "groq_employee_access",
+      "name": "Groq Employee Access",
+      "description": "Verifies employee access to Groq via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

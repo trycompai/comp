@@ -1,0 +1,45 @@
+{
+  "slug": "loops",
+  "name": "Loops",
+  "description": "Monitor Loops email platform for team access and transactional email compliance",
+  "category": "Communication",
+  "docsUrl": "https://loops.so/docs/api",
+  "baseUrl": "https://app.loops.so/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Loops at https://app.loops.so\n2. Go to Settings → API\n3. Generate an API key\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Loops Settings → API"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "loops_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Loops account is active and accessible for email compliance",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "loops_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Loops platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

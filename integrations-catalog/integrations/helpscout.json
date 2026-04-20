@@ -1,0 +1,45 @@
+{
+  "slug": "helpscout",
+  "name": "Help Scout",
+  "description": "Monitor Help Scout customer support platform for mailbox access and team member compliance",
+  "category": "Communication",
+  "docsUrl": "https://developer.helpscout.com/mailbox-api/",
+  "baseUrl": "https://api.helpscout.net/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Help Scout at https://secure.helpscout.net\n2. Go to Your Profile → API Keys\n3. Create a new API key\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Help Scout Profile → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "helpscout_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Help Scout team members with access to customer support mailboxes",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "helpscout_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Help Scout mailboxes are active for customer support",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

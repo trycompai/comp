@@ -1,0 +1,45 @@
+{
+  "slug": "jenkins",
+  "name": "Jenkins",
+  "description": "CI/CD automation server. Monitor build pipelines and deployment compliance.",
+  "category": "Development",
+  "docsUrl": "https://www.jenkins.io/doc/book/using/remote-access-api/",
+  "baseUrl": "https://jenkins.example.com",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to your Jenkins server\n2. Click your username (top-right) → Configure\n3. Under API Token, click Add new Token → Generate\n4. Copy the token\n5. Enter your Jenkins URL below\n6. Use your Jenkins username and the API token as the password",
+      "credentialFields": [
+        {
+          "label": "Jenkins URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Jenkins server URL (e.g. https://jenkins.yourcompany.com). No trailing slash."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "jenkins_app_availability",
+      "name": "Jenkins App Availability",
+      "description": "Verifies Jenkins API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "jenkins_code_changes",
+      "name": "Jenkins CI/CD Pipeline",
+      "description": "Verifies CI/CD pipelines are configured in Jenkins.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

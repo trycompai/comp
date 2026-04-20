@@ -1,0 +1,45 @@
+{
+  "slug": "zerotier",
+  "name": "ZeroTier",
+  "description": "Monitor ZeroTier software-defined networking for secure network access and device compliance",
+  "category": "Infrastructure",
+  "docsUrl": "https://docs.zerotier.com/api/",
+  "baseUrl": "https://api.zerotier.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to ZeroTier Central at https://my.zerotier.com\n2. Go to Account → API Access Tokens\n3. Generate a new token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in ZeroTier Central → Account → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "zerotier_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists ZeroTier networks for secure network infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "zerotier_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews ZeroTier network members to audit private network access",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

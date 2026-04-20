@@ -1,0 +1,77 @@
+{
+  "slug": "code42-incydr",
+  "name": "Code42 Incydr",
+  "description": "Monitor Code42 Incydr insider risk management platform for device inventory, security alerts, file activity, user access, and audit logs for compliance",
+  "category": "Security",
+  "docsUrl": "https://developer.code42.com/api/",
+  "baseUrl": "https://{{credentials.region}}/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "API client ID from Code42 Incydr console"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "API client secret from Code42 Incydr console"
+        },
+        {
+          "label": "Region",
+          "type": "select",
+          "required": true,
+          "helpText": "Select your Code42 region"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Verify devices are properly inventoried and monitored for insider risk management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "security_alerts",
+      "name": "Monitoring & Alerting",
+      "description": "Verify security alerts and monitoring sessions are configured and active for insider threat detection",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "file_activity_monitoring",
+      "name": "File Events",
+      "description": "Monitor file activity events for data exfiltration and unauthorized access patterns",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "user_access_review",
+      "name": "Employee Access",
+      "description": "Review user access and ensure proper user management for insider risk monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "audit_logs",
+      "name": "Incident Response",
+      "description": "Monitor Code42 Incydr investigation cases for insider risk incidents",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

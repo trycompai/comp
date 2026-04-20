@@ -1,0 +1,35 @@
+{
+  "slug": "deepgram",
+  "name": "Deepgram",
+  "description": "AI speech-to-text and audio intelligence platform. Monitor API access.",
+  "category": "Cloud",
+  "docsUrl": "https://developers.deepgram.com/reference/",
+  "baseUrl": "https://api.deepgram.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "deepgram_app_availability",
+      "name": "Deepgram App Availability",
+      "description": "Checks that the Deepgram API is accessible with the provided credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "deepgram_employee_access",
+      "name": "Deepgram Employee Access",
+      "description": "Verifies employee access to Deepgram via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

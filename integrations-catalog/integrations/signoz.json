@@ -1,0 +1,51 @@
+{
+  "slug": "signoz",
+  "name": "SigNoz",
+  "description": "Open-source observability platform with metrics, traces, and logs. Monitor infrastructure alerting.",
+  "category": "Monitoring",
+  "docsUrl": "https://signoz.io/docs/",
+  "baseUrl": "https://signoz.example.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your SigNoz instance\n2. Go to Settings → API Keys (or Organization Settings for Cloud)\n3. Create a new API key\n4. Enter your SigNoz URL and the API key below",
+      "credentialFields": [
+        {
+          "label": "SigNoz URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your SigNoz instance URL (e.g. https://yourcompany.signoz.cloud or self-hosted URL). No trailing slash."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in SigNoz → Settings → API Keys. Create a key with read permissions."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "signoz_app_availability",
+      "name": "SigNoz App Availability",
+      "description": "Verifies SigNoz API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "signoz_monitoring",
+      "name": "SigNoz Monitoring",
+      "description": "Verifies monitoring alerts are configured in SigNoz.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

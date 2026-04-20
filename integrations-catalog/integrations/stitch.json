@@ -1,0 +1,45 @@
+{
+  "slug": "stitch",
+  "name": "Stitch",
+  "description": "Monitor Stitch ETL data pipelines for data source connectivity and compliance",
+  "category": "Development",
+  "docsUrl": "https://www.stitchdata.com/docs/developers/import-api/",
+  "baseUrl": "https://api.stitchdata.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Stitch at https://app.stitchdata.com\n2. Go to Account Settings → API Keys\n3. Generate an access token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Stitch Account Settings → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "stitch_separation",
+      "name": "Separation of Environments",
+      "description": "Verifies Stitch ETL data sources are configured for structured data pipeline management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "stitch_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Stitch destinations are configured to receive ETL data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,52 @@
+{
+  "slug": "manageengine-log360-cloud",
+  "name": "ManageEngine Log360 Cloud",
+  "description": "ManageEngine Log360 Cloud SIEM for centralized log management, threat detection, and compliance monitoring",
+  "category": "Security",
+  "docsUrl": "https://www.manageengine.com/cloud-siem/api/v2/introduction/",
+  "baseUrl": "https://log360cloud.manageengine.com",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Log in to your Log360 Cloud instance\n2. Connect your Zoho account when prompted\n3. Grant read access to accounts, log sources, search, and log fields\n\nNote: If your Log360 Cloud instance is on a non-.com domain (e.g. .eu, .in, .com.au), let us know so we can configure the correct regional endpoint.",
+      "scopes": [
+        "logs360cloud.accounts.READ",
+        "logs360cloud.logsources.READ",
+        "logs360cloud.search.READ",
+        "logs360cloud.logfields.READ"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "log360_cloud_siem_availability",
+      "name": "SIEM Availability",
+      "description": "Verifies Log360 Cloud SIEM is accessible and the connection is valid",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "log360_cloud_log_sources",
+      "name": "Log Source Monitoring",
+      "description": "Verifies that log sources are configured and actively collecting logs in Log360 Cloud",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "log360_cloud_log_source_groups",
+      "name": "Log Source Organization",
+      "description": "Verifies that log sources are organized into groups for structured monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "sumo-logic",
+  "name": "Sumo Logic",
+  "description": "Cloud-native SIEM and log analytics platform. Monitor collectors and data ingestion.",
+  "category": "Monitoring",
+  "docsUrl": "https://help.sumologic.com/docs/api/",
+  "baseUrl": "https://api.us2.sumologic.com",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to Sumo Logic\n2. Go to Administration → Security → Access Keys\n3. Click + Add Access Key\n4. Copy the Access ID and Access Key\n5. Use Access ID as username and Access Key as password\n6. Determine your API URL from your login URL region\n7. Paste all values below",
+      "credentialFields": [
+        {
+          "label": "API Endpoint URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Sumo Logic API URL based on region (e.g. https://api.us2.sumologic.com, https://api.eu.sumologic.com)."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "sumo_logic_app_availability",
+      "name": "Sumo Logic App Availability",
+      "description": "Verifies Sumo Logic API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sumo_logic_monitoring",
+      "name": "Sumo Logic Monitoring",
+      "description": "Verifies log collection is active.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

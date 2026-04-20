@@ -1,0 +1,38 @@
+{
+  "slug": "juro",
+  "name": "Juro",
+  "description": "Juro contract management and automation platform",
+  "category": "Productivity",
+  "docsUrl": "https://developers.juro.com/",
+  "baseUrl": "https://app.juro.com/api/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Juro\n2. Go to Settings → Integrations → API\n3. Create an API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Juro → Settings → Integrations → API → Create API key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "juro_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Juro users to verify contract platform access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

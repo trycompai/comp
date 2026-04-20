@@ -1,0 +1,51 @@
+{
+  "slug": "cisco-umbrella",
+  "name": "Cisco Umbrella",
+  "description": "Cloud-delivered DNS security and web filtering platform. Monitor policies and admin access.",
+  "category": "Security",
+  "docsUrl": "https://developer.cisco.com/docs/cloud-security/",
+  "baseUrl": "https://api.umbrella.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Cisco Umbrella Dashboard\n2. Go to Admin → API Keys\n3. Create a new key with Admin scope\n4. Copy API Key and Secret\n5. Paste both below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "text",
+          "required": true,
+          "helpText": "From Umbrella Dashboard → Admin → API Keys."
+        },
+        {
+          "label": "API Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Shown once when creating the API key."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "cisco_umbrella_app_availability",
+      "name": "Cisco Umbrella App Availability",
+      "description": "Verifies Cisco Umbrella API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "cisco_umbrella_employee_access",
+      "name": "Cisco Umbrella Admin Access",
+      "description": "Verifies admin access to Umbrella.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

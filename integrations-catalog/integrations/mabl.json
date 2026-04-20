@@ -1,0 +1,45 @@
+{
+  "slug": "mabl",
+  "name": "Mabl",
+  "description": "Monitor Mabl AI-powered testing for automated test coverage and code quality compliance",
+  "category": "Development",
+  "docsUrl": "https://help.mabl.com/hc/en-us/articles/360017810591-Using-the-Mabl-REST-API",
+  "baseUrl": "https://api.mabl.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Mabl at https://app.mabl.com\n2. Go to Settings → API → API Keys\n3. Generate an API key\n4. Base64 encode 'key:your_api_key' (where 'key' is the literal username)\n5. Enter the encoded value below",
+      "credentialFields": [
+        {
+          "label": "Encoded API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'key:your_api_key' (literally 'key' as username). Command: echo -n 'key:your_api_key' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "mabl_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies Mabl automated tests are running to validate code changes",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mabl_secure_code",
+      "name": "Secure Code",
+      "description": "Verifies Mabl test plans are configured for continuous quality assurance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

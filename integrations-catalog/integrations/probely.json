@@ -1,0 +1,35 @@
+{
+  "slug": "probely",
+  "name": "Probely",
+  "description": "Web application security scanner. Monitor scan targets and vulnerability assessments.",
+  "category": "Security",
+  "docsUrl": "https://developers.probely.com",
+  "baseUrl": "https://api.probely.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "probely_app_availability",
+      "name": "Probely App Availability",
+      "description": "Checks that the Probely API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "probely_employee_access",
+      "name": "Probely Employee Access",
+      "description": "Verifies employee access to Probely via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

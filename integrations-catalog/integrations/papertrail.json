@@ -1,0 +1,45 @@
+{
+  "slug": "papertrail",
+  "name": "Papertrail",
+  "description": "Monitor Papertrail log management for logging infrastructure and monitoring compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://help.papertrailapp.com/kb/how-it-works/http-api/",
+  "baseUrl": "https://papertrailapp.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Papertrail at https://papertrailapp.com\n2. Go to Profile (top right)\n3. Copy your API Token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Papertrail → Profile → API Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "papertrail_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Papertrail saved searches and alerts are configured for log monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "papertrail_utility_monitoring",
+      "name": "Utility Monitoring",
+      "description": "Verifies Papertrail log sources are actively ingesting logs",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,58 @@
+{
+  "slug": "snipeit",
+  "name": "Snipe-IT",
+  "description": "Open-source IT asset management platform. Monitor hardware assets, users, and licenses for compliance.",
+  "category": "Infrastructure",
+  "docsUrl": "https://snipe-it.readme.io/reference",
+  "baseUrl": "https://develop.snipeitapp.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Snipe-IT instance\n2. Click your name (top-right) → Manage API Keys\n3. Create a new Personal Access Token\n4. Copy the token\n5. Enter your Snipe-IT URL (e.g. https://yourcompany.snipeitapp.com) and the token below",
+      "credentialFields": [
+        {
+          "label": "Snipe-IT Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Snipe-IT URL (e.g. 'https://yourcompany.snipeitapp.com' or your self-hosted URL). No trailing slash."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Snipe-IT → Admin → User Profile → Manage API Keys → Create New Token."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "snipeit_app_availability",
+      "name": "Snipe-IT App Availability",
+      "description": "Checks that the Snipe-IT API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "snipeit_employee_access",
+      "name": "Snipe-IT Employee Access",
+      "description": "Verifies employee access by listing Snipe-IT users.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "snipeit_asset_inventory",
+      "name": "Snipe-IT Asset Inventory",
+      "description": "Verifies hardware asset inventory is maintained in Snipe-IT.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "inngest",
+  "name": "Inngest",
+  "description": "Event-driven workflow platform. Monitor function deployment and event access.",
+  "category": "Development",
+  "docsUrl": "https://www.inngest.com/docs/reference/",
+  "baseUrl": "https://api.inngest.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "inngest_app_availability",
+      "name": "Inngest App Availability",
+      "description": "Checks that the Inngest API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "inngest_employee_access",
+      "name": "Inngest Employee Access",
+      "description": "Verifies employee access to Inngest via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

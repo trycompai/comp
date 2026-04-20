@@ -1,0 +1,43 @@
+{
+  "slug": "justworks",
+  "name": "Justworks",
+  "description": "Monitor employee access and organizational roles in Justworks PEO/HR platform",
+  "category": "HR & People",
+  "docsUrl": "https://public-api.justworks.com/v1/docs",
+  "baseUrl": "https://public-api.justworks.com",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "scopes": [
+        "member.detail:read",
+        "company.basic:read"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all members in Justworks and verifies active employee access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "role_based_access",
+      "name": "Role-based Access Controls",
+      "description": "Reviews member types and organizational roles to verify role-based access controls in Justworks",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

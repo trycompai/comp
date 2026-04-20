@@ -1,0 +1,35 @@
+{
+  "slug": "secureframe",
+  "name": "Secureframe",
+  "description": "Security compliance automation platform. Monitor compliance posture and controls.",
+  "category": "Security",
+  "docsUrl": "https://developers.secureframe.com/",
+  "baseUrl": "https://api.secureframe.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "secureframe_app_availability",
+      "name": "Secureframe App Availability",
+      "description": "Checks that the Secureframe API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "secureframe_employee_access",
+      "name": "Secureframe Employee Access",
+      "description": "Verifies access to Secureframe.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

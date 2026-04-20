@@ -1,0 +1,35 @@
+{
+  "slug": "lucid",
+  "name": "Lucid",
+  "description": "Visual collaboration platform for diagrams and whiteboards.",
+  "category": "Productivity",
+  "docsUrl": "https://developer.lucid.co/",
+  "baseUrl": "https://api.lucid.co",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "lucid_app_availability",
+      "name": "Lucid App Availability",
+      "description": "Checks Lucid app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "lucid_employee_access",
+      "name": "Lucid Employee Access",
+      "description": "Checks Lucid employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

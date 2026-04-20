@@ -1,0 +1,75 @@
+{
+  "slug": "cohesity",
+  "name": "Cohesity",
+  "description": "Monitor Cohesity DataProtect for backup job status, cluster infrastructure inventory, and alerting for enterprise backup and data management compliance",
+  "category": "Security",
+  "docsUrl": "https://developer.cohesity.com/docs/getting-started-641",
+  "baseUrl": "https://cohesity-cluster.example.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Cluster URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Cohesity cluster URL (e.g., https://cohesity.company.com)"
+        },
+        {
+          "label": "API Key",
+          "type": "secret",
+          "required": false,
+          "helpText": "Cohesity API key. Generate in Settings > Access Management > API Keys. If not using API key, provide username and password instead."
+        },
+        {
+          "label": "Username",
+          "type": "text",
+          "required": false,
+          "helpText": "Cohesity admin username (used if API Key is not provided)"
+        },
+        {
+          "label": "Password",
+          "type": "secret",
+          "required": false,
+          "helpText": "Cohesity admin password (used if API Key is not provided)"
+        },
+        {
+          "label": "Domain",
+          "type": "text",
+          "required": false,
+          "helpText": "Authentication domain (default: LOCAL)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "backup_jobs",
+      "name": "Backup logs",
+      "description": "Monitors Cohesity protection job status and recent backup runs to ensure backups are completing successfully",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Inventories Cohesity cluster nodes, protection sources, and storage domains to verify infrastructure is properly configured",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Reviews active Cohesity alerts to identify critical issues, hardware failures, and security events requiring attention",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

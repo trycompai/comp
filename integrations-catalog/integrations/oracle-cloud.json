@@ -1,0 +1,76 @@
+{
+  "slug": "oracle-cloud",
+  "name": "Oracle Cloud Infrastructure",
+  "description": "Monitor OCI IAM users, compute instances, and encryption keys for cloud compliance",
+  "category": "Cloud",
+  "docsUrl": "https://docs.oracle.com/en-us/iaas/Content/API/Concepts/usingapi.htm",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "## Setup Instructions\n\n1. Log in to the Oracle Cloud Console\n2. Go to **Identity & Security > Users** and select your user\n3. Under **Resources**, click **API Keys** and then **Add API Key**\n4. Download the private key or upload your own public key\n5. Copy the **Tenancy OCID** from **Administration > Tenancy Details**\n6. Copy the **User OCID** from the user details page\n7. Copy the **Fingerprint** shown after adding the API key\n8. Enter your **Region** identifier (e.g., us-ashburn-1)\n\nThe user needs the following IAM policies:\n- `Allow user to inspect users in tenancy`\n- `Allow user to inspect compartments in tenancy`\n- `Allow user to inspect instances in tenancy`\n- `Allow user to inspect vaults in tenancy`\n- `Allow user to inspect keys in tenancy`",
+      "credentialFields": [
+        {
+          "label": "Tenancy OCID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your tenancy OCID from the OCI Console (Administration > Tenancy Details)"
+        },
+        {
+          "label": "User OCID",
+          "type": "text",
+          "required": true,
+          "helpText": "The OCID of the IAM user whose API key is used for authentication"
+        },
+        {
+          "label": "API Key Fingerprint",
+          "type": "text",
+          "required": true,
+          "helpText": "The fingerprint of the RSA public key uploaded to OCI"
+        },
+        {
+          "label": "Private Key (PEM)",
+          "type": "textarea",
+          "required": true,
+          "helpText": "The RSA private key in PEM format used for API request signing"
+        },
+        {
+          "label": "Region",
+          "type": "text",
+          "required": true,
+          "helpText": "Your OCI region identifier (e.g., us-ashburn-1, eu-frankfurt-1, ap-tokyo-1)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "oci_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all IAM users in the OCI tenancy to verify employee access controls",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "oci_infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all compartments and compute instances across the OCI tenancy for infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "oci_encryption_at_rest",
+      "name": "Encryption at Rest",
+      "description": "Lists KMS vaults and encryption keys to verify data encryption at rest across the OCI tenancy",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

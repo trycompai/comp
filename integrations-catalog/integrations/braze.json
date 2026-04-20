@@ -1,0 +1,51 @@
+{
+  "slug": "braze",
+  "name": "Braze",
+  "description": "Monitor Braze customer engagement platform for API security and campaign access compliance",
+  "category": "Communication",
+  "docsUrl": "https://www.braze.com/docs/api/basics/",
+  "baseUrl": "https://rest.iad-01.braze.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Braze at https://dashboard.braze.com\n2. Go to Settings → API Keys\n3. Create a key with campaigns.list permission\n4. Find your REST endpoint URL in the same settings page\n5. Enter both below",
+      "credentialFields": [
+        {
+          "label": "REST API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Braze → Settings → API Keys (create a key with campaigns.list and email.unsubscribes permissions)"
+        },
+        {
+          "label": "REST Endpoint URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Braze REST endpoint URL. Found in Braze → Settings → API Keys. Example: https://rest.iad-01.braze.com"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "braze_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Braze campaigns to audit active customer engagement workflows",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "braze_secure_secrets",
+      "name": "Secure Secrets",
+      "description": "Verifies Braze API keys are scoped with least-privilege permissions",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

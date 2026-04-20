@@ -1,0 +1,57 @@
+{
+  "slug": "docebo",
+  "name": "Docebo",
+  "description": "Monitor Docebo LMS user access and role-based access controls",
+  "category": "Productivity",
+  "docsUrl": "https://help.docebo.com/hc/en-us/articles/360020082060-APIs-authentication",
+  "baseUrl": "https://{{credentials.subdomain}}.docebosaas.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Docebo Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Docebo subdomain (e.g., 'mycompany' from mycompany.docebosaas.com)"
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "OAuth2 Client ID from Admin Menu > API & SSO > API Credentials"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "OAuth2 Client Secret from Admin Menu > API & SSO > API Credentials"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all Docebo LMS users with their account status and role for access review",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "rbac",
+      "name": "Role-based Access Controls",
+      "description": "Lists Docebo user groups for role-based access control review",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

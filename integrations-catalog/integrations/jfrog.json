@@ -1,0 +1,51 @@
+{
+  "slug": "jfrog",
+  "name": "JFrog Artifactory",
+  "description": "Monitor JFrog Artifactory artifact repository for secure package management and access compliance",
+  "category": "Development",
+  "docsUrl": "https://jfrog.com/help/r/jfrog-rest-apis/jfrog-platform-rest-apis",
+  "baseUrl": "https://yourdomain.jfrog.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your JFrog Platform at your instance URL\n2. Go to Administration → Identity and Access → Access Tokens\n3. Generate a new Access Token with Read scope\n4. Copy the token and your instance URL below",
+      "credentialFields": [
+        {
+          "label": "Artifactory URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your JFrog Artifactory URL (e.g. https://mycompany.jfrog.io)"
+        },
+        {
+          "label": "Access Token or API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate an Access Token in JFrog Platform → Administration → Identity and Access → Access Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "jfrog_secure_code",
+      "name": "Secure Code",
+      "description": "Verifies JFrog Artifactory repositories are configured for secure artifact storage",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "jfrog_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews JFrog Artifactory users and their access permissions",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

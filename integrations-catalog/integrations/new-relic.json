@@ -1,0 +1,52 @@
+{
+  "slug": "new-relic",
+  "name": "New Relic",
+  "description": "Monitor New Relic alert policies, APM applications, and notification channels for observability compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.newrelic.com/docs/apis/rest-api-v2/",
+  "baseUrl": "https://api.newrelic.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to New Relic One (one.newrelic.com)\n2. Click your user icon > API keys\n3. Click 'Create a key' and select type 'User'\n4. Copy and paste the key below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Create a User API Key under your New Relic profile > API keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "alert_policies",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that New Relic alert policies are configured",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "applications_monitored",
+      "name": "Utility Monitoring",
+      "description": "Verifies that applications are instrumented in New Relic APM",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "alert_channels",
+      "name": "Incident Response",
+      "description": "Verifies that New Relic alert channels are configured for incident notifications",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

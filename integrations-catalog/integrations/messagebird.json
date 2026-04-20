@@ -1,0 +1,45 @@
+{
+  "slug": "messagebird",
+  "name": "MessageBird",
+  "description": "Omnichannel communications platform for SMS, voice, and chat.",
+  "category": "Communication",
+  "docsUrl": "https://developers.messagebird.com/api/",
+  "baseUrl": "https://rest.messagebird.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to MessageBird Dashboard\n2. Go to Developers → API access keys\n3. Copy your live API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in MessageBird Dashboard → Developers → API access keys."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "messagebird_app_availability",
+      "name": "MessageBird App Availability",
+      "description": "Checks MessageBird app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "messagebird_employee_access",
+      "name": "MessageBird Employee Access",
+      "description": "Checks MessageBird employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

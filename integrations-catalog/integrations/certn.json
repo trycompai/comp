@@ -1,0 +1,51 @@
+{
+  "slug": "certn",
+  "name": "Certn",
+  "description": "Monitor Certn background check platform for employee verification and access management compliance",
+  "category": "Security",
+  "docsUrl": "https://docs.certn.co/api",
+  "baseUrl": "https://api.certn.co",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Certn at https://app.certn.co/login\n2. Click the Partner tab in the dashboard\n3. Click Refresh Keys to generate a new Client ID and Secret\n4. Copy both values immediately (Secret is only shown once)\n5. Paste them here",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Certn Dashboard - Partner tab - API Keys"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Generated when creating/refreshing API keys in the Partner tab. Only shown once at creation time."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "certn_employee_verification",
+      "name": "Employee Verification",
+      "description": "Verifies that background checks are being conducted through Certn for employee screening",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "certn_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews users with access to the Certn background check platform",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

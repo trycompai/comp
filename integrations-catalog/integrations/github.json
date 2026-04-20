@@ -1,0 +1,35 @@
+{
+  "slug": "github",
+  "name": "GitHub",
+  "description": "Monitor GitHub organization members and repository access for code compliance",
+  "category": "Development",
+  "docsUrl": "https://docs.github.com/en/rest",
+  "baseUrl": "https://api.github.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "github_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews GitHub organization members and verifies appropriate access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "github_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies GitHub repositories have proper branch protection and access controls",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

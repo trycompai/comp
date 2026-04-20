@@ -1,0 +1,46 @@
+{
+  "slug": "zoho-people",
+  "name": "Zoho People",
+  "description": "Cloud-based HR management. Monitor employee records and organizational data.",
+  "category": "HR & People",
+  "docsUrl": "https://www.zoho.com/people/api/",
+  "baseUrl": "https://people.zoho.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Zoho API Console at https://api-console.zoho.com\n2. Create a Self Client application\n3. Generate a token with scope: ZOHOPEOPLE.forms.ALL\n4. Paste the access token below\n\nNote: Tokens expire. For long-term use, set up OAuth2 refresh tokens.",
+      "credentialFields": [
+        {
+          "label": "OAuth Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate from Zoho API Console (https://api-console.zoho.com). Create a Self Client, generate token with scope: ZOHOPEOPLE.forms.ALL."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "zoho_people_app_availability",
+      "name": "Zoho People App Availability",
+      "description": "Verifies Zoho People API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "zoho_people_employee_access",
+      "name": "Zoho People Employee Access",
+      "description": "Verifies employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

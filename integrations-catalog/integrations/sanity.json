@@ -1,0 +1,45 @@
+{
+  "slug": "sanity",
+  "name": "Sanity",
+  "description": "Monitor Sanity headless CMS projects for team access and content infrastructure compliance",
+  "category": "Productivity",
+  "docsUrl": "https://www.sanity.io/docs/http-api",
+  "baseUrl": "https://api.sanity.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Sanity at https://manage.sanity.io\n2. Go to API → Tokens\n3. Create a token with Viewer or higher permissions\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Sanity manage.sanity.io → API → Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "sanity_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Sanity projects for content infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sanity_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Sanity project members and their content management access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

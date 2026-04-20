@@ -1,0 +1,45 @@
+{
+  "slug": "dub",
+  "name": "Dub.co",
+  "description": "Monitor Dub.co link management for domain security and access control compliance",
+  "category": "Productivity",
+  "docsUrl": "https://dub.co/docs/api-reference/introduction",
+  "baseUrl": "https://api.dub.co/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Dub.co at https://app.dub.co\n2. Go to Settings → API Keys\n3. Create a new API key\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Dub.co Settings → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "dub_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Dub.co workspaces and members for link management access control",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "dub_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Dub.co platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,38 @@
+{
+  "slug": "bob",
+  "name": "HiBob",
+  "description": "HR platform for mid-size businesses. Monitor employee records and workforce data.",
+  "category": "HR & People",
+  "docsUrl": "https://apidocs.hibob.com/",
+  "baseUrl": "https://api.hibob.com",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to HiBob\n2. Go to Settings → Integrations → API\n3. Create a Service User\n4. Copy the Service User ID and Token\n5. Use Service User ID as username and Token as password below"
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "bob_app_availability",
+      "name": "HiBob App Availability",
+      "description": "Verifies HiBob API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "bob_employee_access",
+      "name": "HiBob Employee Access",
+      "description": "Verifies employee directory access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

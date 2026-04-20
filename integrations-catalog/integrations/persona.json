@@ -1,0 +1,35 @@
+{
+  "slug": "persona",
+  "name": "Persona",
+  "description": "Identity verification platform. Monitor verification inquiries and access.",
+  "category": "Identity & Access",
+  "docsUrl": "https://docs.withpersona.com/reference",
+  "baseUrl": "https://withpersona.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "persona_app_availability",
+      "name": "Persona App Availability",
+      "description": "Checks that the Persona API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "persona_employee_access",
+      "name": "Persona Employee Access",
+      "description": "Verifies employee access to Persona via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

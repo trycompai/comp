@@ -1,0 +1,45 @@
+{
+  "slug": "attio",
+  "name": "Attio",
+  "description": "Monitor Attio CRM for team member access and workspace data compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.attio.com/reference/get_v2-self",
+  "baseUrl": "https://api.attio.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Attio at https://app.attio.com\n2. Go to Workspace Settings → Developers → API Keys\n3. Create a new API key with read access\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Attio Workspace Settings → Developers → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "attio_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Attio workspace members and their CRM access permissions",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "attio_access_review",
+      "name": "Access Review Log",
+      "description": "Audits Attio workspace member roles for access review compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "fly",
+  "name": "Fly.io",
+  "description": "Monitor Fly.io applications for edge infrastructure inventory and availability",
+  "category": "Cloud",
+  "docsUrl": "https://fly.io/docs/machines/api/",
+  "baseUrl": "https://api.machines.dev/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "fly_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Fly.io applications for edge compute infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "fly_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Fly.io apps are deployed and running",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

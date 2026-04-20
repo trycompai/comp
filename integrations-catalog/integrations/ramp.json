@@ -1,0 +1,34 @@
+{
+  "slug": "ramp",
+  "name": "Ramp",
+  "description": "Monitor Ramp user access and employee listing",
+  "category": "Productivity",
+  "docsUrl": "https://docs.ramp.com/developer-api",
+  "baseUrl": "https://api.ramp.com/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "scopes": [
+        "users:read"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "ramp_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all active Ramp users with their roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

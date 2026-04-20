@@ -1,0 +1,72 @@
+{
+  "slug": "securityscorecard",
+  "name": "SecurityScorecard",
+  "description": "Monitor vendor risk scores, security factors, portfolio health, and breach events via SecurityScorecard's security ratings platform",
+  "category": "Security",
+  "docsUrl": "https://securityscorecard.readme.io/reference",
+  "baseUrl": "https://api.securityscorecard.io",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to SecurityScorecard at platform.securityscorecard.io\n2. Click your profile avatar and select My Settings\n3. On the People Management tab under Admin Settings, click Invite People\n4. Toggle the user to a bot user and set Access Level (Read Only is sufficient)\n5. Click Add User\n6. Click Create API token for the new bot user, confirm, and copy the token\n7. Enter your company primary domain (the one tracked in SecurityScorecard)",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Bot User API token from SecurityScorecard. Go to My Settings > Users > Add User (bot user) > Create Token."
+        },
+        {
+          "label": "Your Company Domain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your company's primary domain in SecurityScorecard (e.g., trycomp.ai). Used for self-assessment checks."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "securityscorecard_app_availability",
+      "name": "App Availability",
+      "description": "Verifies connectivity to the SecurityScorecard API by fetching the company scorecard for your domain",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "securityscorecard_vendor_risk_score",
+      "name": "Vendor Risk Score",
+      "description": "Retrieves the overall security scorecard grade and score for your company's domain",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "securityscorecard_portfolio_monitoring",
+      "name": "Vendor Portfolio Monitoring",
+      "description": "Lists all portfolios and their vendors, flagging any vendor with a grade below C (score below 70)",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "securityscorecard_factor_analysis",
+      "name": "Security Factor Analysis",
+      "description": "Analyzes individual security factor scores for your domain and flags any factor with a grade below C",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "securityscorecard_breach_monitoring",
+      "name": "Breach Monitoring",
+      "description": "Checks for recent breach events reported against your company's domain in the last 90 days",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "gong",
+  "name": "Gong",
+  "description": "Monitor Gong revenue intelligence platform for call recording access and data retention compliance",
+  "category": "Security",
+  "docsUrl": "https://app.gong.io/settings/api/documentation",
+  "baseUrl": "https://api.gong.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Gong at https://app.gong.io\n2. Go to Settings → Ecosystem → API\n3. Generate API credentials (access key + secret)\n4. Base64 encode 'access_key:access_key_secret'\n5. Enter the encoded value below",
+      "credentialFields": [
+        {
+          "label": "Encoded Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'access_key:access_key_secret'. Found in Gong Settings → Ecosystem → API. Command: echo -n 'access_key:access_key_secret' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "gong_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Gong users with access to call recordings and revenue intelligence",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "gong_data_masking",
+      "name": "Data Masking",
+      "description": "Verifies Gong account settings manage call recording retention and access appropriately",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

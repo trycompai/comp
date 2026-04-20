@@ -1,0 +1,52 @@
+{
+  "slug": "hive",
+  "name": "Hive",
+  "description": "Hive is a project management and collaboration platform used for ticketing and team collaboration. This integration monitors workspace member access and role-based access controls.",
+  "category": "Productivity",
+  "docsUrl": "https://developers.hive.com/reference",
+  "baseUrl": "https://app.hive.com/api/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Hive at https://app.hive.com\n2. Click the main menu in the top right corner\n3. Select 'My Profile'\n4. Click the 'API Info' tab\n5. Generate an API key and copy it\n6. Also copy your User ID from the same page\n7. Enter both values below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Hive > Main Menu (top right) > My Profile > API Info tab. Generate a key there."
+        },
+        {
+          "label": "User ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found alongside your API key on the API Info tab in your Hive profile."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "hive_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all users in the Hive workspace to verify employee access to the platform.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hive_rbac",
+      "name": "Role-based Access Controls",
+      "description": "Checks role tags assigned to workspace members in Hive to verify role-based access control configuration.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

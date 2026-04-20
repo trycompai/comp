@@ -1,0 +1,45 @@
+{
+  "slug": "metronome",
+  "name": "Metronome",
+  "description": "Monitor Metronome usage-based billing platform for access and revenue data compliance",
+  "category": "Productivity",
+  "docsUrl": "https://docs.metronome.com/api/",
+  "baseUrl": "https://api.metronome.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Metronome at https://metronome.com\n2. Go to Settings → API Keys\n3. Create a new API key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Metronome Settings → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "metronome_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Metronome billing platform access and customer data exposure",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "metronome_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Metronome billing platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

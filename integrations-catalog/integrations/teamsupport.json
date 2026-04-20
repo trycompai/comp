@@ -1,0 +1,45 @@
+{
+  "slug": "teamsupport",
+  "name": "TeamSupport",
+  "description": "Monitor TeamSupport B2B customer support platform for team access and ticket management compliance",
+  "category": "Communication",
+  "docsUrl": "https://developer.teamsupport.com/",
+  "baseUrl": "https://app.teamsupport.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to TeamSupport at https://app.teamsupport.com\n2. Go to Admin → Settings → API\n3. Copy your Organization ID and API Token\n4. Base64 encode them: echo -n 'OrganizationID:APIToken' | base64\n5. Enter the encoded value below",
+      "credentialFields": [
+        {
+          "label": "Encoded API Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'OrganizationID:APIToken'. Found in TeamSupport Admin → Settings → API. Command: echo -n 'orgid:apitoken' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "teamsupport_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews TeamSupport agent accounts with access to the customer support platform",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "teamsupport_app_availability",
+      "name": "App Availability",
+      "description": "Verifies TeamSupport customer support platform is operational",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

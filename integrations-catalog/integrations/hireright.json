@@ -1,0 +1,55 @@
+{
+  "slug": "hireright",
+  "name": "HireRight",
+  "description": "Monitor background screening status and verify employee background checks through HireRight",
+  "category": "HR & People",
+  "docsUrl": "https://stage-developer.hireright.com/documentation/overview",
+  "baseUrl": "https://api.hireright.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Domain ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your unique API integration domain identifier (hr-domain-id), provided by HireRight"
+        },
+        {
+          "label": "Company Login",
+          "type": "text",
+          "required": true,
+          "helpText": "Your unique company identifier (hr-company-login), provided by HireRight"
+        },
+        {
+          "label": "User Reference ID",
+          "type": "text",
+          "required": true,
+          "helpText": "The unique user identifier (hr-user-ref-id), typically an admin user email address"
+        },
+        {
+          "label": "API Subscription Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your API subscription key (hr-api-subscription-key), provided by HireRight"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "background_check_status",
+      "name": "Employee Verification",
+      "description": "Verifies that the organization has active background screening capability through HireRight and checks order completion status",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

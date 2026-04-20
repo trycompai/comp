@@ -1,0 +1,63 @@
+{
+  "slug": "docker-hub",
+  "name": "Docker Hub",
+  "description": "Monitor Docker Hub organization members, teams, and container repositories for compliance",
+  "category": "Development",
+  "docsUrl": "https://docs.docker.com/reference/api/hub/latest/",
+  "baseUrl": "https://hub.docker.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Docker Hub Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Docker Hub username (must be an owner/admin of the organization)"
+        },
+        {
+          "label": "Personal Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Docker Hub Personal Access Token with Read-only access. Generate at https://hub.docker.com/settings/security"
+        },
+        {
+          "label": "Organization Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Docker Hub organization name (the namespace shown in hub.docker.com/orgs/<name>)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "org_members",
+      "name": "Employee Access",
+      "description": "Reviews Docker Hub organization members and their roles to ensure proper access controls",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "teams_permissions",
+      "name": "Role-based Access Controls",
+      "description": "Verifies Docker Hub organization teams are properly configured with members and descriptions",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "repo_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all Docker Hub repositories in the organization for infrastructure inventory tracking",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

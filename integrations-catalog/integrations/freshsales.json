@@ -1,0 +1,52 @@
+{
+  "slug": "freshsales",
+  "name": "Freshsales",
+  "description": "Monitor Freshsales CRM user access and role-based access controls for compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.freshworks.com/crm/api/",
+  "baseUrl": "https://example.myfreshworks.com/crm/sales",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Freshsales at https://your-domain.myfreshworks.com/crm/sales\n2. Click your profile picture and select Profile Settings\n3. Click the API Settings tab\n4. Copy your API key\n5. Find your Bundle alias (domain) below the API key\n6. Enter both values below",
+      "credentialFields": [
+        {
+          "label": "Freshworks Domain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Freshworks domain (e.g. 'acme' from acme.myfreshworks.com)"
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Freshsales Profile Settings > API Settings"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "freshsales_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all Freshsales CRM users/owners and reports their active status for access review",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "freshsales_rbac",
+      "name": "Role-based Access Controls",
+      "description": "Verifies Freshsales CRM user access controls by reviewing user assignments and availability",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

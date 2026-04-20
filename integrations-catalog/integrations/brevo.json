@@ -1,0 +1,45 @@
+{
+  "slug": "brevo",
+  "name": "Brevo",
+  "description": "Monitor Brevo email marketing platform for user access and data compliance",
+  "category": "Communication",
+  "docsUrl": "https://developers.brevo.com/reference/getting-started-1",
+  "baseUrl": "https://api.brevo.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Brevo at https://app.brevo.com\n2. Go to Account → SMTP & API\n3. Click Generate a new API key\n4. Copy the key and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Brevo → Account → SMTP & API → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "brevo_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Brevo account users and their access levels",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "brevo_data_masking",
+      "name": "Data Masking",
+      "description": "Verifies Brevo email sending domain is authenticated to prevent spoofing",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

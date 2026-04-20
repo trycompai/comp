@@ -1,0 +1,59 @@
+{
+  "slug": "cloudflare",
+  "name": "Cloudflare",
+  "description": "Monitor Cloudflare security settings including TLS/SSL configuration and WAF firewall rules for compliance evidence",
+  "category": "Infrastructure",
+  "docsUrl": "https://developers.cloudflare.com/api/",
+  "baseUrl": "https://api.cloudflare.com/client/v4/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Cloudflare Dashboard at https://dash.cloudflare.com.\n2. Go to My Profile > API Tokens > Create Token.\n3. Create a custom token with the following Zone permissions:\n   - Zone > Zone Settings > Read\n   - Zone > Zone > Read\n   - Zone > WAF > Read\n4. Set Zone Resources to 'All zones' (or select specific zones you want to monitor).\n5. Copy the token and enter it below.\n6. Copy the Zone ID(s) from each domain's overview page (right sidebar). You can enter multiple Zone IDs separated by commas.",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Cloudflare Dashboard > My Profile > API Tokens. Create a custom token with Zone Settings:Read, Zone:Read, and Zone WAF:Read permissions for all zones you want to monitor."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "tls_https",
+      "name": "TLS / HTTPS",
+      "description": "Verifies that Cloudflare SSL/TLS encryption mode is set to Full or Strict for end-to-end encryption across all monitored zones",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "production_firewall",
+      "name": "Production Firewall",
+      "description": "Verifies that Cloudflare WAF firewall rules are configured and active across all monitored zones",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "encryption_at_rest",
+      "name": "Encryption at Rest",
+      "description": "Verifies Cloudflare data stores encryption at rest across all monitored zones - all Cloudflare storage is encrypted at rest by default using AES-256",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "app_availability",
+      "name": "App Availability",
+      "description": "Verifies Cloudflare zones are active with DDoS protection and performance features enabled",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

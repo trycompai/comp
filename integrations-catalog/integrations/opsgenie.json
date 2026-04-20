@@ -1,0 +1,35 @@
+{
+  "slug": "opsgenie",
+  "name": "Opsgenie",
+  "description": "Monitor Opsgenie alerts and on-call schedules for incident response compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.opsgenie.com/docs/api-overview",
+  "baseUrl": "https://api.opsgenie.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "opsgenie_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Checks Opsgenie for open alerts requiring attention",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "opsgenie_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies Opsgenie has on-call schedules configured for incident response",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

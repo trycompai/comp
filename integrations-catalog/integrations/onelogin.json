@@ -1,0 +1,51 @@
+{
+  "slug": "onelogin",
+  "name": "OneLogin",
+  "description": "Monitor OneLogin SSO and identity management platform for user access and MFA compliance",
+  "category": "Identity & Access",
+  "docsUrl": "https://developers.onelogin.com/api-docs/2/getting-started/dev-overview",
+  "baseUrl": "https://api.us.onelogin.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to OneLogin Administration\n2. Go to Developers → API Credentials → New Credential\n3. Select 'Read users' scope\n4. Copy Client ID and Client Secret\n5. Base64 encode 'client_id:client_secret': echo -n 'id:secret' | base64\n6. Enter encoded value and your region (us or eu)",
+      "credentialFields": [
+        {
+          "label": "Encoded Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'client_id:client_secret'. Found in OneLogin Administration → API Credentials → New Credential. Command: echo -n 'id:secret' | base64"
+        },
+        {
+          "label": "Region",
+          "type": "text",
+          "required": true,
+          "helpText": "Your OneLogin region: 'us' or 'eu'"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "onelogin_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews OneLogin users with SSO access to connected applications",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "onelogin_2fa",
+      "name": "2FA",
+      "description": "Verifies OneLogin MFA policies are configured for user authentication",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

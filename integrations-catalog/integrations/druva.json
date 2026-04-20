@@ -1,0 +1,71 @@
+{
+  "slug": "druva",
+  "name": "Druva",
+  "description": "Monitor Druva cloud data protection and backup platform for storage, devices, admin users, backup sets, and audit logs",
+  "category": "Infrastructure",
+  "docsUrl": "https://developer.druva.com/docs/introduction",
+  "baseUrl": "https://apis.druva.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Client ID from Druva Cloud Platform Console > API Credentials"
+        },
+        {
+          "label": "Secret Key",
+          "type": "secret",
+          "required": true,
+          "helpText": "Secret Key from Druva Cloud Platform Console > API Credentials"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_security",
+      "name": "Secure Devices",
+      "description": "Verifies that all devices managed by Druva are properly secured and backed up",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "admin_access",
+      "name": "Employee Access",
+      "description": "Reviews admin user access and permissions in Druva platform",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "backup_logs",
+      "name": "Backup logs",
+      "description": "Verifies that backup operations are logged and monitored",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Provides inventory of devices and storage managed by Druva",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that monitoring and alerting is configured for backup operations",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

@@ -1,0 +1,44 @@
+{
+  "slug": "qualtrics",
+  "name": "Qualtrics",
+  "description": "Qualtrics experience management platform for employee and customer surveys",
+  "category": "HR & People",
+  "docsUrl": "https://api.qualtrics.com/",
+  "baseUrl": "https://{{credentials.datacenter_id}}.qualtrics.com/API/v3",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Qualtrics\n2. Go to Account Settings → Qualtrics IDs\n3. Copy your API Token\n4. Your datacenter ID is in your account URL (e.g. iad1.qualtrics.com → iad1)\n5. Enter both values below",
+      "credentialFields": [
+        {
+          "label": "Datacenter ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Qualtrics datacenter ID (e.g. iad1, fra1, syd1). Found in your account URL."
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate an API token in Qualtrics → Account Settings → Qualtrics IDs → API Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "qualtrics_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Qualtrics users to verify access is properly managed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

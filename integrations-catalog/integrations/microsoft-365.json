@@ -1,0 +1,55 @@
+{
+  "slug": "microsoft-365",
+  "name": "Microsoft 365",
+  "description": "Monitor Microsoft 365 user access, conditional access policies, and audit log activity for compliance",
+  "category": "Productivity",
+  "docsUrl": "https://learn.microsoft.com/en-us/graph/api/overview",
+  "baseUrl": "https://graph.microsoft.com/v1.0/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Register an app in Azure AD > App registrations\n2. Add Delegated permissions: User.Read.All, AuditLog.Read.All, Policy.Read.All, Directory.Read.All\n3. Grant admin consent for all permissions\n4. Add redirect URI: https://api.trycomp.ai/v1/integrations/oauth/callback\n5. Connect using a Work/School account with Global Administrator or Security Administrator role — personal Microsoft accounts (@hotmail/@outlook) are not supported",
+      "scopes": [
+        "User.Read.All",
+        "AuditLog.Read.All",
+        "Policy.Read.All",
+        "Directory.Read.All",
+        "offline_access",
+        "openid",
+        "profile"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "m365_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews active Microsoft 365 users and verifies account status",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "m365_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies that conditional access policies exist to enforce environment and access separation",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "m365_access_review_log",
+      "name": "Access Review Log",
+      "description": "Verifies that Microsoft 365 directory audit logs are active and contain recent events",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

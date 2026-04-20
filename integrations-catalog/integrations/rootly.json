@@ -1,0 +1,45 @@
+{
+  "slug": "rootly",
+  "name": "Rootly",
+  "description": "Monitor Rootly incident management for incident response workflows and on-call coverage",
+  "category": "Monitoring",
+  "docsUrl": "https://rootly.com/api",
+  "baseUrl": "https://api.rootly.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Rootly at https://rootly.com\n2. Go to Settings → API Keys\n3. Generate a new API key\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Rootly Settings → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "rootly_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies Rootly incident workflows are configured for structured response procedures",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "rootly_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Reviews Rootly incidents to verify active monitoring and alerting is in place",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

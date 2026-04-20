@@ -1,0 +1,51 @@
+{
+  "slug": "workable",
+  "name": "Workable",
+  "description": "Monitor Workable account member access and role assignments for compliance",
+  "category": "HR & People",
+  "docsUrl": "https://workable.readme.io/reference",
+  "baseUrl": "https://www.workable.com/spi/v3/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Workable Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Workable subdomain (e.g., 'mycompany' from mycompany.workable.com)"
+        },
+        {
+          "label": "API Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate in Workable: Settings > Integrations > API Access Tokens. Must have r_jobs scope."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all Workable account members with their roles to verify appropriate access levels",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "role_based_access",
+      "name": "Role-based Access Controls",
+      "description": "Verifies role assignments for all Workable account members to ensure proper access controls",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

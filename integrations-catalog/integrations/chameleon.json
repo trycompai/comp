@@ -1,0 +1,45 @@
+{
+  "slug": "chameleon",
+  "name": "Chameleon",
+  "description": "Monitor Chameleon product adoption platform for access and user data compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.chameleon.io/",
+  "baseUrl": "https://api.chameleon.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Chameleon at https://app.chameleon.io\n2. Go to Settings → API\n3. Copy your Account Secret\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "Account Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Chameleon Dashboard → Settings → API"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "chameleon_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Chameleon team members with access to product tour and user adoption data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "chameleon_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Chameleon product adoption platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

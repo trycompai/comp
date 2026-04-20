@@ -1,0 +1,36 @@
+{
+  "slug": "kenjo",
+  "name": "Kenjo",
+  "description": "HR software for SMBs. Monitor employee records and people operations.",
+  "category": "HR & People",
+  "docsUrl": "https://kenjo.readme.io/reference",
+  "baseUrl": "https://api.kenjo.io",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "kenjo_app_availability",
+      "name": "Kenjo App Availability",
+      "description": "Verifies Kenjo API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "kenjo_employee_access",
+      "name": "Kenjo Employee Access",
+      "description": "Verifies employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

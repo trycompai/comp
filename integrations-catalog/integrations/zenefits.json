@@ -1,0 +1,38 @@
+{
+  "slug": "zenefits",
+  "name": "Zenefits",
+  "description": "Zenefits HR platform for payroll, benefits, and HR management",
+  "category": "HR & People",
+  "docsUrl": "https://developers.zenefits.com/docs/getting-started",
+  "baseUrl": "https://api.zenefits.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Zenefits at https://secure.zenefits.com\n2. Go to Settings → Custom Integrations → API Tokens\n3. Generate a new token with People read access\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Zenefits Settings → Custom Integrations → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "zenefits_employee_access",
+      "name": "Employee Access",
+      "description": "Lists TriNet HR Platform employees to verify HR access is active",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

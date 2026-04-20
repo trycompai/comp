@@ -1,0 +1,35 @@
+{
+  "slug": "veracode",
+  "name": "Veracode",
+  "description": "Static Application Security Testing (SAST) and Dynamic Application Security Testing (DAST) platform for identifying security vulnerabilities in applications.",
+  "category": "Security",
+  "docsUrl": null,
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "secure_code",
+      "name": "Secure Code",
+      "description": "Monitors application scans for security vulnerabilities and findings",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "app_availability",
+      "name": "App Availability",
+      "description": "Verifies that applications are being scanned and monitored for security vulnerabilities",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

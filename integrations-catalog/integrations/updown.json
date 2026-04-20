@@ -1,0 +1,45 @@
+{
+  "slug": "updown",
+  "name": "Updown.io",
+  "description": "Simple website monitoring service. Monitor uptime checks and response times.",
+  "category": "Monitoring",
+  "docsUrl": "https://updown.io/api",
+  "baseUrl": "https://updown.io",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Updown.io\n2. Go to Settings → API\n3. Copy your API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Updown.io → Settings → API."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "updown_app_availability",
+      "name": "Updown.io App Availability",
+      "description": "Verifies Updown.io API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "updown_monitoring",
+      "name": "Updown.io Monitoring",
+      "description": "Verifies uptime monitoring is configured.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,38 @@
+{
+  "slug": "drift",
+  "name": "Drift",
+  "description": "Drift conversational marketing and sales platform",
+  "category": "Communication",
+  "docsUrl": "https://devdocs.drift.com/",
+  "baseUrl": "https://driftapi.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Drift\n2. Settings → App Settings → Drift App\n3. Generate an access token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Drift → Settings → App Settings → Access Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "drift_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Drift users to verify agent access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

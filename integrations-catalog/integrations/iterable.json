@@ -1,0 +1,45 @@
+{
+  "slug": "iterable",
+  "name": "Iterable",
+  "description": "Iterable cross-channel growth marketing platform for customer communication",
+  "category": "Communication",
+  "docsUrl": "https://api.iterable.com/api/docs",
+  "baseUrl": "https://api.iterable.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Iterable\n2. Go to Integrations → API Keys\n3. Create a new API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Iterable → Integrations → API Keys → New API Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "iterable_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Iterable platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "iterable_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Iterable user fields to verify platform access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

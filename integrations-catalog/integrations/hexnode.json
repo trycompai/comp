@@ -1,0 +1,71 @@
+{
+  "slug": "hexnode",
+  "name": "Hexnode",
+  "description": "Hexnode UEM integration for device management, compliance monitoring, and policy enforcement",
+  "category": "Security",
+  "docsUrl": "https://www.hexnode.com/mobile-device-management/developers/",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Hexnode MDM admin portal\n2. Go to Admin > API\n3. Enable the 'Enable API Access' checkbox\n4. Copy your API key\n5. Enter your portal name (the subdomain before .hexnodemdm.com) and the API key above",
+      "credentialFields": [
+        {
+          "label": "Portal Name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "hexnode_device_inventory",
+      "name": "Device Inventory",
+      "description": "Retrieve and verify all enrolled devices in Hexnode MDM",
+      "defaultSeverity": "info",
+      "enabled": true
+    },
+    {
+      "slug": "hexnode_device_compliance",
+      "name": "Device Compliance",
+      "description": "Check compliance status across all managed devices in Hexnode",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hexnode_policy_enforcement",
+      "name": "Policy Enforcement",
+      "description": "Verify that security policies are configured and applied to devices in Hexnode",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hexnode_user_management",
+      "name": "User Management",
+      "description": "Verify user enrollment status and management in Hexnode",
+      "defaultSeverity": "info",
+      "enabled": true
+    },
+    {
+      "slug": "hexnode_device_activity",
+      "name": "Device Activity Monitoring",
+      "description": "Check for inactive or stale devices that have not reported recently",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

@@ -1,0 +1,58 @@
+{
+  "slug": "paycom",
+  "name": "Paycom",
+  "description": "Paycom is a cloud-based Human Capital Management (HCM) platform that combines payroll, HR, time tracking, and other key functions",
+  "category": "HR & People",
+  "docsUrl": "https://www.paycom.com",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Contact your Paycom representative to enable API access\n2. Obtain your API Base URL, Client ID, and Client Secret\n3. Ensure your API user has read access to employee data and user roles\n4. Enter all values below",
+      "credentialFields": [
+        {
+          "label": "API Base URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Paycom API base URL, provided by your Paycom representative (e.g. https://api.paycom.com)"
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "OAuth Client ID provided by Paycom for API access"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "OAuth Client Secret provided by Paycom for API access"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "paycom_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies that employee records are accessible through the Paycom API",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "paycom_role_based_access_controls",
+      "name": "Role-based Access Controls",
+      "description": "Verifies that user roles and permissions are configured in Paycom",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

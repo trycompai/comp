@@ -1,0 +1,35 @@
+{
+  "slug": "socket-dev",
+  "name": "Socket",
+  "description": "Supply chain security platform for open source dependencies. Monitor organizations and alerts.",
+  "category": "Security",
+  "docsUrl": "https://docs.socket.dev",
+  "baseUrl": "https://api.socket.dev",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "socket_dev_app_availability",
+      "name": "Socket App Availability",
+      "description": "Checks that the Socket API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "socket_dev_employee_access",
+      "name": "Socket Employee Access",
+      "description": "Verifies employee access to Socket via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "anthropic",
+  "name": "Anthropic",
+  "description": "AI safety company building Claude. Monitor API access and usage.",
+  "category": "Cloud",
+  "docsUrl": "https://docs.anthropic.com/en/api/",
+  "baseUrl": "https://api.anthropic.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "anthropic_app_availability",
+      "name": "Anthropic App Availability",
+      "description": "Checks that the Anthropic API is accessible with the provided credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "anthropic_employee_access",
+      "name": "Anthropic Employee Access",
+      "description": "Verifies employee access to Anthropic via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

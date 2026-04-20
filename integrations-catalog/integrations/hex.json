@@ -1,0 +1,35 @@
+{
+  "slug": "hex",
+  "name": "Hex",
+  "description": "Collaborative data analytics platform. Monitor project access and workspace.",
+  "category": "Monitoring",
+  "docsUrl": "https://learn.hex.tech/docs/develop-logic/hex-api/api-reference",
+  "baseUrl": "https://app.hex.tech",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "hex_app_availability",
+      "name": "Hex App Availability",
+      "description": "Checks that the Hex API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hex_employee_access",
+      "name": "Hex Employee Access",
+      "description": "Verifies employee access to Hex via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,51 @@
+{
+  "slug": "scaleway",
+  "name": "Scaleway",
+  "description": "Monitor Scaleway EU cloud infrastructure and user access for compliance",
+  "category": "Cloud",
+  "docsUrl": "https://www.scaleway.com/en/developers/api/",
+  "baseUrl": "https://api.scaleway.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Scaleway Console at https://console.scaleway.com\n2. Go to IAM → API Keys\n3. Generate an API key with Read access\n4. Copy the Secret Key and enter it below",
+      "credentialFields": [
+        {
+          "label": "Secret Key",
+          "type": "password",
+          "required": true,
+          "helpText": "The Secret Key from your Scaleway IAM API Key (not the Access Key ID)."
+        },
+        {
+          "label": "Organization ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Scaleway Console → Organization → Settings → Organization ID"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "scaleway_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Scaleway projects for cloud infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "scaleway_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Scaleway IAM users and their access to infrastructure",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

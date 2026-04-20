@@ -1,0 +1,44 @@
+{
+  "slug": "talent-lms",
+  "name": "TalentLMS",
+  "description": "TalentLMS learning management system for employee training and compliance",
+  "category": "HR & People",
+  "docsUrl": "https://www.talentlms.com/pages/docs/TalentLMS-API-Documentation.pdf",
+  "baseUrl": "https://{{credentials.subdomain}}.talentlms.com/api/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to TalentLMS as admin\n2. Go to Account & Settings → Basic Settings\n3. Copy the API Key shown on the page\n4. Enter your subdomain and paste the API key below",
+      "credentialFields": [
+        {
+          "label": "Company Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your TalentLMS subdomain (e.g. if your URL is acme.talentlms.com, enter: acme)"
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Get your API key from TalentLMS → Account & Settings → Basic Settings → API Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "talentlms_employee_verification",
+      "name": "Employee Verification",
+      "description": "Verifies employee training and course completion status in TalentLMS",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

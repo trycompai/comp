@@ -1,0 +1,45 @@
+{
+  "slug": "honeybadger",
+  "name": "Honeybadger",
+  "description": "Monitor Honeybadger error monitoring for application health and incident response compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.honeybadger.io/api/",
+  "baseUrl": "https://app.honeybadger.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Honeybadger at https://app.honeybadger.io\n2. Go to Profile → Authentication Tokens\n3. Copy your API key\n4. Base64 encode 'api_key:' (with colon, empty password)\n5. Enter the encoded value below",
+      "credentialFields": [
+        {
+          "label": "Encoded API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'api_key:' (your API key with a colon and empty password). Command: echo -n 'your_api_key:' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "honeybadger_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Honeybadger projects are configured for error monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "honeybadger_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies Honeybadger uptime checks are configured for availability monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

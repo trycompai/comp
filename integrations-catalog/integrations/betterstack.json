@@ -1,0 +1,35 @@
+{
+  "slug": "betterstack",
+  "name": "BetterStack",
+  "description": "Monitor BetterStack uptime monitors and incident alerts for availability compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://betterstack.com/docs/uptime/api/getting-started-with-uptime-api/",
+  "baseUrl": "https://uptime.betterstack.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "betterstack_app_availability",
+      "name": "App Availability",
+      "description": "Verifies BetterStack monitors are configured and services are up",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "betterstack_incident_response",
+      "name": "Incident Response",
+      "description": "Checks BetterStack for open incidents requiring response",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,63 @@
+{
+  "slug": "rubrik",
+  "name": "Rubrik",
+  "description": "Monitor Rubrik Security Cloud backup policies, protected infrastructure, and security events for compliance evidence",
+  "category": "Security",
+  "docsUrl": "https://developer.rubrik.com/Rubrik-Security-Cloud-API/",
+  "baseUrl": "https://example.my.rubrik.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "RSC URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Rubrik Security Cloud URL, e.g. mycompany.my.rubrik.com (without https://)"
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Service account Client ID from RSC Settings > Service Accounts"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Service account Client Secret from RSC Settings > Service Accounts"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "backup_policies",
+      "name": "Backup Logs",
+      "description": "Verifies SLA Domain backup policies are configured with snapshot schedules in Rubrik Security Cloud",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists protected objects and workloads managed by Rubrik Security Cloud for infrastructure inventory evidence",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Checks for critical and warning events and alerts in Rubrik Security Cloud",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

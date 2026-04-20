@@ -1,0 +1,59 @@
+{
+  "slug": "freshteam",
+  "name": "Freshteam",
+  "description": "Freshteam by Freshworks is a cloud-based HR software for employee management, recruitment, onboarding, time-off, and organizational management.",
+  "category": "HR & People",
+  "docsUrl": null,
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Freshteam account\n2. Click your profile icon in the top right\n3. Select 'API Settings'\n4. Copy the API key displayed under 'Your API Key'\n5. Enter your subdomain (the part before .freshteam.com in your URL)\n6. Paste the API key below\n\nNote: Only HR Partner, Admin, and Account Admin roles can use the API.",
+      "credentialFields": [
+        {
+          "label": "Freshteam Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Freshteam subdomain. For example, if you log in at https://acme.freshteam.com, enter 'acme'."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Freshteam: click your profile icon > API Settings > copy Your API Key."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "freshteam_employee_access",
+      "name": "Freshteam Employee Access",
+      "description": "Verifies that employee records can be accessed through the Freshteam API, confirming the integration is properly connected and employee data is available.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "freshteam_rbac",
+      "name": "Freshteam Role-based Access Controls",
+      "description": "Verifies that role-based access controls are configured in Freshteam by checking that organizational roles and departments are defined.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "freshteam_employee_descriptions",
+      "name": "Freshteam Employee Descriptions",
+      "description": "Verifies that employee records in Freshteam have job titles or designations assigned, ensuring proper role documentation for compliance.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

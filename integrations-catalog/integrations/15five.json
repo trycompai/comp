@@ -1,0 +1,45 @@
+{
+  "slug": "15five",
+  "name": "15Five",
+  "description": "Monitor 15Five HR performance platform for team access and employee engagement compliance",
+  "category": "HR & People",
+  "docsUrl": "https://my.15five.com/api/public/",
+  "baseUrl": "https://my.15five.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to 15Five at https://my.15five.com\n2. Go to Settings → Integrations → API\n3. Generate an API key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in 15Five Settings → Integrations → API"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "15five_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews 15Five users with access to performance management data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "15five_app_availability",
+      "name": "App Availability",
+      "description": "Verifies 15Five HR performance platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

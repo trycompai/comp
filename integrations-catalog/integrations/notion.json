@@ -1,0 +1,52 @@
+{
+  "slug": "notion",
+  "name": "Notion",
+  "description": "Monitor Notion workspace members, integration access, and activity for compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.notion.com/reference/intro",
+  "baseUrl": "https://api.notion.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Go to notion.so/profile/integrations\n2. Click 'New integration' (or select an existing one)\n3. Give it a name and select the workspace you want to connect\n4. Under Capabilities, make sure 'Read user information including email addresses' is enabled\n5. Copy the Internal Integration Secret and paste it below",
+      "credentialFields": [
+        {
+          "label": "Internal Integration Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Notion internal integration secret. Go to notion.so/profile/integrations, create or select an integration, and copy the Internal Integration Secret."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "notion_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Notion workspace members and verifies active user access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "notion_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies that Notion has dedicated bot integrations for automated processes, separating human from automated access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "notion_access_review",
+      "name": "Access Review Log",
+      "description": "Reviews Notion workspace membership and identifies users without email verification",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

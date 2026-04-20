@@ -1,0 +1,51 @@
+{
+  "slug": "backblaze",
+  "name": "Backblaze B2",
+  "description": "Backblaze B2 cloud object storage for backup and archival",
+  "category": "Infrastructure",
+  "docsUrl": "https://www.backblaze.com/apidocs",
+  "baseUrl": "https://api.backblazeb2.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Backblaze\n2. Go to Account → App Keys\n3. Note your Account ID and Application Key\n4. Encode them: echo -n 'accountId:applicationKey' | base64\n5. Paste the encoded value below",
+      "credentialFields": [
+        {
+          "label": "Account ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Backblaze → Account → App Keys → Account ID"
+        },
+        {
+          "label": "Basic Auth Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Run: echo -n 'accountId:applicationKey' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "backblaze_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Backblaze B2 storage account is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "backblaze_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Backblaze B2 credentials are valid and storage access is managed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

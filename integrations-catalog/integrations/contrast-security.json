@@ -1,0 +1,63 @@
+{
+  "slug": "contrast-security",
+  "name": "Contrast Security",
+  "description": "Application security testing platform. Monitor application vulnerabilities and compliance.",
+  "category": "Security",
+  "docsUrl": "https://docs.contrastsecurity.com/",
+  "baseUrl": "https://app.contrastsecurity.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Contrast Security\n2. Go to User Settings → Profile\n3. Copy your API Key, Service Key, Username, and Organization ID\n4. Paste all values below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Contrast → User Settings → Profile → API Key."
+        },
+        {
+          "label": "Service Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Contrast → User Settings → Profile → Service Key."
+        },
+        {
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Contrast Security username (email)."
+        },
+        {
+          "label": "Organization ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Contrast → User Settings → Profile → Organization ID."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "contrast_security_app_availability",
+      "name": "Contrast Security App Availability",
+      "description": "Verifies Contrast Security API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "contrast_security_employee_access",
+      "name": "Contrast Security Employee Access",
+      "description": "Verifies user access to Contrast Security.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

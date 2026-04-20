@@ -1,0 +1,35 @@
+{
+  "slug": "close",
+  "name": "Close",
+  "description": "Sales CRM platform. Monitor user access and pipeline data.",
+  "category": "Productivity",
+  "docsUrl": "https://developer.close.com/",
+  "baseUrl": "https://api.close.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "close_app_availability",
+      "name": "Close App Availability",
+      "description": "Checks Close app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "close_employee_access",
+      "name": "Close Employee Access",
+      "description": "Checks Close employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,56 @@
+{
+  "slug": "sonicwall",
+  "name": "SonicWall",
+  "description": "Monitor SonicWall firewall for security policies, rules, and network protection compliance",
+  "category": "Security",
+  "docsUrl": "https://www.sonicwall.com/support/knowledge-base/introduction-to-sonicos-api/200818060121313",
+  "baseUrl": "https://example.sonicwall.local",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Firewall URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your SonicWall firewall URL (e.g., https://192.168.1.1)"
+        },
+        {
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Admin username for SonicWall firewall"
+        },
+        {
+          "label": "Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Admin password for SonicWall firewall"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "production_firewall",
+      "name": "Production Firewall",
+      "description": "Check firewall rules and security policies",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerts",
+      "name": "Monitoring & Alerting",
+      "description": "Check security services and system status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

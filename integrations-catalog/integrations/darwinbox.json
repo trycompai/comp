@@ -1,0 +1,77 @@
+{
+  "slug": "darwinbox",
+  "name": "Darwinbox",
+  "description": "Darwinbox is a global end-to-end cloud-based HRMS platform popular in the Asia-Pacific region, providing comprehensive HR management including employee lifecycle, payroll, attendance, and talent management.",
+  "category": "HR & People",
+  "docsUrl": "https://api-docs.darwinbox.com",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Contact your Darwinbox account manager or email integrationsteam@darwinbox.in to request API access\n2. You will receive: a username, password, API key, and dataset key\n3. Your subdomain is the part before .darwinbox.in in your Darwinbox URL (e.g. for https://acme.darwinbox.in, enter 'acme')\n4. Enter all credentials below\n\nNote: API access is provided on a request-only basis by the Darwinbox team.",
+      "credentialFields": [
+        {
+          "label": "Darwinbox Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Darwinbox subdomain. For example, if you access Darwinbox at https://acme.darwinbox.in, enter 'acme'."
+        },
+        {
+          "label": "API Username",
+          "type": "text",
+          "required": true,
+          "helpText": "The username provided by the Darwinbox team for API access."
+        },
+        {
+          "label": "API Password",
+          "type": "password",
+          "required": true,
+          "helpText": "The password provided by the Darwinbox team for API access."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "The API key provided by the Darwinbox team for endpoint authorization."
+        },
+        {
+          "label": "Dataset Key",
+          "type": "password",
+          "required": true,
+          "helpText": "The dataset key provided by the Darwinbox team. This determines which employee fields are returned."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "darwinbox_employee_access",
+      "name": "Darwinbox Employee Access",
+      "description": "Verifies that employee records can be accessed through the Darwinbox API, confirming the integration is properly configured and the API credentials have access to employee data.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "darwinbox_rbac",
+      "name": "Darwinbox Role-based Access Controls",
+      "description": "Verifies that role-based access controls are configured in Darwinbox by checking that employees have designated job titles and organizational roles assigned.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "darwinbox_org_chart",
+      "name": "Darwinbox Organisation Chart",
+      "description": "Verifies that the organizational structure is properly configured in Darwinbox by checking that employees have reporting managers and department hierarchies assigned.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

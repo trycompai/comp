@@ -1,0 +1,66 @@
+{
+  "slug": "bitsight",
+  "name": "Bitsight",
+  "description": "Bitsight is a cybersecurity ratings platform that provides data-driven security ratings and risk analytics. This integration monitors your organization's security rating, risk vectors, vulnerability findings, alerting configuration, and third-party portfolio coverage.",
+  "category": "Security",
+  "docsUrl": "https://help.bitsighttech.com/hc/en-us/sections/360001428594-API-Guide",
+  "baseUrl": "https://api.bitsighttech.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to the Bitsight Security Ratings Platform at https://service.bitsight.com\n2. Go to Settings (gear icon) > Account > User Preferences\n3. Under 'User API Token' or 'Company API Token', generate a new token\n4. Copy the token and paste it here\n\nNote: Company API tokens provide broader access than user tokens and are not user-specific. API tokens should be treated as passwords.",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Your BitSight API token. Find it in the BitSight platform under Settings > Account > User Preferences > API Token."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "bitsight_security_rating",
+      "name": "Bitsight Security Rating",
+      "description": "Verifies that the organization's Bitsight security rating is retrieved and meets acceptable thresholds. A rating below 640 indicates significant security risk.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "bitsight_risk_vectors",
+      "name": "Bitsight Risk Vector Assessment",
+      "description": "Evaluates the organization's Bitsight risk vector grades across security categories (Compromised Systems, Diligence, User Behavior, Public Disclosures). Flags any risk vectors graded D or F.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "bitsight_alerts_monitoring",
+      "name": "Bitsight Alerts Configuration",
+      "description": "Verifies that Bitsight alerting is active and configured. Checks for the presence of alert configurations to ensure security events are being monitored.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "bitsight_portfolio_monitoring",
+      "name": "Bitsight Portfolio Monitoring",
+      "description": "Verifies third-party risk monitoring by checking the Bitsight portfolio for monitored companies. Ensures vendors and third parties are being tracked for security risk.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "bitsight_vulnerability_findings",
+      "name": "Bitsight Vulnerability Findings",
+      "description": "Checks for open vulnerability findings in the organization's Bitsight profile. Reviews diligence findings that may indicate security gaps in the infrastructure.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

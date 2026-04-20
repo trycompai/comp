@@ -1,0 +1,43 @@
+{
+  "slug": "docusign",
+  "name": "DocuSign",
+  "description": "Monitor DocuSign user access and envelope status for eSignature compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.docusign.com/docs/esign-rest-api/",
+  "baseUrl": "https://account.docusign.com/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Go to https://developers.docusign.com/apps-and-keys\n2. Create an Integration (App)\n3. Set redirect URI to: https://api.trycomp.ai/v1/integrations/oauth/callback\n4. Copy Integration Key (Client ID) and Secret Key\n5. After connecting, enter your DocuSign Account ID and API base URL (found in DocuSign Admin > API and Keys)",
+      "scopes": [
+        "signature",
+        "offline_access"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "docusign_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews DocuSign users and their signing access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "docusign_access_review",
+      "name": "Access Review Log",
+      "description": "Reviews recent DocuSign envelope activity for access audit",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

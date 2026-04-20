@@ -1,0 +1,45 @@
+{
+  "slug": "airbyte",
+  "name": "Airbyte",
+  "description": "Monitor Airbyte data integration pipelines for connection status and workspace access compliance",
+  "category": "Cloud",
+  "docsUrl": "https://reference.airbyte.com/reference/getting-started",
+  "baseUrl": "https://api.airbyte.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Airbyte Cloud at https://cloud.airbyte.com\n2. Go to Settings → API Keys\n3. Generate a new API key\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Airbyte Cloud Settings → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "airbyte_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Airbyte workspaces for data pipeline infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "airbyte_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Airbyte workspace users and their data pipeline access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

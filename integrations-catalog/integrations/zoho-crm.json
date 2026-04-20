@@ -1,0 +1,59 @@
+{
+  "slug": "zoho-crm",
+  "name": "Zoho CRM",
+  "description": "Zoho CRM customer relationship management. Monitor user access, roles, profiles, and organization settings.",
+  "category": "Productivity",
+  "docsUrl": "https://www.zoho.com/crm/developer/docs/api/v7/",
+  "baseUrl": "https://www.zohoapis.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Zoho API Console at https://api-console.zoho.com\n2. Create a Self Client application\n3. Generate a token with scopes: ZohoCRM.users.READ, ZohoCRM.settings.READ, ZohoCRM.org.READ\n4. Paste the access token below\n5. If your Zoho account is not in the US region, enter your data center domain (e.g. www.zohoapis.eu for EU)\n\nNote: For long-term use, set up OAuth2 refresh tokens via Zoho API Console.",
+      "credentialFields": [
+        {
+          "label": "OAuth Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate from Zoho API Console (https://api-console.zoho.com). Create a Self Client, generate token with scopes: ZohoCRM.users.READ, ZohoCRM.settings.READ, ZohoCRM.org.READ."
+        },
+        {
+          "label": "Zoho Data Center Region",
+          "type": "text",
+          "required": false,
+          "helpText": "Your Zoho data center domain. Examples: www.zohoapis.com (US), www.zohoapis.eu (EU), www.zohoapis.in (IN), www.zohoapis.com.au (AU), www.zohoapis.jp (JP), www.zohoapis.com.cn (CN)."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "zoho_crm_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all Zoho CRM users and verifies their account status.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "zoho_crm_rbac",
+      "name": "Role-based Access Controls",
+      "description": "Verifies that Zoho CRM has roles and profiles configured for access control.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "zoho_crm_app_availability",
+      "name": "App Availability",
+      "description": "Verifies that the Zoho CRM API is accessible and returns organization information.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

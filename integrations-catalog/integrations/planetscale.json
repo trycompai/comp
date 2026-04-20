@@ -1,0 +1,58 @@
+{
+  "slug": "planetscale",
+  "name": "PlanetScale",
+  "description": "PlanetScale serverless MySQL-compatible database platform",
+  "category": "Infrastructure",
+  "docsUrl": "https://api-docs.planetscale.com/",
+  "baseUrl": "https://api.planetscale.com/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to PlanetScale\n2. Go to Organization Settings → Service Tokens\n3. Create a service token with read_databases and read_organization permissions\n4. Copy the Token ID and Token Value separately\n5. Enter your Organization name (from app.planetscale.com/YOUR-ORG) and the token fields below",
+      "credentialFields": [
+        {
+          "label": "Service Token ID",
+          "type": "text",
+          "required": true,
+          "helpText": "PlanetScale → Settings → Service Tokens → your token → Token ID"
+        },
+        {
+          "label": "Service Token Value",
+          "type": "password",
+          "required": true,
+          "helpText": "PlanetScale → Settings → Service Tokens → your token → Token Value"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "planetscale_app_availability",
+      "name": "App Availability",
+      "description": "Verifies PlanetScale is reachable and the service token is valid",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "planetscale_employee_access",
+      "name": "Employee Access",
+      "description": "Lists PlanetScale organization members to verify database access is managed",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "planetscale_encryption_at_rest",
+      "name": "Encryption at Rest",
+      "description": "Confirms PlanetScale is in use — PlanetScale encrypts all data at rest by default using AES-256",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

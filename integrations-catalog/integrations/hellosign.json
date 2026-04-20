@@ -1,0 +1,35 @@
+{
+  "slug": "hellosign",
+  "name": "Dropbox Sign",
+  "description": "Electronic signature platform. Monitor account access and signature workflows.",
+  "category": "Productivity",
+  "docsUrl": "https://developers.hellosign.com/",
+  "baseUrl": "https://api.hellosign.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "hellosign_app_availability",
+      "name": "Dropbox Sign App Availability",
+      "description": "Checks Dropbox Sign app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hellosign_employee_access",
+      "name": "Dropbox Sign Employee Access",
+      "description": "Checks Dropbox Sign employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

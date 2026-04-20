@@ -1,0 +1,45 @@
+{
+  "slug": "courier",
+  "name": "Courier",
+  "description": "Monitor Courier notification infrastructure for routing policies and delivery compliance",
+  "category": "Communication",
+  "docsUrl": "https://www.courier.com/docs/reference/",
+  "baseUrl": "https://api.courier.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Courier at https://app.courier.com\n2. Go to Settings → API Keys\n3. Copy your Production API Key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Courier Settings → API Keys (Production key)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "courier_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Courier workspace members with access to notification routing",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "courier_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Courier notification channels are configured and delivering",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,63 @@
+{
+  "slug": "onetrust",
+  "name": "OneTrust",
+  "description": "Monitor OneTrust privacy management and GRC platform for user access, data inventory assets, and assessment status",
+  "category": "Security",
+  "docsUrl": "https://developer.onetrust.com/onetrust/reference/onetrust-api-reference",
+  "baseUrl": "https://app.onetrust.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "OneTrust Hostname",
+          "type": "text",
+          "required": true,
+          "helpText": "Your OneTrust hostname (e.g., app.onetrust.com, app-eu.onetrust.com, app-de.onetrust.com, app-uk.onetrust.com, app-apac.onetrust.com)"
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "OAuth 2.0 Client ID from OneTrust Global Settings > Access Management > Client Credentials"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "OAuth 2.0 Client Secret from OneTrust Global Settings > Access Management > Client Credentials"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "user_access",
+      "name": "Employee Access",
+      "description": "Lists all users in OneTrust and reports their active/inactive status for access review evidence",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "data_inventory",
+      "name": "Systems Description",
+      "description": "Lists all assets in the OneTrust data inventory to provide evidence of systems tracking and data mapping",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "assessment_status",
+      "name": "Monitoring & Alerting",
+      "description": "Lists all assessments in OneTrust and reports their completion status for audit and monitoring evidence",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

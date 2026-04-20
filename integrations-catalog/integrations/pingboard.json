@@ -1,0 +1,38 @@
+{
+  "slug": "pingboard",
+  "name": "Pingboard",
+  "description": "Pingboard org chart and people directory platform",
+  "category": "HR & People",
+  "docsUrl": "https://pingboard.com/api",
+  "baseUrl": "https://app.pingboard.com/api/v2",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Register an OAuth application in Pingboard → Settings → API Applications\n2. Use your client_id and client_secret to obtain an access token via OAuth2 client credentials\n3. Paste the access token below",
+      "credentialFields": [
+        {
+          "label": "Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate an OAuth access token via Pingboard's API (client credentials flow)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "pingboard_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Pingboard users to verify org directory is up to date",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

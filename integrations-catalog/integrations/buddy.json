@@ -1,0 +1,45 @@
+{
+  "slug": "buddy",
+  "name": "Buddy",
+  "description": "Monitor Buddy CI/CD pipelines for automated build, test, and deployment compliance",
+  "category": "Development",
+  "docsUrl": "https://buddy.works/docs/api/getting-started/overview",
+  "baseUrl": "https://api.buddy.works/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Buddy at https://app.buddy.works\n2. Go to Profile → Personal Access Tokens\n3. Generate a new token with workspace and pipeline scopes\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "Personal Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Buddy Profile → Personal Access Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "buddy_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies Buddy CI/CD pipelines are configured to automate code deployments",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "buddy_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Buddy account is active with authorized team members",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

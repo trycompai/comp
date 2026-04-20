@@ -1,0 +1,37 @@
+{
+  "slug": "upcloud",
+  "name": "UpCloud",
+  "description": "European cloud infrastructure provider. Monitor servers and resources.",
+  "category": "Cloud",
+  "docsUrl": "https://developers.upcloud.com/",
+  "baseUrl": "https://api.upcloud.com",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to UpCloud\n2. Go to Account → API credentials\n3. Use your username and password below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "upcloud_app_availability",
+      "name": "UpCloud App Availability",
+      "description": "Checks UpCloud app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "upcloud_employee_access",
+      "name": "UpCloud Employee Access",
+      "description": "Checks UpCloud employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

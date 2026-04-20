@@ -1,0 +1,45 @@
+{
+  "slug": "drip",
+  "name": "Drip",
+  "description": "Drip ecommerce CRM and email marketing automation platform",
+  "category": "Communication",
+  "docsUrl": "https://developer.drip.com",
+  "baseUrl": "https://api.getdrip.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Drip\n2. Go to User Settings (top-right) → API Token\n3. Copy your API token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Drip → User Settings → API Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "drip_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Drip platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "drip_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Drip accounts to verify access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

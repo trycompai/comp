@@ -1,0 +1,51 @@
+{
+  "slug": "copper",
+  "name": "Copper CRM",
+  "description": "Monitor Copper CRM for sales team access and customer relationship data compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.copper.com/",
+  "baseUrl": "https://api.copper.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Copper at https://app.copper.com\n2. Go to Settings → Integrations → API Keys\n3. Generate a new API key\n4. Enter the API key and the email of the user who generated it",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Copper Settings → Integrations → API Keys"
+        },
+        {
+          "label": "User Email",
+          "type": "text",
+          "required": true,
+          "helpText": "Email address of the Copper user who owns the API key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "copper_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Copper CRM users with access to customer relationship data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "copper_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Copper CRM platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

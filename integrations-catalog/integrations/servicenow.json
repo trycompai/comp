@@ -1,0 +1,45 @@
+{
+  "slug": "servicenow",
+  "name": "ServiceNow",
+  "description": "Monitor ServiceNow users and incident tickets for ITSM compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.servicenow.com/dev.do#!/reference/api/utah/rest/",
+  "baseUrl": "https://yourinstance.service-now.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Use a service account with REST API access in ServiceNow\n2. Encode credentials: base64('username:password')\n3. Enter the encoded value below along with your instance name",
+      "credentialFields": [
+        {
+          "label": "Encoded Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode your username:password. Example: base64('admin:yourpassword'). Use https://www.base64encode.org/"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "servicenow_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews ServiceNow users with active system access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "servicenow_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies ServiceNow has an active incident management process",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

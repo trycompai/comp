@@ -1,0 +1,65 @@
+{
+  "slug": "tanium",
+  "name": "Tanium",
+  "description": "Endpoint management and security platform providing real-time visibility, control, and compliance across organizational infrastructure",
+  "category": "Security",
+  "docsUrl": "https://developer.tanium.com/",
+  "baseUrl": "https://example.cloud.tanium.com/api/v2/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log into Tanium Console as Administrator\n2. Navigate to Administration > Permissions > API Tokens\n3. Click 'Create API Token'\n4. Set appropriate scopes and expiration\n5. Copy the generated token (shown only once)",
+      "credentialFields": [
+        {
+          "label": "Tanium Server URL",
+          "type": "text",
+          "required": true,
+          "helpText": "For Tanium Cloud: https://{tenant}.cloud.tanium.com (without /api). For on-premises: provide your full Tanium server URL"
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate API tokens in Administration > Permissions > API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_inventory",
+      "name": "Device List",
+      "description": "Verifies endpoint devices are properly managed and inventoried in Tanium",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Checks that endpoints managed by Tanium are secure and compliant with organizational policies",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies monitoring capabilities and alerting configuration for security and compliance events",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Reviews user accounts and access permissions in Tanium for proper role-based access control",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "frontegg",
+  "name": "Frontegg",
+  "description": "Monitor Frontegg authentication platform for user management and access control compliance",
+  "category": "Identity & Access",
+  "docsUrl": "https://docs.frontegg.com/reference/overview",
+  "baseUrl": "https://api.frontegg.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Frontegg at https://portal.frontegg.com\n2. Go to Environments → [your env] → Settings → API Tokens\n3. Generate an API token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Frontegg Portal → Environments → Settings → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "frontegg_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Frontegg users to audit authentication platform access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "frontegg_mfa",
+      "name": "2FA",
+      "description": "Verifies Frontegg MFA is enabled for user authentication security",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

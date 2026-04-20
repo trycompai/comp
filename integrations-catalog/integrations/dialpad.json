@@ -1,0 +1,45 @@
+{
+  "slug": "dialpad",
+  "name": "Dialpad",
+  "description": "Cloud communications platform providing business phone, video conferencing, and messaging services.",
+  "category": "Communication",
+  "docsUrl": "https://developers.dialpad.com/reference",
+  "baseUrl": "https://dialpad.com/api/v2",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Dialpad admin portal at https://dialpad.com/admin\n2. Go to Company Settings > API Keys\n3. Generate a new API key\n4. Copy the API key and paste it below"
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "dialpad_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all Dialpad users with their roles and access levels to verify employee access controls.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "dialpad_role_based_access",
+      "name": "Role-based Access Controls",
+      "description": "Reviews admin vs non-admin user distribution and access control policies to verify RBAC implementation.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "dialpad_monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Reviews webhook subscriptions configured in Dialpad for monitoring and alerting capabilities.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "clearbit",
+  "name": "Clearbit",
+  "description": "Monitor Clearbit B2B data enrichment for API access and data handling compliance",
+  "category": "Productivity",
+  "docsUrl": "https://dashboard.clearbit.com/docs",
+  "baseUrl": "https://company.clearbit.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Clearbit at https://dashboard.clearbit.com\n2. Go to API → Keys\n3. Copy your Secret API Key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "Secret API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Clearbit Dashboard → API → Keys (Secret key)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "clearbit_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Clearbit API key is active and properly scoped for B2B data enrichment",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "clearbit_data_masking",
+      "name": "Data Masking",
+      "description": "Verifies Clearbit data enrichment access is appropriately restricted",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

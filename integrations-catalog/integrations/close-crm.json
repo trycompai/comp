@@ -1,0 +1,45 @@
+{
+  "slug": "close-crm",
+  "name": "Close CRM",
+  "description": "Monitor Close CRM for sales team access and customer data compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.close.com/",
+  "baseUrl": "https://api.close.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Close at https://app.close.com\n2. Go to Settings → API Keys → Create API Key\n3. Base64 encode 'api_key:' (with colon): echo -n 'apikey:' | base64\n4. Enter the encoded value below",
+      "credentialFields": [
+        {
+          "label": "Encoded API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'api_key:' (with trailing colon). Found in Close Settings → API Keys. Command: echo -n 'apikey:' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "close_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Close CRM users with access to sales data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "close_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Close CRM platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

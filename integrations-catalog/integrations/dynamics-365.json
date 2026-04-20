@@ -1,0 +1,70 @@
+{
+  "slug": "dynamics-365",
+  "name": "Dynamics 365",
+  "description": "CRM and business applications platform. Monitor organizational data, contacts, and user access for compliance.",
+  "category": "Productivity",
+  "docsUrl": "https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/overview",
+  "baseUrl": "https://org.api.crm.dynamics.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Register an app in Azure AD with Dynamics CRM permissions\n2. Grant admin consent\n3. Register the app as an application user in Power Platform admin center\n4. Enter all values below",
+      "credentialFields": [
+        {
+          "label": "Dynamics 365 Environment URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Dynamics 365 environment URL (e.g. https://yourorg.crm.dynamics.com)."
+        },
+        {
+          "label": "Tenant ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Azure Portal → Microsoft Entra ID → Overview → Tenant ID."
+        },
+        {
+          "label": "Application (Client) ID",
+          "type": "text",
+          "required": true,
+          "helpText": "From Azure AD app registration."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "From Azure AD app registration."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "dynamics_365_app_availability",
+      "name": "Dynamics 365 App Availability",
+      "description": "Verifies Dynamics 365 Dataverse API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "dynamics_365_employee_access",
+      "name": "Dynamics 365 User Access",
+      "description": "Verifies user access to Dynamics 365.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "dynamics_365_regulatory_contacts",
+      "name": "Dynamics 365 Regulatory Contacts",
+      "description": "Verifies CRM contact records are accessible for regulatory liaison tracking.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

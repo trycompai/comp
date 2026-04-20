@@ -1,0 +1,79 @@
+{
+  "slug": "conductorone",
+  "name": "ConductorOne",
+  "description": "Monitor ConductorOne access governance including access reviews, role-based access controls, user management, application inventory, and access policies for compliance",
+  "category": "Identity & Access",
+  "docsUrl": "https://www.c1.ai/docs/conductorone-api/api",
+  "baseUrl": "https://conductorone.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to the C1 web app (https://your-tenant.conductor.one)\n2. Open your profile menu and select 'API Keys'\n3. Click 'Create credential'\n4. Give the key a name and select 'Full permissions' or 'Read-only Super Administrator'\n5. Click 'Create'\n6. Copy the Client ID and Client Secret (secret is only shown once)\n7. Your tenant domain is the subdomain in your ConductorOne URL (e.g., if your URL is https://mycompany.conductor.one, enter 'mycompany')\n\nNote: Tenant API URLs use *.conductor.one even though the product is now branded as C1.",
+      "credentialFields": [
+        {
+          "label": "Tenant Domain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ConductorOne tenant subdomain. If your URL is https://mycompany.conductor.one, enter 'mycompany'."
+        },
+        {
+          "label": "API Key Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "The Client ID from your ConductorOne API key. Found in Profile > API Keys."
+        },
+        {
+          "label": "API Key Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The Client Secret from your ConductorOne API key. This is only shown once when you create the key."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "conductorone_access_review_log",
+      "name": "Access Review Log",
+      "description": "Verifies that access reviews are configured and being conducted in ConductorOne",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "conductorone_rbac",
+      "name": "Role-based Access Controls",
+      "description": "Verifies that roles are configured in ConductorOne for proper access governance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "conductorone_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews ConductorOne users to verify employee access and directory status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "conductorone_app_inventory",
+      "name": "Application Inventory",
+      "description": "Lists and reviews applications managed in ConductorOne for access governance visibility",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "conductorone_policy_management",
+      "name": "Access Policies",
+      "description": "Reviews access governance policies configured in ConductorOne for compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

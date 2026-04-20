@@ -1,0 +1,35 @@
+{
+  "slug": "harness",
+  "name": "Harness",
+  "description": "Monitor Harness CI/CD pipelines and user access for deployment and change management compliance",
+  "category": "Development",
+  "docsUrl": "https://apidocs.harness.io/",
+  "baseUrl": "https://app.harness.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "harness_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies Harness pipelines are configured for controlled deployments and change management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "harness_separation",
+      "name": "Separation of Environments",
+      "description": "Verifies Harness has separate projects/environments for deployment stages",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}
