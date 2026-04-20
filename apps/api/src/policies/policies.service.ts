@@ -599,14 +599,10 @@ export class PoliciesService {
       sourceVersion = requestedVersion;
     }
 
-    const contentForVersion = sourceVersion
+    const contentForVersion = (sourceVersion
       ? (sourceVersion.content as Prisma.InputJsonValue[])
-      : (policy.content as Prisma.InputJsonValue[]);
+      : (policy.content as Prisma.InputJsonValue[])) ?? [];
     const sourcePdfUrl = sourceVersion?.pdfUrl ?? policy.pdfUrl;
-
-    if (!contentForVersion || contentForVersion.length === 0) {
-      throw new BadRequestException('No content to create version from');
-    }
 
     // S3 copy is done AFTER the transaction to prevent orphaned files on retry
     let createdVersion: { versionId: string; version: number } | null = null;
