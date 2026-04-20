@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import {
   STALE_DEVICE_THRESHOLD_DAYS,
   daysSinceCheckIn,
-  isDeviceStale,
   getDeviceComplianceStatus,
+  isDeviceStale,
 } from './devices';
 
 // Fri 2026-04-17 12:00:00 UTC — a fixed "now" for deterministic math.
@@ -75,32 +75,28 @@ describe('getDeviceComplianceStatus', () => {
   });
 
   it('returns "stale" regardless of isCompliant when beyond threshold', () => {
-    expect(
-      getDeviceComplianceStatus({ isCompliant: true, lastCheckIn: daysAgo(8) }),
-    ).toBe('stale');
-    expect(
-      getDeviceComplianceStatus({ isCompliant: false, lastCheckIn: daysAgo(51) }),
-    ).toBe('stale');
+    expect(getDeviceComplianceStatus({ isCompliant: true, lastCheckIn: daysAgo(8) })).toBe('stale');
+    expect(getDeviceComplianceStatus({ isCompliant: false, lastCheckIn: daysAgo(51) })).toBe(
+      'stale',
+    );
   });
 
   it('returns "compliant" for fresh + isCompliant true', () => {
-    expect(
-      getDeviceComplianceStatus({ isCompliant: true, lastCheckIn: daysAgo(1) }),
-    ).toBe('compliant');
+    expect(getDeviceComplianceStatus({ isCompliant: true, lastCheckIn: daysAgo(1) })).toBe(
+      'compliant',
+    );
   });
 
   it('returns "non_compliant" for fresh + isCompliant false', () => {
-    expect(
-      getDeviceComplianceStatus({ isCompliant: false, lastCheckIn: daysAgo(1) }),
-    ).toBe('non_compliant');
+    expect(getDeviceComplianceStatus({ isCompliant: false, lastCheckIn: daysAgo(1) })).toBe(
+      'non_compliant',
+    );
   });
 
   it('honors the 7-day boundary: day 6 fresh, day 7 stale', () => {
-    expect(
-      getDeviceComplianceStatus({ isCompliant: true, lastCheckIn: daysAgo(6) }),
-    ).toBe('compliant');
-    expect(
-      getDeviceComplianceStatus({ isCompliant: true, lastCheckIn: daysAgo(7) }),
-    ).toBe('stale');
+    expect(getDeviceComplianceStatus({ isCompliant: true, lastCheckIn: daysAgo(6) })).toBe(
+      'compliant',
+    );
+    expect(getDeviceComplianceStatus({ isCompliant: true, lastCheckIn: daysAgo(7) })).toBe('stale');
   });
 });
