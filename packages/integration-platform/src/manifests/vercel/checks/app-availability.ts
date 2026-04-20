@@ -60,6 +60,18 @@ export const appAvailabilityCheck: IntegrationCheck = {
       return;
     }
 
+    if (projects.length === 0) {
+      ctx.fail({
+        title: 'No Vercel projects found',
+        resourceType: 'vercel',
+        resourceId: 'projects',
+        severity: 'medium',
+        description: 'No projects found in this account.',
+        remediation: 'Verify the connection has access to your Vercel projects.',
+      });
+      return;
+    }
+
     const filter = parseVercelProjectFilter(ctx.variables);
     const scopedProjects = applyVercelProjectFilter(projects, filter);
     ctx.log(
@@ -77,18 +89,6 @@ export const appAvailabilityCheck: IntegrationCheck = {
         totalProjectCount: projects.length,
       },
     });
-
-    if (projects.length === 0) {
-      ctx.fail({
-        title: 'No Vercel projects found',
-        resourceType: 'vercel',
-        resourceId: 'projects',
-        severity: 'medium',
-        description: 'No projects found in this account.',
-        remediation: 'Verify the connection has access to your Vercel projects.',
-      });
-      return;
-    }
 
     // Transient states where Vercel keeps the previous READY deployment serving traffic
     const transitionalStates = new Set(['BUILDING', 'QUEUED', 'INITIALIZING']);

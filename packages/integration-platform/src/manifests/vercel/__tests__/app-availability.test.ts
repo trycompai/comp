@@ -128,4 +128,13 @@ describe('appAvailabilityCheck filter behaviour', () => {
     });
     expect(result.passedResourceIds).toContain('project-filter');
   });
+
+  it('does not emit a filter-applied pass when no projects are returned', async () => {
+    const result = await runWithVariables([], {
+      project_filter_mode: 'exclude',
+      filtered_projects: ['prj_anything'],
+    });
+    expect(result.passedResourceIds).not.toContain('project-filter');
+    expect(result.failedResourceIds).toContain('projects');
+  });
 });
