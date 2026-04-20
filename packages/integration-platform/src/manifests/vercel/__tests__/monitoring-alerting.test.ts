@@ -30,9 +30,14 @@ const makeDeployment = (state: VercelDeployment['state']): VercelDeployment => (
 async function runWithVariables(
   projects: VercelProject[],
   variables: CheckVariableValues | undefined,
-): Promise<{ checkedProjectIds: string[]; passedResourceIds: string[] }> {
+): Promise<{
+  checkedProjectIds: string[];
+  passedResourceIds: string[];
+  failedResourceIds: string[];
+}> {
   const checkedProjectIds: string[] = [];
   const passed: string[] = [];
+  const failed: string[] = [];
 
   const ctx: CheckContext = {
     accessToken: 'tok',
@@ -45,7 +50,9 @@ async function runWithVariables(
     pass: (result) => {
       passed.push(result.resourceId);
     },
-    fail: () => {},
+    fail: (result) => {
+      failed.push(result.resourceId);
+    },
     fetch: (async <T,>(path: string): Promise<T> => {
       if (path.startsWith('/v9/projects')) {
         return { projects } satisfies VercelProjectsResponse as unknown as T;
@@ -65,7 +72,7 @@ async function runWithVariables(
   } as CheckContext;
 
   await monitoringAlertingCheck.run(ctx);
-  return { checkedProjectIds, passedResourceIds: passed };
+  return { checkedProjectIds, passedResourceIds: passed, failedResourceIds: failed };
 }
 
 describe('monitoringAlertingCheck filter behaviour', () => {
@@ -102,5 +109,14 @@ describe('monitoringAlertingCheck filter behaviour', () => {
       filtered_projects: ['prj_b'],
     });
     expect(result.passedResourceIds).toContain('project-filter');
+  });
+
+  it('fails when filter resolves to zero scoped projects', async () => {
+    const result = await runWithVariables(projects, {
+      project_filter_mode: 'exclude',
+      filtered_projects: ['prj_a', 'prj_b', 'prj_c'],
+    });
+    expect(result.failedResourceIds).toContain('project-filter');
+    expect(result.checkedProjectIds).toEqual([]);
   });
 });

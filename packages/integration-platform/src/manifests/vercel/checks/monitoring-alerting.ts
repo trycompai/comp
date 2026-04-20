@@ -70,6 +70,22 @@ export const monitoringAlertingCheck: IntegrationCheck = {
 
     const filter = parseVercelProjectFilter(ctx.variables);
     const scopedProjects = applyVercelProjectFilter(projects, filter);
+    if (filter.mode !== 'all' && scopedProjects.length === 0) {
+      ctx.fail({
+        title: 'Project filter matched no projects',
+        resourceType: 'vercel',
+        resourceId: 'project-filter',
+        severity: 'medium',
+        description: `Filter mode "${filter.mode}" with ${filter.selectedIds.size} selected project(s) resolved to zero projects in scope. This may indicate deleted or renamed projects.`,
+        remediation: 'Open the Configure sheet for this automation and review the selected projects.',
+        evidence: {
+          filterMode: filter.mode,
+          selectedProjectIds: Array.from(filter.selectedIds),
+          availableProjectIds: projects.map((p) => p.id),
+        },
+      });
+      return;
+    }
     ctx.log(
       `Project filter mode=${filter.mode}, scoped ${scopedProjects.length} of ${projects.length} projects`,
     );

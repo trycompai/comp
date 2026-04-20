@@ -137,4 +137,14 @@ describe('appAvailabilityCheck filter behaviour', () => {
     expect(result.passedResourceIds).not.toContain('project-filter');
     expect(result.failedResourceIds).toContain('projects');
   });
+
+  it('fails when filter resolves to zero scoped projects', async () => {
+    const result = await runWithVariables(projects, {
+      project_filter_mode: 'include',
+      filtered_projects: ['prj_does_not_exist'],
+    });
+    expect(result.failedResourceIds).toContain('project-filter');
+    expect(result.checkedProjectIds).toEqual([]);
+    expect(result.passedResourceIds).not.toContain('project-filter');
+  });
 });

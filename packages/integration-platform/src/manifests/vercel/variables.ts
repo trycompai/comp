@@ -70,10 +70,33 @@ export const filteredProjectsVariable: CheckVariable = {
   fetchOptions: async (ctx) => {
     // OAuth token is installation-scoped (one installation = one team or personal account),
     // so /v9/projects returns projects visible to this connection without an explicit teamId.
-    const response = await ctx.fetch<VercelProjectsResponse>('/v9/projects');
-    const projects = response.projects ?? [];
-    return projects
-      .map((p) => ({ value: p.id, label: p.name }))
+    // Vercel paginates with a cursor-based `pagination.next` timestamp (pass as `until`);
+    // we loop until `next` is null to collect every page.
+    const seen = new Map<string, string>();
+    const MAX_PAGES = 20;
+    let until: number | null | undefined;
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const params = new URLSearchParams({ limit: '100' });
+      if (typeof until === 'number') {
+        params.set('until', String(until));
+      }
+      const response = await ctx.fetch<VercelProjectsResponse>(
+        `/v9/projects?${params.toString()}`,
+      );
+      const projects = response.projects ?? [];
+      for (const project of projects) {
+        if (!seen.has(project.id)) {
+          seen.set(project.id, project.name);
+        }
+      }
+      const next = response.pagination?.next;
+      if (typeof next !== 'number') {
+        break;
+      }
+      until = next;
+    }
+    return Array.from(seen.entries())
+      .map(([value, label]) => ({ value, label }))
       .sort((a, b) => a.label.localeCompare(b.label));
   },
 };
