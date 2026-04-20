@@ -1,0 +1,25 @@
+apps/app/src/lib/stripe.ts
+  65d8a25ea2dc2ce8 204-206
+apps/app/src/lib/stripe.test.ts
+  65d8a25ea2dc2ce8 125-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "f73471e007026279e0f83b8ef19ee9bcd90ef1f1",
+  "prompts": {
+    "65d8a25ea2dc2ce8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "42ecccd4-f855-4d39-b1f3-b2c7fa390155",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 573,
+      "total_deletions": 33,
+      "accepted_lines": 544,
+      "overriden_lines": 0
+    }
+  }
+}
