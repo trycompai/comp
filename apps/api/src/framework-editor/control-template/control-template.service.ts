@@ -54,25 +54,13 @@ export class ControlTemplateService {
     return ct;
   }
 
-  async create(dto: CreateControlTemplateDto, frameworkId?: string) {
-    const requirementIds = frameworkId
-      ? await db.frameworkEditorRequirement
-          .findMany({
-            where: { frameworkId },
-            select: { id: true },
-          })
-          .then((reqs) => reqs.map((r) => ({ id: r.id })))
-      : [];
-
+  async create(dto: CreateControlTemplateDto) {
     const ct = await db.frameworkEditorControlTemplate.create({
       data: {
         name: dto.name,
         description: dto.description ?? '',
         ...(dto.documentTypes && {
           documentTypes: dto.documentTypes as EvidenceFormType[],
-        }),
-        ...(requirementIds.length > 0 && {
-          requirements: { connect: requirementIds },
         }),
       },
     });

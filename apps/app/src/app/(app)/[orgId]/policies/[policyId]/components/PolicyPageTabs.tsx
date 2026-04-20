@@ -128,8 +128,12 @@ export function PolicyPageTabs({
     return JSON.stringify(draftContent) !== JSON.stringify(publishedContent);
   }, [policy]);
 
-  // Derive isPendingApproval from current policy data
-  const isPendingApproval = policy ? !!policy.approverId : initialIsPendingApproval;
+  // Derive isPendingApproval from current policy data — both fields must be set
+  // to treat the policy as pending. A stale approverId with no pendingVersionId
+  // is an inconsistent state that should not trigger approval UI.
+  const isPendingApproval = policy
+    ? !!policy.approverId && !!policy.pendingVersionId
+    : initialIsPendingApproval;
 
   const isDeleteDialogOpen = searchParams.get('delete-policy') === 'true';
   const tabFromUrl = searchParams.get('tab') || 'overview';

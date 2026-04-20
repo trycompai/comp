@@ -78,7 +78,7 @@ export default async function PolicyDetails({
     ? activityRes.data.data
     : [];
   const versions = versionsRes.data?.data?.versions ?? [];
-  const isPendingApproval = !!policy?.approverId;
+  const isPendingApproval = !!policy?.approverId && !!policy?.pendingVersionId;
 
   // Check feature flag for AI policy editor
   const session = await auth.api.getSession({

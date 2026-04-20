@@ -44,11 +44,8 @@ export class ControlTemplateController {
   @Post()
   @ApiOperation({ summary: 'Create a control template' })
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-  async create(
-    @Body() dto: CreateControlTemplateDto,
-    @Query('frameworkId') frameworkId?: string,
-  ) {
-    return this.service.create(dto, frameworkId);
+  async create(@Body() dto: CreateControlTemplateDto) {
+    return this.service.create(dto);
   }
 
   @Patch(':id')

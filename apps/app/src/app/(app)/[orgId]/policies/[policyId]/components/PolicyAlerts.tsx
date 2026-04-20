@@ -92,7 +92,7 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
     return null;
   }
 
-  const showPendingAlert = isPendingApproval;
+  const showPendingAlert = isPendingApproval && Boolean(policy.pendingVersionId);
   const showArchivedAlert = policy.isArchived;
 
   if (!showPendingAlert && !showArchivedAlert) {
