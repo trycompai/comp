@@ -1,3 +1,10 @@
+## [3.27.5](https://github.com/trycompai/comp/compare/v3.27.4...v3.27.5) (2026-04-21)
+
+
+### Bug Fixes
+
+* **devices:** soften stale tooltip copy to not prescribe a single cause ([71053b6](https://github.com/trycompai/comp/commit/71053b666219993e1dc087361345e1cec3294804))
+
 ## [3.27.4](https://github.com/trycompai/comp/compare/v3.27.3...v3.27.4) (2026-04-21)
 
 
