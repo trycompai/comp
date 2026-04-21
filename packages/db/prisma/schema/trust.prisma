@@ -17,6 +17,7 @@ model Trust {
   soc2          Boolean @default(false)
   soc2type1     Boolean @default(false)
   soc2type2     Boolean @default(false)
+  soc3          Boolean @default(false)
   iso27001      Boolean @default(false)
   iso42001      Boolean @default(false)
   nen7510       Boolean @default(false)
@@ -28,6 +29,7 @@ model Trust {
   soc2_status      FrameworkStatus @default(started)
   soc2type1_status FrameworkStatus @default(started)
   soc2type2_status FrameworkStatus @default(started)
+  soc3_status      FrameworkStatus @default(started)
   iso27001_status  FrameworkStatus @default(started)
   iso42001_status  FrameworkStatus @default(started)
   nen7510_status   FrameworkStatus @default(started)
@@ -68,6 +70,7 @@ enum TrustFramework {
   hipaa
   soc2_type1
   soc2_type2
+  soc3
   pci_dss
   nen_7510
   iso_9001
