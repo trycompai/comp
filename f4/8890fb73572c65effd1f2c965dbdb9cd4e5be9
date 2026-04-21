@@ -1,0 +1,25 @@
+apps/app/src/trigger/tasks/task/policy-acknowledgment-digest.test.ts
+  df7776b39240b168 424-503
+apps/app/src/trigger/tasks/task/policy-acknowledgment-digest.ts
+  df7776b39240b168 125-130,185-186,190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "f48890fb73572c65effd1f2c965dbdb9cd4e5be9",
+  "prompts": {
+    "df7776b39240b168": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c09e727a-3c45-4d43-acfd-22cd1627e14b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 853,
+      "total_deletions": 4,
+      "accepted_lines": 90,
+      "overriden_lines": 0
+    }
+  }
+}
