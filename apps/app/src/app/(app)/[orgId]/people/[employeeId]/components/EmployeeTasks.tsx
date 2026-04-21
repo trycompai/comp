@@ -52,6 +52,30 @@ const PLATFORM_LABELS: Record<string, string> = {
   linux: 'Linux',
 };
 
+function staleLabel(daysSinceLastCheckIn: number | null): string {
+  return daysSinceLastCheckIn === null ? 'Stale' : `Stale (${daysSinceLastCheckIn}d)`;
+}
+
+function staleTitle(daysSinceLastCheckIn: number | null): string {
+  return daysSinceLastCheckIn === null
+    ? 'No check-ins recorded'
+    : `No check-in in ${daysSinceLastCheckIn} days`;
+}
+
+function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
+  if (device.complianceStatus === 'stale') {
+    return (
+      <Badge variant="secondary" title={staleTitle(device.daysSinceLastCheckIn)}>
+        {staleLabel(device.daysSinceLastCheckIn)}
+      </Badge>
+    );
+  }
+  if (device.complianceStatus === 'compliant') {
+    return <Badge variant="default">Compliant</Badge>;
+  }
+  return <Badge variant="destructive">Non-Compliant</Badge>;
+}
+
 export const EmployeeTasks = ({
   employee,
   policies,
@@ -340,15 +364,14 @@ export const EmployeeTasks = ({
                           {memberDevice.hardwareModel ? ` \u2022 ${memberDevice.hardwareModel}` : ''}
                         </Text>
                       </div>
-                      <Badge variant={memberDevice.isCompliant ? 'default' : 'destructive'}>
-                        {memberDevice.isCompliant ? 'Compliant' : 'Non-Compliant'}
-                      </Badge>
+                      <DeviceComplianceBadge device={memberDevice} />
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
                       {CHECK_FIELDS.map(({ key, dbKey, label }) => {
                         const isFleetUnsupported = memberDevice.source === 'fleet' && key !== 'diskEncryptionEnabled';
+                        const isStale = memberDevice.complianceStatus === 'stale';
                         const passed = memberDevice[key];
                         const details = memberDevice.checkDetails?.[dbKey];
                         return (
@@ -358,7 +381,7 @@ export const EmployeeTasks = ({
                           >
                             <div>
                               <span className="text-sm font-medium">{label}</span>
-                              {!isFleetUnsupported && details?.message && (
+                              {!isFleetUnsupported && !isStale && details?.message && (
                                 <p className="text-muted-foreground text-xs">
                                   {details.message}
                                 </p>
@@ -368,7 +391,7 @@ export const EmployeeTasks = ({
                                   Not tracked by Fleet
                                 </p>
                               )}
-                              {details?.exception && (
+                              {!isFleetUnsupported && !isStale && details?.exception && (
                                 <p className="text-amber-600 dark:text-amber-400 text-xs mt-0.5">
                                   {details.exception}
                                 </p>
@@ -376,6 +399,13 @@ export const EmployeeTasks = ({
                             </div>
                             {isFleetUnsupported ? (
                               <Badge variant="outline">N/A</Badge>
+                            ) : isStale ? (
+                              <Badge
+                                variant="secondary"
+                                title={`${label} — unknown (device is stale)`}
+                              >
+                                —
+                              </Badge>
                             ) : (
                               <Badge variant={passed ? 'default' : 'destructive'}>
                                 {passed ? 'Pass' : 'Fail'}

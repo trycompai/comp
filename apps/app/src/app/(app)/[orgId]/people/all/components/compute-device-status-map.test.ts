@@ -1,0 +1,156 @@
+import { describe, expect, it } from 'vitest';
+
+import type { DeviceWithChecks, Host } from '../../devices/types';
+import { computeDeviceStatusMap } from './compute-device-status-map';
+
+function makeAgentDevice(overrides: Partial<DeviceWithChecks> = {}): DeviceWithChecks {
+  return {
+    id: `dev_${Math.random().toString(36).slice(2)}`,
+    name: 'Laptop',
+    hostname: 'laptop',
+    platform: 'macos',
+    osVersion: '14.0',
+    serialNumber: 'SN',
+    hardwareModel: 'MBP',
+    isCompliant: true,
+    diskEncryptionEnabled: true,
+    antivirusEnabled: true,
+    passwordPolicySet: true,
+    screenLockEnabled: true,
+    checkDetails: null,
+    lastCheckIn: new Date().toISOString(),
+    agentVersion: '1.0.0',
+    installedAt: new Date().toISOString(),
+    memberId: 'mem_1',
+    user: { name: 'A', email: 'a@example.com' },
+    source: 'device_agent',
+    complianceStatus: 'compliant',
+    daysSinceLastCheckIn: 0,
+    ...overrides,
+  };
+}
+
+function makeFleetHost(overrides: Partial<Host> = {}): Host {
+  return {
+    id: Math.floor(Math.random() * 10000),
+    member_id: 'mem_2',
+    policies: [{ id: 1, name: 'Disk Encryption', response: 'pass' }],
+    ...overrides,
+  } as unknown as Host;
+}
+
+describe('computeDeviceStatusMap', () => {
+  it('returns not-installed for members with no device', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1', 'mem_2'],
+    });
+    expect(map).toEqual({ mem_1: 'not-installed', mem_2: 'not-installed' });
+  });
+
+  it('returns compliant when all agent devices for a member are compliant', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'compliant' }),
+        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'compliant' }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('compliant');
+  });
+
+  it('returns non-compliant when any agent device is non_compliant', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'compliant' }),
+        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'non_compliant' }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('non-compliant');
+  });
+
+  it('counts a stale device as non-compliant in the roll-up', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({
+          memberId: 'mem_1',
+          complianceStatus: 'stale',
+          daysSinceLastCheckIn: 15,
+          isCompliant: true, // raw field — should NOT matter
+        }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('non-compliant');
+  });
+
+  it('counts stale among mixed devices as non-compliant', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'compliant' }),
+        makeAgentDevice({
+          memberId: 'mem_1',
+          complianceStatus: 'stale',
+          daysSinceLastCheckIn: 8,
+        }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('non-compliant');
+  });
+
+  it('falls back to Fleet policy status when no agent device is present', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [],
+      fleetHosts: [
+        makeFleetHost({
+          member_id: 'mem_1',
+          policies: [
+            { id: 1, name: 'Enc', response: 'pass' },
+            { id: 2, name: 'AV', response: 'pass' },
+          ],
+        }),
+      ],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('compliant');
+  });
+
+  it('prefers agent device status over fleet for the same member', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({
+          memberId: 'mem_1',
+          complianceStatus: 'stale',
+          daysSinceLastCheckIn: 10,
+        }),
+      ],
+      fleetHosts: [
+        makeFleetHost({
+          member_id: 'mem_1',
+          policies: [{ id: 1, name: 'Enc', response: 'pass' }],
+        }),
+      ],
+      complianceMemberIds: ['mem_1'],
+    });
+    // Agent says stale → non-compliant, even if fleet would say compliant.
+    expect(map.mem_1).toBe('non-compliant');
+  });
+
+  it('ignores devices for members not in the compliance set', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({ memberId: 'mem_admin', complianceStatus: 'non_compliant' }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map).toEqual({ mem_1: 'not-installed' });
+  });
+});
