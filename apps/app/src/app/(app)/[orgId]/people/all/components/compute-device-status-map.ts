@@ -60,6 +60,9 @@ export function computeDeviceStatusMap({
   for (const host of fleetHosts) {
     if (!host.member_id || !complianceSet.has(host.member_id)) continue;
     if (agentRollup.has(host.member_id)) continue;
+    // Non-compliant wins across multiple Fleet hosts for the same member —
+    // once we've seen a failing host, a later passing host must not clobber it.
+    if (map[host.member_id] === 'non-compliant') continue;
     const isCompliant = host.policies.every((p) => p.response === 'pass');
     map[host.member_id] = isCompliant ? 'compliant' : 'non-compliant';
   }

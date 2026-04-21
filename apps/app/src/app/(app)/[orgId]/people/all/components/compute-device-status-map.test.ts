@@ -179,6 +179,47 @@ describe('computeDeviceStatusMap', () => {
     expect(map.mem_1).toBe('stale');
   });
 
+  it('keeps a member non-compliant when a failing fleet host precedes a passing one', () => {
+    // Regression test for a fleet-loop last-host-wins bug: a passing host
+    // encountered after a failing one for the same member must not overwrite
+    // non-compliant with compliant.
+    const map = computeDeviceStatusMap({
+      agentDevices: [],
+      fleetHosts: [
+        makeFleetHost({
+          member_id: 'mem_1',
+          policies: [{ id: 1, name: 'Disk Enc', response: 'fail' }],
+        }),
+        makeFleetHost({
+          member_id: 'mem_1',
+          policies: [{ id: 2, name: 'Antivirus', response: 'pass' }],
+        }),
+      ],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('non-compliant');
+  });
+
+  it('keeps a member non-compliant when a passing fleet host precedes a failing one', () => {
+    // Sibling order — the passing host runs first; the later failing host
+    // must still flip the member to non-compliant.
+    const map = computeDeviceStatusMap({
+      agentDevices: [],
+      fleetHosts: [
+        makeFleetHost({
+          member_id: 'mem_1',
+          policies: [{ id: 1, name: 'Antivirus', response: 'pass' }],
+        }),
+        makeFleetHost({
+          member_id: 'mem_1',
+          policies: [{ id: 2, name: 'Disk Enc', response: 'fail' }],
+        }),
+      ],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('non-compliant');
+  });
+
   it('ignores devices for members not in the compliance set', () => {
     const map = computeDeviceStatusMap({
       agentDevices: [
