@@ -52,7 +52,7 @@ interface MemberRowProps {
   isCurrentUserOwner: boolean;
   customRoles?: CustomRoleOption[];
   taskCompletion?: TaskCompletion;
-  deviceStatus?: 'compliant' | 'non-compliant' | 'not-installed';
+  deviceStatus?: 'compliant' | 'non-compliant' | 'stale' | 'not-installed';
   isDeviceStatusLoading?: boolean;
 }
 
@@ -85,6 +85,34 @@ function getRoleLabel(role: string): string {
 function parseRoles(role: Role | Role[] | string): string[] {
   if (Array.isArray(role)) return role as string[];
   return parseRolesString(role);
+}
+
+type DeviceStatus = 'compliant' | 'non-compliant' | 'stale' | 'not-installed';
+
+function getDeviceStatusDotClass(status: DeviceStatus): string {
+  switch (status) {
+    case 'compliant':
+      return 'bg-green-500';
+    case 'non-compliant':
+      return 'bg-yellow-500';
+    case 'stale':
+      return 'bg-gray-400';
+    case 'not-installed':
+      return 'bg-red-400';
+  }
+}
+
+function getDeviceStatusLabel(status: DeviceStatus): string {
+  switch (status) {
+    case 'compliant':
+      return 'Compliant';
+    case 'non-compliant':
+      return 'Non-Compliant';
+    case 'stale':
+      return 'Stale';
+    case 'not-installed':
+      return 'Not Installed';
+  }
 }
 
 export function MemberRow({
@@ -251,26 +279,16 @@ export function MemberRow({
           ) : (
             <div className="flex items-center gap-2">
               <span
-                className={`inline-block h-2 w-2 rounded-full ${
-                  deviceStatus === 'compliant'
-                    ? 'bg-green-500'
-                    : deviceStatus === 'non-compliant'
-                      ? 'bg-yellow-500'
-                      : 'bg-red-400'
-                }`}
+                className={`inline-block h-2 w-2 rounded-full ${getDeviceStatusDotClass(deviceStatus)}`}
               />
               <span
                 className={`text-sm ${
-                  deviceStatus === 'not-installed'
+                  deviceStatus === 'not-installed' || deviceStatus === 'stale'
                     ? 'text-muted-foreground'
                     : 'text-foreground'
                 }`}
               >
-                {deviceStatus === 'compliant'
-                  ? 'Compliant'
-                  : deviceStatus === 'non-compliant'
-                    ? 'Non-Compliant'
-                    : 'Not Installed'}
+                {getDeviceStatusLabel(deviceStatus)}
               </span>
             </div>
           )}

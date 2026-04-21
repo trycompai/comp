@@ -73,7 +73,7 @@ describe('computeDeviceStatusMap', () => {
     expect(map.mem_1).toBe('non-compliant');
   });
 
-  it('counts a stale device as non-compliant in the roll-up', () => {
+  it('returns stale when the only agent device is stale', () => {
     const map = computeDeviceStatusMap({
       agentDevices: [
         makeAgentDevice({
@@ -86,10 +86,10 @@ describe('computeDeviceStatusMap', () => {
       fleetHosts: [],
       complianceMemberIds: ['mem_1'],
     });
-    expect(map.mem_1).toBe('non-compliant');
+    expect(map.mem_1).toBe('stale');
   });
 
-  it('counts stale among mixed devices as non-compliant', () => {
+  it('returns stale when a compliant and a stale device are mixed', () => {
     const map = computeDeviceStatusMap({
       agentDevices: [
         makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'compliant' }),
@@ -102,7 +102,43 @@ describe('computeDeviceStatusMap', () => {
       fleetHosts: [],
       complianceMemberIds: ['mem_1'],
     });
+    expect(map.mem_1).toBe('stale');
+  });
+
+  it('prefers non-compliant over stale when both present', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({
+          memberId: 'mem_1',
+          complianceStatus: 'stale',
+          daysSinceLastCheckIn: 10,
+        }),
+        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'non_compliant' }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
     expect(map.mem_1).toBe('non-compliant');
+  });
+
+  it('returns stale when all devices are stale', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({
+          memberId: 'mem_1',
+          complianceStatus: 'stale',
+          daysSinceLastCheckIn: 10,
+        }),
+        makeAgentDevice({
+          memberId: 'mem_1',
+          complianceStatus: 'stale',
+          daysSinceLastCheckIn: 20,
+        }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('stale');
   });
 
   it('falls back to Fleet policy status when no agent device is present', () => {
@@ -139,8 +175,8 @@ describe('computeDeviceStatusMap', () => {
       ],
       complianceMemberIds: ['mem_1'],
     });
-    // Agent says stale → non-compliant, even if fleet would say compliant.
-    expect(map.mem_1).toBe('non-compliant');
+    // Agent says stale → member is stale, even if fleet would say compliant.
+    expect(map.mem_1).toBe('stale');
   });
 
   it('ignores devices for members not in the compliance set', () => {
