@@ -1,3 +1,10 @@
+## [3.27.3](https://github.com/trycompai/comp/compare/v3.27.2...v3.27.3) (2026-04-21)
+
+
+### Bug Fixes
+
+* **devices:** propagate three-state compliance to employee & device drill-ins (CS-276) ([b56f7dc](https://github.com/trycompai/comp/commit/b56f7dcb88cfce8e908ed1bc60f6974d3e0c3601))
+
 ## [3.27.2](https://github.com/trycompai/comp/compare/v3.27.1...v3.27.2) (2026-04-21)
 
 
