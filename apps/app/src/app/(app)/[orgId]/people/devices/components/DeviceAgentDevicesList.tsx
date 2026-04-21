@@ -19,7 +19,8 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Download, Search } from '@trycompai/design-system/icons';
+import { Download, Information, Search } from '@trycompai/design-system/icons';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -101,16 +102,27 @@ function UserNameCell({ device, orgId }: { device: DeviceWithChecks; orgId: stri
 function CompliantBadge({ device }: { device: DeviceWithChecks }) {
   if (device.complianceStatus === 'stale') {
     return (
-      <Badge
-        variant="secondary"
-        title={
-          device.daysSinceLastCheckIn === null
-            ? 'No check-ins recorded'
-            : `No check-in in ${device.daysSinceLastCheckIn} days`
-        }
-      >
-        {staleLabel(device.daysSinceLastCheckIn)}
-      </Badge>
+      <div className="flex items-center gap-1">
+        <Badge variant="secondary">{staleLabel(device.daysSinceLastCheckIn)}</Badge>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="What does Stale mean?"
+                className="inline-flex items-center text-muted-foreground hover:text-foreground"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Information size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs text-xs">
+              This device's CompAI agent hasn't reported in over 7 days, so we can't verify its
+              current compliance. Ask the employee to update or reinstall the agent.
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
     );
   }
   if (device.complianceStatus === 'compliant') {

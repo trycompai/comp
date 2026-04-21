@@ -156,33 +156,30 @@ describe('EmployeeTasks device compliance badge', () => {
     expect(screen.getByText('Stale')).toBeInTheDocument();
   });
 
-  it('sets stale badge title tooltip based on daysSinceLastCheckIn', () => {
-    const { rerender } = renderWithDevice(
-      makeDevice({ complianceStatus: 'stale', daysSinceLastCheckIn: 9 }),
-    );
-    expect(screen.getByText('Stale (9d)').closest('[title]')?.getAttribute('title')).toBe(
-      'No check-in in 9 days',
-    );
+  it('renders a stale-explainer tooltip trigger for a stale device', () => {
+    renderWithDevice(makeDevice({ complianceStatus: 'stale', daysSinceLastCheckIn: 9 }));
+    expect(
+      screen.getByRole('button', { name: /What does Stale mean\?/i }),
+    ).toBeInTheDocument();
+  });
 
-    rerender(
-      <EmployeeTasks
-        employee={baseEmployee}
-        policies={[]}
-        trainingVideos={[]}
-        host={null as unknown as Host}
-        fleetPolicies={[] as FleetPolicy[]}
-        organization={baseOrganization}
-        memberDevice={makeDevice({
-          complianceStatus: 'stale',
-          daysSinceLastCheckIn: null,
-          lastCheckIn: null,
-        })}
-        hasHipaaFramework={false}
-        hipaaCompletedAt={null}
-      />,
+  it('does not render the stale-explainer tooltip trigger for a compliant device', () => {
+    renderWithDevice(makeDevice({ complianceStatus: 'compliant' }));
+    expect(
+      screen.queryByRole('button', { name: /What does Stale mean\?/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not render the stale-explainer tooltip trigger for a non-compliant device', () => {
+    renderWithDevice(
+      makeDevice({
+        complianceStatus: 'non_compliant',
+        isCompliant: false,
+        diskEncryptionEnabled: false,
+      }),
     );
-    expect(screen.getByText('Stale').closest('[title]')?.getAttribute('title')).toBe(
-      'No check-ins recorded',
-    );
+    expect(
+      screen.queryByRole('button', { name: /What does Stale mean\?/i }),
+    ).not.toBeInTheDocument();
   });
 });
