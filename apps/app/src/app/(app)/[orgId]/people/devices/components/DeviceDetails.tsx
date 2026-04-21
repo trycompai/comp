@@ -38,6 +38,30 @@ function isDeviceOnline(lastCheckIn: string | null): boolean {
   return diffMs < 2 * 60 * 60 * 1000;
 }
 
+function staleLabel(daysSinceLastCheckIn: number | null): string {
+  return daysSinceLastCheckIn === null ? 'Stale' : `Stale (${daysSinceLastCheckIn}d)`;
+}
+
+function staleTitle(daysSinceLastCheckIn: number | null): string {
+  return daysSinceLastCheckIn === null
+    ? 'No check-ins recorded'
+    : `No check-in in ${daysSinceLastCheckIn} days`;
+}
+
+function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
+  if (device.complianceStatus === 'stale') {
+    return (
+      <Badge variant="secondary" title={staleTitle(device.daysSinceLastCheckIn)}>
+        {staleLabel(device.daysSinceLastCheckIn)}
+      </Badge>
+    );
+  }
+  if (device.complianceStatus === 'compliant') {
+    return <Badge variant="default">Compliant</Badge>;
+  }
+  return <Badge variant="destructive">Non-Compliant</Badge>;
+}
+
 interface DeviceDetailsProps {
   device: DeviceWithChecks;
   onClose: () => void;
@@ -78,9 +102,7 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 {device.hardwareModel ? ` \u2022 ${device.hardwareModel}` : ''}
               </Text>
             </div>
-            <Badge variant={device.isCompliant ? 'default' : 'destructive'}>
-              {device.isCompliant ? 'Compliant' : 'Non-Compliant'}
-            </Badge>
+            <DeviceComplianceBadge device={device} />
           </div>
         </CardHeader>
         <CardContent>
@@ -154,6 +176,7 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
         <TableBody>
           {CHECK_FIELDS.map(({ key, dbKey, label }) => {
             const isFleetUnsupported = device.source === 'fleet' && key !== 'diskEncryptionEnabled';
+            const isStale = device.complianceStatus === 'stale';
             const passed = device[key];
             const details = device.checkDetails?.[dbKey];
             return (
@@ -165,12 +188,23 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 </TableCell>
                 <TableCell>
                   <Text size="sm" variant="muted">
-                    {isFleetUnsupported ? 'Not tracked by Fleet' : (details?.message ?? '—')}
+                    {isFleetUnsupported
+                      ? 'Not tracked by Fleet'
+                      : isStale
+                        ? '—'
+                        : (details?.message ?? '—')}
                   </Text>
                 </TableCell>
                 <TableCell>
                   {isFleetUnsupported ? (
                     <Badge variant="outline">N/A</Badge>
+                  ) : isStale ? (
+                    <Badge
+                      variant="secondary"
+                      title={`${label} — unknown (device is stale)`}
+                    >
+                      —
+                    </Badge>
                   ) : (
                     <Badge variant={passed ? 'default' : 'destructive'}>
                       {passed ? 'Pass' : 'Fail'}
@@ -179,7 +213,7 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 </TableCell>
                 <TableCell>
                   <Text size="sm" variant="muted">
-                    {details?.exception ?? '—'}
+                    {isStale ? '—' : (details?.exception ?? '—')}
                   </Text>
                 </TableCell>
               </TableRow>

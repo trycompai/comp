@@ -40,6 +40,7 @@ import { useMemo } from 'react';
 import { useAgentDevices } from '../../devices/hooks/useAgentDevices';
 import { useFleetHosts } from '../../devices/hooks/useFleetHosts';
 import { buildDisplayItems, filterDisplayItems } from './filter-members';
+import { computeDeviceStatusMap } from './compute-device-status-map';
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TaskCompletion, TeamMembersData } from './TeamMembers';
@@ -72,35 +73,10 @@ export function TeamMembersClient({
   const { fleetHosts, isLoading: isFleetHostsLoading } = useFleetHosts();
   const isDeviceStatusLoading = isAgentDevicesLoading || isFleetHostsLoading;
 
-  const deviceStatusMap = useMemo(() => {
-    const map: Record<string, 'compliant' | 'non-compliant' | 'not-installed'> =
-      {};
-    const complianceSet = new Set(complianceMemberIds);
-    for (const id of complianceSet) {
-      map[id] = 'not-installed';
-    }
-
-    const agentComplianceByMember = new Map<string, boolean>();
-    for (const d of agentDevices) {
-      if (!d.memberId || !complianceSet.has(d.memberId)) continue;
-      const prev = agentComplianceByMember.get(d.memberId);
-      agentComplianceByMember.set(d.memberId, (prev ?? true) && d.isCompliant);
-    }
-    for (const [memberId, allCompliant] of agentComplianceByMember) {
-      map[memberId] = allCompliant ? 'compliant' : 'non-compliant';
-    }
-
-    for (const host of fleetHosts) {
-      if (!host.member_id || !complianceSet.has(host.member_id)) continue;
-      if (agentComplianceByMember.has(host.member_id)) continue;
-      const isCompliant = host.policies.every((p) => p.response === 'pass');
-      if (map[host.member_id] !== 'non-compliant') {
-        map[host.member_id] = isCompliant ? 'compliant' : 'non-compliant';
-      }
-    }
-
-    return map;
-  }, [agentDevices, fleetHosts, complianceMemberIds]);
+  const deviceStatusMap = useMemo(
+    () => computeDeviceStatusMap({ agentDevices, fleetHosts, complianceMemberIds }),
+    [agentDevices, fleetHosts, complianceMemberIds],
+  );
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
