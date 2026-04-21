@@ -12022,6 +12022,7 @@
                 "hipaa",
                 "soc2_type1",
                 "soc2_type2",
+                "soc3",
                 "pci_dss",
                 "nen_7510",
                 "iso_9001"
@@ -12265,16 +12266,7 @@
       },
       "post": {
         "operationId": "ControlTemplateController_create_v1",
-        "parameters": [
-          {
-            "name": "frameworkId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -13791,6 +13783,20 @@
                 "ready_for_review",
                 "needs_revision",
                 "closed"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "severity",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
               ],
               "type": "string"
             }
@@ -23356,6 +23362,7 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
               "iso_9001"
@@ -23397,6 +23404,7 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
               "iso_9001"
@@ -23439,6 +23447,7 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
               "iso_9001"

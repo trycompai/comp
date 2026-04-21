@@ -123,6 +123,7 @@ export class TrustPortalService {
         | 'iso42001_status'
         | 'gdpr_status'
         | 'hipaa_status'
+        | 'soc3_status'
         | 'soc2type1_status'
         | 'soc2type2_status'
         | 'pci_dss_status'
@@ -133,6 +134,7 @@ export class TrustPortalService {
         | 'iso42001'
         | 'gdpr'
         | 'hipaa'
+        | 'soc3'
         | 'soc2type1'
         | 'soc2type2'
         | 'pci_dss'
@@ -185,6 +187,11 @@ export class TrustPortalService {
       statusField: 'iso9001_status',
       enabledField: 'iso9001',
       slug: 'iso_9001',
+    },
+    [TrustFramework.soc3]: {
+      statusField: 'soc3_status',
+      enabledField: 'soc3',
+      slug: 'soc3',
     },
   };
 
@@ -612,6 +619,7 @@ export class TrustPortalService {
       soc2: 'soc2',
       soc2type1: 'soc2type1',
       soc2type2: 'soc2type2',
+      soc3: 'soc3',
       iso27001: 'iso27001',
       iso42001: 'iso42001',
       gdpr: 'gdpr',
@@ -626,6 +634,7 @@ export class TrustPortalService {
     const statusFieldMap: Record<string, string> = {
       soc2type1Status: 'soc2type1_status',
       soc2type2Status: 'soc2type2_status',
+      soc3Status: 'soc3_status',
       iso27001Status: 'iso27001_status',
       iso42001Status: 'iso42001_status',
       gdprStatus: 'gdpr_status',
@@ -636,6 +645,7 @@ export class TrustPortalService {
       // Also support snake_case input (from other callers)
       soc2type1_status: 'soc2type1_status',
       soc2type2_status: 'soc2type2_status',
+      soc3_status: 'soc3_status',
       iso27001_status: 'iso27001_status',
       iso42001_status: 'iso42001_status',
       gdpr_status: 'gdpr_status',
@@ -1515,6 +1525,7 @@ export class TrustPortalService {
       // Framework flags
       soc2type1: trust.soc2type1 ?? false,
       soc2type2: trust.soc2type2 || trust.soc2 || false,
+      soc3: trust.soc3 ?? false,
       iso27001: trust.iso27001 ?? false,
       iso42001: trust.iso42001 ?? false,
       gdpr: trust.gdpr ?? false,
@@ -1528,6 +1539,7 @@ export class TrustPortalService {
         !trust.soc2type2 && trust.soc2
           ? (trust.soc2_status ?? 'started')
           : (trust.soc2type2_status ?? 'started'),
+      soc3Status: trust.soc3_status ?? 'started',
       iso27001Status: trust.iso27001_status ?? 'started',
       iso42001Status: trust.iso42001_status ?? 'started',
       gdprStatus: trust.gdpr_status ?? 'started',
