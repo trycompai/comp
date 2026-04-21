@@ -43,6 +43,12 @@ function staleLabel(daysSinceLastCheckIn: number | null): string {
   return daysSinceLastCheckIn === null ? 'Stale' : `Stale (${daysSinceLastCheckIn}d)`;
 }
 
+function staleTooltipCopy(daysSinceLastCheckIn: number | null): string {
+  return daysSinceLastCheckIn === null
+    ? "This device's CompAI agent hasn't reported any check-ins, so we can't verify its current compliance. Ask the employee to install or activate the agent."
+    : "This device's CompAI agent hasn't reported in over 7 days, so we can't verify its current compliance. Ask the employee to update or reinstall the agent.";
+}
+
 function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
   if (device.complianceStatus === 'stale') {
     return (
@@ -61,8 +67,7 @@ function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
               </button>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs text-xs">
-              This device's CompAI agent hasn't reported in over 7 days, so we can't verify its
-              current compliance. Ask the employee to update or reinstall the agent.
+              {staleTooltipCopy(device.daysSinceLastCheckIn)}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

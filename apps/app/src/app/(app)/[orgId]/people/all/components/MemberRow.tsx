@@ -305,7 +305,7 @@ export function MemberRow({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs text-xs">
-                      This device's CompAI agent hasn't reported in over 7 days, so we can't verify
+                      This device's CompAI agent hasn't reported in recently, so we can't verify
                       its current compliance. Ask the employee to update or reinstall the agent.
                     </TooltipContent>
                   </Tooltip>

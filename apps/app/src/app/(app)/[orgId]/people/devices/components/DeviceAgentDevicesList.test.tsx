@@ -137,6 +137,23 @@ describe('DeviceAgentDevicesList', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders the stale-explainer tooltip trigger when daysSinceLastCheckIn is null (never reported)', () => {
+    render(
+      <DeviceAgentDevicesList
+        devices={[
+          makeDevice({
+            complianceStatus: 'stale',
+            daysSinceLastCheckIn: null,
+            lastCheckIn: null,
+          }),
+        ]}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: /What does Stale mean\?/i }),
+    ).toBeInTheDocument();
+  });
+
   it('does not render the stale-explainer tooltip trigger for a compliant device', () => {
     render(<DeviceAgentDevicesList devices={[makeDevice({ complianceStatus: 'compliant' })]} />);
     expect(
