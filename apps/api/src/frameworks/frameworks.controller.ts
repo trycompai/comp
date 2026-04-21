@@ -18,7 +18,11 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { SkipOrgCheck } from '../auth/skip-org-check.decorator';
-import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
+import {
+  AuthContext,
+  OrganizationId,
+  OrganizationIdOptional,
+} from '../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { FrameworksService } from './frameworks.service';
 import { AddFrameworksDto } from './dto/add-frameworks.dto';
@@ -57,7 +61,7 @@ export class FrameworksController {
     summary:
       'List available frameworks (requires session, no active org needed — used during onboarding)',
   })
-  async findAvailable(@OrganizationId() organizationId?: string) {
+  async findAvailable(@OrganizationIdOptional() organizationId?: string) {
     const data = await this.frameworksService.findAvailable(organizationId);
     return { data, count: data.length };
   }
