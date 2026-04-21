@@ -1,3 +1,10 @@
+## [3.27.1](https://github.com/trycompai/comp/compare/v3.27.0...v3.27.1) (2026-04-21)
+
+
+### Bug Fixes
+
+* **api,app:** unblock onboarding frameworks list for users without active org ([8fee034](https://github.com/trycompai/comp/commit/8fee03414bedaced9c2bfb835726ab6b8735c5ce))
+
 # [3.27.0](https://github.com/trycompai/comp/compare/v3.26.1...v3.27.0) (2026-04-20)
 
 
