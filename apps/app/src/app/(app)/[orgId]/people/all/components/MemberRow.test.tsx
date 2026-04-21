@@ -60,7 +60,9 @@ const baseMember = {
 
 const noop = vi.fn();
 
-function renderMemberRow(deviceStatus?: 'compliant' | 'non-compliant' | 'not-installed') {
+function renderMemberRow(
+  deviceStatus?: 'compliant' | 'non-compliant' | 'stale' | 'not-installed',
+) {
   return render(
     <table>
       <tbody>
@@ -107,6 +109,41 @@ describe('MemberRow device status', () => {
     renderMemberRow('non-compliant');
     expect(screen.getByText('Non-Compliant')).toBeInTheDocument();
     expect(screen.getByText('Non-Compliant').className).toContain('text-foreground');
+  });
+
+  it('shows "Stale" with gray dot and muted label when deviceStatus is stale', () => {
+    const { container } = renderMemberRow('stale');
+    expect(screen.getByText('Stale')).toBeInTheDocument();
+    expect(screen.getByText('Stale').className).toContain('text-muted-foreground');
+    expect(container.querySelector('.bg-gray-400')).toBeInTheDocument();
+  });
+
+  it('renders an info tooltip trigger next to the Stale label', () => {
+    renderMemberRow('stale');
+    expect(
+      screen.getByRole('button', { name: /What does Stale mean\?/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('does not render the Stale info tooltip for compliant devices', () => {
+    renderMemberRow('compliant');
+    expect(
+      screen.queryByRole('button', { name: /What does Stale mean\?/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not render the Stale info tooltip for non-compliant devices', () => {
+    renderMemberRow('non-compliant');
+    expect(
+      screen.queryByRole('button', { name: /What does Stale mean\?/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not render the Stale info tooltip for not-installed devices', () => {
+    renderMemberRow('not-installed');
+    expect(
+      screen.queryByRole('button', { name: /What does Stale mean\?/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('does not show device status for platform admin', () => {
@@ -175,8 +212,13 @@ describe('MemberRow device status', () => {
     expect(yellowDot).toBeInTheDocument();
     u2();
 
-    const { container: c3 } = renderMemberRow('not-installed');
-    const redDot = c3.querySelector('.bg-red-400');
+    const { container: c3, unmount: u3 } = renderMemberRow('stale');
+    const grayDot = c3.querySelector('.bg-gray-400');
+    expect(grayDot).toBeInTheDocument();
+    u3();
+
+    const { container: c4 } = renderMemberRow('not-installed');
+    const redDot = c4.querySelector('.bg-red-400');
     expect(redDot).toBeInTheDocument();
   });
 
