@@ -1,3 +1,10 @@
+## [3.27.4](https://github.com/trycompai/comp/compare/v3.27.3...v3.27.4) (2026-04-21)
+
+
+### Bug Fixes
+
+* **devices:** show stale as distinct state on /people device column ([#2629](https://github.com/trycompai/comp/issues/2629)) ([6e1a06f](https://github.com/trycompai/comp/commit/6e1a06f8d71d7305d8883aff444a944e83b16e3f))
+
 ## [3.27.3](https://github.com/trycompai/comp/compare/v3.27.2...v3.27.3) (2026-04-21)
 
 
