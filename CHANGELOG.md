@@ -1,3 +1,10 @@
+## [3.27.2](https://github.com/trycompai/comp/compare/v3.27.1...v3.27.2) (2026-04-21)
+
+
+### Bug Fixes
+
+* **digest:** key policy acknowledgment rollup by email, not user.id ([#2624](https://github.com/trycompai/comp/issues/2624)) ([75c8888](https://github.com/trycompai/comp/commit/75c888846d3f427c3d9bc2382ea987b50ed3bf89))
+
 ## [3.27.1](https://github.com/trycompai/comp/compare/v3.27.0...v3.27.1) (2026-04-21)
 
 
