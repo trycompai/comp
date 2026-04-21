@@ -43,6 +43,7 @@ export default async function TrustPage({
     hipaa: 'hipaaFileName',
     soc2_type1: 'soc2type1FileName',
     soc2_type2: 'soc2type2FileName',
+    soc3: 'soc3FileName',
     pci_dss: 'pcidssFileName',
     nen_7510: 'nen7510FileName',
     iso_9001: 'iso9001FileName',
@@ -55,6 +56,7 @@ export default async function TrustPage({
     hipaaFileName: null,
     soc2type1FileName: null,
     soc2type2FileName: null,
+    soc3FileName: null,
     pcidssFileName: null,
     nen7510FileName: null,
     iso9001FileName: null,
@@ -100,6 +102,7 @@ export default async function TrustPage({
         primaryColor={settings?.primaryColor ?? null}
         soc2type1={settings?.soc2type1 ?? false}
         soc2type2={settings?.soc2type2 ?? false}
+        soc3={settings?.soc3 ?? false}
         iso27001={settings?.iso27001 ?? false}
         iso42001={settings?.iso42001 ?? false}
         gdpr={settings?.gdpr ?? false}
@@ -109,6 +112,7 @@ export default async function TrustPage({
         iso9001={settings?.iso9001 ?? false}
         soc2type1Status={settings?.soc2type1Status ?? 'started'}
         soc2type2Status={settings?.soc2type2Status ?? 'started'}
+        soc3Status={settings?.soc3Status ?? 'started'}
         iso27001Status={settings?.iso27001Status ?? 'started'}
         iso42001Status={settings?.iso42001Status ?? 'started'}
         gdprStatus={settings?.gdprStatus ?? 'started'}
@@ -123,6 +127,7 @@ export default async function TrustPage({
         hipaaFileName={certificateFiles.hipaaFileName}
         soc2type1FileName={certificateFiles.soc2type1FileName}
         soc2type2FileName={certificateFiles.soc2type2FileName}
+        soc3FileName={certificateFiles.soc3FileName}
         pcidssFileName={certificateFiles.pcidssFileName}
         nen7510FileName={certificateFiles.nen7510FileName}
         iso9001FileName={certificateFiles.iso9001FileName}
