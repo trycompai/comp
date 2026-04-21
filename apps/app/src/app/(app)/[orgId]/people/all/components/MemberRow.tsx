@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@trycompai/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import { parseRolesString } from '@/lib/permissions';
 import type { Role } from '@db';
 import {
@@ -33,7 +34,7 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Checkmark, Edit, Laptop, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
+import { Checkmark, Edit, Information, Laptop, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 
 import { toast } from 'sonner';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
@@ -290,6 +291,26 @@ export function MemberRow({
               >
                 {getDeviceStatusLabel(deviceStatus)}
               </span>
+              {deviceStatus === 'stale' && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="What does Stale mean?"
+                        className="inline-flex items-center text-muted-foreground hover:text-foreground"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Information size={14} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-xs">
+                      This device's CompAI agent hasn't reported in over 7 days, so we can't verify
+                      its current compliance. Ask the employee to update or reinstall the agent.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
           )}
         </TableCell>

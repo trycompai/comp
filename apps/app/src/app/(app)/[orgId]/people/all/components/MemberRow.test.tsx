@@ -118,6 +118,34 @@ describe('MemberRow device status', () => {
     expect(container.querySelector('.bg-gray-400')).toBeInTheDocument();
   });
 
+  it('renders an info tooltip trigger next to the Stale label', () => {
+    renderMemberRow('stale');
+    expect(
+      screen.getByRole('button', { name: /What does Stale mean\?/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('does not render the Stale info tooltip for compliant devices', () => {
+    renderMemberRow('compliant');
+    expect(
+      screen.queryByRole('button', { name: /What does Stale mean\?/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not render the Stale info tooltip for non-compliant devices', () => {
+    renderMemberRow('non-compliant');
+    expect(
+      screen.queryByRole('button', { name: /What does Stale mean\?/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not render the Stale info tooltip for not-installed devices', () => {
+    renderMemberRow('not-installed');
+    expect(
+      screen.queryByRole('button', { name: /What does Stale mean\?/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it('does not show device status for platform admin', () => {
     const adminMember = {
       ...baseMember,
