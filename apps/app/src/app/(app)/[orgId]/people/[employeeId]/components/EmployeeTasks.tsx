@@ -60,8 +60,8 @@ function staleLabel(daysSinceLastCheckIn: number | null): string {
 
 function staleTooltipCopy(daysSinceLastCheckIn: number | null): string {
   return daysSinceLastCheckIn === null
-    ? "This device's CompAI agent hasn't reported any check-ins, so we can't verify its current compliance. Ask the employee to install or activate the agent."
-    : "This device's CompAI agent hasn't reported in over 7 days, so we can't verify its current compliance. Ask the employee to update or reinstall the agent.";
+    ? "This device was registered but hasn't sent a compliance check yet. If it's not new, the agent may not be running or the device may be offline."
+    : "This device hasn't reported to CompAI in over 7 days, so we can't verify its current compliance. It may be offline, the agent may need to be updated, or the device may no longer be in use. Check with the employee.";
 }
 
 function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
