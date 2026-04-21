@@ -15,6 +15,7 @@ describe('FrameworksController', () => {
 
   const mockService = {
     findAll: jest.fn(),
+    findAvailable: jest.fn(),
     delete: jest.fn(),
   };
 
@@ -65,6 +66,32 @@ describe('FrameworksController', () => {
       const result = await controller.findAll('org_1');
 
       expect(result).toEqual({ data: [], count: 0 });
+    });
+  });
+
+  describe('findAvailable', () => {
+    // Regression test for the onboarding 500 bug: this endpoint must not throw
+    // when the authenticated user has no active organization yet (fresh signups
+    // hitting the first onboarding step). Previously used @OrganizationId(),
+    // which threw when organizationId was empty → HTTP 500.
+    it('should return frameworks when user has no active organization', async () => {
+      const mockFrameworks = [
+        { id: 'frk_1', name: 'soc2', visible: true, isCustom: false },
+      ];
+      mockService.findAvailable.mockResolvedValue(mockFrameworks);
+
+      const result = await controller.findAvailable(undefined);
+
+      expect(result).toEqual({ data: mockFrameworks, count: 1 });
+      expect(service.findAvailable).toHaveBeenCalledWith(undefined);
+    });
+
+    it('should pass organizationId to service when user has an active org', async () => {
+      mockService.findAvailable.mockResolvedValue([]);
+
+      await controller.findAvailable('org_1');
+
+      expect(service.findAvailable).toHaveBeenCalledWith('org_1');
     });
   });
 
