@@ -29,10 +29,17 @@ describe('useRevokeAgentAccess', () => {
     expect(deleteMock).toHaveBeenCalledWith('/v1/device-agent/sessions/dev_1');
   });
 
-  it('surfaces errors from the API client', async () => {
-    deleteMock.mockRejectedValue(new Error('forbidden'));
+  it('throws when the API returns an error', async () => {
+    deleteMock.mockResolvedValue({ error: 'Forbidden', status: 403 });
     const { result } = renderHook(() => useRevokeAgentAccess(), { wrapper });
 
-    await expect(result.current.revokeAgentAccess('dev_1')).rejects.toThrow('forbidden');
+    await expect(result.current.revokeAgentAccess('dev_1')).rejects.toThrow('Forbidden');
+  });
+
+  it('throws on network-level rejection', async () => {
+    deleteMock.mockRejectedValue(new Error('network error'));
+    const { result } = renderHook(() => useRevokeAgentAccess(), { wrapper });
+
+    await expect(result.current.revokeAgentAccess('dev_1')).rejects.toThrow('network error');
   });
 });

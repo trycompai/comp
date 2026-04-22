@@ -9,7 +9,12 @@ export function useRevokeAgentAccess() {
 
   const revokeAgentAccess = useCallback(
     async (deviceId: string) => {
-      await apiClient.delete(`/v1/device-agent/sessions/${deviceId}`);
+      const response = await apiClient.delete(
+        `/v1/device-agent/sessions/${deviceId}`,
+      );
+      if (response.error) {
+        throw new Error(response.error);
+      }
       await mutate(
         (key) => Array.isArray(key) && key[0] === 'people-agent-devices',
       );
