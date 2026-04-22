@@ -76,7 +76,7 @@ export class PurgeOrganizationService {
 
     await db.organization.delete({ where: { id: organizationId } });
 
-    await this.verifyDeletion(organizationId);
+    await this.verifyDeletion(organizationId, snapshot);
 
     const externalCleanup: PurgeExternalCleanupResult = {
       stripe: stripeResult,
@@ -84,13 +84,24 @@ export class PurgeOrganizationService {
       vectorStore: vectorResult,
     };
 
-    await this.writeAdminAuditLog({
-      loggingOrgId,
-      adminUserId,
-      snapshot,
-      status: 'completed',
-      externalCleanup,
-    });
+    // Completion audit is best-effort: the purge has already succeeded, so
+    // failing the request here would lie to the caller about deletion state.
+    // The "initiated" record written earlier is the durable trail.
+    try {
+      await this.writeAdminAuditLog({
+        loggingOrgId,
+        adminUserId,
+        snapshot,
+        status: 'completed',
+        externalCleanup,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to write completion audit log for purge of ${organizationId}; ` +
+          `deletion succeeded, initiated audit record is the record of truth`,
+        err instanceof Error ? err.stack : err,
+      );
+    }
 
     return {
       success: true,
@@ -118,7 +129,10 @@ export class PurgeOrganizationService {
     }
   }
 
-  private async verifyDeletion(organizationId: string): Promise<void> {
+  private async verifyDeletion(
+    organizationId: string,
+    snapshot: PurgeSnapshot,
+  ): Promise<void> {
     const where = { organizationId };
     const checks: Array<[string, Promise<number>]> = [
       ['apiKey', db.apiKey.count({ where })],
@@ -146,7 +160,10 @@ export class PurgeOrganizationService {
       );
     }
 
-    const s3Clean = await this.externalService.verifyS3Clean(organizationId);
+    const s3Clean = await this.externalService.verifyS3Clean(
+      organizationId,
+      snapshot,
+    );
     if (!s3Clean) {
       throw new Error(
         `Organization ${organizationId} purge verification failed — S3 objects remain under prefix`,

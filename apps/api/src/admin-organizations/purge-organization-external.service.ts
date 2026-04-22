@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   DeleteObjectsCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   type ObjectIdentifier,
 } from '@aws-sdk/client-s3';
@@ -200,11 +201,15 @@ export class PurgeOrganizationExternalService {
     return deleted;
   }
 
-  async verifyS3Clean(organizationId: string): Promise<boolean> {
+  async verifyS3Clean(
+    organizationId: string,
+    snapshot: PurgeSnapshot,
+  ): Promise<boolean> {
     if (!s3Client) return true;
     for (const ref of BUCKET_REFS) {
       const bucket = BUCKET_ENV[ref];
       if (!bucket) continue;
+
       const remaining = await s3Client.send(
         new ListObjectsV2Command({
           Bucket: bucket,
@@ -213,7 +218,35 @@ export class PurgeOrganizationExternalService {
         }),
       );
       if ((remaining.Contents ?? []).length > 0) return false;
+
+      // Schema-referenced keys may not live under the `${orgId}/` prefix
+      // (legacy uploads, cross-org-shared paths, etc.), so verify each
+      // captured key is actually gone.
+      const keys = snapshot.s3KeysByBucket[ref] ?? [];
+      for (const key of keys) {
+        if (key.startsWith(`${organizationId}/`)) continue;
+        try {
+          await s3Client.send(
+            new HeadObjectCommand({ Bucket: bucket, Key: key }),
+          );
+          return false;
+        } catch (err) {
+          if (!this.isS3NotFound(err)) throw err;
+        }
+      }
     }
     return true;
+  }
+
+  private isS3NotFound(err: unknown): boolean {
+    const e = err as
+      | { name?: string; $metadata?: { httpStatusCode?: number } }
+      | undefined;
+    return (
+      !!e &&
+      (e.name === 'NotFound' ||
+        e.name === 'NoSuchKey' ||
+        e.$metadata?.httpStatusCode === 404)
+    );
   }
 }

@@ -196,6 +196,51 @@ describe('PurgeOrganizationService', () => {
     expect(mockDb.organization.delete).not.toHaveBeenCalled();
   });
 
+  it('succeeds even if completion audit log write fails', async () => {
+    mockDb.auditLog.create
+      .mockResolvedValueOnce({}) // initiated
+      .mockRejectedValueOnce(new Error('db unavailable')); // completed
+
+    const result = await service.purgeOrganization({
+      organizationId: 'org_1',
+      confirm: 'acme',
+      adminUserId: 'u1',
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockDb.organization.delete).toHaveBeenCalled();
+  });
+
+  it('fails closed if the initiated audit log write fails, before deletion', async () => {
+    mockDb.auditLog.create.mockRejectedValueOnce(new Error('db unavailable'));
+
+    await expect(
+      service.purgeOrganization({
+        organizationId: 'org_1',
+        confirm: 'acme',
+        adminUserId: 'u1',
+      }),
+    ).rejects.toThrow(/db unavailable/);
+
+    expect(externalService.cleanupStripe).not.toHaveBeenCalled();
+    expect(mockDb.organization.delete).not.toHaveBeenCalled();
+  });
+
+  it('passes snapshot to verifyS3Clean so non-prefix keys can be verified', async () => {
+    await service.purgeOrganization({
+      organizationId: 'org_1',
+      confirm: 'acme',
+      adminUserId: 'u1',
+    });
+
+    expect(externalService.verifyS3Clean).toHaveBeenCalledWith(
+      'org_1',
+      expect.objectContaining({
+        s3KeysByBucket: expect.any(Object),
+      }),
+    );
+  });
+
   it('fails closed when admin has no other membership for audit trail', async () => {
     mockDb.member.findFirst.mockResolvedValue(null);
 
