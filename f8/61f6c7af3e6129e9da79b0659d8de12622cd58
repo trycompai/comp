@@ -1,0 +1,25 @@
+apps/api/src/device-agent/device-agent-session.helper.spec.ts
+  bceff394c42f40bd 1-48
+apps/api/src/device-agent/device-agent-session.helper.ts
+  bceff394c42f40bd 1-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "f861f6c7af3e6129e9da79b0659d8de12622cd58",
+  "prompts": {
+    "bceff394c42f40bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "97bc2f6d-8072-4294-a180-04c6dec511a4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 91,
+      "total_deletions": 0,
+      "accepted_lines": 91,
+      "overriden_lines": 0
+    }
+  }
+}
