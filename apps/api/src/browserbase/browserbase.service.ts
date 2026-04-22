@@ -12,6 +12,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@/app/s3';
 import { renderOverlay } from './screenshot-overlay';
+import { toRunErrorMessage } from './run-error-formatter';
 
 const BROWSER_WIDTH = 1440;
 const BROWSER_HEIGHT = 900;
@@ -569,6 +570,7 @@ export class BrowserbaseService {
       };
     } catch (err) {
       this.logger.error('Failed to execute automation on session', err);
+      const { userFacing } = toRunErrorMessage(err);
 
       await db.browserAutomationRun.update({
         where: { id: runId },
@@ -576,13 +578,13 @@ export class BrowserbaseService {
           status: 'failed',
           completedAt: new Date(),
           durationMs: run.startedAt ? Date.now() - run.startedAt.getTime() : 0,
-          error: err instanceof Error ? err.message : 'Unknown error',
+          error: userFacing,
         },
       });
 
       return {
         success: false,
-        error: err instanceof Error ? err.message : 'Unknown error',
+        error: userFacing,
       };
     }
   }
@@ -720,6 +722,7 @@ export class BrowserbaseService {
       }
     } catch (err) {
       this.logger.error('Failed to run browser automation', err);
+      const { userFacing } = toRunErrorMessage(err);
 
       // Update run as failed
       await db.browserAutomationRun.update({
@@ -728,14 +731,14 @@ export class BrowserbaseService {
           status: 'failed',
           completedAt: new Date(),
           durationMs: run.startedAt ? Date.now() - run.startedAt.getTime() : 0,
-          error: err instanceof Error ? err.message : 'Unknown error',
+          error: userFacing,
         },
       });
 
       return {
         runId: run.id,
         success: false,
-        error: err instanceof Error ? err.message : 'Unknown error',
+        error: userFacing,
       };
     }
   }
@@ -834,25 +837,10 @@ export class BrowserbaseService {
       };
     } catch (err) {
       this.logger.error('Failed to execute automation', err);
-      const message = err instanceof Error ? err.message : String(err);
-      const isNoPage =
-        message.includes('awaitActivePage') ||
-        message.includes('no page available') ||
-        message.includes('No page found');
-      const isTimeout =
-        message.includes('timeout') ||
-        message.includes('Timeout') ||
-        message.includes('timed out');
-
-      const userFacing = isNoPage
-        ? 'Browser session ended before we could capture evidence. Please retry.'
-        : isTimeout
-          ? 'Automation timed out before completing. Please retry — if this keeps happening, simplify the instruction or check the target site.'
-          : 'Automation failed to complete. Please retry — see run error details for specifics.';
-
+      const { userFacing, needsReauth } = toRunErrorMessage(err);
       return {
         success: false,
-        needsReauth: isNoPage ? true : undefined,
+        needsReauth: needsReauth ? true : undefined,
         error: userFacing,
       };
     } finally {
