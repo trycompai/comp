@@ -1025,6 +1025,10 @@ function ComplianceFramework({
       <div className="h-16 w-16 flex items-center justify-center">
         <ISO9001 className="max-h-full max-w-full" />
       </div>
+    ) : title === 'SOC 3' ? (
+      <div className="h-16 w-16 flex items-center justify-center">
+        <ISO9001 className="max-h-full max-w-full" />
+      </div>
     ) : null;
 
   return (
