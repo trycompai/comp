@@ -15,13 +15,23 @@ export interface RenderOverlayInput {
   capturedAt: Date;
 }
 
+/**
+ * Composite an audit metadata banner onto the bottom of a screenshot.
+ * The banner adds OVERLAY_HEIGHT_PX to the total image height.
+ * Failure-mode contract: throws on malformed input; callers should handle
+ * and fall back to the raw image.
+ */
 export async function renderOverlay(input: RenderOverlayInput): Promise<Buffer> {
   const { buffer, instruction, sourceUrl, capturedAt } = input;
 
   const sourceMeta = await sharp(buffer).metadata();
   const width = sourceMeta.width;
+  const height = sourceMeta.height;
   if (!width) {
     throw new Error('renderOverlay: source image has no width');
+  }
+  if (!height) {
+    throw new Error('renderOverlay: source image has no height');
   }
 
   const instructionText = truncate(instruction, MAX_INSTRUCTION_CHARS);
@@ -48,7 +58,7 @@ export async function renderOverlay(input: RenderOverlayInput): Promise<Buffer> 
     .composite([
       {
         input: bannerBuffer,
-        top: sourceMeta.height ?? 0,
+        top: height,
         left: 0,
       },
     ])
@@ -75,7 +85,9 @@ function formatUtc(date: Date): string {
 }
 
 function escapeXml(value: string): string {
-  return value
+  // Strip XML 1.0 illegal control chars (keep tab 0x09, LF 0x0A, CR 0x0D)
+  const stripped = value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+  return stripped
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
