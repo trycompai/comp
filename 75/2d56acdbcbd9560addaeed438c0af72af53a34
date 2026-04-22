@@ -1,0 +1,27 @@
+packages/db/prisma/schema/framework-sync-operation.prisma
+  26176ac5d96c92b4 1-35
+packages/db/prisma/schema/framework.prisma
+  26176ac5d96c92b4 15-17,19,22,27
+packages/db/prisma/schema/auth.prisma
+  26176ac5d96c92b4 18-30,119-139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "752d56acdbcbd9560addaeed438c0af72af53a34",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 660,
+      "total_deletions": 619,
+      "accepted_lines": 657,
+      "overriden_lines": 0
+    }
+  }
+}
