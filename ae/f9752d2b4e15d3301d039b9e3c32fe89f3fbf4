@@ -1,0 +1,25 @@
+apps/app/src/app/(app)/[orgId]/people/devices/hooks/useRevokeAgentAccess.ts
+  bceff394c42f40bd 1-21
+apps/app/src/app/(app)/[orgId]/people/devices/hooks/useRevokeAgentAccess.test.tsx
+  bceff394c42f40bd 1-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "aef9752d2b4e15d3301d039b9e3c32fe89f3fbf4",
+  "prompts": {
+    "bceff394c42f40bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "97bc2f6d-8072-4294-a180-04c6dec511a4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 59,
+      "total_deletions": 0,
+      "accepted_lines": 59,
+      "overriden_lines": 0
+    }
+  }
+}
