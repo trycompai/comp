@@ -563,6 +563,12 @@ export class EvidenceExportService {
   /**
    * Find task IDs that have either automation runs or task attachments.
    * Union of two cheap queries — avoids scanning every task for the org.
+   *
+   * Attachment rows are polymorphic (`entityType`/`entityId`) with no FK to
+   * Task, so we can't rely on a cascade keeping them in sync. We validate
+   * attachment `entityId`s against the Task table to drop orphans — otherwise
+   * a deleted task whose attachments weren't cleaned up would pass pre-flight
+   * and produce a misleading "successful" empty ZIP.
    */
   private async findTasksWithEvidence(
     organizationId: string,
@@ -592,9 +598,18 @@ export class EvidenceExportService {
       }),
     ]);
 
+    const attachmentTaskIds = taskAttachments.map((a) => a.entityId);
+    const liveAttachmentTasks =
+      attachmentTaskIds.length > 0
+        ? await db.task.findMany({
+            where: { organizationId, id: { in: attachmentTaskIds } },
+            select: { id: true },
+          })
+        : [];
+
     const ids = new Set<string>();
     for (const t of tasksWithRuns) ids.add(t.id);
-    for (const a of taskAttachments) ids.add(a.entityId);
+    for (const t of liveAttachmentTasks) ids.add(t.id);
     return Array.from(ids);
   }
 }

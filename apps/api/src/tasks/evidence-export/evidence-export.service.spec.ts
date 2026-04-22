@@ -518,8 +518,12 @@ describe('EvidenceExportService — streaming ZIPs', () => {
 
     it('includes a task that has attachments but no automations', async () => {
       mockDb.organization.findUnique.mockResolvedValue({ name: 'Acme Corp' });
-      // findTasksWithEvidence: one has runs, one is distinct attachments-only
-      mockDb.task.findMany.mockResolvedValue([]);
+      // findTasksWithEvidence does two task.findMany calls:
+      //   1) tasks with runs (empty here)
+      //   2) validate attachment entityIds exist in Task table
+      mockDb.task.findMany
+        .mockResolvedValueOnce([]) // no tasks with runs
+        .mockResolvedValueOnce([{ id: 'tsk_att_only' }]); // task exists
       mockDb.attachment.findMany
         // First call: findTasksWithEvidence's distinct entityIds
         .mockResolvedValueOnce([{ entityId: 'tsk_att_only' }])
@@ -556,6 +560,27 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       expect(paths.some((p) => p.includes('/01-attachments/audit.pdf'))).toBe(
         true,
       );
+    });
+
+    it('treats orphan attachment rows (task deleted) as empty — 404 at pre-flight', async () => {
+      // Attachment rows are polymorphic and have no FK to Task. If tasks get
+      // deleted without cleaning up attachments, those entityIds become stale.
+      // Without the live-task intersection, pre-flight would pass with orphan
+      // IDs and produce a misleading "successful" ZIP with tasksCount=0.
+      mockDb.organization.findUnique.mockResolvedValue({ name: 'Acme' });
+      mockDb.task.findMany
+        .mockResolvedValueOnce([]) // no tasks with runs
+        .mockResolvedValueOnce([]); // orphan entityId does NOT exist in Task
+      mockDb.attachment.findMany.mockResolvedValueOnce([
+        { entityId: 'tsk_deleted' },
+      ]);
+
+      await expect(
+        service.streamOrganizationEvidenceZip('org_1'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      // Pre-flight rejected before any archive is created.
+      expect(archiveInstances).toHaveLength(0);
     });
 
     it('works for an org with automations but zero attachments anywhere — no regression', async () => {
@@ -634,7 +659,9 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       mockDb.organization.findUnique.mockResolvedValue({ name: 'Acme Corp' });
 
       // findTasksWithEvidence: one task has runs, another has only attachments
-      mockDb.task.findMany.mockResolvedValue([{ id: 'tsk_auto' }]);
+      mockDb.task.findMany
+        .mockResolvedValueOnce([{ id: 'tsk_auto' }]) // tasks with runs
+        .mockResolvedValueOnce([{ id: 'tsk_att' }]); // attachment tasks that still exist
       mockDb.attachment.findMany.mockResolvedValueOnce([
         { entityId: 'tsk_att' },
       ]);
