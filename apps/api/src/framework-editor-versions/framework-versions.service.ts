@@ -1,6 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { buildManifestForFramework } from './framework-manifest-builder';
+import { diffManifests } from '../frameworks/framework-versioning/framework-diff';
+import type { FrameworkManifest } from '../frameworks/framework-versioning/manifest.types';
 
 const SEMVER = /^\d+\.\d+\.\d+$/;
 
@@ -57,5 +59,20 @@ export class FrameworkVersionsService {
     const v = await db.frameworkVersion.findUnique({ where: { id: versionId } });
     if (!v || v.frameworkId !== frameworkId) throw new NotFoundException('Version not found');
     return v;
+  }
+
+  async getDraftDiff(frameworkId: string) {
+    const latest = await db.frameworkVersion.findFirst({
+      where: { frameworkId },
+      orderBy: { publishedAt: 'desc' },
+    });
+    if (!latest) {
+      throw new NotFoundException('No published version yet — publish v1.0.0 first');
+    }
+    const currentManifest = await buildManifestForFramework(frameworkId);
+    return {
+      latestVersion: { id: latest.id, version: latest.version },
+      diff: diffManifests(latest.manifest as unknown as FrameworkManifest, currentManifest),
+    };
   }
 }

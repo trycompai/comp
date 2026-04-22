@@ -16,8 +16,9 @@ jest.mock('../auth/auth.server', () => ({
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import { Test, type TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
-import { FrameworkVersionsController } from './framework-versions.controller';
+import { FrameworkVersionsController, FrameworkDraftDiffController } from './framework-versions.controller';
 import { FrameworkVersionsService } from './framework-versions.service';
 import type { PublishVersionDto } from './dto/publish-version.dto';
 import type { AdminRequest } from '../admin-organizations/platform-admin-auth-context';
@@ -102,6 +103,57 @@ describe('FrameworkVersionsController', () => {
 
       expect(service.get).toHaveBeenCalledWith('frk_1', 'fvr_1');
       expect(result).toEqual({ data: { id: 'fvr_1', version: '1.0.0' } });
+    });
+  });
+});
+
+describe('FrameworkDraftDiffController', () => {
+  let draftDiffController: FrameworkDraftDiffController;
+  const draftDiffService = {
+    getDraftDiff: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+
+    const mod: TestingModule = await Test.createTestingModule({
+      controllers: [FrameworkDraftDiffController],
+      providers: [{ provide: FrameworkVersionsService, useValue: draftDiffService }],
+    })
+      .overrideGuard(PlatformAdminGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
+
+    draftDiffController = mod.get(FrameworkDraftDiffController);
+  });
+
+  describe('getDraftDiff (GET /draft-diff)', () => {
+    it('returns { data } with latestVersion and diff', async () => {
+      const mockDiff = {
+        latestVersion: { id: 'fvr_1', version: '1.0.0' },
+        diff: {
+          controls: { added: [], removed: [], updated: [] },
+          tasks: { added: [], removed: [], updated: [] },
+          policies: { added: [], removed: [], updated: [] },
+          requirements: { added: [], removed: [], updated: [] },
+        },
+      };
+      draftDiffService.getDraftDiff.mockResolvedValue(mockDiff);
+
+      const result = await draftDiffController.getDraftDiff('frk_1');
+
+      expect(draftDiffService.getDraftDiff).toHaveBeenCalledWith('frk_1');
+      expect(result).toEqual({ data: mockDiff });
+    });
+
+    it('propagates NotFoundException when no published version exists', async () => {
+      draftDiffService.getDraftDiff.mockRejectedValue(
+        new NotFoundException('No published version yet — publish v1.0.0 first'),
+      );
+
+      await expect(draftDiffController.getDraftDiff('frk_empty')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

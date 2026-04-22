@@ -41,3 +41,16 @@ export class FrameworkVersionsController {
     return { data: version };
   }
 }
+
+@ApiExcludeController()
+@Controller({ path: 'framework-editor/framework/:frameworkId', version: '1' })
+@UseGuards(PlatformAdminGuard)
+export class FrameworkDraftDiffController {
+  constructor(private readonly service: FrameworkVersionsService) {}
+
+  @Get('draft-diff')
+  async getDraftDiff(@Param('frameworkId') frameworkId: string) {
+    const data = await this.service.getDraftDiff(frameworkId);
+    return { data };
+  }
+}

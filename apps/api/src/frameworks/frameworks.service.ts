@@ -13,6 +13,8 @@ import {
 import { upsertOrgFrameworkStructure } from './frameworks-upsert.helper';
 import { createTimelinesForFrameworks } from './frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
+import type { FrameworkManifest } from './framework-versioning/manifest.types';
+import { buildUpdatePreview } from './framework-versioning/framework-update-preview';
 
 type RequirementDef = {
   id: string;
@@ -560,5 +562,162 @@ export class FrameworksService {
     });
 
     return { success: true };
+  }
+
+  async getUpdateStatus(params: {
+    organizationId: string;
+    frameworkInstanceId: string;
+  }) {
+    const instance = await db.frameworkInstance.findUnique({
+      where: { id: params.frameworkInstanceId },
+      include: { currentVersion: { select: { id: true, version: true } } },
+    });
+    if (!instance || instance.organizationId !== params.organizationId) {
+      throw new NotFoundException('Framework instance not found');
+    }
+    if (!instance.frameworkId) {
+      return { currentVersion: null, latestVersion: null, updateAvailable: false };
+    }
+
+    const latest = await db.frameworkVersion.findFirst({
+      where: { frameworkId: instance.frameworkId },
+      orderBy: { publishedAt: 'desc' },
+      select: { id: true, version: true, publishedAt: true, releaseNotes: true },
+    });
+
+    return {
+      currentVersion: instance.currentVersion,
+      latestVersion: latest,
+      updateAvailable: latest !== null && latest.id !== instance.currentVersion?.id,
+    };
+  }
+
+  async getUpdatePreview(params: {
+    organizationId: string;
+    frameworkInstanceId: string;
+  }) {
+    const instance = await db.frameworkInstance.findUnique({
+      where: { id: params.frameworkInstanceId },
+      include: { currentVersion: true },
+    });
+    if (!instance || instance.organizationId !== params.organizationId) {
+      throw new NotFoundException('Framework instance not found');
+    }
+    if (!instance.currentVersion) {
+      throw new BadRequestException('Instance is not on any version');
+    }
+
+    const latest = await db.frameworkVersion.findFirst({
+      where: { frameworkId: instance.frameworkId! },
+      orderBy: { publishedAt: 'desc' },
+    });
+    if (!latest || latest.id === instance.currentVersionId) {
+      throw new NotFoundException('No update available');
+    }
+
+    const fromManifest = instance.currentVersion.manifest as unknown as FrameworkManifest;
+    const toManifest = latest.manifest as unknown as FrameworkManifest;
+    const templateControlIds = [
+      ...new Set([
+        ...fromManifest.controls.map((c) => c.id),
+        ...toManifest.controls.map((c) => c.id),
+      ]),
+    ];
+    const templatePolicyIds = [
+      ...new Set([
+        ...fromManifest.policies.map((p) => p.id),
+        ...toManifest.policies.map((p) => p.id),
+      ]),
+    ];
+    const templateTaskIds = [
+      ...new Set([
+        ...fromManifest.tasks.map((t) => t.id),
+        ...toManifest.tasks.map((t) => t.id),
+      ]),
+    ];
+
+    const [instanceControls, instancePolicies, instanceTasks] = await Promise.all([
+      db.control.findMany({
+        where: {
+          organizationId: params.organizationId,
+          controlTemplateId: { in: templateControlIds },
+          archivedAt: null,
+        },
+      }),
+      db.policy.findMany({
+        where: {
+          organizationId: params.organizationId,
+          policyTemplateId: { in: templatePolicyIds },
+          archivedAt: null,
+        },
+      }),
+      db.task.findMany({
+        where: {
+          organizationId: params.organizationId,
+          taskTemplateId: { in: templateTaskIds },
+          archivedAt: null,
+        },
+      }),
+    ]);
+
+    return buildUpdatePreview({
+      fromManifest,
+      toManifest,
+      instanceControls: instanceControls.map((c) => ({
+        id: c.id,
+        controlTemplateId: c.controlTemplateId,
+        name: c.name,
+        description: c.description,
+      })),
+      instanceTasks: instanceTasks.map((t) => ({
+        id: t.id,
+        taskTemplateId: t.taskTemplateId,
+        title: t.title,
+        description: t.description,
+        frequency: t.frequency,
+        department: t.department,
+      })),
+      instancePolicies: instancePolicies.map((p) => ({
+        id: p.id,
+        policyTemplateId: p.policyTemplateId,
+        name: p.name,
+        description: p.description,
+        content: p.content,
+        frequency: p.frequency,
+        department: p.department,
+        status: p.status,
+      })),
+      fromVersionLabel: { id: instance.currentVersion.id, version: instance.currentVersion.version },
+      toVersionLabel: { id: latest.id, version: latest.version },
+      releaseNotes: latest.releaseNotes,
+    });
+  }
+
+  async getSyncHistory(params: {
+    organizationId: string;
+    frameworkInstanceId: string;
+  }) {
+    const instance = await db.frameworkInstance.findUnique({
+      where: { id: params.frameworkInstanceId },
+    });
+    if (!instance || instance.organizationId !== params.organizationId) {
+      throw new NotFoundException('Framework instance not found');
+    }
+
+    return db.frameworkSyncOperation.findMany({
+      where: { frameworkInstanceId: params.frameworkInstanceId },
+      orderBy: { performedAt: 'desc' },
+      select: {
+        id: true,
+        kind: true,
+        performedAt: true,
+        performedById: true,
+        rollbackExpiresAt: true,
+        rolledBackByOperationId: true,
+        fromVersion: { select: { id: true, version: true } },
+        toVersion: { select: { id: true, version: true } },
+        summary: true,
+      },
+    });
   }
 }

@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { FrameworkVersionsController } from './framework-versions.controller';
+import { FrameworkVersionsController, FrameworkDraftDiffController } from './framework-versions.controller';
 import { FrameworkVersionsService } from './framework-versions.service';
 
 @Module({
-  controllers: [FrameworkVersionsController],
+  controllers: [FrameworkVersionsController, FrameworkDraftDiffController],
   providers: [FrameworkVersionsService],
   exports: [FrameworkVersionsService],
 })
