@@ -80,14 +80,16 @@ export class FrameworksService {
         customFramework: true,
         ...(includeControls && {
           requirementsMapped: {
+            where: { archivedAt: null },
             include: {
               control: {
                 include: {
                   policies: {
+                    where: { archivedAt: null },
                     select: { id: true, name: true, status: true },
                   },
                   controlDocumentTypes: true,
-                  requirementsMapped: true,
+                  requirementsMapped: { where: { archivedAt: null } },
                 },
               },
             },
@@ -124,9 +126,10 @@ export class FrameworksService {
       db.task.findMany({
         where: {
           organizationId,
-          controls: { some: { organizationId } },
+          archivedAt: null,
+          controls: { some: { organizationId, archivedAt: null } },
         },
-        include: { controls: true },
+        include: { controls: { where: { archivedAt: null } } },
       }),
       db.evidenceSubmission.findMany({
         where: { organizationId },
@@ -151,13 +154,15 @@ export class FrameworksService {
         framework: true,
         customFramework: true,
         requirementsMapped: {
+          where: { archivedAt: null },
           include: {
             control: {
               include: {
                 policies: {
+                  where: { archivedAt: null },
                   select: { id: true, name: true, status: true },
                 },
-                requirementsMapped: true,
+                requirementsMapped: { where: { archivedAt: null } },
                 controlDocumentTypes: true,
               },
             },
@@ -195,11 +200,11 @@ export class FrameworksService {
       await Promise.all([
         this.loadRequirementDefinitions(fi),
         db.task.findMany({
-          where: { organizationId, controls: { some: { organizationId } } },
-          include: { controls: true },
+          where: { organizationId, archivedAt: null, controls: { some: { organizationId, archivedAt: null } } },
+          include: { controls: { where: { archivedAt: null } } },
         }),
         db.requirementMap.findMany({
-          where: { frameworkInstanceId },
+          where: { frameworkInstanceId, archivedAt: null },
           include: { control: true },
         }),
         allFormTypes.size > 0
@@ -397,7 +402,7 @@ export class FrameworksService {
     }
 
     const controls = await db.control.findMany({
-      where: { id: { in: controlIds }, organizationId },
+      where: { id: { in: controlIds }, organizationId, archivedAt: null },
       select: { id: true },
     });
     if (controls.length === 0) {
@@ -495,6 +500,7 @@ export class FrameworksService {
       db.requirementMap.findMany({
         where: {
           frameworkInstanceId,
+          archivedAt: null,
           ...(fi.customFrameworkId
             ? { customRequirementId: requirementKey }
             : { requirementId: requirementKey }),
@@ -503,6 +509,7 @@ export class FrameworksService {
           control: {
             include: {
               policies: {
+                where: { archivedAt: null },
                 select: { id: true, name: true, status: true },
               },
               controlDocumentTypes: true,
@@ -511,8 +518,8 @@ export class FrameworksService {
         },
       }),
       db.task.findMany({
-        where: { organizationId },
-        include: { controls: true },
+        where: { organizationId, archivedAt: null },
+        include: { controls: { where: { archivedAt: null } } },
       }),
     ]);
 
