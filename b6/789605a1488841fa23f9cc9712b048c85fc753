@@ -1,0 +1,35 @@
+apps/app/src/app/(app)/[orgId]/framework-editor/[frameworkId]/versions/VersionsPageClient.tsx
+  26176ac5d96c92b4 1-56
+apps/app/src/app/(app)/[orgId]/framework-editor/[frameworkId]/versions/page.tsx
+  26176ac5d96c92b4 1-26
+apps/app/src/app/(app)/[orgId]/framework-editor/[frameworkId]/versions/components/PublishVersionDialog.tsx
+  26176ac5d96c92b4 1-290
+apps/app/src/hooks/use-framework-draft-diff.ts
+  26176ac5d96c92b4 1-54
+apps/app/src/hooks/use-framework-versions.ts
+  26176ac5d96c92b4 1-41
+apps/app/src/app/(app)/[orgId]/framework-editor/[frameworkId]/versions/components/PublishVersionDialog.test.tsx
+  26176ac5d96c92b4 1-175
+apps/app/src/app/(app)/[orgId]/framework-editor/[frameworkId]/versions/components/VersionList.tsx
+  26176ac5d96c92b4 1-91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "b6789605a1488841fa23f9cc9712b048c85fc753",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 775,
+      "total_deletions": 42,
+      "accepted_lines": 1631,
+      "overriden_lines": 0
+    }
+  }
+}
