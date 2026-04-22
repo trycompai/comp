@@ -1,3 +1,10 @@
+## [3.27.6](https://github.com/trycompai/comp/compare/v3.27.5...v3.27.6) (2026-04-22)
+
+
+### Bug Fixes
+
+* **db:** increase prisma transaction timeout from 30s to 60s ([8d1764a](https://github.com/trycompai/comp/commit/8d1764a67e1c444028a3c853436a667cef13da13))
+
 ## [3.27.5](https://github.com/trycompai/comp/compare/v3.27.4...v3.27.5) (2026-04-21)
 
 
