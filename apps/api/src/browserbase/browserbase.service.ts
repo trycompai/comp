@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import Browserbase from '@browserbasehq/sdk';
 // Lazy-imported in createStagehand() to avoid Node v25 crash
 // (SlowBuffer.prototype was removed — @browserbasehq/stagehand bundles buffer-equal-constant-time which uses it)
@@ -879,6 +879,34 @@ export class BrowserbaseService {
       Key: key,
     });
     return getSignedUrl(this.s3Client, command, { expiresIn });
+  }
+
+  /**
+   * Resolve a run's S3 screenshot key to a freshly signed presigned URL,
+   * scoped to the caller's organization. Used by the controller's
+   * GET runs/:runId/screenshot redirect endpoint so that the "Open full size"
+   * UI link never serves an expired URL.
+   */
+  async getScreenshotRedirectUrl(input: {
+    runId: string;
+    organizationId: string;
+  }): Promise<string> {
+    const { runId, organizationId } = input;
+
+    const run = await db.browserAutomationRun.findUnique({
+      where: { id: runId },
+      include: { automation: { include: { task: true } } },
+    });
+
+    if (!run || !run.screenshotUrl) {
+      throw new NotFoundException('Screenshot not found');
+    }
+
+    if (run.automation.task.organizationId !== organizationId) {
+      throw new NotFoundException('Screenshot not found');
+    }
+
+    return this.getPresignedUrl(run.screenshotUrl);
   }
 
   async getRunWithPresignedUrl(runId: string) {
