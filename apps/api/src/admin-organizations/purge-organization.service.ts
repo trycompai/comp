@@ -12,6 +12,7 @@ import type {
   PurgeExternalCleanupResult,
   PurgeResult,
   PurgeSnapshot,
+  PurgeVerificationResult,
 } from './purge-organization.types';
 
 @Injectable()
@@ -60,29 +61,75 @@ export class PurgeOrganizationService {
       status: 'initiated',
     });
 
-    const stripeResult = await this.runExternalStep(
-      'stripe',
-      organizationId,
-      () => this.externalService.cleanupStripe(snapshot.stripe),
-    );
-    const vectorResult = await this.runExternalStep(
-      'vector-store',
-      organizationId,
-      () => this.externalService.cleanupVectorStore(snapshot),
-    );
-    const s3Result = await this.runExternalStep('s3', organizationId, () =>
-      this.externalService.cleanupS3(organizationId, snapshot),
-    );
+    let stripeResult: PurgeExternalCleanupResult['stripe'];
+    let vectorResult: PurgeExternalCleanupResult['vectorStore'];
+    let s3Result: PurgeExternalCleanupResult['s3'];
+    try {
+      stripeResult = await this.runExternalStep('stripe', organizationId, () =>
+        this.externalService.cleanupStripe(snapshot.stripe),
+      );
+      vectorResult = await this.runExternalStep(
+        'vector-store',
+        organizationId,
+        () => this.externalService.cleanupVectorStore(snapshot),
+      );
+      s3Result = await this.runExternalStep('s3', organizationId, () =>
+        this.externalService.cleanupS3(organizationId, snapshot),
+      );
 
-    await db.organization.delete({ where: { id: organizationId } });
+      // Verify S3 is clean *before* deleting the DB row. After the DB delete
+      // we can no longer fail safely — the org is gone regardless.
+      const s3Clean = await this.externalService.verifyS3Clean(
+        organizationId,
+        snapshot,
+      );
+      if (!s3Clean) {
+        throw new Error(
+          `Organization ${organizationId} purge verification failed — S3 objects remain`,
+        );
+      }
 
-    await this.verifyDeletion(organizationId, snapshot);
+      await db.organization.delete({ where: { id: organizationId } });
+    } catch (err) {
+      // Pair the "initiated" record with a "failed" record so the audit trail
+      // is not left open-ended. Best-effort: we do not want a secondary write
+      // failure to mask the underlying purge error.
+      try {
+        await this.writeAdminAuditLog({
+          loggingOrgId,
+          adminUserId,
+          snapshot,
+          status: 'failed',
+          failureReason: err instanceof Error ? err.message : String(err),
+        });
+      } catch (logErr) {
+        this.logger.error(
+          `Failed to write failure audit log for purge of ${organizationId}`,
+          logErr instanceof Error ? logErr.stack : logErr,
+        );
+      }
+      throw err;
+    }
 
     const externalCleanup: PurgeExternalCleanupResult = {
       stripe: stripeResult,
       s3: s3Result,
       vectorStore: vectorResult,
     };
+
+    // Post-delete verification of cascade completeness. We do not throw on
+    // leftovers here because the org is already gone — throwing would lie
+    // to the caller about deletion state. Surface it in the response and
+    // log loudly so operators can investigate.
+    const verification = await this.verifyDeletion(organizationId);
+    if (!verification.verified) {
+      this.logger.error(
+        `Organization ${organizationId} deleted but cascade left rows: ` +
+          Object.entries(verification.leftoverRows)
+            .map(([k, v]) => `${k}=${v}`)
+            .join(', '),
+      );
+    }
 
     // Completion audit is best-effort: the purge has already succeeded, so
     // failing the request here would lie to the caller about deletion state.
@@ -94,6 +141,7 @@ export class PurgeOrganizationService {
         snapshot,
         status: 'completed',
         externalCleanup,
+        verification,
       });
     } catch (err) {
       this.logger.error(
@@ -108,6 +156,7 @@ export class PurgeOrganizationService {
       organizationId,
       deletedCounts: snapshot.counts,
       externalCleanup,
+      verification,
     };
   }
 
@@ -131,8 +180,7 @@ export class PurgeOrganizationService {
 
   private async verifyDeletion(
     organizationId: string,
-    snapshot: PurgeSnapshot,
-  ): Promise<void> {
+  ): Promise<PurgeVerificationResult> {
     const where = { organizationId };
     const checks: Array<[string, Promise<number>]> = [
       ['apiKey', db.apiKey.count({ where })],
@@ -150,41 +198,41 @@ export class PurgeOrganizationService {
     const results = await Promise.all(
       checks.map(async ([name, p]) => [name, await p] as const),
     );
-    const leftovers = results.filter(([, count]) => count > 0);
-    if (leftovers.length > 0) {
-      const summary = leftovers
-        .map(([name, count]) => `${name}=${count}`)
-        .join(', ');
-      throw new Error(
-        `Organization ${organizationId} purge verification failed — leftover rows: ${summary}`,
-      );
+    const leftoverRows: Record<string, number> = {};
+    for (const [name, count] of results) {
+      if (count > 0) leftoverRows[name] = count;
     }
 
-    const s3Clean = await this.externalService.verifyS3Clean(
-      organizationId,
-      snapshot,
-    );
-    if (!s3Clean) {
-      throw new Error(
-        `Organization ${organizationId} purge verification failed — S3 objects remain under prefix`,
-      );
-    }
+    // S3 was already verified pre-delete, but we've kept the field for
+    // compatibility with a potential future async verification pass.
+    const s3Clean = true;
+
+    return {
+      verified: Object.keys(leftoverRows).length === 0 && s3Clean,
+      leftoverRows,
+      s3Clean,
+    };
   }
 
   private async writeAdminAuditLog(params: {
     loggingOrgId: string;
     adminUserId: string;
     snapshot: PurgeSnapshot;
-    status: 'initiated' | 'completed';
+    status: 'initiated' | 'completed' | 'failed';
     externalCleanup?: PurgeExternalCleanupResult;
+    failureReason?: string;
+    verification?: PurgeVerificationResult;
   }): Promise<void> {
-    const description =
-      params.status === 'initiated'
-        ? `Initiated purge of organization '${params.snapshot.organization.name}'`
-        : `Completed purge of organization '${params.snapshot.organization.name}'`;
+    const descriptions: Record<typeof params.status, string> = {
+      initiated: `Initiated purge of organization '${params.snapshot.organization.name}'`,
+      completed: `Completed purge of organization '${params.snapshot.organization.name}'`,
+      failed: `Failed purge of organization '${params.snapshot.organization.name}'`,
+    };
+    const description = descriptions[params.status];
 
     const data: Record<string, unknown> = {
       action: description,
+      status: params.status,
       resource: 'admin',
       permission: 'platform-admin',
       targetOrganization: params.snapshot.organization,
@@ -206,6 +254,15 @@ export class PurgeOrganizationService {
         unknown
       >;
     }
+    if (params.failureReason) {
+      data.failureReason = params.failureReason;
+    }
+    if (params.verification) {
+      data.verification = params.verification as unknown as Record<
+        string,
+        unknown
+      >;
+    }
 
     await db.auditLog.create({
       data: {
@@ -220,15 +277,24 @@ export class PurgeOrganizationService {
     });
   }
 
+  // Membership must predate this request by at least this much, to prevent an
+  // admin from self-inviting into an arbitrary org immediately before a purge
+  // to satisfy the audit-trail requirement.
+  private static readonly MIN_LOGGING_MEMBERSHIP_AGE_MS = 60 * 60 * 1000;
+
   private async findAdminMembershipOrgId(
     adminUserId: string,
     excludeOrgId: string,
   ): Promise<string | null> {
+    const cutoff = new Date(
+      Date.now() - PurgeOrganizationService.MIN_LOGGING_MEMBERSHIP_AGE_MS,
+    );
     const member = await db.member.findFirst({
       where: {
         userId: adminUserId,
         organizationId: { not: excludeOrgId },
         deactivated: false,
+        createdAt: { lt: cutoff },
       },
       select: { organizationId: true },
       orderBy: { createdAt: 'asc' },

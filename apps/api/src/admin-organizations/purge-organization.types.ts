@@ -28,9 +28,16 @@ export interface PurgeExternalCleanupResult {
   };
 }
 
+export interface PurgeVerificationResult {
+  verified: boolean;
+  leftoverRows: Record<string, number>;
+  s3Clean: boolean;
+}
+
 export interface PurgeResult {
   success: true;
   organizationId: string;
   deletedCounts: Record<string, number>;
   externalCleanup: PurgeExternalCleanupResult;
+  verification: PurgeVerificationResult;
 }

@@ -135,8 +135,8 @@ describe('PurgeOrganizationService', () => {
       'stripe',
       'vector',
       's3',
-      'db-delete',
       'verify-s3',
+      'db-delete',
     ]);
     expect(result.success).toBe(true);
     expect(result.deletedCounts).toEqual({ policies: 5 });
@@ -144,18 +144,22 @@ describe('PurgeOrganizationService', () => {
     expect(result.externalCleanup.s3.objectsDeleted).toBe(3);
   });
 
-  it('throws when verification finds leftover rows', async () => {
+  it('returns partial-success when post-delete verification finds leftover rows', async () => {
     mockDb.policy.count.mockResolvedValue(5);
-    await expect(
-      service.purgeOrganization({
-        organizationId: 'org_1',
-        confirm: 'acme',
-        adminUserId: 'u1',
-      }),
-    ).rejects.toThrow(/verification failed/);
+
+    const result = await service.purgeOrganization({
+      organizationId: 'org_1',
+      confirm: 'acme',
+      adminUserId: 'u1',
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.verification.verified).toBe(false);
+    expect(result.verification.leftoverRows).toEqual({ policy: 5 });
+    expect(mockDb.organization.delete).toHaveBeenCalled();
   });
 
-  it('throws when S3 verification reports leftover objects', async () => {
+  it('throws pre-delete when S3 verification reports leftover objects', async () => {
     externalService.verifyS3Clean.mockResolvedValue(false);
     await expect(
       service.purgeOrganization({
@@ -164,6 +168,26 @@ describe('PurgeOrganizationService', () => {
         adminUserId: 'u1',
       }),
     ).rejects.toThrow(/S3 objects remain/);
+
+    // Org is NOT deleted if S3 cleanup is incomplete
+    expect(mockDb.organization.delete).not.toHaveBeenCalled();
+  });
+
+  it('writes a failed audit log when external cleanup throws', async () => {
+    externalService.cleanupStripe.mockRejectedValue(new Error('stripe down'));
+
+    await expect(
+      service.purgeOrganization({
+        organizationId: 'org_1',
+        confirm: 'acme',
+        adminUserId: 'u1',
+      }),
+    ).rejects.toBeInstanceOf(InternalServerErrorException);
+
+    const calls = mockDb.auditLog.create.mock.calls;
+    const statuses = calls.map(([arg]) => arg.data.data.status);
+    expect(statuses).toContain('initiated');
+    expect(statuses).toContain('failed');
   });
 
   it('writes persistent audit log to admin member org', async () => {

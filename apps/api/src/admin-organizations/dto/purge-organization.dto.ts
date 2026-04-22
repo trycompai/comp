@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 export class PurgeOrganizationDto {
   @ApiProperty({
@@ -8,5 +8,7 @@ export class PurgeOrganizationDto {
     example: 'acme-corp',
   })
   @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
   confirm: string;
 }
