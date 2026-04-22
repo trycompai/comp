@@ -699,6 +699,67 @@ describe('DeviceAgentAuthService', () => {
     });
   });
 
+  describe('revokeAgentAccess', () => {
+    it('happy path: deletes session for device in org', async () => {
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+        id: 'dev_1',
+        agentSessionId: 'ses_new',
+      });
+      (mockDb.session.delete as jest.Mock).mockResolvedValue({ id: 'ses_new' });
+
+      await expect(
+        service.revokeAgentAccess({ organizationId: 'org_1', deviceId: 'dev_1' }),
+      ).resolves.toBeUndefined();
+
+      expect(mockDb.device.findFirst).toHaveBeenCalledWith({
+        where: { id: 'dev_1', organizationId: 'org_1' },
+        select: { id: true, agentSessionId: true },
+      });
+      expect(mockDb.session.delete).toHaveBeenCalledWith({
+        where: { id: 'ses_new' },
+      });
+    });
+
+    it('idempotent: resolves without calling session.delete when agentSessionId is null', async () => {
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+        id: 'dev_1',
+        agentSessionId: null,
+      });
+
+      await expect(
+        service.revokeAgentAccess({ organizationId: 'org_1', deviceId: 'dev_1' }),
+      ).resolves.toBeUndefined();
+
+      expect(mockDb.session.delete).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when device not found in org', async () => {
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.revokeAgentAccess({ organizationId: 'org_1', deviceId: 'dev_missing' }),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.revokeAgentAccess({ organizationId: 'org_1', deviceId: 'dev_missing' }),
+      ).rejects.toThrow('Device not found');
+    });
+
+    it('P2025 race: swallows error when session already deleted', async () => {
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+        id: 'dev_1',
+        agentSessionId: 'ses_gone',
+      });
+      const p2025Error = Object.assign(new Error('Record not found'), {
+        code: 'P2025',
+      });
+      (mockDb.session.delete as jest.Mock).mockRejectedValue(p2025Error);
+
+      await expect(
+        service.revokeAgentAccess({ organizationId: 'org_1', deviceId: 'dev_1' }),
+      ).resolves.toBeUndefined();
+    });
+  });
+
   describe('getDeviceStatus', () => {
     it('should return all devices when no deviceId specified', async () => {
       const devices = [

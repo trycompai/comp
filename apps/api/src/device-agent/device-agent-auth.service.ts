@@ -225,6 +225,38 @@ export class DeviceAgentAuthService {
     };
   }
 
+  async revokeAgentAccess({
+    organizationId,
+    deviceId,
+  }: {
+    organizationId: string;
+    deviceId: string;
+  }): Promise<void> {
+    const device = await db.device.findFirst({
+      where: { id: deviceId, organizationId },
+      select: { id: true, agentSessionId: true },
+    });
+
+    if (!device) {
+      throw new NotFoundException('Device not found');
+    }
+
+    if (!device.agentSessionId) {
+      return;
+    }
+
+    try {
+      await db.session.delete({ where: { id: device.agentSessionId } });
+    } catch (err) {
+      if ((err as { code?: string }).code !== 'P2025') {
+        this.logger.error(
+          `Failed to revoke agent session ${device.agentSessionId} for device ${device.id}: ${err}`,
+        );
+        throw err;
+      }
+    }
+  }
+
   async getDeviceStatus({
     userId,
     deviceId,

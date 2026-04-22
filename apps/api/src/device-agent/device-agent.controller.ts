@@ -1,8 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Head,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
   Query,
@@ -235,5 +238,20 @@ export class DeviceAgentController {
     });
 
     return new StreamableFile(stream);
+  }
+
+  @Delete('sessions/:deviceId')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('member', 'update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Revoke a device agent session' })
+  async revokeAgentAccess(
+    @OrganizationId() organizationId: string,
+    @Param('deviceId') deviceId: string,
+  ) {
+    await this.deviceAgentAuthService.revokeAgentAccess({
+      organizationId,
+      deviceId,
+    });
   }
 }
