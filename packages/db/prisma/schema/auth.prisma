@@ -28,6 +28,7 @@ model User {
   timelinePhaseCompletions  TimelinePhase[]
   lockedTimelineInstances   TimelineInstance[]   @relation("TimelineInstanceLockedBy")
   unlockedTimelineInstances TimelineInstance[]   @relation("TimelineInstanceUnlockedBy")
+  publishedFrameworkVersions FrameworkVersion[]  @relation("FrameworkVersionPublisher")
 
   @@unique([email])
 }
@@ -133,7 +134,6 @@ model Member {
   createdFindings                  Finding[]                @relation("FindingCreatedBy")
   subjectFindings                  Finding[]                @relation("FindingSubject")
   publishedPolicyVersions          PolicyVersion[]          @relation("PolicyVersionPublisher")
-  publishedFrameworkVersions       FrameworkVersion[]       @relation("FrameworkVersionPublisher")
   performedFrameworkSyncOperations FrameworkSyncOperation[] @relation("FrameworkSyncOperationPerformer")
   approvedTasks                    Task[]                   @relation("TaskApprover")
   devices                          Device[]

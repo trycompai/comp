@@ -6,7 +6,7 @@ model FrameworkVersion {
   version          String   // semver-ish, e.g., "1.0.0", "2.1.0"
   publishedAt      DateTime @default(now())
   publishedById    String?
-  publishedBy      Member?  @relation("FrameworkVersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+  publishedBy      User?    @relation("FrameworkVersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
 
   releaseNotes     String?  // markdown
 
