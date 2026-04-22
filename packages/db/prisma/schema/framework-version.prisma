@@ -1,0 +1,23 @@
+model FrameworkVersion {
+  id               String   @id @default(dbgenerated("generate_prefixed_cuid('fvr'::text)"))
+  frameworkId      String
+  framework        FrameworkEditorFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  version          String   // semver-ish, e.g., "1.0.0", "2.1.0"
+  publishedAt      DateTime @default(now())
+  publishedById    String?
+  publishedBy      Member?  @relation("FrameworkVersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+
+  releaseNotes     String?  // markdown
+
+  // Full snapshot of all templates at publish time (see manifest.types.ts).
+  // Immutable once published.
+  manifest         Json
+
+  frameworkInstances FrameworkInstance[] @relation("FrameworkInstanceCurrentVersion")
+  syncOperationsFrom FrameworkSyncOperation[] @relation("FrameworkSyncOperationFromVersion")
+  syncOperationsTo   FrameworkSyncOperation[] @relation("FrameworkSyncOperationToVersion")
+
+  @@unique([frameworkId, version])
+  @@index([frameworkId, publishedAt])
+}
