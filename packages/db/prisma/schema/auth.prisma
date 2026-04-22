@@ -55,9 +55,15 @@ model Session {
   userId               String
   activeOrganizationId String?
   impersonatedBy       String?
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deviceAgent    Boolean  @default(false)
+  deviceAgentFor Device[] @relation("DeviceAgentSession")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([token])
+  @@index([userId])
+  @@index([deviceAgent])
 }
 
 model Account {
