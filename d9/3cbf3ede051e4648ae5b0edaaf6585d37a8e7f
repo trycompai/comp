@@ -1,0 +1,41 @@
+apps/app/src/app/(app)/[orgId]/people/devices/types/index.ts
+  bceff394c42f40bd 42-43
+apps/app/src/app/(app)/[orgId]/people/[employeeId]/components/EmployeeTasks.test.tsx
+  bceff394c42f40bd 94
+apps/app/src/app/(app)/[orgId]/people/all/components/compute-device-status-map.test.ts
+  bceff394c42f40bd 29
+apps/app/src/app/(app)/[orgId]/people/devices/components/DeviceComplianceChart.test.tsx
+  bceff394c42f40bd 53
+apps/app/src/app/api/people/agent-devices/route.ts
+  bceff394c42f40bd 33,68-69
+apps/app/src/app/api/people/agent-devices/route.test.ts
+  bceff394c42f40bd 119-139
+apps/app/src/app/(app)/[orgId]/people/devices/lib/devices-csv.test.ts
+  bceff394c42f40bd 33
+apps/app/src/app/(app)/[orgId]/people/devices/components/DeviceAgentDevicesList.test.tsx
+  bceff394c42f40bd 45
+apps/app/src/app/(app)/[orgId]/people/devices/components/DeviceDetails.test.tsx
+  bceff394c42f40bd 30
+apps/app/src/app/(app)/[orgId]/people/[employeeId]/page.tsx
+  bceff394c42f40bd 286-288,326-328
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "d93cbf3ede051e4648ae5b0edaaf6585d37a8e7f",
+  "prompts": {
+    "bceff394c42f40bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "97bc2f6d-8072-4294-a180-04c6dec511a4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 39,
+      "total_deletions": 1,
+      "accepted_lines": 38,
+      "overriden_lines": 0
+    }
+  }
+}
