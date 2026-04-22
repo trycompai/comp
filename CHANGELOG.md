@@ -1,3 +1,18 @@
+# [3.28.0](https://github.com/trycompai/comp/compare/v3.27.6...v3.28.0) (2026-04-22)
+
+
+### Bug Fixes
+
+* **admin-organizations:** harden org purge against silent failures ([3d179d9](https://github.com/trycompai/comp/commit/3d179d9cfc4b62ddbb10d24cdce7ef0fd53b7db1))
+* **admin-organizations:** harden purge per security review ([fae4aeb](https://github.com/trycompai/comp/commit/fae4aeb1525e82840cf134a80ad0d502503fd4b2))
+* **admin-organizations:** make completion audit best-effort; verify non-prefix S3 keys ([463bcab](https://github.com/trycompai/comp/commit/463bcab941106054b7a103a021f19a60cdf87959))
+* ff timeline in framework tab ([987ad1e](https://github.com/trycompai/comp/commit/987ad1ef5648023417779debb1a63ec3dd12f237))
+
+
+### Features
+
+* **admin:** add platform-admin endpoint to permanently purge an organization ([3cf3b2d](https://github.com/trycompai/comp/commit/3cf3b2d018ed0a25ac5082e5524c74d77a483832))
+
 ## [3.27.6](https://github.com/trycompai/comp/compare/v3.27.5...v3.27.6) (2026-04-22)
 
 
