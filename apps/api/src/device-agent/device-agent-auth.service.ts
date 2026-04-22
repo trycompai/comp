@@ -9,6 +9,7 @@ import { randomBytes } from 'node:crypto';
 import { db, Prisma } from '@db';
 import { auth } from '../auth/auth.server';
 import { deviceAgentRedisClient } from './device-agent-kv';
+import { createDeviceAgentSession } from './device-agent-session.helper';
 import {
   registerWithSerial,
   registerWithoutSerial,
@@ -17,7 +18,6 @@ import { RegisterDeviceDto } from './dto/register-device.dto';
 import { CheckInDto } from './dto/check-in.dto';
 
 interface StoredAuthCode {
-  sessionToken: string;
   userId: string;
   state: string;
   createdAt: number;
@@ -52,7 +52,6 @@ export class DeviceAgentAuthService {
     await deviceAgentRedisClient.set(
       `device-auth:${code}`,
       {
-        sessionToken: session.session.token,
         userId: session.user.id,
         state,
         createdAt: Date.now(),
@@ -72,8 +71,10 @@ export class DeviceAgentAuthService {
       throw new UnauthorizedException('Invalid or expired authorization code');
     }
 
+    const session = await createDeviceAgentSession({ userId: stored.userId });
+
     return {
-      session_token: stored.sessionToken,
+      session_token: session.token,
       user_id: stored.userId,
     };
   }

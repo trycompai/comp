@@ -40,15 +40,24 @@ jest.mock('./device-agent-kv', () => ({
   },
 }));
 
+jest.mock('./device-agent-session.helper', () => ({
+  createDeviceAgentSession: jest.fn(),
+}));
+
 import { db } from '@db';
 import { auth } from '../auth/auth.server';
 import { deviceAgentRedisClient } from './device-agent-kv';
+import { createDeviceAgentSession } from './device-agent-session.helper';
 
 const mockDb = db as jest.Mocked<typeof db>;
 const mockAuth = auth as jest.Mocked<typeof auth>;
 const mockKv = deviceAgentRedisClient as jest.Mocked<
   typeof deviceAgentRedisClient
 >;
+const mockCreateDeviceAgentSession =
+  createDeviceAgentSession as jest.MockedFunction<
+    typeof createDeviceAgentSession
+  >;
 
 describe('DeviceAgentAuthService', () => {
   let service: DeviceAgentAuthService;
@@ -62,7 +71,6 @@ describe('DeviceAgentAuthService', () => {
     it('should generate an auth code and store it in KV', async () => {
       (mockAuth.api.getSession as unknown as jest.Mock).mockResolvedValue({
         user: { id: 'user-1' },
-        session: { token: 'raw-session-token' },
       });
 
       const headers = new Headers();
@@ -77,7 +85,6 @@ describe('DeviceAgentAuthService', () => {
       expect(mockKv.set).toHaveBeenCalledWith(
         expect.stringMatching(/^device-auth:/),
         expect.objectContaining({
-          sessionToken: 'raw-session-token',
           userId: 'user-1',
           state: 'test-state',
         }),
@@ -96,29 +103,57 @@ describe('DeviceAgentAuthService', () => {
   });
 
   describe('exchangeCode', () => {
-    it('should return session token for valid code', async () => {
-      (mockKv.getdel as jest.Mock).mockResolvedValue({
-        sessionToken: 'session-123',
-        userId: 'user-1',
-        state: 'state-1',
-        createdAt: Date.now(),
-      });
-
-      const result = await service.exchangeCode({ code: 'valid-code' });
-
-      expect(result).toEqual({
-        session_token: 'session-123',
-        user_id: 'user-1',
-      });
-      expect(mockKv.getdel).toHaveBeenCalledWith('device-auth:valid-code');
+    beforeEach(() => {
+      jest.clearAllMocks();
     });
 
-    it('should throw UnauthorizedException for invalid/expired code', async () => {
-      (mockKv.getdel as jest.Mock).mockResolvedValue(null);
+    it('calls createDeviceAgentSession with stored userId and returns its token', async () => {
+      (mockKv.getdel as jest.Mock).mockResolvedValueOnce({
+        userId: 'usr_1',
+        state: 'state-abc',
+        createdAt: Date.now(),
+      });
+      mockCreateDeviceAgentSession.mockResolvedValueOnce({
+        sessionId: 'sess_new',
+        token: 'tok_new',
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      });
+
+      const result = await service.exchangeCode({ code: 'code-abc' });
+
+      expect(mockKv.getdel).toHaveBeenCalledWith('device-auth:code-abc');
+      expect(mockCreateDeviceAgentSession).toHaveBeenCalledWith({
+        userId: 'usr_1',
+      });
+      expect(result).toEqual({
+        session_token: 'tok_new',
+        user_id: 'usr_1',
+      });
+    });
+
+    it('throws UnauthorizedException with correct message for invalid/expired code', async () => {
+      (mockKv.getdel as jest.Mock).mockResolvedValueOnce(null);
 
       await expect(
         service.exchangeCode({ code: 'invalid-code' }),
       ).rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.exchangeCode({ code: 'invalid-code' }),
+      ).rejects.toThrow('Invalid or expired authorization code');
+    });
+
+    it('propagates rejection from createDeviceAgentSession without swallowing', async () => {
+      (mockKv.getdel as jest.Mock).mockResolvedValue({
+        userId: 'usr_1',
+        state: 'state-xyz',
+        createdAt: Date.now(),
+      });
+      const helperError = new Error('session creation failed');
+      mockCreateDeviceAgentSession.mockRejectedValueOnce(helperError);
+
+      await expect(
+        service.exchangeCode({ code: 'code-xyz' }),
+      ).rejects.toThrow(helperError);
     });
   });
 
