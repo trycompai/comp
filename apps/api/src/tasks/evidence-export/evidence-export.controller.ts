@@ -277,6 +277,12 @@ export class AuditorEvidenceExportController {
  *  1. Archive errors → log and end the response (500 if headers not yet sent).
  *  2. Client disconnect → abort the archive so S3 fetches stop and the
  *     background populate task doesn't keep running for a closed socket.
+ *
+ * We listen on `res.close` only and distinguish normal-completion from
+ * disconnect via `res.writableFinished` (true only after the full response
+ * has been flushed). `req.close` is not used because it fires on normal
+ * request completion in modern Node, which can race with our response flush
+ * and cause false aborts of successful exports.
  */
 function pipeArchiveToResponse(params: {
   archive: Archiver;
@@ -285,19 +291,18 @@ function pipeArchiveToResponse(params: {
   logger: Logger;
   tag: string;
 }): void {
-  const { archive, req, res, logger, tag } = params;
+  const { archive, res, logger, tag } = params;
   let aborted = false;
 
-  const abortIfIncomplete = () => {
+  res.once('close', () => {
     if (aborted) return;
-    if (res.writableEnded) return;
+    // writableFinished becomes true only after the response is fully flushed
+    // and the 'finish' event fires; on a client disconnect this stays false.
+    if (res.writableFinished) return;
     aborted = true;
     logger.warn(`Client disconnected during export (${tag}); aborting archive`);
     archive.abort();
-  };
-
-  req.once('close', abortIfIncomplete);
-  res.once('close', abortIfIncomplete);
+  });
 
   archive.on('error', (err) => {
     logger.error(`Archive stream error (${tag}): ${err.message}`);
