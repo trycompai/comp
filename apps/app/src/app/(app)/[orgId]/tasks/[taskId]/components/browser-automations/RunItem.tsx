@@ -3,7 +3,11 @@
 import { cn } from '@/lib/utils';
 import { Badge } from '@trycompai/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
-import { ChevronDown, ExternalLink, Image as ImageIcon } from 'lucide-react';
+import {
+  ChevronDown,
+  Image as ImageIcon,
+  Launch as ExternalLink,
+} from '@trycompai/design-system/icons';
 import Image from 'next/image';
 import { useState } from 'react';
 import type { BrowserAutomationRun } from '../../hooks/types';
@@ -82,7 +86,7 @@ export function RunItem({ run, isLatest }: RunItemProps) {
               <>
                 <span className="text-muted-foreground">•</span>
                 <span className="text-primary flex items-center gap-1">
-                  <ImageIcon className="h-3 w-3" />
+                  <ImageIcon size={12} />
                   Screenshot
                 </span>
               </>
@@ -91,8 +95,9 @@ export function RunItem({ run, isLatest }: RunItemProps) {
         </div>
 
         <ChevronDown
+          size={14}
           className={cn(
-            'h-3.5 w-3.5 text-muted-foreground transition-transform duration-300',
+            'text-muted-foreground transition-transform duration-300',
             expanded && 'rotate-180',
           )}
         />
@@ -150,7 +155,7 @@ export function RunItem({ run, isLatest }: RunItemProps) {
                     onClick={(e) => e.stopPropagation()}
                   >
                     Open full size
-                    <ExternalLink className="h-3 w-3" />
+                    <ExternalLink size={12} />
                   </a>
                 </div>
                 <div className="relative rounded-md overflow-hidden border border-border/50 bg-muted/30">
@@ -169,7 +174,7 @@ export function RunItem({ run, isLatest }: RunItemProps) {
             {/* Image load error fallback */}
             {hasScreenshot && imageError && (
               <div className="p-3 rounded-md bg-muted/50 border border-border/30 text-center">
-                <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <ImageIcon size={32} className="text-muted-foreground mx-auto mb-2" />
                 <p className="text-xs text-muted-foreground">Screenshot unavailable</p>
                 <a
                   href={fullSizeHref}
