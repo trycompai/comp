@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { DeviceAgentAuthService } from './device-agent-auth.service';
+import { CheckResultDto } from './dto/check-in.dto';
 
 // Mock dependencies
 jest.mock('@db', () => ({
@@ -462,6 +463,7 @@ describe('DeviceAgentAuthService', () => {
     it('should update device compliance fields', async () => {
       (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
         id: 'dev-1',
+        agentSessionId: 'ses-1',
         diskEncryptionEnabled: false,
         antivirusEnabled: false,
         passwordPolicySet: false,
@@ -474,6 +476,8 @@ describe('DeviceAgentAuthService', () => {
 
       const result = await service.checkIn({
         userId: 'user-1',
+        sessionId: 'ses-1',
+        sessionDeviceAgent: true,
         dto: {
           deviceId: 'dev-1',
           checks: [
@@ -521,6 +525,8 @@ describe('DeviceAgentAuthService', () => {
       await expect(
         service.checkIn({
           userId: 'user-1',
+          sessionId: 'ses-1',
+          sessionDeviceAgent: true,
           dto: {
             deviceId: 'dev-missing',
             checks: [
@@ -538,6 +544,7 @@ describe('DeviceAgentAuthService', () => {
     it('should set isCompliant to false when not all checks pass', async () => {
       (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
         id: 'dev-1',
+        agentSessionId: 'ses-1',
         diskEncryptionEnabled: false,
         antivirusEnabled: false,
         passwordPolicySet: false,
@@ -550,6 +557,8 @@ describe('DeviceAgentAuthService', () => {
 
       const result = await service.checkIn({
         userId: 'user-1',
+        sessionId: 'ses-1',
+        sessionDeviceAgent: true,
         dto: {
           deviceId: 'dev-1',
           checks: [
@@ -568,6 +577,125 @@ describe('DeviceAgentAuthService', () => {
       });
 
       expect(result.isCompliant).toBe(false);
+    });
+  });
+
+  describe('checkIn (silent upgrade)', () => {
+    const baseChecks: CheckResultDto[] = [
+      {
+        checkType: 'disk_encryption',
+        passed: true,
+        checkedAt: new Date().toISOString(),
+      },
+      {
+        checkType: 'antivirus',
+        passed: true,
+        checkedAt: new Date().toISOString(),
+      },
+      {
+        checkType: 'password_policy',
+        passed: true,
+        checkedAt: new Date().toISOString(),
+      },
+      {
+        checkType: 'screen_lock',
+        passed: true,
+        checkedAt: new Date().toISOString(),
+      },
+    ];
+
+    it('non-device-agent session → upgrade fires and token returned', async () => {
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+        id: 'dev-1',
+        agentSessionId: null,
+        diskEncryptionEnabled: false,
+        antivirusEnabled: false,
+        passwordPolicySet: false,
+        screenLockEnabled: false,
+        checkDetails: {},
+      });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({ id: 'dev-1' });
+      mockCreateDeviceAgentSession.mockResolvedValueOnce({
+        sessionId: 'ses_new',
+        token: 'tok_new',
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      });
+
+      const result = await service.checkIn({
+        userId: 'user-1',
+        sessionId: 'ses_old_web',
+        sessionDeviceAgent: false,
+        dto: { deviceId: 'dev-1', checks: baseChecks },
+      });
+
+      expect(result.upgradedSessionToken).toBe('tok_new');
+      expect(mockCreateDeviceAgentSession).toHaveBeenCalledWith({
+        userId: 'user-1',
+      });
+      expect(mockDb.device.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'dev-1' },
+          data: expect.objectContaining({ agentSessionId: 'ses_new' }),
+        }),
+      );
+    });
+
+    it('device-agent session already linked → no upgrade, no extra update', async () => {
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+        id: 'dev-1',
+        agentSessionId: 'ses_new',
+        diskEncryptionEnabled: true,
+        antivirusEnabled: true,
+        passwordPolicySet: true,
+        screenLockEnabled: true,
+        checkDetails: {},
+      });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({ id: 'dev-1' });
+
+      const result = await service.checkIn({
+        userId: 'user-1',
+        sessionId: 'ses_new',
+        sessionDeviceAgent: true,
+        dto: { deviceId: 'dev-1', checks: baseChecks },
+      });
+
+      expect(result.upgradedSessionToken).toBeUndefined();
+      expect(mockCreateDeviceAgentSession).not.toHaveBeenCalled();
+      expect(mockDb.device.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'dev-1' },
+          data: expect.not.objectContaining({ agentSessionId: expect.anything() }),
+        }),
+      );
+    });
+
+    it('device-agent session, device not yet linked → backfill agentSessionId', async () => {
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+        id: 'dev-1',
+        agentSessionId: null,
+        diskEncryptionEnabled: false,
+        antivirusEnabled: false,
+        passwordPolicySet: false,
+        screenLockEnabled: false,
+        checkDetails: {},
+      });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({ id: 'dev-1' });
+
+      const result = await service.checkIn({
+        userId: 'user-1',
+        sessionId: 'ses_new',
+        sessionDeviceAgent: true,
+        dto: { deviceId: 'dev-1', checks: baseChecks },
+      });
+
+      expect(result.upgradedSessionToken).toBeUndefined();
+      expect(mockCreateDeviceAgentSession).not.toHaveBeenCalled();
+      expect(mockDb.device.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'dev-1' },
+          data: expect.objectContaining({ agentSessionId: 'ses_new' }),
+        }),
+      );
     });
   });
 

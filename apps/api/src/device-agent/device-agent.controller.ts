@@ -146,8 +146,21 @@ export class DeviceAgentController {
   @UseGuards(HybridAuthGuard)
   @SkipOrgCheck()
   @ApiOperation({ summary: 'Submit a device check-in' })
-  async checkIn(@UserId() userId: string, @Body() dto: CheckInDto) {
-    return this.deviceAgentAuthService.checkIn({ userId, dto });
+  async checkIn(
+    @Req() req: AuthenticatedRequest,
+    @UserId() userId: string,
+    @Body() dto: CheckInDto,
+  ) {
+    const { sessionId, sessionDeviceAgent } = req;
+    if (!sessionId) {
+      throw new UnauthorizedException('Session ID missing from request');
+    }
+    return this.deviceAgentAuthService.checkIn({
+      userId,
+      sessionId,
+      sessionDeviceAgent: sessionDeviceAgent ?? false,
+      dto,
+    });
   }
 
   @Get('status')

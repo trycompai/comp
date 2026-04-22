@@ -145,7 +145,17 @@ export class DeviceAgentAuthService {
     return { deviceId: device.id };
   }
 
-  async checkIn({ userId, dto }: { userId: string; dto: CheckInDto }) {
+  async checkIn({
+    userId,
+    sessionId,
+    sessionDeviceAgent,
+    dto,
+  }: {
+    userId: string;
+    sessionId: string;
+    sessionDeviceAgent: boolean;
+    dto: CheckInDto;
+  }) {
     const device = await db.device.findFirst({
       where: {
         id: dto.deviceId,
@@ -185,6 +195,17 @@ export class DeviceAgentAuthService {
       checkFields.passwordPolicySet &&
       checkFields.screenLockEnabled;
 
+    let upgradedSessionToken: string | undefined;
+    let sessionIdToLink: string | undefined;
+
+    if (!sessionDeviceAgent) {
+      const upgraded = await createDeviceAgentSession({ userId });
+      upgradedSessionToken = upgraded.token;
+      sessionIdToLink = upgraded.sessionId;
+    } else if (device.agentSessionId !== sessionId) {
+      sessionIdToLink = sessionId;
+    }
+
     await db.device.update({
       where: { id: dto.deviceId },
       data: {
@@ -193,12 +214,14 @@ export class DeviceAgentAuthService {
         isCompliant,
         lastCheckIn: new Date(),
         ...(dto.agentVersion ? { agentVersion: dto.agentVersion } : {}),
+        ...(sessionIdToLink !== undefined ? { agentSessionId: sessionIdToLink } : {}),
       },
     });
 
     return {
       isCompliant,
       nextCheckIn: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      ...(upgradedSessionToken ? { upgradedSessionToken } : {}),
     };
   }
 
