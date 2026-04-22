@@ -39,7 +39,7 @@ describe('applySync', () => {
         frameworkId: 'frk_soc2',
         manifest: manifest({ controls: [{ id: 'ct_new', name: 'New Control', description: 'd', requirementIds: [], policyIds: [], taskIds: [] }] }),
       } as any,
-      userId: 'mem_1',
+      memberId: 'mem_1',
     });
 
     expect(tx.control.create).toHaveBeenCalledTimes(1);
@@ -64,7 +64,7 @@ describe('applySync', () => {
         frameworkId: 'frk_soc2',
         manifest: manifest({ controls: [{ id: 'ct_shared', name: 'X', description: 'Y', requirementIds: [], policyIds: [], taskIds: [] }] }),
       } as any,
-      userId: 'mem_1',
+      memberId: 'mem_1',
     });
 
     expect(tx.control.create).not.toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe('applySync', () => {
         manifest: manifest({ controls: [{ id: 'ct_old', name: 'Old', description: 'd', requirementIds: [], policyIds: [], taskIds: [] }] }),
       } as any,
       targetVersion: { id: 'fvr_v2', frameworkId: 'frk_soc2', manifest: manifest() } as any,
-      userId: 'mem_1',
+      memberId: 'mem_1',
     });
 
     expect(tx.control.update).toHaveBeenCalledWith(expect.objectContaining({
@@ -108,7 +108,7 @@ describe('applySync', () => {
         manifest: manifest({ controls: [{ id: 'ct_shared', name: 'X', description: 'Y', requirementIds: [], policyIds: [], taskIds: [] }] }),
       } as any,
       targetVersion: { id: 'fvr_v2', frameworkId: 'frk_soc2', manifest: manifest() } as any,
-      userId: 'mem_1',
+      memberId: 'mem_1',
     });
 
     expect(tx.control.update).not.toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ archivedAt: expect.any(Date) }) }));
@@ -130,7 +130,7 @@ describe('applySync', () => {
         frameworkId: 'frk_soc2',
         manifest: manifest({ controls: [{ id: 'ct_1', name: 'New', description: 'd', requirementIds: [], policyIds: [], taskIds: [] }] }),
       } as any,
-      userId: 'mem_1',
+      memberId: 'mem_1',
     });
 
     expect(tx.control.update).toHaveBeenCalledWith(expect.objectContaining({
@@ -155,7 +155,7 @@ describe('applySync', () => {
         frameworkId: 'frk_soc2',
         manifest: manifest({ controls: [{ id: 'ct_1', name: 'New', description: 'd', requirementIds: [], policyIds: [], taskIds: [] }] }),
       } as any,
-      userId: 'mem_1',
+      memberId: 'mem_1',
     });
 
     expect(tx.control.update).not.toHaveBeenCalledWith(expect.objectContaining({
@@ -183,7 +183,7 @@ describe('applySync', () => {
         frameworkId: 'frk_soc2',
         manifest: manifest({ policies: [{ id: 'pt_1', name: 'Access', description: 'd', content: [{ new: true }], frequency: null, department: null }] }),
       } as any,
-      userId: 'mem_1',
+      memberId: 'mem_1',
     });
 
     expect(tx.policyVersion.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -206,7 +206,7 @@ describe('applySync', () => {
           policies: [{ id: 'pt_new', name: 'New Policy', description: 'd', content: [{ body: 'x' }], frequency: null, department: null }],
         }),
       } as any,
-      userId: 'mem_1',
+      memberId: 'mem_1',
     });
 
     expect(tx.policy.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -239,7 +239,7 @@ describe('applySync', () => {
           controls: [{ id: 'ct_1', name: 'C', description: 'D', requirementIds: ['rq_1'], policyIds: [], taskIds: [] }],
         }),
       } as any,
-      userId: 'mem_1',
+      memberId: 'mem_1',
     });
 
     expect(tx.requirementMap.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -270,7 +270,7 @@ describe('applySync', () => {
           controls: [{ id: 'ct_1', name: 'C', description: 'D', requirementIds: [], policyIds: [], taskIds: [] }],
         }),
       } as any,
-      userId: 'mem_1',
+      memberId: 'mem_1',
     });
 
     expect(tx.requirementMap.updateMany).toHaveBeenCalledWith(expect.objectContaining({
@@ -285,7 +285,7 @@ describe('applySync', () => {
       instance: baseInstance as any,
       currentVersion: { id: 'fvr_v1', frameworkId: 'frk_soc2', manifest: manifest() } as any,
       targetVersion: { id: 'fvr_v2', frameworkId: 'frk_soc2', manifest: manifest({ controls: [{ id: 'ct_new', name: 'C', description: 'D', requirementIds: [], policyIds: [], taskIds: [] }] }) } as any,
-      userId: 'mem_1',
+      memberId: 'mem_1',
     });
 
     const createCall = tx.frameworkSyncOperation.create.mock.calls[0][0];

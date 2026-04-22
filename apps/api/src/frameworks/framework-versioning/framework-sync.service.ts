@@ -7,7 +7,7 @@ export interface SyncParams {
   organizationId: string;
   frameworkInstanceId: string;
   targetVersionId: string;
-  userId: string;
+  memberId: string;
 }
 
 export type SyncResult =
@@ -40,7 +40,7 @@ export class FrameworkSyncService {
         instance,
         currentVersion: currentVersion as unknown as VersionWithManifest,
         targetVersion: targetVersion as unknown as VersionWithManifest,
-        userId: params.userId,
+        memberId: params.memberId,
       });
     });
 

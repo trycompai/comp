@@ -22,13 +22,13 @@ describe('FrameworkSyncService preconditions', () => {
 
   it('404s when framework instance not found', async () => {
     (db.frameworkInstance.findUnique as jest.Mock).mockResolvedValue(null);
-    await expect(service.sync({ organizationId: 'org_1', frameworkInstanceId: 'frm_missing', targetVersionId: 'fvr_1', userId: 'mem_1' }))
+    await expect(service.sync({ organizationId: 'org_1', frameworkInstanceId: 'frm_missing', targetVersionId: 'fvr_1', memberId: 'mem_1' }))
       .rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('403s when instance belongs to a different org', async () => {
     (db.frameworkInstance.findUnique as jest.Mock).mockResolvedValue({ id: 'frm_1', organizationId: 'org_other' });
-    await expect(service.sync({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', targetVersionId: 'fvr_1', userId: 'mem_1' }))
+    await expect(service.sync({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', targetVersionId: 'fvr_1', memberId: 'mem_1' }))
       .rejects.toBeInstanceOf(ForbiddenException);
   });
 
@@ -37,13 +37,13 @@ describe('FrameworkSyncService preconditions', () => {
     (db.frameworkVersion.findUnique as jest.Mock)
       .mockResolvedValueOnce({ id: 'fvr_current', frameworkId: 'frk_soc2' })
       .mockResolvedValueOnce({ id: 'fvr_target', frameworkId: 'frk_iso' });
-    await expect(service.sync({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', targetVersionId: 'fvr_target', userId: 'mem_1' }))
+    await expect(service.sync({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', targetVersionId: 'fvr_target', memberId: 'mem_1' }))
       .rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('is a no-op when instance is already at target version', async () => {
     (db.frameworkInstance.findUnique as jest.Mock).mockResolvedValue({ id: 'frm_1', organizationId: 'org_1', frameworkId: 'frk_soc2', currentVersionId: 'fvr_target' });
-    const result = await service.sync({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', targetVersionId: 'fvr_target', userId: 'mem_1' });
+    const result = await service.sync({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', targetVersionId: 'fvr_target', memberId: 'mem_1' });
     expect(result.kind).toBe('no-op');
     expect(db.$transaction).not.toHaveBeenCalled();
   });

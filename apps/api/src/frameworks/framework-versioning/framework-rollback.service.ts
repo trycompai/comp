@@ -7,7 +7,7 @@ export interface RollbackParams {
   organizationId: string;
   frameworkInstanceId: string;
   syncOperationId: string;
-  userId: string;
+  memberId: string;
 }
 
 export interface RollbackResult {
@@ -34,7 +34,7 @@ export class FrameworkRollbackService {
 
     const rollbackOp = await db.$transaction(async (tx) => {
       await lockOrganizationForSync(tx, params.organizationId);
-      return replayUndo(tx, { syncOp, undo, userId: params.userId });
+      return replayUndo(tx, { syncOp, undo, memberId: params.memberId });
     });
 
     return { rollbackOperationId: rollbackOp.id };
@@ -76,7 +76,7 @@ interface ReplayUndoCtx {
     toVersionId: string;
   };
   undo: UndoPayload;
-  userId: string;
+  memberId: string;
 }
 
 async function replayUndo(
@@ -160,7 +160,7 @@ async function replayUndo(
       fromVersionId: ctx.syncOp.toVersionId,
       toVersionId: ctx.syncOp.fromVersionId,
       kind: 'ROLLBACK',
-      performedById: ctx.userId,
+      performedById: ctx.memberId,
       rollbackExpiresAt: null,
       undoPayload: {} as unknown as object,
       summary: { reversedSyncOperationId: ctx.syncOp.id } as unknown as object,

@@ -13,7 +13,7 @@ export interface ApplySyncCtx {
   instance: FrameworkInstance;
   currentVersion: VersionWithManifest;
   targetVersion: VersionWithManifest;
-  userId: string;
+  memberId: string;
 }
 
 export async function applySync(
@@ -281,7 +281,7 @@ export async function applySync(
       fromVersionId: ctx.currentVersion.id,
       toVersionId: ctx.targetVersion.id,
       kind: 'SYNC',
-      performedById: ctx.userId,
+      performedById: ctx.memberId,
       rollbackExpiresAt: addDays(new Date(), ROLLBACK_WINDOW_DAYS),
       undoPayload: undo as unknown as object,
       summary: summary as unknown as object,

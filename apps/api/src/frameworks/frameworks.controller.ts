@@ -218,12 +218,12 @@ export class FrameworksController {
     @Body() body: SyncFrameworkDto,
     @AuthContext() authContext: AuthContextType,
   ) {
-    if (!authContext.userId) throw new BadRequestException('User ID not available');
+    if (!authContext.memberId) throw new BadRequestException('Member ID not available');
     const result = await this.syncService.sync({
       organizationId,
       frameworkInstanceId: id,
       targetVersionId: body.targetVersionId,
-      userId: authContext.userId,
+      memberId: authContext.memberId,
     });
     return { data: result };
   }
@@ -237,12 +237,12 @@ export class FrameworksController {
     @Body() body: RollbackFrameworkDto,
     @AuthContext() authContext: AuthContextType,
   ) {
-    if (!authContext.userId) throw new BadRequestException('User ID not available');
+    if (!authContext.memberId) throw new BadRequestException('Member ID not available');
     const result = await this.rollbackService.rollback({
       organizationId,
       frameworkInstanceId: id,
       syncOperationId: body.syncOperationId,
-      userId: authContext.userId,
+      memberId: authContext.memberId,
     });
     return { data: result };
   }

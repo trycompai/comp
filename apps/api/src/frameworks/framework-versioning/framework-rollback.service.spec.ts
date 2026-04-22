@@ -32,13 +32,13 @@ describe('FrameworkRollbackService', () => {
 
   it('404s when the sync operation does not exist', async () => {
     (db.frameworkSyncOperation.findUnique as jest.Mock).mockResolvedValue(null);
-    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_missing', userId: 'mem_1' }))
+    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_missing', memberId: 'mem_1' }))
       .rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('403s when sync op belongs to another org', async () => {
     (db.frameworkSyncOperation.findUnique as jest.Mock).mockResolvedValue({ id: 'fso_1', frameworkInstance: { organizationId: 'org_other' } });
-    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_1', userId: 'mem_1' }))
+    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_1', memberId: 'mem_1' }))
       .rejects.toBeInstanceOf(ForbiddenException);
   });
 
@@ -49,7 +49,7 @@ describe('FrameworkRollbackService', () => {
       rollbackExpiresAt: new Date(Date.now() - 1000),
       rolledBackByOperationId: null,
     });
-    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_1', userId: 'mem_1' }))
+    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_1', memberId: 'mem_1' }))
       .rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -60,7 +60,7 @@ describe('FrameworkRollbackService', () => {
       rollbackExpiresAt: new Date(Date.now() + 86_400_000),
       rolledBackByOperationId: 'fso_previous_rb',
     });
-    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_1', userId: 'mem_1' }))
+    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_1', memberId: 'mem_1' }))
       .rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -75,7 +75,7 @@ describe('FrameworkRollbackService', () => {
     });
     (db.task.findMany as jest.Mock).mockResolvedValue([{ id: 'tsk_new', completedAt: new Date() }]);
 
-    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_1', userId: 'mem_1' }))
+    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_1', memberId: 'mem_1' }))
       .rejects.toThrow(/data loss|completed/i);
   });
 
@@ -90,7 +90,7 @@ describe('FrameworkRollbackService', () => {
     });
     (db.policy.findMany as jest.Mock).mockResolvedValue([{ id: 'pol_new', status: 'published' }]);
 
-    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_1', userId: 'mem_1' }))
+    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_1', memberId: 'mem_1' }))
       .rejects.toThrow(/data loss|published/i);
   });
 });
