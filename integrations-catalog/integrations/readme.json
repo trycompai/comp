@@ -1,0 +1,45 @@
+{
+  "slug": "readme",
+  "name": "ReadMe",
+  "description": "ReadMe developer hub and API documentation platform",
+  "category": "Development",
+  "docsUrl": "https://docs.readme.com/main/reference",
+  "baseUrl": "https://dash.readme.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to ReadMe\n2. Go to Configuration → API Key\n3. Copy your API key\n4. Paste it below as Basic Auth: run echo -n 'YOUR_API_KEY:' | base64 (or just paste the key — ReadMe supports it as Basic username)",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "ReadMe → Configuration → API Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "readme_app_availability",
+      "name": "App Availability",
+      "description": "Verifies ReadMe documentation hub is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "readme_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies ReadMe project access and team management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

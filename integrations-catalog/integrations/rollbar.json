@@ -1,0 +1,35 @@
+{
+  "slug": "rollbar",
+  "name": "Rollbar",
+  "description": "Monitor Rollbar error tracking and alert configuration for incident response compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://explorer.docs.rollbar.com",
+  "baseUrl": "https://api.rollbar.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "rollbar_app_availability",
+      "name": "App Availability",
+      "description": "Checks Rollbar for critical active errors indicating availability issues",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "rollbar_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies Rollbar has notifications configured for incident response",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

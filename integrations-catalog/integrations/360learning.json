@@ -1,0 +1,52 @@
+{
+  "slug": "360learning",
+  "name": "360Learning",
+  "description": "Monitor 360Learning LMS for compliance training completion and user management.",
+  "category": "Security",
+  "docsUrl": null,
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to 360Learning as an admin\n2. Go to Settings > API\n3. Copy your Company ID and API Key (v1 credentials)\n4. If you don't have API credentials, contact your 360Learning Customer Success Partner (CSP)\n5. Enter both values below\n\nNote: API v2 credentials are NOT compatible. Use API v1 credentials only.",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your 360Learning API v1 key. Go to Settings > API to generate or find your API key."
+        },
+        {
+          "label": "Company ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your 360Learning company ID. Found in Settings > API or ask your 360Learning Customer Success Partner."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "360learning_employee_access",
+      "name": "360Learning Employee Access",
+      "description": "Verifies that the 360Learning LMS is accessible and lists platform users.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "360learning_training_completion",
+      "name": "360Learning Training Completion",
+      "description": "Verifies that employees have completed required training courses in 360Learning.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

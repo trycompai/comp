@@ -1,0 +1,48 @@
+{
+  "slug": "barracuda-email-gateway-defense",
+  "name": "Barracuda Email Gateway Defense",
+  "description": "Monitor Barracuda Email Gateway Defense cloud email security platform for domain configuration, account access, and security compliance",
+  "category": "Communication",
+  "docsUrl": "https://documentation.campus.barracuda.com/wiki/spaces/EGD/pages/2851437/Getting+Started+with+the+API",
+  "baseUrl": "https://api.barracudanetworks.com/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "scopes": [
+        "ess:account:read"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": false
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": true,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "account_access",
+      "name": "Employee Access",
+      "description": "Verifies employee access to Barracuda Email Gateway Defense accounts",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "domain_verification",
+      "name": "TLS / HTTPS",
+      "description": "Verifies that email domains are properly verified and configured in Barracuda Email Gateway Defense",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Barracuda Email Gateway Defense service monitoring and alerting configuration",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

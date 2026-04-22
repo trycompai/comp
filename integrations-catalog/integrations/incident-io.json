@@ -1,0 +1,35 @@
+{
+  "slug": "incident-io",
+  "name": "Incident.io",
+  "description": "Monitor Incident.io for incident response workflows and team access",
+  "category": "Monitoring",
+  "docsUrl": "https://api-docs.incident.io/",
+  "baseUrl": "https://api.incident.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "incidentio_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies incident response workflows are configured with active users and roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "incidentio_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Incident.io alert sources are configured for automated incident detection",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

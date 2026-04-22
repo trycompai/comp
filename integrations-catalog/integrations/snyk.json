@@ -1,0 +1,45 @@
+{
+  "slug": "snyk",
+  "name": "Snyk",
+  "description": "Monitor Snyk security findings including open source vulnerabilities, code issues, and project security posture",
+  "category": "Security",
+  "docsUrl": "https://snyk.docs.apiary.io/",
+  "baseUrl": "https://api.snyk.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Snyk at https://app.snyk.io.\n2. Go to Account Settings (top right menu) > General.\n3. Under 'Auth Token', click 'click to show' and copy your token.\n4. Paste the token below.",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Snyk Account Settings > General > Auth Token. Requires read access to your organization."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "secure_code",
+      "name": "Secure Code",
+      "description": "Verifies that Snyk projects are actively monitored for vulnerabilities",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "sanitized_inputs",
+      "name": "Sanitized Inputs",
+      "description": "Checks for critical and high severity open source vulnerabilities across monitored projects",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,38 @@
+{
+  "slug": "dropbox-sign",
+  "name": "Dropbox Sign",
+  "description": "Dropbox Sign (formerly HelloSign) e-signature platform",
+  "category": "Productivity",
+  "docsUrl": "https://developers.hellosign.com/",
+  "baseUrl": "https://api.hellosign.com/v3",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Dropbox Sign\n2. Go to Settings → Integrations → API\n3. Copy your API key\n4. Run: echo -n 'YOUR_API_KEY:' | base64\n5. Paste the output below",
+      "credentialFields": [
+        {
+          "label": "Basic Auth Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64-encode your API key with a colon: echo -n 'your_api_key:' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "dropboxsign_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Dropbox Sign team members to verify access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

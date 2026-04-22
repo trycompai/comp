@@ -1,0 +1,69 @@
+{
+  "slug": "watchguard",
+  "name": "WatchGuard",
+  "description": "Monitor WatchGuard Cloud firewall policies, device management, and security alerts for compliance",
+  "category": "Security",
+  "docsUrl": "https://www.watchguard.com/help/docs/API/Content/en-US/api_get_started/get_started.html",
+  "baseUrl": "https://api.usa.cloud.watchguard.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in WatchGuard Cloud > Administration > Managed Access"
+        },
+        {
+          "label": "Access ID (Read-write)",
+          "type": "text",
+          "required": true,
+          "helpText": "Read-write Access ID from WatchGuard Cloud > Administration > Managed Access"
+        },
+        {
+          "label": "Access Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Read-write password from WatchGuard Cloud > Administration > Managed Access"
+        },
+        {
+          "label": "API Region",
+          "type": "select",
+          "required": true,
+          "helpText": "Select your WatchGuard Cloud data region"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "production_firewall",
+      "name": "Production Firewall",
+      "description": "Check firewall policies and configuration",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "List managed WatchGuard devices",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerts",
+      "name": "Monitoring & Alerting",
+      "description": "Check security alerts and system events",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

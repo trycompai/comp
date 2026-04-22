@@ -1,0 +1,45 @@
+{
+  "slug": "proofpoint",
+  "name": "Proofpoint",
+  "description": "Monitor Proofpoint email security platform for threat detection and phishing protection compliance",
+  "category": "Security",
+  "docsUrl": "https://help.proofpoint.com/Threat_Insight_Dashboard/API_Documentation/Threat_API",
+  "baseUrl": "https://tap-api-v2.proofpoint.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Proofpoint TAP at https://threatinsight.proofpoint.com\n2. Go to Settings → Connected Applications\n3. Create a new Service Principal\n4. Base64 encode 'service_principal:secret': echo -n 'principal:secret' | base64\n5. Enter the encoded value below",
+      "credentialFields": [
+        {
+          "label": "Encoded Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'service_principal:secret'. Found in Proofpoint TAP dashboard → Settings → Connected Applications. Command: echo -n 'principal:secret' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "proofpoint_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Proofpoint email security is active and detecting threats",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "proofpoint_incident_response",
+      "name": "Incident Response",
+      "description": "Reviews Proofpoint threat detections for incident response readiness",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

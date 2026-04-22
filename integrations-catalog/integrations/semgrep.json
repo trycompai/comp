@@ -1,0 +1,35 @@
+{
+  "slug": "semgrep",
+  "name": "Semgrep",
+  "description": "Monitor Semgrep SAST findings and deployment security scans for secure code compliance",
+  "category": "Security",
+  "docsUrl": "https://semgrep.dev/api/v1/docs/",
+  "baseUrl": "https://semgrep.dev/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "semgrep_secure_code",
+      "name": "Secure Code",
+      "description": "Verifies Semgrep SAST scanning is configured and active",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "semgrep_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies Semgrep is scanning code changes for security issues in CI/CD",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

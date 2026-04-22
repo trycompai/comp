@@ -1,0 +1,51 @@
+{
+  "slug": "shopify",
+  "name": "Shopify",
+  "description": "Monitor Shopify e-commerce platform for store security, staff access, and payment compliance",
+  "category": "Productivity",
+  "docsUrl": "https://shopify.dev/docs/api/admin-rest",
+  "baseUrl": "https://myshopify.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Shopify Admin at https://yourstore.myshopify.com/admin\n2. Go to Settings → Apps → Develop apps\n3. Create a custom app and enable required Admin API scopes\n4. Install the app to reveal the access token\n5. Enter your store URL and access token below",
+      "credentialFields": [
+        {
+          "label": "Store URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Shopify store URL (e.g. mystore.myshopify.com)"
+        },
+        {
+          "label": "Admin API Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Create a Custom App in Shopify Admin → Settings → Apps → Develop Apps, then install it to get the token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "shopify_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Shopify staff accounts and their store access permissions",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "shopify_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Shopify platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

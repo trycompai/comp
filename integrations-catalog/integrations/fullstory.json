@@ -1,0 +1,45 @@
+{
+  "slug": "fullstory",
+  "name": "FullStory",
+  "description": "Monitor FullStory session replay and analytics for user data handling and access compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://developer.fullstory.com/server/v2/getting-started/authentication/",
+  "baseUrl": "https://api.fullstory.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to FullStory at https://app.fullstory.com\n2. Go to Settings → Integrations → API Keys\n3. Generate a Server API key\n4. Copy and enter it below (the key itself, no encoding needed)",
+      "credentialFields": [
+        {
+          "label": "Server API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in FullStory Settings → Integrations → API Keys (Server API key)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "fullstory_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews FullStory users with access to session replay data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "fullstory_data_masking",
+      "name": "Data Masking",
+      "description": "Verifies FullStory data capture policies are configured to protect sensitive user data",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

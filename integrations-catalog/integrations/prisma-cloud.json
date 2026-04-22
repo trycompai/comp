@@ -1,0 +1,57 @@
+{
+  "slug": "prisma-cloud",
+  "name": "Prisma Cloud",
+  "description": "Cloud-native security platform. Monitor cloud workloads, compliance, and vulnerabilities.",
+  "category": "Security",
+  "docsUrl": "https://pan.dev/prisma-cloud/api/cspm/",
+  "baseUrl": "https://api.prismacloud.io",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Prisma Cloud\n2. Go to Settings → Access Keys\n3. Add Access Key, copy ID and Secret\n4. Note your API URL\n5. Paste all values below",
+      "credentialFields": [
+        {
+          "label": "Prisma Cloud API URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Prisma Cloud API URL (e.g. https://api.prismacloud.io)."
+        },
+        {
+          "label": "Access Key ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Settings → Access Keys."
+        },
+        {
+          "label": "Secret Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Shown once when creating."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "prisma_cloud_app_availability",
+      "name": "Prisma Cloud App Availability",
+      "description": "Verifies Prisma Cloud API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "prisma_cloud_employee_access",
+      "name": "Prisma Cloud Employee Access",
+      "description": "Verifies user access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

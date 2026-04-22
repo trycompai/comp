@@ -1,0 +1,35 @@
+{
+  "slug": "qovery",
+  "name": "Qovery",
+  "description": "Cloud deployment platform for developers. Monitor organizations and environments.",
+  "category": "Infrastructure",
+  "docsUrl": "https://api-doc.qovery.com",
+  "baseUrl": "https://api.qovery.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "qovery_app_availability",
+      "name": "Qovery App Availability",
+      "description": "Checks that the Qovery API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "qovery_employee_access",
+      "name": "Qovery Employee Access",
+      "description": "Verifies employee access to Qovery via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

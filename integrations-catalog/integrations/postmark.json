@@ -1,0 +1,45 @@
+{
+  "slug": "postmark",
+  "name": "Postmark",
+  "description": "Monitor Postmark transactional email servers for access and TLS delivery compliance",
+  "category": "Communication",
+  "docsUrl": "https://postmarkapp.com/developer/api/overview",
+  "baseUrl": "https://api.postmarkapp.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Postmark at https://account.postmarkapp.com\n2. Go to Account → API Tokens\n3. Copy your Account API Token (not the Server token)\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "Account API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Postmark Account → API Tokens. Use the Account token, not the Server token."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "postmark_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Postmark email servers and verifies they are configured correctly",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "postmark_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Postmark platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

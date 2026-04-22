@@ -1,0 +1,58 @@
+{
+  "slug": "gitlab",
+  "name": "GitLab",
+  "description": "Monitor GitLab group security including 2FA enforcement, protected branches, and member access controls",
+  "category": "Development",
+  "docsUrl": "https://docs.gitlab.com/ee/api/",
+  "baseUrl": "https://gitlab.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to GitLab\n2. Go to your group > Settings > General > find the numeric Group ID\n3. Go to User Settings > Access Tokens > create a token with read_api scope\n4. Enter the token and your GitLab domain below (e.g. gitlab.com for cloud, or your self-hosted domain)",
+      "credentialFields": [
+        {
+          "label": "Personal Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in GitLab > Profile > Access Tokens. Create a token with api or read_api scope. Must be a group Owner or Admin to view 2FA status."
+        },
+        {
+          "label": "GitLab Domain",
+          "type": "text",
+          "required": true,
+          "helpText": "Use 'gitlab.com' for GitLab SaaS, or your self-hosted domain e.g. gitlab.company.com"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "two_factor_enforcement",
+      "name": "2FA",
+      "description": "Verifies that two-factor authentication is enforced at the GitLab group level",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "protected_branches",
+      "name": "Code Changes",
+      "description": "Verifies that GitLab projects have protected branches configured to enforce code review.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all members of the GitLab group with their access levels and status.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

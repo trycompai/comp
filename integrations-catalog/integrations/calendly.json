@@ -1,0 +1,45 @@
+{
+  "slug": "calendly",
+  "name": "Calendly",
+  "description": "Monitor Calendly scheduling platform for team access and meeting link security compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.calendly.com/api-docs/",
+  "baseUrl": "https://api.calendly.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Calendly at https://calendly.com\n2. Go to Integrations → API & Webhooks\n3. Generate a Personal Access Token\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "Personal Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Calendly Integrations → API & Webhooks"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "calendly_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Calendly organization members and their scheduling access",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "calendly_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Calendly scheduling service is active",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

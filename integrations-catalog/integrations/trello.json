@@ -1,0 +1,51 @@
+{
+  "slug": "trello",
+  "name": "Trello",
+  "description": "Monitor Trello board organization and workspace members for compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.atlassian.com/cloud/trello/rest/",
+  "baseUrl": "https://api.trello.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to https://trello.com/power-ups/admin\n2. Create a new Power-Up (or select an existing one)\n3. Click on your Power-Up → go to the API Key tab\n4. Copy your API Key\n5. Click the Token link next to your key → click Allow to authorize\n6. Copy the generated token\n7. Enter your API Key and Token below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found at https://trello.com/power-ups/admin → your Power-Up → API Key tab"
+        },
+        {
+          "label": "Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate at https://trello.com/power-ups/admin → your Power-Up → API Key tab → click the Token link"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "trello_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Trello organization members and their access levels",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "trello_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies that Trello boards are organized for environment separation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

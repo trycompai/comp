@@ -1,0 +1,51 @@
+{
+  "slug": "atera",
+  "name": "Atera",
+  "description": "Monitor Atera RMM for device security, patch compliance, and alert management across your managed endpoints",
+  "category": "Security",
+  "docsUrl": "https://app.atera.com/apidocs",
+  "baseUrl": "https://app.atera.com/api/v3/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Atera Admin > API Management"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_security",
+      "name": "Secure Devices",
+      "description": "Verifies that managed devices have antivirus enabled and are up to date with patches",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "active_alerts",
+      "name": "Monitoring & Alerting",
+      "description": "Checks for active critical alerts in the Atera monitoring system",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "device_inventory",
+      "name": "Device List",
+      "description": "Validates comprehensive inventory of all managed devices and endpoints",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

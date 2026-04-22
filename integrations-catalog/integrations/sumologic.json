@@ -1,0 +1,51 @@
+{
+  "slug": "sumologic",
+  "name": "Sumo Logic",
+  "description": "Monitor Sumo Logic log management and analytics platform for user access and monitoring compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://api.sumologic.com/docs/",
+  "baseUrl": "https://api.sumologic.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Sumo Logic\n2. Go to your name → Preferences → Access Keys\n3. Create a new access key — copy the Access ID and Access Key\n4. Base64 encode 'accessId:accessKey': echo -n 'id:key' | base64\n5. Find your API endpoint at https://help.sumologic.com/docs/api/getting-started/#sumo-logic-endpoints\n6. Enter both below",
+      "credentialFields": [
+        {
+          "label": "Encoded Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'accessId:accessKey'. Found in Sumo Logic Preferences → Access Keys. Command: echo -n 'accessId:accessKey' | base64"
+        },
+        {
+          "label": "API Endpoint",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Sumo Logic API endpoint based on your deployment (e.g. api.us2.sumologic.com, api.eu.sumologic.com). See https://help.sumologic.com/docs/api/getting-started/#sumo-logic-endpoints"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "sumologic_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Sumo Logic users with access to log analytics",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sumologic_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Sumo Logic monitors are configured for log-based alerting",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

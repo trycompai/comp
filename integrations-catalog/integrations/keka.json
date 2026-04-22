@@ -1,0 +1,78 @@
+{
+  "slug": "keka",
+  "name": "Keka",
+  "description": "Keka is a modern HR and payroll platform for employee lifecycle management, including hiring, onboarding, attendance, performance, and offboarding.",
+  "category": "HR & People",
+  "docsUrl": "https://developers.keka.com",
+  "baseUrl": "https://api.keka.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Keka as an admin\n2. Go to Settings > API > Generate API Key\n3. Copy the Client ID, Client Secret, and API Key\n4. Your subdomain is the part before .keka.com in your URL (e.g. for https://acme.keka.com, enter 'acme')\n5. Enter all credentials below",
+      "credentialFields": [
+        {
+          "label": "Company Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Keka company subdomain. For example, if you access Keka at https://acme.keka.com, enter 'acme'."
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "The Client ID from your Keka API application. Go to Settings > API > Generate API Key."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The Client Secret from your Keka API application."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "The API Key from your Keka API application."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "keka_employee_directory",
+      "name": "Keka Employee Directory",
+      "description": "Verifies that employee records can be accessed through the Keka API and that active employees exist in the system.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "keka_departments",
+      "name": "Keka Organizational Structure",
+      "description": "Verifies that departments are defined in Keka, confirming organizational structure is properly configured for compliance reporting.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "keka_offboarding",
+      "name": "Keka Employee Offboarding Process",
+      "description": "Verifies that exit reasons are configured in Keka, ensuring a proper employee offboarding process is in place for compliance.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "keka_groups",
+      "name": "Keka Role-based Access Controls",
+      "description": "Verifies that groups and group types are configured in Keka, confirming role-based access controls are in place for organizational management.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

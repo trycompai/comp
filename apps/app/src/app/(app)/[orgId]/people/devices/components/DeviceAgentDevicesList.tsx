@@ -2,6 +2,7 @@
 
 import {
   Badge,
+  Button,
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -18,11 +19,17 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Search } from '@trycompai/design-system/icons';
+import { Download, Information, Search } from '@trycompai/design-system/icons';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import type { DeviceWithChecks } from '../types';
+import {
+  buildDevicesCsv,
+  devicesCsvFilename,
+  downloadDevicesCsv,
+} from '../lib/devices-csv';
 import { DeviceDetails } from './DeviceDetails';
 
 export interface DeviceAgentDevicesListProps {
@@ -62,9 +69,17 @@ function isDeviceOnline(lastCheckIn: string | null): boolean {
   return diffMs < 2 * 60 * 60 * 1000;
 }
 
-function UserNameCell({ device }: { device: DeviceWithChecks }) {
-  const params = useParams();
-  const orgId = params?.orgId as string;
+function staleLabel(daysSinceLastCheckIn: number | null): string {
+  return daysSinceLastCheckIn === null ? 'Stale' : `Stale (${daysSinceLastCheckIn}d)`;
+}
+
+function staleTooltipCopy(daysSinceLastCheckIn: number | null): string {
+  return daysSinceLastCheckIn === null
+    ? "This device was registered but hasn't sent a compliance check yet. If it's not new, the agent may not be running or the device may be offline."
+    : "This device hasn't reported to CompAI in over 7 days, so we can't verify its current compliance. It may be offline, the agent may need to be updated, or the device may no longer be in use. Check with the employee.";
+}
+
+function UserNameCell({ device, orgId }: { device: DeviceWithChecks; orgId: string }) {
   const memberId = device.memberId;
 
   if (!memberId) {
@@ -90,7 +105,62 @@ function UserNameCell({ device }: { device: DeviceWithChecks }) {
   );
 }
 
+function CompliantBadge({ device }: { device: DeviceWithChecks }) {
+  if (device.complianceStatus === 'stale') {
+    return (
+      <div className="flex items-center gap-1">
+        <Badge variant="secondary">{staleLabel(device.daysSinceLastCheckIn)}</Badge>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="What does Stale mean?"
+                className="inline-flex items-center text-muted-foreground hover:text-foreground"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Information size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs text-xs">
+              {staleTooltipCopy(device.daysSinceLastCheckIn)}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    );
+  }
+  if (device.complianceStatus === 'compliant') {
+    return <Badge variant="default">Yes</Badge>;
+  }
+  return <Badge variant="destructive">No</Badge>;
+}
+
+function CheckBadges({ device }: { device: DeviceWithChecks }) {
+  if (device.complianceStatus === 'stale') {
+    return (
+      <div className="flex flex-wrap gap-1">
+        {CHECK_FIELDS.map(({ key, label }) => (
+          <Badge key={key} variant="secondary" title={`${label} — unknown (device is stale)`}>
+            —
+          </Badge>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {CHECK_FIELDS.map(({ key, label }) => (
+        <Badge key={key} variant={device[key] ? 'default' : 'destructive'}>
+          {label}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
 export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps) => {
+  const { orgId } = useParams<{ orgId: string }>();
   const [selectedDevice, setSelectedDevice] = useState<DeviceWithChecks | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -114,6 +184,12 @@ export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps)
     return filteredDevices.slice(start, start + perPage);
   }, [filteredDevices, page, perPage]);
 
+  function handleExport() {
+    const contents = buildDevicesCsv(devices);
+    const filename = devicesCsvFilename({ orgId });
+    downloadDevicesCsv(filename, contents);
+  }
+
   if (selectedDevice) {
     return <DeviceDetails device={selectedDevice} onClose={() => setSelectedDevice(null)} />;
   }
@@ -124,20 +200,25 @@ export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps)
 
   return (
     <Stack gap="4">
-      <div className="w-full md:max-w-[300px]">
-        <InputGroup>
-          <InputGroupAddon>
-            <Search size={16} />
-          </InputGroupAddon>
-          <InputGroupInput
-            placeholder="Search devices..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
-            }}
-          />
-        </InputGroup>
+      <div className="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="w-full md:max-w-[300px]">
+          <InputGroup>
+            <InputGroupAddon>
+              <Search size={16} />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search devices..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
+            />
+          </InputGroup>
+        </div>
+        <Button variant="outline" iconLeft={<Download />} onClick={handleExport}>
+          Export CSV
+        </Button>
       </div>
 
       {filteredDevices.length === 0 ? (
@@ -195,7 +276,7 @@ export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps)
                   </div>
                 </TableCell>
                 <TableCell>
-                  <UserNameCell device={device} />
+                  <UserNameCell device={device} orgId={orgId} />
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
@@ -209,21 +290,10 @@ export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps)
                   <Text size="sm">{formatTimeAgo(device.lastCheckIn)}</Text>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {CHECK_FIELDS.map(({ key, label }) => (
-                      <Badge
-                        key={key}
-                        variant={device[key] ? 'default' : 'destructive'}
-                      >
-                        {label}
-                      </Badge>
-                    ))}
-                  </div>
+                  <CheckBadges device={device} />
                 </TableCell>
                 <TableCell>
-                  <Badge variant={device.isCompliant ? 'default' : 'destructive'}>
-                    {device.isCompliant ? 'Yes' : 'No'}
-                  </Badge>
+                  <CompliantBadge device={device} />
                 </TableCell>
               </TableRow>
             ))}

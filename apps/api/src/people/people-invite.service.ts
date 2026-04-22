@@ -8,6 +8,8 @@ import { db } from '@db';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
 import type { InviteItemDto } from './dto/invite-people.dto';
+import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
+import { TimelinesService } from '../timelines/timelines.service';
 
 export interface InviteResult {
   email: string;
@@ -19,6 +21,8 @@ export interface InviteResult {
 @Injectable()
 export class PeopleInviteService {
   private readonly logger = new Logger(PeopleInviteService.name);
+
+  constructor(private readonly timelinesService: TimelinesService) {}
 
   async inviteMembers(params: {
     organizationId: string;
@@ -93,6 +97,17 @@ export class PeopleInviteService {
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
+    }
+
+    // Check timeline auto-completion after inviting members (people metrics may change)
+    const hasSuccessfulInvites = results.some((r) => r.success);
+    if (hasSuccessfulInvites) {
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
     }
 
     return results;

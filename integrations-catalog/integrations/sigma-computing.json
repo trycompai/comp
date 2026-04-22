@@ -1,0 +1,45 @@
+{
+  "slug": "sigma-computing",
+  "name": "Sigma Computing",
+  "description": "Monitor Sigma Computing business intelligence platform for user access and data governance compliance",
+  "category": "Productivity",
+  "docsUrl": "https://help.sigmacomputing.com/reference/overview-1",
+  "baseUrl": "https://api.sigmacomputing.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Sigma at https://app.sigmacomputing.com\n2. Go to Administration → Developer Access → API Tokens\n3. Create a new API token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Sigma Administration → Developer Access → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "sigma_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Sigma Computing workspace members with access to BI data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sigma_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Sigma Computing BI platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

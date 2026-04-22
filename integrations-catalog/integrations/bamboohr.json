@@ -1,0 +1,45 @@
+{
+  "slug": "bamboohr",
+  "name": "BambooHR",
+  "description": "Monitor employee records, onboarding/offboarding status, and HR compliance in BambooHR",
+  "category": "HR & People",
+  "docsUrl": "https://documentation.bamboohr.com/reference/",
+  "baseUrl": "https://api.bamboohr.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to BambooHR > profile icon > API Keys > Add New Key\n2. Copy the API key\n3. Encode it: run echo -n YOUR_API_KEY:x | base64\n4. Enter the encoded result and your subdomain below",
+      "credentialFields": [
+        {
+          "label": "Encoded API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode your API key: run echo -n YOUR_API_KEY:x | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "employee_records",
+      "name": "Employee Verification",
+      "description": "Verifies that all active employees in BambooHR have required profile fields completed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "employee_descriptions",
+      "name": "Employee Descriptions",
+      "description": "Verifies that active employees have job titles and department assignments documented",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

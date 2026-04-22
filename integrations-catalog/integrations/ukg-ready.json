@@ -1,0 +1,69 @@
+{
+  "slug": "ukg-ready",
+  "name": "UKG Ready",
+  "description": "Monitor UKG Ready HRIS for employee records, workforce compliance, and system access controls",
+  "category": "HR & People",
+  "docsUrl": "https://secure7.saashr.com/ta/docs/rest/public/",
+  "baseUrl": "https://secure.saashr.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to UKG Ready\n2. Note your instance URL (e.g. secure3.saashr.com from your login URL)\n3. Note your Company Short Name (visible in the login URL)\n4. Ask your UKG Ready administrator to create a dedicated service account and generate an API Key\n5. Enter all values below",
+      "credentialFields": [
+        {
+          "label": "Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your UKG Ready server hostname (e.g. secure.saashr.com, secure3.saashr.com). Check your UKG Ready login URL."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Developer API key from UKG Ready. Contact your UKG Ready administrator to generate one."
+        },
+        {
+          "label": "Service Account Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Username for the dedicated UKG Ready service account used for API access"
+        },
+        {
+          "label": "Service Account Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Password for the UKG Ready service account"
+        },
+        {
+          "label": "Company Short Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your UKG Ready company short name (numeric or alphanumeric code). Check your UKG Ready login URL or contact your administrator."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "ukg_ready_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews UKG Ready employee records to audit workforce access and employment status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "ukg_ready_employee_verification",
+      "name": "Employee Verification",
+      "description": "Verifies UKG Ready employment records include required verification data for compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

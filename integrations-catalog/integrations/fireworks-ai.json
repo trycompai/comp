@@ -1,0 +1,35 @@
+{
+  "slug": "fireworks-ai",
+  "name": "Fireworks AI",
+  "description": "AI inference platform for deploying and running LLMs. Monitor API access.",
+  "category": "Cloud",
+  "docsUrl": "https://docs.fireworks.ai/",
+  "baseUrl": "https://api.fireworks.ai",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "fireworks_ai_app_availability",
+      "name": "Fireworks AI App Availability",
+      "description": "Checks that the Fireworks AI API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "fireworks_ai_employee_access",
+      "name": "Fireworks AI Employee Access",
+      "description": "Verifies employee access to Fireworks AI via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

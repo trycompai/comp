@@ -81,6 +81,9 @@ model Organization {
   organizationRoles          OrganizationRole[]
   roleNotificationSettings   RoleNotificationSetting[]
 
+  // Timeline
+  timelineInstances          TimelineInstance[]
+
   // Custom frameworks / requirements authored by this org
   customFrameworks   CustomFramework[]
   customRequirements CustomRequirement[]

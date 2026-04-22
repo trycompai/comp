@@ -1,0 +1,53 @@
+{
+  "slug": "absolute",
+  "name": "Absolute",
+  "description": "Endpoint security and persistence platform. Monitor device inventory, applications, and security compliance.",
+  "category": "Security",
+  "docsUrl": "https://api.absolute.com/api-doc/doc.html",
+  "baseUrl": "https://api.absolute.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Token ID",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Secret Key",
+          "type": "password",
+          "required": true
+        },
+        {
+          "label": "API Base URL",
+          "type": "text",
+          "required": true
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_inventory",
+      "name": "Device Inventory",
+      "description": "Monitor enrolled endpoint devices and their security status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "application_inventory",
+      "name": "Application Inventory",
+      "description": "Monitor installed applications across managed devices",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

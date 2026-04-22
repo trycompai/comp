@@ -1,0 +1,62 @@
+{
+  "slug": "fortinet-fortigate",
+  "name": "Fortinet FortiGate",
+  "description": "Monitor Fortinet FortiGate firewall and UTM security appliance for firewall policies, admin users, system configuration, firmware status, and logging compliance",
+  "category": "Security",
+  "docsUrl": "https://docs.fortinet.com/document/fortigate/7.6.6/administration-guide/940602/using-apis",
+  "baseUrl": "https://api.fortigate.local/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Api Token",
+          "type": "secret",
+          "required": true
+        },
+        {
+          "label": "Server Url",
+          "type": "text",
+          "required": true
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "production_firewall",
+      "name": "Production Firewall",
+      "description": "Verifies firewall policies are configured to protect network traffic and segment environments",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Reviews FortiGate administrator users and access controls for system management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "systems_description",
+      "name": "Systems Description",
+      "description": "Documents FortiGate system information including hostname, firmware version, and operational status",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies FortiGate syslog configuration for centralized logging and monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

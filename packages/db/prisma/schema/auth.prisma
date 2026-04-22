@@ -15,16 +15,19 @@ model User {
   banExpires                     DateTime?
   isPlatformAdmin                Boolean   @default(false)
 
-  accounts            Account[]
-  auditLog            AuditLog[]
-  integrationResults  IntegrationResult[]
-  invitations         Invitation[]
-  members             Member[]
-  sessions            Session[]
-  fleetPolicyResults  FleetPolicyResult[]
-  evidenceSubmissions EvidenceSubmission[] @relation("EvidenceSubmitter")
-  evidenceReviews     EvidenceSubmission[] @relation("EvidenceReviewer")
-  adminFindings       Finding[]            @relation("AdminFindingCreator")
+  accounts                   Account[]
+  auditLog                   AuditLog[]
+  integrationResults         IntegrationResult[]
+  invitations                Invitation[]
+  members                    Member[]
+  sessions                   Session[]
+  fleetPolicyResults         FleetPolicyResult[]
+  evidenceSubmissions        EvidenceSubmission[] @relation("EvidenceSubmitter")
+  evidenceReviews            EvidenceSubmission[] @relation("EvidenceReviewer")
+  adminFindings              Finding[]            @relation("AdminFindingCreator")
+  timelinePhaseCompletions   TimelinePhase[]
+  lockedTimelineInstances    TimelineInstance[]   @relation("TimelineInstanceLockedBy")
+  unlockedTimelineInstances  TimelineInstance[]   @relation("TimelineInstanceUnlockedBy")
 
   @@unique([email])
 }

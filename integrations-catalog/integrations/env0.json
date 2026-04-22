@@ -1,0 +1,35 @@
+{
+  "slug": "env0",
+  "name": "env0",
+  "description": "Infrastructure automation platform. Monitor environments and deployments.",
+  "category": "Infrastructure",
+  "docsUrl": "https://developer.env0.com/",
+  "baseUrl": "https://api.env0.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "env0_app_availability",
+      "name": "env0 App Availability",
+      "description": "Checks env0 app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "env0_employee_access",
+      "name": "env0 Employee Access",
+      "description": "Checks env0 employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

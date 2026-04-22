@@ -1,0 +1,49 @@
+{
+  "slug": "confluent-cloud",
+  "name": "Confluent Cloud",
+  "description": "Monitor Confluent Cloud (managed Apache Kafka) for user access, RBAC role bindings, infrastructure inventory, and encryption settings",
+  "category": "Infrastructure",
+  "docsUrl": "https://docs.confluent.io/cloud/current/api.html",
+  "baseUrl": "https://api.confluent.cloud",
+  "authConfig": {
+    "type": "basic",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all users and service accounts in the Confluent Cloud organization to verify access is appropriate",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "rbac_role_bindings",
+      "name": "Role-based Access Controls",
+      "description": "Reviews RBAC role bindings across the Confluent Cloud organization to ensure least-privilege access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all environments and Kafka clusters in the Confluent Cloud organization for infrastructure tracking",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "encryption_at_rest",
+      "name": "Encryption at Rest",
+      "description": "Verifies encryption configuration for Confluent Cloud by checking for BYOK (Bring Your Own Key) customer-managed encryption keys",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

@@ -1,0 +1,69 @@
+{
+  "slug": "netsuite",
+  "name": "NetSuite",
+  "description": "Oracle NetSuite ERP - monitors employee access and role-based access controls via SuiteQL REST API with OAuth1 Token-Based Authentication.",
+  "category": "Productivity",
+  "docsUrl": "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_1540811039.html",
+  "baseUrl": "https://placeholder.suitetalk.api.netsuite.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Account ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your NetSuite Account ID (e.g., 1234567 or TSTDRV1234567). Found at Setup > Company > Company Information."
+        },
+        {
+          "label": "Consumer Key",
+          "type": "text",
+          "required": true,
+          "helpText": "Integration consumer key. Found at Setup > Integration > Manage Integrations."
+        },
+        {
+          "label": "Consumer Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Integration consumer secret. Displayed only once when creating the integration."
+        },
+        {
+          "label": "Token ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Access token ID. Found at Setup > Users/Roles > Access Tokens."
+        },
+        {
+          "label": "Token Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Access token secret. Displayed only once when creating the token."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all employees in NetSuite via SuiteQL to verify employee access records are maintained and accounts have proper status.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "role_based_access_controls",
+      "name": "Role-based Access Controls",
+      "description": "Lists all roles defined in NetSuite via SuiteQL to verify that role-based access controls are properly configured.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

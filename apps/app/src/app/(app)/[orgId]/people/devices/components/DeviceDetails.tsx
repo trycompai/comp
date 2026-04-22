@@ -15,7 +15,8 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { ArrowLeft } from '@trycompai/design-system/icons';
+import { ArrowLeft, Information } from '@trycompai/design-system/icons';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import type { DeviceWithChecks } from '../types';
 
 const CHECK_FIELDS = [
@@ -36,6 +37,47 @@ function isDeviceOnline(lastCheckIn: string | null): boolean {
   if (!lastCheckIn) return false;
   const diffMs = Date.now() - new Date(lastCheckIn).getTime();
   return diffMs < 2 * 60 * 60 * 1000;
+}
+
+function staleLabel(daysSinceLastCheckIn: number | null): string {
+  return daysSinceLastCheckIn === null ? 'Stale' : `Stale (${daysSinceLastCheckIn}d)`;
+}
+
+function staleTooltipCopy(daysSinceLastCheckIn: number | null): string {
+  return daysSinceLastCheckIn === null
+    ? "This device was registered but hasn't sent a compliance check yet. If it's not new, the agent may not be running or the device may be offline."
+    : "This device hasn't reported to CompAI in over 7 days, so we can't verify its current compliance. It may be offline, the agent may need to be updated, or the device may no longer be in use. Check with the employee.";
+}
+
+function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
+  if (device.complianceStatus === 'stale') {
+    return (
+      <div className="flex items-center gap-1">
+        <Badge variant="secondary">{staleLabel(device.daysSinceLastCheckIn)}</Badge>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="What does Stale mean?"
+                className="inline-flex items-center text-muted-foreground hover:text-foreground"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Information size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs text-xs">
+              {staleTooltipCopy(device.daysSinceLastCheckIn)}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    );
+  }
+  if (device.complianceStatus === 'compliant') {
+    return <Badge variant="default">Compliant</Badge>;
+  }
+  return <Badge variant="destructive">Non-Compliant</Badge>;
 }
 
 interface DeviceDetailsProps {
@@ -78,9 +120,7 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 {device.hardwareModel ? ` \u2022 ${device.hardwareModel}` : ''}
               </Text>
             </div>
-            <Badge variant={device.isCompliant ? 'default' : 'destructive'}>
-              {device.isCompliant ? 'Compliant' : 'Non-Compliant'}
-            </Badge>
+            <DeviceComplianceBadge device={device} />
           </div>
         </CardHeader>
         <CardContent>
@@ -154,6 +194,7 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
         <TableBody>
           {CHECK_FIELDS.map(({ key, dbKey, label }) => {
             const isFleetUnsupported = device.source === 'fleet' && key !== 'diskEncryptionEnabled';
+            const isStale = device.complianceStatus === 'stale';
             const passed = device[key];
             const details = device.checkDetails?.[dbKey];
             return (
@@ -165,12 +206,23 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 </TableCell>
                 <TableCell>
                   <Text size="sm" variant="muted">
-                    {isFleetUnsupported ? 'Not tracked by Fleet' : (details?.message ?? '—')}
+                    {isFleetUnsupported
+                      ? 'Not tracked by Fleet'
+                      : isStale
+                        ? '—'
+                        : (details?.message ?? '—')}
                   </Text>
                 </TableCell>
                 <TableCell>
                   {isFleetUnsupported ? (
                     <Badge variant="outline">N/A</Badge>
+                  ) : isStale ? (
+                    <Badge
+                      variant="secondary"
+                      title={`${label} — unknown (device is stale)`}
+                    >
+                      —
+                    </Badge>
                   ) : (
                     <Badge variant={passed ? 'default' : 'destructive'}>
                       {passed ? 'Pass' : 'Fail'}
@@ -179,7 +231,7 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 </TableCell>
                 <TableCell>
                   <Text size="sm" variant="muted">
-                    {details?.exception ?? '—'}
+                    {isStale ? '—' : (details?.exception ?? '—')}
                   </Text>
                 </TableCell>
               </TableRow>

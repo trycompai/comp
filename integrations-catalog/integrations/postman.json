@@ -1,0 +1,35 @@
+{
+  "slug": "postman",
+  "name": "Postman",
+  "description": "Monitor Postman workspaces and team API collections for development compliance",
+  "category": "Development",
+  "docsUrl": "https://www.postman.com/postman/postman-postman/documentation/",
+  "baseUrl": "https://api.getpostman.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "postman_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Postman workspace members and API access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "postman_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies Postman workspaces are organized for environment separation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

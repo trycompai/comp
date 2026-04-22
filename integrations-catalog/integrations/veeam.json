@@ -1,0 +1,63 @@
+{
+  "slug": "veeam",
+  "name": "Veeam Backup & Replication",
+  "description": "Monitor Veeam Backup & Replication for backup job status, backup sessions, repository health, and infrastructure inventory for compliance",
+  "category": "Infrastructure",
+  "docsUrl": "https://helpcenter.veeam.com/references/vbr/13/rest/",
+  "baseUrl": "https://veeam-server.example.com:9419/api/v1/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Server URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Veeam B&R server URL (e.g., https://veeam.company.com:9419)"
+        },
+        {
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Veeam administrator username"
+        },
+        {
+          "label": "Password",
+          "type": "secret",
+          "required": true,
+          "helpText": "Veeam administrator password"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "backup_jobs",
+      "name": "Backup logs",
+      "description": "Monitors backup job status and ensures jobs are running successfully",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "backup_sessions",
+      "name": "Backup Restoration Test",
+      "description": "Reviews recent backup sessions to verify backup completion and success rates",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "repository_health",
+      "name": "Infrastructure Inventory",
+      "description": "Monitors backup repository status and storage capacity for infrastructure compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

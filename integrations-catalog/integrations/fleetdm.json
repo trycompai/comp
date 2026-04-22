@@ -1,0 +1,42 @@
+{
+  "slug": "fleetdm",
+  "name": "FleetDM",
+  "description": "Open-source device management platform for monitoring and securing endpoints",
+  "category": "Security",
+  "docsUrl": null,
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "List all enrolled hosts and devices in Fleet",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Check host compliance status and policy adherence",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verify Fleet policies are configured and active",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

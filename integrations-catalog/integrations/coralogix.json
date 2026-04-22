@@ -1,0 +1,51 @@
+{
+  "slug": "coralogix",
+  "name": "Coralogix",
+  "description": "Coralogix log analytics and monitoring platform",
+  "category": "Monitoring",
+  "docsUrl": "https://coralogix.com/docs/coralogix-rest-api/",
+  "baseUrl": "https://api.coralogix.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Coralogix\n2. Settings → API Access\n3. Copy the Alerts, Rules and Tags API Key\n4. Enter your region endpoint (default: api.coralogix.com)",
+      "credentialFields": [
+        {
+          "label": "Alerts API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Coralogix → Settings → API Access → Alerts, Rules and Tags API Key"
+        },
+        {
+          "label": "Region Endpoint",
+          "type": "text",
+          "required": false,
+          "helpText": "Your region API host. Examples: api.coralogix.com (US), api.eu2.coralogix.com (EU), api.coralogixsg.com (AP)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "coralogix_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Coralogix has active alerts configured",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "coralogix_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Coralogix users",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,51 @@
+{
+  "slug": "chargebee",
+  "name": "Chargebee",
+  "description": "Monitor Chargebee subscription billing for revenue compliance and customer data management",
+  "category": "Productivity",
+  "docsUrl": "https://apidocs.chargebee.com/docs/api",
+  "baseUrl": "https://app.chargebee.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Chargebee at https://app.chargebee.com\n2. Go to Settings → Configure Chargebee → API Keys\n3. Copy your Full-Access or Read-Only API key\n4. Base64 encode 'api_key:' (with trailing colon, empty password)\n5. Enter your site name and encoded key below",
+      "credentialFields": [
+        {
+          "label": "Site Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Chargebee site name (e.g. mycompany — the subdomain of your Chargebee URL)"
+        },
+        {
+          "label": "Encoded API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'api_key:' (with colon, empty password). Command: echo -n 'your_api_key:' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "chargebee_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Chargebee user access to billing and subscription management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "chargebee_data_masking",
+      "name": "Data Masking",
+      "description": "Verifies Chargebee customer data is accessible only via authenticated API with proper scoping",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

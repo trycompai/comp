@@ -1,0 +1,35 @@
+{
+  "slug": "honeycomb",
+  "name": "Honeycomb",
+  "description": "Monitor Honeycomb observability configuration — verify datasets and team access for distributed tracing compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.honeycomb.io/api/",
+  "baseUrl": "https://api.honeycomb.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "honeycomb_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Honeycomb datasets are configured for observability and tracing",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "honeycomb_utility_monitoring",
+      "name": "Utility Monitoring",
+      "description": "Verifies Honeycomb queries and SLOs are configured for ongoing observability",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

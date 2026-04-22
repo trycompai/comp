@@ -1,0 +1,35 @@
+{
+  "slug": "strongdm",
+  "name": "StrongDM",
+  "description": "Infrastructure access management platform. Monitor resource access and audit logs.",
+  "category": "Security",
+  "docsUrl": "https://www.strongdm.com/docs/api/",
+  "baseUrl": "https://api.strongdm.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "strongdm_app_availability",
+      "name": "StrongDM App Availability",
+      "description": "Checks that the StrongDM API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "strongdm_employee_access",
+      "name": "StrongDM Employee Access",
+      "description": "Verifies access to StrongDM.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,52 @@
+{
+  "slug": "deputy",
+  "name": "Deputy",
+  "description": "Workforce management platform for scheduling, time tracking, and compliance.",
+  "category": "HR & People",
+  "docsUrl": "https://www.deputy.com/api-doc/API",
+  "baseUrl": "https://once.deputy.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Deputy\n2. Go to your account icon → API Access\n3. Click 'Get Access Token'\n4. Enter your Deputy URL and the token below",
+      "credentialFields": [
+        {
+          "label": "Deputy Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Deputy URL (e.g. https://yourcompany.na.deputy.com). Found in your browser address bar."
+        },
+        {
+          "label": "Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Deputy → Account → API Access → Get Access Token."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "deputy_app_availability",
+      "name": "Deputy App Availability",
+      "description": "Verifies Deputy API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "deputy_employee_access",
+      "name": "Deputy Employee Access",
+      "description": "Verifies employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

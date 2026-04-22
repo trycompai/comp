@@ -1,0 +1,45 @@
+{
+  "slug": "mailchimp",
+  "name": "Mailchimp",
+  "description": "Monitor Mailchimp subscriber lists and data handling for email marketing compliance",
+  "category": "Productivity",
+  "docsUrl": "https://mailchimp.com/developer/marketing/api/",
+  "baseUrl": "https://us1.api.mailchimp.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Mailchimp > Profile > Extras > API keys\n2. Create a new API key\n3. Note your data center suffix from the key (e.g. 'us1' in 'xxx-us1')\n4. Encode: base64('anystring:your_api_key')\n5. Enter encoded value + data center below",
+      "credentialFields": [
+        {
+          "label": "Encoded API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'anystring:your_api_key'. Example: base64('user:abc123def456-us1'). Use https://www.base64encode.org/"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "mailchimp_contact_information",
+      "name": "Contact Information",
+      "description": "Verifies Mailchimp subscriber lists are maintained",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mailchimp_data_masking",
+      "name": "Data Masking",
+      "description": "Verifies Mailchimp GDPR data management tools are configured",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

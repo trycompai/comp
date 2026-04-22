@@ -1,0 +1,35 @@
+{
+  "slug": "mosyle",
+  "name": "Mosyle",
+  "description": "Apple Mobile Device Management (MDM) solution for managing iPads, iPhones, Macs, and Apple TVs in educational and enterprise environments.",
+  "category": "Security",
+  "docsUrl": null,
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Retrieve a comprehensive list of all managed devices from Mosyle, including iPads, iPhones, Macs, and Apple TVs with their security status and configuration details.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Identify devices that meet security requirements including supervision status, encryption, and compliance with organizational security policies.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

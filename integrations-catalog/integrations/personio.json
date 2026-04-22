@@ -1,0 +1,35 @@
+{
+  "slug": "personio",
+  "name": "Personio",
+  "description": "Monitor Personio employee records and status for HR compliance",
+  "category": "HR & People",
+  "docsUrl": "https://developer.personio.de/reference",
+  "baseUrl": "https://api.personio.de/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "personio_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Personio employees and verifies only active employees have access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "personio_employee_verification",
+      "name": "Employee Verification",
+      "description": "Verifies all Personio employees have work email addresses on file",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { FrameworkOverview } from './components/FrameworkOverview';
 import { FrameworkRequirements } from './components/FrameworkRequirements';
+import { FrameworkTimeline } from './components/FrameworkTimeline';
 
 interface PageProps {
   params: Promise<{
@@ -47,6 +48,7 @@ export default async function FrameworkPage({ params }: PageProps) {
         tasks={framework.tasks || []}
         evidenceSubmissions={framework.evidenceSubmissions || []}
       />
+      <FrameworkTimeline frameworkInstanceId={frameworkInstanceId} />
       <FrameworkRequirements
         requirementDefinitions={framework.requirementDefinitions || []}
         frameworkInstanceWithControls={frameworkInstanceWithControls}

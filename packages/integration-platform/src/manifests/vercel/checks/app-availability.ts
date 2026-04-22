@@ -1,5 +1,11 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
+import {
+  applyVercelProjectFilter,
+  filteredProjectsVariable,
+  parseVercelProjectFilter,
+  projectFilterModeVariable,
+} from '../variables';
 import type {
   VercelDeploymentsResponse,
   VercelProject,
@@ -18,7 +24,7 @@ export const appAvailabilityCheck: IntegrationCheck = {
   name: 'App Availability',
   description: 'Verify Vercel projects have active, healthy deployments',
   taskMapping: TASK_TEMPLATES.appAvailability,
-  variables: [],
+  variables: [projectFilterModeVariable, filteredProjectsVariable],
 
   run: async (ctx: CheckContext) => {
     ctx.log('Starting Vercel App Availability check');
@@ -66,10 +72,44 @@ export const appAvailabilityCheck: IntegrationCheck = {
       return;
     }
 
+    const filter = parseVercelProjectFilter(ctx.variables);
+    const scopedProjects = applyVercelProjectFilter(projects, filter);
+    if (filter.mode !== 'all' && scopedProjects.length === 0) {
+      ctx.fail({
+        title: 'Project filter matched no projects',
+        resourceType: 'vercel',
+        resourceId: 'project-filter',
+        severity: 'medium',
+        description: `Filter mode "${filter.mode}" with ${filter.selectedIds.size} selected project(s) resolved to zero projects in scope. This may indicate deleted or renamed projects.`,
+        remediation: 'Open the Configure sheet for this automation and review the selected projects.',
+        evidence: {
+          filterMode: filter.mode,
+          selectedProjectIds: Array.from(filter.selectedIds),
+          availableProjectIds: projects.map((p) => p.id),
+        },
+      });
+      return;
+    }
+    ctx.log(
+      `Project filter mode=${filter.mode}, scoped ${scopedProjects.length} of ${projects.length} projects`,
+    );
+    ctx.pass({
+      title: 'Project filter applied',
+      resourceType: 'vercel',
+      resourceId: 'project-filter',
+      description: `Mode: ${filter.mode}. Projects in scope: ${scopedProjects.length}/${projects.length}.`,
+      evidence: {
+        filterMode: filter.mode,
+        selectedProjectIds: Array.from(filter.selectedIds),
+        scopedProjectIds: scopedProjects.map((p) => p.id),
+        totalProjectCount: projects.length,
+      },
+    });
+
     // Transient states where Vercel keeps the previous READY deployment serving traffic
     const transitionalStates = new Set(['BUILDING', 'QUEUED', 'INITIALIZING']);
 
-    for (const project of projects.slice(0, 10)) {
+    for (const project of scopedProjects.slice(0, 10)) {
       try {
         const params = new URLSearchParams({ projectId: project.id, limit: '1', target: 'production' });
         if (teamId) params.set('teamId', teamId);

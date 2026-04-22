@@ -1,0 +1,38 @@
+{
+  "slug": "qonto",
+  "name": "Qonto",
+  "description": "Qonto business finance platform for European companies",
+  "category": "HR & People",
+  "docsUrl": "https://api-doc.qonto.com",
+  "baseUrl": "https://thirdparty.qonto.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Qonto\n2. Go to Settings → Integrations\n3. Copy your API key (format: login:secret_key)\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Qonto → Settings → Integrations → API Key (format: login:secret_key)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "qonto_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Qonto organization members to verify financial access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

@@ -3,12 +3,15 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { filterDescriptionByFrameworks } from './description-framework-filter';
 import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
+import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
+import { TimelinesService } from '../timelines/timelines.service';
 
 function computeNextTaskReviewDate(
   frequency: TaskFrequency | null | undefined,
@@ -32,7 +35,12 @@ function computeNextTaskReviewDate(
 
 @Injectable()
 export class TasksService {
-  constructor(private readonly taskNotifierService: TaskNotifierService) {}
+  private readonly logger = new Logger(TasksService.name);
+
+  constructor(
+    private readonly taskNotifierService: TaskNotifierService,
+    private readonly timelinesService: TimelinesService,
+  ) {}
 
   /**
    * Resolve a user actor for API-key authenticated requests.
@@ -406,6 +414,17 @@ export class TasksService {
           );
         });
 
+      // Any task status change can shift AUTO_TASKS metric in either
+      // direction (done/not_relevant can complete a phase; back to
+      // todo/in_progress can regress one). checkAutoCompletePhases also
+      // kicks off regression reconciliation, so fire on every change.
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
+
       return { updatedCount: result.count };
     } catch (error) {
       console.error('Error updating task statuses:', error);
@@ -504,6 +523,14 @@ export class TasksService {
           'No tasks were deleted. Check task IDs or organization access.',
         );
       }
+
+      // Check timeline auto-completion after bulk task deletion (total task count changed)
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
       return { deletedCount: result.count };
     } catch (error) {
@@ -691,6 +718,15 @@ export class TasksService {
           .catch((error) => {
             console.error('Failed to send status change notifications:', error);
           });
+
+        // Any status change can shift AUTO_TASKS metric in either direction,
+        // and checkAutoCompletePhases also triggers regression reconciliation.
+        checkAutoCompletePhases({
+          organizationId,
+          timelinesService: this.timelinesService,
+        }).catch((err) => {
+          this.logger.warn('timeline auto-complete check failed', err);
+        });
       }
 
       // Write audit logs and send notifications for assignee changes
@@ -821,6 +857,16 @@ export class TasksService {
         },
       });
 
+      // Task creation drops the AUTO_TASKS completion % (denominator up,
+      // numerator unchanged), so reconciliation can regress a COMPLETED
+      // phase back to IN_PROGRESS if we're now under 100%.
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
+
       return {
         id: task.id,
         title: task.title,
@@ -899,6 +945,14 @@ export class TasksService {
 
     await db.task.delete({
       where: { id: taskId },
+    });
+
+    // Check timeline auto-completion after task deletion (total task count changed)
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
     });
   }
 
@@ -1162,6 +1216,14 @@ export class TasksService {
       });
 
       return updated;
+    });
+
+    // Check timeline auto-completion when task is approved (status changed to done)
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
     });
 
     return updatedTask;

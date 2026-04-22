@@ -1,0 +1,35 @@
+{
+  "slug": "better-uptime",
+  "name": "Better Stack",
+  "description": "Uptime monitoring and incident management platform.",
+  "category": "Monitoring",
+  "docsUrl": "https://betterstack.com/docs/uptime/api/",
+  "baseUrl": "https://uptime.betterstack.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "better_uptime_app_availability",
+      "name": "Better Stack App Availability",
+      "description": "Checks Better Stack app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "better_uptime_employee_access",
+      "name": "Better Stack Employee Access",
+      "description": "Checks Better Stack employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

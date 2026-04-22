@@ -1,0 +1,64 @@
+{
+  "slug": "eset-protect",
+  "name": "ESET Protect",
+  "description": "Monitor ESET Protect Cloud managed devices and endpoint security compliance",
+  "category": "Security",
+  "docsUrl": "https://help.eset.com/eset_connect/en-US/",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to ESET Protect Cloud console\n2. Go to More > Users > API Users\n3. Create a new API user with Device Management read permissions\n4. Note your region from the console URL (eu, de, us, jpn, or ca)\n5. Enter the API username, password, and region prefix",
+      "credentialFields": [
+        {
+          "label": "API Username",
+          "type": "text",
+          "required": true,
+          "helpText": "The username of the API user created in ESET Protect Cloud"
+        },
+        {
+          "label": "API Password",
+          "type": "password",
+          "required": true,
+          "helpText": "The password for the API user"
+        },
+        {
+          "label": "Region",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ESET region prefix: eu, de, us, jpn, or ca"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Lists all managed devices enrolled in ESET Protect Cloud",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies endpoint protection status across all managed devices",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that ESET Protect has incident detection and alerting configured",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

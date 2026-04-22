@@ -1,0 +1,64 @@
+{
+  "slug": "microsoft-defender",
+  "name": "Microsoft Defender for Endpoint",
+  "description": "Connect Microsoft Defender for Endpoint to monitor device health, security alerts, and vulnerability management across your organization.",
+  "category": "Security",
+  "docsUrl": "https://learn.microsoft.com/en-us/defender-endpoint/api/",
+  "baseUrl": "https://api.security.microsoft.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Azure Portal → Microsoft Entra ID → App registrations\n2. Click 'New registration', name it (e.g. 'CompAI Defender'), register\n3. Note the Application (client) ID and Directory (tenant) ID\n4. Go to 'Certificates & secrets' → 'New client secret', copy the value\n5. Go to 'API permissions' → 'Add a permission' → 'APIs my organization uses'\n6. Search for 'Microsoft Threat Protection' (or 'WindowsDefenderATP')\n7. Select 'Application permissions' and add: Machine.Read.All, Alert.Read.All, Vulnerability.Read.All\n8. Click 'Grant admin consent' for your organization\n9. Paste the Tenant ID, Client ID, and Client Secret below",
+      "credentialFields": [
+        {
+          "label": "Tenant ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Azure AD (Entra ID) tenant ID. Found in Azure Portal → Microsoft Entra ID → Overview."
+        },
+        {
+          "label": "Client ID (Application ID)",
+          "type": "text",
+          "required": true,
+          "helpText": "The Application (client) ID from your Azure AD app registration."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "A client secret generated for your Azure AD app registration."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "microsoft_defender_device_list",
+      "name": "Device List",
+      "description": "Retrieves devices managed by Microsoft Defender for Endpoint and verifies they are active and reporting.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "microsoft_defender_monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Checks for unresolved security alerts in Microsoft Defender for Endpoint and reports severity-based findings.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "microsoft_defender_vulnerability_scanning",
+      "name": "Vulnerability Scanning",
+      "description": "Retrieves vulnerabilities detected by Microsoft Defender for Endpoint and reports critical and high severity findings.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

@@ -1,0 +1,57 @@
+{
+  "slug": "huntress",
+  "name": "Huntress",
+  "description": "Monitor Huntress managed detection and response (MDR/EDR) platform for incident reports, agent status, and threat detection compliance",
+  "category": "Security",
+  "docsUrl": "https://api.huntress.io/docs",
+  "baseUrl": "https://api.huntress.io/v1/",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "text",
+          "required": true,
+          "helpText": "API Key from Account Settings > API Credentials in Huntress portal"
+        },
+        {
+          "label": "Secret Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Secret Key from Account Settings > API Credentials in Huntress portal"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "incident_reports",
+      "name": "Incident Response",
+      "description": "Verifies active threat detection and incident response capabilities by checking for incident reports in the Huntress platform",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Reviews Huntress agent deployment and device protection status across endpoints",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies threat monitoring and alerting capabilities are active across organizations",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

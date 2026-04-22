@@ -1,0 +1,35 @@
+{
+  "slug": "rudderstack",
+  "name": "RudderStack",
+  "description": "Customer data platform for event streaming and data routing. Monitor data sources.",
+  "category": "Monitoring",
+  "docsUrl": "https://www.rudderstack.com/docs/api/",
+  "baseUrl": "https://api.rudderstack.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "rudderstack_app_availability",
+      "name": "RudderStack App Availability",
+      "description": "Checks that the RudderStack API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "rudderstack_employee_access",
+      "name": "RudderStack Employee Access",
+      "description": "Verifies employee access to RudderStack via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

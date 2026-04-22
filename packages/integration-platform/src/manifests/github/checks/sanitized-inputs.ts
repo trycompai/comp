@@ -1,9 +1,11 @@
 /**
  * Sanitized Inputs Check
  *
- * Ensures repositories use a modern validation/sanitization library
- * (Zod or Pydantic) and have automated static analysis (CodeQL) enabled.
- * Supports monorepos by scanning all package.json/requirements.txt files.
+ * Ensures repositories use a modern validation/sanitization library and have
+ * automated static analysis (CodeQL) enabled. Supports monorepos by scanning
+ * all package.json / requirements.txt / pyproject.toml / composer.json files.
+ *
+ * Validation-library detection covers JS/TS, Python, and PHP ecosystems.
  *
  * Code scanning detection supports:
  * - GitHub CodeQL default setup
@@ -21,10 +23,43 @@ import type {
 } from '../types';
 import { parseRepoBranch, targetReposVariable } from '../variables';
 
-const JS_VALIDATION_PACKAGES = ['zod'];
-const PY_VALIDATION_PACKAGES = ['pydantic'];
+const JS_VALIDATION_PACKAGES = [
+  'zod',
+  'yup',
+  'joi',
+  '@effect/schema',
+  'effect',
+  'valibot',
+  'ajv',
+  'class-validator',
+  'io-ts',
+  'superstruct',
+  'runtypes',
+];
 
-const TARGET_FILES = ['package.json', 'requirements.txt', 'pyproject.toml'];
+const PY_VALIDATION_PACKAGES = [
+  'pydantic',
+  'marshmallow',
+  'cerberus',
+  'voluptuous',
+  'jsonschema',
+  'schematics',
+  'typeguard',
+];
+
+const PHP_VALIDATION_PACKAGES = [
+  'laravel/framework',
+  'respect/validation',
+  'symfony/validator',
+  'vlucas/valitron',
+];
+
+const TARGET_FILES = [
+  'package.json',
+  'requirements.txt',
+  'pyproject.toml',
+  'composer.json',
+];
 
 // Patterns that indicate code scanning is configured in a workflow
 const CODE_SCANNING_PATTERNS = [
@@ -76,7 +111,7 @@ export const sanitizedInputsCheck: IntegrationCheck = {
   id: 'sanitized_inputs',
   name: 'Sanitized Inputs & Code Scanning',
   description:
-    'Verifies repositories use Zod/Pydantic for input validation and have GitHub CodeQL scanning enabled. Scans entire repository including monorepo subdirectories.',
+    'Verifies repositories use a supported input-validation library (JS/TS, Python, or PHP) and have GitHub CodeQL scanning enabled. Scans entire repository including monorepo subdirectories.',
   service: 'code-security',
   taskMapping: TASK_TEMPLATES.sanitizedInputs,
   defaultSeverity: 'medium',
@@ -151,12 +186,64 @@ export const sanitizedInputsCheck: IntegrationCheck = {
       return null;
     };
 
-    const checkPythonFile = (content: string, filePath: string): ValidationMatch | null => {
-      const lower = content.toLowerCase();
-      for (const candidate of PY_VALIDATION_PACKAGES) {
-        if (lower.includes(candidate)) {
-          return { library: candidate, file: filePath };
+    const escapeRegex = (s: string): string =>
+      s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const checkPythonFile = (
+      content: string,
+      filePath: string,
+      fileName: string,
+    ): ValidationMatch | null => {
+      // Parse line-by-line so we can strip comments and match package names as
+      // standalone tokens (e.g. don't match "schema" inside "jsonschema" or inside
+      // a prose comment).
+      //
+      // Comment syntax differs between the two Python dependency file formats:
+      //   - pyproject.toml (TOML): `#` starts a comment anywhere outside a string.
+      //     Dependency values are always quoted, so stripping at any `#` is safe
+      //     — the package name in `"name @ url#egg=name"` appears before the URL.
+      //   - requirements.txt (pip): `#` only starts a comment when preceded by
+      //     whitespace (or at line start). This preserves VCS URL fragments like
+      //     `git+https://...#egg=pydantic` used for editable installs.
+      const isTOML = fileName === 'pyproject.toml';
+      const stripCommentRegex = isTOML ? /#.*$/ : /(^|\s)#.*$/;
+      const lines = content.split('\n');
+      for (const rawLine of lines) {
+        const line = rawLine.replace(stripCommentRegex, '').toLowerCase();
+        if (!line.trim()) continue;
+        for (const candidate of PY_VALIDATION_PACKAGES) {
+          const escaped = escapeRegex(candidate.toLowerCase());
+          // Match the package name as a standalone token. Leading context: start
+          // of line or a separator commonly preceding a package name (whitespace,
+          // quote, bracket, comma, semicolon, or `=` for `#egg=name` VCS syntax).
+          // Trailing context: end of line or a separator that can follow a
+          // package name (whitespace, version operator, bracket, quote, comma,
+          // semicolon).
+          const pattern = new RegExp(
+            `(?:^|[\\s"'\\[,;=])${escaped}(?:$|[\\s=<>!~\\[\\]"',;])`,
+          );
+          if (pattern.test(line)) {
+            return { library: candidate, file: filePath };
+          }
         }
+      }
+      return null;
+    };
+
+    const checkComposerJson = (content: string, filePath: string): ValidationMatch | null => {
+      try {
+        const pkg = JSON.parse(content);
+        const deps = {
+          ...(pkg.require || {}),
+          ...(pkg['require-dev'] || {}),
+        };
+        for (const candidate of PHP_VALIDATION_PACKAGES) {
+          if (deps[candidate]) {
+            return { library: candidate, file: filePath };
+          }
+        }
+      } catch {
+        // Invalid JSON, skip
       }
       return null;
     };
@@ -182,7 +269,10 @@ export const sanitizedInputsCheck: IntegrationCheck = {
           const match = checkPackageJson(content, entry.path);
           if (match) matches.push(match);
         } else if (fileName === 'requirements.txt' || fileName === 'pyproject.toml') {
-          const match = checkPythonFile(content, entry.path);
+          const match = checkPythonFile(content, entry.path, fileName);
+          if (match) matches.push(match);
+        } else if (fileName === 'composer.json') {
+          const match = checkComposerJson(content, entry.path);
           if (match) matches.push(match);
         }
       }
@@ -335,15 +425,20 @@ export const sanitizedInputsCheck: IntegrationCheck = {
           .filter((e) => e.type === 'blob' && TARGET_FILES.includes(getFileName(e.path)))
           .map((e) => e.path);
 
+        const supportedLibraries = [
+          ...JS_VALIDATION_PACKAGES,
+          ...PY_VALIDATION_PACKAGES,
+          ...PHP_VALIDATION_PACKAGES,
+        ].join(', ');
+
         ctx.fail({
           title: `No input validation library found in ${repo.name}`,
-          description:
-            'Could not detect Zod or Pydantic in any package.json, requirements.txt, or pyproject.toml. Implement input validation and sanitization using one of these libraries.',
+          description: `Could not detect a supported validation library in any package.json, requirements.txt, pyproject.toml, or composer.json. Checked for: ${supportedLibraries}. If you use a different library, you can mark this task manually with evidence.`,
           resourceType: 'repository',
           resourceId: repo.full_name,
           severity: 'medium',
           remediation:
-            'Add Zod (JavaScript/TypeScript) or Pydantic (Python) to enforce schema validation on inbound data.',
+            'Add a supported input-validation library (e.g. Zod/Yup/Joi/Valibot for JS/TS, Pydantic/Marshmallow for Python, Laravel/Respect-Validation for PHP) to enforce schema validation on inbound data.',
           evidence: {
             [repo.full_name]: {
               validation: {

@@ -1,0 +1,45 @@
+{
+  "slug": "instatus",
+  "name": "Instatus",
+  "description": "Instatus status page platform for communicating service incidents",
+  "category": "Monitoring",
+  "docsUrl": "https://instatus.com/api",
+  "baseUrl": "https://api.instatus.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Instatus\n2. Go to Account Settings\n3. Copy your API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Instatus → Account Settings → API Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "instatus_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Instatus status page platform is accessible",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "instatus_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Instatus status pages to verify incident communication setup",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

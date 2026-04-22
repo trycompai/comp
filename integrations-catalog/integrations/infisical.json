@@ -1,0 +1,35 @@
+{
+  "slug": "infisical",
+  "name": "Infisical",
+  "description": "Monitor Infisical secrets management workspaces and member access for secrets hygiene compliance",
+  "category": "Security",
+  "docsUrl": "https://infisical.com/docs/api-reference/overview/introduction",
+  "baseUrl": "https://app.infisical.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "infisical_secure_secrets",
+      "name": "Secure Secrets",
+      "description": "Verifies Infisical projects are configured for secrets management",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "infisical_separation",
+      "name": "Separation of Environments",
+      "description": "Verifies Infisical workspaces have environment separation configured",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

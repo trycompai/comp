@@ -1,0 +1,35 @@
+{
+  "slug": "pulumi-cloud",
+  "name": "Pulumi Cloud",
+  "description": "Infrastructure as code platform. Monitor stacks and deployments.",
+  "category": "Infrastructure",
+  "docsUrl": "https://www.pulumi.com/docs/pulumi-cloud/reference/",
+  "baseUrl": "https://api.pulumi.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "pulumi_cloud_app_availability",
+      "name": "Pulumi Cloud App Availability",
+      "description": "Checks Pulumi Cloud app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "pulumi_cloud_employee_access",
+      "name": "Pulumi Cloud Employee Access",
+      "description": "Checks Pulumi Cloud employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

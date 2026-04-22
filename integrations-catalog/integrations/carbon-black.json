@@ -1,0 +1,35 @@
+{
+  "slug": "carbon-black",
+  "name": "Carbon Black",
+  "description": "Monitor VMware Carbon Black endpoint protection and device security compliance",
+  "category": "Security",
+  "docsUrl": "https://developer.carbonblack.com/reference/carbon-black-cloud/",
+  "baseUrl": "https://defense.conferdeploy.net/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "cb_secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies Carbon Black endpoints are registered and protected",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "cb_device_list",
+      "name": "Device List",
+      "description": "Lists all endpoints managed by Carbon Black for device inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

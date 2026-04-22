@@ -1,0 +1,51 @@
+{
+  "slug": "crowdstrike",
+  "name": "CrowdStrike Falcon",
+  "description": "Monitor CrowdStrike Falcon endpoint security platform for device protection and threat detection compliance",
+  "category": "Security",
+  "docsUrl": "https://developer.crowdstrike.com/crowdstrike/docs/welcome",
+  "baseUrl": "https://api.crowdstrike.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Falcon Console at https://falcon.crowdstrike.com\n2. Go to Support & Resources → API Clients and Keys\n3. Click Add new API client\n4. Enable scopes: Hosts (Read), User Management (Read)\n5. Copy the Client ID and Secret",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Falcon Console → Support → API Clients and Keys → Add new API client"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Generated when creating an API client in Falcon Console"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "crowdstrike_secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies CrowdStrike Falcon agent is deployed and protecting endpoints",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "crowdstrike_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews CrowdStrike Falcon users with access to the endpoint security platform",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

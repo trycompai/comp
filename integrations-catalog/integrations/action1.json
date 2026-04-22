@@ -1,0 +1,72 @@
+{
+  "slug": "action1",
+  "name": "Action1",
+  "description": "Patch management and endpoint management platform. Monitor vulnerability status, patch compliance, and device inventory.",
+  "category": "Security",
+  "docsUrl": "https://www.action1.com/api-documentation/",
+  "baseUrl": "https://app.action1.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Action1 at https://app.action1.com\n2. Go to Settings → API Credentials\n3. Click 'Add' to create new credentials\n4. Copy the Client ID and Client Secret\n5. Paste both values below",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Action1 Console → Settings → API Credentials."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Generated when you create API credentials in Action1."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "action1_app_availability",
+      "name": "Action1 App Availability",
+      "description": "Verifies Action1 API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "action1_asset_inventory",
+      "name": "Action1 Asset Inventory",
+      "description": "Verifies endpoint inventory in Action1.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "action1_vulnerability_management",
+      "name": "Action1 Vulnerability Management",
+      "description": "Verifies vulnerability scanning and tracking in Action1.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "action1_patch_validation",
+      "name": "Action1 Patch Validation",
+      "description": "Checks for missing patches across managed endpoints.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "action1_device_configuration",
+      "name": "Action1 Device Configuration",
+      "description": "Verifies device configuration policies are defined in Action1.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

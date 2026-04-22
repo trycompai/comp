@@ -1,0 +1,72 @@
+{
+  "slug": "entra-id",
+  "name": "Microsoft Entra ID",
+  "description": "Identity provider and directory service. Monitor user access, MFA status, and conditional access policies.",
+  "category": "Identity & Access",
+  "docsUrl": "https://learn.microsoft.com/en-us/graph/api/overview",
+  "baseUrl": "https://graph.microsoft.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Azure Portal → Microsoft Entra ID → App registrations\n2. Click 'New registration', name it 'CompAI Integration'\n3. Under API permissions, add Microsoft Graph (Application):\n   - User.Read.All\n   - Directory.Read.All\n   - AuditLog.Read.All\n4. Click 'Grant admin consent'\n5. Go to Certificates & secrets → New client secret\n6. Copy the Tenant ID, Application ID, and Client Secret below",
+      "credentialFields": [
+        {
+          "label": "Tenant ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Azure Portal → Microsoft Entra ID → Overview → Tenant ID."
+        },
+        {
+          "label": "Application (Client) ID",
+          "type": "text",
+          "required": true,
+          "helpText": "From your Azure AD app registration → Overview → Application (client) ID."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "From your Azure AD app registration → Certificates & secrets → New client secret."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "entra_id_app_availability",
+      "name": "Entra ID App Availability",
+      "description": "Verifies Microsoft Graph API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "entra_id_employee_access",
+      "name": "Entra ID Identity & Access",
+      "description": "Verifies user directory access via Microsoft Graph.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "entra_id_mfa",
+      "name": "Entra ID MFA Compliance",
+      "description": "Checks MFA registration status.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "entra_id_access_review",
+      "name": "Entra ID Access Review",
+      "description": "Verifies access reviews are configured in Entra ID.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

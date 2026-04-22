@@ -20,12 +20,17 @@ import {
   removeMemberFromOrgChart,
   notifyOwnerOfUnassignedItems,
 } from './utils/member-deactivation';
+import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
+import { TimelinesService } from '../timelines/timelines.service';
 
 @Injectable()
 export class PeopleService {
   private readonly logger = new Logger(PeopleService.name);
 
-  constructor(private readonly fleetService: FleetService) {}
+  constructor(
+    private readonly fleetService: FleetService,
+    private readonly timelinesService: TimelinesService,
+  ) {}
 
   async findAllByOrganization(
     organizationId: string,
@@ -170,6 +175,15 @@ export class PeopleService {
       this.logger.log(
         `Created member: ${member.user.name} (${member.id}) for organization ${organizationId}`,
       );
+
+      // Check timeline auto-completion after member creation (people metrics may change)
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
       return member;
     } catch (error) {
       if (
@@ -250,6 +264,16 @@ export class PeopleService {
       this.logger.log(
         `Bulk create completed for organization ${organizationId}: ${summary.successful}/${summary.total} successful`,
       );
+
+      // Check timeline auto-completion after bulk member creation
+      if (created.length > 0) {
+        checkAutoCompletePhases({
+          organizationId,
+          timelinesService: this.timelinesService,
+        }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+      }
 
       return { created, errors, summary };
     } catch (error) {
@@ -380,6 +404,14 @@ export class PeopleService {
       `Deactivated member: ${member.user.name} (${memberId}) from organization ${organizationId}`,
     );
 
+    // Check timeline auto-completion after member deactivation (people metrics may change)
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
     return {
       success: true,
       deletedMember: {
@@ -414,11 +446,21 @@ export class PeopleService {
       );
     }
 
-    return db.member.update({
+    const reactivatedMember = await db.member.update({
       where: { id: memberId, organizationId },
       data: { deactivated: false, isActive: true },
       select: MemberQueries.MEMBER_SELECT,
     });
+
+    // Check timeline auto-completion after member reactivation (people metrics may change)
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
+    return reactivatedMember;
   }
 
   async unlinkDevice(

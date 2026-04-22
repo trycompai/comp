@@ -1,0 +1,35 @@
+{
+  "slug": "codefresh",
+  "name": "Codefresh",
+  "description": "CI/CD platform for Kubernetes and GitOps deployments. Monitor pipelines and user access.",
+  "category": "Development",
+  "docsUrl": "https://codefresh.io/docs/docs/integrations/codefresh-api/",
+  "baseUrl": "https://g.codefresh.io",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "codefresh_app_availability",
+      "name": "Codefresh App Availability",
+      "description": "Checks that the Codefresh API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "codefresh_employee_access",
+      "name": "Codefresh Employee Access",
+      "description": "Verifies employee access to Codefresh via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

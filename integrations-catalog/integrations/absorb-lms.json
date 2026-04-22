@@ -1,0 +1,63 @@
+{
+  "slug": "absorb-lms",
+  "name": "Absorb LMS",
+  "description": "Monitor user access, admin roles, and employee enrollment in Absorb Learning Management System",
+  "category": "Productivity",
+  "docsUrl": "https://docs.myabsorb.com/",
+  "baseUrl": "https://myabsorb.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Portal URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Absorb LMS portal URL, e.g. yourcompany.myabsorb.com (no https:// prefix)"
+        },
+        {
+          "label": "Admin Username",
+          "type": "text",
+          "required": true,
+          "helpText": "An LMS administrator account username"
+        },
+        {
+          "label": "Admin Password",
+          "type": "password",
+          "required": true,
+          "helpText": "The LMS administrator account password"
+        },
+        {
+          "label": "API Private Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your unique API Private Key (GUID). Request from Absorb Support or your System Admin."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "user_access",
+      "name": "Employee Access",
+      "description": "Lists all users/learners in Absorb LMS to verify active employee access and account status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "admin_roles",
+      "name": "Role-based Access Controls",
+      "description": "Checks administrative roles and permissions in Absorb LMS to ensure proper role-based access control",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

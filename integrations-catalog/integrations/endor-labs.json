@@ -1,0 +1,44 @@
+{
+  "slug": "endor-labs",
+  "name": "Endor Labs",
+  "description": "Endor Labs software supply chain security platform",
+  "category": "Security",
+  "docsUrl": "https://docs.endorlabs.com/",
+  "baseUrl": "https://api.endorlabs.com/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Endor Labs\n2. Go to Settings → API Keys\n3. Create an API key\n4. Enter your namespace and paste the key below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Endor Labs → Settings → API Keys → Create API key"
+        },
+        {
+          "label": "Namespace",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Endor Labs namespace (organization identifier)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "endorlabs_code_security",
+      "name": "Code Changes",
+      "description": "Verifies Endor Labs has projects connected for supply chain security",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

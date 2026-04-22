@@ -1,0 +1,51 @@
+{
+  "slug": "rapid7",
+  "name": "Rapid7",
+  "description": "Rapid7 InsightVM vulnerability management",
+  "category": "Security",
+  "docsUrl": "https://docs.rapid7.com/insight/",
+  "baseUrl": "https://us.api.insight.rapid7.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to insight.rapid7.com\n2. Manage Platform → API Keys\n3. Create a new API key\n4. Enter your region (us, eu, ca, etc.)",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "insight.rapid7.com → Manage Platform → API Keys"
+        },
+        {
+          "label": "Region",
+          "type": "text",
+          "required": false,
+          "helpText": "Your Insight Platform region: us, us2, us3, eu, ca, au, ap (default: us)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "rapid7_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Rapid7 platform users to verify access is properly managed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "rapid7_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Rapid7 InsightVM has active vulnerability scans configured",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

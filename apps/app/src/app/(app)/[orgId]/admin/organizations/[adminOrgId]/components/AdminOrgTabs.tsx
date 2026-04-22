@@ -33,6 +33,8 @@ import { VendorsTab } from './VendorsTab';
 import { ContextTab } from './ContextTab';
 import { EvidenceTab } from './EvidenceTab';
 import { PoliciesTab } from './PoliciesTab';
+import { TimelineTab } from './TimelineTab';
+import { FeatureFlagsTab } from './FeatureFlagsTab';
 
 interface OrgMember {
   id: string;
@@ -168,6 +170,8 @@ export function AdminOrgTabs({
                 <TabsTrigger value="vendors">Vendors</TabsTrigger>
                 <TabsTrigger value="context">Context</TabsTrigger>
                 <TabsTrigger value="evidence">Evidence</TabsTrigger>
+                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="feature-flags">Feature Flags</TabsTrigger>
               </TabsList>
             }
           >
@@ -213,6 +217,12 @@ export function AdminOrgTabs({
         </TabsContent>
         <TabsContent value="evidence">
           <EvidenceTab orgId={org.id} />
+        </TabsContent>
+        <TabsContent value="timeline">
+          <TimelineTab orgId={org.id} />
+        </TabsContent>
+        <TabsContent value="feature-flags">
+          <FeatureFlagsTab orgId={org.id} />
         </TabsContent>
       </PageLayout>
 

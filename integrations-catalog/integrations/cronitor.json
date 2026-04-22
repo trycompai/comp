@@ -1,0 +1,35 @@
+{
+  "slug": "cronitor",
+  "name": "Cronitor",
+  "description": "Monitoring platform for cron jobs, heartbeats, and scheduled tasks.",
+  "category": "Monitoring",
+  "docsUrl": "https://cronitor.io/docs/api",
+  "baseUrl": "https://cronitor.io",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "cronitor_app_availability",
+      "name": "Cronitor App Availability",
+      "description": "Checks that the Cronitor API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "cronitor_employee_access",
+      "name": "Cronitor Employee Access",
+      "description": "Verifies employee access to Cronitor via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

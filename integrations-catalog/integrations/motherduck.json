@@ -1,0 +1,35 @@
+{
+  "slug": "motherduck",
+  "name": "MotherDuck",
+  "description": "Serverless analytics platform built on DuckDB. Monitor organization access.",
+  "category": "Cloud",
+  "docsUrl": "https://motherduck.com/docs/",
+  "baseUrl": "https://api.motherduck.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "motherduck_app_availability",
+      "name": "MotherDuck App Availability",
+      "description": "Checks that the MotherDuck API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "motherduck_employee_access",
+      "name": "MotherDuck Employee Access",
+      "description": "Verifies employee access to MotherDuck via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

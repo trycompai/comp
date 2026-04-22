@@ -275,11 +275,18 @@ export async function updatePolicyInDatabase(
     }
 
     await db.$transaction(async (tx) => {
-      // Clear version references first to avoid FK constraint issues during deletion
+      // Clear version references first to avoid FK constraint issues during deletion.
+      // Clear approverId alongside pendingVersionId so the two fields never diverge
+      // — any lingering approverId without a pending version produces the inconsistent
+      // state behind CS-254/260/261 ("No pending version to approve").
       if (policy.versions.length > 0) {
         await tx.policy.update({
           where: { id: policyId },
-          data: { currentVersionId: null, pendingVersionId: null },
+          data: {
+            currentVersionId: null,
+            pendingVersionId: null,
+            approverId: null,
+          },
         });
         await tx.policyVersion.deleteMany({ where: { policyId } });
       }

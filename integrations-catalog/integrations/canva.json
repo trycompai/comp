@@ -1,0 +1,35 @@
+{
+  "slug": "canva",
+  "name": "Canva",
+  "description": "Design and visual content platform. Monitor team access and workspace.",
+  "category": "Productivity",
+  "docsUrl": "https://www.canva.dev/docs/connect/",
+  "baseUrl": "https://api.canva.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "canva_app_availability",
+      "name": "Canva App Availability",
+      "description": "Checks that the Canva API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "canva_employee_access",
+      "name": "Canva Employee Access",
+      "description": "Verifies access to Canva.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

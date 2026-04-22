@@ -1,0 +1,56 @@
+{
+  "slug": "auvik",
+  "name": "Auvik",
+  "description": "Monitor Auvik network infrastructure for device inventory, alerts, and network management compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://support.auvik.com/hc/en-us/articles/360031007111-Auvik-API-Integration-Guide",
+  "baseUrl": "https://auvikapi.{{credentials.region}}.my.auvik.com",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "API Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Auvik > Admin > Integrations > API"
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Auvik > Admin > Integrations > API"
+        },
+        {
+          "label": "Region",
+          "type": "select",
+          "required": true,
+          "helpText": "Select your Auvik data region"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "List network devices from Auvik",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerts",
+      "name": "Monitoring & Alerting",
+      "description": "Check alerts from Auvik network monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

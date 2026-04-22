@@ -1,0 +1,35 @@
+{
+  "slug": "port-io",
+  "name": "Port",
+  "description": "Internal developer portal for service catalog and developer self-service.",
+  "category": "Development",
+  "docsUrl": "https://docs.getport.io/api-reference/port-api",
+  "baseUrl": "https://api.getport.io",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "port_io_app_availability",
+      "name": "Port App Availability",
+      "description": "Checks that the Port API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "port_io_employee_access",
+      "name": "Port Employee Access",
+      "description": "Verifies employee access to Port via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

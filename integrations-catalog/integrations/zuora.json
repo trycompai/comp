@@ -1,0 +1,51 @@
+{
+  "slug": "zuora",
+  "name": "Zuora",
+  "description": "Zuora subscription management and recurring billing platform",
+  "category": "Productivity",
+  "docsUrl": "https://developer.zuora.com",
+  "baseUrl": "https://rest.zuora.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Zuora\n2. Go to Settings → Administration → OAuth Client Management\n3. Create a new OAuth Client\n4. Enter the Client ID and Client Secret below",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Zuora → Settings → Administration → OAuth Client Management"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Zuora → Settings → Administration → OAuth Client Management"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "zuora_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Zuora billing platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "zuora_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Zuora users to verify billing access is managed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

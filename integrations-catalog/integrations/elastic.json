@@ -1,0 +1,45 @@
+{
+  "slug": "elastic",
+  "name": "Elastic Cloud",
+  "description": "Monitor Elastic Cloud cluster health and user accounts for monitoring and access review compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://www.elastic.co/docs/api/",
+  "baseUrl": "https://elastic.co/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Kibana\n2. Go to Stack Management > Security > API keys\n3. Create an API key with cluster:monitor and security permissions\n4. The key is provided as id:value — base64-encode it\n5. Paste the encoded value below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Create an API key in Kibana > Stack Management > Security > API keys. Use the base64-encoded 'id:value' format"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "cluster_health",
+      "name": "Monitoring & Alerting",
+      "description": "Checks that Elastic cluster health is not in a critical (red) state",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "user_review",
+      "name": "Access Review Log",
+      "description": "Retrieves Elasticsearch users for access review log compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

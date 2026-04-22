@@ -1,0 +1,45 @@
+{
+  "slug": "bitbucket",
+  "name": "Bitbucket",
+  "description": "Monitor Bitbucket repositories and workspace members for source code management and access compliance",
+  "category": "Development",
+  "docsUrl": "https://developer.atlassian.com/cloud/bitbucket/rest/",
+  "baseUrl": "https://api.bitbucket.org/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Bitbucket\n2. Go to Personal Settings > App passwords\n3. Create an App Password with Repositories:Read and Account:Read permissions\n4. Base64-encode 'your_username:app_password'\n5. Paste the encoded string below",
+      "credentialFields": [
+        {
+          "label": "Base64 Encoded Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64-encode 'username:app_password'. Create an App Password in Bitbucket > Personal Settings > App passwords"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "repos",
+      "name": "Code Changes",
+      "description": "Lists Bitbucket repositories to verify code changes are tracked",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "members",
+      "name": "Employee Access",
+      "description": "Reviews Bitbucket workspace members for employee access management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

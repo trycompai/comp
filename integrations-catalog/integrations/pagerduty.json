@@ -1,0 +1,45 @@
+{
+  "slug": "pagerduty",
+  "name": "PagerDuty",
+  "description": "Monitor PagerDuty incident response configuration including services, escalation policies, and on-call schedules for compliance evidence",
+  "category": "Security",
+  "docsUrl": "https://developer.pagerduty.com/api-reference/",
+  "baseUrl": "https://api.pagerduty.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to PagerDuty.\n2. Go to Integrations > API Access Keys.\n3. Click 'Create New API Key', give it a description (e.g. 'Comp AI'), select Read-Only.\n4. Copy the API key and paste it below.",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in PagerDuty > Integrations > API Access Keys. Create a General Access Key with Read-Only access."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "incident_response",
+      "name": "Incident Response",
+      "description": "Verifies that PagerDuty services have escalation policies configured for incident response",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that PagerDuty escalation policies are configured with escalation rules for alerting",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

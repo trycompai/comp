@@ -421,6 +421,87 @@ describe('policyAcknowledgmentDigest', () => {
     });
   });
 
+  it('rolls up across orgs by email when the same person has multiple User records (schema allows duplicate emails)', async () => {
+    // Regression: User.email is not @unique in the Prisma schema, so one
+    // person can end up with multiple user rows — typically when they get
+    // invited to separate orgs through different flows. Keying the rollup
+    // on user.id split those duplicates into one email each. Rollup must
+    // collapse by normalized email instead.
+    mockFindMany.mockResolvedValueOnce([
+      {
+        id: 'org_1',
+        name: 'Acme',
+        policy: [
+          {
+            id: 'pol_a',
+            name: 'Access Control',
+            signedBy: [],
+            visibility: 'ALL',
+            visibleToDepartments: [],
+          },
+        ],
+        members: [
+          {
+            id: 'mem_1',
+            department: 'it',
+            user: {
+              id: 'usr_alice_first',
+              name: 'Alice',
+              email: 'alice@example.com',
+              role: null,
+            },
+          },
+        ],
+      },
+      {
+        id: 'org_2',
+        name: 'Beta',
+        policy: [
+          {
+            id: 'pol_b',
+            name: 'Backup',
+            signedBy: [],
+            visibility: 'ALL',
+            visibleToDepartments: [],
+          },
+        ],
+        members: [
+          {
+            id: 'mem_2',
+            department: 'hr',
+            user: {
+              // Different user row, same email — Alice was re-invited under
+              // a separate user record.
+              id: 'usr_alice_second',
+              name: 'Alice',
+              email: 'ALICE@example.com',
+              role: null,
+            },
+          },
+        ],
+      },
+    ]);
+
+    const result = await taskUnderTest.run({ timestamp: new Date() } as never);
+
+    expect(mockSendEmailViaApi).toHaveBeenCalledTimes(1);
+    const call = mockSendEmailViaApi.mock.calls[0][0] as {
+      to: string;
+      subject: string;
+      organizationId: string;
+    };
+    expect(call.subject).toBe(
+      'You have 2 policies to review across 2 organizations',
+    );
+    expect(call.organizationId).toBe('org_1');
+    expect(result).toMatchObject({
+      success: true,
+      orgsProcessed: 2,
+      recipients: 1,
+      emailsSent: 1,
+    });
+  });
+
   it('drops a single org from the rollup when the user is unsubscribed there, but still emails about other orgs', async () => {
     mockFindMany.mockResolvedValueOnce([
       {

@@ -1,0 +1,35 @@
+{
+  "slug": "clockify",
+  "name": "Clockify",
+  "description": "Time tracking platform. Monitor workspace access.",
+  "category": "Productivity",
+  "docsUrl": "https://clockify.me/developers-api",
+  "baseUrl": "https://api.clockify.me",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "clockify_app_availability",
+      "name": "Clockify App Availability",
+      "description": "Checks Clockify app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "clockify_employee_access",
+      "name": "Clockify Employee Access",
+      "description": "Checks Clockify employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

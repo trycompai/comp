@@ -27,7 +27,10 @@ export async function getOverviewScores(organizationId: string) {
       }),
       db.organization.findUnique({
         where: { id: organizationId },
-        select: { securityTrainingStepEnabled: true },
+        select: {
+          securityTrainingStepEnabled: true,
+          deviceAgentStepEnabled: true,
+        },
       }),
       db.frameworkInstance.findFirst({
         where: { organizationId, framework: { name: 'HIPAA' } },
@@ -36,6 +39,7 @@ export async function getOverviewScores(organizationId: string) {
     ]);
 
   const securityTrainingStepEnabled = org?.securityTrainingStepEnabled === true;
+  const deviceAgentStepEnabled = org?.deviceAgentStepEnabled === true;
   const hasHipaaFramework = !!hipaaInstance;
 
   // Policy breakdown
@@ -70,7 +74,55 @@ export async function getOverviewScores(organizationId: string) {
     );
 
     const memberIds = activeEmployees.map((e) => e.id);
+    const memberUserIds = activeEmployees
+      .map((e) => e.userId)
+      .filter((id): id is string => !!id);
     const needsCompletions = securityTrainingStepEnabled || hasHipaaFramework;
+    let membersWithInstalledDevices = new Set<string>();
+
+    if (deviceAgentStepEnabled) {
+      const [installedDevices, membersWithFleetLabels, fleetPolicyResults] =
+        await Promise.all([
+          db.device.findMany({
+            where: {
+              organizationId,
+              memberId: { in: memberIds },
+            },
+            select: { memberId: true },
+            distinct: ['memberId'],
+          }),
+          db.member.findMany({
+            where: {
+              organizationId,
+              id: { in: memberIds },
+              NOT: { fleetDmLabelId: null },
+            },
+            select: { id: true, userId: true },
+          }),
+          memberUserIds.length > 0
+            ? db.fleetPolicyResult.findMany({
+                where: {
+                  organizationId,
+                  userId: { in: memberUserIds },
+                },
+                select: { userId: true },
+                distinct: ['userId'],
+              })
+            : Promise.resolve([]),
+        ]);
+
+      const fleetUserIdsWithData = new Set(
+        fleetPolicyResults.map((result) => result.userId),
+      );
+      const memberIdsWithFleetData = membersWithFleetLabels
+        .filter((member) => fleetUserIdsWithData.has(member.userId))
+        .map((member) => member.id);
+
+      membersWithInstalledDevices = new Set([
+        ...installedDevices.map((device) => device.memberId),
+        ...memberIdsWithFleetData,
+      ]);
+    }
 
     const trainingCompletions = needsCompletions
       ? await db.employeeTrainingVideoCompletion.findMany({
@@ -94,11 +146,15 @@ export async function getOverviewScores(organizationId: string) {
       const hasCompletedHipaa = hasHipaaFramework
         ? completedVideoIds.includes(HIPAA_TRAINING_ID)
         : true;
+      const hasInstalledDevice = deviceAgentStepEnabled
+        ? membersWithInstalledDevices.has(emp.id)
+        : true;
 
       if (
         hasAcceptedAllPolicies &&
         hasCompletedAllTraining &&
-        hasCompletedHipaa
+        hasCompletedHipaa &&
+        hasInstalledDevice
       ) {
         completedMembers++;
       }

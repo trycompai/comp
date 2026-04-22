@@ -49,6 +49,8 @@ import { SecretsModule } from './secrets/secrets.module';
 import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
 import { StripeModule } from './stripe/stripe.module';
 import { AdminOrganizationsModule } from './admin-organizations/admin-organizations.module';
+import { AdminFeatureFlagsModule } from './admin-feature-flags/admin-feature-flags.module';
+import { TimelinesModule } from './timelines/timelines.module';
 
 @Module({
   imports: [
@@ -110,6 +112,8 @@ import { AdminOrganizationsModule } from './admin-organizations/admin-organizati
     SecurityPenetrationTestsModule,
     StripeModule,
     AdminOrganizationsModule,
+    AdminFeatureFlagsModule,
+    TimelinesModule,
   ],
   controllers: [AppController],
   providers: [

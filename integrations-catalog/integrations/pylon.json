@@ -1,0 +1,45 @@
+{
+  "slug": "pylon",
+  "name": "Pylon",
+  "description": "Monitor Pylon customer operations platform for support access and B2B communication compliance",
+  "category": "Communication",
+  "docsUrl": "https://docs.usepylon.com/api-reference",
+  "baseUrl": "https://api.usepylon.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Pylon at https://app.usepylon.com\n2. Go to Settings → API\n3. Generate a new API key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Pylon Settings → API"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "pylon_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Pylon users with access to customer operations data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "pylon_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Pylon customer operations platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

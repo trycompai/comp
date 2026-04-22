@@ -1,0 +1,35 @@
+{
+  "slug": "cobalt",
+  "name": "Cobalt",
+  "description": "Pentest as a service platform. Monitor security assessments.",
+  "category": "Security",
+  "docsUrl": "https://docs.cobalt.io/",
+  "baseUrl": "https://api.cobalt.io",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "cobalt_app_availability",
+      "name": "Cobalt App Availability",
+      "description": "Checks Cobalt app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "cobalt_employee_access",
+      "name": "Cobalt Employee Access",
+      "description": "Checks Cobalt employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

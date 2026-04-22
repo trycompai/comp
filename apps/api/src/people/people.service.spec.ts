@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PeopleService } from './people.service';
 import { FleetService } from '../lib/fleet.service';
+import { TimelinesService } from '../timelines/timelines.service';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
 
@@ -85,11 +86,14 @@ describe('PeopleService', () => {
     removeHostById: jest.fn(),
   };
 
+  const mockTimelinesService = {};
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PeopleService,
         { provide: FleetService, useValue: mockFleetService },
+        { provide: TimelinesService, useValue: mockTimelinesService },
       ],
     }).compile();
 

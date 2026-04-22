@@ -1,0 +1,57 @@
+{
+  "slug": "n-able-n-sight",
+  "name": "N-able N-sight RMM",
+  "description": "Monitor N-able N-sight remote monitoring and management platform for device compliance, monitoring alerts, and endpoint inventory",
+  "category": "Security",
+  "docsUrl": "https://documentation.n-able.com/remote-management/userguide/Content/api_key.htm",
+  "baseUrl": "https://www.systemmonitor.co.uk/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Server URL",
+          "type": "text",
+          "required": false,
+          "helpText": "Your N-sight RMM server URL (varies by region)"
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": false,
+          "helpText": "API key from N-sight RMM Dashboard > Account Settings > API Access"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Inventory of monitored devices and endpoints managed by N-sight RMM",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Validates device security compliance and configuration status",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerts",
+      "name": "Monitoring & Alerting",
+      "description": "Monitors system alerts and check failures for proactive issue detection",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

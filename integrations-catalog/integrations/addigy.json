@@ -1,0 +1,35 @@
+{
+  "slug": "addigy",
+  "name": "Addigy",
+  "description": "Monitor managed Apple devices for security compliance and device management status",
+  "category": "Security",
+  "docsUrl": null,
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Retrieve all managed devices in the organization",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Check device compliance and security configuration",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

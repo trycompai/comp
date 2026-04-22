@@ -1,0 +1,35 @@
+{
+  "slug": "pulumi",
+  "name": "Pulumi",
+  "description": "Monitor Pulumi infrastructure-as-code stacks for cloud infrastructure compliance",
+  "category": "Infrastructure",
+  "docsUrl": "https://www.pulumi.com/docs/reference/service-rest-api/",
+  "baseUrl": "https://api.pulumi.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "pulumi_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Pulumi stacks for IaC infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "pulumi_separation",
+      "name": "Separation of Environments",
+      "description": "Verifies Pulumi has separate stacks for different environments",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

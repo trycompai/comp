@@ -68,8 +68,19 @@ vi.mock('../hooks/useAuditLogs', () => ({
 
 // Mock child components to isolate testing
 vi.mock('./PolicyAlerts', () => ({
-  PolicyAlerts: ({ policy }: { policy: unknown }) => (
-    <div data-testid="policy-alerts">{policy ? 'alerts' : 'no-alerts'}</div>
+  PolicyAlerts: ({
+    policy,
+    isPendingApproval,
+  }: {
+    policy: unknown;
+    isPendingApproval: boolean;
+  }) => (
+    <div
+      data-testid="policy-alerts"
+      data-pending={String(isPendingApproval)}
+    >
+      {policy ? 'alerts' : 'no-alerts'}
+    </div>
   ),
 }));
 
@@ -237,6 +248,69 @@ describe('PolicyPageTabs', () => {
       expect(
         screen.queryByTestId('policy-delete-dialog'),
       ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('isPendingApproval derivation', () => {
+    beforeEach(() => {
+      setMockPermissions(ADMIN_PERMISSIONS);
+    });
+
+    it('is true only when both approverId and pendingVersionId are set', () => {
+      const policy = {
+        ...basePolicy,
+        approverId: 'mem-1',
+        pendingVersionId: 'ver-1',
+      };
+      render(
+        <PolicyPageTabs
+          {...defaultProps}
+          policy={policy}
+          isPendingApproval={true}
+        />,
+      );
+      expect(screen.getByTestId('policy-alerts')).toHaveAttribute(
+        'data-pending',
+        'true',
+      );
+    });
+
+    it('is false when approverId is set but pendingVersionId is null (inconsistent state)', () => {
+      const stalePolicy = {
+        ...basePolicy,
+        approverId: 'mem-1',
+        pendingVersionId: null,
+      };
+      render(
+        <PolicyPageTabs
+          {...defaultProps}
+          policy={stalePolicy}
+          isPendingApproval={true}
+        />,
+      );
+      expect(screen.getByTestId('policy-alerts')).toHaveAttribute(
+        'data-pending',
+        'false',
+      );
+    });
+
+    it('is false when pendingVersionId is set but approverId is null', () => {
+      const policy = {
+        ...basePolicy,
+        approverId: null,
+        pendingVersionId: 'ver-1',
+      };
+      render(
+        <PolicyPageTabs
+          {...defaultProps}
+          policy={policy}
+          isPendingApproval={false}
+        />,
+      );
+      expect(screen.getByTestId('policy-alerts')).toHaveAttribute(
+        'data-pending',
+        'false',
+      );
     });
   });
 });

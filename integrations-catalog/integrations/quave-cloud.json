@@ -1,0 +1,70 @@
+{
+  "slug": "quave-cloud",
+  "name": "Quave Cloud",
+  "description": "Monitor security settings and app environments in Quave Cloud",
+  "category": "Cloud",
+  "docsUrl": "https://docs.quave.cloud/public-api/get-started",
+  "baseUrl": "https://api.quave.cloud/api/public/v1/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Your user token from Quave Cloud Profile page."
+        },
+        {
+          "label": "Account ID (leave blank to check all accounts)",
+          "type": "text",
+          "required": false,
+          "helpText": "To scope checks to a single account, paste your Account ID here. Find it in Quave Cloud dashboard. Leave blank to scan all accounts."
+        },
+        {
+          "label": "App IDs (optional - comma-separated)",
+          "type": "text",
+          "required": false,
+          "helpText": "To check only specific apps or environments, enter their App IDs or App Env IDs separated by commas. Leave blank to check all."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "quave_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all Quave Cloud accounts accessible with the provided token",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "quave_app_availability",
+      "name": "App Availability",
+      "description": "Checks SSL, firewall, and security settings for all app environments",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "quave_tls_https",
+      "name": "TLS / HTTPS",
+      "description": "Verifies SSL/TLS is enabled on all app environments",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "quave_firewall",
+      "name": "Production Firewall",
+      "description": "Verifies restricted network policy is enabled on all app environments",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

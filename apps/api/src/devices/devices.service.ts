@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { db } from '@db';
+import { getDeviceComplianceStatus } from '@trycompai/utils/devices';
 import { FleetService } from '../lib/fleet.service';
 import { DeviceResponseDto } from './dto/device-responses.dto';
 import type { MemberResponseDto } from './dto/member-responses.dto';
@@ -331,7 +332,14 @@ export class DevicesService {
     dto.updated_at = device.updatedAt.toISOString();
     dto.display_name = device.name;
     dto.display_text = device.name;
-    dto.status = device.isCompliant ? 'compliant' : 'non-compliant';
+    const complianceStatus = getDeviceComplianceStatus({
+      isCompliant: device.isCompliant,
+      lastCheckIn: device.lastCheckIn,
+    });
+    // Keep the existing string shape ('compliant' | 'non-compliant' | 'stale') so
+    // downstream API consumers see a predictable value.
+    dto.status =
+      complianceStatus === 'non_compliant' ? 'non-compliant' : complianceStatus;
     dto.disk_encryption_enabled = device.diskEncryptionEnabled;
     dto.source = 'device_agent';
     // Default empty values for FleetDM-specific fields

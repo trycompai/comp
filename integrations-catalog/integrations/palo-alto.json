@@ -1,0 +1,35 @@
+{
+  "slug": "palo-alto",
+  "name": "Palo Alto Networks SASE",
+  "description": "Secure access service edge platform. Monitor network security policies and access.",
+  "category": "Security",
+  "docsUrl": "https://pan.dev/sase/api/",
+  "baseUrl": "https://api.sase.paloaltonetworks.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "palo_alto_app_availability",
+      "name": "Palo Alto SASE App Availability",
+      "description": "Verifies Palo Alto SASE API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "palo_alto_employee_access",
+      "name": "Palo Alto SASE Employee Access",
+      "description": "Verifies access to Palo Alto SASE management.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "greenhouse",
+  "name": "Greenhouse",
+  "description": "Monitor Greenhouse recruiting pipeline and user access for HR compliance",
+  "category": "HR & People",
+  "docsUrl": "https://developers.greenhouse.io/harvest.html",
+  "baseUrl": "https://harvest.greenhouse.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "greenhouse_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Greenhouse users and verifies access is appropriate",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "greenhouse_employee_descriptions",
+      "name": "Employee Descriptions",
+      "description": "Verifies Greenhouse has job postings with proper descriptions",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

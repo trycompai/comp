@@ -1,0 +1,45 @@
+{
+  "slug": "freshservice",
+  "name": "Freshservice",
+  "description": "Monitor Freshservice IT agents and incident tickets for ITSM compliance",
+  "category": "Productivity",
+  "docsUrl": "https://api.freshservice.com/",
+  "baseUrl": "https://yoursubdomain.freshservice.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Freshservice Profile Settings (top-right avatar)\n2. Copy your API Key\n3. Encode: base64('your_api_key:X')\n4. Enter the encoded value below along with your subdomain",
+      "credentialFields": [
+        {
+          "label": "Encoded API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode your API key: base64('your_api_key:X'). Use https://www.base64encode.org/ — note the literal ':X' suffix"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "freshservice_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Freshservice agents and their IT service access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "freshservice_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies Freshservice has a process for tracking and resolving incidents",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

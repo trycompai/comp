@@ -1,0 +1,51 @@
+{
+  "slug": "cloudinary",
+  "name": "Cloudinary",
+  "description": "Monitor Cloudinary media management for asset security and API access compliance",
+  "category": "Cloud",
+  "docsUrl": "https://cloudinary.com/documentation/admin_api",
+  "baseUrl": "https://api.cloudinary.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Cloudinary at https://cloudinary.com/console\n2. Go to Settings → Access Keys\n3. Copy your API Key and API Secret\n4. Base64 encode 'api_key:api_secret'\n5. Enter your cloud name and encoded credentials below",
+      "credentialFields": [
+        {
+          "label": "Cloud Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Cloudinary cloud name (found in Dashboard)"
+        },
+        {
+          "label": "Encoded API Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'api_key:api_secret'. Found in Cloudinary Dashboard → Settings → Access Keys. Command: echo -n 'api_key:api_secret' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "cloudinary_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Reviews Cloudinary media usage and storage for asset infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "cloudinary_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Cloudinary sub-accounts and access keys for media access management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "abnormal-security",
+  "name": "Abnormal Security",
+  "description": "Monitor Abnormal Security AI-powered email security for threat detection and compliance",
+  "category": "Security",
+  "docsUrl": "https://app.abnormalsecurity.com/settings/integrations/api",
+  "baseUrl": "https://api.abnormalplatform.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Abnormal Security at https://app.abnormalsecurity.com\n2. Go to Settings → Integrations → API\n3. Generate an API token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Abnormal Security Portal → Settings → Integrations → API"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "abnormal_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Abnormal Security is detecting and blocking email threats",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "abnormal_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Abnormal Security vendor integrations are configured for email protection",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,58 @@
+{
+  "slug": "nordpass",
+  "name": "NordPass",
+  "description": "Monitor NordPass activity logs, admin access, and credential management compliance",
+  "category": "Security",
+  "docsUrl": "https://support.nordpass.com/hc/en-us/articles/23485641117329-Activity-Logs-API",
+  "baseUrl": "https://api-activities.us.nordpass.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "Note: This integration requires a NordPass Enterprise plan.\n\n1. Log in to the NordPass Admin Panel as an Owner or Admin\n2. Go to Settings > Token Management\n3. Generate a new token and copy it\n4. Select your data center region (EU or US)\n5. Paste the token below\n\nIf you don't see Token Management in your settings, you may need to upgrade to the Enterprise plan.",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Your NordPass API token (Enterprise plan required). Go to Admin Panel > Settings > Token Management to generate one."
+        },
+        {
+          "label": "Data Center Region",
+          "type": "select",
+          "required": true,
+          "helpText": "Select the data center where your NordPass organization is located"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "nordpass_app_availability",
+      "name": "App Availability",
+      "description": "Verifies connectivity to the NordPass Activity Logs API",
+      "defaultSeverity": "critical",
+      "enabled": true
+    },
+    {
+      "slug": "nordpass_activity_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Fetches recent NordPass activity logs for compliance monitoring and audit trail evidence",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "nordpass_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews NordPass organization member activity to verify active access management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

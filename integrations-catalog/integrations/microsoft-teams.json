@@ -1,0 +1,57 @@
+{
+  "slug": "microsoft-teams",
+  "name": "Microsoft Teams",
+  "description": "Team collaboration and messaging platform. Monitor team access and communication compliance.",
+  "category": "Communication",
+  "docsUrl": "https://learn.microsoft.com/en-us/graph/teams-concept-overview",
+  "baseUrl": "https://graph.microsoft.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Azure Portal → Microsoft Entra ID → App registrations\n2. Use the same app as Entra ID, or create a new one\n3. Add Microsoft Graph (Application) permissions:\n   - Team.ReadBasic.All\n   - Channel.ReadBasic.All\n4. Click 'Grant admin consent'\n5. Enter the Tenant ID, Application ID, and Client Secret below",
+      "credentialFields": [
+        {
+          "label": "Tenant ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Azure Portal → Microsoft Entra ID → Overview → Tenant ID."
+        },
+        {
+          "label": "Application (Client) ID",
+          "type": "text",
+          "required": true,
+          "helpText": "From your Azure AD app registration."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "From your Azure AD app registration → Certificates & secrets."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "microsoft_teams_app_availability",
+      "name": "Microsoft Teams App Availability",
+      "description": "Verifies Microsoft Teams API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "microsoft_teams_employee_access",
+      "name": "Microsoft Teams Employee Access",
+      "description": "Verifies team membership access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

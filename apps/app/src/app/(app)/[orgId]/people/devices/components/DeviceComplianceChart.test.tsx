@@ -48,6 +48,8 @@ function makeAgentDevice(overrides: Partial<DeviceWithChecks> = {}): DeviceWithC
     installedAt: new Date().toISOString(),
     user: { name: 'Test User', email: 'test@example.com' },
     source: 'device_agent',
+    complianceStatus: 'compliant',
+    daysSinceLastCheckIn: 0,
     ...overrides,
   };
 }
@@ -140,11 +142,25 @@ describe('DeviceComplianceChart', () => {
   it('counts agent devices correctly — mixed compliance', () => {
     const devices = [
       makeAgentDevice({ isCompliant: true }),
-      makeAgentDevice({ isCompliant: false }),
+      makeAgentDevice({ isCompliant: false, complianceStatus: 'non_compliant' }),
     ];
 
     render(<DeviceComplianceChart fleetDevices={[]} agentDevices={devices} />);
     expect(screen.getByText('Compliant (1)')).toBeInTheDocument();
+    expect(screen.getByText('Non-Compliant (1)')).toBeInTheDocument();
+  });
+
+  it('counts stale agent devices as Non-Compliant (chart stays binary)', () => {
+    const devices = [
+      makeAgentDevice({
+        isCompliant: true,
+        complianceStatus: 'stale',
+        daysSinceLastCheckIn: 30,
+      }),
+    ];
+
+    render(<DeviceComplianceChart fleetDevices={[]} agentDevices={devices} />);
+    expect(screen.getByText('Compliant (0)')).toBeInTheDocument();
     expect(screen.getByText('Non-Compliant (1)')).toBeInTheDocument();
   });
 
@@ -181,7 +197,7 @@ describe('DeviceComplianceChart', () => {
   it('combines agent and fleet devices in total count', () => {
     const agentDevices = [
       makeAgentDevice({ isCompliant: true }),
-      makeAgentDevice({ isCompliant: false }),
+      makeAgentDevice({ isCompliant: false, complianceStatus: 'non_compliant' }),
     ];
     const fleetDevices = [
       makeFleetDevice({

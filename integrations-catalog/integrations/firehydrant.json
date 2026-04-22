@@ -1,0 +1,35 @@
+{
+  "slug": "firehydrant",
+  "name": "FireHydrant",
+  "description": "Monitor FireHydrant incident response platform for team access and runbook coverage",
+  "category": "Monitoring",
+  "docsUrl": "https://developers.firehydrant.io/docs/api/",
+  "baseUrl": "https://api.firehydrant.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "firehydrant_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies FireHydrant has runbooks configured for incident response procedures",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "firehydrant_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews FireHydrant team members with incident response access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

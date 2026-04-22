@@ -1,0 +1,35 @@
+{
+  "slug": "sentinelone",
+  "name": "SentinelOne",
+  "description": "Monitor SentinelOne endpoint agents and threat status for device security compliance",
+  "category": "Security",
+  "docsUrl": "https://usea1.sentinelone.net/api-doc/overview",
+  "baseUrl": "https://usea1.sentinelone.net/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "s1_secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies SentinelOne agents are healthy and not infected",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "s1_device_list",
+      "name": "Device List",
+      "description": "Lists all endpoints managed by SentinelOne for device inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

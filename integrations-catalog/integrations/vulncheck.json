@@ -1,0 +1,45 @@
+{
+  "slug": "vulncheck",
+  "name": "VulnCheck",
+  "description": "VulnCheck vulnerability intelligence platform for exploit and threat data",
+  "category": "Security",
+  "docsUrl": "https://docs.vulncheck.com",
+  "baseUrl": "https://api.vulncheck.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to VulnCheck\n2. Go to Account → API Tokens\n3. Create a new token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "VulnCheck → Account → API Tokens → Create Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "vulncheck_app_availability",
+      "name": "App Availability",
+      "description": "Verifies VulnCheck vulnerability intelligence platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "vulncheck_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies VulnCheck team access to vulnerability intelligence",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "datto",
+  "name": "Datto",
+  "description": "Backup, disaster recovery, and business continuity platform. Monitor backup status.",
+  "category": "Infrastructure",
+  "docsUrl": "https://portal.dattobackup.com/integrations/xml-api",
+  "baseUrl": "https://api.datto.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "datto_app_availability",
+      "name": "Datto App Availability",
+      "description": "Checks that the Datto API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "datto_employee_access",
+      "name": "Datto Employee Access",
+      "description": "Verifies access to Datto.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

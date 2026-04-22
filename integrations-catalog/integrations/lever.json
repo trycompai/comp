@@ -1,0 +1,38 @@
+{
+  "slug": "lever",
+  "name": "Lever",
+  "description": "Lever applicant tracking system for talent acquisition",
+  "category": "HR & People",
+  "docsUrl": "https://hire.lever.co/developer/",
+  "baseUrl": "https://api.lever.co/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Lever\n2. Go to Settings → Integrations → API credentials\n3. Generate an API key\n4. Run: echo -n 'YOUR_API_KEY:' | base64\n5. Paste the output below",
+      "credentialFields": [
+        {
+          "label": "Basic Auth Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64-encode your API key with a colon: echo -n 'your_api_key:' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "lever_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Lever users to verify ATS access is managed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

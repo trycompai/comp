@@ -1,0 +1,35 @@
+{
+  "slug": "northflank",
+  "name": "Northflank",
+  "description": "Cloud platform for deploying and managing services. Monitor infrastructure.",
+  "category": "Infrastructure",
+  "docsUrl": "https://northflank.com/docs/v1/api",
+  "baseUrl": "https://api.northflank.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "northflank_app_availability",
+      "name": "Northflank App Availability",
+      "description": "Checks that the Northflank API is accessible with the provided credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "northflank_employee_access",
+      "name": "Northflank Employee Access",
+      "description": "Verifies employee access to Northflank via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

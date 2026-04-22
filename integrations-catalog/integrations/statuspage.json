@@ -1,0 +1,35 @@
+{
+  "slug": "statuspage",
+  "name": "Statuspage",
+  "description": "Monitor Atlassian Statuspage incidents and uptime for service availability compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://developer.statuspage.io/",
+  "baseUrl": "https://api.statuspage.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "statuspage_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Statuspage pages are configured and monitoring service availability",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "statuspage_incident_response",
+      "name": "Incident Response",
+      "description": "Checks for open incidents on Statuspage requiring resolution",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

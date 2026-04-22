@@ -1,0 +1,35 @@
+{
+  "slug": "qase",
+  "name": "Qase",
+  "description": "Monitor Qase test management — verify test cases and QA coverage for software quality compliance",
+  "category": "Development",
+  "docsUrl": "https://developers.qase.io/reference/",
+  "baseUrl": "https://api.qase.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "qase_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies Qase test projects are configured with test suites documenting software changes",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "qase_secure_code",
+      "name": "Secure Code",
+      "description": "Verifies Qase test runs are executed regularly to validate code quality",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

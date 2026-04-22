@@ -1,0 +1,58 @@
+{
+  "slug": "employment-hero",
+  "name": "Employment Hero",
+  "description": "Monitor Employment Hero HR platform for employee access management, role-based controls, and HR policy compliance",
+  "category": "HR & People",
+  "docsUrl": "https://developer.employmenthero.com/api-references/",
+  "baseUrl": "https://api.employmenthero.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "API Token (Bearer Token)",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Employment Hero OAuth2 Bearer token. Obtain from the Developer Portal in your Employment Hero account under your profile menu."
+        },
+        {
+          "label": "Organisation ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Employment Hero organisation ID (UUID). Found via GET /api/v1/organisations after authenticating."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "employment_hero_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews all employees in Employment Hero with access to the HR platform, identifying active and terminated users",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "employment_hero_rbac",
+      "name": "Role-based Access Controls",
+      "description": "Verifies employee roles and team assignments in Employment Hero to ensure proper access control governance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "employment_hero_policies",
+      "name": "Publish Policies",
+      "description": "Verifies that HR policies are configured and published in Employment Hero for organizational compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

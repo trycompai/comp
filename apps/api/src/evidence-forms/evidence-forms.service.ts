@@ -8,6 +8,7 @@ import {
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -20,6 +21,8 @@ import {
   type EvidenceFormFieldDefinition,
   type EvidenceFormType,
 } from './evidence-forms.definitions';
+import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
+import { TimelinesService } from '../timelines/timelines.service';
 
 const listQuerySchema = z.object({
   search: z.string().trim().optional(),
@@ -128,7 +131,12 @@ function normalizeSubmissionFormType<
 
 @Injectable()
 export class EvidenceFormsService {
-  constructor(private readonly attachmentsService: AttachmentsService) {}
+  private readonly logger = new Logger(EvidenceFormsService.name);
+
+  constructor(
+    private readonly attachmentsService: AttachmentsService,
+    private readonly timelinesService: TimelinesService,
+  ) {}
 
   private requireJwtUser(authContext: AuthContext): string {
     if (authContext.isApiKey || authContext.authType === 'api-key') {
@@ -407,6 +415,14 @@ export class EvidenceFormsService {
       where: { id: params.submissionId },
     });
 
+    // Check timeline auto-completion after evidence deletion
+    checkAutoCompletePhases({
+      organizationId: params.organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
     return { success: true, id: params.submissionId };
   }
 
@@ -464,7 +480,7 @@ export class EvidenceFormsService {
       throw new BadRequestException(message);
     }
 
-    return await db.evidenceSubmission
+    const submission = await db.evidenceSubmission
       .create({
         data: {
           organizationId: params.organizationId,
@@ -483,6 +499,16 @@ export class EvidenceFormsService {
         },
       })
       .then(normalizeSubmissionFormType);
+
+    // Check timeline auto-completion after evidence submission
+    checkAutoCompletePhases({
+      organizationId: params.organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
+    return submission;
   }
 
   async uploadFile(params: {
@@ -576,7 +602,7 @@ export class EvidenceFormsService {
     const downloadUrl =
       await this.attachmentsService.getPresignedDownloadUrl(fileKey);
 
-    return await db.evidenceSubmission
+    const submission = await db.evidenceSubmission
       .create({
         data: {
           organizationId: params.organizationId,
@@ -602,6 +628,16 @@ export class EvidenceFormsService {
         },
       })
       .then(normalizeSubmissionFormType);
+
+    // Check timeline auto-completion after evidence upload submission
+    checkAutoCompletePhases({
+      organizationId: params.organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
+    return submission;
   }
 
   async exportCsv(params: {

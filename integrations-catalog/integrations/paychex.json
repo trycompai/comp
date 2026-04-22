@@ -1,0 +1,45 @@
+{
+  "slug": "paychex",
+  "name": "Paychex",
+  "description": "Monitor Paychex payroll platform for employee data access and HR compliance",
+  "category": "HR & People",
+  "docsUrl": "https://developer.paychex.com/documentation",
+  "baseUrl": "https://api.paychex.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Sign up at https://developer.paychex.com\n2. Go to My Apps → Create App\n3. Copy Client ID and Client Secret\n4. Base64 encode 'client_id:client_secret': echo -n 'id:secret' | base64\n5. Enter the encoded value below",
+      "credentialFields": [
+        {
+          "label": "Encoded Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'client_id:client_secret'. Found in Paychex Developer Portal → My Apps. Command: echo -n 'id:secret' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "paychex_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Paychex payroll access and connected employee records",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "paychex_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Paychex payroll platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -97,6 +97,31 @@ export function canAccessRoute(permissions: UserPermissions, routeSegment: strin
 }
 
 /**
+ * CS-189: Auditor View visibility rule (product decision).
+ *
+ * "Auditor View" is scoped to audit work — it should only appear for users
+ * whose role explicitly grants audit access, not for owners/admins whose
+ * implicit all-permissions include `audit:read`.
+ *
+ * Show the tab iff:
+ *  - user has the built-in `auditor` role, OR
+ *  - user has a custom org role that explicitly grants `audit:read`.
+ *
+ * Owners/admins who want this tab can opt in by adding the auditor role
+ * to their membership or by creating a custom role that includes
+ * `audit:read`. Multi-role users are handled because `auditor` can be
+ * one of several roles on a membership.
+ */
+export function canAccessAuditorView(
+  roleString: string | null | undefined,
+  customRolePermissions: UserPermissions,
+): boolean {
+  const roles = parseRolesString(roleString);
+  if (roles.includes('auditor')) return true;
+  return hasPermission(customRolePermissions, 'audit', 'read');
+}
+
+/**
  * Ordered list of main navigation routes used to find a user's default landing page.
  * Order matches sidebar priority — the first accessible route becomes the default.
  */

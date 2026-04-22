@@ -1,0 +1,35 @@
+{
+  "slug": "webflow",
+  "name": "Webflow",
+  "description": "Monitor Webflow sites and publishing status for web presence compliance",
+  "category": "Cloud",
+  "docsUrl": "https://developers.webflow.com/reference/",
+  "baseUrl": "https://api.webflow.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "webflow_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Webflow sites are published and live",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "webflow_tls",
+      "name": "TLS / HTTPS",
+      "description": "Verifies Webflow sites have HTTPS and custom domains configured",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

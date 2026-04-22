@@ -191,7 +191,7 @@
         "db:getschema": "find ../../packages/db/prisma/schema -name '*.prisma' ! -name 'schema.prisma' -exec cp {} prisma/schema/ \\;",
         "db:migrate": "cd ../../packages/db && bunx prisma migrate dev && cd ../../apps/app",
         "deploy:trigger-prod": "npx trigger.dev@4.4.3 deploy",
-        "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"NODE_OPTIONS='--no-deprecation' next dev --turbo -p 3000\" \"NODE_OPTIONS='--no-deprecation' trigger dev\"",
+        "dev": "bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"NODE_OPTIONS='--no-deprecation' next dev --turbo -p 3000\" \"NODE_OPTIONS='--no-deprecation' trigger dev\"",
         "lint": "eslint . && prettier --check .",
         "prebuild": "bun run db:generate",
         "postinstall": "prisma generate --schema=./prisma/schema || exit 0",

@@ -1,0 +1,51 @@
+{
+  "slug": "duo-security",
+  "name": "Duo Security",
+  "description": "Monitor Duo Security MFA platform for user enrollment and authentication policy compliance",
+  "category": "Identity & Access",
+  "docsUrl": "https://duo.com/docs/adminapi",
+  "baseUrl": "https://api.duosecurity.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Duo Admin Panel at https://admin.duosecurity.com\n2. Go to Applications → Protect an Application\n3. Find Admin API → click Protect\n4. Copy the Integration Key, Secret Key, and API Hostname\n5. Base64 encode 'integration_key:secret_key': echo -n 'ikey:skey' | base64\n6. Enter both below",
+      "credentialFields": [
+        {
+          "label": "Encoded Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'integration_key:secret_key'. Found in Duo Admin Panel → Applications → Admin API. Command: echo -n 'DIXXXXXXXX:secret' | base64"
+        },
+        {
+          "label": "API Hostname",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Duo API hostname from the Admin API application (e.g. api-XXXXXXXX.duosecurity.com)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "duo_mfa",
+      "name": "2FA",
+      "description": "Verifies Duo Security MFA is active and users are enrolled",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "duo_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Duo Security user enrollment for MFA compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

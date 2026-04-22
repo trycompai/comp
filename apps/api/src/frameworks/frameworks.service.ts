@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { db, type EvidenceFormType } from '@db';
@@ -10,6 +11,8 @@ import {
   computeFrameworkComplianceScore,
 } from './frameworks-scores.helper';
 import { upsertOrgFrameworkStructure } from './frameworks-upsert.helper';
+import { createTimelinesForFrameworks } from './frameworks-timeline.helper';
+import { TimelinesService } from '../timelines/timelines.service';
 
 type RequirementDef = {
   id: string;
@@ -22,6 +25,10 @@ type RequirementDef = {
 
 @Injectable()
 export class FrameworksService {
+  private readonly logger = new Logger(FrameworksService.name);
+
+  constructor(private readonly timelinesService: TimelinesService) {}
+
   private async loadRequirementDefinitions(fi: {
     frameworkId: string | null;
     customFrameworkId: string | null;
@@ -414,6 +421,11 @@ export class FrameworksService {
       getOverviewScores(organizationId),
       userId ? getCurrentMember(organizationId, userId) : Promise.resolve(null),
     ]);
+
+    // checkAutoCompletePhases is driven from mutation hooks in
+    // tasks/policies/people/findings/evidence-forms services (it also triggers
+    // regression reconciliation via reconcileAutoPhasesForOrganization), so
+    // the dashboard read path no longer needs to fire it on every call.
     return { ...scores, currentMember };
   }
 
@@ -439,10 +451,23 @@ export class FrameworksService {
         tx,
       });
 
-      return { success: true, frameworksAdded: finalIds.length };
+      return { success: true, frameworksAdded: finalIds.length, finalIds };
     });
 
-    return result;
+    // Auto-create timeline instances from templates for newly added
+    // frameworks. Fire-and-forget so a timeline-creation failure never masks
+    // the primary transaction's success — partial state (e.g. only one SOC 2
+    // track created) is repaired on the next /timelines read because
+    // ensureTimelinesExist now always calls backfill (idempotent per track).
+    createTimelinesForFrameworks({
+      organizationId,
+      frameworkEditorIds: result.finalIds,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('createTimelinesForFrameworks failed after framework add', err);
+    });
+
+    return { success: result.success, frameworksAdded: result.frameworksAdded };
   }
 
   async findRequirement(

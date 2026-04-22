@@ -1,0 +1,35 @@
+{
+  "slug": "doppler",
+  "name": "Doppler",
+  "description": "Monitor Doppler secrets management — verify project configurations and team member access for secrets hygiene compliance",
+  "category": "Cloud",
+  "docsUrl": "https://docs.doppler.com/reference/api",
+  "baseUrl": "https://api.doppler.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "doppler_secure_secrets",
+      "name": "Secure Secrets",
+      "description": "Verifies Doppler projects are configured for secrets management across environments",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "doppler_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Doppler workplace members and their access roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

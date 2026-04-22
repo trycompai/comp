@@ -1,0 +1,45 @@
+{
+  "slug": "outreach",
+  "name": "Outreach",
+  "description": "Monitor Outreach sales engagement platform for team access and communication data compliance",
+  "category": "Productivity",
+  "docsUrl": "https://api.outreach.io/api/v2/docs",
+  "baseUrl": "https://api.outreach.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Outreach at https://app.outreach.io\n2. Go to your Profile → API Tokens\n3. Create a new API token with read access\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Outreach Profile → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "outreach_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Outreach users with access to the sales engagement platform",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "outreach_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Outreach sales engagement platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -59,7 +59,9 @@ describe('EvidenceFormsService', () => {
     getPresignedDownloadUrl: jest.fn(),
   } as unknown as AttachmentsService;
 
-  const service = new EvidenceFormsService(attachmentsServiceMock);
+  const timelinesServiceMock = {} as unknown as import('../timelines/timelines.service').TimelinesService;
+
+  const service = new EvidenceFormsService(attachmentsServiceMock, timelinesServiceMock);
   const mockedDb = db as unknown as MockDb;
 
   beforeEach(() => {

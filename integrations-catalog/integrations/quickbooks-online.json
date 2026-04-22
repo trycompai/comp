@@ -1,0 +1,35 @@
+{
+  "slug": "quickbooks-online",
+  "name": "QuickBooks Online",
+  "description": "Monitor QuickBooks Online employee records and access for HR compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.intuit.com/app/developer/qbo/docs/api/accounting/all-entities/employee",
+  "baseUrl": "https://quickbooks.api.intuit.com/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Create an app at https://developer.intuit.com\n2. Set environment to Production\n3. Add redirect URI: https://api.trycomp.ai/v1/integrations/oauth/callback\n4. Copy Client ID and Client Secret to Comp AI admin panel\n5. After connecting, enter your QuickBooks Company ID (found in the URL when logged into QuickBooks Online)",
+      "scopes": [
+        "com.intuit.quickbooks.accounting"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "qbo_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews QuickBooks Online employee records and verifies active vs terminated status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

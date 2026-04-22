@@ -2192,6 +2192,92 @@
         ]
       }
     },
+    "/v1/timelines": {
+      "get": {
+        "operationId": "TimelinesController_findAll_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List timelines for the organization",
+        "tags": [
+          "Timelines"
+        ]
+      }
+    },
+    "/v1/timelines/{id}": {
+      "get": {
+        "operationId": "TimelinesController_findOne_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a single timeline instance with phases",
+        "tags": [
+          "Timelines"
+        ]
+      }
+    },
+    "/v1/timelines/{id}/phases/{phaseId}/ready": {
+      "post": {
+        "operationId": "TimelinesController_markReadyForReview_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "phaseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a phase as ready for review",
+        "tags": [
+          "Timelines"
+        ]
+      }
+    },
     "/v1/risks": {
       "get": {
         "description": "Returns all risks for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",

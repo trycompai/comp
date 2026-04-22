@@ -1,0 +1,121 @@
+enum TimelineStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum TimelinePhaseStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum PhaseCompletionType {
+  AUTO_TASKS
+  AUTO_POLICIES
+  AUTO_PEOPLE
+  AUTO_FINDINGS
+  AUTO_UPLOAD
+  MANUAL
+}
+
+model TimelineTemplate {
+  id              String   @id @default(dbgenerated("generate_prefixed_cuid('tml'::text)"))
+  frameworkId     String
+  name            String
+  trackKey        String   @default("primary")
+  cycleNumber     Int
+  templateKey     String?
+  nextTemplateKey String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  framework FrameworkEditorFramework @relation(fields: [frameworkId], references: [id])
+  phases    TimelinePhaseTemplate[]
+  instances TimelineInstance[]
+
+  @@unique([frameworkId, trackKey, cycleNumber])
+  // Note: Postgres treats NULLs as distinct in unique indexes, so this
+  // constraint only enforces uniqueness among rows where templateKey is set.
+  // That's intentional — frameworks without explicit keys (legacy defaults)
+  // are uniquely identified by the (frameworkId, trackKey, cycleNumber)
+  // constraint above, so multiple NULL templateKey rows are permitted.
+  @@unique([frameworkId, templateKey])
+}
+
+model TimelinePhaseTemplate {
+  id                   String              @id @default(dbgenerated("generate_prefixed_cuid('tpt'::text)"))
+  templateId           String
+  name                 String
+  description          String?
+  groupLabel           String?
+  orderIndex           Int
+  defaultDurationWeeks Int
+  completionType       PhaseCompletionType @default(MANUAL)
+  locksTimelineOnComplete Boolean          @default(false)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  template TimelineTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  phases   TimelinePhase[]
+}
+
+model TimelineInstance {
+  id                 String         @id @default(dbgenerated("generate_prefixed_cuid('tli'::text)"))
+  organizationId     String
+  frameworkInstanceId String
+  templateId         String
+  trackKey           String         @default("primary")
+  cycleNumber        Int
+  status             TimelineStatus @default(DRAFT)
+  startDate          DateTime?
+  pausedAt           DateTime?
+  lockedAt           DateTime?
+  lockedById         String?
+  unlockedAt         DateTime?
+  unlockedById       String?
+  unlockReason       String?
+  completedAt        DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  frameworkInstance FrameworkInstance @relation(fields: [frameworkInstanceId], references: [id], onDelete: Cascade)
+  template         TimelineTemplate @relation(fields: [templateId], references: [id])
+  lockedBy         User?            @relation("TimelineInstanceLockedBy", fields: [lockedById], references: [id])
+  unlockedBy       User?            @relation("TimelineInstanceUnlockedBy", fields: [unlockedById], references: [id])
+  phases           TimelinePhase[]
+
+  @@unique([frameworkInstanceId, trackKey, cycleNumber])
+}
+
+model TimelinePhase {
+  id               String              @id @default(dbgenerated("generate_prefixed_cuid('tlp'::text)"))
+  instanceId       String
+  phaseTemplateId  String?
+  name             String
+  description      String?
+  groupLabel       String?
+  orderIndex       Int
+  status           TimelinePhaseStatus @default(PENDING)
+  startDate        DateTime?
+  endDate          DateTime?
+  durationWeeks    Int
+  completionType   PhaseCompletionType @default(MANUAL)
+  locksTimelineOnComplete Boolean       @default(false)
+  regressedAt       DateTime?
+  datesPinned      Boolean             @default(false)
+  completedAt      DateTime?
+  completedById    String?
+  readyForReview   Boolean             @default(false)
+  readyForReviewAt DateTime?
+  documentUrl      String?
+  documentName     String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  instance      TimelineInstance       @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  phaseTemplate TimelinePhaseTemplate? @relation(fields: [phaseTemplateId], references: [id])
+  completedBy   User?                  @relation(fields: [completedById], references: [id])
+}

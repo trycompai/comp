@@ -1,0 +1,76 @@
+{
+  "slug": "acronis-cyber-protect-cloud",
+  "name": "Acronis Cyber Protect Cloud",
+  "description": "Monitor backup activities, protection policies, alerts, and tenant usage for cyber protection compliance",
+  "category": "Infrastructure",
+  "docsUrl": "https://developer.acronis.com/doc/index.html",
+  "baseUrl": "https://us-cloud.acronis.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Datacenter URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Acronis datacenter URL (e.g., https://us-cloud.acronis.com, https://eu-cloud.acronis.com)"
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "API client ID from Acronis management console"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "API client secret from Acronis management console"
+        },
+        {
+          "label": "Tenant ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Acronis tenant ID"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "backup_monitoring_alerts",
+      "name": "Monitoring & Alerting",
+      "description": "Checks for active backup and security alerts that require attention",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "backup_policies",
+      "name": "Infrastructure Inventory",
+      "description": "Verifies that backup protection policies are properly configured and active",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "backup_activities",
+      "name": "Backup logs",
+      "description": "Reviews recent backup activities and tasks for successful completion",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "tenant_usage",
+      "name": "Systems Description",
+      "description": "Monitors tenant usage and resource consumption for backup services",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}
