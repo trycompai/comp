@@ -1,3 +1,31 @@
+## [3.27.5](https://github.com/trycompai/comp/compare/v3.27.4...v3.27.5) (2026-04-21)
+
+
+### Bug Fixes
+
+* **devices:** soften stale tooltip copy to not prescribe a single cause ([71053b6](https://github.com/trycompai/comp/commit/71053b666219993e1dc087361345e1cec3294804))
+
+## [3.27.4](https://github.com/trycompai/comp/compare/v3.27.3...v3.27.4) (2026-04-21)
+
+
+### Bug Fixes
+
+* **devices:** show stale as distinct state on /people device column ([#2629](https://github.com/trycompai/comp/issues/2629)) ([6e1a06f](https://github.com/trycompai/comp/commit/6e1a06f8d71d7305d8883aff444a944e83b16e3f))
+
+## [3.27.3](https://github.com/trycompai/comp/compare/v3.27.2...v3.27.3) (2026-04-21)
+
+
+### Bug Fixes
+
+* **devices:** propagate three-state compliance to employee & device drill-ins (CS-276) ([b56f7dc](https://github.com/trycompai/comp/commit/b56f7dcb88cfce8e908ed1bc60f6974d3e0c3601))
+
+## [3.27.2](https://github.com/trycompai/comp/compare/v3.27.1...v3.27.2) (2026-04-21)
+
+
+### Bug Fixes
+
+* **digest:** key policy acknowledgment rollup by email, not user.id ([#2624](https://github.com/trycompai/comp/issues/2624)) ([75c8888](https://github.com/trycompai/comp/commit/75c888846d3f427c3d9bc2382ea987b50ed3bf89))
+
 ## [3.27.1](https://github.com/trycompai/comp/compare/v3.27.0...v3.27.1) (2026-04-21)
 
 

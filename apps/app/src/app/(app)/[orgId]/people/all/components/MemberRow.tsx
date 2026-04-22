@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@trycompai/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import { parseRolesString } from '@/lib/permissions';
 import type { Role } from '@db';
 import {
@@ -33,7 +34,7 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Checkmark, Edit, Laptop, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
+import { Checkmark, Edit, Information, Laptop, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 
 import { toast } from 'sonner';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
@@ -52,7 +53,7 @@ interface MemberRowProps {
   isCurrentUserOwner: boolean;
   customRoles?: CustomRoleOption[];
   taskCompletion?: TaskCompletion;
-  deviceStatus?: 'compliant' | 'non-compliant' | 'not-installed';
+  deviceStatus?: 'compliant' | 'non-compliant' | 'stale' | 'not-installed';
   isDeviceStatusLoading?: boolean;
 }
 
@@ -85,6 +86,34 @@ function getRoleLabel(role: string): string {
 function parseRoles(role: Role | Role[] | string): string[] {
   if (Array.isArray(role)) return role as string[];
   return parseRolesString(role);
+}
+
+type DeviceStatus = 'compliant' | 'non-compliant' | 'stale' | 'not-installed';
+
+function getDeviceStatusDotClass(status: DeviceStatus): string {
+  switch (status) {
+    case 'compliant':
+      return 'bg-green-500';
+    case 'non-compliant':
+      return 'bg-yellow-500';
+    case 'stale':
+      return 'bg-gray-400';
+    case 'not-installed':
+      return 'bg-red-400';
+  }
+}
+
+function getDeviceStatusLabel(status: DeviceStatus): string {
+  switch (status) {
+    case 'compliant':
+      return 'Compliant';
+    case 'non-compliant':
+      return 'Non-Compliant';
+    case 'stale':
+      return 'Stale';
+    case 'not-installed':
+      return 'Not Installed';
+  }
 }
 
 export function MemberRow({
@@ -251,27 +280,38 @@ export function MemberRow({
           ) : (
             <div className="flex items-center gap-2">
               <span
-                className={`inline-block h-2 w-2 rounded-full ${
-                  deviceStatus === 'compliant'
-                    ? 'bg-green-500'
-                    : deviceStatus === 'non-compliant'
-                      ? 'bg-yellow-500'
-                      : 'bg-red-400'
-                }`}
+                className={`inline-block h-2 w-2 rounded-full ${getDeviceStatusDotClass(deviceStatus)}`}
               />
               <span
                 className={`text-sm ${
-                  deviceStatus === 'not-installed'
+                  deviceStatus === 'not-installed' || deviceStatus === 'stale'
                     ? 'text-muted-foreground'
                     : 'text-foreground'
                 }`}
               >
-                {deviceStatus === 'compliant'
-                  ? 'Compliant'
-                  : deviceStatus === 'non-compliant'
-                    ? 'Non-Compliant'
-                    : 'Not Installed'}
+                {getDeviceStatusLabel(deviceStatus)}
               </span>
+              {deviceStatus === 'stale' && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="What does Stale mean?"
+                        className="inline-flex items-center text-muted-foreground hover:text-foreground"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Information size={14} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-xs">
+                      We haven't received a recent compliance check from this device. It may be
+                      offline, the agent may need to be updated, or the device may no longer be in
+                      use.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
           )}
         </TableCell>
