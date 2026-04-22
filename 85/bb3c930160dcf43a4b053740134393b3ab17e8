@@ -1,0 +1,27 @@
+packages/db/prisma/schema/auth.prisma
+  26176ac5d96c92b4 31
+packages/db/prisma/schema/framework-version.prisma
+  26176ac5d96c92b4 9
+packages/db/prisma/migrations/20260422183412_framework_version_publisher_to_user/migration.sql
+  26176ac5d96c92b4 1-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "85bb3c930160dcf43a4b053740134393b3ab17e8",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 200,
+      "total_deletions": 217,
+      "accepted_lines": 412,
+      "overriden_lines": 0
+    }
+  }
+}
