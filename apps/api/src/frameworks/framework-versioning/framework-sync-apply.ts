@@ -1,4 +1,4 @@
-import { Prisma, type FrameworkInstance, type FrameworkVersion } from '@db';
+import { Prisma, Frequency, Departments, type FrameworkInstance, type FrameworkVersion } from '@db';
 import { diffManifests } from './framework-diff';
 import { isControlEdited, isPolicyEdited, isTaskEdited } from './framework-drift';
 import { buildCrossFrameworkRefs } from './cross-framework-refs';
@@ -38,14 +38,14 @@ export async function applySync(
     }),
   ]);
 
-  const ctlByTemplate = new Map(instanceControls.filter((c: any) => c.controlTemplateId).map((c: any) => [c.controlTemplateId!, c]));
-  const polByTemplate = new Map(instancePolicies.filter((p: any) => p.policyTemplateId).map((p: any) => [p.policyTemplateId!, p]));
-  const taskByTemplate = new Map(instanceTasks.filter((t: any) => t.taskTemplateId).map((t: any) => [t.taskTemplateId!, t]));
+  const ctlByTemplate = new Map(instanceControls.filter((c) => c.controlTemplateId).map((c) => [c.controlTemplateId!, c]));
+  const polByTemplate = new Map(instancePolicies.filter((p) => p.policyTemplateId).map((p) => [p.policyTemplateId!, p]));
+  const taskByTemplate = new Map(instanceTasks.filter((t) => t.taskTemplateId).map((t) => [t.taskTemplateId!, t]));
 
   const refs = buildCrossFrameworkRefs({
     otherInstances: otherInstances
-      .filter((i: any) => i.currentVersion)
-      .map((i: any) => ({ frameworkInstanceId: i.id, manifest: i.currentVersion!.manifest as unknown as FrameworkManifest })),
+      .filter((i) => i.currentVersion)
+      .map((i) => ({ frameworkInstanceId: i.id, manifest: i.currentVersion!.manifest as unknown as FrameworkManifest })),
   });
 
   const undo: UndoPayload = {
@@ -108,8 +108,8 @@ export async function applySync(
         taskTemplateId: added.id,
         title: added.name,
         description: added.description,
-        frequency: added.frequency as any,
-        department: added.department as any,
+        frequency: added.frequency as Frequency | null,
+        department: added.department as Departments | null,
       },
     });
     taskByTemplate.set(added.id, created);
@@ -138,7 +138,7 @@ export async function applySync(
     });
     await tx.task.update({
       where: { id: inst.id },
-      data: { title: u.to.name, description: u.to.description, frequency: u.to.frequency as any, department: u.to.department as any },
+      data: { title: u.to.name, description: u.to.description, frequency: u.to.frequency as Frequency | null, department: u.to.department as Departments | null },
     });
     summary.tasksUpdatedApplied += 1;
   }
@@ -152,12 +152,24 @@ export async function applySync(
         policyTemplateId: added.id,
         name: added.name,
         description: added.description,
-        content: added.content as any,
-        frequency: added.frequency as any,
-        department: added.department as any,
+        content: added.content as Prisma.InputJsonValue[],
+        frequency: added.frequency as Frequency | null,
+        department: added.department as Departments | null,
         status: 'draft',
       },
     });
+
+    // Create the initial draft PolicyVersion. Cascades on Policy delete, so
+    // rollback only needs to hard-delete the Policy row (undo.policies.created).
+    await tx.policyVersion.create({
+      data: {
+        policyId: policyCreated.id,
+        version: 1,
+        content: added.content as Prisma.InputJsonValue[],
+        changelog: 'Initial draft from framework template',
+      },
+    });
+
     polByTemplate.set(added.id, policyCreated);
     undo.policies.created.push(policyCreated.id);
     summary.policiesAdded += 1;
@@ -178,7 +190,7 @@ export async function applySync(
       const latest = await tx.policyVersion.findFirst({ where: { policyId: inst.id }, orderBy: { version: 'desc' }, select: { version: true } });
       const nextVersion = (latest?.version ?? 0) + 1;
       const draft = await tx.policyVersion.create({
-        data: { policyId: inst.id, version: nextVersion, content: u.to.content as any, changelog: 'Template update available' },
+        data: { policyId: inst.id, version: nextVersion, content: u.to.content as Prisma.InputJsonValue[], changelog: 'Template update available' },
       });
       undo.policies.draftsAdded.push({ policyId: inst.id, draftVersionId: draft.id });
       summary.policiesDraftAdded += 1;
@@ -194,7 +206,7 @@ export async function applySync(
     });
     await tx.policy.update({
       where: { id: inst.id },
-      data: { name: u.to.name, description: u.to.description, content: u.to.content as any, frequency: u.to.frequency as any, department: u.to.department as any },
+      data: { name: u.to.name, description: u.to.description, content: u.to.content as Prisma.InputJsonValue[], frequency: u.to.frequency as Frequency | null, department: u.to.department as Departments | null },
     });
     summary.policiesUpdatedApplied += 1;
   }
@@ -206,7 +218,7 @@ export async function applySync(
   });
   const keyOf = (controlId: string, requirementId: string) => `${controlId}::${requirementId}`;
   const existingByKey = new Map(
-    existingEdges.filter((e: any) => e.requirementId).map((e: any) => [keyOf(e.controlId, e.requirementId!), e]),
+    existingEdges.filter((e) => e.requirementId).map((e) => [keyOf(e.controlId, e.requirementId!), e]),
   );
 
   for (const edge of diff.requirementMapEdges.added) {

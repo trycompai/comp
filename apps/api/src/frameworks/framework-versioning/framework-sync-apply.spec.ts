@@ -194,6 +194,29 @@ describe('applySync', () => {
     }));
   });
 
+  it('creates an initial draft PolicyVersion when a policy is added', async () => {
+    const tx = mockTx();
+    await applySync(tx, {
+      instance: baseInstance as any,
+      currentVersion: { id: 'fvr_v1', frameworkId: 'frk_soc2', manifest: manifest() } as any,
+      targetVersion: {
+        id: 'fvr_v2',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({
+          policies: [{ id: 'pt_new', name: 'New Policy', description: 'd', content: [{ body: 'x' }], frequency: null, department: null }],
+        }),
+      } as any,
+      userId: 'mem_1',
+    });
+
+    expect(tx.policy.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ policyTemplateId: 'pt_new', status: 'draft' }),
+    }));
+    expect(tx.policyVersion.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ version: 1, content: [{ body: 'x' }] }),
+    }));
+  });
+
   it('creates RequirementMap edge when link appears in target manifest', async () => {
     const tx = mockTx();
     tx.control.findMany.mockResolvedValue([{ id: 'ctl_1', controlTemplateId: 'ct_1', organizationId: 'org_1', name: 'C', description: 'D', archivedAt: null }]);
