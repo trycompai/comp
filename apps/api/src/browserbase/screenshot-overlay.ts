@@ -110,8 +110,10 @@ function buildBannerSvg(args: BannerArgs): string {
   const labelFontSize = 11;
   const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
+  const w = Math.floor(width);
+  const h = Math.floor(height);
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <rect x="0" y="0" width="${width}" height="${height}" fill="${OVERLAY_BG}"/>
   <g font-family='${fontFamily}' fill="${OVERLAY_TEXT}">
     <text x="${padX}" y="22" font-size="${rowFontSize}" font-weight="600">

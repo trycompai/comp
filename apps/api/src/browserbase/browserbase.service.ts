@@ -12,7 +12,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@/app/s3';
 import { renderOverlay } from './screenshot-overlay';
-import { toRunErrorMessage } from './run-error-formatter';
+import { isNoPageError, toRunErrorMessage } from './run-error-formatter';
 
 const BROWSER_WIDTH = 1440;
 const BROWSER_HEIGHT = 900;
@@ -321,12 +321,7 @@ export class BrowserbaseService {
         username: result.username,
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      const isNoPage =
-        message.includes('awaitActivePage') ||
-        message.includes('no page available') ||
-        message.includes('No page found');
-      if (isNoPage) {
+      if (isNoPageError(err)) {
         throw new Error(
           'Browser session ended before we could verify login status. Please retry.',
         );
@@ -570,7 +565,7 @@ export class BrowserbaseService {
       };
     } catch (err) {
       this.logger.error('Failed to execute automation on session', err);
-      const { userFacing } = toRunErrorMessage(err);
+      const { userFacing, needsReauth } = toRunErrorMessage(err);
 
       await db.browserAutomationRun.update({
         where: { id: runId },
@@ -585,6 +580,7 @@ export class BrowserbaseService {
       return {
         success: false,
         error: userFacing,
+        needsReauth: needsReauth ? true : undefined,
       };
     }
   }
@@ -722,7 +718,7 @@ export class BrowserbaseService {
       }
     } catch (err) {
       this.logger.error('Failed to run browser automation', err);
-      const { userFacing } = toRunErrorMessage(err);
+      const { userFacing, needsReauth } = toRunErrorMessage(err);
 
       // Update run as failed
       await db.browserAutomationRun.update({
@@ -739,6 +735,7 @@ export class BrowserbaseService {
         runId: run.id,
         success: false,
         error: userFacing,
+        needsReauth: needsReauth ? true : undefined,
       };
     }
   }
