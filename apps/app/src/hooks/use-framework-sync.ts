@@ -19,9 +19,15 @@ export function useFrameworkSync(frameworkInstanceId: string) {
         { targetVersionId },
       );
       if (res.error) throw new Error(res.error);
+      // Clear the preview cache without refetching — after a successful sync
+      // the instance is at the latest version, so /update-preview would 404.
+      await mutate(
+        `/v1/frameworks/${frameworkInstanceId}/update-preview`,
+        undefined,
+        { revalidate: false },
+      );
       await Promise.all([
         mutate(`/v1/frameworks/${frameworkInstanceId}/update-status`),
-        mutate(`/v1/frameworks/${frameworkInstanceId}/update-preview`),
         mutate(`/v1/frameworks/${frameworkInstanceId}/sync-history`),
         mutate(`/v1/frameworks/${frameworkInstanceId}`),
       ]);
