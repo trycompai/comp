@@ -21,10 +21,10 @@ export function useFrameworkVersions(frameworkId: string) {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await apiClient<FrameworkVersionListItem[]>(
+      const result = await apiClient<{ data: FrameworkVersionListItem[]; count?: number }>(
         `/framework/${frameworkId}/versions`,
       );
-      setData(result);
+      setData(Array.isArray(result?.data) ? result.data : []);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch versions'));
     } finally {

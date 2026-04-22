@@ -42,10 +42,10 @@ export function useFrameworkDraftDiff(
     setIsLoading(true);
     setError(null);
     try {
-      const result = await apiClient<DraftDiff>(
+      const result = await apiClient<{ data: DraftDiff }>(
         `/framework/${frameworkId}/draft-diff`,
       );
-      setData(result);
+      setData(result?.data);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch draft diff'));
     } finally {
