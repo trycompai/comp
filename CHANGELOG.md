@@ -1,3 +1,17 @@
+# [3.29.0](https://github.com/trycompai/comp/compare/v3.28.0...v3.29.0) (2026-04-22)
+
+
+### Bug Fixes
+
+* **evidence-export:** address review feedback on streaming export ([3814e33](https://github.com/trycompai/comp/commit/3814e33c31da2e40ef5fed43f2f463e599497a55))
+* **evidence-export:** address two follow-up review findings ([752ed24](https://github.com/trycompai/comp/commit/752ed244dd4909dbf75188df36998e1bf1c46e2d)), closes [#2640](https://github.com/trycompai/comp/issues/2640)
+* **evidence-export:** tighten S3 missing-object check to specific error codes ([317d407](https://github.com/trycompai/comp/commit/317d407b23c089235990c754e5afd1757467d2d1))
+
+
+### Features
+
+* **evidence-export:** include task attachments and stream large ZIPs ([1bc86d8](https://github.com/trycompai/comp/commit/1bc86d88e5654464a0ece92d51fc6a8e44106ad3))
+
 # [3.28.0](https://github.com/trycompai/comp/compare/v3.27.6...v3.28.0) (2026-04-22)
 
 
