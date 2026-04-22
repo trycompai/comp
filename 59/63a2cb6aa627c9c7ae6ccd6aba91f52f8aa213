@@ -1,0 +1,23 @@
+apps/api/src/browserbase/browserbase.service.spec.ts
+  bd578efdc41c66bc 1-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "5963a2cb6aa627c9c7ae6ccd6aba91f52f8aa213",
+  "prompts": {
+    "bd578efdc41c66bc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e6c163ee-6bd9-41ff-b295-830dc0e3974b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 90,
+      "total_deletions": 0,
+      "accepted_lines": 90,
+      "overriden_lines": 0
+    }
+  }
+}
