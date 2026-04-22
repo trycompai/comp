@@ -1,0 +1,25 @@
+apps/app/src/app/(app)/[orgId]/people/devices/components/DeviceDetails.test.tsx
+  bceff394c42f40bd 7-12,146-174
+apps/app/src/app/(app)/[orgId]/people/devices/components/DeviceDetails.tsx
+  bceff394c42f40bd 21,124-129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "2728c9bba5ba59bd484eadd09122b022504d4a50",
+  "prompts": {
+    "bceff394c42f40bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "97bc2f6d-8072-4294-a180-04c6dec511a4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 42,
+      "total_deletions": 1,
+      "accepted_lines": 42,
+      "overriden_lines": 0
+    }
+  }
+}
