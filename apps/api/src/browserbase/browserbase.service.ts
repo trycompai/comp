@@ -839,12 +839,21 @@ export class BrowserbaseService {
         message.includes('awaitActivePage') ||
         message.includes('no page available') ||
         message.includes('No page found');
+      const isTimeout =
+        message.includes('timeout') ||
+        message.includes('Timeout') ||
+        message.includes('timed out');
+
+      const userFacing = isNoPage
+        ? 'Browser session ended before we could capture evidence. Please retry.'
+        : isTimeout
+          ? 'Automation timed out before completing. Please retry — if this keeps happening, simplify the instruction or check the target site.'
+          : 'Automation failed to complete. Please retry — see run error details for specifics.';
+
       return {
         success: false,
         needsReauth: isNoPage ? true : undefined,
-        error: isNoPage
-          ? 'Browser session ended before we could capture evidence. Please retry.'
-          : message,
+        error: userFacing,
       };
     } finally {
       await this.safeCloseStagehand(stagehand);
