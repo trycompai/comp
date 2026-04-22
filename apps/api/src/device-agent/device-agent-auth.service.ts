@@ -101,9 +101,11 @@ export class DeviceAgentAuthService {
 
   async registerDevice({
     userId,
+    sessionId,
     dto,
   }: {
     userId: string;
+    sessionId: string;
     dto: RegisterDeviceDto;
   }) {
     const member = await db.member.findFirst({
@@ -121,6 +123,24 @@ export class DeviceAgentAuthService {
     const device = dto.serialNumber
       ? await registerWithSerial({ member, dto })
       : await registerWithoutSerial({ member, dto });
+
+    if (device.agentSessionId && device.agentSessionId !== sessionId) {
+      try {
+        await db.session.delete({ where: { id: device.agentSessionId } });
+      } catch (err) {
+        if ((err as { code?: string }).code !== 'P2025') {
+          this.logger.error(
+            `Failed to delete stale agent session ${device.agentSessionId} for device ${device.id}: ${err}`,
+          );
+          throw err;
+        }
+      }
+    }
+
+    await db.device.update({
+      where: { id: device.id },
+      data: { agentSessionId: sessionId },
+    });
 
     return { deviceId: device.id };
   }

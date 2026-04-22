@@ -19,6 +19,9 @@ jest.mock('@db', () => ({
       update: jest.fn(),
       findMany: jest.fn(),
     },
+    session: {
+      delete: jest.fn(),
+    },
   },
   Prisma: {
     InputJsonValue: {},
@@ -201,7 +204,11 @@ describe('DeviceAgentAuthService', () => {
       (mockDb.member.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(
-        service.registerDevice({ userId: 'user-1', dto: baseDto }),
+        service.registerDevice({
+          userId: 'user-1',
+          sessionId: 'ses-1',
+          dto: baseDto,
+        }),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -210,10 +217,18 @@ describe('DeviceAgentAuthService', () => {
         id: 'member-1',
       });
       (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
-      (mockDb.device.create as jest.Mock).mockResolvedValue({ id: 'dev-1' });
+      (mockDb.device.create as jest.Mock).mockResolvedValue({
+        id: 'dev-1',
+        agentSessionId: null,
+      });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({
+        id: 'dev-1',
+        agentSessionId: 'ses-1',
+      });
 
       const result = await service.registerDevice({
         userId: 'user-1',
+        sessionId: 'ses-1',
         dto: baseDto,
       });
 
@@ -233,10 +248,21 @@ describe('DeviceAgentAuthService', () => {
         id: 'member-1',
       });
       (mockDb.device.findUnique as jest.Mock).mockResolvedValue(null);
-      (mockDb.device.create as jest.Mock).mockResolvedValue({ id: 'dev-2' });
+      (mockDb.device.create as jest.Mock).mockResolvedValue({
+        id: 'dev-2',
+        agentSessionId: null,
+      });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({
+        id: 'dev-2',
+        agentSessionId: 'ses-1',
+      });
 
       const dto = { ...baseDto, serialNumber: 'ABC123' };
-      const result = await service.registerDevice({ userId: 'user-1', dto });
+      const result = await service.registerDevice({
+        userId: 'user-1',
+        sessionId: 'ses-1',
+        dto,
+      });
 
       expect(result).toEqual({ deviceId: 'dev-2' });
     });
@@ -249,12 +275,22 @@ describe('DeviceAgentAuthService', () => {
         id: 'dev-existing',
         memberId: 'member-1',
       });
-      (mockDb.device.update as jest.Mock).mockResolvedValue({
-        id: 'dev-existing',
-      });
+      (mockDb.device.update as jest.Mock)
+        .mockResolvedValueOnce({
+          id: 'dev-existing',
+          agentSessionId: null,
+        })
+        .mockResolvedValueOnce({
+          id: 'dev-existing',
+          agentSessionId: 'ses-1',
+        });
 
       const dto = { ...baseDto, serialNumber: 'ABC123' };
-      const result = await service.registerDevice({ userId: 'user-1', dto });
+      const result = await service.registerDevice({
+        userId: 'user-1',
+        sessionId: 'ses-1',
+        dto,
+      });
 
       expect(result).toEqual({ deviceId: 'dev-existing' });
       expect(mockDb.device.update).toHaveBeenCalled();
@@ -272,16 +308,152 @@ describe('DeviceAgentAuthService', () => {
       (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
       (mockDb.device.create as jest.Mock).mockResolvedValue({
         id: 'dev-fallback',
+        agentSessionId: null,
+      });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({
+        id: 'dev-fallback',
+        agentSessionId: 'ses-1',
       });
 
       const dto = { ...baseDto, serialNumber: 'GENERIC-SERIAL' };
-      const result = await service.registerDevice({ userId: 'user-1', dto });
+      const result = await service.registerDevice({
+        userId: 'user-1',
+        sessionId: 'ses-1',
+        dto,
+      });
 
       expect(result).toEqual({ deviceId: 'dev-fallback' });
       expect(mockDb.device.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           serialNumber: expect.stringMatching(/^fallback:GENERIC-SERIAL:/),
         }),
+      });
+    });
+  });
+
+  describe('registerDevice (device-agent session linkage)', () => {
+    const baseDto = {
+      name: 'My Mac',
+      hostname: 'macbook.local',
+      platform: 'macos' as const,
+      osVersion: '14.0',
+      organizationId: 'org-1',
+    };
+
+    it('fresh device: links new session and does not delete stale session', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'member-1',
+      });
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.device.create as jest.Mock).mockResolvedValue({
+        id: 'dev_1',
+        agentSessionId: null,
+      });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({
+        id: 'dev_1',
+        agentSessionId: 'ses_new',
+      });
+
+      const result = await service.registerDevice({
+        userId: 'user-1',
+        sessionId: 'ses_new',
+        dto: baseDto,
+      });
+
+      expect(result).toEqual({ deviceId: 'dev_1' });
+      expect(mockDb.device.update).toHaveBeenCalledWith({
+        where: { id: 'dev_1' },
+        data: { agentSessionId: 'ses_new' },
+      });
+      expect(mockDb.session.delete).not.toHaveBeenCalled();
+    });
+
+    it('reinstall: deletes stale session and links new session', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'member-1',
+      });
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.device.create as jest.Mock).mockResolvedValue({
+        id: 'dev_1',
+        agentSessionId: 'ses_stale',
+      });
+      (mockDb.session.delete as jest.Mock).mockResolvedValue({ id: 'ses_stale' });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({
+        id: 'dev_1',
+        agentSessionId: 'ses_new',
+      });
+
+      await service.registerDevice({
+        userId: 'user-1',
+        sessionId: 'ses_new',
+        dto: baseDto,
+      });
+
+      expect(mockDb.session.delete).toHaveBeenCalledWith({
+        where: { id: 'ses_stale' },
+      });
+      expect(mockDb.device.update).toHaveBeenCalledWith({
+        where: { id: 'dev_1' },
+        data: { agentSessionId: 'ses_new' },
+      });
+    });
+
+    it('same-session re-registration: does not delete the session when the device is already linked to the same session', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'member-1',
+      });
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.device.create as jest.Mock).mockResolvedValue({
+        id: 'dev_1',
+        agentSessionId: 'ses_same',
+      });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({
+        id: 'dev_1',
+        agentSessionId: 'ses_same',
+      });
+
+      await service.registerDevice({
+        userId: 'user-1',
+        sessionId: 'ses_same',
+        dto: baseDto,
+      });
+
+      expect(mockDb.session.delete).not.toHaveBeenCalled();
+      expect(mockDb.device.update).toHaveBeenCalledWith({
+        where: { id: 'dev_1' },
+        data: { agentSessionId: 'ses_same' },
+      });
+    });
+
+    it('idempotent reinstall: swallows P2025 when stale session already gone', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'member-1',
+      });
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.device.create as jest.Mock).mockResolvedValue({
+        id: 'dev_1',
+        agentSessionId: 'ses_stale',
+      });
+      const p2025Error = Object.assign(new Error('Record not found'), {
+        code: 'P2025',
+      });
+      (mockDb.session.delete as jest.Mock).mockRejectedValue(p2025Error);
+      (mockDb.device.update as jest.Mock).mockResolvedValue({
+        id: 'dev_1',
+        agentSessionId: 'ses_new',
+      });
+
+      await expect(
+        service.registerDevice({
+          userId: 'user-1',
+          sessionId: 'ses_new',
+          dto: baseDto,
+        }),
+      ).resolves.toEqual({ deviceId: 'dev_1' });
+
+      expect(mockDb.device.update).toHaveBeenCalledWith({
+        where: { id: 'dev_1' },
+        data: { agentSessionId: 'ses_new' },
       });
     });
   });

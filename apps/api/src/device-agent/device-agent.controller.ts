@@ -9,6 +9,7 @@ import {
   Req,
   Response,
   StreamableFile,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -27,7 +28,7 @@ import { PermissionGuard } from '../auth/permission.guard';
 import { Public } from '../auth/public.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { SkipOrgCheck } from '../auth/skip-org-check.decorator';
-import type { AuthContext as AuthContextType } from '../auth/types';
+import type { AuthContext as AuthContextType, AuthenticatedRequest } from '../auth/types';
 import { DeviceAgentAuthService } from './device-agent-auth.service';
 import { DeviceAgentService } from './device-agent.service';
 import { AuthCodeDto } from './dto/auth-code.dto';
@@ -130,10 +131,15 @@ export class DeviceAgentController {
   @SkipOrgCheck()
   @ApiOperation({ summary: 'Register a device agent' })
   async registerDevice(
+    @Req() req: AuthenticatedRequest,
     @UserId() userId: string,
     @Body() dto: RegisterDeviceDto,
   ) {
-    return this.deviceAgentAuthService.registerDevice({ userId, dto });
+    const { sessionId } = req;
+    if (!sessionId) {
+      throw new UnauthorizedException('Session ID missing from request');
+    }
+    return this.deviceAgentAuthService.registerDevice({ userId, sessionId, dto });
   }
 
   @Post('check-in')
