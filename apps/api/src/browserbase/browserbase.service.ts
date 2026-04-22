@@ -11,6 +11,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@/app/s3';
+import { renderOverlay } from './screenshot-overlay';
 
 const BROWSER_WIDTH = 1440;
 const BROWSER_HEIGHT = 900;
@@ -802,15 +803,31 @@ export class BrowserbaseService {
 
       // Always take a screenshot at the end (no pass/fail criteria gate)
       page = await this.ensureActivePage(stagehand);
-      const screenshot = await page.screenshot({
+      const sourceUrl = page.url();
+      const rawScreenshot = await page.screenshot({
         type: 'jpeg',
         quality: 80,
         fullPage: false,
       });
 
+      let finalBuffer: Buffer = rawScreenshot;
+      try {
+        finalBuffer = await renderOverlay({
+          buffer: rawScreenshot,
+          instruction,
+          sourceUrl,
+          capturedAt: new Date(),
+        });
+      } catch (overlayErr) {
+        this.logger.warn('Screenshot overlay render failed; uploading raw image', {
+          error:
+            overlayErr instanceof Error ? overlayErr.message : String(overlayErr),
+        });
+      }
+
       return {
         success: true,
-        screenshot: screenshot.toString('base64'),
+        screenshot: finalBuffer.toString('base64'),
         evaluationReason: taskContext
           ? `Navigation completed for "${taskContext.title}". Screenshot captured.`
           : 'Navigation completed. Screenshot captured.',
