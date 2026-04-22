@@ -24,6 +24,9 @@ export function RunItem({ run, isLatest }: RunItemProps) {
   const evaluationPassed = run.evaluationStatus === 'pass';
   const evaluationFailed = run.evaluationStatus === 'fail';
 
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+  const fullSizeHref = `${apiBase}/v1/browserbase/runs/${run.id}/screenshot`;
+
   // Determine overall status: failed run, or completed but evaluation failed
   const hasIssue = hasFailed || evaluationFailed;
   const statusColor = hasIssue
@@ -140,7 +143,7 @@ export function RunItem({ run, isLatest }: RunItemProps) {
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-muted-foreground">Screenshot</p>
                   <a
-                    href={run.screenshotUrl}
+                    href={fullSizeHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-primary hover:underline flex items-center gap-1"
@@ -169,7 +172,7 @@ export function RunItem({ run, isLatest }: RunItemProps) {
                 <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-xs text-muted-foreground">Screenshot unavailable</p>
                 <a
-                  href={run.screenshotUrl}
+                  href={fullSizeHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
