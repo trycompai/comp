@@ -59,6 +59,7 @@ function makeFakeResponse() {
     end: jest.fn(),
     headersSent: false,
     writableEnded: false,
+    writableFinished: false,
   });
   return res;
 }
@@ -180,10 +181,43 @@ describe('EvidenceExportController', () => {
 
     expect(archive.abort).not.toHaveBeenCalled();
 
-    // Simulate client closing the connection before the stream finished.
-    req.emit('close');
+    // Simulate a client-side disconnect: res emits 'close' before the response
+    // has fully flushed (writableFinished is still false).
+    res.writableFinished = false;
+    res.emit('close');
 
     expect(archive.abort).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT abort the archive when the response completed normally', async () => {
+    // Regression guard for cubic P1: with req.once('close') this would falsely
+    // abort on Node 16+. Using res.close + writableFinished avoids that.
+    const archive = makeFakeArchive();
+    service.streamTaskEvidenceZip.mockResolvedValue({
+      archive: archive as unknown as import('archiver').Archiver,
+      filename: 'f.zip',
+    });
+    const req = makeFakeRequest();
+    const res = makeFakeResponse();
+
+    await controller.exportTaskEvidenceZip(
+      'org_1',
+      'tsk_1',
+      'false',
+      req as unknown as import('express').Request,
+      res as unknown as import('express').Response,
+    );
+
+    // Successful flow: archiver finishes, writableFinished becomes true before
+    // 'close' fires on the response.
+    res.writableFinished = true;
+    res.emit('close');
+
+    // And even if req 'close' fires too (Node 16+ does this on normal
+    // completion), we ignore it — no listener attached there.
+    req.emit('close');
+
+    expect(archive.abort).not.toHaveBeenCalled();
   });
 });
 

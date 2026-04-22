@@ -77,6 +77,11 @@ export function createFilenameTracker(): (rawName: string) => string {
  * - All other failures (network, permissions, throttling, empty body) → rethrow
  *   so the archive aborts and the user sees a real failure instead of silently
  *   receiving an incomplete export.
+ *
+ * Filename collisions are resolved on the *final* ZIP entry name (including
+ * any `_MISSING_…txt` wrapping), not the raw attachment name — otherwise a
+ * success-path file named `_MISSING_foo.txt` could collide with a failure-path
+ * placeholder for a file named `foo` once the wrapping is applied.
  */
 export async function appendAttachmentToArchive(params: {
   archive: Archiver;
@@ -128,8 +133,13 @@ export async function appendAttachmentToArchive(params: {
     logger.warn(
       `Missing S3 object for attachment ${attachment.id} (key=${attachment.url}): ${message}`,
     );
+    // Feed the FULL final name (including `_MISSING_` prefix and `.txt` suffix)
+    // into the same collision tracker that success paths use, so a legitimate
+    // file uploaded as `_MISSING_foo.txt` can't silently collide with a
+    // placeholder for a different missing attachment named `foo`.
+    const placeholderName = uniqueName(`_MISSING_${attachment.name}.txt`);
     archive.append(buildMissingPlaceholder(attachment, message), {
-      name: `${folderPath}/_MISSING_${uniqueName(attachment.name)}.txt`,
+      name: `${folderPath}/${placeholderName}`,
     });
   }
 }

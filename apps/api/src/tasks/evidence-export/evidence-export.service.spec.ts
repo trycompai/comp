@@ -303,6 +303,69 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       expect(placeholder).toBeUndefined();
     });
 
+    it('prevents placeholder vs success filename collision in final ZIP path', async () => {
+      // Regression guard for cubic P2: if a legitimate file is uploaded with
+      // the name `_MISSING_foo.txt` and succeeds from S3, AND another upload
+      // named `foo` fails (NoSuchKey), the wrapping of the failure into
+      // `_MISSING_foo.txt` must NOT collide with the successful file.
+      const attachments = [
+        {
+          id: 'att_real',
+          name: '_MISSING_foo.txt',
+          url: 'key-real',
+          type: 'document',
+          createdAt: new Date('2024-01-01'),
+        },
+        {
+          id: 'att_miss',
+          name: 'foo',
+          url: 'key-miss',
+          type: 'document',
+          createdAt: new Date('2024-01-02'),
+        },
+      ];
+
+      (s3Client!.send as jest.Mock).mockImplementation(
+        (cmd: { input: { Key: string } }) => {
+          if (cmd.input.Key === 'key-real') {
+            return Promise.resolve({ Body: Buffer.from('REAL') });
+          }
+          return Promise.reject(
+            Object.assign(new Error('NoSuchKey'), {
+              name: 'NoSuchKey',
+              $metadata: { httpStatusCode: 404 },
+            }),
+          );
+        },
+      );
+      primeTaskQueries({ attachments });
+
+      const { archive } = await service.streamTaskEvidenceZip(
+        'org_1',
+        'tsk_123',
+      );
+      const mock = archive as unknown as MockArchive;
+      await mock.finalized;
+
+      const attachmentPaths = mock.appendCalls
+        .map((c) => c.options.name)
+        .filter((p) => p.includes('/01-attachments/'));
+
+      // Two entries, each with a distinct final path inside the ZIP.
+      expect(attachmentPaths).toHaveLength(2);
+      const uniquePaths = new Set(attachmentPaths);
+      expect(uniquePaths.size).toBe(2);
+
+      // The real file keeps its name; the placeholder gets a numeric suffix
+      // because the tracker now dedupes on the final ZIP entry name.
+      expect(attachmentPaths).toContain(
+        'acme-corp_soc-2-access-review_evidence/01-attachments/_MISSING_foo.txt',
+      );
+      expect(attachmentPaths).toContain(
+        'acme-corp_soc-2-access-review_evidence/01-attachments/_MISSING_foo (1).txt',
+      );
+    });
+
     it('disambiguates duplicate filenames within attachments folder', async () => {
       const attachments = [
         {
