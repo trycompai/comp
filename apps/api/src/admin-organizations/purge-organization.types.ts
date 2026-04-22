@@ -1,3 +1,11 @@
+export type PurgeS3BucketRef =
+  | 'orgAssets'
+  | 'default'
+  | 'knowledgeBase'
+  | 'questionnaire';
+
+export type PurgeS3KeysByBucket = Partial<Record<PurgeS3BucketRef, string[]>>;
+
 export interface PurgeSnapshot {
   organization: { id: string; name: string; slug: string };
   counts: Record<string, number>;
@@ -5,7 +13,7 @@ export interface PurgeSnapshot {
     customerId: string | null;
     subscriptionId: string | null;
   };
-  s3KeysFromSchema: string[];
+  s3KeysByBucket: PurgeS3KeysByBucket;
   knowledgeBaseDocumentIds: string[];
   manualAnswerIds: string[];
   integrations: { id: string; provider: string }[];

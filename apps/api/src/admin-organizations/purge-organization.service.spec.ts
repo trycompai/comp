@@ -24,9 +24,9 @@ jest.mock('@db', () => ({
 
 import { db } from '@db';
 import { PurgeOrganizationService } from './purge-organization.service';
-import type { PurgeOrganizationSnapshotService } from './purge-organization-snapshot.service';
-import type { PurgeOrganizationExternalService } from './purge-organization-external.service';
-import type { PurgeSnapshot } from './purge-organization.types';
+import { PurgeOrganizationSnapshotService } from './purge-organization-snapshot.service';
+import { PurgeOrganizationExternalService } from './purge-organization-external.service';
+import { PurgeSnapshot } from './purge-organization.types';
 
 const mockDb = db as unknown as Record<string, Record<string, jest.Mock>>;
 
@@ -34,7 +34,7 @@ const sampleSnapshot: PurgeSnapshot = {
   organization: { id: 'org_1', name: 'Acme', slug: 'acme' },
   counts: { policies: 5 },
   stripe: { customerId: 'cus_1', subscriptionId: 'sub_1' },
-  s3KeysFromSchema: ['org_1/logo/a.png'],
+  s3KeysByBucket: { orgAssets: ['org_1/logo/a.png'] },
   knowledgeBaseDocumentIds: ['kbd_1'],
   manualAnswerIds: ['ma_1'],
   integrations: [{ id: 'icn_1', provider: 'google' }],

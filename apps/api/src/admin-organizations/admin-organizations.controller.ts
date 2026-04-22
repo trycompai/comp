@@ -19,6 +19,7 @@ import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { AdminOrganizationsService } from './admin-organizations.service';
 import { PurgeOrganizationService } from './purge-organization.service';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
+import { SkipAdminAuditLog } from './skip-admin-audit-log.decorator';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { PurgeOrganizationDto } from './dto/purge-organization.dto';
 
@@ -165,6 +166,7 @@ export class AdminOrganizationsController {
   }
 
   @Delete(':id')
+  @SkipAdminAuditLog()
   @ApiOperation({
     summary:
       'Permanently delete organization and all associated data (platform admin)',

@@ -1,7 +1,11 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { extractS3KeyFromUrl } from '../app/s3';
-import type { PurgeSnapshot } from './purge-organization.types';
+import type {
+  PurgeS3BucketRef,
+  PurgeS3KeysByBucket,
+  PurgeSnapshot,
+} from './purge-organization.types';
 
 @Injectable()
 export class PurgeOrganizationSnapshotService {
@@ -83,33 +87,44 @@ export class PurgeOrganizationSnapshotService {
       this.countOrgRows(organizationId),
     ]);
 
-    const s3KeysFromSchema: string[] = [];
+    const keysByBucket: Record<PurgeS3BucketRef, Set<string>> = {
+      orgAssets: new Set(),
+      default: new Set(),
+      knowledgeBase: new Set(),
+      questionnaire: new Set(),
+    };
+    const add = (bucket: PurgeS3BucketRef, key: string | null | undefined) => {
+      if (key) keysByBucket[bucket].add(key);
+    };
 
-    if (org.logo) s3KeysFromSchema.push(org.logo);
-    for (const r of trustResources) if (r.s3Key) s3KeysFromSchema.push(r.s3Key);
+    add('orgAssets', org.logo);
+    for (const r of trustResources) add('orgAssets', r.s3Key);
+    for (const d of trustDocs) add('orgAssets', d.s3Key);
     for (const n of trustNdas) {
-      if (n.pdfTemplateKey) s3KeysFromSchema.push(n.pdfTemplateKey);
-      if (n.pdfSignedKey) s3KeysFromSchema.push(n.pdfSignedKey);
+      add('default', n.pdfTemplateKey);
+      add('default', n.pdfSignedKey);
     }
-    for (const d of trustDocs) if (d.s3Key) s3KeysFromSchema.push(d.s3Key);
-    if (orgChart?.uploadedImageUrl) {
-      s3KeysFromSchema.push(orgChart.uploadedImageUrl);
-    }
-    for (const q of questionnaires) if (q.s3Key) s3KeysFromSchema.push(q.s3Key);
-    for (const k of kbDocs) if (k.s3Key) s3KeysFromSchema.push(k.s3Key);
-    for (const v of scriptVersions) {
-      if (v.scriptKey) s3KeysFromSchema.push(v.scriptKey);
-    }
+    add('default', orgChart?.uploadedImageUrl ?? null);
+    for (const v of scriptVersions) add('default', v.scriptKey);
+    for (const q of questionnaires) add('questionnaire', q.s3Key);
+    for (const k of kbDocs) add('knowledgeBase', k.s3Key);
     for (const a of attachments) {
       if (!a.url) continue;
       try {
-        s3KeysFromSchema.push(extractS3KeyFromUrl(a.url));
+        add('default', extractS3KeyFromUrl(a.url));
       } catch (err) {
         this.logger.warn(
           `Skipping attachment with unparseable URL during purge of ${organizationId}`,
           err instanceof Error ? err.message : 'unknown',
         );
       }
+    }
+
+    const s3KeysByBucket: PurgeS3KeysByBucket = {};
+    for (const [bucket, set] of Object.entries(keysByBucket) as Array<
+      [PurgeS3BucketRef, Set<string>]
+    >) {
+      if (set.size > 0) s3KeysByBucket[bucket] = [...set];
     }
 
     return {
@@ -119,7 +134,7 @@ export class PurgeOrganizationSnapshotService {
         customerId: billing?.stripeCustomerId ?? null,
         subscriptionId: pentest?.stripeSubscriptionId ?? null,
       },
-      s3KeysFromSchema: [...new Set(s3KeysFromSchema)],
+      s3KeysByBucket,
       knowledgeBaseDocumentIds: kbDocs.map((d) => d.id),
       manualAnswerIds: manualAnswers.map((m) => m.id),
       integrations: integrations.map((i) => ({

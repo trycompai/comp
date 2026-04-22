@@ -174,7 +174,12 @@ export class PurgeOrganizationService {
       counts: params.snapshot.counts,
       stripe: params.snapshot.stripe,
       integrations: params.snapshot.integrations,
-      s3KeyCount: params.snapshot.s3KeysFromSchema.length,
+      s3KeyCountByBucket: Object.fromEntries(
+        Object.entries(params.snapshot.s3KeysByBucket).map(([k, v]) => [
+          k,
+          v.length,
+        ]),
+      ),
       knowledgeBaseDocumentIds: params.snapshot.knowledgeBaseDocumentIds,
       manualAnswerIdCount: params.snapshot.manualAnswerIds.length,
     };
@@ -185,24 +190,17 @@ export class PurgeOrganizationService {
       >;
     }
 
-    try {
-      await db.auditLog.create({
-        data: {
-          organizationId: params.loggingOrgId,
-          userId: params.adminUserId,
-          memberId: null,
-          entityType: AuditLogEntityType.organization,
-          entityId: params.snapshot.organization.id,
-          description,
-          data: data as Prisma.InputJsonValue,
-        },
-      });
-    } catch (err) {
-      this.logger.error(
-        'Failed to write platform-admin purge audit log',
-        err instanceof Error ? err.message : err,
-      );
-    }
+    await db.auditLog.create({
+      data: {
+        organizationId: params.loggingOrgId,
+        userId: params.adminUserId,
+        memberId: null,
+        entityType: AuditLogEntityType.organization,
+        entityId: params.snapshot.organization.id,
+        description,
+        data: data as Prisma.InputJsonValue,
+      },
+    });
   }
 
   private async findAdminMembershipOrgId(
