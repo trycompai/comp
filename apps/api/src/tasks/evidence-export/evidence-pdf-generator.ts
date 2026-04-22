@@ -512,7 +512,10 @@ function getStatusColor(
 /**
  * Generate a summary PDF for a task with all automations
  */
-export function generateTaskSummaryPDF(summary: TaskEvidenceSummary): Buffer {
+export function generateTaskSummaryPDF(
+  summary: TaskEvidenceSummary,
+  options?: { attachmentsCount?: number },
+): Buffer {
   const doc = new jsPDF();
   const config: PDFConfig = {
     doc,
@@ -539,8 +542,8 @@ export function generateTaskSummaryPDF(summary: TaskEvidenceSummary): Buffer {
 
   addSeparator(config);
 
-  // Automations overview
-  addSectionHeader(config, 'Automations Overview');
+  // Contents overview
+  addSectionHeader(config, 'Contents');
 
   const appAutomations = summary.automations.filter(
     (a) => a.type === 'app_automation',
@@ -549,6 +552,10 @@ export function generateTaskSummaryPDF(summary: TaskEvidenceSummary): Buffer {
     (a) => a.type === 'custom_automation',
   );
 
+  const attachmentsCount = options?.attachmentsCount ?? 0;
+  if (attachmentsCount > 0) {
+    addText(config, `Attachments: ${attachmentsCount}`);
+  }
   addText(config, `Total Automations: ${summary.automations.length}`);
   addText(config, `App Automations: ${appAutomations.length}`);
   addText(config, `Custom Automations: ${customAutomations.length}`);

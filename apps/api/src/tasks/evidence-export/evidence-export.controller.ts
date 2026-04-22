@@ -173,18 +173,29 @@ export class EvidenceExportController {
     });
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
 
-    const result = await this.evidenceExportService.exportTaskEvidenceZip(
-      organizationId,
-      taskId,
-      { includeRawJson: includeJson === 'true' },
-    );
+    const { archive, filename } =
+      await this.evidenceExportService.streamTaskEvidenceZip(
+        organizationId,
+        taskId,
+        { includeRawJson: includeJson === 'true' },
+      );
 
-    res.setHeader('Content-Type', result.mimeType);
+    res.setHeader('Content-Type', 'application/zip');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${result.filename}"`,
+      `attachment; filename="${filename}"`,
     );
-    res.send(result.fileBuffer);
+
+    archive.on('error', (err) => {
+      this.logger.error(`Archive stream error for task ${taskId}: ${err.message}`);
+      if (!res.headersSent) {
+        res.status(500).end();
+      } else {
+        res.end();
+      }
+    });
+
+    archive.pipe(res);
   }
 }
 
@@ -238,17 +249,29 @@ export class AuditorEvidenceExportController {
       includeJson: includeJson === 'true',
     });
 
-    const result =
-      await this.evidenceExportService.exportOrganizationEvidenceZip(
+    const { archive, filename } =
+      await this.evidenceExportService.streamOrganizationEvidenceZip(
         organizationId,
         { includeRawJson: includeJson === 'true' },
       );
 
-    res.setHeader('Content-Type', result.mimeType);
+    res.setHeader('Content-Type', 'application/zip');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${result.filename}"`,
+      `attachment; filename="${filename}"`,
     );
-    res.send(result.fileBuffer);
+
+    archive.on('error', (err) => {
+      this.logger.error(
+        `Archive stream error for org ${organizationId}: ${err.message}`,
+      );
+      if (!res.headersSent) {
+        res.status(500).end();
+      } else {
+        res.end();
+      }
+    });
+
+    archive.pipe(res);
   }
 }
