@@ -50,18 +50,21 @@ function makeFakeArchive() {
 }
 
 function makeFakeResponse() {
-  const res: {
-    setHeader: jest.Mock;
-    status: jest.Mock;
-    end: jest.Mock;
-    headersSent: boolean;
-  } = {
+  const emitter = new EventEmitter();
+  const res = Object.assign(emitter, {
     setHeader: jest.fn(),
-    status: jest.fn(() => res),
+    status: jest.fn(function (this: unknown) {
+      return res;
+    }),
     end: jest.fn(),
     headersSent: false,
-  };
+    writableEnded: false,
+  });
   return res;
+}
+
+function makeFakeRequest() {
+  return new EventEmitter();
 }
 
 describe('EvidenceExportController', () => {
@@ -106,12 +109,14 @@ describe('EvidenceExportController', () => {
       archive: archive as unknown as import('archiver').Archiver,
       filename: 'acme_mytask_evidence_2026-04-22.zip',
     });
+    const req = makeFakeRequest();
     const res = makeFakeResponse();
 
     await controller.exportTaskEvidenceZip(
       'org_1',
       'tsk_1',
       'true',
+      req as unknown as import('express').Request,
       res as unknown as import('express').Response,
     );
 
@@ -138,12 +143,14 @@ describe('EvidenceExportController', () => {
       archive: archive as unknown as import('archiver').Archiver,
       filename: 'f.zip',
     });
+    const req = makeFakeRequest();
     const res = makeFakeResponse();
 
     await controller.exportTaskEvidenceZip(
       'org_1',
       'tsk_1',
       undefined as unknown as string,
+      req as unknown as import('express').Request,
       res as unknown as import('express').Response,
     );
 
@@ -152,6 +159,31 @@ describe('EvidenceExportController', () => {
       'tsk_1',
       { includeRawJson: false },
     );
+  });
+
+  it('aborts the archive when the client disconnects mid-stream', async () => {
+    const archive = makeFakeArchive();
+    service.streamTaskEvidenceZip.mockResolvedValue({
+      archive: archive as unknown as import('archiver').Archiver,
+      filename: 'f.zip',
+    });
+    const req = makeFakeRequest();
+    const res = makeFakeResponse();
+
+    await controller.exportTaskEvidenceZip(
+      'org_1',
+      'tsk_1',
+      'false',
+      req as unknown as import('express').Request,
+      res as unknown as import('express').Response,
+    );
+
+    expect(archive.abort).not.toHaveBeenCalled();
+
+    // Simulate client closing the connection before the stream finished.
+    req.emit('close');
+
+    expect(archive.abort).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -185,11 +217,13 @@ describe('AuditorEvidenceExportController', () => {
       archive: archive as unknown as import('archiver').Archiver,
       filename: 'acme_all-evidence_2026-04-22.zip',
     });
+    const req = makeFakeRequest();
     const res = makeFakeResponse();
 
     await controller.exportAllEvidence(
       'org_1',
       'true',
+      req as unknown as import('express').Request,
       res as unknown as import('express').Response,
     );
 

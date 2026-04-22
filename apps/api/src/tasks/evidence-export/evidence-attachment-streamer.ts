@@ -71,8 +71,12 @@ export function createFilenameTracker(): (rawName: string) => string {
 
 /**
  * Append a single attachment to the archive by streaming its S3 body.
- * If the object is missing (deleted from S3 but DB row still exists), writes a
- * plaintext placeholder so the bundle remains auditable instead of failing.
+ *
+ * - Genuine missing-object errors (`NoSuchKey` / HTTP 404) → write a
+ *   `_MISSING_<name>.txt` placeholder so the bundle stays auditable.
+ * - All other failures (network, permissions, throttling, empty body) → rethrow
+ *   so the archive aborts and the user sees a real failure instead of silently
+ *   receiving an incomplete export.
  */
 export async function appendAttachmentToArchive(params: {
   archive: Archiver;
@@ -83,14 +87,11 @@ export async function appendAttachmentToArchive(params: {
   const { archive, attachment, folderPath, uniqueName } = params;
 
   if (!s3Client || !BUCKET_NAME) {
-    logger.warn(
-      `S3 client unavailable — attachment ${attachment.id} skipped with placeholder`,
+    // Misconfiguration at process level — fail the whole export, don't silently
+    // produce placeholders for every attachment.
+    throw new Error(
+      'S3 client or bucket not configured; cannot stream attachments',
     );
-    archive.append(
-      buildMissingPlaceholder(attachment, 'S3 client not configured'),
-      { name: `${folderPath}/_MISSING_${uniqueName(attachment.name)}.txt` },
-    );
-    return;
   }
 
   try {
@@ -114,6 +115,15 @@ export async function appendAttachmentToArchive(params: {
       name: `${folderPath}/${uniqueName(attachment.name)}`,
     });
   } catch (error) {
+    if (!isS3MissingObjectError(error)) {
+      logger.error(
+        `Failed to fetch attachment ${attachment.id} (key=${attachment.url}): ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+
     const message = error instanceof Error ? error.message : String(error);
     logger.warn(
       `Missing S3 object for attachment ${attachment.id} (key=${attachment.url}): ${message}`,
@@ -122,6 +132,24 @@ export async function appendAttachmentToArchive(params: {
       name: `${folderPath}/_MISSING_${uniqueName(attachment.name)}.txt`,
     });
   }
+}
+
+/**
+ * True only for "the object does not exist" — NoSuchKey or HTTP 404.
+ * Everything else (AccessDenied, SlowDown, NetworkError, timeouts) is treated
+ * as a real failure that should surface, not a silent skip.
+ */
+function isS3MissingObjectError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const err = error as {
+    name?: string;
+    Code?: string;
+    $metadata?: { httpStatusCode?: number };
+  };
+  if (err.name === 'NoSuchKey' || err.name === 'NotFound') return true;
+  if (err.Code === 'NoSuchKey' || err.Code === 'NotFound') return true;
+  if (err.$metadata?.httpStatusCode === 404) return true;
+  return false;
 }
 
 function buildMissingPlaceholder(

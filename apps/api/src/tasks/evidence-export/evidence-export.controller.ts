@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   Query,
+  Req,
   Res,
   UseGuards,
   Logger,
@@ -15,7 +16,8 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
+import type { Archiver } from 'archiver';
 import { AuditRead } from '../../audit/skip-audit-log.decorator';
 import { OrganizationId } from '../../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
@@ -164,6 +166,7 @@ export class EvidenceExportController {
     @OrganizationId() organizationId: string,
     @Param('taskId') taskId: string,
     @Query('includeJson') includeJson: string,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     this.logger.log('Export task evidence ZIP', {
@@ -186,16 +189,13 @@ export class EvidenceExportController {
       `attachment; filename="${filename}"`,
     );
 
-    archive.on('error', (err) => {
-      this.logger.error(`Archive stream error for task ${taskId}: ${err.message}`);
-      if (!res.headersSent) {
-        res.status(500).end();
-      } else {
-        res.end();
-      }
+    pipeArchiveToResponse({
+      archive,
+      req,
+      res,
+      logger: this.logger,
+      tag: `task ${taskId}`,
     });
-
-    archive.pipe(res);
   }
 }
 
@@ -242,6 +242,7 @@ export class AuditorEvidenceExportController {
   async exportAllEvidence(
     @OrganizationId() organizationId: string,
     @Query('includeJson') includeJson: string,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     this.logger.log('Auditor exporting all evidence', {
@@ -261,17 +262,51 @@ export class AuditorEvidenceExportController {
       `attachment; filename="${filename}"`,
     );
 
-    archive.on('error', (err) => {
-      this.logger.error(
-        `Archive stream error for org ${organizationId}: ${err.message}`,
-      );
-      if (!res.headersSent) {
-        res.status(500).end();
-      } else {
-        res.end();
-      }
+    pipeArchiveToResponse({
+      archive,
+      req,
+      res,
+      logger: this.logger,
+      tag: `org ${organizationId}`,
     });
-
-    archive.pipe(res);
   }
+}
+
+/**
+ * Wire an archive to the HTTP response with two concerns:
+ *  1. Archive errors → log and end the response (500 if headers not yet sent).
+ *  2. Client disconnect → abort the archive so S3 fetches stop and the
+ *     background populate task doesn't keep running for a closed socket.
+ */
+function pipeArchiveToResponse(params: {
+  archive: Archiver;
+  req: Request;
+  res: Response;
+  logger: Logger;
+  tag: string;
+}): void {
+  const { archive, req, res, logger, tag } = params;
+  let aborted = false;
+
+  const abortIfIncomplete = () => {
+    if (aborted) return;
+    if (res.writableEnded) return;
+    aborted = true;
+    logger.warn(`Client disconnected during export (${tag}); aborting archive`);
+    archive.abort();
+  };
+
+  req.once('close', abortIfIncomplete);
+  res.once('close', abortIfIncomplete);
+
+  archive.on('error', (err) => {
+    logger.error(`Archive stream error (${tag}): ${err.message}`);
+    if (!res.headersSent) {
+      res.status(500).end();
+    } else if (!res.writableEnded) {
+      res.end();
+    }
+  });
+
+  archive.pipe(res);
 }

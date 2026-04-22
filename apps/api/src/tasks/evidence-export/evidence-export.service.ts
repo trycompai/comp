@@ -404,6 +404,10 @@ export class EvidenceExportService {
 
   /**
    * Stream all evidence across an organization as a ZIP.
+   *
+   * Pre-flight checks (organization exists, has content) run synchronously
+   * before the archive is created so failures turn into proper HTTP errors
+   * instead of mid-stream aborts with headers already sent.
    */
   async streamOrganizationEvidenceZip(
     organizationId: string,
@@ -416,6 +420,14 @@ export class EvidenceExportService {
 
     if (!organization) {
       throw new NotFoundException('Organization not found');
+    }
+
+    // Pre-flight: error synchronously if nothing to export.
+    const taskIds = await this.findTasksWithEvidence(organizationId);
+    if (taskIds.length === 0) {
+      throw new NotFoundException(
+        'No tasks with evidence or attachments found',
+      );
     }
 
     const orgFolder = sanitizeFilename(organization.name);
@@ -439,6 +451,7 @@ export class EvidenceExportService {
       organizationId,
       organizationName: organization.name,
       orgFolder,
+      taskIds,
       options,
     }).catch((err) => {
       this.logger.error(
@@ -457,19 +470,27 @@ export class EvidenceExportService {
     organizationId: string;
     organizationName: string;
     orgFolder: string;
+    taskIds: string[];
     options: { includeRawJson?: boolean };
   }): Promise<void> {
-    const { archive, organizationId, organizationName, orgFolder, options } =
-      params;
+    const {
+      archive,
+      organizationId,
+      organizationName,
+      orgFolder,
+      taskIds,
+      options,
+    } = params;
 
-    const taskIds = await this.findTasksWithEvidence(organizationId);
-
-    const tasksWithData: Array<{
+    // Stream tasks one at a time. Only keep lightweight manifest metadata in
+    // memory (task title + counts) — never hold all summaries simultaneously.
+    const manifestEntries: Array<{
       id: string;
       title: string;
-      summary: TaskEvidenceSummary;
-      attachments: TaskAttachment[];
+      automations: number;
+      attachments: number;
     }> = [];
+    let totalAttachments = 0;
 
     for (const taskId of taskIds) {
       try {
@@ -477,74 +498,64 @@ export class EvidenceExportService {
           this.getTaskEvidenceSummary(organizationId, taskId),
           getTaskAttachments(organizationId, taskId),
         ]);
+
         if (summary.automations.length === 0 && attachments.length === 0) {
           continue;
         }
-        tasksWithData.push({
-          id: summary.taskId,
-          title: summary.taskTitle,
+
+        const taskIdSuffix = summary.taskId.slice(-8);
+        const taskFolder = `${orgFolder}/${sanitizeFilename(summary.taskTitle)}-${taskIdSuffix}`;
+
+        await this.appendTaskContents({
+          archive,
           summary,
           attachments,
+          folderName: taskFolder,
+          options,
+          // Org-wide keeps automation files flat (existing convention).
+          perAutomationSubfolders: false,
         });
+
+        manifestEntries.push({
+          id: summary.taskId,
+          title: summary.taskTitle,
+          automations: summary.automations.length,
+          attachments: attachments.length,
+        });
+        totalAttachments += attachments.length;
       } catch (error) {
         this.logger.warn(
-          `Failed to prepare task ${taskId} for export: ${
+          `Failed to export task ${taskId}: ${
             error instanceof Error ? error.message : String(error)
           }`,
         );
       }
     }
 
-    if (tasksWithData.length === 0) {
-      throw new NotFoundException(
-        'No tasks with evidence or attachments found',
-      );
-    }
+    manifestEntries.sort((a, b) => a.title.localeCompare(b.title));
 
-    tasksWithData.sort((a, b) => a.title.localeCompare(b.title));
-
+    // Manifest written last — archiver doesn't care about append order for the
+    // final ZIP structure, and this lets us include final counts without a
+    // separate aggregation pass.
     const manifest = {
       organization: organizationName,
       organizationId,
       exportedAt: new Date().toISOString(),
-      tasksCount: tasksWithData.length,
-      totalAttachments: tasksWithData.reduce(
-        (sum, t) => sum + t.attachments.length,
-        0,
-      ),
-      tasks: tasksWithData.map((t) => ({
-        id: t.id,
-        title: t.title,
-        automations: t.summary.automations.length,
-        attachments: t.attachments.length,
-      })),
+      tasksCount: manifestEntries.length,
+      totalAttachments,
+      tasks: manifestEntries,
     };
     archive.append(
       Buffer.from(safeStringify(manifest, null, 2) ?? '{}', 'utf-8'),
       { name: `${orgFolder}/manifest.json` },
     );
 
-    for (const task of tasksWithData) {
-      const taskIdSuffix = task.id.slice(-8);
-      const taskFolder = `${orgFolder}/${sanitizeFilename(task.title)}-${taskIdSuffix}`;
-
-      await this.appendTaskContents({
-        archive,
-        summary: task.summary,
-        attachments: task.attachments,
-        folderName: taskFolder,
-        options,
-        // Org-wide keeps automation files flat (existing convention).
-        perAutomationSubfolders: false,
-      });
-    }
-
     await archive.finalize();
 
     this.logger.log('Organization evidence ZIP streamed', {
       organizationId,
-      tasks: tasksWithData.length,
-      totalAttachments: manifest.totalAttachments,
+      tasks: manifestEntries.length,
+      totalAttachments,
       includeRawJson: !!options.includeRawJson,
     });
   }

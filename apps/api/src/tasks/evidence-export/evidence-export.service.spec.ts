@@ -199,7 +199,7 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       );
     });
 
-    it('writes a placeholder when S3 object is missing', async () => {
+    it('writes a placeholder when S3 object is truly missing (NoSuchKey)', async () => {
       const attachments = [
         {
           id: 'att_missing',
@@ -210,9 +210,11 @@ describe('EvidenceExportService — streaming ZIPs', () => {
         },
       ];
 
-      (s3Client!.send as jest.Mock).mockRejectedValue(
-        new Error('NoSuchKey: The specified key does not exist.'),
-      );
+      const noSuchKeyError = Object.assign(new Error('NoSuchKey'), {
+        name: 'NoSuchKey',
+        $metadata: { httpStatusCode: 404 },
+      });
+      (s3Client!.send as jest.Mock).mockRejectedValue(noSuchKeyError);
       primeTaskQueries({ attachments });
 
       const { archive } = await service.streamTaskEvidenceZip(
@@ -228,6 +230,41 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       expect(placeholder).toBeDefined();
       expect(placeholder!.options.name).toMatch(/_MISSING_ghost\.pdf\.txt$/);
       expect(String(placeholder!.source)).toContain('att_missing');
+    });
+
+    it('aborts the archive on transient S3 failures (not a placeholder)', async () => {
+      const attachments = [
+        {
+          id: 'att_err',
+          name: 'file.pdf',
+          url: 'org_1/attachments/task/tsk_123/file.pdf',
+          type: 'document',
+          createdAt: new Date(),
+        },
+      ];
+
+      // AccessDenied — NOT a missing-object error; must surface as a failure.
+      const accessDeniedError = Object.assign(new Error('Access Denied'), {
+        name: 'AccessDenied',
+        $metadata: { httpStatusCode: 403 },
+      });
+      (s3Client!.send as jest.Mock).mockRejectedValue(accessDeniedError);
+      primeTaskQueries({ attachments });
+
+      const { archive } = await service.streamTaskEvidenceZip(
+        'org_1',
+        'tsk_123',
+      );
+      const mock = archive as unknown as MockArchive;
+
+      await expect(mock.finalized).rejects.toThrow('aborted');
+      expect(mock.abort).toHaveBeenCalled();
+
+      // No placeholder text file written for a non-missing error
+      const placeholder = mock.appendCalls.find((c) =>
+        c.options.name.includes('_MISSING_'),
+      );
+      expect(placeholder).toBeUndefined();
     });
 
     it('disambiguates duplicate filenames within attachments folder', async () => {
@@ -296,18 +333,20 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       ).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('aborts archive with NotFoundException when no tasks have content', async () => {
+    it('throws NotFoundException synchronously (pre-flight) when no tasks have content', async () => {
+      // Org exists but no tasks with automations and no attachments.
       mockDb.organization.findUnique.mockResolvedValue({ name: 'Acme' });
       mockDb.task.findMany.mockResolvedValue([]);
       mockDb.attachment.findMany.mockResolvedValue([]);
 
-      const { archive } = await service.streamOrganizationEvidenceZip(
-        'org_1',
-      );
-      const mock = archive as unknown as MockArchive;
+      // Must reject synchronously — before an archive is returned — so the
+      // controller can produce a real HTTP 404 instead of a broken streamed ZIP.
+      await expect(
+        service.streamOrganizationEvidenceZip('org_1'),
+      ).rejects.toBeInstanceOf(NotFoundException);
 
-      await expect(mock.finalized).rejects.toThrow('aborted');
-      expect(mock.abort).toHaveBeenCalled();
+      // No archive should have been created at all.
+      expect(archiveInstances).toHaveLength(0);
     });
 
     it('includes a task that has attachments but no automations', async () => {
