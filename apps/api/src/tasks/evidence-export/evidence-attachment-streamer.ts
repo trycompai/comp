@@ -135,21 +135,18 @@ export async function appendAttachmentToArchive(params: {
 }
 
 /**
- * True only for "the object does not exist" — NoSuchKey or HTTP 404.
- * Everything else (AccessDenied, SlowDown, NetworkError, timeouts) is treated
- * as a real failure that should surface, not a silent skip.
+ * True only for "the object does not exist" — specifically `NoSuchKey` (or
+ * `NotFound` for HeadObject semantics). Anything else — including the other
+ * 404s like `NoSuchBucket`, or 403s like `AccessDenied` — is a real failure
+ * that must surface, not a silent per-attachment skip. A misconfigured bucket
+ * returning NoSuchBucket would otherwise produce an export full of placeholders
+ * that looks "successful" but contains none of the customer's evidence.
  */
 function isS3MissingObjectError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
-  const err = error as {
-    name?: string;
-    Code?: string;
-    $metadata?: { httpStatusCode?: number };
-  };
-  if (err.name === 'NoSuchKey' || err.name === 'NotFound') return true;
-  if (err.Code === 'NoSuchKey' || err.Code === 'NotFound') return true;
-  if (err.$metadata?.httpStatusCode === 404) return true;
-  return false;
+  const err = error as { name?: string; Code?: string };
+  const code = err.name ?? err.Code;
+  return code === 'NoSuchKey' || code === 'NotFound';
 }
 
 function buildMissingPlaceholder(

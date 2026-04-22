@@ -267,6 +267,42 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       expect(placeholder).toBeUndefined();
     });
 
+    it('aborts on NoSuchBucket (a 404 that is NOT a missing object)', async () => {
+      const attachments = [
+        {
+          id: 'att_bucket',
+          name: 'file.pdf',
+          url: 'org_1/attachments/task/tsk_123/file.pdf',
+          type: 'document',
+          createdAt: new Date(),
+        },
+      ];
+
+      // Bucket misconfiguration — returns HTTP 404 but must NOT be
+      // treated as a single missing attachment. Otherwise the export looks
+      // "successful" while silently containing only placeholders.
+      const noSuchBucketError = Object.assign(new Error('NoSuchBucket'), {
+        name: 'NoSuchBucket',
+        $metadata: { httpStatusCode: 404 },
+      });
+      (s3Client!.send as jest.Mock).mockRejectedValue(noSuchBucketError);
+      primeTaskQueries({ attachments });
+
+      const { archive } = await service.streamTaskEvidenceZip(
+        'org_1',
+        'tsk_123',
+      );
+      const mock = archive as unknown as MockArchive;
+
+      await expect(mock.finalized).rejects.toThrow('aborted');
+      expect(mock.abort).toHaveBeenCalled();
+
+      const placeholder = mock.appendCalls.find((c) =>
+        c.options.name.includes('_MISSING_'),
+      );
+      expect(placeholder).toBeUndefined();
+    });
+
     it('disambiguates duplicate filenames within attachments folder', async () => {
       const attachments = [
         {
