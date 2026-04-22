@@ -1,0 +1,23 @@
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/components/FrameworkTimeline.tsx
+  93813e26127223ab 10,50,53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "5eaf7b156227fb45f4ad73f1404efe675cf780ee",
+  "prompts": {
+    "93813e26127223ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e076f1fc-d6c4-4a54-a08c-5ebb436580d7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 269,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    }
+  }
+}
