@@ -2,6 +2,17 @@ import { describe, it, expect, beforeEach } from 'bun:test';
 import { db } from '../client';
 import { backfillFrameworkVersions } from './backfill-framework-versions';
 
+const dbUrl = process.env.DATABASE_URL ?? '';
+if (
+  dbUrl.includes('prod') ||
+  dbUrl.includes('staging') ||
+  (!dbUrl.includes('test') && !dbUrl.includes('localhost') && !dbUrl.includes('127.0.0.1'))
+) {
+  throw new Error(
+    `Refusing to run destructive tests. DATABASE_URL must target a local/test DB; got: ${dbUrl}`,
+  );
+}
+
 describe('backfillFrameworkVersions', () => {
   beforeEach(async () => {
     // Clear FK references before deleting FrameworkVersions

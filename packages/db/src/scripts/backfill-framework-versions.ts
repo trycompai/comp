@@ -42,22 +42,25 @@ export async function backfillFrameworkVersions(): Promise<BackfillResult> {
   let versionsCreated = 0;
 
   for (const framework of frameworks) {
-    const existing = await db.frameworkVersion.findUnique({
-      where: { frameworkId_version: { frameworkId: framework.id, version: '1.0.0' } },
-    });
-    if (existing) continue;
-
     const manifest = buildManifestFromFramework(framework);
 
-    await db.frameworkVersion.create({
-      data: {
-        frameworkId: framework.id,
-        version: '1.0.0',
-        manifest: manifest as object,
-        releaseNotes: 'Initial version (backfilled).',
-      },
-    });
-    versionsCreated += 1;
+    try {
+      await db.frameworkVersion.create({
+        data: {
+          frameworkId: framework.id,
+          version: '1.0.0',
+          manifest: manifest as unknown as Prisma.InputJsonValue,
+          releaseNotes: 'Initial version (backfilled).',
+        },
+      });
+      versionsCreated += 1;
+    } catch (err: unknown) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        // Raced with another backfill run — already created. Not counted.
+      } else {
+        throw err;
+      }
+    }
   }
 
   // Backfill instances
@@ -129,8 +132,8 @@ function buildManifestFromFramework(framework: FrameworkWithTemplates) {
           name: p.name,
           description: p.description,
           content: p.content,
-          frequency: p.frequency as string,
-          department: p.department as string,
+          frequency: p.frequency,
+          department: p.department,
         })),
       ),
     ),
@@ -140,8 +143,8 @@ function buildManifestFromFramework(framework: FrameworkWithTemplates) {
           id: t.id,
           name: t.name,
           description: t.description,
-          frequency: t.frequency as string,
-          department: t.department as string,
+          frequency: t.frequency,
+          department: t.department,
         })),
       ),
     ),
