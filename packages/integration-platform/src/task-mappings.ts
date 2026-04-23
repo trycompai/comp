@@ -322,7 +322,7 @@ PCI: Mask PAN when displayed outside the secure CDE, ensuring only truncated ...
   },
   frk_tt_6840796f77d8a0dff53f947a: {
     name: 'Secure Devices',
-    description: `Ensure all devices have BitLocker/FileVault enabled, screen lock enabled after 5 minutes (for mac) o...`,
+    description: `Ensure all devices have BitLocker/FileVault enabled, screen lock enabled after 15 minutes (for mac) o...`,
     department: 'itsm',
     frequency: 'yearly',
   },

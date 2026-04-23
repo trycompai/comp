@@ -2,10 +2,10 @@ import { execSync } from 'node:child_process';
 import type { CheckResult } from '../../shared/types';
 import type { ComplianceCheck } from '../types';
 
-const MAX_IDLE_TIME_SECONDS = 300; // 5 minutes
+const MAX_IDLE_TIME_SECONDS = 900; // 15 minutes
 
 /**
- * Checks if screen lock is enabled and set to 5 minutes or less on Linux.
+ * Checks if screen lock is enabled and set to 15 minutes or less on Linux.
  *
  * Detection methods:
  *  1. GNOME: gsettings for org.gnome.desktop.session idle-delay and
@@ -16,7 +16,7 @@ const MAX_IDLE_TIME_SECONDS = 300; // 5 minutes
  */
 export class LinuxScreenLockCheck implements ComplianceCheck {
   checkType = 'screen_lock' as const;
-  displayName = 'Screen Lock (5 min or less)';
+  displayName = 'Screen Lock (15 min or less)';
 
   async run(): Promise<CheckResult> {
     try {
