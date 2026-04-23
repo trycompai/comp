@@ -3,12 +3,12 @@ import type { RemediationInfo, RemediationResult } from '../../shared/types';
 import { getInstructions } from '../instructions';
 import type { ComplianceRemediation } from '../types';
 
-const TARGET_IDLE_TIME_SECONDS = 300; // 5 minutes
+const TARGET_IDLE_TIME_SECONDS = 900; // 15 minutes
 
 /**
  * Windows screen lock remediation.
  * Auto-fixes without admin privileges by writing user-level HKCU registry keys:
- *  - ScreenSaveTimeOut = 300 (5 minutes)
+ *  - ScreenSaveTimeOut = 900 (15 minutes)
  *  - ScreenSaverIsSecure = 1 (password required on resume)
  *  - ScreenSaveActive = 1 (screen saver enabled)
  */
@@ -37,7 +37,7 @@ export class WindowsScreenLockRemediation implements ComplianceRemediation {
         { encoding: 'utf-8', timeout: 10000 },
       );
 
-      // Set timeout to 5 minutes
+      // Set timeout to 15 minutes
       execSync(
         `powershell.exe -NoProfile -NonInteractive -Command "Set-ItemProperty -Path '${regPath}' -Name ScreenSaveTimeOut -Value '${TARGET_IDLE_TIME_SECONDS}'"`,
         { encoding: 'utf-8', timeout: 10000 },
