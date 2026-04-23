@@ -289,23 +289,67 @@ export function PublishVersionDialog({
                   />
                   <LinkEdgeSection
                     title="Control → requirement links"
-                    added={diff.requirementMapEdges.added.length}
-                    removed={diff.requirementMapEdges.removed.length}
+                    added={(draftDiff?.linkChanges?.controlRequirement.added ?? []).map((e) => ({
+                      key: `${e.controlName}→${e.requirementIdentifier}${e.requirementName}`,
+                      left: e.controlName,
+                      right: e.requirementIdentifier
+                        ? `${e.requirementIdentifier} — ${e.requirementName}`
+                        : e.requirementName,
+                    }))}
+                    removed={(draftDiff?.linkChanges?.controlRequirement.removed ?? []).map((e) => ({
+                      key: `${e.controlName}→${e.requirementIdentifier}${e.requirementName}`,
+                      left: e.controlName,
+                      right: e.requirementIdentifier
+                        ? `${e.requirementIdentifier} — ${e.requirementName}`
+                        : e.requirementName,
+                    }))}
+                    fallbackAdded={diff.requirementMapEdges.added.length}
+                    fallbackRemoved={diff.requirementMapEdges.removed.length}
                   />
                   <LinkEdgeSection
                     title="Control → policy links"
-                    added={diff.controlPolicyEdges.added.length}
-                    removed={diff.controlPolicyEdges.removed.length}
+                    added={(draftDiff?.linkChanges?.controlPolicy.added ?? []).map((e) => ({
+                      key: `${e.controlName}→${e.policyName}`,
+                      left: e.controlName,
+                      right: e.policyName,
+                    }))}
+                    removed={(draftDiff?.linkChanges?.controlPolicy.removed ?? []).map((e) => ({
+                      key: `${e.controlName}→${e.policyName}`,
+                      left: e.controlName,
+                      right: e.policyName,
+                    }))}
+                    fallbackAdded={diff.controlPolicyEdges.added.length}
+                    fallbackRemoved={diff.controlPolicyEdges.removed.length}
                   />
                   <LinkEdgeSection
                     title="Control → task links"
-                    added={diff.controlTaskEdges.added.length}
-                    removed={diff.controlTaskEdges.removed.length}
+                    added={(draftDiff?.linkChanges?.controlTask.added ?? []).map((e) => ({
+                      key: `${e.controlName}→${e.taskName}`,
+                      left: e.controlName,
+                      right: e.taskName,
+                    }))}
+                    removed={(draftDiff?.linkChanges?.controlTask.removed ?? []).map((e) => ({
+                      key: `${e.controlName}→${e.taskName}`,
+                      left: e.controlName,
+                      right: e.taskName,
+                    }))}
+                    fallbackAdded={diff.controlTaskEdges.added.length}
+                    fallbackRemoved={diff.controlTaskEdges.removed.length}
                   />
                   <LinkEdgeSection
                     title="Control → document-type links"
-                    added={diff.controlDocumentTypeEdges?.added.length ?? 0}
-                    removed={diff.controlDocumentTypeEdges?.removed.length ?? 0}
+                    added={(draftDiff?.linkChanges?.controlDocumentType.added ?? []).map((e) => ({
+                      key: `${e.controlName}→${e.formType}`,
+                      left: e.controlName,
+                      right: e.formType.replace(/_/g, ' '),
+                    }))}
+                    removed={(draftDiff?.linkChanges?.controlDocumentType.removed ?? []).map((e) => ({
+                      key: `${e.controlName}→${e.formType}`,
+                      left: e.controlName,
+                      right: e.formType.replace(/_/g, ' '),
+                    }))}
+                    fallbackAdded={diff.controlDocumentTypeEdges?.added.length ?? 0}
+                    fallbackRemoved={diff.controlDocumentTypeEdges?.removed.length ?? 0}
                   />
                 </div>
               )}
@@ -402,33 +446,89 @@ function DiffRow({
   );
 }
 
+interface LinkEntry {
+  key: string;
+  left: string;
+  right: string;
+}
+
 function LinkEdgeSection({
   title,
   added,
   removed,
+  fallbackAdded,
+  fallbackRemoved,
 }: {
   title: string;
-  added: number;
-  removed: number;
+  added: LinkEntry[];
+  removed: LinkEntry[];
+  fallbackAdded: number;
+  fallbackRemoved: number;
 }) {
-  if (added === 0 && removed === 0) return null;
+  const totalDetailed = added.length + removed.length;
+  const totalFallback = fallbackAdded + fallbackRemoved;
+  if (totalDetailed === 0 && totalFallback === 0) return null;
+
+  // If the enriched linkChanges payload is missing (older API), just show counts.
+  if (totalDetailed === 0 && totalFallback > 0) {
+    return (
+      <div className="border-b last:border-b-0 px-4 py-3">
+        <p className="text-muted-foreground mb-1 text-xs font-semibold uppercase tracking-wide">
+          {title}
+        </p>
+        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+          {fallbackAdded > 0 && (
+            <span>
+              {fallbackAdded} link{fallbackAdded !== 1 ? 's' : ''} added
+            </span>
+          )}
+          {fallbackRemoved > 0 && (
+            <span>
+              {fallbackRemoved} link{fallbackRemoved !== 1 ? 's' : ''} removed
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="border-b last:border-b-0 px-4 py-3">
-      <p className="text-muted-foreground mb-1 text-xs font-semibold uppercase tracking-wide">
+      <p className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wide">
         {title}
       </p>
-      <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-        {added > 0 && (
-          <span>
-            {added} link{added !== 1 ? 's' : ''} added
-          </span>
-        )}
-        {removed > 0 && (
-          <span>
-            {removed} link{removed !== 1 ? 's' : ''} removed
-          </span>
-        )}
+      <div className="flex flex-col gap-1">
+        {added.map((e) => (
+          <LinkRow key={`a-${e.key}`} kind="added" entry={e} />
+        ))}
+        {removed.map((e) => (
+          <LinkRow key={`r-${e.key}`} kind="removed" entry={e} />
+        ))}
       </div>
+    </div>
+  );
+}
+
+function LinkRow({ kind, entry }: { kind: 'added' | 'removed'; entry: LinkEntry }) {
+  const markerClass =
+    kind === 'added' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+  const marker = kind === 'added' ? '+' : '−';
+  const label = kind === 'added' ? 'Added' : 'Removed';
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex min-w-0 items-start gap-2">
+        <span
+          className={`mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-[10px] font-semibold ${markerClass}`}
+        >
+          {marker}
+        </span>
+        <span className="text-sm">
+          <span className="font-medium">{entry.left}</span>
+          <span className="text-muted-foreground mx-1">→</span>
+          <span className="font-medium">{entry.right}</span>
+        </span>
+      </div>
+      <span className="text-muted-foreground shrink-0 text-xs">{label}</span>
     </div>
   );
 }

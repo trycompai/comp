@@ -70,10 +70,76 @@ export class FrameworkVersionsService {
     if (!latest) {
       throw new NotFoundException('No published version yet — publish v1.0.0 first');
     }
-    const currentManifest = await buildManifestForFramework(frameworkId);
+    const fromManifest = latest.manifest as unknown as FrameworkManifest;
+    const toManifest = await buildManifestForFramework(frameworkId);
+    const diff = diffManifests(fromManifest, toManifest);
+
+    // Resolve template IDs to display names (may reference entities in either
+    // the old or new manifest — e.g. a removed edge may point at a removed
+    // control).
+    const nameFor = <K extends keyof FrameworkManifest>(
+      key: K,
+      id: string,
+      fallback: string,
+    ): { name: string; identifier?: string } => {
+      const list = [
+        ...(toManifest[key] as Array<{ id: string; name?: string; identifier?: string }>),
+        ...(fromManifest[key] as Array<{ id: string; name?: string; identifier?: string }>),
+      ];
+      const hit = list.find((x) => x.id === id);
+      return {
+        name: hit?.name ?? fallback,
+        identifier: hit?.identifier,
+      };
+    };
+
     return {
       latestVersion: { id: latest.id, version: latest.version },
-      diff: diffManifests(latest.manifest as unknown as FrameworkManifest, currentManifest),
+      diff,
+      linkChanges: {
+        controlRequirement: {
+          added: diff.requirementMapEdges.added.map((e) => ({
+            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+            requirementName: nameFor('requirements', e.requirementTemplateId, 'Unknown requirement').name,
+            requirementIdentifier: nameFor('requirements', e.requirementTemplateId, '').identifier ?? '',
+          })),
+          removed: diff.requirementMapEdges.removed.map((e) => ({
+            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+            requirementName: nameFor('requirements', e.requirementTemplateId, 'Unknown requirement').name,
+            requirementIdentifier: nameFor('requirements', e.requirementTemplateId, '').identifier ?? '',
+          })),
+        },
+        controlPolicy: {
+          added: diff.controlPolicyEdges.added.map((e) => ({
+            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+            policyName: nameFor('policies', e.policyTemplateId, 'Unknown policy').name,
+          })),
+          removed: diff.controlPolicyEdges.removed.map((e) => ({
+            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+            policyName: nameFor('policies', e.policyTemplateId, 'Unknown policy').name,
+          })),
+        },
+        controlTask: {
+          added: diff.controlTaskEdges.added.map((e) => ({
+            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+            taskName: nameFor('tasks', e.taskTemplateId, 'Unknown task').name,
+          })),
+          removed: diff.controlTaskEdges.removed.map((e) => ({
+            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+            taskName: nameFor('tasks', e.taskTemplateId, 'Unknown task').name,
+          })),
+        },
+        controlDocumentType: {
+          added: diff.controlDocumentTypeEdges.added.map((e) => ({
+            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+            formType: e.formType,
+          })),
+          removed: diff.controlDocumentTypeEdges.removed.map((e) => ({
+            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+            formType: e.formType,
+          })),
+        },
+      },
     };
   }
 }

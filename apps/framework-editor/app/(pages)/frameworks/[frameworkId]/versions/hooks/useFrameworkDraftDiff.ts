@@ -51,6 +51,32 @@ export interface DraftDiff {
     controlTaskEdges: EdgeDiffCounts;
     controlDocumentTypeEdges?: EdgeDiffCounts;
   };
+  linkChanges?: {
+    controlRequirement: {
+      added: Array<{
+        controlName: string;
+        requirementName: string;
+        requirementIdentifier: string;
+      }>;
+      removed: Array<{
+        controlName: string;
+        requirementName: string;
+        requirementIdentifier: string;
+      }>;
+    };
+    controlPolicy: {
+      added: Array<{ controlName: string; policyName: string }>;
+      removed: Array<{ controlName: string; policyName: string }>;
+    };
+    controlTask: {
+      added: Array<{ controlName: string; taskName: string }>;
+      removed: Array<{ controlName: string; taskName: string }>;
+    };
+    controlDocumentType: {
+      added: Array<{ controlName: string; formType: string }>;
+      removed: Array<{ controlName: string; formType: string }>;
+    };
+  };
 }
 
 export function useFrameworkDraftDiff(
