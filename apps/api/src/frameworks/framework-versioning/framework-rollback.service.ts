@@ -135,7 +135,11 @@ async function replayUndo(
       data: {
         name: u.prevContent.name,
         description: u.prevContent.description,
-        content: u.prevContent.content as unknown as Prisma.InputJsonValue[],
+        content: {
+          set: Array.isArray(u.prevContent.content)
+            ? (u.prevContent.content as unknown as Prisma.InputJsonValue[])
+            : [u.prevContent.content as unknown as Prisma.InputJsonValue],
+        },
         frequency: u.prevContent.frequency as Frequency | null,
         department: u.prevContent.department as Departments | null,
       },

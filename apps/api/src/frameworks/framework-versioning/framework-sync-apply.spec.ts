@@ -187,10 +187,10 @@ describe('applySync', () => {
     });
 
     expect(tx.policyVersion.create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ policyId: 'pol_1', content: [{ new: true }] }),
+      data: expect.objectContaining({ policyId: 'pol_1', content: { set: [{ new: true }] } }),
     }));
     expect(tx.policy.update).not.toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ content: [{ new: true }] }),
+      data: expect.objectContaining({ content: { set: [{ new: true }] } }),
     }));
   });
 
@@ -213,7 +213,7 @@ describe('applySync', () => {
       data: expect.objectContaining({ policyTemplateId: 'pt_new', status: 'draft' }),
     }));
     expect(tx.policyVersion.create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ version: 1, content: [{ body: 'x' }] }),
+      data: expect.objectContaining({ version: 1, content: { set: [{ body: 'x' }] } }),
     }));
   });
 

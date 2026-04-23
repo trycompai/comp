@@ -146,13 +146,14 @@ export async function applySync(
   // --- Policies ---
   for (const added of diff.policies.added) {
     if (polByTemplate.has(added.id)) continue;
+    const contentArray = toJsonArray(added.content);
     const policyCreated = await tx.policy.create({
       data: {
         organizationId: ctx.instance.organizationId,
         policyTemplateId: added.id,
         name: added.name,
         description: added.description,
-        content: added.content as Prisma.InputJsonValue[],
+        content: { set: contentArray },
         frequency: added.frequency as Frequency | null,
         department: added.department as Departments | null,
         status: 'draft',
@@ -165,7 +166,7 @@ export async function applySync(
       data: {
         policyId: policyCreated.id,
         version: 1,
-        content: added.content as Prisma.InputJsonValue[],
+        content: { set: contentArray },
         changelog: 'Initial draft from framework template',
       },
     });
@@ -190,7 +191,7 @@ export async function applySync(
       const latest = await tx.policyVersion.findFirst({ where: { policyId: inst.id }, orderBy: { version: 'desc' }, select: { version: true } });
       const nextVersion = (latest?.version ?? 0) + 1;
       const draft = await tx.policyVersion.create({
-        data: { policyId: inst.id, version: nextVersion, content: u.to.content as Prisma.InputJsonValue[], changelog: 'Template update available' },
+        data: { policyId: inst.id, version: nextVersion, content: { set: toJsonArray(u.to.content) }, changelog: 'Template update available' },
       });
       undo.policies.draftsAdded.push({ policyId: inst.id, draftVersionId: draft.id });
       summary.policiesDraftAdded += 1;
@@ -206,7 +207,7 @@ export async function applySync(
     });
     await tx.policy.update({
       where: { id: inst.id },
-      data: { name: u.to.name, description: u.to.description, content: u.to.content as Prisma.InputJsonValue[], frequency: u.to.frequency as Frequency | null, department: u.to.department as Departments | null },
+      data: { name: u.to.name, description: u.to.description, content: { set: toJsonArray(u.to.content) }, frequency: u.to.frequency as Frequency | null, department: u.to.department as Departments | null },
     });
     summary.policiesUpdatedApplied += 1;
   }
@@ -294,6 +295,17 @@ export async function applySync(
   });
 
   return { syncOperationId: syncOp.id };
+}
+
+/**
+ * Normalize opaque manifest content (either a single JSON object or an array
+ * of them — templates are single-object, customer Policy.content is Json[])
+ * into an InputJsonValue[] for Prisma writes.
+ */
+function toJsonArray(value: unknown): Prisma.InputJsonValue[] {
+  if (value == null) return [];
+  if (Array.isArray(value)) return value as Prisma.InputJsonValue[];
+  return [value as Prisma.InputJsonValue];
 }
 
 function addDays(d: Date, days: number): Date {
