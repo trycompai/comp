@@ -7,7 +7,6 @@ import {
   Heading,
   PageHeader,
   PageHeaderDescription,
-  Stack,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -147,7 +146,7 @@ export function ReviewUpdateContent({
   const showEmpty = visibleGroups.length === 0 && !showLinkChanges;
 
   return (
-    <Stack gap="xl" className="pb-20">
+    <div className="flex flex-col gap-10 pb-24">
       <PageHeader
         title={`${frameworkName} v${preview.toVersion.version}`}
         backHref={frameworkHref}
@@ -167,7 +166,7 @@ export function ReviewUpdateContent({
         <StatCard label="Links affected" value={linksTotal} />
       </div>
 
-      <Stack gap="md">
+      <div className="flex flex-col gap-6">
         <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
           <TabsList variant="underline">
             <TabsTrigger value="all">
@@ -190,21 +189,21 @@ export function ReviewUpdateContent({
             <Text variant="muted">No changes in this category.</Text>
           </div>
         ) : (
-          <Stack gap="lg">
+          <div className="flex flex-col gap-8">
             {visibleGroups.map((group) => (
-              <Stack key={group.title} gap="sm">
+              <div key={group.title} className="flex flex-col gap-3">
                 <HStack justify="between" align="center">
                   <Text size="sm" weight="medium" variant="muted">
                     {group.title}
                   </Text>
                   <Badge variant="outline">{group.rows.length}</Badge>
                 </HStack>
-                <Stack gap="sm">
+                <div className="flex flex-col gap-2">
                   {group.rows.map((row) => (
                     <ItemRow key={row.key} row={row} />
                   ))}
-                </Stack>
-              </Stack>
+                </div>
+              </div>
             ))}
             {showLinkChanges && (
               <LinkChangesBlock
@@ -212,17 +211,16 @@ export function ReviewUpdateContent({
                 show={filter === 'all' ? 'both' : filter === 'added' ? 'added' : 'removed'}
               />
             )}
-          </Stack>
+          </div>
         )}
-      </Stack>
+      </div>
 
-      {/* Sticky apply bar */}
-      <div className="sticky bottom-0 z-10 -mx-4 border-t bg-background px-4 py-4 md:-mx-6 md:px-6">
+      <div className="sticky bottom-0 z-10 -mx-4 mt-4 border-t bg-background px-4 py-4 md:-mx-6 md:px-6">
         <HStack justify="between" align="center">
           <Text size="sm" variant="muted">
             Apply will update your framework instance. You can roll back within 14 days.
           </Text>
-          <HStack gap="2">
+          <HStack gap="sm">
             <Button variant="outline" size="lg" onClick={() => router.push(frameworkHref)}>
               Cancel
             </Button>
@@ -247,7 +245,7 @@ export function ReviewUpdateContent({
         isSyncing={isSyncing}
         onConfirm={handleApply}
       />
-    </Stack>
+    </div>
   );
 }
 
