@@ -146,7 +146,7 @@ export function ReviewUpdateContent({
   const showEmpty = visibleGroups.length === 0 && !showLinkChanges;
 
   return (
-    <div className="flex h-[calc(100dvh-6rem)] flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-6 overflow-hidden">
       <div className="shrink-0">
         <PageHeader
           title={`${frameworkName} v${preview.toVersion.version}`}
