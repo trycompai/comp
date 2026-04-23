@@ -54,6 +54,8 @@ export async function applySync(
     tasks: { created: [], archived: [], contentUpdated: [] },
     requirementMaps: { created: [], archived: [] },
     controlDocumentTypes: { created: [], archived: [] },
+    controlPolicyLinks: { connected: [], disconnected: [] },
+    controlTaskLinks: { connected: [], disconnected: [] },
   };
   const summary: SyncSummary = {
     controlsAdded: 0, controlsArchived: 0, controlsUpdatedApplied: 0, controlsUpdatedPreserved: 0,
@@ -255,24 +257,28 @@ export async function applySync(
     const polInst = polByTemplate.get(edge.policyTemplateId);
     if (!ctlInst || !polInst) continue;
     await tx.control.update({ where: { id: ctlInst.id }, data: { policies: { connect: { id: polInst.id } } } });
+    undo.controlPolicyLinks.connected.push({ controlId: ctlInst.id, otherId: polInst.id });
   }
   for (const edge of diff.controlPolicyEdges.removed) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     const polInst = polByTemplate.get(edge.policyTemplateId);
     if (!ctlInst || !polInst) continue;
     await tx.control.update({ where: { id: ctlInst.id }, data: { policies: { disconnect: { id: polInst.id } } } });
+    undo.controlPolicyLinks.disconnected.push({ controlId: ctlInst.id, otherId: polInst.id });
   }
   for (const edge of diff.controlTaskEdges.added) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     const tInst = taskByTemplate.get(edge.taskTemplateId);
     if (!ctlInst || !tInst) continue;
     await tx.control.update({ where: { id: ctlInst.id }, data: { tasks: { connect: { id: tInst.id } } } });
+    undo.controlTaskLinks.connected.push({ controlId: ctlInst.id, otherId: tInst.id });
   }
   for (const edge of diff.controlTaskEdges.removed) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     const tInst = taskByTemplate.get(edge.taskTemplateId);
     if (!ctlInst || !tInst) continue;
     await tx.control.update({ where: { id: ctlInst.id }, data: { tasks: { disconnect: { id: tInst.id } } } });
+    undo.controlTaskLinks.disconnected.push({ controlId: ctlInst.id, otherId: tInst.id });
   }
 
   // --- Persist sync op + update currentVersionId ---

@@ -4,6 +4,10 @@ export interface UndoPayload {
   tasks: EntityUndoBucket<TaskUndoContent>;
   requirementMaps: EdgeUndoBucket;
   controlDocumentTypes: EdgeUndoBucket;
+  // Prisma implicit many-to-many relations: each entry is one connect or
+  // disconnect between a Control and a Policy / Task instance.
+  controlPolicyLinks: ImplicitEdgeBucket;
+  controlTaskLinks: ImplicitEdgeBucket;
 }
 
 export interface EntityUndoBucket<Content> {
@@ -40,6 +44,17 @@ export interface PolicyUndoContent {
 export interface EdgeUndoBucket {
   created: string[];
   archived: Array<{ id: string; prevArchivedAt: Date | null }>;
+}
+
+/**
+ * Implicit Prisma M:N relation edges (e.g., `control.policies`, `control.tasks`).
+ * Unlike explicit junction tables, these have no per-edge row with an archive
+ * column — so the undo payload records the raw pairs we connected/disconnected.
+ * Rollback reverses: `connected` become disconnects, `disconnected` become connects.
+ */
+export interface ImplicitEdgeBucket {
+  connected: Array<{ controlId: string; otherId: string }>;
+  disconnected: Array<{ controlId: string; otherId: string }>;
 }
 
 export interface SyncSummary {

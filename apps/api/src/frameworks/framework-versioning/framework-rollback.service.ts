@@ -170,6 +170,24 @@ async function replayUndo(
     await tx.policyVersion.delete({ where: { id: d.draftVersionId } });
   }
 
+  // Reverse implicit M:N edges: connects become disconnects and vice versa.
+  // Guard with nullish coalescing so older sync operations written before
+  // this bucket existed don't crash the rollback.
+  const cpl = ctx.undo.controlPolicyLinks ?? { connected: [], disconnected: [] };
+  const ctl = ctx.undo.controlTaskLinks ?? { connected: [], disconnected: [] };
+  for (const link of cpl.connected) {
+    await tx.control.update({ where: { id: link.controlId }, data: { policies: { disconnect: { id: link.otherId } } } });
+  }
+  for (const link of cpl.disconnected) {
+    await tx.control.update({ where: { id: link.controlId }, data: { policies: { connect: { id: link.otherId } } } });
+  }
+  for (const link of ctl.connected) {
+    await tx.control.update({ where: { id: link.controlId }, data: { tasks: { disconnect: { id: link.otherId } } } });
+  }
+  for (const link of ctl.disconnected) {
+    await tx.control.update({ where: { id: link.controlId }, data: { tasks: { connect: { id: link.otherId } } } });
+  }
+
   // Revert framework instance version pointer
   await tx.frameworkInstance.update({
     where: { id: ctx.syncOp.frameworkInstanceId },
