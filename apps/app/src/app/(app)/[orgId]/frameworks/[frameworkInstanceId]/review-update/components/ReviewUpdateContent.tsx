@@ -336,7 +336,7 @@ function ItemRow({ row }: { row: ChangeRow }) {
 interface LinkRow {
   key: string;
   left: string;
-  arrow: '→' | '↛';
+  arrow: '→';
   right: string;
   kind: 'added' | 'removed';
   label: string;
@@ -401,7 +401,7 @@ function LinkChangesBlock({
       rows.push({
         key: `cr-rem-${i}`,
         left: e.controlName,
-        arrow: '↛',
+        arrow: '→',
         right: `${e.requirementIdentifier ? `${e.requirementIdentifier} — ` : ''}${e.requirementName}`,
         kind: 'removed',
         label: 'Requirement unlinked',
@@ -411,7 +411,7 @@ function LinkChangesBlock({
       rows.push({
         key: `cp-rem-${i}`,
         left: e.controlName,
-        arrow: '↛',
+        arrow: '→',
         right: e.policyName,
         kind: 'removed',
         label: 'Policy unlinked',
@@ -421,7 +421,7 @@ function LinkChangesBlock({
       rows.push({
         key: `ct-rem-${i}`,
         left: e.controlName,
-        arrow: '↛',
+        arrow: '→',
         right: e.taskName,
         kind: 'removed',
         label: 'Task unlinked',
@@ -431,7 +431,7 @@ function LinkChangesBlock({
       rows.push({
         key: `cd-rem-${i}`,
         left: e.controlName,
-        arrow: '↛',
+        arrow: '→',
         right: e.formType.replace(/_/g, ' '),
         kind: 'removed',
         label: 'Document type unlinked',
