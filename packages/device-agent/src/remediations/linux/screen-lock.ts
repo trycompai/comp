@@ -3,12 +3,12 @@ import type { RemediationInfo, RemediationResult } from '../../shared/types';
 import { getInstructions } from '../instructions';
 import type { ComplianceRemediation } from '../types';
 
-const TARGET_IDLE_TIME_SECONDS = 300; // 5 minutes
+const TARGET_IDLE_TIME_SECONDS = 900; // 15 minutes
 
 /**
  * Linux screen lock remediation.
  * Auto-fixes without admin privileges by setting GNOME gsettings:
- *  - idle-delay to 5 minutes
+ *  - idle-delay to 15 minutes
  *  - lock-enabled to true
  *  - lock-delay to 0 (immediate)
  */
@@ -29,7 +29,7 @@ export class LinuxScreenLockRemediation implements ComplianceRemediation {
 
   async remediate(): Promise<RemediationResult> {
     try {
-      // Set idle delay to 5 minutes
+      // Set idle delay to 15 minutes
       execSync(`gsettings set org.gnome.desktop.session idle-delay ${TARGET_IDLE_TIME_SECONDS}`, {
         encoding: 'utf-8',
         timeout: 10000,

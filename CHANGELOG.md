@@ -1,3 +1,69 @@
+## [3.31.1](https://github.com/trycompai/comp/compare/v3.31.0...v3.31.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* **cloud-security:** recognize VPC-scope flow logs correctly ([7698670](https://github.com/trycompai/comp/commit/76986706c2e6e1979156c9df84bfd9eb696a5b7e))
+
+# [3.31.0](https://github.com/trycompai/comp/compare/v3.30.0...v3.31.0) (2026-04-23)
+
+
+### Bug Fixes
+
+* **db:** exclude *.spec.ts from tsc build ([#2651](https://github.com/trycompai/comp/issues/2651)) ([4d340ad](https://github.com/trycompai/comp/commit/4d340ad3251ff8d804c7000ded6db81953156a63))
+
+
+### Features
+
+* enabled framework versioning and updating existing frameworks when new versions come out ([7518075](https://github.com/trycompai/comp/commit/75180757dd436b6f03c2c504d57b2584f19f9b7f))
+
+# [3.30.0](https://github.com/trycompai/comp/compare/v3.29.0...v3.30.0) (2026-04-23)
+
+
+### Bug Fixes
+
+* **app:** show evidence block for failed automation runs ([975b4c9](https://github.com/trycompai/comp/commit/975b4c9089c2ab603dea65f769e2daa53fc2c516)), closes [#2643](https://github.com/trycompai/comp/issues/2643)
+* **integration-platform:** fail Dependabot check on open high/critical alerts ([b4492d1](https://github.com/trycompai/comp/commit/b4492d1fa229295d51a2f355632f19a098677f81))
+
+
+### Features
+
+* **device-agent:** relax screen lock threshold to 15 minutes ([b20ced0](https://github.com/trycompai/comp/commit/b20ced08edca1d6673efb025711a974d5a7748b6))
+
+
+### Performance Improvements
+
+* **onboarding:** replace sequential update loops with bulk SQL in org init ([0c5d332](https://github.com/trycompai/comp/commit/0c5d3321a0ccea26b07f10f9f6a48188cb7f1634))
+
+# [3.29.0](https://github.com/trycompai/comp/compare/v3.28.0...v3.29.0) (2026-04-22)
+
+
+### Bug Fixes
+
+* **evidence-export:** address review feedback on streaming export ([3814e33](https://github.com/trycompai/comp/commit/3814e33c31da2e40ef5fed43f2f463e599497a55))
+* **evidence-export:** address two follow-up review findings ([752ed24](https://github.com/trycompai/comp/commit/752ed244dd4909dbf75188df36998e1bf1c46e2d)), closes [#2640](https://github.com/trycompai/comp/issues/2640)
+* **evidence-export:** tighten S3 missing-object check to specific error codes ([317d407](https://github.com/trycompai/comp/commit/317d407b23c089235990c754e5afd1757467d2d1))
+
+
+### Features
+
+* **evidence-export:** include task attachments and stream large ZIPs ([1bc86d8](https://github.com/trycompai/comp/commit/1bc86d88e5654464a0ece92d51fc6a8e44106ad3))
+
+# [3.28.0](https://github.com/trycompai/comp/compare/v3.27.6...v3.28.0) (2026-04-22)
+
+
+### Bug Fixes
+
+* **admin-organizations:** harden org purge against silent failures ([3d179d9](https://github.com/trycompai/comp/commit/3d179d9cfc4b62ddbb10d24cdce7ef0fd53b7db1))
+* **admin-organizations:** harden purge per security review ([fae4aeb](https://github.com/trycompai/comp/commit/fae4aeb1525e82840cf134a80ad0d502503fd4b2))
+* **admin-organizations:** make completion audit best-effort; verify non-prefix S3 keys ([463bcab](https://github.com/trycompai/comp/commit/463bcab941106054b7a103a021f19a60cdf87959))
+* ff timeline in framework tab ([987ad1e](https://github.com/trycompai/comp/commit/987ad1ef5648023417779debb1a63ec3dd12f237))
+
+
+### Features
+
+* **admin:** add platform-admin endpoint to permanently purge an organization ([3cf3b2d](https://github.com/trycompai/comp/commit/3cf3b2d018ed0a25ac5082e5524c74d77a483832))
+
 ## [3.27.6](https://github.com/trycompai/comp/compare/v3.27.5...v3.27.6) (2026-04-22)
 
 

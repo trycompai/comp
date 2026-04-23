@@ -190,15 +190,28 @@ export class Ec2VpcAdapter implements AwsServiceAdapter {
 
     if (vpcs.length === 0) return findings;
 
-    const flowLogsResp = await client.send(
-      new DescribeFlowLogsCommand({
-        Filter: [{ Name: 'resource-type', Values: ['VPC'] }],
-      }),
-    );
-
-    const vpcsWithFlowLogs = new Set(
-      (flowLogsResp.FlowLogs || []).map((fl) => fl.ResourceId),
-    );
+    // DescribeFlowLogs does not support a `resource-type` filter — the only
+    // supported filters are documented in DescribeFlowLogsRequest (resource-id,
+    // flow-log-id, traffic-type, etc.). We fetch all flow logs with pagination
+    // and filter to VPC-scope by the `vpc-` ResourceId prefix client-side.
+    // Subnet-scope (subnet-*) and ENI-scope (eni-*) flow logs are ignored
+    // because they don't cover all VPC traffic.
+    const vpcsWithFlowLogs = new Set<string>();
+    let nextToken: string | undefined;
+    do {
+      const flowLogsResp = await client.send(
+        new DescribeFlowLogsCommand({
+          MaxResults: 1000,
+          NextToken: nextToken,
+        }),
+      );
+      for (const fl of flowLogsResp.FlowLogs || []) {
+        if (fl.ResourceId && fl.ResourceId.startsWith('vpc-')) {
+          vpcsWithFlowLogs.add(fl.ResourceId);
+        }
+      }
+      nextToken = flowLogsResp.NextToken;
+    } while (nextToken);
 
     for (const vpc of vpcs) {
       if (!vpc.VpcId) continue;

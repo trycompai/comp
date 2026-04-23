@@ -19781,6 +19781,171 @@
         ]
       }
     },
+    "/v1/frameworks/{id}/update-status": {
+      "get": {
+        "operationId": "FrameworksController_getUpdateStatus_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the update status for a framework instance",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/update-preview": {
+      "get": {
+        "operationId": "FrameworksController_getUpdatePreview_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Preview changes from updating a framework instance",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/sync": {
+      "post": {
+        "operationId": "FrameworksController_syncFramework_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sync a framework instance to a target version",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/rollback": {
+      "post": {
+        "operationId": "FrameworksController_rollbackFramework_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollbackFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Roll back a framework sync operation",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/sync-history": {
+      "get": {
+        "operationId": "FrameworksController_getSyncHistory_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get sync history for a framework instance",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
     "/v1/audit-logs": {
       "get": {
         "operationId": "AuditLogController_getAuditLogs_v1",
@@ -25282,6 +25447,14 @@
         "required": [
           "controlIds"
         ]
+      },
+      "SyncFrameworkDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RollbackFrameworkDto": {
+        "type": "object",
+        "properties": {}
       },
       "RequirementMappingDto": {
         "type": "object",

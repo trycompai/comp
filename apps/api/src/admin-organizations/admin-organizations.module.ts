@@ -9,6 +9,9 @@ import { CommentsModule } from '../comments/comments.module';
 import { AttachmentsModule } from '../attachments/attachments.module';
 import { AdminOrganizationsController } from './admin-organizations.controller';
 import { AdminOrganizationsService } from './admin-organizations.service';
+import { PurgeOrganizationService } from './purge-organization.service';
+import { PurgeOrganizationSnapshotService } from './purge-organization-snapshot.service';
+import { PurgeOrganizationExternalService } from './purge-organization-external.service';
 import { AdminFindingsController } from './admin-findings.controller';
 import { AdminPoliciesController } from './admin-policies.controller';
 import { AdminTasksController } from './admin-tasks.controller';
@@ -36,6 +39,11 @@ import { AdminEvidenceController } from './admin-evidence.controller';
     AdminContextController,
     AdminEvidenceController,
   ],
-  providers: [AdminOrganizationsService],
+  providers: [
+    AdminOrganizationsService,
+    PurgeOrganizationService,
+    PurgeOrganizationSnapshotService,
+    PurgeOrganizationExternalService,
+  ],
 })
 export class AdminOrganizationsModule {}

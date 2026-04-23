@@ -8,6 +8,12 @@ model Control {
   lastReviewDate DateTime?
   nextReviewDate DateTime?
 
+  // Sync-driven archive (set by FrameworkSyncOperation when the control
+  // template is removed from the framework's latest version and no other
+  // framework instance in the org still references it). Distinct from user
+  // archive (no user archive exists on Control today).
+  archivedAt DateTime?
+
   // Relationships
   organization       Organization                    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId     String
@@ -19,4 +25,5 @@ model Control {
   controlDocumentTypes ControlDocumentType[]
 
   @@index([organizationId])
+  @@index([organizationId, archivedAt])
 }

@@ -82,7 +82,9 @@ describe('AdminAuditLogInterceptor', () => {
   let interceptor: AdminAuditLogInterceptor;
 
   beforeEach(() => {
-    interceptor = new AdminAuditLogInterceptor();
+    interceptor = new AdminAuditLogInterceptor({
+      get: jest.fn().mockReturnValue(false),
+    } as never);
     jest.clearAllMocks();
     mockPolicyFind.mockResolvedValue(null);
     mockTaskFind.mockResolvedValue(null);

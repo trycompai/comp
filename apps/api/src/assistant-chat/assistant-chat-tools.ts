@@ -60,7 +60,7 @@ export function buildTools(ctx: ToolContext) {
       }),
       execute: async ({ status }: { status?: 'draft' | 'published' }) => {
         const policies = await db.policy.findMany({
-          where: { organizationId: ctx.organizationId, status },
+          where: { organizationId: ctx.organizationId, isArchived: false, archivedAt: null, status },
           select: { id: true, name: true, description: true, department: true },
         });
         return policies.length === 0
