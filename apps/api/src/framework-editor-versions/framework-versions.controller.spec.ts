@@ -29,6 +29,7 @@ describe('FrameworkVersionsController', () => {
     publish: jest.fn(),
     list: jest.fn(),
     get: jest.fn(),
+    getVersionDiff: jest.fn(),
   };
 
   const mockAdminReq: AdminRequest = { userId: 'usr_admin' };
@@ -103,6 +104,42 @@ describe('FrameworkVersionsController', () => {
 
       expect(service.get).toHaveBeenCalledWith('frk_1', 'fvr_1');
       expect(result).toEqual({ data: { id: 'fvr_1', version: '1.0.0' } });
+    });
+  });
+
+  describe('getDiff (GET /:versionId/diff)', () => {
+    it('returns { data } with version/previousVersion/diff/linkChanges', async () => {
+      const payload = {
+        version: { id: 'fvr_2', version: '1.1.0', publishedAt: new Date(), releaseNotes: null },
+        previousVersion: { id: 'fvr_1', version: '1.0.0' },
+        diff: {
+          controls: { added: [], removed: [], updated: [] },
+          requirements: { added: [], removed: [], updated: [] },
+          policies: { added: [], removed: [], updated: [] },
+          tasks: { added: [], removed: [], updated: [] },
+          requirementMapEdges: { added: [], removed: [] },
+          controlPolicyEdges: { added: [], removed: [] },
+          controlTaskEdges: { added: [], removed: [] },
+          controlDocumentTypeEdges: { added: [], removed: [] },
+        },
+        linkChanges: {
+          controlRequirement: { added: [], removed: [] },
+          controlPolicy: { added: [], removed: [] },
+          controlTask: { added: [], removed: [] },
+          controlDocumentType: { added: [], removed: [] },
+        },
+      };
+      service.getVersionDiff.mockResolvedValue(payload);
+
+      const result = await controller.getDiff('frk_1', 'fvr_2');
+
+      expect(service.getVersionDiff).toHaveBeenCalledWith('frk_1', 'fvr_2');
+      expect(result).toEqual({ data: payload });
+    });
+
+    it('propagates NotFoundException for a missing version', async () => {
+      service.getVersionDiff.mockRejectedValue(new NotFoundException('Version not found'));
+      await expect(controller.getDiff('frk_1', 'fvr_missing')).rejects.toThrow(NotFoundException);
     });
   });
 });

@@ -40,6 +40,15 @@ export class FrameworkVersionsController {
     const version = await this.service.get(frameworkId, versionId);
     return { data: version };
   }
+
+  @Get(':versionId/diff')
+  async getDiff(
+    @Param('frameworkId') frameworkId: string,
+    @Param('versionId') versionId: string,
+  ) {
+    const data = await this.service.getVersionDiff(frameworkId, versionId);
+    return { data };
+  }
 }
 
 @ApiExcludeController()
