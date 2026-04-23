@@ -295,6 +295,36 @@ export function PublishVersionDialog({
                       Requirements updated: {diff.requirements.updated.length}
                     </p>
                   )}
+                  {diff.requirementMapEdges.added.length > 0 && (
+                    <p className="text-muted-foreground text-sm">
+                      Control → requirement links added: {diff.requirementMapEdges.added.length}
+                    </p>
+                  )}
+                  {diff.requirementMapEdges.removed.length > 0 && (
+                    <p className="text-muted-foreground text-sm">
+                      Control → requirement links removed: {diff.requirementMapEdges.removed.length}
+                    </p>
+                  )}
+                  {diff.controlPolicyEdges.added.length > 0 && (
+                    <p className="text-muted-foreground text-sm">
+                      Control → policy links added: {diff.controlPolicyEdges.added.length}
+                    </p>
+                  )}
+                  {diff.controlPolicyEdges.removed.length > 0 && (
+                    <p className="text-muted-foreground text-sm">
+                      Control → policy links removed: {diff.controlPolicyEdges.removed.length}
+                    </p>
+                  )}
+                  {diff.controlTaskEdges.added.length > 0 && (
+                    <p className="text-muted-foreground text-sm">
+                      Control → task links added: {diff.controlTaskEdges.added.length}
+                    </p>
+                  )}
+                  {diff.controlTaskEdges.removed.length > 0 && (
+                    <p className="text-muted-foreground text-sm">
+                      Control → task links removed: {diff.controlTaskEdges.removed.length}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
