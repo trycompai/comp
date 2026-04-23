@@ -1,4 +1,5 @@
 import { Prisma } from '@db';
+import { loadFrameworkSources } from './frameworks-source-loader.helper';
 
 /**
  * Unwraps a `{ set: [...] }` wrapper that was incorrectly stored by a
@@ -7,9 +8,9 @@ import { Prisma } from '@db';
  * Filters null entries and returns InputJsonValue[] for createMany compatibility.
  */
 function sanitizeJsonContent(
-  value: Prisma.JsonValue[],
+  value: Prisma.JsonValue | Prisma.JsonValue[],
 ): Prisma.InputJsonValue[] {
-  let arr = value;
+  let arr: Prisma.JsonValue[] = Array.isArray(value) ? value : [value];
 
   if (
     arr.length === 1 &&
@@ -46,74 +47,34 @@ export async function upsertOrgFrameworkStructure({
   frameworkEditorFrameworks,
   tx,
 }: UpsertOrgFrameworkStructureInput) {
-  // Get all template entities based on input frameworks
-  const requirementIds = frameworkEditorFrameworks.flatMap((framework) =>
-    framework.requirements.map((req) => req.id),
-  );
-
-  const controlTemplates = await tx.frameworkEditorControlTemplate.findMany({
-    where: {
-      requirements: { some: { id: { in: requirementIds } } },
-    },
+  // Source data comes from each framework's pinned FrameworkVersion.manifest
+  // so a new org is aligned with the version it's about to be pinned to —
+  // not with whatever CX is editing live. Frameworks without a published
+  // version fall back to live templates (with a warning).
+  const sources = await loadFrameworkSources({
+    frameworkEditorIds: targetFrameworkEditorIds,
+    frameworkEditorFrameworks,
+    tx,
   });
+
+  for (const fid of sources.frameworksWithoutVersion) {
+    console.warn(
+      `upsertOrgFrameworkStructure: no FrameworkVersion for framework ${fid} — falling back to live templates and pinning currentVersionId=null. Publish v1.0.0 in the framework editor.`,
+    );
+  }
+
+  const {
+    controlTemplates,
+    policyTemplates,
+    taskTemplates,
+    groupedRelations,
+    latestVersionByFrameworkId,
+    requirementToFrameworkId,
+  } = sources;
+
   const controlTemplateIds = controlTemplates.map((c) => c.id);
-
-  const policyTemplates = await tx.frameworkEditorPolicyTemplate.findMany({
-    where: {
-      controlTemplates: { some: { id: { in: controlTemplateIds } } },
-    },
-  });
   const policyTemplateIds = policyTemplates.map((p) => p.id);
-
-  const taskTemplates = await tx.frameworkEditorTaskTemplate.findMany({
-    where: {
-      controlTemplates: { some: { id: { in: controlTemplateIds } } },
-    },
-  });
   const taskTemplateIds = taskTemplates.map((t) => t.id);
-
-  // Get all template relations
-  const controlRelations = await tx.frameworkEditorControlTemplate.findMany({
-    where: { id: { in: controlTemplateIds } },
-    select: {
-      id: true,
-      requirements: { where: { id: { in: requirementIds } } },
-      policyTemplates: { where: { id: { in: policyTemplateIds } } },
-      taskTemplates: { where: { id: { in: taskTemplateIds } } },
-    },
-  });
-
-  const groupedRelations = controlRelations.map((ct) => ({
-    controlTemplateId: ct.id,
-    requirementTemplateIds: ct.requirements.map((r) => r.id),
-    policyTemplateIds: ct.policyTemplates.map((p) => p.id),
-    taskTemplateIds: ct.taskTemplates.map((t) => t.id),
-  }));
-
-  // Pin new FrameworkInstances to the latest published FrameworkVersion so
-  // customers are tied to a known snapshot rather than whatever CX happens to
-  // be editing in the live templates. The backfill data migration guarantees
-  // every framework has at least a v1.0.0 in prod/staging; locally the seed
-  // script handles it. Frameworks without a published version fall through
-  // with currentVersionId = null (logged below).
-  const latestVersions = await tx.frameworkVersion.findMany({
-    where: { frameworkId: { in: targetFrameworkEditorIds } },
-    orderBy: { publishedAt: 'desc' },
-    select: { id: true, frameworkId: true },
-  });
-  const latestVersionByFrameworkId = new Map<string, string>();
-  for (const v of latestVersions) {
-    if (!latestVersionByFrameworkId.has(v.frameworkId)) {
-      latestVersionByFrameworkId.set(v.frameworkId, v.id);
-    }
-  }
-  for (const fid of targetFrameworkEditorIds) {
-    if (!latestVersionByFrameworkId.has(fid)) {
-      console.warn(
-        `upsertOrgFrameworkStructure: no FrameworkVersion for framework ${fid} — onboarding will proceed with currentVersionId=null. Publish v1.0.0 in the framework editor.`,
-      );
-    }
-  }
 
   // Upsert framework instances
   const existingInstances = await tx.frameworkInstance.findMany({
@@ -206,9 +167,7 @@ export async function upsertOrgFrameworkStructure({
         description: pt.description,
         department: pt.department,
         frequency: pt.frequency,
-        content: sanitizeJsonContent(
-          Array.isArray(pt.content) ? pt.content : [pt.content],
-        ),
+        content: sanitizeJsonContent(pt.content),
         organizationId,
         policyTemplateId: pt.id,
       })),
@@ -272,6 +231,8 @@ export async function upsertOrgFrameworkStructure({
         title: tt.name,
         description: tt.description,
         automationStatus: tt.automationStatus,
+        frequency: tt.frequency,
+        department: tt.department,
         organizationId,
         taskTemplateId: tt.id,
       })),
@@ -318,6 +279,8 @@ export async function upsertOrgFrameworkStructure({
   );
 
   const requirementMapEntries: Prisma.RequirementMapCreateManyInput[] = [];
+  const controlDocumentTypeEntries: Prisma.ControlDocumentTypeCreateManyInput[] = [];
+  const controlTemplateById = new Map(controlTemplates.map((c) => [c.id, c]));
 
   for (const relation of groupedRelations) {
     const controlId = controlMap.get(relation.controlTemplateId);
@@ -326,15 +289,8 @@ export async function upsertOrgFrameworkStructure({
     const updateData: Prisma.ControlUpdateInput = {};
     let needsUpdate = false;
 
-    // Process requirements for RequirementMap
     for (const reqTemplateId of relation.requirementTemplateIds) {
-      let frameworkEditorId: string | undefined;
-      for (const fw of frameworkEditorFrameworks) {
-        if (fw.requirements.some((r) => r.id === reqTemplateId)) {
-          frameworkEditorId = fw.id;
-          break;
-        }
-      }
+      const frameworkEditorId = requirementToFrameworkId.get(reqTemplateId);
       const frameworkInstanceId = frameworkEditorId
         ? editorToInstanceMap.get(frameworkEditorId)
         : undefined;
@@ -348,7 +304,6 @@ export async function upsertOrgFrameworkStructure({
       }
     }
 
-    // Connect policies
     const policiesToConnect = relation.policyTemplateIds
       .map((ptId) => policyMap.get(ptId))
       .filter((id): id is string => !!id)
@@ -359,7 +314,6 @@ export async function upsertOrgFrameworkStructure({
       needsUpdate = true;
     }
 
-    // Connect tasks
     const tasksToConnect = relation.taskTemplateIds
       .map((ttId) => taskMap.get(ttId))
       .filter((id): id is string => !!id)
@@ -376,12 +330,27 @@ export async function upsertOrgFrameworkStructure({
         data: updateData,
       });
     }
+
+    // ControlDocumentType: explicit junction rows. Drive from manifest/live
+    // documentTypes so the new org starts with the same evidence form types
+    // the published version specified. Skip duplicates against existing rows
+    // via the unique constraint at create time.
+    const ct = controlTemplateById.get(relation.controlTemplateId);
+    for (const formType of ct?.documentTypes ?? []) {
+      controlDocumentTypeEntries.push({ controlId, formType });
+    }
   }
 
-  // Create RequirementMap entries
   if (requirementMapEntries.length > 0) {
     await tx.requirementMap.createMany({
       data: requirementMapEntries,
+      skipDuplicates: true,
+    });
+  }
+
+  if (controlDocumentTypeEntries.length > 0) {
+    await tx.controlDocumentType.createMany({
+      data: controlDocumentTypeEntries,
       skipDuplicates: true,
     });
   }
