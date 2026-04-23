@@ -14,6 +14,7 @@ import { ImportFrameworkDialog } from './components/ImportFrameworkDialog';
 export interface FrameworkWithCounts extends Omit<FrameworkEditorFramework, 'requirements'> {
   requirementsCount: number;
   controlsCount: number;
+  latestVersion: { id: string; version: string; publishedAt: string } | null;
 }
 
 interface FrameworksClientPageProps {

@@ -37,6 +37,11 @@ model Task {
   approver       Member?     @relation("TaskApprover", fields: [approverId], references: [id])
   approvedAt     DateTime?
   previousStatus TaskStatus?
+
+  // Sync-driven archive — see Control.archivedAt.
+  archivedAt DateTime?
+
+  @@index([organizationId, archivedAt])
 }
 
 enum TaskStatus {

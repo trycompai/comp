@@ -14,7 +14,28 @@ jest.mock('../auth/auth.server', () => ({
   auth: { api: {} },
 }));
 
-jest.mock('@db', () => ({ db: {} }));
+jest.mock('@db', () => ({
+  db: {},
+  AuditLogEntityType: {
+    organization: 'organization',
+    people: 'people',
+    control: 'control',
+    policy: 'policy',
+    task: 'task',
+    vendor: 'vendor',
+    risk: 'risk',
+    finding: 'finding',
+    framework: 'framework',
+    integration: 'integration',
+    trust: 'trust',
+  },
+  CommentEntityType: {
+    task: 'task',
+    vendor: 'vendor',
+    risk: 'risk',
+    policy: 'policy',
+  },
+}));
 
 describe('AdminOrganizationsController', () => {
   let controller: AdminOrganizationsController;
@@ -28,12 +49,20 @@ describe('AdminOrganizationsController', () => {
     revokeInvitation: jest.fn(),
     getAuditLogs: jest.fn(),
   };
+  const mockPurgeService = {
+    purgeOrganization: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AdminOrganizationsController],
       providers: [
         { provide: AdminOrganizationsService, useValue: mockService },
+        {
+          provide: require('./purge-organization.service')
+            .PurgeOrganizationService,
+          useValue: mockPurgeService,
+        },
       ],
     }).compile();
 
@@ -157,6 +186,28 @@ describe('AdminOrganizationsController', () => {
 
       expect(mockService.listInvitations).toHaveBeenCalledWith('org_1');
       expect(result).toEqual(mockInvitations);
+    });
+  });
+
+  describe('purge', () => {
+    it('should call purge service with confirm, id, and acting user', async () => {
+      mockPurgeService.purgeOrganization.mockResolvedValue({
+        success: true,
+        organizationId: 'org_1',
+      });
+
+      const result = await controller.purge(
+        'org_1',
+        { userId: 'usr_admin' } as { userId: string },
+        { confirm: 'acme' },
+      );
+
+      expect(mockPurgeService.purgeOrganization).toHaveBeenCalledWith({
+        organizationId: 'org_1',
+        confirm: 'acme',
+        adminUserId: 'usr_admin',
+      });
+      expect(result).toEqual({ success: true, organizationId: 'org_1' });
     });
   });
 

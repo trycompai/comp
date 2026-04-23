@@ -12,12 +12,17 @@ model FrameworkInstance {
   // CustomFramework in its own org. Enforced at the DB level.
   customFramework   CustomFramework? @relation(fields: [customFrameworkId, organizationId], references: [id, organizationId], onDelete: Cascade)
 
+  currentVersionId String?
+  currentVersion   FrameworkVersion? @relation("FrameworkInstanceCurrentVersion", fields: [currentVersionId], references: [id], onDelete: Restrict)
+
   // Relationships
-  organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization       Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   requirementsMapped RequirementMap[]
   timelineInstances  TimelineInstance[]
+  syncOperations     FrameworkSyncOperation[]
 
   @@unique([organizationId, frameworkId])
   @@unique([organizationId, customFrameworkId])
   @@index([customFrameworkId])
+  @@index([currentVersionId])
 }

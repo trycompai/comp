@@ -181,14 +181,14 @@ export class PoliciesController {
   ) {
     const [policy, allControls] = await Promise.all([
       db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null },
         select: {
           id: true,
-          controls: { select: { id: true, name: true, description: true } },
+          controls: { where: { archivedAt: null }, select: { id: true, name: true, description: true } },
         },
       }),
       db.control.findMany({
-        where: { organizationId },
+        where: { organizationId, archivedAt: null },
         select: { id: true, name: true, description: true },
         orderBy: { name: 'asc' },
       }),
@@ -311,8 +311,14 @@ export class PoliciesController {
     let pdfUrl: string | null = null;
 
     if (versionId) {
+      // Apply the same archive guard to the parent policy as the non-versioned
+      // path — otherwise an archived policy's PDF could still be fetched by
+      // passing a versionId, bypassing the user-archived/sync-archived filter.
       const version = await db.policyVersion.findFirst({
-        where: { id: versionId, policy: { id, organizationId } },
+        where: {
+          id: versionId,
+          policy: { id, organizationId, archivedAt: null, isArchived: false },
+        },
         select: { pdfUrl: true },
       });
       pdfUrl = version?.pdfUrl ?? null;
@@ -320,7 +326,7 @@ export class PoliciesController {
 
     if (!pdfUrl) {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null, isArchived: false },
         select: { pdfUrl: true },
       });
       pdfUrl = policy?.pdfUrl ?? null;
@@ -389,7 +395,7 @@ export class PoliciesController {
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
     const policy = await db.policy.findFirst({
-      where: { id, organizationId },
+      where: { id, organizationId, archivedAt: null },
       select: {
         id: true,
         status: true,
@@ -520,7 +526,7 @@ export class PoliciesController {
       }
     } else {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null },
         select: { id: true, pdfUrl: true },
       });
       if (!policy) throw new NotFoundException('Policy not found');
@@ -570,7 +576,7 @@ export class PoliciesController {
     }
     if (!pdfUrl) {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null },
         select: { pdfUrl: true },
       });
       pdfUrl = policy?.pdfUrl ?? null;

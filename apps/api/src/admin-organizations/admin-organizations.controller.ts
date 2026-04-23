@@ -17,8 +17,11 @@ import { ApiExcludeController, ApiOperation, ApiQuery, ApiTags } from '@nestjs/s
 import { Throttle } from '@nestjs/throttler';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { AdminOrganizationsService } from './admin-organizations.service';
+import { PurgeOrganizationService } from './purge-organization.service';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
+import { SkipAdminAuditLog } from './skip-admin-audit-log.decorator';
 import { InviteMemberDto } from './dto/invite-member.dto';
+import { PurgeOrganizationDto } from './dto/purge-organization.dto';
 
 @ApiExcludeController()
 @ApiTags('Admin - Organizations')
@@ -27,7 +30,10 @@ import { InviteMemberDto } from './dto/invite-member.dto';
 @UseInterceptors(AdminAuditLogInterceptor)
 @Throttle({ default: { ttl: 60000, limit: 30 } })
 export class AdminOrganizationsController {
-  constructor(private readonly service: AdminOrganizationsService) {}
+  constructor(
+    private readonly service: AdminOrganizationsService,
+    private readonly purgeService: PurgeOrganizationService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List all organizations (platform admin)' })
@@ -157,6 +163,32 @@ export class AdminOrganizationsController {
   @ApiOperation({ summary: 'List pending invitations (platform admin)' })
   async listInvitations(@Param('id') id: string) {
     return this.service.listInvitations(id);
+  }
+
+  @Delete(':id')
+  @SkipAdminAuditLog()
+  @ApiOperation({
+    summary:
+      'Permanently delete organization and all associated data (platform admin)',
+  })
+  @Throttle({ default: { ttl: 60000, limit: 2 } })
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
+  async purge(
+    @Param('id') id: string,
+    @Req() req: { userId: string },
+    @Body() body: PurgeOrganizationDto,
+  ) {
+    return this.purgeService.purgeOrganization({
+      organizationId: id,
+      confirm: body.confirm,
+      adminUserId: req.userId,
+    });
   }
 
   @Delete(':id/invitations/:invId')

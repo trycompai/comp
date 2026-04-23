@@ -1046,6 +1046,18 @@ function CheckRunItem({
                         )}
                       </div>
                     </div>
+                    {finding.evidence && Object.keys(finding.evidence).length > 0 && (
+                      <details className="text-xs">
+                        <summary className="text-muted-foreground cursor-pointer">
+                          View Evidence
+                        </summary>
+                        <EvidenceJsonView
+                          evidence={finding.evidence}
+                          organizationName={organizationName}
+                          automationName={run.checkName}
+                        />
+                      </details>
+                    )}
                   </div>
                 ))}
                 {findings.length > 3 && (

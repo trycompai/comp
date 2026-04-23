@@ -48,7 +48,7 @@ export class PoliciesService {
   async findAll(organizationId: string) {
     try {
       const policies = await db.policy.findMany({
-        where: { organizationId },
+        where: { organizationId, isArchived: false, archivedAt: null },
         select: {
           id: true,
           name: true,
@@ -1284,6 +1284,7 @@ export class PoliciesService {
       where: {
         organizationId,
         isArchived: false,
+        archivedAt: null,
       },
       select: {
         id: true,
