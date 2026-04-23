@@ -6,7 +6,7 @@ import {
   HStack,
   Heading,
   PageHeader,
-  Section,
+  PageHeaderDescription,
   Stack,
   Tabs,
   TabsList,
@@ -137,104 +137,98 @@ export function ReviewUpdateContent({
     }
   }
 
+  const showLinkChanges =
+    linksTotal > 0 &&
+    filter !== 'modified' &&
+    (filter === 'all' ||
+      (filter === 'added' && linksAdded > 0) ||
+      (filter === 'removed' && linksRemoved > 0));
+
+  const showEmpty = visibleGroups.length === 0 && !showLinkChanges;
+
   return (
-    <Stack gap="lg" className="pb-20">
+    <Stack gap="xl" className="pb-20">
       <PageHeader
         title={`${frameworkName} v${preview.toVersion.version}`}
         backHref={frameworkHref}
         backLabel={`Back to ${frameworkName}`}
       >
-        <HStack gap="2" align="center">
-          <Badge tone="info">Update available</Badge>
-          <Text size="sm" variant="muted">
-            Reviewing v{preview.fromVersion.version} → v{preview.toVersion.version}
-          </Text>
-        </HStack>
+        <PageHeaderDescription>
+          Reviewing update from v{preview.fromVersion.version} to v
+          {preview.toVersion.version}
+          {preview.releaseNotes ? ` — ${preview.releaseNotes}` : ''}
+        </PageHeaderDescription>
       </PageHeader>
 
-      {preview.releaseNotes && (
-        <Text variant="muted" className="max-w-3xl">
-          {preview.releaseNotes}
-        </Text>
-      )}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard label="New" value={addedTotal} tone="positive" />
+        <StatCard label="Removed" value={removedTotal} tone="danger" />
+        <StatCard label="Modified" value={modifiedCount + preservedCount} />
+        <StatCard label="Links affected" value={linksTotal} />
+      </div>
 
-      {/* Summary */}
-      <Section title="Summary" description={`${totalChanges} change${totalChanges !== 1 ? 's' : ''} since v${preview.fromVersion.version}`}>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatCard label="New" value={addedTotal} tone="positive" />
-          <StatCard label="Removed" value={removedTotal} tone="danger" />
-          <StatCard label="Modified" value={modifiedCount + preservedCount} />
-          <StatCard label="Links affected" value={linksTotal} />
-        </div>
-      </Section>
+      <Stack gap="md">
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
+          <TabsList variant="underline">
+            <TabsTrigger value="all">
+              All <TabBadge count={totalChanges} />
+            </TabsTrigger>
+            <TabsTrigger value="added">
+              Added <TabBadge count={addedTotal} />
+            </TabsTrigger>
+            <TabsTrigger value="removed">
+              Removed <TabBadge count={removedTotal} />
+            </TabsTrigger>
+            <TabsTrigger value="modified">
+              Modified <TabBadge count={modifiedCount + preservedCount} />
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-      {/* Filters + list */}
-      <Section
-        title="Changes"
-        description="Filter by what's added, removed, or modified. All changes apply together — this is v1 all-or-nothing sync."
-      >
-        <Stack gap="md">
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
-            <TabsList variant="underline">
-              <TabsTrigger value="all">
-                All <TabBadge count={totalChanges} />
-              </TabsTrigger>
-              <TabsTrigger value="added">
-                Added <TabBadge count={addedTotal} />
-              </TabsTrigger>
-              <TabsTrigger value="removed">
-                Removed <TabBadge count={removedTotal} />
-              </TabsTrigger>
-              <TabsTrigger value="modified">
-                Modified <TabBadge count={modifiedCount + preservedCount} />
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {visibleGroups.length === 0 ? (
-            <div className="rounded-md border border-dashed p-8 text-center">
-              <Text variant="muted">No changes in this category.</Text>
-            </div>
-          ) : (
-            <Stack gap="lg">
-              {visibleGroups.map((group) => (
-                <Stack key={group.title} gap="3">
-                  <HStack justify="between" align="center">
-                    <Text size="sm" weight="medium" variant="muted">
-                      {group.title}
-                    </Text>
-                    <Badge variant="outline">{group.rows.length}</Badge>
-                  </HStack>
-                  <Stack gap="2">
-                    {group.rows.map((row) => (
-                      <ItemRow key={row.key} row={row} />
-                    ))}
-                  </Stack>
+        {showEmpty ? (
+          <div className="rounded-md border border-dashed p-8 text-center">
+            <Text variant="muted">No changes in this category.</Text>
+          </div>
+        ) : (
+          <Stack gap="lg">
+            {visibleGroups.map((group) => (
+              <Stack key={group.title} gap="sm">
+                <HStack justify="between" align="center">
+                  <Text size="sm" weight="medium" variant="muted">
+                    {group.title}
+                  </Text>
+                  <Badge variant="outline">{group.rows.length}</Badge>
+                </HStack>
+                <Stack gap="sm">
+                  {group.rows.map((row) => (
+                    <ItemRow key={row.key} row={row} />
+                  ))}
                 </Stack>
-              ))}
-              {filter !== 'modified' && linksTotal > 0 && (filter === 'all' || (filter === 'added' && linksAdded > 0) || (filter === 'removed' && linksRemoved > 0)) && (
-                <LinkChangesBlock
-                  edges={edges}
-                  show={filter === 'all' ? 'both' : filter === 'added' ? 'added' : 'removed'}
-                />
-              )}
-            </Stack>
-          )}
-        </Stack>
-      </Section>
+              </Stack>
+            ))}
+            {showLinkChanges && (
+              <LinkChangesBlock
+                edges={edges}
+                show={filter === 'all' ? 'both' : filter === 'added' ? 'added' : 'removed'}
+              />
+            )}
+          </Stack>
+        )}
+      </Stack>
 
       {/* Sticky apply bar */}
-      <div className="sticky bottom-0 z-10 -mx-4 border-t bg-background px-4 py-3 md:-mx-6 md:px-6">
+      <div className="sticky bottom-0 z-10 -mx-4 border-t bg-background px-4 py-4 md:-mx-6 md:px-6">
         <HStack justify="between" align="center">
           <Text size="sm" variant="muted">
             Apply will update your framework instance. You can roll back within 14 days.
           </Text>
           <HStack gap="2">
-            <Button variant="ghost" onClick={() => router.push(frameworkHref)}>
+            <Button variant="outline" size="lg" onClick={() => router.push(frameworkHref)}>
               Cancel
             </Button>
             <Button
-              variant="primary"
+              variant="default"
+              size="lg"
               disabled={!canApply || isSyncing || !preview.toVersion.id || totalChanges === 0}
               onClick={() => setConfirmOpen(true)}
             >
