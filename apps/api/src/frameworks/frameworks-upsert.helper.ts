@@ -90,6 +90,31 @@ export async function upsertOrgFrameworkStructure({
     taskTemplateIds: ct.taskTemplates.map((t) => t.id),
   }));
 
+  // Pin new FrameworkInstances to the latest published FrameworkVersion so
+  // customers are tied to a known snapshot rather than whatever CX happens to
+  // be editing in the live templates. The backfill data migration guarantees
+  // every framework has at least a v1.0.0 in prod/staging; locally the seed
+  // script handles it. Frameworks without a published version fall through
+  // with currentVersionId = null (logged below).
+  const latestVersions = await tx.frameworkVersion.findMany({
+    where: { frameworkId: { in: targetFrameworkEditorIds } },
+    orderBy: { publishedAt: 'desc' },
+    select: { id: true, frameworkId: true },
+  });
+  const latestVersionByFrameworkId = new Map<string, string>();
+  for (const v of latestVersions) {
+    if (!latestVersionByFrameworkId.has(v.frameworkId)) {
+      latestVersionByFrameworkId.set(v.frameworkId, v.id);
+    }
+  }
+  for (const fid of targetFrameworkEditorIds) {
+    if (!latestVersionByFrameworkId.has(fid)) {
+      console.warn(
+        `upsertOrgFrameworkStructure: no FrameworkVersion for framework ${fid} — onboarding will proceed with currentVersionId=null. Publish v1.0.0 in the framework editor.`,
+      );
+    }
+  }
+
   // Upsert framework instances
   const existingInstances = await tx.frameworkInstance.findMany({
     where: {
@@ -111,6 +136,7 @@ export async function upsertOrgFrameworkStructure({
     .map((framework) => ({
       organizationId,
       frameworkId: framework.id,
+      currentVersionId: latestVersionByFrameworkId.get(framework.id) ?? null,
     }));
 
   if (instancesToCreate.length > 0) {

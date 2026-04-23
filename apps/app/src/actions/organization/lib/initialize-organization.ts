@@ -124,8 +124,32 @@ export const _upsertOrgFrameworkStructureCore = async ({
     |--------------------------------------------------
     | Create FrameworkInstances if they don't already exist for the organization
     | and targetFrameworkEditorIds. Then, fetch all relevant instances (new + existing).
+    | Each new instance is pinned to the framework's latest published
+    | FrameworkVersion so customers are tied to a known snapshot rather than
+    | whatever CX happens to be editing live. The backfill data migration
+    | guarantees every framework has at least v1.0.0 in deployed environments;
+    | locally the seed script handles it.
     |--------------------------------------------------
     */
+  const latestVersions = await tx.frameworkVersion.findMany({
+    where: { frameworkId: { in: targetFrameworkEditorIds } },
+    orderBy: { publishedAt: 'desc' },
+    select: { id: true, frameworkId: true },
+  });
+  const latestVersionByFrameworkId = new Map<string, string>();
+  for (const v of latestVersions) {
+    if (!latestVersionByFrameworkId.has(v.frameworkId)) {
+      latestVersionByFrameworkId.set(v.frameworkId, v.id);
+    }
+  }
+  for (const fid of targetFrameworkEditorIds) {
+    if (!latestVersionByFrameworkId.has(fid)) {
+      console.warn(
+        `UpsertOrgFrameworkStructureCore: no FrameworkVersion for framework ${fid} — onboarding will proceed with currentVersionId=null. Publish v1.0.0 in the framework editor.`,
+      );
+    }
+  }
+
   const existingFrameworkInstances = await tx.frameworkInstance.findMany({
     where: {
       organizationId: organizationId,
@@ -145,6 +169,7 @@ export const _upsertOrgFrameworkStructureCore = async ({
     .map((framework) => ({
       organizationId: organizationId,
       frameworkId: framework.id,
+      currentVersionId: latestVersionByFrameworkId.get(framework.id) ?? null,
     }));
 
   if (frameworkInstancesToCreateData.length > 0) {
