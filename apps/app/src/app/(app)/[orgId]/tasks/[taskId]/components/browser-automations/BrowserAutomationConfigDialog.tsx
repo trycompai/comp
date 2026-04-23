@@ -23,7 +23,7 @@ const automationConfigSchema = z.object({
   name: z.string().trim().min(1, { message: 'Name is required' }),
   targetUrl: z.string().trim().url({ message: 'Starting URL must be a valid URL' }),
   instruction: z.string().trim().min(1, { message: 'Instruction is required' }),
-  evaluationCriteria: z.string().trim().optional().default(''),
+  evaluationCriteria: z.string().trim().optional(),
 });
 
 type AutomationConfigFormData = z.infer<typeof automationConfigSchema>;
