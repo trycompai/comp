@@ -7,7 +7,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { createSOADocument } from '../../hooks/useSOADocument';
+import { createSOADocument } from '../hooks/useSOADocument';
 
 interface CreateSOADocumentProps {
   frameworkId: string;
@@ -31,7 +31,7 @@ export function CreateSOADocument({
     try {
       const result = await createSOADocument({ frameworkId, organizationId });
       toast.success('SOA document created successfully');
-      router.push(`/${organizationId}/questionnaire/soa/${result.id}`);
+      router.push(`/${organizationId}/documents/statement-of-applicability/${result.id}`);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'An error occurred while creating the SOA document',

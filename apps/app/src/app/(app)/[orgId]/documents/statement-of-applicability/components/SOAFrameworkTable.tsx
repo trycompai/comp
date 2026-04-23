@@ -4,7 +4,7 @@ import { Card } from '@trycompai/ui';
 import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useSOAAutoFill } from '../hooks/useSOAAutoFill';
-import { useSOADocument } from '../../hooks/useSOADocument';
+import { useSOADocument } from '../hooks/useSOADocument';
 import type { Member, User } from '@db';
 import { SOADocumentInfo } from './SOADocumentInfo';
 import { SOAPendingApprovalAlert } from './SOAPendingApprovalAlert';

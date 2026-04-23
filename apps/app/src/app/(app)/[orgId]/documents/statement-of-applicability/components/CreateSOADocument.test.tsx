@@ -18,7 +18,7 @@ vi.mock('@/hooks/use-permissions', () => ({
 
 // Mock createSOADocument
 const mockCreateSOADocument = vi.fn();
-vi.mock('../../hooks/useSOADocument', () => ({
+vi.mock('../hooks/useSOADocument', () => ({
   createSOADocument: (...args: any[]) => mockCreateSOADocument(...args),
 }));
 
