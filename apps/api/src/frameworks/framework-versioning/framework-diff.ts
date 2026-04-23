@@ -48,7 +48,32 @@ export interface ManifestDiff {
   controlDocumentTypeEdges: EdgeDiff<ControlDocumentTypeEdge>;
 }
 
-export function diffManifests(from: FrameworkManifest, to: FrameworkManifest): ManifestDiff {
+/**
+ * Drop dangling references in each control's requirement/policy/task link
+ * arrays — IDs that don't correspond to an entity in the manifest's top-level
+ * list. Older snapshots (pre-filter) stored cross-framework IDs there, which
+ * would otherwise appear in the diff as phantom add/remove edges pointing at
+ * 'Unknown' entities. This normalization is local to the diff and does not
+ * mutate the input manifests.
+ */
+function sanitizeManifestEdges(m: FrameworkManifest): FrameworkManifest {
+  const reqIds = new Set(m.requirements.map((r) => r.id));
+  const policyIds = new Set(m.policies.map((p) => p.id));
+  const taskIds = new Set(m.tasks.map((t) => t.id));
+  return {
+    ...m,
+    controls: m.controls.map((c) => ({
+      ...c,
+      requirementIds: c.requirementIds.filter((id) => reqIds.has(id)),
+      policyIds: c.policyIds.filter((id) => policyIds.has(id)),
+      taskIds: c.taskIds.filter((id) => taskIds.has(id)),
+    })),
+  };
+}
+
+export function diffManifests(fromRaw: FrameworkManifest, toRaw: FrameworkManifest): ManifestDiff {
+  const from = sanitizeManifestEdges(fromRaw);
+  const to = sanitizeManifestEdges(toRaw);
   return {
     controls: diffEntities(from.controls, to.controls, controlEqual),
     requirements: diffEntities(from.requirements, to.requirements, requirementEqual),

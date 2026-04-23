@@ -48,10 +48,40 @@ describe('diffManifests', () => {
   });
 
   it('detects updated requirement-map edges when control→requirement links change', () => {
-    const from = { ...emptyManifest(), controls: [{ id: 'c1', name: 'C', description: '', requirementIds: ['r1'], policyIds: [], taskIds: [] }] };
-    const to = { ...emptyManifest(), controls: [{ id: 'c1', name: 'C', description: '', requirementIds: ['r2'], policyIds: [], taskIds: [] }] };
+    const r1 = { id: 'r1', identifier: 'R1', name: 'Req 1', description: null };
+    const r2 = { id: 'r2', identifier: 'R2', name: 'Req 2', description: null };
+    const from = {
+      ...emptyManifest(),
+      requirements: [r1, r2],
+      controls: [{ id: 'c1', name: 'C', description: '', requirementIds: ['r1'], policyIds: [], taskIds: [] }],
+    };
+    const to = {
+      ...emptyManifest(),
+      requirements: [r1, r2],
+      controls: [{ id: 'c1', name: 'C', description: '', requirementIds: ['r2'], policyIds: [], taskIds: [] }],
+    };
     const diff = diffManifests(from, to);
     expect(diff.requirementMapEdges.added).toContainEqual({ controlTemplateId: 'c1', requirementTemplateId: 'r2' });
     expect(diff.requirementMapEdges.removed).toContainEqual({ controlTemplateId: 'c1', requirementTemplateId: 'r1' });
+  });
+
+  it('drops phantom edges that reference entities missing from the manifest', () => {
+    // Older snapshots sometimes stored cross-framework requirement IDs in
+    // control.requirementIds. Those IDs are not in manifest.requirements, so
+    // the diff must ignore them rather than surface them as phantom adds or
+    // removes.
+    const from = {
+      ...emptyManifest(),
+      requirements: [],
+      controls: [{ id: 'c1', name: 'C', description: '', requirementIds: ['cross_framework'], policyIds: [], taskIds: [] }],
+    };
+    const to = {
+      ...emptyManifest(),
+      requirements: [],
+      controls: [{ id: 'c1', name: 'C', description: '', requirementIds: [], policyIds: [], taskIds: [] }],
+    };
+    const diff = diffManifests(from, to);
+    expect(diff.requirementMapEdges.removed).toHaveLength(0);
+    expect(diff.requirementMapEdges.added).toHaveLength(0);
   });
 });
