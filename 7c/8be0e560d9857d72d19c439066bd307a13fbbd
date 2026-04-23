@@ -1,0 +1,27 @@
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/review-update/page.tsx
+  26176ac5d96c92b4 1-42
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/components/FrameworkVersioningSection.tsx
+  26176ac5d96c92b4 4,26-27,40-42
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/review-update/components/ReviewUpdateContent.tsx
+  26176ac5d96c92b4 4,7-9,12-15,18-21,23-24,26-45,48-58,60-65,67,69-70,72,74-232,234-275,278-324,326-328,331,333-334,336,339-427,429-434,436-437,439-570
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "7c8be0e560d9857d72d19c439066bd307a13fbbd",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 1281,
+      "total_deletions": 412,
+      "accepted_lines": 1029,
+      "overriden_lines": 3
+    }
+  }
+}

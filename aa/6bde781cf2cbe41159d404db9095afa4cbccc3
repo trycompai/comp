@@ -1,0 +1,23 @@
+apps/framework-editor/app/(pages)/frameworks/[frameworkId]/layout.tsx
+  26176ac5d96c92b4 16-20,40-52,62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "aa6bde781cf2cbe41159d404db9095afa4cbccc3",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 19,
+      "total_deletions": 1,
+      "accepted_lines": 423,
+      "overriden_lines": 0
+    }
+  }
+}

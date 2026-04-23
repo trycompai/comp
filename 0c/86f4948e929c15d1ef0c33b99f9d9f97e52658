@@ -1,0 +1,27 @@
+apps/api/src/frameworks/framework-versioning/framework-rollback.service.ts
+  26176ac5d96c92b4 31-49
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/components/SyncHistorySection.tsx
+  26176ac5d96c92b4 111-117,148
+apps/api/src/frameworks/framework-versioning/framework-rollback.service.spec.ts
+  26176ac5d96c92b4 96-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "0c86f4948e929c15d1ef0c33b99f9d9f97e52658",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 624,
+      "total_deletions": 1,
+      "accepted_lines": 944,
+      "overriden_lines": 1
+    }
+  }
+}

@@ -1,0 +1,25 @@
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/components/RollbackConfirmDialog.tsx
+  26176ac5d96c92b4 1-62
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/components/SyncHistorySection.tsx
+  26176ac5d96c92b4 11,106,114,117-121,123-125,142-143,147-153
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "82689c108e2134830b509d7f937db4760a8d3a76",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 542,
+      "total_deletions": 21,
+      "accepted_lines": 531,
+      "overriden_lines": 9
+    }
+  }
+}
