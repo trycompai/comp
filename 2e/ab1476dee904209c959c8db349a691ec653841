@@ -1,0 +1,27 @@
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/components/FrameworkProgress.tsx
+  26176ac5d96c92b4 1-63
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/page.tsx
+  26176ac5d96c92b4 28-33
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/components/FrameworkDetailContent.tsx
+  26176ac5d96c92b4 4-23,26-30,33-34,38,41,44-45,47,50,52-55,57-58,69-81,83,85-104,107-187,190-205,209-230
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "2eab1476dee904209c959c8db349a691ec653841",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 265,
+      "total_deletions": 68,
+      "accepted_lines": 1364,
+      "overriden_lines": 0
+    }
+  }
+}
