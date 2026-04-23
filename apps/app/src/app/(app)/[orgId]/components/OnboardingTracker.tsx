@@ -67,6 +67,14 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     enabled: !!triggerJobId,
   });
 
+  const dismissKey = triggerJobId ? `onboarding-tracker-dismissed:${triggerJobId}` : null;
+  const handleDismiss = useCallback(() => {
+    if (dismissKey && typeof window !== 'undefined') {
+      window.localStorage.setItem(dismissKey, '1');
+    }
+    setIsDismissed(true);
+  }, [dismissKey]);
+
   const handleRetry = useCallback(() => {
     if (!organizationId) {
       return;
@@ -76,7 +84,12 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (dismissKey && typeof window !== 'undefined') {
+      if (window.localStorage.getItem(dismissKey) === '1') {
+        setIsDismissed(true);
+      }
+    }
+  }, [dismissKey]);
 
   // Auto-minimize when completed
   useEffect(() => {
@@ -302,8 +315,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     return null;
   }
 
-  // Dismiss completed card
-  if (run?.status === 'COMPLETED' && isDismissed) {
+  // Dismissed is a hard hide — stays gone across refreshes via localStorage
+  // keyed by triggerJobId, so onboarding keeps running in the background and
+  // the user doesn't see the tracker again for this run.
+  if (isDismissed) {
     return null;
   }
 
@@ -346,15 +361,6 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {isCompleted && (
-                    <button
-                      onClick={() => setIsDismissed(true)}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Close"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  )}
                   {!isCompleted && (
                     <button
                       onClick={() => setIsMinimized(false)}
@@ -364,6 +370,13 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                       <ChevronsUp className="h-5 w-5" />
                     </button>
                   )}
+                  <button
+                    onClick={handleDismiss}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Close"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
               </div>
             </CardContent>
@@ -394,13 +407,22 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
             <p className="text-warning text-base font-medium">Status Unavailable</p>
             <p className="text-muted-foreground text-sm mt-1">Could not retrieve status</p>
           </div>
-          <button
-            onClick={() => setIsMinimized(true)}
-            className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-            aria-label="Minimize"
-          >
-            <ChevronsDown className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Minimize"
+            >
+              <ChevronsDown className="h-5 w-5" />
+            </button>
+            <button
+              onClick={handleDismiss}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       );
     }
@@ -424,13 +446,22 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                   Setting up your organization
                 </p>
               </div>
-              <button
-                onClick={() => setIsMinimized(true)}
-                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                aria-label="Minimize"
-              >
-                <ChevronsDown className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setIsMinimized(true)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Minimize"
+                >
+                  <ChevronsDown className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={handleDismiss}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             {/* Step progress - scrollable */}
@@ -841,13 +872,22 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 <Rocket className="h-5 w-5 shrink-0 text-primary" />
                 <p className="text-base font-medium text-foreground">Setup Complete</p>
               </div>
-              <button
-                onClick={() => setIsMinimized(true)}
-                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                aria-label="Minimize"
-              >
-                <ChevronsDown className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setIsMinimized(true)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Minimize"
+                >
+                  <ChevronsDown className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={handleDismiss}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 flex flex-col justify-center">
@@ -892,13 +932,22 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                   contact support for help.
                 </p>
               </div>
-              <button
-                onClick={() => setIsMinimized(true)}
-                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                aria-label="Minimize"
-              >
-                <ChevronsDown className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setIsMinimized(true)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Minimize"
+                >
+                  <ChevronsDown className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={handleDismiss}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
             <div className="flex gap-2 flex-wrap">
               <Button size="sm" onClick={handleRetry} disabled={!organizationId}>
@@ -921,13 +970,22 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
               <p className="text-warning text-base font-medium">Unknown Status</p>
               <p className="text-muted-foreground text-sm mt-1">Status: {exhaustiveCheck}</p>
             </div>
-            <button
-              onClick={() => setIsMinimized(true)}
-              className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              aria-label="Minimize"
-            >
-              <ChevronsDown className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setIsMinimized(true)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Minimize"
+              >
+                <ChevronsDown className="h-5 w-5" />
+              </button>
+              <button
+                onClick={handleDismiss}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         );
       }
