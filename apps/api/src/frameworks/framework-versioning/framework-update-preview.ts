@@ -65,6 +65,11 @@ export interface UpdatePreview {
     removed: ManifestRequirement[];
     updated: Array<{ from: ManifestRequirement; to: ManifestRequirement }>;
   };
+  edges: {
+    controlPolicy: { added: number; removed: number };
+    controlTask: { added: number; removed: number };
+    controlRequirement: { added: number; removed: number };
+  };
 }
 
 export interface BuildUpdatePreviewInput {
@@ -164,6 +169,20 @@ export function buildUpdatePreview(input: BuildUpdatePreviewInput): UpdatePrevie
       added: d.requirements.added,
       removed: d.requirements.removed,
       updated: d.requirements.updated.map((u) => ({ from: u.from, to: u.to })),
+    },
+    edges: {
+      controlPolicy: {
+        added: d.controlPolicyEdges.added.length,
+        removed: d.controlPolicyEdges.removed.length,
+      },
+      controlTask: {
+        added: d.controlTaskEdges.added.length,
+        removed: d.controlTaskEdges.removed.length,
+      },
+      controlRequirement: {
+        added: d.requirementMapEdges.added.length,
+        removed: d.requirementMapEdges.removed.length,
+      },
     },
   };
 }

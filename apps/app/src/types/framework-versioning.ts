@@ -124,6 +124,11 @@ export interface UpdatePreview {
     removed: ManifestRequirement[];
     updated: Array<{ from: ManifestRequirement; to: ManifestRequirement }>;
   };
+  edges: {
+    controlPolicy: { added: number; removed: number };
+    controlTask: { added: number; removed: number };
+    controlRequirement: { added: number; removed: number };
+  };
 }
 
 export interface SyncHistoryItem {

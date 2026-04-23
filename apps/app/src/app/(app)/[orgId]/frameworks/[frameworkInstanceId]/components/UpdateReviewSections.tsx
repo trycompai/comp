@@ -90,11 +90,22 @@ export function UpdateReviewSections({ preview }: UpdateReviewSectionsProps) {
   const reqRemoved = preview.requirements.removed.length;
   const reqUpdated = preview.requirements.updated.length;
 
+  const edges = preview.edges ?? {
+    controlPolicy: { added: 0, removed: 0 },
+    controlTask: { added: 0, removed: 0 },
+    controlRequirement: { added: 0, removed: 0 },
+  };
+  const edgesTotal =
+    edges.controlPolicy.added + edges.controlPolicy.removed +
+    edges.controlTask.added + edges.controlTask.removed +
+    edges.controlRequirement.added + edges.controlRequirement.removed;
+
   const totalChanges =
     controlsAdded + controlsArchived + controlsUpdated + controlsPreserved +
     tasksAdded + tasksArchived + tasksUpdated +
     policiesAdded + policiesArchived + policiesUpdated + policiesDraft +
-    reqAdded + reqRemoved + reqUpdated;
+    reqAdded + reqRemoved + reqUpdated +
+    edgesTotal;
 
   return (
     <Stack gap="4">
@@ -208,6 +219,45 @@ export function UpdateReviewSections({ preview }: UpdateReviewSectionsProps) {
           <ItemRow key={to.id} name={to.name} description={to.description} />
         ))}
       </CollapsibleSection>
+
+      {/* Edge changes (no detail rendering — just counts) */}
+      {edgesTotal > 0 && (
+        <div className="rounded-md border px-4 py-3">
+          <Text weight="medium">Link changes</Text>
+          <Stack gap="1" className="mt-1">
+            {edges.controlRequirement.added > 0 && (
+              <Text size="sm" variant="muted">
+                {edges.controlRequirement.added} control → requirement link{edges.controlRequirement.added !== 1 ? 's' : ''} added
+              </Text>
+            )}
+            {edges.controlRequirement.removed > 0 && (
+              <Text size="sm" variant="muted">
+                {edges.controlRequirement.removed} control → requirement link{edges.controlRequirement.removed !== 1 ? 's' : ''} removed
+              </Text>
+            )}
+            {edges.controlPolicy.added > 0 && (
+              <Text size="sm" variant="muted">
+                {edges.controlPolicy.added} control → policy link{edges.controlPolicy.added !== 1 ? 's' : ''} added
+              </Text>
+            )}
+            {edges.controlPolicy.removed > 0 && (
+              <Text size="sm" variant="muted">
+                {edges.controlPolicy.removed} control → policy link{edges.controlPolicy.removed !== 1 ? 's' : ''} removed
+              </Text>
+            )}
+            {edges.controlTask.added > 0 && (
+              <Text size="sm" variant="muted">
+                {edges.controlTask.added} control → task link{edges.controlTask.added !== 1 ? 's' : ''} added
+              </Text>
+            )}
+            {edges.controlTask.removed > 0 && (
+              <Text size="sm" variant="muted">
+                {edges.controlTask.removed} control → task link{edges.controlTask.removed !== 1 ? 's' : ''} removed
+              </Text>
+            )}
+          </Stack>
+        </div>
+      )}
     </Stack>
   );
 }
