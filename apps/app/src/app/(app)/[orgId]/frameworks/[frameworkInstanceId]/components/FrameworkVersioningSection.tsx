@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { useFeatureFlag } from '@trycompai/analytics';
+import { useParams, useRouter } from 'next/navigation';
 import { useFrameworkUpdateStatus } from '@/hooks/use-framework-update-status';
 import { usePermissions } from '@/hooks/use-permissions';
 import type { FrameworkUpdateStatus } from '@/types/framework-versioning';
 import { UpdateAvailableBanner } from './UpdateAvailableBanner';
-import { UpdateReviewSheet } from './UpdateReviewSheet';
 
 interface FrameworkVersioningSectionProps {
   frameworkInstanceId: string;
@@ -24,7 +23,8 @@ export function FrameworkVersioningSection({
     fallbackData: initialStatus,
   });
   const { hasPermission } = usePermissions();
-  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const { orgId } = useParams<{ orgId: string }>();
 
   if (!enabled) return null;
 
@@ -37,14 +37,11 @@ export function FrameworkVersioningSection({
           status={data}
           canUpdate={canUpdate}
           hasActiveAudit={hasActiveAudit}
-          onReview={() => setOpen(true)}
+          onReview={() =>
+            router.push(`/${orgId}/frameworks/${frameworkInstanceId}/review-update`)
+          }
         />
       )}
-      <UpdateReviewSheet
-        open={open}
-        onOpenChange={setOpen}
-        frameworkInstanceId={frameworkInstanceId}
-      />
     </>
   );
 }
