@@ -1,3 +1,21 @@
+// Stub @db so importing applySync (which now uses Prisma.sql / Prisma.join at
+// runtime for junction-table raw SQL) doesn't trigger real PrismaClient init.
+jest.mock('@db', () => {
+  // Minimal sql tag + join implementation sufficient for the tests (we don't
+  // actually inspect the SQL output here — $executeRaw is jest.fn'd below).
+  const sql = (strings: TemplateStringsArray, ..._values: unknown[]) => ({
+    __sql: strings.raw.join('?'),
+  });
+  return {
+    Prisma: {
+      sql,
+      join: (items: unknown[]) => ({ __sql: 'join', items }),
+    },
+    Frequency: { monthly: 'monthly', yearly: 'yearly', daily: 'daily', weekly: 'weekly' },
+    Departments: { none: 'none', it: 'it' },
+  };
+});
+
 import { applySync } from './framework-sync-apply';
 import type { FrameworkManifest } from './manifest.types';
 
@@ -25,6 +43,8 @@ function mockTx() {
     requirementMap: { create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...data, id: `rm_new_${Math.random()}` })), updateMany: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
     frameworkInstance: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
     frameworkSyncOperation: { create: jest.fn().mockResolvedValue({ id: 'fso_new' }) },
+    controlDocumentType: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn().mockResolvedValue({ id: 'cdt_new' }), delete: jest.fn() },
+    $executeRaw: jest.fn().mockResolvedValue(0),
   } as any;
 }
 

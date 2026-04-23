@@ -190,19 +190,49 @@ async function replayUndo(
   // Reverse implicit M:N edges: connects become disconnects and vice versa.
   // Guard with nullish coalescing so older sync operations written before
   // this bucket existed don't crash the rollback.
+  //
+  // Direct raw-SQL on the junction tables is idempotent by design:
+  //   - INSERT … ON CONFLICT DO NOTHING tolerates edges that already exist
+  //   - DELETE … WHERE (A,B) IN (…) tolerates edges that don't exist
+  // Prisma 7's implicit-M:N `disconnect` is strict and throws P2025 when the
+  // edge is missing for any reason (e.g., sync recorded a `connected` entry
+  // for a connect that was already a no-op, or a manual edit removed the
+  // edge between sync and rollback). Making rollback resilient here keeps
+  // the 100%-reliable-undo guarantee we promise customers.
   const cpl = ctx.undo.controlPolicyLinks ?? { connected: [], disconnected: [] };
   const ctl = ctx.undo.controlTaskLinks ?? { connected: [], disconnected: [] };
-  for (const link of cpl.connected) {
-    await tx.control.update({ where: { id: link.controlId }, data: { policies: { disconnect: { id: link.otherId } } } });
+
+  if (cpl.connected.length > 0) {
+    const pairs = Prisma.join(
+      cpl.connected.map(
+        ({ controlId, otherId }) => Prisma.sql`(${controlId}::text, ${otherId}::text)`,
+      ),
+    );
+    await tx.$executeRaw`DELETE FROM "_ControlToPolicy" WHERE ("A", "B") IN (${pairs})`;
   }
-  for (const link of cpl.disconnected) {
-    await tx.control.update({ where: { id: link.controlId }, data: { policies: { connect: { id: link.otherId } } } });
+  if (cpl.disconnected.length > 0) {
+    const rows = Prisma.join(
+      cpl.disconnected.map(
+        ({ controlId, otherId }) => Prisma.sql`(${controlId}::text, ${otherId}::text)`,
+      ),
+    );
+    await tx.$executeRaw`INSERT INTO "_ControlToPolicy" ("A", "B") VALUES ${rows} ON CONFLICT ("A", "B") DO NOTHING`;
   }
-  for (const link of ctl.connected) {
-    await tx.control.update({ where: { id: link.controlId }, data: { tasks: { disconnect: { id: link.otherId } } } });
+  if (ctl.connected.length > 0) {
+    const pairs = Prisma.join(
+      ctl.connected.map(
+        ({ controlId, otherId }) => Prisma.sql`(${controlId}::text, ${otherId}::text)`,
+      ),
+    );
+    await tx.$executeRaw`DELETE FROM "_ControlToTask" WHERE ("A", "B") IN (${pairs})`;
   }
-  for (const link of ctl.disconnected) {
-    await tx.control.update({ where: { id: link.controlId }, data: { tasks: { connect: { id: link.otherId } } } });
+  if (ctl.disconnected.length > 0) {
+    const rows = Prisma.join(
+      ctl.disconnected.map(
+        ({ controlId, otherId }) => Prisma.sql`(${controlId}::text, ${otherId}::text)`,
+      ),
+    );
+    await tx.$executeRaw`INSERT INTO "_ControlToTask" ("A", "B") VALUES ${rows} ON CONFLICT ("A", "B") DO NOTHING`;
   }
 
   // Revert framework instance version pointer
