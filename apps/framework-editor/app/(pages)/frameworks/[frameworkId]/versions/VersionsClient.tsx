@@ -25,7 +25,12 @@ export function VersionsClient({ frameworkId }: VersionsClientProps) {
         </Button>
       </div>
 
-      <VersionList versions={versions} isLoading={isLoading} error={error} />
+      <VersionList
+        frameworkId={frameworkId}
+        versions={versions}
+        isLoading={isLoading}
+        error={error}
+      />
 
       <PublishVersionDialog
         frameworkId={frameworkId}

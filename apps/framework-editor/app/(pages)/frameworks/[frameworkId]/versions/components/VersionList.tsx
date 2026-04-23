@@ -8,15 +8,18 @@ import {
   TableHeader,
   TableRow,
 } from '@trycompai/ui';
+import { useRouter } from 'next/navigation';
 import type { FrameworkVersionListItem } from '../hooks/useFrameworkVersions';
 
 interface VersionListProps {
+  frameworkId: string;
   versions: FrameworkVersionListItem[] | undefined;
   isLoading: boolean;
   error: Error | null;
 }
 
-export function VersionList({ versions, isLoading, error }: VersionListProps) {
+export function VersionList({ frameworkId, versions, isLoading, error }: VersionListProps) {
+  const router = useRouter();
   if (isLoading) {
     return (
       <div className="py-8 text-center text-sm text-muted-foreground">
@@ -53,7 +56,11 @@ export function VersionList({ versions, isLoading, error }: VersionListProps) {
       </TableHeader>
       <TableBody>
         {versions.map((v) => (
-          <TableRow key={v.id}>
+          <TableRow
+            key={v.id}
+            className="cursor-pointer hover:bg-muted/50"
+            onClick={() => router.push(`/frameworks/${frameworkId}/versions/${v.id}`)}
+          >
             <TableCell>
               <span className="text-sm font-medium">v{v.version}</span>
             </TableCell>
