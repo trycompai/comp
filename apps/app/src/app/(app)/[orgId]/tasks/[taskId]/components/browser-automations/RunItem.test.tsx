@@ -40,4 +40,12 @@ describe('RunItem', () => {
     const img = screen.getByAltText('Automation screenshot') as HTMLImageElement;
     expect(img.src).toContain('s3.example.com');
   });
+
+  it('Download anchor points at the redirect endpoint with ?download=true', () => {
+    render(<RunItem run={baseRun} isLatest={true} />);
+    const link = screen.getByRole('link', { name: /download/i });
+    expect(link.getAttribute('href')).toContain(
+      '/v1/browserbase/runs/bar_123/screenshot?download=true',
+    );
+  });
 });

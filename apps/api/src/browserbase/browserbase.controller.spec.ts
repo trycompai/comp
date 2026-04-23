@@ -71,8 +71,24 @@ describe('BrowserbaseController.redirectToScreenshot', () => {
     expect(service.getScreenshotRedirectUrl).toHaveBeenCalledWith({
       runId: 'bar_1',
       organizationId: 'org_1',
+      download: false,
     });
     expect(res.redirect).toHaveBeenCalledWith(302, 'https://s3.example.com/fresh-signed');
+  });
+
+  it('passes download=true to the service when the query param is "true"', async () => {
+    service.getScreenshotRedirectUrl.mockResolvedValue(
+      'https://s3.example.com/fresh-signed-attachment',
+    );
+    const res = makeRes();
+
+    await controller.redirectToScreenshot('bar_1', 'org_1', res, 'true');
+
+    expect(service.getScreenshotRedirectUrl).toHaveBeenCalledWith({
+      runId: 'bar_1',
+      organizationId: 'org_1',
+      download: true,
+    });
   });
 
   it('propagates NotFoundException when the service throws', async () => {

@@ -5,6 +5,7 @@ import { Badge } from '@trycompai/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import {
   ChevronDown,
+  Download,
   Image as ImageIcon,
   Launch as ExternalLink,
 } from '@trycompai/design-system/icons';
@@ -30,6 +31,7 @@ export function RunItem({ run, isLatest }: RunItemProps) {
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
   const fullSizeHref = `${apiBase}/v1/browserbase/runs/${run.id}/screenshot`;
+  const downloadHref = `${fullSizeHref}?download=true`;
 
   // Determine overall status: failed run, or completed but evaluation failed
   const hasIssue = hasFailed || evaluationFailed;
@@ -147,16 +149,27 @@ export function RunItem({ run, isLatest }: RunItemProps) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-muted-foreground">Screenshot</p>
-                  <a
-                    href={fullSizeHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline flex items-center gap-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Open full size
-                    <ExternalLink size={12} />
-                  </a>
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={downloadHref}
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline flex items-center gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Download
+                      <Download size={12} />
+                    </a>
+                    <a
+                      href={fullSizeHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline flex items-center gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Open full size
+                      <ExternalLink size={12} />
+                    </a>
+                  </div>
                 </div>
                 <div className="relative rounded-md overflow-hidden border border-border/50 bg-muted/30">
                   <Image

@@ -872,12 +872,18 @@ export class BrowserbaseService {
     return key;
   }
 
-  async getPresignedUrl(key: string, expiresIn = 3600): Promise<string> {
+  async getPresignedUrl(
+    key: string,
+    options: { expiresIn?: number; responseContentDisposition?: string } = {},
+  ): Promise<string> {
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: key,
+      ResponseContentDisposition: options.responseContentDisposition,
     });
-    return getSignedUrl(this.s3Client, command, { expiresIn });
+    return getSignedUrl(this.s3Client, command, {
+      expiresIn: options.expiresIn ?? 3600,
+    });
   }
 
   /**
@@ -885,12 +891,17 @@ export class BrowserbaseService {
    * scoped to the caller's organization. Used by the controller's
    * GET runs/:runId/screenshot redirect endpoint so that the "Open full size"
    * UI link never serves an expired URL.
+   *
+   * When `download` is true, the presigned URL is signed with an
+   * attachment Content-Disposition so the browser downloads the image
+   * instead of rendering it inline.
    */
   async getScreenshotRedirectUrl(input: {
     runId: string;
     organizationId: string;
+    download?: boolean;
   }): Promise<string> {
-    const { runId, organizationId } = input;
+    const { runId, organizationId, download } = input;
 
     const run = await db.browserAutomationRun.findUnique({
       where: { id: runId },
@@ -905,7 +916,13 @@ export class BrowserbaseService {
       throw new NotFoundException('Screenshot not found');
     }
 
-    return this.getPresignedUrl(run.screenshotUrl);
+    const responseContentDisposition = download
+      ? `attachment; filename="screenshot-${runId}.jpg"`
+      : undefined;
+
+    return this.getPresignedUrl(run.screenshotUrl, {
+      responseContentDisposition,
+    });
   }
 
   async getRunWithPresignedUrl(runId: string) {

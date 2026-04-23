@@ -18,6 +18,7 @@ jest.mock('@/app/s3', () => ({
 }));
 
 import { db } from '@db';
+import { getSignedUrl } from '@/app/s3';
 
 describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
   let service: BrowserbaseService;
@@ -88,5 +89,40 @@ describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
         organizationId: 'org_1',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('signs the URL without Content-Disposition when download is falsy', async () => {
+    (db.browserAutomationRun.findUnique as jest.Mock).mockResolvedValue({
+      id: 'bar_1',
+      screenshotUrl: 'browser-automations/org_1/bau_1/bar_1.jpg',
+      automation: { task: { organizationId: 'org_1' } },
+    });
+
+    await service.getScreenshotRedirectUrl({
+      runId: 'bar_1',
+      organizationId: 'org_1',
+    });
+
+    const command = (getSignedUrl as jest.Mock).mock.calls[0][1];
+    expect(command.input.ResponseContentDisposition).toBeUndefined();
+  });
+
+  it('signs the URL with attachment Content-Disposition when download is true', async () => {
+    (db.browserAutomationRun.findUnique as jest.Mock).mockResolvedValue({
+      id: 'bar_1',
+      screenshotUrl: 'browser-automations/org_1/bau_1/bar_1.jpg',
+      automation: { task: { organizationId: 'org_1' } },
+    });
+
+    await service.getScreenshotRedirectUrl({
+      runId: 'bar_1',
+      organizationId: 'org_1',
+      download: true,
+    });
+
+    const command = (getSignedUrl as jest.Mock).mock.calls[0][1];
+    expect(command.input.ResponseContentDisposition).toBe(
+      'attachment; filename="screenshot-bar_1.jpg"',
+    );
   });
 });
