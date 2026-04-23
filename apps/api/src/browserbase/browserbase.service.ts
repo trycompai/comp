@@ -5,12 +5,8 @@ import Browserbase from '@browserbasehq/sdk';
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 import { db } from '@db';
 import { z } from 'zod';
-import {
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@/app/s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { BUCKET_NAME, getSignedUrl, s3Client } from '@/app/s3';
 import { renderOverlay } from './screenshot-overlay';
 import { isNoPageError, toRunErrorMessage } from './run-error-formatter';
 
@@ -35,14 +31,23 @@ const isPrismaUniqueConstraintError = (error: unknown): boolean => {
 @Injectable()
 export class BrowserbaseService {
   private readonly logger = new Logger(BrowserbaseService.name);
-  private readonly s3Client: S3Client;
-  private readonly bucketName: string;
 
-  constructor() {
-    this.s3Client = new S3Client({
-      region: process.env.AWS_REGION || 'us-east-1',
-    });
-    this.bucketName = process.env.APP_AWS_BUCKET_NAME || 'comp-attachments';
+  private get s3Client(): S3Client {
+    if (!s3Client) {
+      throw new Error(
+        'S3 client not configured — set APP_AWS_ACCESS_KEY_ID, APP_AWS_SECRET_ACCESS_KEY, APP_AWS_REGION, APP_AWS_BUCKET_NAME in apps/api/.env',
+      );
+    }
+    return s3Client;
+  }
+
+  private get bucketName(): string {
+    if (!BUCKET_NAME) {
+      throw new Error(
+        'APP_AWS_BUCKET_NAME is not set — configure S3 credentials in apps/api/.env',
+      );
+    }
+    return BUCKET_NAME;
   }
 
   private getBrowserbase() {
