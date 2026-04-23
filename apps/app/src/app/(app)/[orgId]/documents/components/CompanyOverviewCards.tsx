@@ -165,18 +165,25 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
     return map;
   }, [visibleForms]);
 
-  const hasISO27001Framework = useMemo(() => {
+  const iso27001Framework = useMemo(() => {
     const frameworks = frameworksResponse?.data ?? [];
-    return frameworks.some(
+    return frameworks.find(
       (frameworkInstance) =>
         !!frameworkInstance.framework?.name &&
         ISO27001_NAMES.includes(frameworkInstance.framework.name),
     );
   }, [frameworksResponse]);
+  const hasISO27001Framework = !!iso27001Framework;
+  const iso27001FrameworkId = iso27001Framework?.frameworkId ?? null;
 
   return (
     <Stack gap="6">
-      {hasISO27001Framework && <SOAOverviewCard organizationId={organizationId} />}
+      {hasISO27001Framework && iso27001FrameworkId && (
+        <SOAOverviewCard
+          organizationId={organizationId}
+          iso27001FrameworkId={iso27001FrameworkId}
+        />
+      )}
       {Array.from(categories.entries()).map(([category, forms]) => (
         <div key={category} className="space-y-3">
           <div className="flex items-center gap-2">
