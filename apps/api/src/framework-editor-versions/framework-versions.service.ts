@@ -74,72 +74,116 @@ export class FrameworkVersionsService {
     const toManifest = await buildManifestForFramework(frameworkId);
     const diff = diffManifests(fromManifest, toManifest);
 
-    // Resolve template IDs to display names (may reference entities in either
-    // the old or new manifest — e.g. a removed edge may point at a removed
-    // control).
-    const nameFor = <K extends keyof FrameworkManifest>(
-      key: K,
-      id: string,
-      fallback: string,
-    ): { name: string; identifier?: string } => {
-      const list = [
-        ...(toManifest[key] as Array<{ id: string; name?: string; identifier?: string }>),
-        ...(fromManifest[key] as Array<{ id: string; name?: string; identifier?: string }>),
-      ];
-      const hit = list.find((x) => x.id === id);
-      return {
-        name: hit?.name ?? fallback,
-        identifier: hit?.identifier,
-      };
-    };
-
     return {
       latestVersion: { id: latest.id, version: latest.version },
       diff,
-      linkChanges: {
-        controlRequirement: {
-          added: diff.requirementMapEdges.added.map((e) => ({
-            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
-            requirementName: nameFor('requirements', e.requirementTemplateId, 'Unknown requirement').name,
-            requirementIdentifier: nameFor('requirements', e.requirementTemplateId, '').identifier ?? '',
-          })),
-          removed: diff.requirementMapEdges.removed.map((e) => ({
-            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
-            requirementName: nameFor('requirements', e.requirementTemplateId, 'Unknown requirement').name,
-            requirementIdentifier: nameFor('requirements', e.requirementTemplateId, '').identifier ?? '',
-          })),
-        },
-        controlPolicy: {
-          added: diff.controlPolicyEdges.added.map((e) => ({
-            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
-            policyName: nameFor('policies', e.policyTemplateId, 'Unknown policy').name,
-          })),
-          removed: diff.controlPolicyEdges.removed.map((e) => ({
-            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
-            policyName: nameFor('policies', e.policyTemplateId, 'Unknown policy').name,
-          })),
-        },
-        controlTask: {
-          added: diff.controlTaskEdges.added.map((e) => ({
-            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
-            taskName: nameFor('tasks', e.taskTemplateId, 'Unknown task').name,
-          })),
-          removed: diff.controlTaskEdges.removed.map((e) => ({
-            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
-            taskName: nameFor('tasks', e.taskTemplateId, 'Unknown task').name,
-          })),
-        },
-        controlDocumentType: {
-          added: diff.controlDocumentTypeEdges.added.map((e) => ({
-            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
-            formType: e.formType,
-          })),
-          removed: diff.controlDocumentTypeEdges.removed.map((e) => ({
-            controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
-            formType: e.formType,
-          })),
-        },
-      },
+      linkChanges: resolveLinkChanges(diff, fromManifest, toManifest),
     };
   }
+
+  /**
+   * Diff a specific published version against the version that was published
+   * immediately before it. When no prior version exists (i.e., this is the
+   * first published version), diffs against an empty manifest so everything
+   * reads as "added" — giving CX a full view of what the framework contained
+   * at its inception.
+   */
+  async getVersionDiff(frameworkId: string, versionId: string) {
+    const current = await db.frameworkVersion.findUnique({ where: { id: versionId } });
+    if (!current || current.frameworkId !== frameworkId) {
+      throw new NotFoundException('Version not found');
+    }
+
+    const previous = await db.frameworkVersion.findFirst({
+      where: { frameworkId, publishedAt: { lt: current.publishedAt } },
+      orderBy: { publishedAt: 'desc' },
+    });
+
+    const toManifest = current.manifest as unknown as FrameworkManifest;
+    const fromManifest: FrameworkManifest = previous
+      ? (previous.manifest as unknown as FrameworkManifest)
+      : {
+          framework: toManifest.framework,
+          requirements: [],
+          controls: [],
+          policies: [],
+          tasks: [],
+        };
+
+    const diff = diffManifests(fromManifest, toManifest);
+
+    return {
+      version: { id: current.id, version: current.version, publishedAt: current.publishedAt, releaseNotes: current.releaseNotes },
+      previousVersion: previous ? { id: previous.id, version: previous.version } : null,
+      diff,
+      linkChanges: resolveLinkChanges(diff, fromManifest, toManifest),
+    };
+  }
+}
+
+function resolveLinkChanges(
+  diff: ReturnType<typeof diffManifests>,
+  fromManifest: FrameworkManifest,
+  toManifest: FrameworkManifest,
+) {
+  const nameFor = <K extends keyof FrameworkManifest>(
+    key: K,
+    id: string,
+    fallback: string,
+  ): { name: string; identifier?: string } => {
+    const list = [
+      ...(toManifest[key] as Array<{ id: string; name?: string; identifier?: string }>),
+      ...(fromManifest[key] as Array<{ id: string; name?: string; identifier?: string }>),
+    ];
+    const hit = list.find((x) => x.id === id);
+    return {
+      name: hit?.name ?? fallback,
+      identifier: hit?.identifier,
+    };
+  };
+
+  return {
+    controlRequirement: {
+      added: diff.requirementMapEdges.added.map((e) => ({
+        controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+        requirementName: nameFor('requirements', e.requirementTemplateId, 'Unknown requirement').name,
+        requirementIdentifier: nameFor('requirements', e.requirementTemplateId, '').identifier ?? '',
+      })),
+      removed: diff.requirementMapEdges.removed.map((e) => ({
+        controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+        requirementName: nameFor('requirements', e.requirementTemplateId, 'Unknown requirement').name,
+        requirementIdentifier: nameFor('requirements', e.requirementTemplateId, '').identifier ?? '',
+      })),
+    },
+    controlPolicy: {
+      added: diff.controlPolicyEdges.added.map((e) => ({
+        controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+        policyName: nameFor('policies', e.policyTemplateId, 'Unknown policy').name,
+      })),
+      removed: diff.controlPolicyEdges.removed.map((e) => ({
+        controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+        policyName: nameFor('policies', e.policyTemplateId, 'Unknown policy').name,
+      })),
+    },
+    controlTask: {
+      added: diff.controlTaskEdges.added.map((e) => ({
+        controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+        taskName: nameFor('tasks', e.taskTemplateId, 'Unknown task').name,
+      })),
+      removed: diff.controlTaskEdges.removed.map((e) => ({
+        controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+        taskName: nameFor('tasks', e.taskTemplateId, 'Unknown task').name,
+      })),
+    },
+    controlDocumentType: {
+      added: diff.controlDocumentTypeEdges.added.map((e) => ({
+        controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+        formType: e.formType,
+      })),
+      removed: diff.controlDocumentTypeEdges.removed.map((e) => ({
+        controlName: nameFor('controls', e.controlTemplateId, 'Unknown control').name,
+        formType: e.formType,
+      })),
+    },
+  };
 }
