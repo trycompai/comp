@@ -57,7 +57,7 @@ const CHECK_DESCRIPTIONS: Record<DeviceCheckType, string> = {
   disk_encryption: 'FileVault or BitLocker enabled',
   antivirus: 'Antivirus software active',
   password_policy: 'Minimum 8 character password',
-  screen_lock: 'Screen locks within 5 minutes',
+  screen_lock: 'Screen locks within 15 minutes',
 };
 
 /** Label for the remediation button based on remediation type */

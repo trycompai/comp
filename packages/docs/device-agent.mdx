@@ -14,7 +14,7 @@ The agent checks four security areas:
 | **Disk Encryption** | FileVault (macOS), BitLocker (Windows), or LUKS (Linux) is enabled |
 | **Antivirus** | Active antivirus protection (XProtect, Windows Defender, ClamAV, etc.) |
 | **Password Policy** | Minimum 8-character password enforced at the OS level |
-| **Screen Lock** | Automatic screen lock activates within 5 minutes of inactivity |
+| **Screen Lock** | Automatic screen lock activates within 15 minutes of inactivity |
 
 Your device is **compliant** when all four checks pass.
 
@@ -180,12 +180,12 @@ For users who cannot install the agent on their device, manual evidence of devic
     3. Save the recovery key to Microsoft Account / USB / secure location.
     4. Restart if prompted.
 
-    **Screen Lock after 5 Minutes**
+    **Screen Lock after 15 Minutes**
 
     1. Press **Start** → **Settings** → **Personalization** → **Lock screen**.
     2. Scroll down → click **Screen timeout settings**.\
-       Take a screenshot showing the screen timeout set to 5 minutes.
-    3. Set **Screen turns off** = 5 minutes.
+       Take a screenshot showing the screen timeout set to 15 minutes.
+    3. Set **Screen turns off** = 15 minutes.
     4. In **Settings** → **Accounts** → **Sign-in options** → ensure **Require sign-in** is set to _"When PC wakes up from sleep"_.\
        Take a screenshot of the Sign-in Options page showing this setting.
 
@@ -226,11 +226,11 @@ For users who cannot install the agent on their device, manual evidence of devic
     4. Record recovery key.\
        Take a screenshot of the FileVault settings page showing "FileVault is enabled for the disk."
 
-    **Screen Auto-lock (5 min)**
+    **Screen Auto-lock (15 min)**
 
     1. **System Settings** → **Lock Screen**.
-    2. Set **Start screen saver when inactive** = 5 minutes.\
-       Take a screenshot showing the setting at 5 minutes.
+    2. Set **Start screen saver when inactive** = 15 minutes.\
+       Take a screenshot showing the setting at 15 minutes.
     3. Set **Require password after sleep or screen saver begins** = _Immediately_.\
        Take a screenshot showing "Require password immediately" is selected.
 
@@ -267,10 +267,10 @@ For users who cannot install the agent on their device, manual evidence of devic
     2. To verify, run: `lsblk -o NAME,TYPE,FSTYPE | grep crypt`\
        Take a screenshot showing the encrypted volume.
 
-    **Screen Lock (5 min)**
+    **Screen Lock (15 min)**
 
     1. Open **Settings** → **Privacy** → **Screen Lock**.
-    2. Set **Automatic Screen Lock Delay** = 5 minutes.\
+    2. Set **Automatic Screen Lock Delay** = 15 minutes.\
        Take a screenshot showing the screen lock delay setting.
 
     **Password Policy**
