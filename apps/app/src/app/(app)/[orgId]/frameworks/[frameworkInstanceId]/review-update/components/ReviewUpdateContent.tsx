@@ -1,5 +1,9 @@
 'use client';
 
+import { useFrameworkSync } from '@/hooks/use-framework-sync';
+import { useFrameworkUpdatePreview } from '@/hooks/use-framework-update-preview';
+import { usePermissions } from '@/hooks/use-permissions';
+import type { UpdatePreview } from '@/types/framework-versioning';
 import {
   Badge,
   Button,
@@ -15,10 +19,6 @@ import {
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { useFrameworkSync } from '@/hooks/use-framework-sync';
-import { useFrameworkUpdatePreview } from '@/hooks/use-framework-update-preview';
-import { usePermissions } from '@/hooks/use-permissions';
-import type { UpdatePreview } from '@/types/framework-versioning';
 import { SyncConfirmDialog } from '../../components/SyncConfirmDialog';
 
 interface Props {
@@ -66,10 +66,7 @@ export function ReviewUpdateContent({
   const canApply = hasPermission('framework', 'update');
   const frameworkHref = `/${orgId}/frameworks/${frameworkInstanceId}`;
 
-  const groups = useMemo<ChangeGroup[]>(
-    () => buildGroups(preview),
-    [preview],
-  );
+  const groups = useMemo<ChangeGroup[]>(() => buildGroups(preview), [preview]);
 
   // Summary counts: link removals/adds fold into the Removed / New totals.
   const edges = preview.edges ?? {
@@ -146,7 +143,7 @@ export function ReviewUpdateContent({
   const showEmpty = visibleGroups.length === 0 && !showLinkChanges;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-6 overflow-hidden">
+    <div className="flex h-[calc(100dvh-7.5rem)] min-h-0 flex-col gap-6 overflow-hidden">
       <div className="shrink-0">
         <PageHeader
           title={`${frameworkName} v${preview.toVersion.version}`}
@@ -154,8 +151,7 @@ export function ReviewUpdateContent({
           backLabel={`Back to ${frameworkName}`}
         >
           <PageHeaderDescription>
-            Reviewing update from v{preview.fromVersion.version} to v
-            {preview.toVersion.version}
+            Reviewing update from v{preview.fromVersion.version} to v{preview.toVersion.version}
             {preview.releaseNotes ? ` — ${preview.releaseNotes}` : ''}
           </PageHeaderDescription>
         </PageHeader>
@@ -317,12 +313,7 @@ function ItemRow({ row }: { row: ChangeRow }) {
         <div className="flex flex-col gap-1">
           <HStack gap="2" align="center">
             {row.identifier && (
-              <Text
-                size="sm"
-                weight="medium"
-                variant="muted"
-                className="font-mono"
-              >
+              <Text size="sm" weight="medium" variant="muted" className="font-mono">
                 {row.identifier}
               </Text>
             )}
