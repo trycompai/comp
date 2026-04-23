@@ -37,8 +37,17 @@ function suggestNextVersion(current: string | undefined): string {
 
 function hasDiffChanges(diff: DraftDiff | undefined): boolean {
   if (!diff) return false;
-  const { controls, requirements, policies, tasks, requirementMapEdges, controlPolicyEdges, controlTaskEdges } =
-    diff.diff;
+  const {
+    controls,
+    requirements,
+    policies,
+    tasks,
+    requirementMapEdges,
+    controlPolicyEdges,
+    controlTaskEdges,
+    controlDocumentTypeEdges,
+  } = diff.diff;
+  const docTypeEdges = controlDocumentTypeEdges ?? { added: [], removed: [] };
   return (
     controls.added.length > 0 ||
     controls.removed.length > 0 ||
@@ -57,7 +66,9 @@ function hasDiffChanges(diff: DraftDiff | undefined): boolean {
     controlPolicyEdges.added.length > 0 ||
     controlPolicyEdges.removed.length > 0 ||
     controlTaskEdges.added.length > 0 ||
-    controlTaskEdges.removed.length > 0
+    controlTaskEdges.removed.length > 0 ||
+    docTypeEdges.added.length > 0 ||
+    docTypeEdges.removed.length > 0
   );
 }
 
@@ -323,6 +334,16 @@ export function PublishVersionDialog({
                   {diff.controlTaskEdges.removed.length > 0 && (
                     <p className="text-muted-foreground text-sm">
                       Control → task links removed: {diff.controlTaskEdges.removed.length}
+                    </p>
+                  )}
+                  {(diff.controlDocumentTypeEdges?.added.length ?? 0) > 0 && (
+                    <p className="text-muted-foreground text-sm">
+                      Control → document-type links added: {diff.controlDocumentTypeEdges!.added.length}
+                    </p>
+                  )}
+                  {(diff.controlDocumentTypeEdges?.removed.length ?? 0) > 0 && (
+                    <p className="text-muted-foreground text-sm">
+                      Control → document-type links removed: {diff.controlDocumentTypeEdges!.removed.length}
                     </p>
                   )}
                 </div>

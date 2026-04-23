@@ -3,7 +3,9 @@ export interface UndoPayload {
   policies: PolicyUndoBucket;
   tasks: EntityUndoBucket<TaskUndoContent>;
   requirementMaps: EdgeUndoBucket;
-  controlDocumentTypes: EdgeUndoBucket;
+  // ControlDocumentType has no archivedAt column — hard-delete on remove,
+  // recreate on rollback by (controlId, formType).
+  controlDocumentTypes: ControlDocumentTypeUndoBucket;
   // Prisma implicit many-to-many relations: each entry is one connect or
   // disconnect between a Control and a Policy / Task instance.
   controlPolicyLinks: ImplicitEdgeBucket;
@@ -44,6 +46,17 @@ export interface PolicyUndoContent {
 export interface EdgeUndoBucket {
   created: string[];
   archived: Array<{ id: string; prevArchivedAt: Date | null }>;
+}
+
+/**
+ * ControlDocumentType rows are hard-deleted (no archivedAt column), so the
+ * undo payload needs enough information to recreate them on rollback.
+ */
+export interface ControlDocumentTypeUndoBucket {
+  /** IDs to hard-delete on rollback (rows this sync created). */
+  created: string[];
+  /** Rows this sync hard-deleted — recreate by (controlId, formType) on rollback. */
+  deleted: Array<{ controlId: string; formType: string }>;
 }
 
 /**

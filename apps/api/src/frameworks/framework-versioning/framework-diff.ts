@@ -32,6 +32,11 @@ export interface ControlTaskEdge {
   taskTemplateId: string;
 }
 
+export interface ControlDocumentTypeEdge {
+  controlTemplateId: string;
+  formType: string;
+}
+
 export interface ManifestDiff {
   controls: EntityDiff<ManifestControl>;
   requirements: EntityDiff<ManifestRequirement>;
@@ -40,6 +45,7 @@ export interface ManifestDiff {
   requirementMapEdges: EdgeDiff<ControlRequirementEdge>;
   controlPolicyEdges: EdgeDiff<ControlPolicyEdge>;
   controlTaskEdges: EdgeDiff<ControlTaskEdge>;
+  controlDocumentTypeEdges: EdgeDiff<ControlDocumentTypeEdge>;
 }
 
 export function diffManifests(from: FrameworkManifest, to: FrameworkManifest): ManifestDiff {
@@ -78,6 +84,15 @@ export function diffManifests(from: FrameworkManifest, to: FrameworkManifest): M
       ),
       (a, b) =>
         a.controlTemplateId === b.controlTemplateId && a.taskTemplateId === b.taskTemplateId,
+    ),
+    controlDocumentTypeEdges: diffEdges(
+      edgesFromControls(from.controls, (c) =>
+        (c.documentTypes ?? []).map((formType) => ({ controlTemplateId: c.id, formType })),
+      ),
+      edgesFromControls(to.controls, (c) =>
+        (c.documentTypes ?? []).map((formType) => ({ controlTemplateId: c.id, formType })),
+      ),
+      (a, b) => a.controlTemplateId === b.controlTemplateId && a.formType === b.formType,
     ),
   };
 }

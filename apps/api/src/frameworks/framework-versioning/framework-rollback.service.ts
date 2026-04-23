@@ -116,6 +116,23 @@ async function replayUndo(
     await tx.requirementMap.deleteMany({ where: { id: { in: ctx.undo.requirementMaps.created } } });
   }
 
+  // ControlDocumentType: reverse hard-deletes (recreate) and hard-delete
+  // rows the sync created. Guarded against older sync ops that predate this
+  // bucket shape.
+  const cdt = ctx.undo.controlDocumentTypes ?? { created: [], deleted: [] };
+  const cdtCreated = Array.isArray(cdt.created) ? cdt.created : [];
+  const cdtDeleted = Array.isArray((cdt as { deleted?: unknown }).deleted)
+    ? (cdt as { deleted: Array<{ controlId: string; formType: string }> }).deleted
+    : [];
+  if (cdtCreated.length) {
+    await tx.controlDocumentType.deleteMany({ where: { id: { in: cdtCreated } } });
+  }
+  for (const d of cdtDeleted) {
+    await tx.controlDocumentType.create({
+      data: { controlId: d.controlId, formType: d.formType as never },
+    });
+  }
+
   // Restore archived state
   for (const a of ctx.undo.controls.archived) {
     await tx.control.update({ where: { id: a.id }, data: { archivedAt: a.prevArchivedAt } });

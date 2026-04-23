@@ -41,6 +41,7 @@ export async function buildManifestForFramework(frameworkId: string): Promise<Fr
           requirementIds: ct.requirements.map((r) => r.id),
           policyIds: ct.policyTemplates.map((p) => p.id),
           taskIds: ct.taskTemplates.map((t) => t.id),
+          documentTypes: [...ct.documentTypes],
         });
       }
       for (const pt of ct.policyTemplates) {

@@ -124,6 +124,7 @@ function buildManifestFromFramework(framework: FrameworkWithTemplates) {
       requirementIds: c.requirements.map((r) => r.id),
       policyIds: c.policyTemplates.map((p) => p.id),
       taskIds: c.taskTemplates.map((t) => t.id),
+      documentTypes: [...c.documentTypes],
     })),
     policies: dedupeById(
       controlTemplates.flatMap((c) =>

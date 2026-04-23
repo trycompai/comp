@@ -24,6 +24,7 @@ export interface DraftDiff {
     requirementMapEdges: EdgeDiffCounts;
     controlPolicyEdges: EdgeDiffCounts;
     controlTaskEdges: EdgeDiffCounts;
+    controlDocumentTypeEdges?: EdgeDiffCounts;
   };
 }
 

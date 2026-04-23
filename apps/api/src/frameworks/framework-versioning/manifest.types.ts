@@ -29,6 +29,7 @@ export interface ManifestControl {
   requirementIds: string[];
   policyIds: string[];
   taskIds: string[];
+  documentTypes: string[]; // EvidenceFormType enum values
 }
 
 export interface ManifestPolicy {

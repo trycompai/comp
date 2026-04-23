@@ -53,7 +53,7 @@ export async function applySync(
     policies: { created: [], archived: [], contentUpdated: [], draftsAdded: [] },
     tasks: { created: [], archived: [], contentUpdated: [] },
     requirementMaps: { created: [], archived: [] },
-    controlDocumentTypes: { created: [], archived: [] },
+    controlDocumentTypes: { created: [], deleted: [] },
     controlPolicyLinks: { connected: [], disconnected: [] },
     controlTaskLinks: { connected: [], disconnected: [] },
   };
@@ -279,6 +279,39 @@ export async function applySync(
     if (!ctlInst || !tInst) continue;
     await tx.control.update({ where: { id: ctlInst.id }, data: { tasks: { disconnect: { id: tInst.id } } } });
     undo.controlTaskLinks.disconnected.push({ controlId: ctlInst.id, otherId: tInst.id });
+  }
+
+  // --- Control <-> DocumentType (explicit junction table ControlDocumentType) ---
+  // formType is an enum; uniqueness is on (controlId, formType). We treat adds
+  // as real row creates and removals as hard-deletes because this table has no
+  // archivedAt column and there's no need to preserve archived edges (the
+  // formType is just metadata describing what evidence the control accepts).
+  for (const edge of diff.controlDocumentTypeEdges.added) {
+    const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
+    if (!ctlInst) continue;
+    // Idempotent create: skip if already present (shared-entity case).
+    const existing = await tx.controlDocumentType.findUnique({
+      where: { controlId_formType: { controlId: ctlInst.id, formType: edge.formType as never } },
+      select: { id: true },
+    });
+    if (existing) continue;
+    const created = await tx.controlDocumentType.create({
+      data: { controlId: ctlInst.id, formType: edge.formType as never },
+    });
+    undo.controlDocumentTypes.created.push(created.id);
+    summary.controlDocumentTypesAdded += 1;
+  }
+  for (const edge of diff.controlDocumentTypeEdges.removed) {
+    const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
+    if (!ctlInst) continue;
+    const existing = await tx.controlDocumentType.findUnique({
+      where: { controlId_formType: { controlId: ctlInst.id, formType: edge.formType as never } },
+      select: { id: true },
+    });
+    if (!existing) continue;
+    await tx.controlDocumentType.delete({ where: { id: existing.id } });
+    undo.controlDocumentTypes.deleted.push({ controlId: ctlInst.id, formType: edge.formType });
+    summary.controlDocumentTypesArchived += 1;
   }
 
   // --- Persist sync op + update currentVersionId ---

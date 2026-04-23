@@ -94,11 +94,14 @@ export function UpdateReviewSections({ preview }: UpdateReviewSectionsProps) {
     controlPolicy: { added: 0, removed: 0 },
     controlTask: { added: 0, removed: 0 },
     controlRequirement: { added: 0, removed: 0 },
+    controlDocumentType: { added: 0, removed: 0 },
   };
+  const docTypeEdges = edges.controlDocumentType ?? { added: 0, removed: 0 };
   const edgesTotal =
     edges.controlPolicy.added + edges.controlPolicy.removed +
     edges.controlTask.added + edges.controlTask.removed +
-    edges.controlRequirement.added + edges.controlRequirement.removed;
+    edges.controlRequirement.added + edges.controlRequirement.removed +
+    docTypeEdges.added + docTypeEdges.removed;
 
   const totalChanges =
     controlsAdded + controlsArchived + controlsUpdated + controlsPreserved +
@@ -253,6 +256,16 @@ export function UpdateReviewSections({ preview }: UpdateReviewSectionsProps) {
             {edges.controlTask.removed > 0 && (
               <Text size="sm" variant="muted">
                 {edges.controlTask.removed} control → task link{edges.controlTask.removed !== 1 ? 's' : ''} removed
+              </Text>
+            )}
+            {docTypeEdges.added > 0 && (
+              <Text size="sm" variant="muted">
+                {docTypeEdges.added} control → document-type link{docTypeEdges.added !== 1 ? 's' : ''} added
+              </Text>
+            )}
+            {docTypeEdges.removed > 0 && (
+              <Text size="sm" variant="muted">
+                {docTypeEdges.removed} control → document-type link{docTypeEdges.removed !== 1 ? 's' : ''} removed
               </Text>
             )}
           </Stack>

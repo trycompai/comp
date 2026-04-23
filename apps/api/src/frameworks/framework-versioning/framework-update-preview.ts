@@ -69,6 +69,7 @@ export interface UpdatePreview {
     controlPolicy: { added: number; removed: number };
     controlTask: { added: number; removed: number };
     controlRequirement: { added: number; removed: number };
+    controlDocumentType: { added: number; removed: number };
   };
 }
 
@@ -182,6 +183,10 @@ export function buildUpdatePreview(input: BuildUpdatePreviewInput): UpdatePrevie
       controlRequirement: {
         added: d.requirementMapEdges.added.length,
         removed: d.requirementMapEdges.removed.length,
+      },
+      controlDocumentType: {
+        added: d.controlDocumentTypeEdges.added.length,
+        removed: d.controlDocumentTypeEdges.removed.length,
       },
     },
   };

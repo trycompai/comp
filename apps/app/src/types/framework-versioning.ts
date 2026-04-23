@@ -128,6 +128,7 @@ export interface UpdatePreview {
     controlPolicy: { added: number; removed: number };
     controlTask: { added: number; removed: number };
     controlRequirement: { added: number; removed: number };
+    controlDocumentType: { added: number; removed: number };
   };
 }
 

@@ -35,6 +35,7 @@ describe('buildManifestForFramework', () => {
               taskTemplates: [
                 { id: 'frk_tt_rev', name: 'Review Access', description: 'Review quarterly', frequency: 'quarterly', department: 'it' },
               ],
+              documentTypes: ['rbac_matrix'],
             },
           ],
         },
@@ -71,6 +72,7 @@ describe('buildManifestForFramework', () => {
               requirements: [{ id: 'rq_a' }, { id: 'rq_b' }],
               policyTemplates: [{ id: 'pt_shared', name: 'P', description: null, content: [], frequency: null, department: null }],
               taskTemplates: [{ id: 'tt_shared', name: 'T', description: '', frequency: null, department: null }],
+              documentTypes: [],
             },
           ],
         },
@@ -82,6 +84,7 @@ describe('buildManifestForFramework', () => {
               requirements: [{ id: 'rq_a' }, { id: 'rq_b' }],
               policyTemplates: [{ id: 'pt_shared', name: 'P', description: null, content: [], frequency: null, department: null }],
               taskTemplates: [{ id: 'tt_shared', name: 'T', description: '', frequency: null, department: null }],
+              documentTypes: [],
             },
           ],
         },
