@@ -77,10 +77,14 @@ export function FrameworkDetailContent({
   const requirementDefinitions = framework.requirementDefinitions || [];
 
   // Tab state synced to ?tab=
+  // Progress tab only exists when the compliance timeline flag is on — when
+  // it's off, the lightweight FrameworkProgress renders above the tabs.
   const tabParam = searchParams.get('tab');
-  const validTabs = new Set(
-    versioningEnabled ? ['progress', 'requirements', 'history'] : ['progress', 'requirements'],
-  );
+  const validTabsList: string[] = [];
+  if (complianceTimelineEnabled) validTabsList.push('progress');
+  validTabsList.push('requirements');
+  if (versioningEnabled) validTabsList.push('history');
+  const validTabs = new Set(validTabsList);
   const activeTab = tabParam && validTabs.has(tabParam) ? tabParam : DEFAULT_TAB;
 
   const handleTabChange = useCallback(
@@ -147,9 +151,11 @@ export function FrameworkDetailContent({
             }
             tabs={
               <TabsList variant="underline">
-                <TabsTrigger value="progress">
-                  Progress <TabBadge>{compliancePct}%</TabBadge>
-                </TabsTrigger>
+                {complianceTimelineEnabled && (
+                  <TabsTrigger value="progress">
+                    Progress <TabBadge>{compliancePct}%</TabBadge>
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="requirements">
                   Requirements <TabBadge>{requirementsCount}</TabBadge>
                 </TabsTrigger>
@@ -169,17 +175,19 @@ export function FrameworkDetailContent({
           hasActiveAudit={false}
         />
 
-        <TabsContent value="progress">
-          {complianceTimelineEnabled ? (
+        {!complianceTimelineEnabled && (
+          <FrameworkProgress
+            framework={frameworkInstanceWithControls}
+            tasks={tasks}
+            evidenceSubmissions={evidenceSubmissions}
+          />
+        )}
+
+        {complianceTimelineEnabled && (
+          <TabsContent value="progress">
             <FrameworkTimeline frameworkInstanceId={frameworkInstanceId} />
-          ) : (
-            <FrameworkProgress
-              framework={frameworkInstanceWithControls}
-              tasks={tasks}
-              evidenceSubmissions={evidenceSubmissions}
-            />
-          )}
-        </TabsContent>
+          </TabsContent>
+        )}
 
         <TabsContent value="requirements">
           <FrameworkRequirements
