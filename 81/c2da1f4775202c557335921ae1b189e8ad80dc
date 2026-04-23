@@ -1,0 +1,23 @@
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/components/SyncHistorySection.tsx
+  26176ac5d96c92b4 3,100-101,109,124-126,148-149,158-169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "81c2da1f4775202c557335921ae1b189e8ad80dc",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 21,
+      "total_deletions": 5,
+      "accepted_lines": 7882,
+      "overriden_lines": 4
+    }
+  }
+}
