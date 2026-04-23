@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import type {
   FrameworkManifest,
@@ -24,7 +25,7 @@ export async function buildManifestForFramework(frameworkId: string): Promise<Fr
     },
   });
 
-  if (!framework) throw new Error('Framework not found');
+  if (!framework) throw new NotFoundException('Framework not found');
 
   // Collect all unique control templates across all requirements, deduped by id.
   const controlsMap = new Map<string, ManifestControl>();
