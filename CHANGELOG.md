@@ -1,3 +1,15 @@
+# [3.31.0](https://github.com/trycompai/comp/compare/v3.30.0...v3.31.0) (2026-04-23)
+
+
+### Bug Fixes
+
+* **db:** exclude *.spec.ts from tsc build ([#2651](https://github.com/trycompai/comp/issues/2651)) ([4d340ad](https://github.com/trycompai/comp/commit/4d340ad3251ff8d804c7000ded6db81953156a63))
+
+
+### Features
+
+* enabled framework versioning and updating existing frameworks when new versions come out ([7518075](https://github.com/trycompai/comp/commit/75180757dd436b6f03c2c504d57b2584f19f9b7f))
+
 # [3.30.0](https://github.com/trycompai/comp/compare/v3.29.0...v3.30.0) (2026-04-23)
 
 
