@@ -34,6 +34,7 @@ export class FrameworksService {
   private async loadRequirementDefinitions(fi: {
     frameworkId: string | null;
     customFrameworkId: string | null;
+    currentVersionId?: string | null;
   }): Promise<RequirementDef[]> {
     if (fi.customFrameworkId) {
       const rows = await db.customRequirement.findMany({
@@ -50,6 +51,29 @@ export class FrameworksService {
       }));
     }
     if (fi.frameworkId) {
+      // Prefer the pinned version's manifest so customers see exactly what
+      // they're synced to — NOT the live template state which may have
+      // additions not yet synced.
+      if (fi.currentVersionId) {
+        const version = await db.frameworkVersion.findUnique({
+          where: { id: fi.currentVersionId },
+          select: { manifest: true },
+        });
+        if (version) {
+          const manifest = version.manifest as unknown as FrameworkManifest;
+          return [...manifest.requirements]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((r) => ({
+              id: r.id,
+              name: r.name,
+              identifier: r.identifier,
+              description: r.description ?? '',
+              frameworkId: fi.frameworkId,
+              customFrameworkId: null,
+            }));
+        }
+      }
+      // Fallback: instances with no pinned version (shouldn't happen post-backfill).
       const rows = await db.frameworkEditorRequirement.findMany({
         where: { frameworkId: fi.frameworkId },
         orderBy: { name: 'asc' },
@@ -484,7 +508,7 @@ export class FrameworksService {
   ) {
     const fi = await db.frameworkInstance.findUnique({
       where: { id: frameworkInstanceId, organizationId },
-      select: { id: true, frameworkId: true, customFrameworkId: true },
+      select: { id: true, frameworkId: true, customFrameworkId: true, currentVersionId: true },
     });
     if (!fi) {
       throw new NotFoundException('Framework instance not found');
