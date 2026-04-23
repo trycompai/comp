@@ -199,6 +199,18 @@ export class DeviceAgentAuthService {
     let sessionIdToLink: string | undefined;
 
     if (!sessionDeviceAgent) {
+      if (device.agentSessionId) {
+        try {
+          await db.session.delete({ where: { id: device.agentSessionId } });
+        } catch (err) {
+          if ((err as { code?: string }).code !== 'P2025') {
+            this.logger.error(
+              `Failed to delete stale agent session ${device.agentSessionId} for device ${device.id}: ${err}`,
+            );
+            throw err;
+          }
+        }
+      }
       const upgraded = await createDeviceAgentSession({ userId });
       upgradedSessionToken = upgraded.token;
       sessionIdToLink = upgraded.sessionId;

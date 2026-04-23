@@ -10,5 +10,11 @@ export const RESTRICTED_ROLES = ['employee', 'contractor'];
 export const createAccessControl = () => ({});
 export const ac = {};
 export const allRoles = {};
+export const statement: Record<string, string[]> = {
+  app: ['create', 'read', 'update', 'delete'],
+  member: ['create', 'read', 'update', 'delete'],
+  // extend if future tests need more resources
+};
+export const BUILT_IN_ROLE_PERMISSIONS = {};
 
 export type AccessControl = Record<string, unknown>;

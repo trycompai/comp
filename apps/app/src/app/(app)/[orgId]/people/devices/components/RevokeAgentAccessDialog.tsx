@@ -52,7 +52,7 @@ export function RevokeAgentAccessDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger>
+      <AlertDialogTrigger asChild>
         <Button variant="outline" size="sm">
           Revoke agent access
         </Button>

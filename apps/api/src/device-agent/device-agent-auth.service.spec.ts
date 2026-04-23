@@ -604,7 +604,7 @@ describe('DeviceAgentAuthService', () => {
       },
     ];
 
-    it('non-device-agent session → upgrade fires and token returned', async () => {
+    it('fresh device (agentSessionId: null) → upgrade fires, delete NOT called, token returned', async () => {
       (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
         id: 'dev-1',
         agentSessionId: null,
@@ -614,6 +614,87 @@ describe('DeviceAgentAuthService', () => {
         screenLockEnabled: false,
         checkDetails: {},
       });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({ id: 'dev-1' });
+      mockCreateDeviceAgentSession.mockResolvedValueOnce({
+        sessionId: 'ses_new',
+        token: 'tok_new',
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      });
+
+      const result = await service.checkIn({
+        userId: 'user-1',
+        sessionId: 'ses_old_web',
+        sessionDeviceAgent: false,
+        dto: { deviceId: 'dev-1', checks: baseChecks },
+      });
+
+      expect(result.upgradedSessionToken).toBe('tok_new');
+      expect(mockCreateDeviceAgentSession).toHaveBeenCalledWith({
+        userId: 'user-1',
+      });
+      expect(mockDb.session.delete).not.toHaveBeenCalled();
+      expect(mockDb.device.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'dev-1' },
+          data: expect.objectContaining({ agentSessionId: 'ses_new' }),
+        }),
+      );
+    });
+
+    it('device with stale link → stale session deleted, new session minted, agentSessionId updated', async () => {
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+        id: 'dev-1',
+        agentSessionId: 'ses_stale',
+        diskEncryptionEnabled: false,
+        antivirusEnabled: false,
+        passwordPolicySet: false,
+        screenLockEnabled: false,
+        checkDetails: {},
+      });
+      (mockDb.session.delete as jest.Mock).mockResolvedValue({ id: 'ses_stale' });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({ id: 'dev-1' });
+      mockCreateDeviceAgentSession.mockResolvedValueOnce({
+        sessionId: 'ses_new',
+        token: 'tok_new',
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      });
+
+      const result = await service.checkIn({
+        userId: 'user-1',
+        sessionId: 'ses_old_web',
+        sessionDeviceAgent: false,
+        dto: { deviceId: 'dev-1', checks: baseChecks },
+      });
+
+      expect(mockDb.session.delete).toHaveBeenCalledWith({
+        where: { id: 'ses_stale' },
+      });
+      expect(result.upgradedSessionToken).toBe('tok_new');
+      expect(mockCreateDeviceAgentSession).toHaveBeenCalledWith({
+        userId: 'user-1',
+      });
+      expect(mockDb.device.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'dev-1' },
+          data: expect.objectContaining({ agentSessionId: 'ses_new' }),
+        }),
+      );
+    });
+
+    it('stale delete throws P2025 → method still resolves, new session still minted', async () => {
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+        id: 'dev-1',
+        agentSessionId: 'ses_stale',
+        diskEncryptionEnabled: false,
+        antivirusEnabled: false,
+        passwordPolicySet: false,
+        screenLockEnabled: false,
+        checkDetails: {},
+      });
+      const p2025Error = Object.assign(new Error('Record not found'), {
+        code: 'P2025',
+      });
+      (mockDb.session.delete as jest.Mock).mockRejectedValueOnce(p2025Error);
       (mockDb.device.update as jest.Mock).mockResolvedValue({ id: 'dev-1' });
       mockCreateDeviceAgentSession.mockResolvedValueOnce({
         sessionId: 'ses_new',
