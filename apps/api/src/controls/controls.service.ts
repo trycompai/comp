@@ -305,8 +305,11 @@ export class ControlsService {
   ): Promise<string[]> {
     if (!policyIds || policyIds.length === 0) return [];
     const uniqueIds = Array.from(new Set(policyIds));
+    // Exclude both user-archived (isArchived) and sync-archived (archivedAt)
+    // policies. Checking only archivedAt would let user-archived policies
+    // get re-linked to a control and surface back through the UI.
     const policies = await db.policy.findMany({
-      where: { id: { in: uniqueIds }, organizationId, archivedAt: null },
+      where: { id: { in: uniqueIds }, organizationId, archivedAt: null, isArchived: false },
       select: { id: true },
     });
     if (policies.length !== uniqueIds.length) {

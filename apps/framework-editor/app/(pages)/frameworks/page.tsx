@@ -7,23 +7,14 @@ export default async function Page() {
   const isAllowed = await isAuthorized();
   if (!isAllowed) redirect('/auth');
 
+  // `/framework` now returns latestVersion per framework in a single query,
+  // so we no longer need the N+1 loop that fetched versions per framework.
   const frameworks = await serverApi<FrameworkWithCounts[]>('/framework');
 
-  // Enrich each framework with the latest published version (from FrameworkVersion).
-  // Falls back to the catalog version string if no versions have been published.
-  const enriched = await Promise.all(
-    frameworks.map(async (fw) => {
-      try {
-        const res = await serverApi<{ data: Array<{ id: string; version: string }> }>(
-          `/framework/${fw.id}/versions`,
-        );
-        const latest = Array.isArray(res?.data) ? res.data[0]?.version : undefined;
-        return { ...fw, version: latest ?? fw.version };
-      } catch {
-        return fw;
-      }
-    }),
-  );
+  const enriched = frameworks.map((fw) => ({
+    ...fw,
+    version: fw.latestVersion?.version ?? fw.version,
+  }));
 
   return <FrameworksClientPage initialFrameworks={enriched} />;
 }

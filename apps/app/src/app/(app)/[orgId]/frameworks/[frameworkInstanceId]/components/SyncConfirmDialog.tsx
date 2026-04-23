@@ -26,6 +26,7 @@ function countChanges(preview: UpdatePreview): {
   added: number;
   archived: number;
   updated: number;
+  linkChanges: number;
 } {
   const added =
     preview.controls.added.length +
@@ -45,7 +46,20 @@ function countChanges(preview: UpdatePreview): {
     preview.policies.updatedApplied.length +
     preview.requirements.updated.length;
 
-  return { added, archived, updated };
+  // Edge-level changes (control↔policy/task/requirement/document-type) are
+  // real sync impact too; without this the summary can read "no changes"
+  // even though sync will rewire links.
+  const linkChanges =
+    preview.edges.controlPolicy.added.length +
+    preview.edges.controlPolicy.removed.length +
+    preview.edges.controlTask.added.length +
+    preview.edges.controlTask.removed.length +
+    preview.edges.controlRequirement.added.length +
+    preview.edges.controlRequirement.removed.length +
+    preview.edges.controlDocumentType.added.length +
+    preview.edges.controlDocumentType.removed.length;
+
+  return { added, archived, updated, linkChanges };
 }
 
 export function SyncConfirmDialog({
@@ -55,7 +69,7 @@ export function SyncConfirmDialog({
   isSyncing,
   onConfirm,
 }: SyncConfirmDialogProps) {
-  const { added, archived, updated } = countChanges(preview);
+  const { added, archived, updated, linkChanges } = countChanges(preview);
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -87,6 +101,12 @@ export function SyncConfirmDialog({
             <Text size="sm">
               <span className="font-medium">{updated}</span> item
               {updated !== 1 ? 's' : ''} will be updated
+            </Text>
+          )}
+          {linkChanges > 0 && (
+            <Text size="sm">
+              <span className="font-medium">{linkChanges}</span> link
+              {linkChanges !== 1 ? 's' : ''} will be rewired
             </Text>
           )}
           {preview.controls.updatedPreserved.length > 0 && (

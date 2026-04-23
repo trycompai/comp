@@ -70,8 +70,8 @@ export interface InstancePolicy {
 }
 
 export interface UpdatePreview {
-  fromVersion: { id?: string; version: string };
-  toVersion: { id?: string; version: string };
+  fromVersion: { id: string; version: string };
+  toVersion: { id: string; version: string };
   releaseNotes: string | null;
   controls: {
     added: ManifestControl[];

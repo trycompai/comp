@@ -311,8 +311,14 @@ export class PoliciesController {
     let pdfUrl: string | null = null;
 
     if (versionId) {
+      // Apply the same archive guard to the parent policy as the non-versioned
+      // path — otherwise an archived policy's PDF could still be fetched by
+      // passing a versionId, bypassing the user-archived/sync-archived filter.
       const version = await db.policyVersion.findFirst({
-        where: { id: versionId, policy: { id, organizationId } },
+        where: {
+          id: versionId,
+          policy: { id, organizationId, archivedAt: null, isArchived: false },
+        },
         select: { pdfUrl: true },
       });
       pdfUrl = version?.pdfUrl ?? null;
@@ -320,7 +326,7 @@ export class PoliciesController {
 
     if (!pdfUrl) {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId, archivedAt: null },
+        where: { id, organizationId, archivedAt: null, isArchived: false },
         select: { pdfUrl: true },
       });
       pdfUrl = policy?.pdfUrl ?? null;

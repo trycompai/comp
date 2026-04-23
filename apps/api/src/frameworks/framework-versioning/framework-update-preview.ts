@@ -44,8 +44,8 @@ export interface PolicyUpdatePreviewBuckets {
 }
 
 export interface UpdatePreview {
-  fromVersion: { id?: string; version: string };
-  toVersion: { id?: string; version: string };
+  fromVersion: { id: string; version: string };
+  toVersion: { id: string; version: string };
   releaseNotes: string | null;
   controls: {
     added: ManifestControl[];
@@ -105,8 +105,11 @@ export interface BuildUpdatePreviewInput {
   instanceControls: InstanceControl[];
   instanceTasks: InstanceTask[];
   instancePolicies: InstancePolicy[];
-  fromVersionLabel?: { id: string; version: string };
-  toVersionLabel?: { id: string; version: string };
+  // Required: every real caller pairs a preview with concrete version ids so
+  // the sync engine can operate on known snapshots. Making this optional let
+  // preview payloads ship without version identity.
+  fromVersionLabel: { id: string; version: string };
+  toVersionLabel: { id: string; version: string };
   releaseNotes?: string | null;
 }
 
@@ -186,8 +189,8 @@ export function buildUpdatePreview(input: BuildUpdatePreviewInput): UpdatePrevie
   }
 
   return {
-    fromVersion: input.fromVersionLabel ?? { version: input.fromManifest.framework.catalogVersion },
-    toVersion: input.toVersionLabel ?? { version: input.toManifest.framework.catalogVersion },
+    fromVersion: input.fromVersionLabel,
+    toVersion: input.toVersionLabel,
     releaseNotes: input.releaseNotes ?? null,
     controls,
     tasks,

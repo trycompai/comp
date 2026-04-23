@@ -19,8 +19,12 @@ export function FrameworkVersioningSection({
   hasActiveAudit,
 }: FrameworkVersioningSectionProps) {
   const enabled = useFeatureFlag('is-framework-versioning-enabled');
+  // Thread the flag into SWR so the update-status request doesn't fire for
+  // orgs that don't have versioning enabled. Without this the request runs
+  // every mount and we just throw the response away.
   const { data } = useFrameworkUpdateStatus(frameworkInstanceId, {
     fallbackData: initialStatus,
+    enabled,
   });
   const { hasPermission } = usePermissions();
   const router = useRouter();

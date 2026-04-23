@@ -313,9 +313,11 @@ function ItemRow({ row }: { row: ChangeRow }) {
         <div className="flex flex-col gap-1">
           <HStack gap="2" align="center">
             {row.identifier && (
-              <Text size="sm" weight="medium" variant="muted" className="font-mono">
-                {row.identifier}
-              </Text>
+              <span className="font-mono">
+                <Text size="sm" weight="medium" variant="muted">
+                  {row.identifier}
+                </Text>
+              </span>
             )}
             <Text size="sm" weight="medium">
               {row.name}
@@ -474,15 +476,19 @@ function LinkRowItem({ row }: { row: LinkRow }) {
         </span>
         <div className="flex flex-col gap-1 min-w-0">
           <HStack gap="2" align="center" wrap="wrap">
-            <Text size="sm" weight="medium" className="truncate">
-              {row.left}
-            </Text>
+            <span className="truncate">
+              <Text size="sm" weight="medium">
+                {row.left}
+              </Text>
+            </span>
             <Text size="sm" variant="muted">
               {row.arrow}
             </Text>
-            <Text size="sm" weight="medium" className="truncate">
-              {row.right}
-            </Text>
+            <span className="truncate">
+              <Text size="sm" weight="medium">
+                {row.right}
+              </Text>
+            </span>
           </HStack>
           <Text size="xs" variant="muted">
             {row.label}
