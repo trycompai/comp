@@ -1,3 +1,21 @@
+# [3.30.0](https://github.com/trycompai/comp/compare/v3.29.0...v3.30.0) (2026-04-23)
+
+
+### Bug Fixes
+
+* **app:** show evidence block for failed automation runs ([975b4c9](https://github.com/trycompai/comp/commit/975b4c9089c2ab603dea65f769e2daa53fc2c516)), closes [#2643](https://github.com/trycompai/comp/issues/2643)
+* **integration-platform:** fail Dependabot check on open high/critical alerts ([b4492d1](https://github.com/trycompai/comp/commit/b4492d1fa229295d51a2f355632f19a098677f81))
+
+
+### Features
+
+* **device-agent:** relax screen lock threshold to 15 minutes ([b20ced0](https://github.com/trycompai/comp/commit/b20ced08edca1d6673efb025711a974d5a7748b6))
+
+
+### Performance Improvements
+
+* **onboarding:** replace sequential update loops with bulk SQL in org init ([0c5d332](https://github.com/trycompai/comp/commit/0c5d3321a0ccea26b07f10f9f6a48188cb7f1634))
+
 # [3.29.0](https://github.com/trycompai/comp/compare/v3.28.0...v3.29.0) (2026-04-22)
 
 
