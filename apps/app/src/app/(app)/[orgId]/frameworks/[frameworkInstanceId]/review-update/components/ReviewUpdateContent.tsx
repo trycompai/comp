@@ -266,9 +266,9 @@ function StatCard({
         : '';
   return (
     <div className="flex flex-col gap-1 rounded-md border bg-card p-4">
-      <Heading level="2" className={valueClass}>
-        {value}
-      </Heading>
+      <div className={valueClass}>
+        <Heading level="2">{value}</Heading>
+      </div>
       <Text size="sm" variant="muted" weight="medium">
         {label}
       </Text>
