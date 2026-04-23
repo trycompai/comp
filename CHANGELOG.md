@@ -1,3 +1,10 @@
+# [3.32.0](https://github.com/trycompai/comp/compare/v3.31.1...v3.32.0) (2026-04-23)
+
+
+### Features
+
+* add timestamp to browser automations ([15894f4](https://github.com/trycompai/comp/commit/15894f41a66f70817d1bcd1dcec9d8addc9cfa1f))
+
 ## [3.31.1](https://github.com/trycompai/comp/compare/v3.31.0...v3.31.1) (2026-04-23)
 
 
