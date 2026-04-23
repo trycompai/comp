@@ -1,9 +1,6 @@
 import { serverApi } from '@/lib/api-server';
-import { Breadcrumb, PageLayout } from '@trycompai/design-system';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { FrameworkDetailContent } from './components/FrameworkDetailContent';
-import { FrameworkVersioningSection } from './components/FrameworkVersioningSection';
 import type { FrameworkUpdateStatus } from '@/types/framework-versioning';
 
 interface PageProps {
@@ -27,31 +24,12 @@ export default async function FrameworkPage({ params }: PageProps) {
     redirect(`/${organizationId}/frameworks`);
   }
 
-  const framework = frameworkRes.data;
-  const frameworkName = framework.framework?.name ?? 'Framework';
-  const initialStatus = updateStatusRes.data?.data ?? undefined;
-
   return (
-    <PageLayout>
-      <Breadcrumb
-        items={[
-          {
-            label: 'Frameworks',
-            href: `/${organizationId}/frameworks`,
-            props: { render: <Link href={`/${organizationId}/frameworks`} /> },
-          },
-          { label: frameworkName, isCurrent: true },
-        ]}
-      />
-      <FrameworkVersioningSection
-        frameworkInstanceId={frameworkInstanceId}
-        initialStatus={initialStatus}
-        hasActiveAudit={false}
-      />
-      <FrameworkDetailContent
-        frameworkInstanceId={frameworkInstanceId}
-        initialFramework={framework}
-      />
-    </PageLayout>
+    <FrameworkDetailContent
+      orgId={organizationId}
+      frameworkInstanceId={frameworkInstanceId}
+      initialFramework={frameworkRes.data}
+      initialUpdateStatus={updateStatusRes.data?.data ?? undefined}
+    />
   );
 }

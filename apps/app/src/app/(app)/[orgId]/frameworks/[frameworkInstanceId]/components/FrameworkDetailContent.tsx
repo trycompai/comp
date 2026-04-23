@@ -1,75 +1,231 @@
 'use client';
 
 import { useFeatureFlag } from '@trycompai/analytics';
-import { Stack, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
+import {
+  Button,
+  PageHeader,
+  PageHeaderDescription,
+  PageLayout,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@trycompai/design-system';
+import { OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@trycompai/ui/dropdown-menu';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useState } from 'react';
 import { useFrameworkInstance } from '@/hooks/use-framework-instance';
 import { usePermissions } from '@/hooks/use-permissions';
-import { FrameworkOverview } from './FrameworkOverview';
+import { getControlStatus } from '@/lib/control-compliance';
+import type { FrameworkUpdateStatus } from '@/types/framework-versioning';
+import { AddCustomRequirementSheet } from './AddCustomRequirementSheet';
+import { FrameworkDeleteDialog } from './FrameworkDeleteDialog';
+import { FrameworkProgress } from './FrameworkProgress';
 import { FrameworkRequirements } from './FrameworkRequirements';
 import { FrameworkTimeline } from './FrameworkTimeline';
+import { FrameworkVersioningSection } from './FrameworkVersioningSection';
+import { LinkRequirementSheet } from './LinkRequirementSheet';
 import { SyncHistorySection } from './SyncHistorySection';
 
 interface FrameworkDetailContentProps {
+  orgId: string;
   frameworkInstanceId: string;
   initialFramework: any;
+  initialUpdateStatus?: FrameworkUpdateStatus;
 }
 
+const DEFAULT_TAB = 'progress';
+
 export function FrameworkDetailContent({
+  orgId,
   frameworkInstanceId,
   initialFramework,
+  initialUpdateStatus,
 }: FrameworkDetailContentProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { hasPermission, permissions } = usePermissions();
   const versioningEnabled = useFeatureFlag('is-framework-versioning-enabled');
-  const { permissions } = usePermissions();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // SWR keeps the framework data live so that after a sync/rollback triggers
-  // `mutate('/v1/frameworks/:id')`, requirements/controls/tasks here update
-  // without a full page refresh.
   const { data } = useFrameworkInstance<any>(frameworkInstanceId, {
     fallbackData: initialFramework,
   });
-
   const framework = data ?? initialFramework;
   const frameworkInstanceWithControls = {
     ...framework,
     controls: framework.controls ?? [],
   };
 
-  const overview = (
-    <Stack gap="lg">
-      <FrameworkOverview
-        frameworkInstanceWithControls={frameworkInstanceWithControls}
-        tasks={framework.tasks || []}
-        evidenceSubmissions={framework.evidenceSubmissions || []}
-      />
-      <FrameworkTimeline frameworkInstanceId={frameworkInstanceId} />
-      <FrameworkRequirements
-        requirementDefinitions={framework.requirementDefinitions || []}
-        frameworkInstanceWithControls={frameworkInstanceWithControls}
-        tasks={framework.tasks || []}
-        evidenceSubmissions={framework.evidenceSubmissions || []}
-      />
-    </Stack>
+  const frameworkName =
+    framework.framework?.name ?? framework.customFramework?.name ?? 'Framework';
+  const frameworkDescription =
+    framework.framework?.description ?? framework.customFramework?.description ?? '';
+
+  const tasks = framework.tasks || [];
+  const evidenceSubmissions = framework.evidenceSubmissions || [];
+  const requirementDefinitions = framework.requirementDefinitions || [];
+
+  // Tab state synced to ?tab=
+  const tabParam = searchParams.get('tab');
+  const validTabs = new Set(
+    versioningEnabled ? ['progress', 'requirements', 'history'] : ['progress', 'requirements'],
+  );
+  const activeTab = tabParam && validTabs.has(tabParam) ? tabParam : DEFAULT_TAB;
+
+  const handleTabChange = useCallback(
+    (value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value === DEFAULT_TAB) params.delete('tab');
+      else params.set('tab', value);
+      const q = params.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
   );
 
-  if (!versioningEnabled) {
-    return overview;
-  }
+  // Tab label counts
+  const compliancePct = computeCompliancePercent(
+    frameworkInstanceWithControls.controls,
+    tasks,
+    evidenceSubmissions,
+  );
+  const requirementsCount = requirementDefinitions.length;
+
+  const canDeleteFramework = hasPermission('framework', 'delete');
 
   return (
-    <Tabs defaultValue="overview">
-      <Stack gap="lg">
-        <TabsList variant="underline">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview">{overview}</TabsContent>
-        <TabsContent value="history">
-          <SyncHistorySection
-            frameworkInstanceId={frameworkInstanceId}
-            permissions={permissions}
+    <Tabs value={activeTab} onValueChange={handleTabChange}>
+      <PageLayout
+        header={
+          <PageHeader
+            title={frameworkName}
+            breadcrumbs={[
+              {
+                label: 'Frameworks',
+                href: `/${orgId}/frameworks`,
+                props: { render: <Link href={`/${orgId}/frameworks`} /> },
+              },
+              { label: frameworkName, isCurrent: true },
+            ]}
+            actions={
+              <>
+                <LinkRequirementSheet frameworkInstanceId={frameworkInstanceId} />
+                <AddCustomRequirementSheet frameworkInstanceId={frameworkInstanceId} />
+                {canDeleteFramework && (
+                  <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm" variant="ghost">
+                        <OverflowMenuVertical size={16} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          setDeleteDialogOpen(true);
+                        }}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <TrashCan size={16} className="mr-2" />
+                        Delete Framework
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </>
+            }
+            tabs={
+              <TabsList variant="underline">
+                <TabsTrigger value="progress">
+                  Progress <TabBadge>{compliancePct}%</TabBadge>
+                </TabsTrigger>
+                <TabsTrigger value="requirements">
+                  Requirements <TabBadge>{requirementsCount}</TabBadge>
+                </TabsTrigger>
+                {versioningEnabled && <TabsTrigger value="history">History</TabsTrigger>}
+              </TabsList>
+            }
+          >
+            {frameworkDescription && (
+              <PageHeaderDescription>{frameworkDescription}</PageHeaderDescription>
+            )}
+          </PageHeader>
+        }
+      >
+        <FrameworkVersioningSection
+          frameworkInstanceId={frameworkInstanceId}
+          initialStatus={initialUpdateStatus}
+          hasActiveAudit={false}
+        />
+
+        <TabsContent value="progress">
+          <div className="flex flex-col gap-6">
+            <FrameworkProgress
+              framework={frameworkInstanceWithControls}
+              tasks={tasks}
+              evidenceSubmissions={evidenceSubmissions}
+            />
+            <FrameworkTimeline frameworkInstanceId={frameworkInstanceId} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="requirements">
+          <FrameworkRequirements
+            requirementDefinitions={requirementDefinitions}
+            frameworkInstanceWithControls={frameworkInstanceWithControls}
+            tasks={tasks}
+            evidenceSubmissions={evidenceSubmissions}
           />
         </TabsContent>
-      </Stack>
+
+        {versioningEnabled && (
+          <TabsContent value="history">
+            <SyncHistorySection
+              frameworkInstanceId={frameworkInstanceId}
+              permissions={permissions}
+            />
+          </TabsContent>
+        )}
+      </PageLayout>
+
+      <FrameworkDeleteDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        frameworkInstance={frameworkInstanceWithControls}
+      />
     </Tabs>
   );
+}
+
+function TabBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums">
+      {children}
+    </span>
+  );
+}
+
+function computeCompliancePercent(
+  controls: any[],
+  tasks: any[],
+  evidenceSubmissions: any[],
+): number {
+  const total = controls.length;
+  if (total === 0) return 0;
+  const compliant = controls.filter(
+    (c) =>
+      getControlStatus(c.policies, tasks, c.id, c.controlDocumentTypes, evidenceSubmissions) ===
+      'completed',
+  ).length;
+  return Math.round((compliant / total) * 100);
 }
