@@ -23,7 +23,13 @@ import { useForm, type ControllerRenderProps } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { apiClient } from '@/app/lib/api-client';
-import type { DraftDiff } from '../hooks/useFrameworkDraftDiff';
+import type {
+  DraftDiff,
+  DiffControl,
+  DiffPolicy,
+  DiffRequirement,
+  DiffTask,
+} from '../hooks/useFrameworkDraftDiff';
 import { useFrameworkDraftDiff } from '../hooks/useFrameworkDraftDiff';
 import type { FrameworkVersionListItem } from '../hooks/useFrameworkVersions';
 
@@ -174,7 +180,7 @@ export function PublishVersionDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-[720px]">
         <DialogHeader>
           <DialogTitle>Publish New Version</DialogTitle>
           <DialogDescription>
@@ -229,123 +235,78 @@ export function PublishVersionDialog({
               )}
             />
 
-            <div className="rounded-md border p-4">
-              <p className="text-sm font-medium">Draft Changes</p>
-              {diffLoading && (
-                <p className="text-muted-foreground mt-1 text-sm">Computing diff...</p>
-              )}
-              {!diffLoading && !draftDiff && (
-                <p className="text-muted-foreground mt-1 text-sm">
-                  No published version found. This will publish the first version.
-                </p>
-              )}
-              {!diffLoading && diff && (
-                <div className="mt-2 flex flex-col gap-1">
-                  {!hasChanges && (
-                    <p className="text-muted-foreground text-sm">
-                      No changes detected since the last published version.
-                    </p>
-                  )}
-                  {diff.controls.added.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Controls added: {diff.controls.added.length}
-                    </p>
-                  )}
-                  {diff.controls.removed.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Controls removed: {diff.controls.removed.length}
-                    </p>
-                  )}
-                  {diff.controls.updated.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Controls updated: {diff.controls.updated.length}
-                    </p>
-                  )}
-                  {diff.policies.added.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Policies added: {diff.policies.added.length}
-                    </p>
-                  )}
-                  {diff.policies.removed.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Policies removed: {diff.policies.removed.length}
-                    </p>
-                  )}
-                  {diff.policies.updated.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Policies updated: {diff.policies.updated.length}
-                    </p>
-                  )}
-                  {diff.tasks.added.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Tasks added: {diff.tasks.added.length}
-                    </p>
-                  )}
-                  {diff.tasks.removed.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Tasks removed: {diff.tasks.removed.length}
-                    </p>
-                  )}
-                  {diff.tasks.updated.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Tasks updated: {diff.tasks.updated.length}
-                    </p>
-                  )}
-                  {diff.requirements.added.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Requirements added: {diff.requirements.added.length}
-                    </p>
-                  )}
-                  {diff.requirements.removed.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Requirements removed: {diff.requirements.removed.length}
-                    </p>
-                  )}
-                  {diff.requirements.updated.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Requirements updated: {diff.requirements.updated.length}
-                    </p>
-                  )}
-                  {diff.requirementMapEdges.added.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Control → requirement links added: {diff.requirementMapEdges.added.length}
-                    </p>
-                  )}
-                  {diff.requirementMapEdges.removed.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Control → requirement links removed: {diff.requirementMapEdges.removed.length}
-                    </p>
-                  )}
-                  {diff.controlPolicyEdges.added.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Control → policy links added: {diff.controlPolicyEdges.added.length}
-                    </p>
-                  )}
-                  {diff.controlPolicyEdges.removed.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Control → policy links removed: {diff.controlPolicyEdges.removed.length}
-                    </p>
-                  )}
-                  {diff.controlTaskEdges.added.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Control → task links added: {diff.controlTaskEdges.added.length}
-                    </p>
-                  )}
-                  {diff.controlTaskEdges.removed.length > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Control → task links removed: {diff.controlTaskEdges.removed.length}
-                    </p>
-                  )}
-                  {(diff.controlDocumentTypeEdges?.added.length ?? 0) > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Control → document-type links added: {diff.controlDocumentTypeEdges!.added.length}
-                    </p>
-                  )}
-                  {(diff.controlDocumentTypeEdges?.removed.length ?? 0) > 0 && (
-                    <p className="text-muted-foreground text-sm">
-                      Control → document-type links removed: {diff.controlDocumentTypeEdges!.removed.length}
-                    </p>
-                  )}
+            <div className="rounded-md border">
+              <div className="border-b px-4 py-3">
+                <p className="text-sm font-medium">Draft changes</p>
+                {diffLoading && (
+                  <p className="text-muted-foreground mt-1 text-xs">Computing diff…</p>
+                )}
+                {!diffLoading && !draftDiff && (
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    No published version found. This will publish the first version.
+                  </p>
+                )}
+                {!diffLoading && diff && !hasChanges && (
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    No changes detected since the last published version.
+                  </p>
+                )}
+              </div>
+              {!diffLoading && diff && hasChanges && (
+                <div className="max-h-[320px] overflow-y-auto">
+                  <DiffDetailSection
+                    title="Requirements"
+                    added={diff.requirements.added}
+                    removed={diff.requirements.removed}
+                    updated={diff.requirements.updated}
+                    renderRow={(r: DiffRequirement) => (
+                      <span>
+                        <span className="font-mono text-muted-foreground mr-2">{r.identifier}</span>
+                        {r.name}
+                      </span>
+                    )}
+                  />
+                  <DiffDetailSection
+                    title="Controls"
+                    added={diff.controls.added}
+                    removed={diff.controls.removed}
+                    updated={diff.controls.updated}
+                    renderRow={(c: DiffControl) => <span>{c.name}</span>}
+                  />
+                  <DiffDetailSection
+                    title="Policies"
+                    added={diff.policies.added}
+                    removed={diff.policies.removed}
+                    updated={diff.policies.updated}
+                    renderRow={(p: DiffPolicy) => <span>{p.name}</span>}
+                  />
+                  <DiffDetailSection
+                    title="Tasks"
+                    added={diff.tasks.added}
+                    removed={diff.tasks.removed}
+                    updated={diff.tasks.updated}
+                    renderRow={(t: DiffTask) => <span>{t.name}</span>}
+                  />
+                  <LinkEdgeSection
+                    title="Control → requirement links"
+                    added={diff.requirementMapEdges.added.length}
+                    removed={diff.requirementMapEdges.removed.length}
+                  />
+                  <LinkEdgeSection
+                    title="Control → policy links"
+                    added={diff.controlPolicyEdges.added.length}
+                    removed={diff.controlPolicyEdges.removed.length}
+                  />
+                  <LinkEdgeSection
+                    title="Control → task links"
+                    added={diff.controlTaskEdges.added.length}
+                    removed={diff.controlTaskEdges.removed.length}
+                  />
+                  <LinkEdgeSection
+                    title="Control → document-type links"
+                    added={diff.controlDocumentTypeEdges?.added.length ?? 0}
+                    removed={diff.controlDocumentTypeEdges?.removed.length ?? 0}
+                  />
                 </div>
               )}
             </div>
@@ -372,5 +333,102 @@ export function PublishVersionDialog({
         </Form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface DiffDetailSectionProps<T extends { id: string }> {
+  title: string;
+  added: T[];
+  removed: T[];
+  updated: Array<{ id: string; from: T; to: T }>;
+  renderRow: (item: T) => React.ReactNode;
+}
+
+function DiffDetailSection<T extends { id: string }>({
+  title,
+  added,
+  removed,
+  updated,
+  renderRow,
+}: DiffDetailSectionProps<T>) {
+  if (added.length === 0 && removed.length === 0 && updated.length === 0) return null;
+  return (
+    <div className="border-b last:border-b-0 px-4 py-3">
+      <p className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wide">
+        {title}
+      </p>
+      <div className="flex flex-col gap-1">
+        {added.map((item) => (
+          <DiffRow key={`a-${item.id}`} kind="added">{renderRow(item)}</DiffRow>
+        ))}
+        {removed.map((item) => (
+          <DiffRow key={`r-${item.id}`} kind="removed">{renderRow(item)}</DiffRow>
+        ))}
+        {updated.map((u) => (
+          <DiffRow key={`u-${u.id}`} kind="modified">{renderRow(u.to)}</DiffRow>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DiffRow({
+  kind,
+  children,
+}: {
+  kind: 'added' | 'removed' | 'modified';
+  children: React.ReactNode;
+}) {
+  const markerClass =
+    kind === 'added'
+      ? 'bg-green-100 text-green-700'
+      : kind === 'removed'
+        ? 'bg-red-100 text-red-700'
+        : 'bg-slate-100 text-slate-700';
+  const marker = kind === 'added' ? '+' : kind === 'removed' ? '−' : '~';
+  const label = kind.charAt(0).toUpperCase() + kind.slice(1);
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex min-w-0 items-start gap-2">
+        <span
+          className={`mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-[10px] font-semibold ${markerClass}`}
+        >
+          {marker}
+        </span>
+        <span className="text-sm">{children}</span>
+      </div>
+      <span className="text-muted-foreground shrink-0 text-xs">{label}</span>
+    </div>
+  );
+}
+
+function LinkEdgeSection({
+  title,
+  added,
+  removed,
+}: {
+  title: string;
+  added: number;
+  removed: number;
+}) {
+  if (added === 0 && removed === 0) return null;
+  return (
+    <div className="border-b last:border-b-0 px-4 py-3">
+      <p className="text-muted-foreground mb-1 text-xs font-semibold uppercase tracking-wide">
+        {title}
+      </p>
+      <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+        {added > 0 && (
+          <span>
+            {added} link{added !== 1 ? 's' : ''} added
+          </span>
+        )}
+        {removed > 0 && (
+          <span>
+            {removed} link{removed !== 1 ? 's' : ''} removed
+          </span>
+        )}
+      </div>
+    </div>
   );
 }

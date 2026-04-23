@@ -3,24 +3,49 @@
 import { apiClient } from '@/app/lib/api-client';
 import { useCallback, useEffect, useState } from 'react';
 
-export interface EntityDiffCounts {
-  added: unknown[];
-  removed: unknown[];
-  updated: unknown[];
+export interface DiffControl {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface DiffRequirement {
+  id: string;
+  name: string;
+  identifier: string;
+  description?: string | null;
+}
+
+export interface DiffPolicy {
+  id: string;
+  name: string;
+  description?: string | null;
+}
+
+export interface DiffTask {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface EntityDiffCounts<T = unknown> {
+  added: T[];
+  removed: T[];
+  updated: Array<{ id: string; from: T; to: T }>;
 }
 
 export interface EdgeDiffCounts {
-  added: unknown[];
-  removed: unknown[];
+  added: Array<{ controlTemplateId: string; [k: string]: string | undefined }>;
+  removed: Array<{ controlTemplateId: string; [k: string]: string | undefined }>;
 }
 
 export interface DraftDiff {
   latestVersion: { id: string; version: string } | null;
   diff: {
-    controls: EntityDiffCounts;
-    requirements: EntityDiffCounts;
-    policies: EntityDiffCounts;
-    tasks: EntityDiffCounts;
+    controls: EntityDiffCounts<DiffControl>;
+    requirements: EntityDiffCounts<DiffRequirement>;
+    policies: EntityDiffCounts<DiffPolicy>;
+    tasks: EntityDiffCounts<DiffTask>;
     requirementMapEdges: EdgeDiffCounts;
     controlPolicyEdges: EdgeDiffCounts;
     controlTaskEdges: EdgeDiffCounts;
