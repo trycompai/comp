@@ -41,7 +41,7 @@ interface FrameworkDetailContentProps {
   initialUpdateStatus?: FrameworkUpdateStatus;
 }
 
-const DEFAULT_TAB = 'progress';
+const DEFAULT_TAB = 'requirements';
 
 export function FrameworkDetailContent({
   orgId,
@@ -54,6 +54,7 @@ export function FrameworkDetailContent({
   const searchParams = useSearchParams();
   const { hasPermission, permissions } = usePermissions();
   const versioningEnabled = useFeatureFlag('is-framework-versioning-enabled');
+  const complianceTimelineEnabled = useFeatureFlag('is-timeline-enabled');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -169,14 +170,15 @@ export function FrameworkDetailContent({
         />
 
         <TabsContent value="progress">
-          <div className="flex flex-col gap-6">
+          {complianceTimelineEnabled ? (
+            <FrameworkTimeline frameworkInstanceId={frameworkInstanceId} />
+          ) : (
             <FrameworkProgress
               framework={frameworkInstanceWithControls}
               tasks={tasks}
               evidenceSubmissions={evidenceSubmissions}
             />
-            <FrameworkTimeline frameworkInstanceId={frameworkInstanceId} />
-          </div>
+          )}
         </TabsContent>
 
         <TabsContent value="requirements">
