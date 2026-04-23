@@ -84,10 +84,14 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
 
   useEffect(() => {
     setMounted(true);
+    // Always reflect the stored state for THIS triggerJobId. If the key
+    // changes (new onboarding run), this resets isDismissed to false when
+    // no dismissal exists for the new key — otherwise a dismissed prior
+    // run could leave the tracker hidden forever.
     if (dismissKey && typeof window !== 'undefined') {
-      if (window.localStorage.getItem(dismissKey) === '1') {
-        setIsDismissed(true);
-      }
+      setIsDismissed(window.localStorage.getItem(dismissKey) === '1');
+    } else {
+      setIsDismissed(false);
     }
   }, [dismissKey]);
 

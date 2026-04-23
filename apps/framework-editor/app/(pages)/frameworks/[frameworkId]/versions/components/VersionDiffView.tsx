@@ -93,15 +93,15 @@ export function VersionDiffView({ diff, linkChanges }: VersionDiffViewProps) {
       />
       <LinkEdgeSection
         title="Control → requirement links"
-        added={(linkChanges?.controlRequirement.added ?? []).map((e) => ({
-          key: `${e.controlName}→${e.requirementIdentifier}${e.requirementName}`,
+        added={(linkChanges?.controlRequirement.added ?? []).map((e, i) => ({
+          key: `a-${i}`,
           left: e.controlName,
           right: e.requirementIdentifier
             ? `${e.requirementIdentifier} — ${e.requirementName}`
             : e.requirementName,
         }))}
-        removed={(linkChanges?.controlRequirement.removed ?? []).map((e) => ({
-          key: `${e.controlName}→${e.requirementIdentifier}${e.requirementName}`,
+        removed={(linkChanges?.controlRequirement.removed ?? []).map((e, i) => ({
+          key: `r-${i}`,
           left: e.controlName,
           right: e.requirementIdentifier
             ? `${e.requirementIdentifier} — ${e.requirementName}`
@@ -112,13 +112,13 @@ export function VersionDiffView({ diff, linkChanges }: VersionDiffViewProps) {
       />
       <LinkEdgeSection
         title="Control → policy links"
-        added={(linkChanges?.controlPolicy.added ?? []).map((e) => ({
-          key: `${e.controlName}→${e.policyName}`,
+        added={(linkChanges?.controlPolicy.added ?? []).map((e, i) => ({
+          key: `a-${i}`,
           left: e.controlName,
           right: e.policyName,
         }))}
-        removed={(linkChanges?.controlPolicy.removed ?? []).map((e) => ({
-          key: `${e.controlName}→${e.policyName}`,
+        removed={(linkChanges?.controlPolicy.removed ?? []).map((e, i) => ({
+          key: `r-${i}`,
           left: e.controlName,
           right: e.policyName,
         }))}
@@ -127,13 +127,13 @@ export function VersionDiffView({ diff, linkChanges }: VersionDiffViewProps) {
       />
       <LinkEdgeSection
         title="Control → task links"
-        added={(linkChanges?.controlTask.added ?? []).map((e) => ({
-          key: `${e.controlName}→${e.taskName}`,
+        added={(linkChanges?.controlTask.added ?? []).map((e, i) => ({
+          key: `a-${i}`,
           left: e.controlName,
           right: e.taskName,
         }))}
-        removed={(linkChanges?.controlTask.removed ?? []).map((e) => ({
-          key: `${e.controlName}→${e.taskName}`,
+        removed={(linkChanges?.controlTask.removed ?? []).map((e, i) => ({
+          key: `r-${i}`,
           left: e.controlName,
           right: e.taskName,
         }))}
@@ -142,13 +142,13 @@ export function VersionDiffView({ diff, linkChanges }: VersionDiffViewProps) {
       />
       <LinkEdgeSection
         title="Control → document-type links"
-        added={(linkChanges?.controlDocumentType.added ?? []).map((e) => ({
-          key: `${e.controlName}→${e.formType}`,
+        added={(linkChanges?.controlDocumentType.added ?? []).map((e, i) => ({
+          key: `a-${i}`,
           left: e.controlName,
           right: e.formType.replace(/_/g, ' '),
         }))}
-        removed={(linkChanges?.controlDocumentType.removed ?? []).map((e) => ({
-          key: `${e.controlName}→${e.formType}`,
+        removed={(linkChanges?.controlDocumentType.removed ?? []).map((e, i) => ({
+          key: `r-${i}`,
           left: e.controlName,
           right: e.formType.replace(/_/g, ' '),
         }))}
