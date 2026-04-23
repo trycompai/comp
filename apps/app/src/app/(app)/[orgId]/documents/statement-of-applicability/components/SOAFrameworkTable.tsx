@@ -105,17 +105,17 @@ export function SOAFrameworkTable({
     );
   });
 
-  // Update answersMap when document changes
+  // Update answersMap when the live document changes
   useEffect(() => {
     setAnswersMap(
       new Map(
-        (document?.answers || []).map((answer: { questionId: string; answer: string | null; answerVersion: number }) => [
+        (resolvedDocument?.answers || []).map((answer: { questionId: string; answer: string | null; answerVersion: number }) => [
           answer.questionId,
           { answer: answer.answer, answerVersion: answer.answerVersion },
         ])
       )
     );
-  }, [document?.answers]);
+  }, [resolvedDocument?.answers]);
 
   const handleAnswerUpdate = (questionId: string, payload: SOAFieldSavePayload) => {
     setAnswersMap((prev) => {
@@ -190,10 +190,8 @@ export function SOAFrameworkTable({
     );
   }
 
-  // The document comes from the Prisma SOADocument type which has all necessary fields.
-  // We cast to the SOADocumentInfo's expected type for the info panel.
-  const docForInfo = document as unknown as SOADocumentInfoDocument;
-  const approverId = (document as Record<string, unknown>).approverId as string | null | undefined;
+  // Use the resolved SWR document so approval status updates instantly without page refresh.
+  const docForInfo = resolvedDocument as unknown as SOADocumentInfoDocument;
 
   const handleAutoFill = async () => {
     if (!document) return;
@@ -278,7 +276,7 @@ export function SOAFrameworkTable({
         isFullyRemote={isFullyRemote}
         isExpanded={isExpanded}
         onToggleExpand={() => setIsExpanded(!isExpanded)}
-        documentId={document.id}
+        documentId={resolvedDocument?.id ?? document.id}
         isPendingApproval={derivedIsPendingApproval}
         organizationId={organizationId}
         onAnswerUpdate={handleAnswerUpdate}
