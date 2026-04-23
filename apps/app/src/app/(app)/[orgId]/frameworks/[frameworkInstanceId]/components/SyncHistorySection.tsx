@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, Button, Heading, Stack, Text } from '@trycompai/design-system';
+import { Badge, Button, Text } from '@trycompai/design-system';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useFrameworkSyncHistory } from '@/hooks/use-framework-sync-history';
@@ -97,6 +97,8 @@ function HistoryItemRow({
   );
 }
 
+const INITIAL_VISIBLE = 5;
+
 export function SyncHistorySection({
   frameworkInstanceId,
   permissions,
@@ -104,6 +106,7 @@ export function SyncHistorySection({
   const { data: history, isLoading } = useFrameworkSyncHistory(frameworkInstanceId);
   const { rollback, isRollingBack } = useFrameworkRollback(frameworkInstanceId);
   const [pendingRollback, setPendingRollback] = useState<SyncHistoryItem | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const canUpdate = hasPermission(permissions, 'framework', 'update');
   const items = Array.isArray(history) ? history : [];
@@ -117,6 +120,9 @@ export function SyncHistorySection({
 
   if (isLoading) return null;
   if (items.length === 0) return null;
+
+  const visibleItems = showAll ? items : items.slice(0, INITIAL_VISIBLE);
+  const hiddenCount = items.length - visibleItems.length;
 
   const openRollbackDialog = (syncOperationId: string) => {
     const item = items.find((i) => i.id === syncOperationId);
@@ -139,9 +145,8 @@ export function SyncHistorySection({
 
   return (
     <div className="flex flex-col gap-3">
-      <Heading level="3">Sync history</Heading>
-      <Stack gap="2">
-        {items.map((item) => (
+      <div className="flex flex-col gap-2">
+        {visibleItems.map((item) => (
           <HistoryItemRow
             key={item.id}
             item={item}
@@ -150,7 +155,18 @@ export function SyncHistorySection({
             isRollingBack={isRollingBack && pendingRollback?.id === item.id}
           />
         ))}
-      </Stack>
+      </div>
+      {items.length > INITIAL_VISIBLE && (
+        <div className="flex justify-center">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setShowAll((v) => !v)}
+          >
+            {showAll ? 'Show less' : `Show ${hiddenCount} more`}
+          </Button>
+        </div>
+      )}
       <RollbackConfirmDialog
         open={!!pendingRollback}
         onOpenChange={(open) => !open && setPendingRollback(null)}
