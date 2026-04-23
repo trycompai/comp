@@ -73,21 +73,21 @@ export function ReviewUpdateContent({
 
   // Summary counts: link removals/adds fold into the Removed / New totals.
   const edges = preview.edges ?? {
-    controlPolicy: { added: 0, removed: 0 },
-    controlTask: { added: 0, removed: 0 },
-    controlRequirement: { added: 0, removed: 0 },
-    controlDocumentType: { added: 0, removed: 0 },
+    controlPolicy: { added: [], removed: [] },
+    controlTask: { added: [], removed: [] },
+    controlRequirement: { added: [], removed: [] },
+    controlDocumentType: { added: [], removed: [] },
   };
   const linksAdded =
-    edges.controlPolicy.added +
-    edges.controlTask.added +
-    edges.controlRequirement.added +
-    (edges.controlDocumentType?.added ?? 0);
+    edges.controlPolicy.added.length +
+    edges.controlTask.added.length +
+    edges.controlRequirement.added.length +
+    (edges.controlDocumentType?.added.length ?? 0);
   const linksRemoved =
-    edges.controlPolicy.removed +
-    edges.controlTask.removed +
-    edges.controlRequirement.removed +
-    (edges.controlDocumentType?.removed ?? 0);
+    edges.controlPolicy.removed.length +
+    edges.controlTask.removed.length +
+    edges.controlRequirement.removed.length +
+    (edges.controlDocumentType?.removed.length ?? 0);
 
   const entitiesAdded =
     preview.controls.added.length +
@@ -265,15 +265,13 @@ function StatCard({
         ? 'text-destructive'
         : '';
   return (
-    <div className="rounded-md border bg-card p-4">
-      <Stack gap="1">
-        <Heading level="2" className={valueClass}>
-          {value}
-        </Heading>
-        <Text size="sm" variant="muted" weight="medium">
-          {label}
-        </Text>
-      </Stack>
+    <div className="flex flex-col gap-1 rounded-md border bg-card p-4">
+      <Heading level="2" className={valueClass}>
+        {value}
+      </Heading>
+      <Text size="sm" variant="muted" weight="medium">
+        {label}
+      </Text>
     </div>
   );
 }
@@ -312,7 +310,7 @@ function ItemRow({ row }: { row: ChangeRow }) {
         >
           {marker}
         </span>
-        <Stack gap="1">
+        <div className="flex flex-col gap-1">
           <HStack gap="2" align="center">
             {row.identifier && (
               <Text
@@ -333,11 +331,20 @@ function ItemRow({ row }: { row: ChangeRow }) {
               {row.description}
             </Text>
           )}
-        </Stack>
+        </div>
       </HStack>
       <Badge variant={badge.variant}>{badge.label}</Badge>
     </div>
   );
+}
+
+interface LinkRow {
+  key: string;
+  left: string;
+  arrow: '→' | '↛';
+  right: string;
+  kind: 'added' | 'removed';
+  label: string;
 }
 
 function LinkChangesBlock({
@@ -347,41 +354,150 @@ function LinkChangesBlock({
   edges: UpdatePreview['edges'];
   show: 'both' | 'added' | 'removed';
 }) {
-  const lines: string[] = [];
-  const push = (n: number, label: string, verb: 'added' | 'removed') => {
-    if (n === 0) return;
-    if (show !== 'both' && show !== verb) return;
-    lines.push(`${n} ${label}${n !== 1 ? 's' : ''} ${verb}`);
-  };
-  push(edges.controlRequirement.added, 'control → requirement link', 'added');
-  push(edges.controlRequirement.removed, 'control → requirement link', 'removed');
-  push(edges.controlPolicy.added, 'control → policy link', 'added');
-  push(edges.controlPolicy.removed, 'control → policy link', 'removed');
-  push(edges.controlTask.added, 'control → task link', 'added');
-  push(edges.controlTask.removed, 'control → task link', 'removed');
-  push(edges.controlDocumentType?.added ?? 0, 'control → document-type link', 'added');
-  push(edges.controlDocumentType?.removed ?? 0, 'control → document-type link', 'removed');
+  const rows: LinkRow[] = [];
+  const wantAdded = show === 'both' || show === 'added';
+  const wantRemoved = show === 'both' || show === 'removed';
 
-  if (lines.length === 0) return null;
+  if (wantAdded) {
+    edges.controlRequirement.added.forEach((e, i) =>
+      rows.push({
+        key: `cr-add-${i}`,
+        left: e.controlName,
+        arrow: '→',
+        right: `${e.requirementIdentifier ? `${e.requirementIdentifier} — ` : ''}${e.requirementName}`,
+        kind: 'added',
+        label: 'Requirement linked',
+      }),
+    );
+    edges.controlPolicy.added.forEach((e, i) =>
+      rows.push({
+        key: `cp-add-${i}`,
+        left: e.controlName,
+        arrow: '→',
+        right: e.policyName,
+        kind: 'added',
+        label: 'Policy linked',
+      }),
+    );
+    edges.controlTask.added.forEach((e, i) =>
+      rows.push({
+        key: `ct-add-${i}`,
+        left: e.controlName,
+        arrow: '→',
+        right: e.taskName,
+        kind: 'added',
+        label: 'Task linked',
+      }),
+    );
+    (edges.controlDocumentType?.added ?? []).forEach((e, i) =>
+      rows.push({
+        key: `cd-add-${i}`,
+        left: e.controlName,
+        arrow: '→',
+        right: e.formType.replace(/_/g, ' '),
+        kind: 'added',
+        label: 'Document type linked',
+      }),
+    );
+  }
+
+  if (wantRemoved) {
+    edges.controlRequirement.removed.forEach((e, i) =>
+      rows.push({
+        key: `cr-rem-${i}`,
+        left: e.controlName,
+        arrow: '↛',
+        right: `${e.requirementIdentifier ? `${e.requirementIdentifier} — ` : ''}${e.requirementName}`,
+        kind: 'removed',
+        label: 'Requirement unlinked',
+      }),
+    );
+    edges.controlPolicy.removed.forEach((e, i) =>
+      rows.push({
+        key: `cp-rem-${i}`,
+        left: e.controlName,
+        arrow: '↛',
+        right: e.policyName,
+        kind: 'removed',
+        label: 'Policy unlinked',
+      }),
+    );
+    edges.controlTask.removed.forEach((e, i) =>
+      rows.push({
+        key: `ct-rem-${i}`,
+        left: e.controlName,
+        arrow: '↛',
+        right: e.taskName,
+        kind: 'removed',
+        label: 'Task unlinked',
+      }),
+    );
+    (edges.controlDocumentType?.removed ?? []).forEach((e, i) =>
+      rows.push({
+        key: `cd-rem-${i}`,
+        left: e.controlName,
+        arrow: '↛',
+        right: e.formType.replace(/_/g, ' '),
+        kind: 'removed',
+        label: 'Document type unlinked',
+      }),
+    );
+  }
+
+  if (rows.length === 0) return null;
 
   return (
-    <Stack gap="3">
+    <div className="flex flex-col gap-3">
       <HStack justify="between" align="center">
         <Text size="sm" weight="medium" variant="muted">
           LINK CHANGES
         </Text>
-        <Badge variant="outline">{lines.length}</Badge>
+        <Badge variant="outline">{rows.length}</Badge>
       </HStack>
-      <div className="rounded-md border bg-card px-4 py-3">
-        <Stack gap="1">
-          {lines.map((line) => (
-            <Text key={line} size="sm" variant="muted">
-              {line}
-            </Text>
-          ))}
-        </Stack>
+      <div className="flex flex-col gap-2">
+        {rows.map((row) => (
+          <LinkRowItem key={row.key} row={row} />
+        ))}
       </div>
-    </Stack>
+    </div>
+  );
+}
+
+function LinkRowItem({ row }: { row: LinkRow }) {
+  const markerTone =
+    row.kind === 'added'
+      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
+      : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400';
+  const marker = row.kind === 'added' ? '+' : '−';
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-md border bg-card px-4 py-3">
+      <HStack gap="3" align="start">
+        <span
+          className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-sm text-xs font-semibold ${markerTone}`}
+        >
+          {marker}
+        </span>
+        <div className="flex flex-col gap-1 min-w-0">
+          <HStack gap="2" align="center" wrap="wrap">
+            <Text size="sm" weight="medium" className="truncate">
+              {row.left}
+            </Text>
+            <Text size="sm" variant="muted">
+              {row.arrow}
+            </Text>
+            <Text size="sm" weight="medium" className="truncate">
+              {row.right}
+            </Text>
+          </HStack>
+          <Text size="xs" variant="muted">
+            {row.label}
+          </Text>
+        </div>
+      </HStack>
+      <Badge variant={row.kind === 'added' ? 'default' : 'destructive'}>
+        {row.kind === 'added' ? 'Added' : 'Removed'}
+      </Badge>
+    </div>
   );
 }
 

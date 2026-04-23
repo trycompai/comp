@@ -66,11 +66,37 @@ export interface UpdatePreview {
     updated: Array<{ from: ManifestRequirement; to: ManifestRequirement }>;
   };
   edges: {
-    controlPolicy: { added: number; removed: number };
-    controlTask: { added: number; removed: number };
-    controlRequirement: { added: number; removed: number };
-    controlDocumentType: { added: number; removed: number };
+    controlPolicy: EdgePreviewBuckets<ControlPolicyLink>;
+    controlTask: EdgePreviewBuckets<ControlTaskLink>;
+    controlRequirement: EdgePreviewBuckets<ControlRequirementLink>;
+    controlDocumentType: EdgePreviewBuckets<ControlDocumentTypeLink>;
   };
+}
+
+export interface EdgePreviewBuckets<T> {
+  added: T[];
+  removed: T[];
+}
+
+export interface ControlPolicyLink {
+  controlName: string;
+  policyName: string;
+}
+
+export interface ControlTaskLink {
+  controlName: string;
+  taskName: string;
+}
+
+export interface ControlRequirementLink {
+  controlName: string;
+  requirementIdentifier: string;
+  requirementName: string;
+}
+
+export interface ControlDocumentTypeLink {
+  controlName: string;
+  formType: string;
 }
 
 export interface BuildUpdatePreviewInput {
@@ -171,23 +197,79 @@ export function buildUpdatePreview(input: BuildUpdatePreviewInput): UpdatePrevie
       removed: d.requirements.removed,
       updated: d.requirements.updated.map((u) => ({ from: u.from, to: u.to })),
     },
-    edges: {
-      controlPolicy: {
-        added: d.controlPolicyEdges.added.length,
-        removed: d.controlPolicyEdges.removed.length,
-      },
-      controlTask: {
-        added: d.controlTaskEdges.added.length,
-        removed: d.controlTaskEdges.removed.length,
-      },
-      controlRequirement: {
-        added: d.requirementMapEdges.added.length,
-        removed: d.requirementMapEdges.removed.length,
-      },
-      controlDocumentType: {
-        added: d.controlDocumentTypeEdges.added.length,
-        removed: d.controlDocumentTypeEdges.removed.length,
-      },
+    edges: buildEdgeLinks(input.fromManifest, input.toManifest, d),
+  };
+}
+
+function buildEdgeLinks(
+  fromManifest: FrameworkManifest,
+  toManifest: FrameworkManifest,
+  d: ReturnType<typeof diffManifests>,
+): UpdatePreview['edges'] {
+  // Resolve template IDs to display names using both manifests (an edge's
+  // referent may have been removed or added within the same diff).
+  const nameForControl = (id: string) =>
+    toManifest.controls.find((c) => c.id === id)?.name ??
+    fromManifest.controls.find((c) => c.id === id)?.name ??
+    'Unknown control';
+  const nameForPolicy = (id: string) =>
+    toManifest.policies.find((p) => p.id === id)?.name ??
+    fromManifest.policies.find((p) => p.id === id)?.name ??
+    'Unknown policy';
+  const nameForTask = (id: string) =>
+    toManifest.tasks.find((t) => t.id === id)?.name ??
+    fromManifest.tasks.find((t) => t.id === id)?.name ??
+    'Unknown task';
+  const requirementInfo = (id: string) => {
+    const r =
+      toManifest.requirements.find((x) => x.id === id) ??
+      fromManifest.requirements.find((x) => x.id === id);
+    return {
+      requirementIdentifier: r?.identifier ?? '',
+      requirementName: r?.name ?? 'Unknown requirement',
+    };
+  };
+
+  return {
+    controlPolicy: {
+      added: d.controlPolicyEdges.added.map((e) => ({
+        controlName: nameForControl(e.controlTemplateId),
+        policyName: nameForPolicy(e.policyTemplateId),
+      })),
+      removed: d.controlPolicyEdges.removed.map((e) => ({
+        controlName: nameForControl(e.controlTemplateId),
+        policyName: nameForPolicy(e.policyTemplateId),
+      })),
+    },
+    controlTask: {
+      added: d.controlTaskEdges.added.map((e) => ({
+        controlName: nameForControl(e.controlTemplateId),
+        taskName: nameForTask(e.taskTemplateId),
+      })),
+      removed: d.controlTaskEdges.removed.map((e) => ({
+        controlName: nameForControl(e.controlTemplateId),
+        taskName: nameForTask(e.taskTemplateId),
+      })),
+    },
+    controlRequirement: {
+      added: d.requirementMapEdges.added.map((e) => ({
+        controlName: nameForControl(e.controlTemplateId),
+        ...requirementInfo(e.requirementTemplateId),
+      })),
+      removed: d.requirementMapEdges.removed.map((e) => ({
+        controlName: nameForControl(e.controlTemplateId),
+        ...requirementInfo(e.requirementTemplateId),
+      })),
+    },
+    controlDocumentType: {
+      added: d.controlDocumentTypeEdges.added.map((e) => ({
+        controlName: nameForControl(e.controlTemplateId),
+        formType: e.formType,
+      })),
+      removed: d.controlDocumentTypeEdges.removed.map((e) => ({
+        controlName: nameForControl(e.controlTemplateId),
+        formType: e.formType,
+      })),
     },
   };
 }

@@ -125,10 +125,22 @@ export interface UpdatePreview {
     updated: Array<{ from: ManifestRequirement; to: ManifestRequirement }>;
   };
   edges: {
-    controlPolicy: { added: number; removed: number };
-    controlTask: { added: number; removed: number };
-    controlRequirement: { added: number; removed: number };
-    controlDocumentType: { added: number; removed: number };
+    controlPolicy: {
+      added: Array<{ controlName: string; policyName: string }>;
+      removed: Array<{ controlName: string; policyName: string }>;
+    };
+    controlTask: {
+      added: Array<{ controlName: string; taskName: string }>;
+      removed: Array<{ controlName: string; taskName: string }>;
+    };
+    controlRequirement: {
+      added: Array<{ controlName: string; requirementIdentifier: string; requirementName: string }>;
+      removed: Array<{ controlName: string; requirementIdentifier: string; requirementName: string }>;
+    };
+    controlDocumentType: {
+      added: Array<{ controlName: string; formType: string }>;
+      removed: Array<{ controlName: string; formType: string }>;
+    };
   };
 }
 
