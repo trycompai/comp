@@ -8,12 +8,15 @@ import { CreateControlDto } from './dto/create-control.dto';
 
 const controlInclude = {
   policies: {
+    where: { archivedAt: null },
     select: { status: true, id: true, name: true },
   },
   tasks: {
+    where: { archivedAt: null },
     select: { id: true, title: true, status: true },
   },
   requirementsMapped: {
+    where: { archivedAt: null },
     include: {
       frameworkInstance: {
         include: { framework: true, customFramework: true },
@@ -42,6 +45,7 @@ export class ControlsService {
   ) {
     const where: Prisma.ControlWhereInput = {
       organizationId,
+      archivedAt: null,
       ...(options.name && {
         name: { contains: options.name, mode: Prisma.QueryMode.insensitive },
       }),
@@ -72,10 +76,11 @@ export class ControlsService {
     const control = await db.control.findUnique({
       where: { id: controlId, organizationId },
       include: {
-        policies: true,
-        tasks: true,
+        policies: { where: { archivedAt: null } },
+        tasks: { where: { archivedAt: null } },
         controlDocumentTypes: true,
         requirementsMapped: {
+          where: { archivedAt: null },
           include: {
             frameworkInstance: {
               include: { framework: true, customFramework: true },
@@ -145,12 +150,12 @@ export class ControlsService {
   async getOptions(organizationId: string) {
     const [policies, tasks, frameworkInstances] = await Promise.all([
       db.policy.findMany({
-        where: { organizationId },
+        where: { organizationId, isArchived: false, archivedAt: null },
         select: { id: true, name: true },
         orderBy: { name: 'asc' },
       }),
       db.task.findMany({
-        where: { organizationId },
+        where: { organizationId, archivedAt: null },
         select: { id: true, title: true },
         orderBy: { title: 'asc' },
       }),
@@ -300,8 +305,11 @@ export class ControlsService {
   ): Promise<string[]> {
     if (!policyIds || policyIds.length === 0) return [];
     const uniqueIds = Array.from(new Set(policyIds));
+    // Exclude both user-archived (isArchived) and sync-archived (archivedAt)
+    // policies. Checking only archivedAt would let user-archived policies
+    // get re-linked to a control and surface back through the UI.
     const policies = await db.policy.findMany({
-      where: { id: { in: uniqueIds }, organizationId },
+      where: { id: { in: uniqueIds }, organizationId, archivedAt: null, isArchived: false },
       select: { id: true },
     });
     if (policies.length !== uniqueIds.length) {
@@ -317,7 +325,7 @@ export class ControlsService {
     if (!taskIds || taskIds.length === 0) return [];
     const uniqueIds = Array.from(new Set(taskIds));
     const tasks = await db.task.findMany({
-      where: { id: { in: uniqueIds }, organizationId },
+      where: { id: { in: uniqueIds }, organizationId, archivedAt: null },
       select: { id: true },
     });
     if (tasks.length !== uniqueIds.length) {
@@ -426,7 +434,7 @@ export class ControlsService {
     await this.ensureControl(controlId, organizationId);
 
     const policies = await db.policy.findMany({
-      where: { id: { in: policyIds }, organizationId },
+      where: { id: { in: policyIds }, organizationId, archivedAt: null },
       select: { id: true },
     });
     if (policies.length === 0) {
@@ -449,7 +457,7 @@ export class ControlsService {
     await this.ensureControl(controlId, organizationId);
 
     const tasks = await db.task.findMany({
-      where: { id: { in: taskIds }, organizationId },
+      where: { id: { in: taskIds }, organizationId, archivedAt: null },
       select: { id: true },
     });
     if (tasks.length === 0) {

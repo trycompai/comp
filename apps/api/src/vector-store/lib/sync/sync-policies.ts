@@ -33,6 +33,8 @@ export async function fetchPolicies(
     where: {
       organizationId,
       status: 'published',
+      isArchived: false,
+      archivedAt: null,
     },
     select: {
       id: true,

@@ -1,4 +1,5 @@
 import { db, Prisma } from '@db/server';
+import { loadFrameworkSources } from './load-framework-sources';
 
 /**
  * Policy.content is Json[] (the inner nodes of a TipTap document),
@@ -49,83 +50,40 @@ export const _upsertOrgFrameworkStructureCore = async ({
 }: UpsertOrgFrameworkStructureCoreInput) => {
   /**
     |--------------------------------------------------
-    | Get All Template Entities Based on Input Frameworks
+    | Load Source Data
     |--------------------------------------------------
-    | Requirements from frameworkEditorFrameworks
-    | ControlTemplates based on Requirements
-    | PolicyTemplates based on ControlTemplates
-    | TaskTemplates based on ControlTemplates
-    |--------------------------------------------------
-    */
-  const requirementIds = frameworkEditorFrameworks.flatMap((framework) =>
-    framework.requirements.map((req) => req.id),
-  );
-
-  const controlTemplates = await tx.frameworkEditorControlTemplate.findMany({
-    where: {
-      requirements: {
-        some: {
-          id: { in: requirementIds },
-        },
-      },
-    },
-  });
-  const controlTemplateIds = controlTemplates.map((control) => control.id);
-
-  const policyTemplates = await tx.frameworkEditorPolicyTemplate.findMany({
-    where: {
-      controlTemplates: {
-        some: { id: { in: controlTemplateIds } },
-      },
-    },
-  });
-  const policyTemplateIds = policyTemplates.map((policy) => policy.id);
-
-  const taskTemplates = await tx.frameworkEditorTaskTemplate.findMany({
-    where: {
-      controlTemplates: {
-        some: { id: { in: controlTemplateIds } },
-      },
-    },
-  });
-  const taskTemplateIds = taskTemplates.map((task) => task.id);
-
-  /**
-    |--------------------------------------------------
-    | Get All Template Relations
-    |--------------------------------------------------
-    | ControlTemplates <> Requirements
-    | ControlTemplates <> PolicyTemplates
-    | ControlTemplates <> TaskTemplates
+    | Controls/policies/tasks and their relations come from each framework's
+    | pinned FrameworkVersion.manifest so a new org is aligned with the
+    | version it's about to be pinned to — not with whatever CX is editing
+    | live. Frameworks without a published version fall through to live
+    | templates with a warning.
     |--------------------------------------------------
     */
-  const controlRelations = await tx.frameworkEditorControlTemplate.findMany({
-    where: {
-      id: { in: controlTemplateIds },
-    },
-    select: {
-      id: true,
-      requirements: { where: { id: { in: requirementIds } } },
-      policyTemplates: { where: { id: { in: policyTemplateIds } } },
-      taskTemplates: { where: { id: { in: taskTemplateIds } } },
-    },
+  const sources = await loadFrameworkSources({
+    frameworkEditorIds: targetFrameworkEditorIds,
+    frameworkEditorFrameworks,
+    tx,
   });
 
-  const groupedControlTemplateRelations = controlRelations.map((controlTemplate) => ({
-    controlTemplateId: controlTemplate.id,
-    requirementTemplateIds: controlTemplate.requirements.map((req) => req.id),
-    policyTemplateIds: controlTemplate.policyTemplates.map((policy) => policy.id),
-    taskTemplateIds: controlTemplate.taskTemplates.map((task) => task.id),
-  }));
+  for (const fid of sources.frameworksWithoutVersion) {
+    console.warn(
+      `UpsertOrgFrameworkStructureCore: no FrameworkVersion for framework ${fid} — falling back to live templates and pinning currentVersionId=null. Publish v1.0.0 in the framework editor.`,
+    );
+  }
 
-  /**
-    |--------------------------------------------------
-    | Upsert Framework Instances
-    |--------------------------------------------------
-    | Create FrameworkInstances if they don't already exist for the organization
-    | and targetFrameworkEditorIds. Then, fetch all relevant instances (new + existing).
-    |--------------------------------------------------
-    */
+  const {
+    controlTemplates,
+    policyTemplates,
+    taskTemplates,
+    groupedRelations: groupedControlTemplateRelations,
+    latestVersionByFrameworkId,
+    requirementToFrameworkId,
+  } = sources;
+
+  const controlTemplateIds = controlTemplates.map((c) => c.id);
+  const policyTemplateIds = policyTemplates.map((p) => p.id);
+  const taskTemplateIds = taskTemplates.map((t) => t.id);
+
   const existingFrameworkInstances = await tx.frameworkInstance.findMany({
     where: {
       organizationId: organizationId,
@@ -145,6 +103,7 @@ export const _upsertOrgFrameworkStructureCore = async ({
     .map((framework) => ({
       organizationId: organizationId,
       frameworkId: framework.id,
+      currentVersionId: latestVersionByFrameworkId.get(framework.id) ?? null,
     }));
 
   if (frameworkInstancesToCreateData.length > 0) {
@@ -352,6 +311,8 @@ export const _upsertOrgFrameworkStructureCore = async ({
   const requirementMapEntriesToCreate: Prisma.RequirementMapCreateManyInput[] = [];
   const controlToPolicyPairs: Array<{ controlId: string; policyId: string }> = [];
   const controlToTaskPairs: Array<{ controlId: string; taskId: string }> = [];
+  const controlDocumentTypeEntries: Prisma.ControlDocumentTypeCreateManyInput[] = [];
+  const controlTemplateById = new Map(controlTemplates.map((c) => [c.id, c]));
 
   for (const controlTemplateRelation of groupedControlTemplateRelations) {
     const newControlId = controlTemplateIdToInstanceIdMap.get(
@@ -365,15 +326,8 @@ export const _upsertOrgFrameworkStructureCore = async ({
       continue;
     }
 
-    // --- Process Requirements for RequirementMap ---
     for (const reqTemplateId of controlTemplateRelation.requirementTemplateIds) {
-      let frameworkEditorFrameworkIdForReq: string | undefined;
-      for (const fw of frameworkEditorFrameworks) {
-        if (fw.requirements.some((r) => r.id === reqTemplateId)) {
-          frameworkEditorFrameworkIdForReq = fw.id;
-          break;
-        }
-      }
+      const frameworkEditorFrameworkIdForReq = requirementToFrameworkId.get(reqTemplateId);
       const frameworkInstanceId = frameworkEditorFrameworkIdForReq
         ? editorFrameworkIdToInstanceIdMap.get(frameworkEditorFrameworkIdForReq)
         : undefined;
@@ -391,7 +345,6 @@ export const _upsertOrgFrameworkStructureCore = async ({
       }
     }
 
-    // --- Collect Control <-> Policy pairs ---
     for (const policyTemplateId of controlTemplateRelation.policyTemplateIds) {
       const newPolicyId = policyTemplateIdToInstanceIdMap.get(policyTemplateId);
       if (newPolicyId) {
@@ -403,7 +356,6 @@ export const _upsertOrgFrameworkStructureCore = async ({
       }
     }
 
-    // --- Collect Control <-> Task pairs ---
     for (const taskTemplateId of controlTemplateRelation.taskTemplateIds) {
       const newTaskId = taskTemplateIdToInstanceIdMap.get(taskTemplateId);
       if (newTaskId) {
@@ -413,6 +365,15 @@ export const _upsertOrgFrameworkStructureCore = async ({
           `UpsertOrgFrameworkStructureCore: Task instance not found for template ID ${taskTemplateId}. Cannot connect to Control ${newControlId}.`,
         );
       }
+    }
+
+    // ControlDocumentType: explicit junction rows driven from manifest/live
+    // documentTypes so the org starts with the same evidence form types the
+    // published version specified. Deduped against existing rows via the
+    // unique constraint.
+    const ct = controlTemplateById.get(controlTemplateRelation.controlTemplateId);
+    for (const formType of ct?.documentTypes ?? []) {
+      controlDocumentTypeEntries.push({ controlId: newControlId, formType });
     }
   }
 
@@ -447,10 +408,16 @@ export const _upsertOrgFrameworkStructureCore = async ({
     `;
   }
 
-  // --- Create RequirementMap entries ---
   if (requirementMapEntriesToCreate.length > 0) {
     await tx.requirementMap.createMany({
       data: requirementMapEntriesToCreate,
+      skipDuplicates: true,
+    });
+  }
+
+  if (controlDocumentTypeEntries.length > 0) {
+    await tx.controlDocumentType.createMany({
+      data: controlDocumentTypeEntries,
       skipDuplicates: true,
     });
   }
