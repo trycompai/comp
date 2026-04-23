@@ -146,27 +146,29 @@ export function ReviewUpdateContent({
   const showEmpty = visibleGroups.length === 0 && !showLinkChanges;
 
   return (
-    <div className="flex flex-col gap-10 pb-24">
-      <PageHeader
-        title={`${frameworkName} v${preview.toVersion.version}`}
-        backHref={frameworkHref}
-        backLabel={`Back to ${frameworkName}`}
-      >
-        <PageHeaderDescription>
-          Reviewing update from v{preview.fromVersion.version} to v
-          {preview.toVersion.version}
-          {preview.releaseNotes ? ` — ${preview.releaseNotes}` : ''}
-        </PageHeaderDescription>
-      </PageHeader>
+    <div className="flex h-[calc(100dvh-6rem)] flex-col gap-6">
+      <div className="shrink-0">
+        <PageHeader
+          title={`${frameworkName} v${preview.toVersion.version}`}
+          backHref={frameworkHref}
+          backLabel={`Back to ${frameworkName}`}
+        >
+          <PageHeaderDescription>
+            Reviewing update from v{preview.fromVersion.version} to v
+            {preview.toVersion.version}
+            {preview.releaseNotes ? ` — ${preview.releaseNotes}` : ''}
+          </PageHeaderDescription>
+        </PageHeader>
+      </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid shrink-0 grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="New" value={addedTotal} tone="positive" />
         <StatCard label="Removed" value={removedTotal} tone="danger" />
         <StatCard label="Modified" value={modifiedCount + preservedCount} />
         <StatCard label="Links affected" value={linksTotal} />
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="shrink-0">
         <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
           <TabsList variant="underline">
             <TabsTrigger value="all">
@@ -183,7 +185,9 @@ export function ReviewUpdateContent({
             </TabsTrigger>
           </TabsList>
         </Tabs>
+      </div>
 
+      <div className="min-h-0 flex-1 overflow-y-auto pr-2">
         {showEmpty ? (
           <div className="rounded-md border border-dashed p-8 text-center">
             <Text variant="muted">No changes in this category.</Text>
@@ -215,7 +219,7 @@ export function ReviewUpdateContent({
         )}
       </div>
 
-      <div className="sticky bottom-0 z-10 -mx-4 mt-4 border-t bg-background px-4 py-4 md:-mx-6 md:px-6">
+      <div className="-mx-4 shrink-0 border-t bg-background px-4 py-4 md:-mx-6 md:px-6">
         <HStack justify="between" align="center">
           <Text size="sm" variant="muted">
             Apply will update your framework instance. You can roll back within 14 days.
