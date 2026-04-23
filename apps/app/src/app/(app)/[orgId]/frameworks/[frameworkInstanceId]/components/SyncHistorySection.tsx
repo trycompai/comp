@@ -8,6 +8,7 @@ import { useFrameworkRollback } from '@/hooks/use-framework-rollback';
 import { hasPermission } from '@/lib/permissions';
 import type { UserPermissions } from '@/lib/permissions';
 import type { SyncHistoryItem } from '@/types/framework-versioning';
+import { RollbackConfirmDialog } from './RollbackConfirmDialog';
 
 interface SyncHistorySectionProps {
   frameworkInstanceId: string;
@@ -102,7 +103,7 @@ export function SyncHistorySection({
 }: SyncHistorySectionProps) {
   const { data: history, isLoading } = useFrameworkSyncHistory(frameworkInstanceId);
   const { rollback, isRollingBack } = useFrameworkRollback(frameworkInstanceId);
-  const [rollingBackId, setRollingBackId] = useState<string | null>(null);
+  const [pendingRollback, setPendingRollback] = useState<SyncHistoryItem | null>(null);
 
   const canUpdate = hasPermission(permissions, 'framework', 'update');
   const items = Array.isArray(history) ? history : [];
@@ -110,21 +111,22 @@ export function SyncHistorySection({
   if (isLoading) return null;
   if (items.length === 0) return null;
 
-  const handleRollback = async (syncOperationId: string) => {
+  const openRollbackDialog = (syncOperationId: string) => {
     const item = items.find((i) => i.id === syncOperationId);
     if (!item) return;
-    setRollingBackId(syncOperationId);
+    setPendingRollback(item);
+  };
+
+  const handleConfirmRollback = async () => {
+    if (!pendingRollback) return;
     try {
-      await rollback(syncOperationId);
-      toast.success(
-        `Rolled back to v${item.fromVersion.version}`,
-      );
+      await rollback(pendingRollback.id);
+      toast.success(`Rolled back to v${pendingRollback.fromVersion.version}`);
+      setPendingRollback(null);
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : 'Failed to roll back framework',
       );
-    } finally {
-      setRollingBackId(null);
     }
   };
 
@@ -137,11 +139,18 @@ export function SyncHistorySection({
             key={item.id}
             item={item}
             showRollback={canUpdate}
-            onRollback={handleRollback}
-            isRollingBack={isRollingBack && rollingBackId === item.id}
+            onRollback={openRollbackDialog}
+            isRollingBack={isRollingBack && pendingRollback?.id === item.id}
           />
         ))}
       </Stack>
+      <RollbackConfirmDialog
+        open={!!pendingRollback}
+        onOpenChange={(open) => !open && setPendingRollback(null)}
+        item={pendingRollback}
+        isRollingBack={isRollingBack}
+        onConfirm={handleConfirmRollback}
+      />
     </div>
   );
 }
