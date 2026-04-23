@@ -1,3 +1,10 @@
+## [3.31.1](https://github.com/trycompai/comp/compare/v3.31.0...v3.31.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* **cloud-security:** recognize VPC-scope flow logs correctly ([7698670](https://github.com/trycompai/comp/commit/76986706c2e6e1979156c9df84bfd9eb696a5b7e))
+
 # [3.31.0](https://github.com/trycompai/comp/compare/v3.30.0...v3.31.0) (2026-04-23)
 
 
