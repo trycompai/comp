@@ -1,10 +1,8 @@
 import { serverApi } from '@/lib/api-server';
-import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
+import { Breadcrumb, PageLayout } from '@trycompai/design-system';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { FrameworkOverview } from './components/FrameworkOverview';
-import { FrameworkRequirements } from './components/FrameworkRequirements';
-import { FrameworkTimeline } from './components/FrameworkTimeline';
+import { FrameworkDetailContent } from './components/FrameworkDetailContent';
 import { FrameworkVersioningSection } from './components/FrameworkVersioningSection';
 import type { FrameworkUpdateStatus } from '@/types/framework-versioning';
 
@@ -30,10 +28,6 @@ export default async function FrameworkPage({ params }: PageProps) {
   }
 
   const framework = frameworkRes.data;
-  const frameworkInstanceWithControls = {
-    ...framework,
-    controls: framework.controls ?? [],
-  };
   const frameworkName = framework.framework?.name ?? 'Framework';
   const initialStatus = updateStatusRes.data?.data ?? undefined;
 
@@ -54,17 +48,9 @@ export default async function FrameworkPage({ params }: PageProps) {
         initialStatus={initialStatus}
         hasActiveAudit={false}
       />
-      <FrameworkOverview
-        frameworkInstanceWithControls={frameworkInstanceWithControls}
-        tasks={framework.tasks || []}
-        evidenceSubmissions={framework.evidenceSubmissions || []}
-      />
-      <FrameworkTimeline frameworkInstanceId={frameworkInstanceId} />
-      <FrameworkRequirements
-        requirementDefinitions={framework.requirementDefinitions || []}
-        frameworkInstanceWithControls={frameworkInstanceWithControls}
-        tasks={framework.tasks || []}
-        evidenceSubmissions={framework.evidenceSubmissions || []}
+      <FrameworkDetailContent
+        frameworkInstanceId={frameworkInstanceId}
+        initialFramework={framework}
       />
     </PageLayout>
   );
