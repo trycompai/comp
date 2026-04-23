@@ -193,6 +193,15 @@ async function main() {
   try {
     await seedJsonFiles('primitives');
     await seedJsonFiles('relations');
+    // Build v1.0.0 FrameworkVersion snapshots for any framework without one.
+    // On a fresh `migrate reset`, the backfill data migration runs against empty
+    // tables and is a no-op; seed then creates the framework rows. Without this
+    // call, local onboarding would fail because it reads from FrameworkVersion.
+    const { backfillFrameworkVersions } = await import(
+      '../../src/scripts/backfill-framework-versions'
+    );
+    const result = await backfillFrameworkVersions();
+    console.log('FrameworkVersion backfill:', result);
     await prisma.$disconnect();
     console.log('Seeding completed successfully for primitives and relations.');
   } catch (error: unknown) {

@@ -92,7 +92,7 @@ async function queryTaskScore(
   frameworkInstanceId: string,
 ): Promise<TaskScoreResult> {
   const requirementMaps = await db.requirementMap.findMany({
-    where: { frameworkInstanceId },
+    where: { frameworkInstanceId, archivedAt: null },
     select: { controlId: true },
     distinct: ['controlId'],
   });
@@ -103,7 +103,7 @@ async function queryTaskScore(
   }
 
   const tasks = await db.task.findMany({
-    where: { controls: { some: { id: { in: controlIds } } } },
+    where: { archivedAt: null, controls: { some: { id: { in: controlIds }, archivedAt: null } } },
     select: { id: true, status: true, updatedAt: true },
     distinct: ['id'],
   });

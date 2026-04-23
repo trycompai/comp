@@ -106,6 +106,7 @@ export class TasksService {
         db.task.findMany({
           where: {
             organizationId,
+            archivedAt: null,
             ...assignmentFilter,
           },
           ...(options?.includeRelations && {
@@ -195,10 +196,11 @@ export class TasksService {
           where: {
             id: taskId,
             organizationId,
+            archivedAt: null,
           },
           include: {
             assignee: true,
-            controls: true,
+            controls: { where: { archivedAt: null } },
             approver: { include: { user: true } },
           },
         }),
@@ -236,6 +238,7 @@ export class TasksService {
       where: {
         id: taskId,
         organizationId,
+        archivedAt: null,
       },
     });
 
@@ -318,7 +321,7 @@ export class TasksService {
     const [controls, frameworkInstances, organization, member] =
       await Promise.all([
         db.control.findMany({
-          where: { organizationId },
+          where: { organizationId, archivedAt: null },
           select: { id: true, name: true },
           orderBy: { name: 'asc' },
         }),
@@ -566,6 +569,7 @@ export class TasksService {
         where: {
           id: taskId,
           organizationId,
+          archivedAt: null,
         },
         select: {
           id: true,
@@ -657,7 +661,7 @@ export class TasksService {
       // When status changes to done, set review date based on frequency
       if (updateData.status === TaskStatus.done && !updateData.reviewDate) {
         const task = await db.task.findFirst({
-          where: { id: taskId, organizationId },
+          where: { id: taskId, organizationId, archivedAt: null },
           select: { frequency: true },
         });
         dataToUpdate.reviewDate = computeNextTaskReviewDate(task?.frequency);
@@ -887,7 +891,7 @@ export class TasksService {
    */
   async regenerateFromTemplate(organizationId: string, taskId: string) {
     const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
+      where: { id: taskId, organizationId, archivedAt: null },
       include: { taskTemplate: true },
     });
 
@@ -936,6 +940,7 @@ export class TasksService {
       where: {
         id: taskId,
         organizationId,
+        archivedAt: null,
       },
     });
 
@@ -966,7 +971,7 @@ export class TasksService {
     approverId: string,
   ): Promise<TaskResponseDto> {
     const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
+      where: { id: taskId, organizationId, archivedAt: null },
     });
 
     if (!task) {
@@ -1080,6 +1085,7 @@ export class TasksService {
       where: {
         id: { in: taskIds },
         organizationId,
+        archivedAt: null,
         status: { notIn: ['in_review', 'done'] },
       },
     });
@@ -1150,7 +1156,7 @@ export class TasksService {
     userId: string,
   ): Promise<TaskResponseDto> {
     const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
+      where: { id: taskId, organizationId, archivedAt: null },
       include: {
         approver: { include: { user: true } },
         assignee: { include: { user: true } },
@@ -1238,7 +1244,7 @@ export class TasksService {
     userId: string,
   ): Promise<TaskResponseDto> {
     const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
+      where: { id: taskId, organizationId, archivedAt: null },
       include: {
         approver: { include: { user: true } },
         assignee: { include: { user: true } },
