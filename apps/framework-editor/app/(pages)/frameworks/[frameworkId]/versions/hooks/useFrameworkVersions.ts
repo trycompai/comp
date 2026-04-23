@@ -8,6 +8,7 @@ export interface FrameworkVersionListItem {
   version: string;
   publishedAt: string;
   publishedById: string | null;
+  publishedBy: { id: string; name: string; email: string } | null;
   releaseNotes: string | null;
 }
 

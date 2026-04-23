@@ -50,6 +50,7 @@ export class FrameworkVersionsService {
         version: true,
         publishedAt: true,
         publishedById: true,
+        publishedBy: { select: { id: true, name: true, email: true } },
         releaseNotes: true,
       },
     });

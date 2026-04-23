@@ -68,7 +68,7 @@ export function VersionList({ versions, isLoading, error }: VersionListProps) {
             </TableCell>
             <TableCell>
               <span className="text-sm text-muted-foreground">
-                {v.publishedById ?? '—'}
+                {v.publishedBy?.name || v.publishedBy?.email || '—'}
               </span>
             </TableCell>
             <TableCell>
