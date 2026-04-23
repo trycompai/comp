@@ -13,9 +13,14 @@ import { EnsureSOASetupDto } from './dto/ensure-soa-setup.dto';
 import { ApproveSOADocumentDto } from './dto/approve-soa-document.dto';
 import { DeclineSOADocumentDto } from './dto/decline-soa-document.dto';
 import { SubmitSOAForApprovalDto } from './dto/submit-soa-for-approval.dto';
+import { ExportSOADocumentDto } from './dto/export-soa-document.dto';
 import type { SimilarContentResult } from '@/vector-store/lib';
 import { loadISOConfig } from './utils/transform-iso-config';
 import { ISO27001_FRAMEWORK_NAMES } from './utils/constants';
+import {
+  generateSOAExportFile,
+  type SOAExportQuestion,
+} from './utils/export-generator';
 import {
   batchSearchSOAQuestions,
   generateSOAAnswerWithRAG,
@@ -435,6 +440,61 @@ export class SOAService {
     });
 
     return { success: true, data: updatedDocument };
+  }
+
+  async exportDocument(dto: ExportSOADocumentDto): Promise<{
+    fileBuffer: Buffer;
+    mimeType: string;
+    filename: string;
+  }> {
+    const document = await db.sOADocument.findFirst({
+      where: {
+        id: dto.documentId,
+        organizationId: dto.organizationId,
+      },
+      include: {
+        configuration: true,
+        framework: {
+          select: { name: true },
+        },
+        answers: {
+          where: { isLatestAnswer: true },
+          select: {
+            questionId: true,
+            answer: true,
+          },
+        },
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('SOA document not found');
+    }
+
+    const questions =
+      (document.configuration.questions as unknown as SOAQuestion[]) ?? [];
+    const answersByQuestionId = new Map(
+      document.answers.map((answer) => [answer.questionId, answer.answer]),
+    );
+
+    const exportQuestions: SOAExportQuestion[] = questions.map((question) => ({
+      id: question.id,
+      text: question.text,
+      columnMapping: {
+        title: question.columnMapping?.title ?? null,
+        control_objective: question.columnMapping?.control_objective ?? null,
+        isApplicable: question.columnMapping?.isApplicable ?? null,
+        justification: question.columnMapping?.justification ?? null,
+      },
+      answer: answersByQuestionId.get(question.id) ?? null,
+    }));
+
+    return generateSOAExportFile(
+      exportQuestions,
+      document.framework.name || 'ISO 27001',
+      document.version,
+      dto.format,
+    );
   }
 
   // Auto-fill related methods (delegating to utilities)
