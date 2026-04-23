@@ -252,33 +252,69 @@ export async function applySync(
   }
 
   // --- Control<->Policy / Control<->Task relations (Prisma implicit M:N) ---
+  // Use raw SQL on the junction tables — Prisma 7's implicit-M:N `disconnect`
+  // is strict and throws P2025 if the edge isn't there, which breaks sync in
+  // the (rare) case where manifest/instance state disagrees about whether an
+  // edge exists (e.g., a manual edit or a prior partial sync). Raw INSERT …
+  // ON CONFLICT / DELETE … WHERE IN is naturally idempotent.
+  const cpAdded: Array<{ controlId: string; policyId: string }> = [];
   for (const edge of diff.controlPolicyEdges.added) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     const polInst = polByTemplate.get(edge.policyTemplateId);
     if (!ctlInst || !polInst) continue;
-    await tx.control.update({ where: { id: ctlInst.id }, data: { policies: { connect: { id: polInst.id } } } });
+    cpAdded.push({ controlId: ctlInst.id, policyId: polInst.id });
     undo.controlPolicyLinks.connected.push({ controlId: ctlInst.id, otherId: polInst.id });
   }
+  if (cpAdded.length > 0) {
+    const rows = Prisma.join(
+      cpAdded.map(({ controlId, policyId }) => Prisma.sql`(${controlId}::text, ${policyId}::text)`),
+    );
+    await tx.$executeRaw`INSERT INTO "_ControlToPolicy" ("A", "B") VALUES ${rows} ON CONFLICT ("A", "B") DO NOTHING`;
+  }
+
+  const cpRemoved: Array<{ controlId: string; policyId: string }> = [];
   for (const edge of diff.controlPolicyEdges.removed) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     const polInst = polByTemplate.get(edge.policyTemplateId);
     if (!ctlInst || !polInst) continue;
-    await tx.control.update({ where: { id: ctlInst.id }, data: { policies: { disconnect: { id: polInst.id } } } });
+    cpRemoved.push({ controlId: ctlInst.id, policyId: polInst.id });
     undo.controlPolicyLinks.disconnected.push({ controlId: ctlInst.id, otherId: polInst.id });
   }
+  if (cpRemoved.length > 0) {
+    const pairs = Prisma.join(
+      cpRemoved.map(({ controlId, policyId }) => Prisma.sql`(${controlId}::text, ${policyId}::text)`),
+    );
+    await tx.$executeRaw`DELETE FROM "_ControlToPolicy" WHERE ("A", "B") IN (${pairs})`;
+  }
+
+  const ctAdded: Array<{ controlId: string; taskId: string }> = [];
   for (const edge of diff.controlTaskEdges.added) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     const tInst = taskByTemplate.get(edge.taskTemplateId);
     if (!ctlInst || !tInst) continue;
-    await tx.control.update({ where: { id: ctlInst.id }, data: { tasks: { connect: { id: tInst.id } } } });
+    ctAdded.push({ controlId: ctlInst.id, taskId: tInst.id });
     undo.controlTaskLinks.connected.push({ controlId: ctlInst.id, otherId: tInst.id });
   }
+  if (ctAdded.length > 0) {
+    const rows = Prisma.join(
+      ctAdded.map(({ controlId, taskId }) => Prisma.sql`(${controlId}::text, ${taskId}::text)`),
+    );
+    await tx.$executeRaw`INSERT INTO "_ControlToTask" ("A", "B") VALUES ${rows} ON CONFLICT ("A", "B") DO NOTHING`;
+  }
+
+  const ctRemoved: Array<{ controlId: string; taskId: string }> = [];
   for (const edge of diff.controlTaskEdges.removed) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     const tInst = taskByTemplate.get(edge.taskTemplateId);
     if (!ctlInst || !tInst) continue;
-    await tx.control.update({ where: { id: ctlInst.id }, data: { tasks: { disconnect: { id: tInst.id } } } });
+    ctRemoved.push({ controlId: ctlInst.id, taskId: tInst.id });
     undo.controlTaskLinks.disconnected.push({ controlId: ctlInst.id, otherId: tInst.id });
+  }
+  if (ctRemoved.length > 0) {
+    const pairs = Prisma.join(
+      ctRemoved.map(({ controlId, taskId }) => Prisma.sql`(${controlId}::text, ${taskId}::text)`),
+    );
+    await tx.$executeRaw`DELETE FROM "_ControlToTask" WHERE ("A", "B") IN (${pairs})`;
   }
 
   // --- Control <-> DocumentType (explicit junction table ControlDocumentType) ---
