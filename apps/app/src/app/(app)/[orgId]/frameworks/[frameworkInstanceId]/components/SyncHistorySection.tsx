@@ -52,6 +52,10 @@ function HistoryItemRow({
 }: HistoryItemRowProps) {
   const isSync = item.kind === 'SYNC';
   const wasRolledBack = !!item.rolledBackByOperationId;
+  const actorName = item.performedBy?.user?.name
+    ?? item.performedBy?.user?.email
+    ?? null;
+  const actionVerb = isSync ? 'Synced' : 'Rolled back';
 
   return (
     <div className="flex items-start justify-between gap-4 rounded-md border px-4 py-3">
@@ -68,7 +72,7 @@ function HistoryItemRow({
           )}
         </div>
         <Text size="sm" variant="muted">
-          {formatDate(item.performedAt)}
+          {actionVerb}{actorName ? ` by ${actorName}` : ''} on {formatDate(item.performedAt)}
         </Text>
         {item.rollbackExpiresAt && isWithinRollbackWindow(item) && !wasRolledBack && (
           <Text size="sm" variant="muted">

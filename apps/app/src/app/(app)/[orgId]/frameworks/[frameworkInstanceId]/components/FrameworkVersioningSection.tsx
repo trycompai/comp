@@ -7,7 +7,6 @@ import { usePermissions } from '@/hooks/use-permissions';
 import type { FrameworkUpdateStatus } from '@/types/framework-versioning';
 import { UpdateAvailableBanner } from './UpdateAvailableBanner';
 import { UpdateReviewSheet } from './UpdateReviewSheet';
-import { SyncHistorySection } from './SyncHistorySection';
 
 interface FrameworkVersioningSectionProps {
   frameworkInstanceId: string;
@@ -24,7 +23,7 @@ export function FrameworkVersioningSection({
   const { data } = useFrameworkUpdateStatus(frameworkInstanceId, {
     fallbackData: initialStatus,
   });
-  const { permissions, hasPermission } = usePermissions();
+  const { hasPermission } = usePermissions();
   const [open, setOpen] = useState(false);
 
   if (!enabled) return null;
@@ -32,7 +31,7 @@ export function FrameworkVersioningSection({
   const canUpdate = hasPermission('framework', 'update');
 
   return (
-    <div className="flex flex-col gap-4">
+    <>
       {data && (
         <UpdateAvailableBanner
           status={data}
@@ -46,10 +45,6 @@ export function FrameworkVersioningSection({
         onOpenChange={setOpen}
         frameworkInstanceId={frameworkInstanceId}
       />
-      <SyncHistorySection
-        frameworkInstanceId={frameworkInstanceId}
-        permissions={permissions}
-      />
-    </div>
+    </>
   );
 }

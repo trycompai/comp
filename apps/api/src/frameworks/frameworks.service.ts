@@ -743,6 +743,12 @@ export class FrameworksService {
         kind: true,
         performedAt: true,
         performedById: true,
+        performedBy: {
+          select: {
+            id: true,
+            user: { select: { id: true, name: true, email: true } },
+          },
+        },
         rollbackExpiresAt: true,
         rolledBackByOperationId: true,
         fromVersion: { select: { id: true, version: true } },

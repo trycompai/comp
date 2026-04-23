@@ -131,6 +131,10 @@ export interface SyncHistoryItem {
   kind: 'SYNC' | 'ROLLBACK';
   performedAt: string;
   performedById: string | null;
+  performedBy: {
+    id: string;
+    user: { id: string; name: string; email: string } | null;
+  } | null;
   rollbackExpiresAt: string | null;
   rolledBackByOperationId: string | null;
   fromVersion: { id: string; version: string };
