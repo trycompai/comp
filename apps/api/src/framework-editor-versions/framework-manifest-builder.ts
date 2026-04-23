@@ -31,6 +31,11 @@ export async function buildManifestForFramework(frameworkId: string): Promise<Fr
   const policiesMap = new Map<string, ManifestPolicy>();
   const tasksMap = new Map<string, ManifestTask>();
 
+  // A control template's `requirements` relation spans every framework that
+  // has mapped it — filter down to requirements belonging to THIS framework
+  // so the manifest doesn't reference IDs that aren't in its own `requirements`.
+  const ownRequirementIds = new Set(framework.requirements.map((r) => r.id));
+
   for (const req of framework.requirements) {
     for (const ct of req.controlTemplates) {
       if (!controlsMap.has(ct.id)) {
@@ -38,7 +43,9 @@ export async function buildManifestForFramework(frameworkId: string): Promise<Fr
           id: ct.id,
           name: ct.name,
           description: ct.description,
-          requirementIds: ct.requirements.map((r) => r.id),
+          requirementIds: ct.requirements
+            .map((r) => r.id)
+            .filter((id) => ownRequirementIds.has(id)),
           policyIds: ct.policyTemplates.map((p) => p.id),
           taskIds: ct.taskTemplates.map((t) => t.id),
           documentTypes: [...ct.documentTypes],

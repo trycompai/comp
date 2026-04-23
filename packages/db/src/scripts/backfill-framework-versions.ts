@@ -104,6 +104,11 @@ function buildManifestFromFramework(framework: FrameworkWithTemplates) {
   }
   const controlTemplates = [...controlTemplateMap.values()];
 
+  // Filter each control's requirementIds down to requirements belonging to
+  // this framework — control templates are shared across frameworks via M:N,
+  // so `ct.requirements` can contain IDs for requirements on other frameworks.
+  const ownRequirementIds = new Set(framework.requirements.map((r) => r.id));
+
   return {
     framework: {
       id: framework.id,
@@ -121,7 +126,9 @@ function buildManifestFromFramework(framework: FrameworkWithTemplates) {
       id: c.id,
       name: c.name,
       description: c.description,
-      requirementIds: c.requirements.map((r) => r.id),
+      requirementIds: c.requirements
+        .map((r) => r.id)
+        .filter((id) => ownRequirementIds.has(id)),
       policyIds: c.policyTemplates.map((p) => p.id),
       taskIds: c.taskTemplates.map((t) => t.id),
       documentTypes: [...c.documentTypes],
