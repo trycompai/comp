@@ -9,7 +9,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
   Button,
 } from '@trycompai/design-system';
 import { useState } from 'react';
@@ -51,13 +50,12 @@ export function RevokeAgentAccessDialog({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          Revoke agent access
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
+    <>
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        Revoke agent access
+      </Button>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Revoke agent access on {deviceName}?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -72,7 +70,8 @@ export function RevokeAgentAccessDialog({
             Revoke
           </AlertDialogAction>
         </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
