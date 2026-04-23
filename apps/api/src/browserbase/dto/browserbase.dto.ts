@@ -82,6 +82,14 @@ export class CreateBrowserAutomationDto {
   @IsNotEmpty()
   instruction: string;
 
+  @ApiPropertyOptional({
+    description:
+      'Optional natural-language criteria used to evaluate the automation result. When set, the run gets a pass/fail verdict.',
+  })
+  @IsString()
+  @IsOptional()
+  evaluationCriteria?: string;
+
   @ApiPropertyOptional({ description: 'Cron schedule expression' })
   @IsString()
   @IsOptional()
@@ -110,6 +118,14 @@ export class UpdateBrowserAutomationDto {
   @IsString()
   @IsOptional()
   instruction?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Optional natural-language criteria used to evaluate the automation result. Pass an empty string to clear.',
+  })
+  @IsString()
+  @IsOptional()
+  evaluationCriteria?: string;
 
   @ApiPropertyOptional({ description: 'Cron schedule expression' })
   @IsString()

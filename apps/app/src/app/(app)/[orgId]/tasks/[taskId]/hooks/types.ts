@@ -15,6 +15,7 @@ export interface BrowserAutomation {
   description?: string;
   targetUrl: string;
   instruction: string;
+  evaluationCriteria?: string | null;
   isEnabled: boolean;
   schedule?: string;
   createdAt: string;

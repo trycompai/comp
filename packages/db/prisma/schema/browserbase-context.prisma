@@ -32,6 +32,11 @@ model BrowserAutomation {
     /// Natural language instruction for the AI agent
     instruction String
 
+    /// Optional natural-language criteria used to evaluate whether the
+    /// automation's outcome satisfies the auditor's requirement.
+    /// When null, runs don't produce a pass/fail verdict — only a screenshot.
+    evaluationCriteria String?
+
     /// Whether automation is enabled for scheduled runs
     isEnabled Boolean @default(false)
 

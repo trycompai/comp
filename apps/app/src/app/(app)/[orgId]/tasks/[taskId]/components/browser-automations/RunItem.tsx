@@ -113,23 +113,23 @@ export function RunItem({ run, isLatest }: RunItemProps) {
       >
         <div className="overflow-hidden">
           <div className="px-3 pb-3 pt-1 space-y-3 border-t border-border/30">
-            {/* Evaluation Result */}
-            {run.evaluationReason && (
+            {/* Evaluation Result — only shown when a verdict was produced */}
+            {(evaluationPassed || evaluationFailed) && run.evaluationReason && (
               <div
                 className={cn(
                   'p-2 rounded-md border',
-                  run.evaluationStatus === 'pass'
+                  evaluationPassed
                     ? 'bg-primary/5 border-primary/20'
                     : 'bg-destructive/5 border-destructive/20',
                 )}
               >
                 <p className="text-xs font-medium mb-1">
-                  {run.evaluationStatus === 'pass' ? 'Evaluation Passed' : 'Evaluation Failed'}
+                  {evaluationPassed ? 'Evaluation Passed' : 'Evaluation Failed'}
                 </p>
                 <p
                   className={cn(
                     'text-xs',
-                    run.evaluationStatus === 'pass' ? 'text-foreground' : 'text-destructive',
+                    evaluationPassed ? 'text-foreground' : 'text-destructive',
                   )}
                 >
                   {run.evaluationReason}
@@ -197,7 +197,7 @@ export function RunItem({ run, isLatest }: RunItemProps) {
                   onClick={(e) => e.stopPropagation()}
                 >
                   Try direct link
-                  <ExternalLink className="h-3 w-3" />
+                  <ExternalLink size={12} />
                 </a>
               </div>
             )}

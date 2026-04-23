@@ -21,6 +21,13 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const PENDING_CONTEXT_ID = '__PENDING__';
 
+/** Empty strings become null; any actual text is trimmed and kept. */
+const normalizeCriteria = (value: string | null | undefined): string | null => {
+  if (value == null) return null;
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? null : trimmed;
+};
+
 const isPrismaUniqueConstraintError = (error: unknown): boolean => {
   if (typeof error !== 'object' || error === null) return false;
   if (!('code' in error)) return false;
@@ -345,6 +352,7 @@ export class BrowserbaseService {
     description?: string;
     targetUrl: string;
     instruction: string;
+    evaluationCriteria?: string;
     schedule?: string;
   }) {
     return db.browserAutomation.create({
@@ -354,6 +362,7 @@ export class BrowserbaseService {
         description: data.description,
         targetUrl: data.targetUrl,
         instruction: data.instruction,
+        evaluationCriteria: normalizeCriteria(data.evaluationCriteria),
         schedule: data.schedule,
         isEnabled: true, // Enable by default so scheduled runs work
       },
@@ -392,13 +401,20 @@ export class BrowserbaseService {
       description?: string;
       targetUrl?: string;
       instruction?: string;
+      evaluationCriteria?: string;
       schedule?: string;
       isEnabled?: boolean;
     },
   ) {
+    const { evaluationCriteria, ...rest } = data;
     return db.browserAutomation.update({
       where: { id: automationId },
-      data,
+      data: {
+        ...rest,
+        ...(evaluationCriteria !== undefined
+          ? { evaluationCriteria: normalizeCriteria(evaluationCriteria) }
+          : {}),
+      },
     });
   }
 
@@ -508,6 +524,7 @@ export class BrowserbaseService {
         {
           title: automation.task.title,
           description: automation.task.description,
+          evaluationCriteria: automation.evaluationCriteria,
         },
       );
 
@@ -536,7 +553,7 @@ export class BrowserbaseService {
         };
       }
 
-      // Upload screenshot to S3 (only taken if evaluation passed)
+      // Upload screenshot to S3
       let screenshotKey: string | undefined;
       let presignedUrl: string | undefined;
       if (result.screenshot) {
@@ -549,7 +566,8 @@ export class BrowserbaseService {
         presignedUrl = await this.getPresignedUrl(screenshotKey);
       }
 
-      // Update run as completed
+      // Update run as completed. Only persist an evaluation verdict when
+      // the caller's automation had criteria configured.
       await db.browserAutomationRun.update({
         where: { id: runId },
         data: {
@@ -558,7 +576,7 @@ export class BrowserbaseService {
           durationMs: run.startedAt ? Date.now() - run.startedAt.getTime() : 0,
           screenshotUrl: screenshotKey,
           evaluationStatus: result.evaluationStatus ?? null,
-          evaluationReason: result.evaluationReason ?? 'Screenshot captured',
+          evaluationReason: result.evaluationReason ?? null,
         },
       });
 
@@ -650,6 +668,7 @@ export class BrowserbaseService {
           {
             title: automation.task.title,
             description: automation.task.description,
+            evaluationCriteria: automation.evaluationCriteria,
           },
         );
 
@@ -690,7 +709,8 @@ export class BrowserbaseService {
           presignedUrl = await this.getPresignedUrl(screenshotKey);
         }
 
-        // Update run as completed
+        // Update run as completed. Only persist an evaluation verdict when
+        // the automation had criteria configured.
         await db.browserAutomationRun.update({
           where: { id: run.id },
           data: {
@@ -699,7 +719,7 @@ export class BrowserbaseService {
             durationMs: Date.now() - run.startedAt!.getTime(),
             screenshotUrl: screenshotKey,
             evaluationStatus: result.evaluationStatus ?? null,
-            evaluationReason: result.evaluationReason ?? 'Screenshot captured',
+            evaluationReason: result.evaluationReason ?? null,
           },
         });
 
@@ -749,7 +769,11 @@ export class BrowserbaseService {
     sessionId: string,
     targetUrl: string,
     instruction: string,
-    taskContext?: { title: string; description?: string | null },
+    taskContext?: {
+      title: string;
+      description?: string | null;
+      evaluationCriteria?: string | null;
+    },
   ): Promise<{
     success: boolean;
     screenshot?: string;
@@ -830,12 +854,41 @@ export class BrowserbaseService {
         });
       }
 
+      // Optional evaluation: if the automation was configured with
+      // natural-language criteria, ask Stagehand to inspect the page and
+      // produce a pass/fail verdict with a short reason.
+      let evaluationStatus: 'pass' | 'fail' | undefined;
+      let evaluationReason: string | undefined;
+      const criteria = taskContext?.evaluationCriteria?.trim();
+      if (criteria) {
+        try {
+          const evalSchema = z.object({
+            pass: z.boolean(),
+            reason: z.string(),
+          });
+          const evaluation = (await stagehand.extract(
+            `You are an auditor reviewing the current page after an automation has finished navigating. Decide whether the page clearly satisfies this criteria. Only return pass=true if the evidence is unambiguously present and visible. If it is ambiguous, missing, or contradicted, return pass=false. Always provide a short reason (max 220 characters).\n\nCriteria: ${criteria}`,
+            evalSchema as any,
+          )) as { pass: boolean; reason: string };
+
+          evaluationStatus = evaluation.pass ? 'pass' : 'fail';
+          evaluationReason = evaluation.reason;
+        } catch (evalErr) {
+          this.logger.warn(
+            'Evaluation step failed; returning screenshot without verdict',
+            {
+              error:
+                evalErr instanceof Error ? evalErr.message : String(evalErr),
+            },
+          );
+        }
+      }
+
       return {
         success: true,
         screenshot: finalBuffer.toString('base64'),
-        evaluationReason: taskContext
-          ? `Navigation completed for "${taskContext.title}". Screenshot captured.`
-          : 'Navigation completed. Screenshot captured.',
+        evaluationStatus,
+        evaluationReason,
       };
     } catch (err) {
       this.logger.error('Failed to execute automation', err);

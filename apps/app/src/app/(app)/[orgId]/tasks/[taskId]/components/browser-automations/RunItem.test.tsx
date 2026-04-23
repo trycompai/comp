@@ -48,4 +48,17 @@ describe('RunItem', () => {
       '/v1/browserbase/runs/bar_123/screenshot?download=true',
     );
   });
+
+  it('does not render the evaluation block when evaluationStatus is null', () => {
+    const unevaluatedRun = {
+      ...baseRun,
+      evaluationStatus: null,
+      evaluationReason: 'Navigation completed. Screenshot captured.',
+    } as unknown as BrowserAutomationRun;
+
+    render(<RunItem run={unevaluatedRun} isLatest={true} />);
+    expect(screen.queryByText(/evaluation failed/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/evaluation passed/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/issues found/i)).not.toBeInTheDocument();
+  });
 });
