@@ -17669,6 +17669,48 @@
         ]
       }
     },
+    "/v1/browserbase/runs/{runId}/screenshot": {
+      "get": {
+        "description": "Issues a 302 redirect to a newly signed S3 URL so that \"Open full size\" links never serve an expired URL. Pass ?download=true to force an attachment download.",
+        "operationId": "BrowserbaseController_redirectToScreenshot_v1",
+        "parameters": [
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "description": "Run ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "download",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to signed S3 URL"
+          },
+          "404": {
+            "description": "Run or screenshot not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Redirect to a freshly signed screenshot URL",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
     "/v1/task-management/stats": {
       "get": {
         "description": "Retrieve task items statistics (total count, counts by status) for a specific entity",
@@ -24630,6 +24672,10 @@
             "type": "string",
             "description": "Natural language instruction for navigation"
           },
+          "evaluationCriteria": {
+            "type": "string",
+            "description": "Optional natural-language criteria used to evaluate the automation result. When set, the run gets a pass/fail verdict."
+          },
           "schedule": {
             "type": "string",
             "description": "Cron schedule expression"
@@ -24707,6 +24753,10 @@
           "instruction": {
             "type": "string",
             "description": "Natural language instruction"
+          },
+          "evaluationCriteria": {
+            "type": "string",
+            "description": "Optional natural-language criteria used to evaluate the automation result. Pass an empty string to clear."
           },
           "schedule": {
             "type": "string",

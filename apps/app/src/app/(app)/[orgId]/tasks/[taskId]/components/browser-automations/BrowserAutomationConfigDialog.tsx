@@ -23,6 +23,7 @@ const automationConfigSchema = z.object({
   name: z.string().trim().min(1, { message: 'Name is required' }),
   targetUrl: z.string().trim().url({ message: 'Starting URL must be a valid URL' }),
   instruction: z.string().trim().min(1, { message: 'Instruction is required' }),
+  evaluationCriteria: z.string().trim().optional(),
 });
 
 type AutomationConfigFormData = z.infer<typeof automationConfigSchema>;
@@ -30,7 +31,10 @@ type AutomationConfigFormData = z.infer<typeof automationConfigSchema>;
 interface BrowserAutomationConfigDialogProps {
   isOpen: boolean;
   mode: 'create' | 'edit';
-  initialValues?: Pick<BrowserAutomation, 'id' | 'name' | 'targetUrl' | 'instruction'>;
+  initialValues?: Pick<
+    BrowserAutomation,
+    'id' | 'name' | 'targetUrl' | 'instruction' | 'evaluationCriteria'
+  >;
   isSaving: boolean;
   onClose: () => void;
   onCreate: (data: AutomationConfigFormData) => Promise<boolean>;
@@ -57,6 +61,7 @@ export function BrowserAutomationConfigDialog({
       name: '',
       targetUrl: '',
       instruction: '',
+      evaluationCriteria: '',
     },
   });
 
@@ -68,15 +73,16 @@ export function BrowserAutomationConfigDialog({
         name: initialValues.name ?? '',
         targetUrl: initialValues.targetUrl ?? '',
         instruction: initialValues.instruction ?? '',
+        evaluationCriteria: initialValues.evaluationCriteria ?? '',
       });
       return;
     }
 
-    reset({ name: '', targetUrl: '', instruction: '' });
+    reset({ name: '', targetUrl: '', instruction: '', evaluationCriteria: '' });
   }, [isOpen, mode, initialValues, reset]);
 
   const handleClose = () => {
-    reset({ name: '', targetUrl: '', instruction: '' });
+    reset({ name: '', targetUrl: '', instruction: '', evaluationCriteria: '' });
     onClose();
   };
 
@@ -155,6 +161,23 @@ export function BrowserAutomationConfigDialog({
                 screenshot.
               </p>
             )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="automation-evaluation-criteria">
+              Evaluation Criteria{' '}
+              <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <Textarea
+              id="automation-evaluation-criteria"
+              placeholder="Branch protection is enabled on the main branch, with at least one required reviewer"
+              {...register('evaluationCriteria')}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              If set, each run checks the final page against this criteria and records a
+              pass/fail verdict. Leave blank to only capture a screenshot.
+            </p>
           </div>
 
           <DialogFooter>

@@ -6,8 +6,11 @@ import {
   Param,
   Patch,
   Post,
+  Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiOperation,
   ApiParam,
@@ -370,5 +373,29 @@ export class BrowserbaseController {
     return (await this.browserbaseService.getRunWithPresignedUrl(
       runId,
     )) as BrowserAutomationRunResponseDto | null;
+  }
+
+  @Get('runs/:runId/screenshot')
+  @RequirePermission('task', 'read')
+  @ApiOperation({
+    summary: 'Redirect to a freshly signed screenshot URL',
+    description:
+      'Issues a 302 redirect to a newly signed S3 URL so that "Open full size" links never serve an expired URL. Pass ?download=true to force an attachment download.',
+  })
+  @ApiParam({ name: 'runId', description: 'Run ID' })
+  @ApiResponse({ status: 302, description: 'Redirect to signed S3 URL' })
+  @ApiResponse({ status: 404, description: 'Run or screenshot not found' })
+  async redirectToScreenshot(
+    @Param('runId') runId: string,
+    @OrganizationId() organizationId: string,
+    @Res() res: Response,
+    @Query('download') download?: string,
+  ): Promise<void> {
+    const url = await this.browserbaseService.getScreenshotRedirectUrl({
+      runId,
+      organizationId,
+      download: download === 'true' || download === '1',
+    });
+    res.redirect(302, url);
   }
 }
