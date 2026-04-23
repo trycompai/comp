@@ -1,4 +1,8 @@
-import { PageHeader, Text } from '@trycompai/design-system';
+'use client';
+
+import { Button, PageHeader, Text } from '@trycompai/design-system';
+import { Download } from '@trycompai/design-system/icons';
+import { useSOADocument } from '../hooks/useSOADocument';
 import { SOAFrameworkTable } from './SOAFrameworkTable';
 
 type SOAFrameworkTableProps = Parameters<typeof SOAFrameworkTable>[0];
@@ -22,10 +26,31 @@ interface StatementOfApplicabilitySectionProps {
   soaError?: string | null;
 }
 
-function SectionHeader() {
+function SectionHeader({
+  onExport,
+  isExporting,
+  canExport,
+}: {
+  onExport: () => void;
+  isExporting: boolean;
+  canExport: boolean;
+}) {
   return (
     <>
-      <PageHeader title="Statement of Applicability" />
+      <PageHeader
+        title="Statement of Applicability"
+        actions={
+          <Button
+            type="button"
+            variant="secondary"
+            iconLeft={<Download size={16} />}
+            onClick={onExport}
+            disabled={!canExport || isExporting}
+          >
+            {isExporting ? 'Exporting...' : 'Export PDF'}
+          </Button>
+        }
+      />
       <div className="line-clamp-1">
         <Text variant="muted">
           Auto-complete Statement of Applicability for ISO 27001. Generate answers based on your
@@ -41,10 +66,27 @@ export function StatementOfApplicabilitySection({
   soaData,
   soaError,
 }: StatementOfApplicabilitySectionProps) {
+  const soaDocumentId =
+    ((soaData?.document as { id?: string | null } | null | undefined)?.id ??
+      null);
+  const { handleExport, isExporting } = useSOADocument({
+    documentId: soaDocumentId,
+    organizationId,
+    fallbackData:
+      (soaData?.document as Parameters<typeof useSOADocument>[0]['fallbackData']) ??
+      null,
+  });
+
   if (soaError) {
     return (
       <div className="flex flex-col gap-8">
-        <SectionHeader />
+        <SectionHeader
+          onExport={() => {
+            void handleExport('pdf');
+          }}
+          isExporting={isExporting}
+          canExport={false}
+        />
         <div className="flex items-center justify-center rounded-lg border py-12">
           <Text variant="muted">{soaError}</Text>
         </div>
@@ -55,7 +97,13 @@ export function StatementOfApplicabilitySection({
   if (soaData) {
     return (
       <div className="flex flex-col gap-8">
-        <SectionHeader />
+        <SectionHeader
+          onExport={() => {
+            void handleExport('pdf');
+          }}
+          isExporting={isExporting}
+          canExport={!!soaDocumentId}
+        />
         <SOAFrameworkTable
           framework={soaData.framework}
           configuration={soaData.configuration}
@@ -77,7 +125,13 @@ export function StatementOfApplicabilitySection({
 
   return (
     <div className="flex flex-col gap-8">
-      <SectionHeader />
+      <SectionHeader
+        onExport={() => {
+          void handleExport('pdf');
+        }}
+        isExporting={isExporting}
+        canExport={false}
+      />
       <div className="flex items-center justify-center py-12">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
       </div>

@@ -1,8 +1,10 @@
 'use client';
 
 import useSWR from 'swr';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api-client';
+import { env } from '@/env.mjs';
+import { toast } from 'sonner';
 
 interface SOADocumentData {
   id: string;
@@ -28,6 +30,7 @@ function buildKey(documentId: string | null) {
 }
 
 export function useSOADocument({ documentId, organizationId, fallbackData }: UseSOADocumentOptions) {
+  const [isExporting, setIsExporting] = useState(false);
   const { data, error, isLoading, mutate } = useSWR<SOADocumentData | null>(
     buildKey(documentId),
     null,
@@ -123,15 +126,76 @@ export function useSOADocument({ documentId, organizationId, fallbackData }: Use
     return true;
   };
 
+  const handleExport = async (format: 'pdf' = 'pdf'): Promise<void> => {
+    if (!documentId) {
+      toast.error('No SOA document to export');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const response = await fetch(
+        `${env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}/v1/soa/export`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            documentId,
+            organizationId,
+            format,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to export SOA document');
+      }
+
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `statement-of-applicability.${format}`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match) {
+          filename = match[1];
+        }
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`Exported as ${filename}`);
+    } catch (error) {
+      console.error('SOA export error:', error);
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to export SOA document',
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return {
     document: data ?? null,
     error,
     isLoading,
+    isExporting,
     mutate,
     saveAnswer,
     approve,
     decline,
     submitForApproval,
+    handleExport,
   };
 }
 
