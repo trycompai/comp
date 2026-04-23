@@ -93,4 +93,23 @@ describe('FrameworkRollbackService', () => {
     await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_1', memberId: 'mem_1' }))
       .rejects.toThrow(/data loss|published/i);
   });
+
+  it('400s when a newer non-reversed sync exists (cannot roll back mid-chain)', async () => {
+    (db.frameworkSyncOperation.findUnique as jest.Mock).mockResolvedValue({
+      id: 'fso_1', kind: 'SYNC', frameworkInstanceId: 'frm_1',
+      frameworkInstance: { organizationId: 'org_1', id: 'frm_1' },
+      fromVersionId: 'fvr_v1', toVersionId: 'fvr_v2',
+      performedAt: new Date('2026-04-23T10:00:00Z'),
+      rollbackExpiresAt: new Date(Date.now() + 86_400_000),
+      rolledBackByOperationId: null,
+    });
+    (db.frameworkSyncOperation.findFirst as jest.Mock).mockResolvedValue({
+      id: 'fso_newer',
+      fromVersion: { version: '1.2.0' },
+      toVersion: { version: '1.3.0' },
+    });
+
+    await expect(service.rollback({ organizationId: 'org_1', frameworkInstanceId: 'frm_1', syncOperationId: 'fso_1', memberId: 'mem_1' }))
+      .rejects.toThrow(/most recent sync|1\.2\.0|1\.3\.0/i);
+  });
 });

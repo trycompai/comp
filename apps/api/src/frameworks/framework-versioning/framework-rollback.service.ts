@@ -28,6 +28,25 @@ export class FrameworkRollbackService {
     if (syncOp.rolledBackByOperationId) throw new BadRequestException('Sync has already been rolled back');
     if (!syncOp.rollbackExpiresAt || syncOp.rollbackExpiresAt <= new Date()) throw new BadRequestException('Rollback window has expired');
 
+    // Only the latest non-reversed sync can be rolled back. Rolling back an
+    // older sync in the middle of a chain would leave the instance in an
+    // inconsistent state (undo payloads only describe that single sync's
+    // deltas and can't be stacked out of order).
+    const newerActiveSync = await db.frameworkSyncOperation.findFirst({
+      where: {
+        frameworkInstanceId: syncOp.frameworkInstanceId,
+        kind: 'SYNC',
+        rolledBackByOperationId: null,
+        performedAt: { gt: syncOp.performedAt },
+      },
+      select: { id: true, fromVersion: { select: { version: true } }, toVersion: { select: { version: true } } },
+    });
+    if (newerActiveSync) {
+      throw new BadRequestException({
+        message: `Only the most recent sync can be rolled back. Roll back v${newerActiveSync.fromVersion.version} → v${newerActiveSync.toVersion.version} first.`,
+      });
+    }
+
     const undo = syncOp.undoPayload as unknown as UndoPayload;
 
     await assertNoDataLoss(undo);

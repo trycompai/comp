@@ -108,6 +108,13 @@ export function SyncHistorySection({
   const canUpdate = hasPermission(permissions, 'framework', 'update');
   const items = Array.isArray(history) ? history : [];
 
+  // Only the most recent non-reversed sync can be rolled back. Rolling back
+  // an older sync in the middle of a chain would leave the instance in an
+  // inconsistent state, so we surface the Rollback action only on that row.
+  const latestRollbackableSyncId = items.find(
+    (i) => i.kind === 'SYNC' && !i.rolledBackByOperationId,
+  )?.id ?? null;
+
   if (isLoading) return null;
   if (items.length === 0) return null;
 
@@ -138,7 +145,7 @@ export function SyncHistorySection({
           <HistoryItemRow
             key={item.id}
             item={item}
-            showRollback={canUpdate}
+            showRollback={canUpdate && item.id === latestRollbackableSyncId}
             onRollback={openRollbackDialog}
             isRollingBack={isRollingBack && pendingRollback?.id === item.id}
           />
