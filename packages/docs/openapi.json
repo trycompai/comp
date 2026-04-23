@@ -12265,16 +12265,7 @@
       },
       "post": {
         "operationId": "ControlTemplateController_create_v1",
-        "parameters": [
-          {
-            "name": "frameworkId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -13791,6 +13782,20 @@
                 "ready_for_review",
                 "needs_revision",
                 "closed"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "severity",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
               ],
               "type": "string"
             }
@@ -17659,6 +17664,40 @@
           }
         ],
         "summary": "Get a specific run by ID",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/runs/{runId}/screenshot": {
+      "get": {
+        "description": "Issues a 302 redirect to a newly signed S3 URL so that \"Open full size\" links never serve an expired URL.",
+        "operationId": "BrowserbaseController_redirectToScreenshot_v1",
+        "parameters": [
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "description": "Run ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to signed S3 URL"
+          },
+          "404": {
+            "description": "Run or screenshot not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Redirect to a freshly signed screenshot URL",
         "tags": [
           "Browserbase"
         ]
