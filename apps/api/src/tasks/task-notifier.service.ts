@@ -16,11 +16,53 @@ import { NovuService } from '../notifications/novu.service';
 const BULK_TASK_WORKFLOW_ID = 'evidence-bulk-updated';
 const TASK_WORKFLOW_ID = 'evidence-updated';
 
+type StatusRecipient = { id: string; name: string; email: string };
+
+function toStatusRecipient(user: {
+  id: string;
+  name: string | null;
+  email: string;
+}): StatusRecipient {
+  return {
+    id: user.id,
+    name: user.name?.trim() || user.email?.trim() || 'User',
+    email: user.email,
+  };
+}
+
 @Injectable()
 export class TaskNotifierService {
   private readonly logger = new Logger(TaskNotifierService.name);
 
   constructor(private readonly novuService: NovuService) {}
+
+  /**
+   * Members with 'owner' or 'admin' in their comma-separated role string,
+   * excluding the actor. Used as the fallback recipient pool when a task
+   * has no assignee.
+   */
+  private async getOwnerAdminRecipients(
+    organizationId: string,
+    actorUserId: string | undefined,
+  ): Promise<StatusRecipient[]> {
+    const members = await db.member.findMany({
+      where: { organizationId, deactivated: false },
+      select: {
+        role: true,
+        user: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    const recipients: StatusRecipient[] = [];
+    for (const member of members) {
+      if (!member.user?.id || !member.user.email) continue;
+      if (member.user.id === actorUserId) continue;
+      const roles = (member.role ?? '').split(',').map((r) => r.trim());
+      if (!roles.includes('owner') && !roles.includes('admin')) continue;
+      recipients.push(toStatusRecipient(member.user));
+    }
+    return recipients;
+  }
 
   async notifyBulkStatusChange(params: {
     organizationId: string;
@@ -31,64 +73,37 @@ export class TaskNotifierService {
     const { organizationId, taskIds, newStatus, changedByUserId } = params;
 
     try {
-      const [organization, changedByUser, tasks, allMembers] =
-        await Promise.all([
-          db.organization.findUnique({
-            where: { id: organizationId },
-            select: { name: true },
-          }),
-          db.user.findUnique({
-            where: { id: changedByUserId },
-            select: { name: true, email: true },
-          }),
-          db.task.findMany({
-            where: {
-              id: { in: taskIds },
-              organizationId,
-            },
-            select: {
-              id: true,
-              title: true,
-              assigneeId: true,
-              assignee: {
-                select: {
-                  id: true,
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                    },
+      const [organization, changedByUser, tasks] = await Promise.all([
+        db.organization.findUnique({
+          where: { id: organizationId },
+          select: { name: true },
+        }),
+        db.user.findUnique({
+          where: { id: changedByUserId },
+          select: { name: true, email: true },
+        }),
+        db.task.findMany({
+          where: {
+            id: { in: taskIds },
+            organizationId,
+          },
+          select: {
+            id: true,
+            title: true,
+            assignee: {
+              select: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
                   },
                 },
               },
             },
-          }),
-          db.member.findMany({
-            where: {
-              organizationId,
-              deactivated: false,
-              OR: [
-                { user: { role: { not: 'admin' } } },
-                { role: { contains: 'owner' } },
-              ],
-            },
-            select: {
-              id: true,
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                },
-              },
-            },
-          }),
-        ]);
-
-      this.logger.debug(
-        `[notifyBulkStatusChange] Found ${allMembers.length} total members for organization ${organizationId}`,
-      );
+          },
+        }),
+      ]);
 
       const organizationName = organization?.name ?? 'your organization';
       const changedByName =
@@ -96,29 +111,51 @@ export class TaskNotifierService {
         changedByUser?.email?.trim() ||
         'Someone';
 
-      // Build recipient list: all members excluding actor.
-      // The isUserUnsubscribed check handles role-based filtering via the notification matrix.
-      const recipientMap = new Map<
+      // Recipients: each assignee gets a bulk email scoped to the tasks they
+      // own. Unassigned tasks are routed to owners/admins so someone can act.
+      // The actor is always excluded.
+      const recipientBuckets = new Map<
         string,
-        { id: string; name: string; email: string }
+        { recipient: StatusRecipient; taskCount: number }
       >();
+      let unassignedTaskCount = 0;
+      for (const task of tasks) {
+        const user = task.assignee?.user;
+        if (user?.id && user.email) {
+          if (user.id === changedByUserId) continue;
+          const existing = recipientBuckets.get(user.id);
+          if (existing) {
+            existing.taskCount += 1;
+          } else {
+            recipientBuckets.set(user.id, {
+              recipient: toStatusRecipient(user),
+              taskCount: 1,
+            });
+          }
+        } else {
+          unassignedTaskCount += 1;
+        }
+      }
 
-      for (const member of allMembers) {
-        if (member.user?.id && member.user.email) {
-          const userId = member.user.id;
-          if (userId !== changedByUserId) {
-            recipientMap.set(userId, {
-              id: userId,
-              name:
-                member.user.name?.trim() || member.user.email?.trim() || 'User',
-              email: member.user.email,
+      if (unassignedTaskCount > 0) {
+        const ownerAdmins = await this.getOwnerAdminRecipients(
+          organizationId,
+          changedByUserId,
+        );
+        for (const r of ownerAdmins) {
+          const existing = recipientBuckets.get(r.id);
+          if (existing) {
+            existing.taskCount += unassignedTaskCount;
+          } else {
+            recipientBuckets.set(r.id, {
+              recipient: r,
+              taskCount: unassignedTaskCount,
             });
           }
         }
       }
 
-      const recipients = Array.from(recipientMap.values());
-      const taskCount = tasks.length;
+      const recipients = Array.from(recipientBuckets.values());
       const statusLabel = newStatus.replace('_', ' ');
 
       const appUrl =
@@ -128,12 +165,12 @@ export class TaskNotifierService {
       const tasksUrl = `${appUrl}/${organizationId}/tasks`;
 
       this.logger.log(
-        `Sending bulk status change notifications to ${recipients.length} recipients for ${taskCount} task(s)`,
+        `Sending bulk status change notifications to ${recipients.length} recipients for ${tasks.length} task(s)`,
       );
 
       // Send notifications to each recipient
       await Promise.allSettled(
-        recipients.map(async (recipient) => {
+        recipients.map(async ({ recipient, taskCount }) => {
           const isUnsubscribed = await isUserUnsubscribed(
             db,
             recipient.email,
@@ -390,60 +427,34 @@ export class TaskNotifierService {
     } = params;
 
     try {
-      const [organization, changedByUser, task, allMembers] = await Promise.all(
-        [
-          db.organization.findUnique({
-            where: { id: organizationId },
-            select: { name: true },
-          }),
-          changedByUserId
-            ? db.user.findUnique({
-                where: { id: changedByUserId },
-                select: { name: true, email: true },
-              })
-            : Promise.resolve(null),
-          db.task.findUnique({
-            where: { id: taskId },
-            select: {
-              assignee: {
-                select: {
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                    },
+      const [organization, changedByUser, task] = await Promise.all([
+        db.organization.findUnique({
+          where: { id: organizationId },
+          select: { name: true },
+        }),
+        changedByUserId
+          ? db.user.findUnique({
+              where: { id: changedByUserId },
+              select: { name: true, email: true },
+            })
+          : Promise.resolve(null),
+        db.task.findUnique({
+          where: { id: taskId },
+          select: {
+            assignee: {
+              select: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
                   },
                 },
               },
             },
-          }),
-          db.member.findMany({
-            where: {
-              organizationId,
-              deactivated: false,
-              OR: [
-                { user: { role: { not: 'admin' } } },
-                { role: { contains: 'owner' } },
-              ],
-            },
-            select: {
-              id: true,
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                },
-              },
-            },
-          }),
-        ],
-      );
-
-      this.logger.debug(
-        `[notifyStatusChange] Found ${allMembers.length} total members for organization ${organizationId}`,
-      );
+          },
+        }),
+      ]);
 
       const organizationName = organization?.name ?? 'your organization';
       const changedByName =
@@ -453,24 +464,22 @@ export class TaskNotifierService {
       const oldStatusLabel = oldStatus.replace('_', ' ');
       const newStatusLabel = newStatus.replace('_', ' ');
 
-      // Build recipient list: all members excluding actor.
-      // The isUserUnsubscribed check handles role-based filtering via the notification matrix.
-      const recipientMap = new Map<
-        string,
-        { id: string; name: string; email: string }
-      >();
-
-      for (const member of allMembers) {
-        if (member.user?.id && member.user.email) {
-          const userId = member.user.id;
-          if (userId !== changedByUserId) {
-            recipientMap.set(userId, {
-              id: userId,
-              name:
-                member.user.name?.trim() || member.user.email?.trim() || 'User',
-              email: member.user.email,
-            });
-          }
+      // Recipients: the task's assignee (if any). If the task is unassigned,
+      // fall back to owners/admins so someone who can act on it is notified.
+      // The actor is always excluded.
+      const recipientMap = new Map<string, StatusRecipient>();
+      const assigneeUser = task?.assignee?.user;
+      if (assigneeUser?.id && assigneeUser.email) {
+        if (assigneeUser.id !== changedByUserId) {
+          recipientMap.set(assigneeUser.id, toStatusRecipient(assigneeUser));
+        }
+      } else {
+        const ownerAdmins = await this.getOwnerAdminRecipients(
+          organizationId,
+          changedByUserId,
+        );
+        for (const r of ownerAdmins) {
+          recipientMap.set(r.id, r);
         }
       }
 
