@@ -1,93 +1,117 @@
 ---
 title: "AWS Cloud Tests"
-description: "AWS Cloud Tests allows you to connect your AWS infrastructure to Comp AI for automated security testing using Security Hub, compliance monitoring, and risk assessment."
+description: "Connect your AWS account to Comp AI using a read-only IAM role and External ID to run continuous cloud security checks."
 ---
 
-# Setup Process
+## About the AWS integration
 
-### Prerequisites
+Comp AI connects to your AWS account using a **cross-account IAM role** with an **External ID**. No long-lived access keys are created, and all access is scoped to read-only unless you also opt in to auto-remediation with a separate role.
 
-Before setting up the integration, ensure you have:
+Once connected, Comp AI scans the regions you select and produces findings mapped to common frameworks (SOC 2, ISO 27001, CIS AWS Foundations, PCI DSS, HIPAA).
 
-1. An AWS account with administrator access
-2. Admin access to your Comp AI workspace
-3. IAM permissions to create and manage roles, policies, and trust relationships
+<Note>
+  Comp AI assumes your role from a dedicated AWS principal. You control the trust policy, so you can revoke access at any time by deleting the role.
+</Note>
 
-### Configuration Steps
+## How access works
 
-1. **Log into your AWS Management Console**
-2. **Enable Security Hub**
-   - Navigate to **Security Hub** in the AWS Console
-   - Click **Get Started**
-   - Enable Security Hub in your **desired regions**
-   - Optionally, enable **default security standards** (like CIS AWS Foundations)
-3. **Choose a Region Code**
-   - Decide which AWS region you want Comp AI to use (e.g., `us-east-1`, `us-west-2`)
-   - Copy this region code — you’ll need it in the Comp AI UI
-4. **Create an IAM User for Comp AI**
-   - Go to **IAM \> Users**, then click **Add user**
-   - Enter a name like `CompAIIntegrationUser`
-   - Choose **Programmatic access** (this generates the Access Key ID & Secret)
-5. **Set Permissions**
-   - On the permissions screen, click **Attach policies directly**
-   - Attach the following AWS managed policies:
-     - `SecurityAudit`
-     - `AmazonEC2ReadOnlyAccess & AWSSecurityHubReadOnlyAccess`
+- **Auth model**: AWS STS `AssumeRole` from a Comp AI–managed principal into a role in your account
+- **External ID**: Required in the trust policy so only a specific Comp AI organization can assume the role
+- **Permissions**: `SecurityAudit` + `ViewOnlyAccess` managed policies, plus two small inline policies for Cost Explorer reads and SSM document metadata
+- **Optional auto-remediation**: A separate role (`CompAI-Remediator`) can be created to enable auto-fix actions — this role is **only used when you explicitly trigger a fix**. The audit role stays read-only.
 
-       _(Or use a custom least-privilege policy — see example below)_
-6. **Create the User**
-   - Click **Next**, then **Create user**
-   - Copy and securely store the **Access Key ID** and **Secret Access Key**
-   - You will only see the secret once!
-7. **Connect AWS to Comp AI**
-   - Go to **Settings \> Integrations** in your Comp AI dashboard
-   - Click **Connect** next to the AWS integration card
-   - Paste the **Access Key ID**, **Secret Access Key**, and **Region Code**
-   - Click **Save and Connect**
+## Prerequisites
 
-## Capabilities
+Before you begin, make sure you have:
 
-### Security Tests
+1. An AWS account with permission to create IAM roles
+2. Your Comp AI **organization ID** (used as the External ID — Comp AI's connection form pre-fills this for you)
+3. Admin access to your Comp AI workspace
 
-The AWS integration performs the following security assessments:
+## Connect AWS
 
-| Test Category | Description | IAM Misconfigurations | Detects overly permissive roles, users, or policies | S3 Bucket Security | Checks for public access, encryption, and versioning | EC2 Instance | Analysis Reviews security group rules, instance metadata access | Security Hub | Findings Integrates AWS Security Hub findings for real-time insights | CloudTrail | Configuration Verifies CloudTrail logging and monitoring | Config & Compliance Checks | Audits AWS Config rules and compliance state
+The Comp AI UI walks you through the full flow and displays the exact CloudShell script to run. The summary below is for reference.
 
-### Compliance Frameworks
+<Steps>
+  <Step title="Start the connection in Comp AI">
+    Go to **Cloud Tests → AWS → Connect**. Comp AI displays a CloudShell script pre-filled with your External ID.
+  </Step>
+  <Step title="Run the script in AWS CloudShell">
+    Open [AWS CloudShell](https://console.aws.amazon.com/cloudshell) in the account you want to scan and paste the script. It:
 
-- The integration checks compliance against:
+    - Creates an IAM role named `CompAI-Auditor`
+    - Attaches `SecurityAudit` and `ViewOnlyAccess` managed policies
+    - Adds small inline policies for `ce:GetCostAndUsage` and `ssm:GetDocument` / `ssm:DescribeDocument` / `ssm:ListDocuments`
+    - Sets a trust policy that only allows Comp AI to assume the role when the correct External ID is supplied
+    - Prints the new **Role ARN**
+  </Step>
+  <Step title="Paste the Role ARN and pick regions">
+    Copy the Role ARN from the script output and paste it into the Comp AI connection form. Choose the regions you want scanned. The External ID is already filled in.
+  </Step>
+  <Step title="(Optional) Enable auto-remediation">
+    If you want Comp AI to be able to apply fixes, run the second CloudShell script shown in the UI. It creates a separate `CompAI-Remediator` role with narrower write permissions for the specific services that support auto-fix.
+  </Step>
+  <Step title="Save and run your first scan">
+    Click **Save and Connect**. Comp AI validates the role, then queues an initial scan across all selected regions.
+  </Step>
+</Steps>
+
+## What gets scanned
+
+The AWS integration evaluates findings across a wide set of AWS services, including:
+
+| Area          | Services                                                                        |
+| ------------- | ------------------------------------------------------------------------------- |
+| Identity      | IAM, IAM Access Analyzer, Cognito                                               |
+| Storage       | S3, EBS, EFS, DynamoDB, RDS, Redshift, OpenSearch, ElastiCache                  |
+| Compute       | EC2 & VPC, Lambda, ECS & EKS, EMR, Elastic Beanstalk, CodeBuild, Step Functions |
+| Network       | VPC, ELB/ALB, CloudFront, API Gateway, Route 53, WAF, Network Firewall, Shield  |
+| Data security | KMS, Secrets Manager, ACM, Macie, Inspector                                     |
+| Observability | CloudTrail, CloudWatch, AWS Config, GuardDuty, Security Hub                     |
+| Messaging     | SNS, SQS, Kinesis, EventBridge, MSK                                             |
+| Other         | Backup, ECR, Glue, Athena, SageMaker, Systems Manager, Transfer Family, AppFlow |
+
+The **Services** tab inside each connection lets you enable or disable specific checks per service.
+
+## Compliance frameworks
+
+Findings are mapped to the controls used by:
+
 - CIS AWS Foundations Benchmark
 - SOC 2
-- HIPAA (where applicable)
-- PCI DSS
-- GDPR
 - ISO 27001
+- PCI DSS
+- HIPAA (where applicable)
 
-## Managing Access
+## Security model
 
-### Access Control
+- **Read-only by default** — the audit role cannot create, modify, or delete resources
+- **External ID enforced** — Comp AI refuses to connect unless the External ID in your trust policy matches the one stored against your Comp AI organization
+- **No static credentials** — Comp AI never stores AWS access keys; short-lived credentials are issued by STS on each scan
+- **Revocable at any time** — deleting the IAM role in your account immediately cuts off access
 
-Comp AI uses a cross-account IAM role with read-only permissions and a required external ID to ensure secure, scoped access. This approach follows AWS best practices for secure third-party integrations.
+## Troubleshooting
 
-### Permissions
+<Accordion title="Access denied during AssumeRole" icon="warning">
+  The most common cause is an External ID mismatch. Confirm the value in your role's trust policy matches the External ID shown in the Comp AI connection form. If you recently rotated it, re-run the CloudShell script.
+</Accordion>
 
-The IAM role created for integration has permissions to:
+<Accordion title="Role ARN format error" icon="circle-exclamation">
+  Comp AI expects an ARN in the form `arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME`. Make sure you copied the role ARN from the CloudShell output, not the account or user ARN.
+</Accordion>
 
-- Describe resources (EC2, S3, IAM, etc.)
-- Read configuration and audit logs
-- Access Security Hub and CloudTrail
-- List AWS Config and resource statuses
-- The integration does NOT have permissions to:
+<Accordion title="Findings missing for a specific service" icon="magnifying-glass">
+  Check that:
+  1. The role has `SecurityAudit` + `ViewOnlyAccess` attached (the script attaches both)
+  2. The region is enabled on your connection
+  3. The service is turned on in the **Services** tab for this connection
+</Accordion>
 
-Modify any resources
+<Accordion title="Auto-remediation isn't available" icon="wrench">
+  Auto-remediation requires the separate `CompAI-Remediator` role. Run the second CloudShell script shown in the UI, then paste its Role ARN into the **Remediation Role ARN** field.
+</Accordion>
 
-- Create or delete resources
-- Write to S3 or other services
+## Support
 
-### Support
-
-For additional assistance with your Azure integration:
-
-1. Check our [Knowledge Base](https://help.trycomp.ai/azure-integration)
-2. Contact support at [support@trycomp.ai](mailto:support@trycomp.ai)
-3. Join our [Discord community](https://discord.gg/compai) for peer support
+1. Email [support@trycomp.ai](mailto:support@trycomp.ai)
+2. Join our [Discord community](https://discord.gg/compai)

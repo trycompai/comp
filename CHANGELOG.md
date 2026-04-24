@@ -1,3 +1,10 @@
+## [3.32.2](https://github.com/trycompai/comp/compare/v3.32.1...v3.32.2) (2026-04-24)
+
+
+### Bug Fixes
+
+* fix loading state of flag ([3f0dc13](https://github.com/trycompai/comp/commit/3f0dc1349568be4c59b244ee455b2f413bb90648))
+
 ## [3.32.1](https://github.com/trycompai/comp/compare/v3.32.0...v3.32.1) (2026-04-24)
 
 
