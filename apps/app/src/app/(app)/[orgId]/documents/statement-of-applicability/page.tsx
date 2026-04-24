@@ -1,4 +1,3 @@
-import { getFeatureFlags } from '@/app/posthog';
 import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
 import { Breadcrumb, PageLayout } from '@trycompai/design-system';
@@ -60,13 +59,6 @@ export default async function StatementOfApplicabilityPage({
   });
 
   if (!session?.user?.id || !session?.session?.activeOrganizationId) {
-    return notFound();
-  }
-
-  const flags = await getFeatureFlags(session.user.id);
-  const isFeatureEnabled = flags['ai-vendor-questionnaire'] === true;
-
-  if (!isFeatureEnabled) {
     return notFound();
   }
 
