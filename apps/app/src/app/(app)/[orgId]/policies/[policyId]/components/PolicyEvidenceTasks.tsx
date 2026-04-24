@@ -85,12 +85,14 @@ function ControlGroup({
   }
 
   if (tasks.length > COLLAPSE_THRESHOLD) {
+    const label =
+      tasks.length === 1 ? 'Show 1 task' : `Show ${tasks.length} tasks`;
     return (
       <Collapsible>
         <HStack justify="between" align="center">
           <Text weight="medium">{control.name}</Text>
           <CollapsibleTrigger className="inline-flex h-6 items-center rounded-sm px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
-            {`Show ${tasks.length} tasks`}
+            {label}
           </CollapsibleTrigger>
         </HStack>
         <CollapsibleContent>

@@ -21,7 +21,7 @@ const COLLAPSE_THRESHOLD = 5;
 
 export function TaskPolicies() {
   const { orgId, taskId } = useParams<{ orgId: string; taskId: string }>();
-  const { groups, count, isLoading } = useTaskPolicies({
+  const { groups, isLoading } = useTaskPolicies({
     taskId,
     organizationId: orgId,
   });
@@ -33,7 +33,15 @@ export function TaskPolicies() {
       ...group,
       policies: group.policies.filter((p) => p.status === 'published'),
     }))
+    // Drop empty groups: a control with no published policies is irrelevant noise
+    // on the task page. Diverges intentionally from PolicyEvidenceTasks, which
+    // keeps empty groups as a prompt to add tasks.
     .filter((group) => group.policies.length > 0);
+
+  const visibleCount = visibleGroups.reduce(
+    (n, g) => n + g.policies.length,
+    0,
+  );
 
   if (isLoading) {
     return (
@@ -60,7 +68,7 @@ export function TaskPolicies() {
   return (
     <Section
       title="Policies"
-      description={`${count} ${count === 1 ? 'policy' : 'policies'} whose controls this task demonstrates.`}
+      description={`${visibleCount} ${visibleCount === 1 ? 'policy' : 'policies'} whose controls this task demonstrates.`}
     >
       <Stack gap="4">
         {visibleGroups.map((group) => (

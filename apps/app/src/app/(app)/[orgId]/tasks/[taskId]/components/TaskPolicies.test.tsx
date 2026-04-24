@@ -67,7 +67,9 @@ describe('TaskPolicies', () => {
           ],
         },
       ],
-      count: 1,
+      // API's unfiltered count disagrees with what we render; the description
+      // should reflect the visible (filtered) count, not this value.
+      count: 3,
       isLoading: false,
     });
 
@@ -76,6 +78,9 @@ describe('TaskPolicies', () => {
     expect(screen.getByText('Published One')).toBeInTheDocument();
     expect(screen.queryByText('Draft One')).not.toBeInTheDocument();
     expect(screen.queryByText('Archived One')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/1 policy whose controls this task demonstrates\./i),
+    ).toBeInTheDocument();
   });
 
   it('policy row links to the policy detail page', () => {
