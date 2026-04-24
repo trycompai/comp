@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { db, Prisma, Frequency, Departments } from '@db';
 import { lockOrganizationForSync } from './org-advisory-lock';
+import { normalizeFormType } from './form-type-normalize';
 import type { UndoPayload } from './undo-payload.types';
 
 export interface RollbackParams {
@@ -129,7 +130,9 @@ async function replayUndo(
   }
   for (const d of cdtDeleted) {
     await tx.controlDocumentType.create({
-      data: { controlId: d.controlId, formType: d.formType as never },
+      // Defensive normalization — older undo payloads may have stored the
+      // DB-mapped hyphen form before the sync-apply normalization was added.
+      data: { controlId: d.controlId, formType: normalizeFormType(d.formType) as never },
     });
   }
 
