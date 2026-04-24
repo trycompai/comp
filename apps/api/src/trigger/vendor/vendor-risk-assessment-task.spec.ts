@@ -10,7 +10,10 @@ jest.mock('@db', () => {
 });
 
 import { Impact, Likelihood } from '@db';
-import { assessmentOutputSchema } from './vendor-risk-assessment-task';
+import {
+  assessmentOutputSchema,
+  extractInherentRisk,
+} from './vendor-risk-assessment-task';
 
 describe('assessmentOutputSchema', () => {
   it('accepts independent likelihood and impact combinations across the full matrix', () => {
@@ -77,5 +80,30 @@ describe('assessmentOutputSchema', () => {
       rationale: 'short',
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('extractInherentRisk', () => {
+  it('threads likelihood + impact from a clean assessment payload', () => {
+    const payload = {
+      likelihood: 'very_likely',
+      impact: 'minor',
+      rationale: 'High adversary motivation, low blast radius due to scope.',
+    };
+    const extracted = extractInherentRisk(payload);
+    expect(extracted).toEqual({
+      likelihood: Likelihood.very_likely,
+      impact: Impact.minor,
+    });
+  });
+
+  it('returns null when the payload is missing dimensions', () => {
+    const extracted = extractInherentRisk({ riskLevel: 'high' });
+    expect(extracted).toBeNull();
+  });
+
+  it('returns null when the payload is garbage', () => {
+    const extracted = extractInherentRisk({ foo: 'bar' });
+    expect(extracted).toBeNull();
   });
 });
