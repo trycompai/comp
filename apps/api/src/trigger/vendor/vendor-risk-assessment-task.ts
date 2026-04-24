@@ -1,7 +1,5 @@
 import {
   db,
-  Impact,
-  Likelihood,
   TaskItemPriority,
   TaskItemStatus,
   VendorStatus,
@@ -13,6 +11,7 @@ import { logger, metadata, queue, schemaTask, tags } from '@trigger.dev/sdk';
 import { z } from 'zod';
 
 import { resolveTaskCreatorAndAssignee } from './vendor-risk-assessment/assignee';
+import { extractInherentRisk } from './vendor-risk-assessment/assessment-output';
 import { VENDOR_RISK_ASSESSMENT_TASK_ID } from './vendor-risk-assessment/constants';
 import {
   buildRiskAssessmentDescription,
@@ -170,40 +169,6 @@ function parseRiskAssessmentJson(value: string): Prisma.InputJsonValue {
   }
 
   return parsed;
-}
-
-/**
- * Output of the vendor AI risk assessment — two independent dimensions.
- *
- * Replaces the previous single-level → diagonal-cell mapping, which pooled
- * every vendor into 5 of 25 possible cells (5 of 10 score buckets).
- *
- * `likelihood` = probability of a security incident originating from or
- *   involving this vendor (adversary motivation + exposure + data handled).
- * `impact`     = blast radius if the vendor is compromised (regulatory
- *   exposure, customer-data sensitivity, operational criticality).
- */
-export const assessmentOutputSchema = z.object({
-  likelihood: z.nativeEnum(Likelihood),
-  impact: z.nativeEnum(Impact),
-  rationale: z.string().min(20),
-});
-
-export type AssessmentOutput = z.infer<typeof assessmentOutputSchema>;
-
-/**
- * Extract the inherent likelihood + impact from a vendor risk assessment payload.
- * Returns null if the payload doesn't conform to `assessmentOutputSchema`
- * (e.g. old-format payloads from globalVendors created before ENG-221).
- */
-export function extractInherentRisk(
-  payload: Prisma.InputJsonValue,
-): { likelihood: Likelihood; impact: Impact } | null {
-  const parsed = assessmentOutputSchema.safeParse(payload);
-  if (!parsed.success) {
-    return null;
-  }
-  return { likelihood: parsed.data.likelihood, impact: parsed.data.impact };
 }
 
 /**
@@ -962,22 +927,20 @@ export const vendorRiskAssessmentTask: Task<
         logger.info('🎯 Extracting inherent risk from assessment payload', {
           vendor: payload.vendorName,
         });
-        const inherentRisk = extractInherentRisk(data) ?? {
-          likelihood: Likelihood.possible,
-          impact: Impact.moderate,
-        };
-        const inherentProbability = inherentRisk.likelihood;
-        const inherentImpact = inherentRisk.impact;
-        // Residual defaults to inherent until a human mitigates. Preserved behavior.
-        const residualProbability = inherentRisk.likelihood;
-        const residualImpact = inherentRisk.impact;
+        const inherentRisk = extractInherentRisk(data);
+        if (!inherentRisk) {
+          logger.warn(
+            '⚠️ Assessment payload missing likelihood/impact — preserving existing vendor scores',
+            { vendor: payload.vendorName },
+          );
+        }
         const complianceBadges = extractComplianceBadges(data);
         const logoUrl = generateLogoUrl(vendor.website);
 
         logger.info('📊 Risk level and badges extracted', {
           vendor: payload.vendorName,
-          inherentLikelihood: inherentProbability,
-          inherentImpact,
+          inherentLikelihood: inherentRisk?.likelihood ?? null,
+          inherentImpact: inherentRisk?.impact ?? null,
           hasBadges: Boolean(complianceBadges),
           badgeCount: Array.isArray(complianceBadges)
             ? complianceBadges.length
@@ -997,14 +960,23 @@ export const vendorRiskAssessmentTask: Task<
           ),
         });
 
-        // Update vendor with core data (keep status in_progress — news may still be loading)
+        // Update vendor with core data (keep status in_progress — news may still be loading).
+        // Only write risk fields when the assessment payload produced a valid
+        // inherentRisk — otherwise preserve whatever the vendor row already has
+        // (e.g. pre-ENG-221 globalVendors.riskAssessmentData that lacks
+        // likelihood/impact). Residual defaults to inherent until a human
+        // mitigates. Preserved behavior.
         await db.vendor.update({
           where: { id: vendor.id },
           data: {
-            inherentProbability,
-            inherentImpact,
-            residualProbability,
-            residualImpact,
+            ...(inherentRisk
+              ? {
+                  inherentProbability: inherentRisk.likelihood,
+                  inherentImpact: inherentRisk.impact,
+                  residualProbability: inherentRisk.likelihood,
+                  residualImpact: inherentRisk.impact,
+                }
+              : {}),
             ...(complianceBadges ? { complianceBadges } : {}),
             ...(logoUrl ? { logoUrl } : {}),
           },

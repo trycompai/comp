@@ -30,6 +30,7 @@ export const vendorRiskAssessmentAgentSchema = z.object({
    * from before ENG-221 still parse. New assessments should set
    * `likelihood` + `impact` + `rationale` instead.
    */
+  // TODO(ENG-221 follow-up): remove once globalVendors.riskAssessmentData backfill ships.
   risk_level: z.string().optional().nullable(),
   security_assessment: z.string().optional().nullable(),
   last_researched_at: dateStringOrEmptySchema,

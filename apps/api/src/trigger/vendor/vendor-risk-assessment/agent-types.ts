@@ -67,6 +67,7 @@ export type VendorRiskAssessmentDataV1 = {
   impact?: VendorRiskAssessmentImpact | null;
   rationale?: string | null;
   /** Legacy single-bucket score. Retained for pre-ENG-221 payloads. */
+  // TODO(ENG-221 follow-up): remove once globalVendors.riskAssessmentData backfill ships.
   riskLevel?: string | null;
   securityAssessment?: string | null;
   certifications?: VendorRiskAssessmentCertification[] | null;

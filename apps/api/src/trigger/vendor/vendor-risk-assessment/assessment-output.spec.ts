@@ -1,19 +1,9 @@
-// Prevent PrismaClient construction during test import. The real Likelihood /
-// Impact enums from @prisma/client are still re-exported so the schema can
-// parse them natively.
-jest.mock('@db', () => {
-  const actual = jest.requireActual('@prisma/client');
-  return {
-    ...actual,
-    db: {},
-  };
-});
+import { Impact, Likelihood } from '@prisma/client';
 
-import { Impact, Likelihood } from '@db';
 import {
   assessmentOutputSchema,
   extractInherentRisk,
-} from './vendor-risk-assessment-task';
+} from './assessment-output';
 
 describe('assessmentOutputSchema', () => {
   it('accepts independent likelihood and impact combinations across the full matrix', () => {

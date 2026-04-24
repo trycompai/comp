@@ -109,5 +109,5 @@ export const firecrawlAgentJsonSchema = {
       },
     },
   },
-  required: ['security_assessment'],
+  required: ['security_assessment', 'likelihood', 'impact', 'rationale'],
 } as const;
