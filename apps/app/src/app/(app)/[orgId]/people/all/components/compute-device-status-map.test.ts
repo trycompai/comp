@@ -26,6 +26,7 @@ function makeAgentDevice(overrides: Partial<DeviceWithChecks> = {}): DeviceWithC
     source: 'device_agent',
     complianceStatus: 'compliant',
     daysSinceLastCheckIn: 0,
+    hasActiveAgentSession: false,
     ...overrides,
   };
 }
