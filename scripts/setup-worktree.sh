@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 # Prepare a freshly created worktree: install deps, generate Prisma client,
-# run the full build. Assumes `.env*` files are already linked in (the
-# post-checkout hook does that before calling this script).
+# and optionally run the full build. Assumes `.env*` files are already
+# linked in (the post-checkout hook does that before calling this script).
 #
 # Usage:
 #   scripts/setup-worktree.sh [target-worktree-path]
 #
-# Defaults to the current working directory. Skippable via
-# `SKIP_WORKTREE_SETUP=1` for callers that just want the worktree checked
-# out without the (slow) install/build cycle.
+# Environment toggles:
+#   SKIP_WORKTREE_SETUP=1     — skip everything (just link envs)
+#   SETUP_WORKTREE_WITH_BUILD=1 — also run `bun run build` (slow, minutes;
+#                                 unnecessary for `dev`, tests, typechecks)
+#
+# Defaults to the current working directory.
 set -euo pipefail
 
 if [[ "${SKIP_WORKTREE_SETUP:-}" == "1" ]]; then
@@ -34,7 +37,11 @@ bun install
 echo "▸ Generating Prisma client (bun run db:generate)"
 bun run db:generate
 
-echo "▸ Building all packages (bun run build)"
-bun run build
+if [[ "${SETUP_WORKTREE_WITH_BUILD:-}" == "1" ]]; then
+  echo "▸ Building all packages (bun run build)"
+  bun run build
+else
+  echo "▸ Skipping build — set SETUP_WORKTREE_WITH_BUILD=1 to include it"
+fi
 
 echo "✓ Worktree setup complete: $target"

@@ -19,20 +19,25 @@ worktree — no need to re-run after `git worktree add`.
 Runs two steps automatically on `git worktree add`:
 
 1. **Symlink `.env*` files** from the main worktree (`scripts/link-worktree-envs.sh`).
-2. **Set up the worktree** — `bun install`, `bun run db:generate`, `bun run build`
-   (`scripts/setup-worktree.sh`).
+2. **Set up the worktree** — `bun install` + `bun run db:generate`
+   (`scripts/setup-worktree.sh`). The full `bun run build` is opt-in
+   because it adds several minutes and most dev workflows (`dev`, tests,
+   typechecks) don't need it.
 
 The hook fires **only** inside `git worktree add` — regular `git checkout`,
 `git switch`, and file checkouts are filtered by checking that the
 previous HEAD is the null SHA (true only for fresh checkouts) and that
 the current worktree isn't the main one.
 
-Step 2 is slow (minutes) but synchronous on purpose: callers — including
-Claude Code — typically start running commands in the new worktree
-immediately, and we don't want them racing ahead of the install.
+Step 2 is synchronous on purpose: callers — including Claude Code —
+typically start running commands in the new worktree immediately, and we
+don't want them racing ahead of the install.
 
-Skip step 2 for a fast "just give me the files" worktree with
-`SKIP_WORKTREE_SETUP=1 git worktree add …`.
+Toggles:
+- `SKIP_WORKTREE_SETUP=1 git worktree add …` — skip install + generate
+  (just link envs).
+- `SETUP_WORKTREE_WITH_BUILD=1 git worktree add …` — also run
+  `bun run build` when you actually need the built artifacts.
 
 ## Backfilling existing worktrees
 
