@@ -1,4 +1,5 @@
 import { serverApi } from '@/lib/api-server';
+import { parseRolesString } from '@/lib/permissions';
 import { auth } from '@/utils/auth';
 import { Breadcrumb, PageLayout } from '@trycompai/design-system';
 import { headers } from 'next/headers';
@@ -105,9 +106,10 @@ export default async function StatementOfApplicabilityPage({
         const currentMember =
           people.find((p) => p.userId === session.user.id && !p.deactivated) ?? null;
 
-        const canApprove = currentMember
-          ? currentMember.role.includes('owner') || currentMember.role.includes('admin')
-          : false;
+        const currentMemberRoles = parseRolesString(currentMember?.role);
+        const canApprove = currentMemberRoles.some(
+          (role) => role === 'owner' || role === 'admin',
+        );
 
         const isPendingApproval = document.status === 'needs_review';
         const canCurrentUserApprove = isPendingApproval && approverId === currentMember?.id;
@@ -115,7 +117,10 @@ export default async function StatementOfApplicabilityPage({
         const ownerAdminMembers = people
           .filter(
             (p) =>
-              !p.deactivated && (p.role.includes('owner') || p.role.includes('admin')),
+              !p.deactivated &&
+              parseRolesString(p.role).some(
+                (role) => role === 'owner' || role === 'admin',
+              ),
           )
           .sort((a, b) => (a.user?.name ?? '').localeCompare(b.user?.name ?? ''));
 
