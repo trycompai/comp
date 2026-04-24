@@ -239,4 +239,43 @@ describe('VendorsTable', () => {
     expect(screen.getByText('Acme Corp')).toBeInTheDocument();
     expect(screen.getByText('Cloud')).toBeInTheDocument();
   });
+
+  it('renders the INHERENT RISK column with a numeric score for assessed vendors', () => {
+    setMockPermissions({});
+
+    render(
+      <VendorsTable
+        vendors={mockVendors}
+        assignees={mockAssignees}
+        orgId="org-1"
+      />,
+    );
+
+    // Column header
+    expect(screen.getByText('INHERENT RISK')).toBeInTheDocument();
+    // Acme Corp (possible × moderate) → raw 9 → score 4/10
+    expect(screen.getByText('4/10')).toBeInTheDocument();
+  });
+
+  it('shows an em-dash for vendors that have not been assessed', () => {
+    setMockPermissions({});
+
+    const notAssessedVendor = {
+      ...mockVendors[0],
+      id: 'vendor-2',
+      name: 'Pending Inc',
+      status: 'not_assessed',
+    };
+
+    render(
+      <VendorsTable
+        vendors={[notAssessedVendor]}
+        assignees={mockAssignees}
+        orgId="org-1"
+      />,
+    );
+
+    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.queryByText('1/10')).not.toBeInTheDocument();
+  });
 });
