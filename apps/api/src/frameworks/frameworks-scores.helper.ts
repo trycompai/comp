@@ -251,12 +251,15 @@ async function computeDocumentsScore(organizationId: string) {
       },
       select: {
         approvedAt: true,
+        status: true,
       },
       orderBy: {
         updatedAt: 'desc',
       },
     });
-    soaCompleted = !!latestSOADocument?.approvedAt;
+    soaCompleted =
+      latestSOADocument?.status === 'completed' &&
+      !!latestSOADocument.approvedAt;
   }
 
   const soaTotalDocuments = hasSOADocumentRequirement ? 1 : 0;
