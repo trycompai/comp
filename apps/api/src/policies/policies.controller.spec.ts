@@ -211,13 +211,13 @@ describe('PoliciesController', () => {
       mockPoliciesService.downloadAllPoliciesPdf.mockResolvedValue(mockResult);
 
       await controller.downloadAllPolicies(
-        'org-1',
-        { authType: 'session', userId: 'u-1', userEmail: 'u@x.com' } as any,
+        orgId,
+        mockAuthContext,
         'p1, p2 ,p3',
       );
 
       expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
-        'org-1',
+        orgId,
         ['p1', 'p2', 'p3'],
       );
     });
@@ -227,13 +227,13 @@ describe('PoliciesController', () => {
       mockPoliciesService.downloadAllPoliciesPdf.mockResolvedValue(mockResult);
 
       await controller.downloadAllPolicies(
-        'org-1',
-        { authType: 'session', userId: 'u-1', userEmail: 'u@x.com' } as any,
+        orgId,
+        mockAuthContext,
         'p1,,p1,p2,',
       );
 
       expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
-        'org-1',
+        orgId,
         ['p1', 'p2'],
       );
     });
@@ -243,13 +243,13 @@ describe('PoliciesController', () => {
       mockPoliciesService.downloadAllPoliciesPdf.mockResolvedValue(mockResult);
 
       await controller.downloadAllPolicies(
-        'org-1',
-        { authType: 'session', userId: 'u-1', userEmail: 'u@x.com' } as any,
+        orgId,
+        mockAuthContext,
         undefined,
       );
 
       expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
-        'org-1',
+        orgId,
         undefined,
       );
     });
@@ -259,13 +259,13 @@ describe('PoliciesController', () => {
       mockPoliciesService.downloadAllPoliciesPdf.mockResolvedValue(mockResult);
 
       await controller.downloadAllPolicies(
-        'org-1',
-        { authType: 'session', userId: 'u-1', userEmail: 'u@x.com' } as any,
+        orgId,
+        mockAuthContext,
         '',
       );
 
       expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
-        'org-1',
+        orgId,
         undefined,
       );
     });
