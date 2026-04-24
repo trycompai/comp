@@ -8,6 +8,16 @@ function calendarMonthsBetween(earlier: Date, later: Date): number {
   return years * 12 + months;
 }
 
+/**
+ * Returns whether an automation with the given schedule is due to run at `now`.
+ *
+ * `now` and `lastRunAt` are treated as UTC instants — weekly math uses fixed
+ * 86_400_000-ms days, monthly/quarterly/yearly use UTC calendar buckets. Callers
+ * should pass real `Date` values (any instant works); do NOT pass "midnight in
+ * local time" expecting DST-aware behavior.
+ *
+ * `null` lastRunAt always returns `true` (first run).
+ */
 export function isDueToday({
   scheduleFrequency,
   lastRunAt,
@@ -33,7 +43,7 @@ export function isDueToday({
       return calendarMonthsBetween(lastRunAt, now) >= 12;
     default: {
       const _exhaustive: never = scheduleFrequency;
-      return _exhaustive;
+      throw new Error(`Unhandled TaskFrequency: ${String(_exhaustive)}`);
     }
   }
 }
