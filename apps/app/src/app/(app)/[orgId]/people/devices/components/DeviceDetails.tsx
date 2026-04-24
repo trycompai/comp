@@ -18,6 +18,7 @@ import {
 import { ArrowLeft, Information } from '@trycompai/design-system/icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import type { DeviceWithChecks } from '../types';
+import { RevokeAgentAccessDialog } from './RevokeAgentAccessDialog';
 
 const CHECK_FIELDS = [
   { key: 'diskEncryptionEnabled' as const, dbKey: 'disk_encryption', label: 'Disk Encryption' },
@@ -120,7 +121,12 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 {device.hardwareModel ? ` \u2022 ${device.hardwareModel}` : ''}
               </Text>
             </div>
-            <DeviceComplianceBadge device={device} />
+            <div className="flex items-center gap-2">
+              {device.source === 'device_agent' && device.hasActiveAgentSession && (
+                <RevokeAgentAccessDialog deviceId={device.id} deviceName={device.name} />
+              )}
+              <DeviceComplianceBadge device={device} />
+            </div>
           </div>
         </CardHeader>
         <CardContent>

@@ -116,4 +116,25 @@ describe('GET /api/people/agent-devices', () => {
     expect(body.data[0].complianceStatus).toBe('stale');
     expect(body.data[0].daysSinceLastCheckIn).toBeNull();
   });
+
+  it('returns hasActiveAgentSession=true for devices with an unexpired linked session, false otherwise', async () => {
+    const future = new Date(FIXED_NOW.getTime() + 60 * 60 * 1000); // 1 hour ahead
+    const past = new Date(FIXED_NOW.getTime() - 60 * 60 * 1000);   // 1 hour ago
+
+    mockedFindMany.mockResolvedValue([
+      deviceRow({ id: 'dev_active', agentSession: { expiresAt: future } }),
+      deviceRow({ id: 'dev_none', agentSession: null }),
+      deviceRow({ id: 'dev_expired', agentSession: { expiresAt: past } }),
+    ]);
+
+    const res = await GET();
+    const body = await res.json();
+    const byId = Object.fromEntries(
+      body.data.map((d: { id: string }) => [d.id, d]),
+    );
+
+    expect(byId['dev_active'].hasActiveAgentSession).toBe(true);
+    expect(byId['dev_none'].hasActiveAgentSession).toBe(false);
+    expect(byId['dev_expired'].hasActiveAgentSession).toBe(false);
+  });
 });
