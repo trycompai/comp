@@ -19,6 +19,7 @@ import { loadISOConfig } from './utils/transform-iso-config';
 import { ISO27001_FRAMEWORK_NAMES } from './utils/constants';
 import {
   generateSOAExportFile,
+  type SOAExportMetadata,
   type SOAExportQuestion,
 } from './utils/export-generator';
 import {
@@ -457,6 +458,16 @@ export class SOAService {
         framework: {
           select: { name: true },
         },
+        approver: {
+          select: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
         answers: {
           where: { isLatestAnswer: true },
           select: {
@@ -481,6 +492,7 @@ export class SOAService {
       id: question.id,
       text: question.text,
       columnMapping: {
+        closure: question.columnMapping?.closure ?? null,
         title: question.columnMapping?.title ?? null,
         control_objective: question.columnMapping?.control_objective ?? null,
         isApplicable: question.columnMapping?.isApplicable ?? null,
@@ -489,10 +501,24 @@ export class SOAService {
       answer: answersByQuestionId.get(question.id) ?? null,
     }));
 
+    const exportMetadata: SOAExportMetadata = {
+      preparedBy: (document.preparedBy as string | null) ?? null,
+      answeredQuestions: document.answeredQuestions,
+      totalQuestions: document.totalQuestions,
+      approvedAt: document.approvedAt ?? null,
+      declinedAt: (document as { declinedAt?: Date | null }).declinedAt ?? null,
+      status: document.status,
+      approverName:
+        document.approver?.user?.name ||
+        document.approver?.user?.email ||
+        null,
+    };
+
     return generateSOAExportFile(
       exportQuestions,
       document.framework.name || 'ISO 27001',
       document.version,
+      exportMetadata,
       dto.format,
     );
   }

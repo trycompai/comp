@@ -6,12 +6,23 @@ export interface SOAExportQuestion {
   id: string;
   text: string;
   columnMapping: {
+    closure?: string | null;
     title: string | null;
     control_objective: string | null;
     isApplicable: boolean | null;
     justification: string | null;
   };
   answer: string | null;
+}
+
+export interface SOAExportMetadata {
+  preparedBy: string | null;
+  answeredQuestions: number;
+  totalQuestions: number;
+  approvedAt?: Date | string | null;
+  declinedAt?: Date | string | null;
+  status?: string | null;
+  approverName?: string | null;
 }
 
 export interface SOAExportResult {
@@ -24,6 +35,7 @@ export function generateSOAExportFile(
   questions: SOAExportQuestion[],
   frameworkName: string,
   version: number,
+  metadata: SOAExportMetadata,
   format: SOAExportFormat = 'pdf',
 ): SOAExportResult {
   if (format !== 'pdf') {
@@ -31,7 +43,7 @@ export function generateSOAExportFile(
   }
 
   return {
-    fileBuffer: generateSOAPDF(questions, frameworkName, version),
+    fileBuffer: generateSOAPDF(questions, frameworkName, version, metadata),
     mimeType: 'application/pdf',
     filename: `statement-of-applicability-${sanitizeFrameworkName(frameworkName)}-v${version}.pdf`,
   };
@@ -41,6 +53,7 @@ function generateSOAPDF(
   questions: SOAExportQuestion[],
   frameworkName: string,
   version: number,
+  metadata: SOAExportMetadata,
 ): Buffer {
   const pdf = new jsPDF();
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -68,6 +81,29 @@ function generateSOAPDF(
   y += lineHeight;
   pdf.text(`Version: v${version}`, margin, y);
   y += lineHeight;
+  const progressPercentage =
+    metadata.totalQuestions > 0
+      ? Math.round((metadata.answeredQuestions / metadata.totalQuestions) * 100)
+      : 0;
+  pdf.text(
+    `Progress: ${metadata.answeredQuestions} / ${metadata.totalQuestions} (${progressPercentage}%)`,
+    margin,
+    y,
+  );
+  y += lineHeight;
+  pdf.text(`Prepared by: ${metadata.preparedBy || 'Comp AI'}`, margin, y);
+  y += lineHeight;
+  const approvalStatusText = metadata.approvedAt
+    ? `Approved on ${new Date(metadata.approvedAt).toLocaleDateString()}`
+    : metadata.status === 'needs_review' && metadata.declinedAt
+      ? `Declined on ${new Date(metadata.declinedAt).toLocaleDateString()}`
+      : metadata.approverName
+        ? 'Pending approval'
+        : 'Not approved';
+  pdf.text(`Approval status: ${approvalStatusText}`, margin, y);
+  y += lineHeight;
+  pdf.text(`Approved by: ${metadata.approverName || 'N/A'}`, margin, y);
+  y += lineHeight;
   pdf.text(`Exported: ${new Date().toLocaleDateString()}`, margin, y);
   y += lineHeight * 2;
 
@@ -94,6 +130,9 @@ function generateSOAPDF(
         : question.answer || 'No justification provided';
 
     const title = `${i + 1}. ${mapped.title || question.text || 'Untitled Control'}`;
+    const closure = mapped.closure
+      ? `Closure: ${mapped.closure}`
+      : null;
     const objective = mapped.control_objective
       ? `Objective: ${mapped.control_objective}`
       : null;
@@ -101,6 +140,9 @@ function generateSOAPDF(
     const justificationText = `Justification: ${justification}`;
 
     const titleLines = pdf.splitTextToSize(title, contentWidth);
+    const closureLines = closure
+      ? pdf.splitTextToSize(closure, contentWidth)
+      : [];
     const objectiveLines = objective
       ? pdf.splitTextToSize(objective, contentWidth)
       : [];
@@ -111,6 +153,7 @@ function generateSOAPDF(
     );
     const blockHeight =
       (titleLines.length +
+        closureLines.length +
         objectiveLines.length +
         applicabilityLines.length +
         justificationLines.length) *
@@ -124,6 +167,10 @@ function generateSOAPDF(
     y += titleLines.length * lineHeight;
 
     pdf.setFont('helvetica', 'normal');
+    if (closureLines.length > 0) {
+      pdf.text(closureLines, margin, y);
+      y += closureLines.length * lineHeight;
+    }
     if (objectiveLines.length > 0) {
       pdf.text(objectiveLines, margin, y);
       y += objectiveLines.length * lineHeight;
