@@ -257,6 +257,43 @@ describe('VendorsTable', () => {
     expect(screen.getByText('4/10')).toBeInTheDocument();
   });
 
+  it('renders the RESIDUAL RISK column immediately after INHERENT RISK', () => {
+    setMockPermissions({});
+
+    render(
+      <VendorsTable
+        vendors={mockVendors}
+        assignees={mockAssignees}
+        orgId="org-1"
+      />,
+    );
+
+    expect(screen.getByText('RESIDUAL RISK')).toBeInTheDocument();
+
+    const headers = screen
+      .getAllByRole('columnheader')
+      .map((h) => (h.textContent || '').toUpperCase());
+    const inherentIdx = headers.findIndex((h) => h.includes('INHERENT RISK'));
+    const residualIdx = headers.findIndex((h) => h.includes('RESIDUAL RISK'));
+    expect(inherentIdx).toBeGreaterThanOrEqual(0);
+    expect(residualIdx).toBe(inherentIdx + 1);
+  });
+
+  it('renders a residual score badge for assessed vendors', () => {
+    setMockPermissions({});
+
+    render(
+      <VendorsTable
+        vendors={mockVendors}
+        assignees={mockAssignees}
+        orgId="org-1"
+      />,
+    );
+
+    // Acme Corp residual (unlikely × minor) → raw 4 → score 2/10
+    expect(screen.getByText('2/10')).toBeInTheDocument();
+  });
+
   it('shows an em-dash for vendors that have not been assessed', () => {
     setMockPermissions({});
 
@@ -275,7 +312,8 @@ describe('VendorsTable', () => {
       />,
     );
 
-    expect(screen.getByText('—')).toBeInTheDocument();
+    // One em-dash per risk column (inherent + residual) for not_assessed vendors.
+    expect(screen.getAllByText('—').length).toBe(2);
     expect(screen.queryByText('1/10')).not.toBeInTheDocument();
   });
 });
