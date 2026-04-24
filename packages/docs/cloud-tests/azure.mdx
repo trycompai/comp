@@ -1,128 +1,148 @@
 ---
 title: "Azure Cloud Tests"
-description: "Connect Azure to Comp AI for cloud security testing"
+description: "Connect Microsoft Azure to Comp AI over OAuth (or a service principal) to run continuous cloud security checks against Microsoft Defender for Cloud."
 ---
 
-# Azure Cloud Test
+## About the Azure integration
 
-The Azure Cloud Test enables you to connect your Microsoft Azure cloud environment to Comp AI for comprehensive security testing, compliance monitoring, and risk assessment using Microsoft Defender for Cloud
+Comp AI connects to Microsoft Azure to pull security posture, identity, network, and compliance data from **Microsoft Defender for Cloud** and related services. All access is read-only.
 
-## Setup Process
+The recommended connection method is **Microsoft OAuth** — you sign in with an Azure AD account that has the required roles, and Comp AI auto-detects your subscription. A **service principal** flow is also supported for customers who prefer to provision a dedicated identity.
 
-### Prerequisites
+<Note>
+  Comp AI only ever issues `GET`/`list` API calls. It does not create, modify, or delete Azure resources, even when connected with a user that has write permissions.
+</Note>
 
-Before setting up the integration, ensure you have:
+## How access works
 
-1. Azure subscription with Owner or Contributor access
-2. Admin access to your Comp AI workspace
-3. Permissions to register applications in Azure AD
+- **Primary flow**: OAuth 2.0 against `login.microsoftonline.com` using the `user_impersonation` scope on Azure Management API. Comp AI acts on behalf of the signed-in user, constrained by their Azure RBAC assignments.
+- **Alternative flow**: An Azure AD App Registration (service principal) with a client secret, assigned the required roles on a subscription.
+- **Scope**: A single Azure subscription per connection. Connect additional subscriptions by adding more connections.
 
-### Configuration Steps
+## Prerequisites
 
-1. **Log into your Azure Portal**
-   - Visit https://portal.azure.com
-2. **Enable Microsoft Defender for Cloud**
-   - In the left-hand menu, search for and select **Microsoft Defender for Cloud**
-   - Click **Getting started**
-   - Select the subscription(s) you want to onboard
-   - Enable **Microsoft Defender plans** (especially for relevant services like Compute, Storage, SQL, etc.)
-   - Wait for the provisioning to complete (this may take a few minutes)
-3. **Register an Application in Azure AD**
-   - Navigate to **Azure Active Directory \> App registrations**
-   - Click **\+ New registration**
-   - Name the app (e.g., `CompAIIntegrationApp`)
-   - Choose **Accounts in this organizational directory only**
-   - Click **Register**
-4. **Get the Client ID and Tenant ID**
-   - After registration, go to the app's **Overview** page
-   - Copy the **Application (client) ID**
-   - Copy the **Directory (tenant) ID**
-5. **Create a Client Secret**
-   - In the app menu, go to **Certificates & secrets**
-   - Under **Client secrets**, click **\+ New client secret**
-   - Add a description and set an expiration
-   - Click **Add**
-   - Copy the **Client secret value** — you won’t be able to see it again!
-6. **Assign the Application Access to a Subscription**
-   - Go to **Subscriptions** in the Azure portal
-   - Select the subscription you want to integrate
-   - Copy the **Subscription ID**
-   - Click **Access control (IAM)**
-   - Click **\+ Add \> Add role assignment**
-   - Select role: **Reader** (or **Security Reader** for enhanced visibility)
-   - Assign access to: **User, group, or service principal**
-   - Select your registered application
-7. **Connect Azure to Comp AI**
-   - Go to **Settings \> Integrations** in your Comp AI dashboard
-   - Click **Connect** next to the Azure integration card
-   - Paste the following values:
-     - **Client ID**
-     - **Client Secret**
-     - **Tenant ID**
-     - **Subscription ID**
-   - Click **Save and Connect**
+Before connecting Azure, make sure you have:
 
-## Capabilities
+1. An **Azure subscription** you want to monitor
+2. A user (or service principal) with the following roles on that subscription:
+   - **Reader** — read resource metadata
+   - **Security Reader** — read Microsoft Defender for Cloud findings
+   - **Monitoring Reader** — read activity logs, alerts, and metrics
+3. **Microsoft Defender for Cloud** enabled on the subscription (the free tier is sufficient for most checks)
+4. Admin access to your Comp AI workspace
 
-### Security Tests
+## Connect with OAuth (recommended)
 
-The Azure Cloud Test performs the following security assessments:
+<Steps>
+  <Step title="Start the connection">
+    In Comp AI, go to **Cloud Tests → Azure → Connect**. Click **Sign in with Microsoft**.
+  </Step>
+  <Step title="Consent to the requested scopes">
+    Sign in with an Azure AD account that has the roles listed above on the target subscription. Approve the consent screen.
+  </Step>
+  <Step title="Verify detected subscription">
+    Comp AI automatically detects the subscriptions your account can access. The setup guide then runs checks for:
 
-| Test Category     | Description                                                               |
-| ----------------- | ------------------------------------------------------------------------- |
-| IAM Analysis      | Review Azure AD roles and custom RBAC assignments                         |
-| Storage Security  | Identify improperly configured storage account permissions and encryption |
-| VM Security       | Analyze NSGs, VM configurations, and patch status                         |
-| Database Security | Check Azure SQL, Cosmos DB, and other database security settings          |
-| Activity Logs     | Verify proper logging and monitoring configuration                        |
-| Key Vault         | Validate secret management and key rotation policies                      |
-| Network           | Assess VNet configurations, NSGs, and service endpoints                   |
+    - **Subscription detected**
+    - **Required role assignments**
+    - **Defender for Cloud enabled**
 
-### Compliance Frameworks
+    Any blocking issue is shown with a link to the exact Azure portal blade to fix it.
+  </Step>
+  <Step title="Run your first scan">
+    When all required steps pass, the first scan starts automatically. You can re-run it any time from the connection's page.
+  </Step>
+</Steps>
 
-The Cloud Test checks compliance against:
+<Note>
+  Microsoft OAuth uses the RBAC roles on your account. Granting **Reader + Security Reader + Monitoring Reader** is enough — you do **not** need Contributor or Owner.
+</Note>
+
+## Connect with a service principal (alternative)
+
+Use this flow if you want a dedicated non-human identity or your tenant restricts user OAuth consent.
+
+<Steps>
+  <Step title="Register an app in Microsoft Entra ID">
+    In the Azure portal, go to **Microsoft Entra ID → App registrations → New registration**. Name it something like `comp-security-audit` and register.
+  </Step>
+  <Step title="Create a client secret">
+    In the app, open **Certificates & secrets → New client secret**. Copy the secret **value** immediately — it is only shown once.
+  </Step>
+  <Step title="Assign the three required roles">
+    Open your target subscription, go to **Access control (IAM) → Add role assignment**, and assign each of these roles to the app registration:
+
+    - **Reader**
+    - **Security Reader**
+    - **Monitoring Reader**
+  </Step>
+  <Step title="Collect the four IDs">
+    From the Azure portal, copy:
+
+    - **Tenant ID** — Microsoft Entra ID → Overview
+    - **Client ID** — App registration → Overview (Application ID)
+    - **Client Secret** — the value from the previous step
+    - **Subscription ID** — Subscriptions → your subscription
+  </Step>
+  <Step title="Paste into Comp AI">
+    In the Azure connection form, switch to the service principal option and paste the four values. Click **Save and Connect**.
+  </Step>
+</Steps>
+
+## What gets scanned
+
+The Azure integration evaluates findings across services including:
+
+| Area          | Services                                                          |
+| ------------- | ----------------------------------------------------------------- |
+| Posture       | Microsoft Defender for Cloud (assessments + alerts)               |
+| Identity      | Microsoft Entra ID                                                |
+| Governance    | Azure Policy                                                      |
+| Data security | Key Vault, Storage Accounts, SQL Database, Cosmos DB              |
+| Compute       | Virtual Machines, App Service, AKS, Container Registry            |
+| Network       | Network Watcher (NSGs, flow logs)                                 |
+| Observability | Azure Monitor (activity logs, diagnostic settings)                |
+
+The **Services** tab inside the connection lets you enable or disable specific checks.
+
+## Compliance frameworks
+
+Findings are mapped to the controls used by:
 
 - Microsoft Cloud Security Benchmark
 - SOC 2
-- HIPAA (where applicable)
-- PCI DSS
-- GDPR
 - ISO 27001
+- PCI DSS
+- HIPAA (where applicable)
 
-## Managing Access
+## Security model
 
-### Access Control
-
-Comp AI requires read-only access to your Azure environment. The integration uses Azure's built-in Reader role or custom roles with specific permissions that follow the principle of least privilege.
-
-### Permissions
-
-The Azure application/service principal has permissions for:
-
-- Reading resource configurations
-- Listing resources and their attributes
-- Viewing diagnostic settings
-
-The integration does NOT have permissions to:
-
-- Modify any resources
-- Create new resources
-- Delete existing resources
+- **Read-only** — Comp AI makes no write calls, regardless of the roles you assign
+- **Scoped to one subscription per connection** — a connection cannot read data outside the subscription it was created for
+- **Secrets stay encrypted** — client secrets and refresh tokens are stored in an encrypted vault and never returned to the UI
+- **Revocable at any time** — remove the role assignments in the Azure portal, or delete the connection in Comp AI
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion title="Defender for Cloud shows no assessments" icon="shield">
+  Defender for Cloud must be enabled on the subscription. Open the **Microsoft Defender for Cloud** blade, select the subscription, and confirm at least the free tier is turned on. Initial data can take up to 24 hours to appear.
+</Accordion>
 
-**Issue**: Failed to connect Azure subscription\
-**Solution**: Verify service principal credentials and role assignments
+<Accordion title="Authentication failed" icon="lock">
+  For OAuth: make sure your account still has the three required roles on the subscription — `User_impersonation` scope alone is not enough.
 
-**Issue**: Authentication errors\
-**Solution**: Ensure the service principal hasn't expired and secret is valid
+  For service principal: confirm the client secret has not expired and the app registration has not been disabled.
+</Accordion>
 
-### Support
+<Accordion title="Subscription not detected after sign-in" icon="magnifying-glass">
+  Comp AI only sees subscriptions your signed-in account has access to. If you manage multiple subscriptions, sign in with an account that has **Reader** on the one you want to monitor, or use the service principal flow to target it explicitly.
+</Accordion>
 
-For additional assistance with your Azure Cloud Tests:
+<Accordion title="Missing findings for a specific service" icon="circle-exclamation">
+  Check that the service is enabled under the **Services** tab for this connection. Some services also require Defender plans beyond the free tier — for example, Defender for Servers, SQL, or Containers.
+</Accordion>
 
-1. Check our [Knowledge Base](https://help.trycomp.ai/azure-integration)
-2. Contact support at [support@trycomp.ai](mailto:support@trycomp.ai)
-3. Join our [Discord community](https://discord.gg/compai) for peer support
+## Support
+
+1. Email [support@trycomp.ai](mailto:support@trycomp.ai)
+2. Join our [Discord community](https://discord.gg/compai)
