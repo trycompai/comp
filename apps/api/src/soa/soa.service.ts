@@ -346,6 +346,7 @@ export class SOAService {
       data: {
         status: 'completed',
         approvedAt: new Date(),
+        declinedAt: null,
       },
     });
 
@@ -380,6 +381,7 @@ export class SOAService {
         approverId: null,
         approvedAt: null,
         status: 'completed',
+        declinedAt: new Date(),
       },
     });
 
@@ -436,6 +438,8 @@ export class SOAService {
       where: { id: dto.documentId },
       data: {
         approverId: dto.approverId,
+        approvedAt: null,
+        declinedAt: null,
         status: 'needs_review',
       },
     });

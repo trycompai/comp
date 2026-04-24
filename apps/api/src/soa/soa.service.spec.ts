@@ -212,6 +212,105 @@ describe('SOAService', () => {
       });
       const result = await service.approveDocument(dto, userId);
       expect(result.success).toBe(true);
+      expect(mockDb.sOADocument.update).toHaveBeenCalledWith({
+        where: { id: dto.documentId },
+        data: expect.objectContaining({
+          status: 'completed',
+          declinedAt: null,
+        }),
+      });
+    });
+  });
+
+  describe('declineDocument', () => {
+    const dto = {
+      documentId: 'doc-1',
+      organizationId: 'org-1',
+      reason: 'Needs changes',
+    };
+    const userId = 'user-1';
+    const ownerMember = { id: 'mem-1', role: 'owner' };
+
+    it('throws NotFoundException when member not found', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.declineDocument(dto, userId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('throws ForbiddenException when user is not owner/admin', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'mem-1',
+        role: 'employee',
+      });
+
+      await expect(service.declineDocument(dto, userId)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('throws NotFoundException when document not found', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(ownerMember);
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.declineDocument(dto, userId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('throws ForbiddenException when not pending approval for this user', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(ownerMember);
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc-1',
+        approverId: 'other-member',
+        status: 'needs_review',
+      });
+
+      await expect(service.declineDocument(dto, userId)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('throws BadRequestException when not in needs_review status', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(ownerMember);
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc-1',
+        approverId: 'mem-1',
+        status: 'draft',
+      });
+
+      await expect(service.declineDocument(dto, userId)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('declines document and sets declinedAt', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(ownerMember);
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc-1',
+        approverId: 'mem-1',
+        status: 'needs_review',
+      });
+      (mockDb.sOADocument.update as jest.Mock).mockResolvedValue({
+        id: 'doc-1',
+        status: 'completed',
+      });
+
+      const result = await service.declineDocument(dto, userId);
+
+      expect(result.success).toBe(true);
+      expect(mockDb.sOADocument.update).toHaveBeenCalledWith({
+        where: { id: dto.documentId },
+        data: expect.objectContaining({
+          approverId: null,
+          approvedAt: null,
+          status: 'completed',
+        }),
+      });
+      expect((mockDb.sOADocument.update as jest.Mock).mock.calls[0][0].data.declinedAt).toBeInstanceOf(
+        Date,
+      );
     });
   });
 
@@ -301,6 +400,15 @@ describe('SOAService', () => {
       });
       const result = await service.submitForApproval(dto);
       expect(result.success).toBe(true);
+      expect(mockDb.sOADocument.update).toHaveBeenCalledWith({
+        where: { id: dto.documentId },
+        data: expect.objectContaining({
+          approverId: dto.approverId,
+          status: 'needs_review',
+          approvedAt: null,
+          declinedAt: null,
+        }),
+      });
     });
   });
 
