@@ -16,6 +16,7 @@ import { PolicyAlerts } from './PolicyAlerts';
 import { PolicyArchiveSheet } from './PolicyArchiveSheet';
 import { PolicyControlMappings } from './PolicyControlMappings';
 import { PolicyDeleteDialog } from './PolicyDeleteDialog';
+import { PolicyEvidenceTasks } from './PolicyEvidenceTasks';
 import { PolicyOverviewSheet } from './PolicyOverviewSheet';
 import { PolicySettingsCard } from './PolicySettingsCard';
 import { PolicyVersionsTab } from './PolicyVersionsTab';
@@ -202,6 +203,7 @@ export function PolicyPageTabs({
                 isPendingApproval={isPendingApproval}
                 onMutate={mutateAll}
               />
+              <PolicyEvidenceTasks />
             </Stack>
           </TabsContent>
 
