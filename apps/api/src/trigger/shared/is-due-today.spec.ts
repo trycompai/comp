@@ -39,8 +39,8 @@ describe('isDueToday', () => {
   });
 
   describe('monthly', () => {
-    it('returns false when lastRunAt is 29 days ago but same calendar month', () => {
-      // 2026-03-26 → 2026-04-24 is 29 days, crosses a month boundary; should be true
+    it('returns true when lastRunAt crossed a calendar-month boundary', () => {
+      // 2026-03-26 → 2026-04-24: different calendar month → due
       expect(
         isDueToday({ scheduleFrequency: TaskFrequency.monthly, lastRunAt: atUtc('2026-03-26'), now }),
       ).toBe(true);
