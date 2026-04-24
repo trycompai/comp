@@ -278,7 +278,7 @@ export function TaskIntegrationChecks({
   const getNextScheduledRun = () => {
     const now = new Date();
     const PERIOD_DAYS: Record<TaskFrequency, number> = {
-      daily: 0,
+      daily: 1,
       weekly: 7,
       monthly: 30,
       quarterly: 91,
