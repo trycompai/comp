@@ -52,6 +52,7 @@ import { TaskAutomationStatusBadge } from './TaskAutomationStatusBadge';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskIntegrationChecks } from './TaskIntegrationChecks';
 import { TaskMainContent } from './TaskMainContent';
+import { TaskPolicies } from './TaskPolicies';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 
 type AutomationWithRuns = EvidenceAutomation & {
@@ -335,6 +336,7 @@ export function SingleTask({
                 onRequestApproval={handleRequestApproval}
               />
               <TaskMainContent task={task} showComments={false} />
+              <TaskPolicies />
             </Stack>
           </TabsContent>
 
