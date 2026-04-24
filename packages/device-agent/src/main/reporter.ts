@@ -1,7 +1,7 @@
 import { AGENT_VERSION, API_ROUTES } from '../shared/constants';
 import type { CheckInRequest, CheckInResponse, CheckResult } from '../shared/types';
 import { log } from './logger';
-import { getApiUrl, getAuth } from './store';
+import { getApiUrl, getAuth, setAuth } from './store';
 
 export interface ReportResult {
   allSucceeded: boolean;
@@ -15,6 +15,10 @@ export interface ReportResult {
 /**
  * Sends compliance check results to the NestJS API for ALL registered organizations.
  * The same check results are reported to each org's device record.
+ *
+ * If the API returns `upgradedSessionToken` on any check-in, the token is persisted
+ * via setAuth and used for all subsequent iterations. If persistence fails, the loop
+ * aborts immediately to avoid further check-ins with a stale on-disk token.
  */
 export async function reportCheckResults(checks: CheckResult[]): Promise<ReportResult> {
   const auth = getAuth();
@@ -24,7 +28,7 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
   }
 
   const apiUrl = getApiUrl();
-  const authHeader = `Bearer ${auth.sessionToken}`;
+  let currentToken = auth.sessionToken;
 
   let allSucceeded = true;
   let anyNonCompliant = false;
@@ -42,7 +46,7 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
       const response = await fetch(`${apiUrl}${API_ROUTES.CHECK_IN}`, {
         method: 'POST',
         headers: {
-          Authorization: authHeader,
+          Authorization: `Bearer ${currentToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
@@ -68,6 +72,19 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
       }
 
       const result: CheckInResponse = await response.json();
+
+      if (result.upgradedSessionToken) {
+        try {
+          setAuth({ ...auth, sessionToken: result.upgradedSessionToken });
+          currentToken = result.upgradedSessionToken;
+          log('Session upgraded to dedicated device-agent session');
+        } catch (err) {
+          log(`Failed to persist upgraded session token: ${err}`, 'ERROR');
+          allSucceeded = false;
+          break;
+        }
+      }
+
       log(
         `Check-in for ${org.organizationName}: ${result.isCompliant ? 'COMPLIANT' : 'NON-COMPLIANT'}`,
       );

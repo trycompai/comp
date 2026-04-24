@@ -9,6 +9,7 @@ import { randomBytes } from 'node:crypto';
 import { db, Prisma } from '@db';
 import { auth } from '../auth/auth.server';
 import { deviceAgentRedisClient } from './device-agent-kv';
+import { createDeviceAgentSession } from './device-agent-session.helper';
 import {
   registerWithSerial,
   registerWithoutSerial,
@@ -17,7 +18,6 @@ import { RegisterDeviceDto } from './dto/register-device.dto';
 import { CheckInDto } from './dto/check-in.dto';
 
 interface StoredAuthCode {
-  sessionToken: string;
   userId: string;
   state: string;
   createdAt: number;
@@ -52,7 +52,6 @@ export class DeviceAgentAuthService {
     await deviceAgentRedisClient.set(
       `device-auth:${code}`,
       {
-        sessionToken: session.session.token,
         userId: session.user.id,
         state,
         createdAt: Date.now(),
@@ -72,8 +71,10 @@ export class DeviceAgentAuthService {
       throw new UnauthorizedException('Invalid or expired authorization code');
     }
 
+    const session = await createDeviceAgentSession({ userId: stored.userId });
+
     return {
-      session_token: stored.sessionToken,
+      session_token: session.token,
       user_id: stored.userId,
     };
   }
@@ -100,9 +101,11 @@ export class DeviceAgentAuthService {
 
   async registerDevice({
     userId,
+    sessionId,
     dto,
   }: {
     userId: string;
+    sessionId: string;
     dto: RegisterDeviceDto;
   }) {
     const member = await db.member.findFirst({
@@ -121,10 +124,38 @@ export class DeviceAgentAuthService {
       ? await registerWithSerial({ member, dto })
       : await registerWithoutSerial({ member, dto });
 
+    if (device.agentSessionId && device.agentSessionId !== sessionId) {
+      try {
+        await db.session.delete({ where: { id: device.agentSessionId } });
+      } catch (err) {
+        if ((err as { code?: string }).code !== 'P2025') {
+          this.logger.error(
+            `Failed to delete stale agent session ${device.agentSessionId} for device ${device.id}: ${err}`,
+          );
+          throw err;
+        }
+      }
+    }
+
+    await db.device.update({
+      where: { id: device.id },
+      data: { agentSessionId: sessionId },
+    });
+
     return { deviceId: device.id };
   }
 
-  async checkIn({ userId, dto }: { userId: string; dto: CheckInDto }) {
+  async checkIn({
+    userId,
+    sessionId,
+    sessionDeviceAgent,
+    dto,
+  }: {
+    userId: string;
+    sessionId: string;
+    sessionDeviceAgent: boolean;
+    dto: CheckInDto;
+  }) {
     const device = await db.device.findFirst({
       where: {
         id: dto.deviceId,
@@ -164,6 +195,29 @@ export class DeviceAgentAuthService {
       checkFields.passwordPolicySet &&
       checkFields.screenLockEnabled;
 
+    let upgradedSessionToken: string | undefined;
+    let sessionIdToLink: string | undefined;
+
+    if (!sessionDeviceAgent) {
+      if (device.agentSessionId) {
+        try {
+          await db.session.delete({ where: { id: device.agentSessionId } });
+        } catch (err) {
+          if ((err as { code?: string }).code !== 'P2025') {
+            this.logger.error(
+              `Failed to delete stale agent session ${device.agentSessionId} for device ${device.id}: ${err}`,
+            );
+            throw err;
+          }
+        }
+      }
+      const upgraded = await createDeviceAgentSession({ userId });
+      upgradedSessionToken = upgraded.token;
+      sessionIdToLink = upgraded.sessionId;
+    } else if (device.agentSessionId !== sessionId) {
+      sessionIdToLink = sessionId;
+    }
+
     await db.device.update({
       where: { id: dto.deviceId },
       data: {
@@ -172,13 +226,47 @@ export class DeviceAgentAuthService {
         isCompliant,
         lastCheckIn: new Date(),
         ...(dto.agentVersion ? { agentVersion: dto.agentVersion } : {}),
+        ...(sessionIdToLink !== undefined ? { agentSessionId: sessionIdToLink } : {}),
       },
     });
 
     return {
       isCompliant,
       nextCheckIn: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      ...(upgradedSessionToken ? { upgradedSessionToken } : {}),
     };
+  }
+
+  async revokeAgentAccess({
+    organizationId,
+    deviceId,
+  }: {
+    organizationId: string;
+    deviceId: string;
+  }): Promise<void> {
+    const device = await db.device.findFirst({
+      where: { id: deviceId, organizationId },
+      select: { id: true, agentSessionId: true },
+    });
+
+    if (!device) {
+      throw new NotFoundException('Device not found');
+    }
+
+    if (!device.agentSessionId) {
+      return;
+    }
+
+    try {
+      await db.session.delete({ where: { id: device.agentSessionId } });
+    } catch (err) {
+      if ((err as { code?: string }).code !== 'P2025') {
+        this.logger.error(
+          `Failed to revoke agent session ${device.agentSessionId} for device ${device.id}: ${err}`,
+        );
+        throw err;
+      }
+    }
   }
 
   async getDeviceStatus({

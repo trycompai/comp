@@ -2,6 +2,7 @@ import { Prisma, Frequency, Departments, type FrameworkInstance, type FrameworkV
 import { diffManifests } from './framework-diff';
 import { isControlEdited, isPolicyEdited, isTaskEdited } from './framework-drift';
 import { buildCrossFrameworkRefs } from './cross-framework-refs';
+import { normalizeFormType } from './form-type-normalize';
 import type { FrameworkManifest } from './manifest.types';
 import type { UndoPayload, SyncSummary } from './undo-payload.types';
 
@@ -325,14 +326,15 @@ export async function applySync(
   for (const edge of diff.controlDocumentTypeEdges.added) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     if (!ctlInst) continue;
+    const formType = normalizeFormType(edge.formType);
     // Idempotent create: skip if already present (shared-entity case).
     const existing = await tx.controlDocumentType.findUnique({
-      where: { controlId_formType: { controlId: ctlInst.id, formType: edge.formType as never } },
+      where: { controlId_formType: { controlId: ctlInst.id, formType: formType as never } },
       select: { id: true },
     });
     if (existing) continue;
     const created = await tx.controlDocumentType.create({
-      data: { controlId: ctlInst.id, formType: edge.formType as never },
+      data: { controlId: ctlInst.id, formType: formType as never },
     });
     undo.controlDocumentTypes.created.push(created.id);
     summary.controlDocumentTypesAdded += 1;
@@ -340,13 +342,14 @@ export async function applySync(
   for (const edge of diff.controlDocumentTypeEdges.removed) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     if (!ctlInst) continue;
+    const formType = normalizeFormType(edge.formType);
     const existing = await tx.controlDocumentType.findUnique({
-      where: { controlId_formType: { controlId: ctlInst.id, formType: edge.formType as never } },
+      where: { controlId_formType: { controlId: ctlInst.id, formType: formType as never } },
       select: { id: true },
     });
     if (!existing) continue;
     await tx.controlDocumentType.delete({ where: { id: existing.id } });
-    undo.controlDocumentTypes.deleted.push({ controlId: ctlInst.id, formType: edge.formType });
+    undo.controlDocumentTypes.deleted.push({ controlId: ctlInst.id, formType });
     summary.controlDocumentTypesArchived += 1;
   }
 
