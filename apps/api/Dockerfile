@@ -1,8 +1,13 @@
 # Use Node.js runtime for production
 FROM node:20-slim
 
-# Install required packages (wget for healthcheck, curl/bash for bun install, libc compat for prisma)
-RUN apt-get update && apt-get install -y --no-install-recommends wget curl openssl && rm -rf /var/lib/apt/lists/*
+# Install required packages:
+# - wget for healthcheck, curl/bash for bun install, openssl for prisma
+# - fontconfig + fonts-dejavu-core so sharp/librsvg can render text in the
+#   browser-automation screenshot overlay (node:*-slim ships with zero fonts)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget curl openssl fontconfig fonts-dejavu-core \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
