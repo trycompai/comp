@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import { SOAService } from './soa.service';
+import { generateSOAExportFile } from './utils/export-generator';
 
 jest.mock('@db', () => ({
   db: {
@@ -51,8 +52,12 @@ jest.mock('./utils/soa-storage', () => ({
   updateDocumentAnsweredCount: jest.fn(),
   checkIfFullyRemote: jest.fn(),
 }));
+jest.mock('./utils/export-generator', () => ({
+  generateSOAExportFile: jest.fn(),
+}));
 
 const mockDb = jest.mocked(db);
+const mockGenerateSOAExportFile = jest.mocked(generateSOAExportFile);
 
 describe('SOAService', () => {
   let service: SOAService;
@@ -296,6 +301,112 @@ describe('SOAService', () => {
       });
       const result = await service.submitForApproval(dto);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('exportDocument', () => {
+    const dto = {
+      documentId: 'doc-1',
+      organizationId: 'org-1',
+      format: 'pdf' as const,
+    };
+
+    it('throws NotFoundException when document not found', async () => {
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.exportDocument(dto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('maps document data and delegates to generateSOAExportFile', async () => {
+      const generated = {
+        fileBuffer: Buffer.from('pdf'),
+        mimeType: 'application/pdf',
+        filename: 'statement-of-applicability-iso-27001-v2.pdf',
+      };
+      mockGenerateSOAExportFile.mockReturnValue(generated);
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc-1',
+        organizationId: 'org-1',
+        preparedBy: 'Compliance Lead',
+        answeredQuestions: 3,
+        totalQuestions: 5,
+        approvedAt: null,
+        declinedAt: new Date('2026-04-20T00:00:00.000Z'),
+        status: 'declined',
+        version: 2,
+        framework: { name: 'ISO 27001' },
+        configuration: {
+          questions: [
+            {
+              id: 'q-1',
+              text: 'Control 1',
+              columnMapping: {
+                closure: 'A.5',
+                title: 'Control title',
+                control_objective: 'Objective',
+                isApplicable: true,
+                justification: 'Mapped justification',
+              },
+            },
+            {
+              id: 'q-2',
+              text: 'Control 2',
+              columnMapping: {},
+            },
+          ],
+        },
+        approver: {
+          user: {
+            name: 'Approver Name',
+            email: 'approver@example.com',
+          },
+        },
+        answers: [{ questionId: 'q-2', answer: 'Fallback answer' }],
+      });
+
+      const result = await service.exportDocument(dto);
+
+      expect(mockGenerateSOAExportFile).toHaveBeenCalledWith(
+        [
+          {
+            id: 'q-1',
+            text: 'Control 1',
+            columnMapping: {
+              closure: 'A.5',
+              title: 'Control title',
+              control_objective: 'Objective',
+              isApplicable: true,
+              justification: 'Mapped justification',
+            },
+            answer: null,
+          },
+          {
+            id: 'q-2',
+            text: 'Control 2',
+            columnMapping: {
+              closure: null,
+              title: null,
+              control_objective: null,
+              isApplicable: null,
+              justification: null,
+            },
+            answer: 'Fallback answer',
+          },
+        ],
+        'ISO 27001',
+        2,
+        {
+          preparedBy: 'Compliance Lead',
+          answeredQuestions: 3,
+          totalQuestions: 5,
+          approvedAt: null,
+          declinedAt: new Date('2026-04-20T00:00:00.000Z'),
+          status: 'declined',
+          approverName: 'Approver Name',
+        },
+        'pdf',
+      );
+      expect(result).toEqual(generated);
     });
   });
 });
