@@ -34,6 +34,9 @@ cd "$target"
 echo "▸ Installing dependencies (bun install) in $target"
 bun install
 
+echo "▸ Applying Prisma migrations (cd packages/db && bun run db:migrate)"
+(cd packages/db && bun run db:migrate)
+
 echo "▸ Generating Prisma client (bun run db:generate)"
 bun run db:generate
 

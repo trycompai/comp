@@ -19,10 +19,11 @@ worktree — no need to re-run after `git worktree add`.
 Runs two steps automatically on `git worktree add`:
 
 1. **Symlink `.env*` files** from the main worktree (`scripts/link-worktree-envs.sh`).
-2. **Set up the worktree** — `bun install` + `bun run db:generate`
-   (`scripts/setup-worktree.sh`). The full `bun run build` is opt-in
-   because it adds several minutes and most dev workflows (`dev`, tests,
-   typechecks) don't need it.
+2. **Set up the worktree** — `bun install`, `cd packages/db && bun run db:migrate`
+   (apply pending Prisma migrations to the local DB), then
+   `bun run db:generate` (`scripts/setup-worktree.sh`). The full
+   `bun run build` is opt-in because it adds several minutes and most
+   dev workflows (`dev`, tests, typechecks) don't need it.
 
 The hook fires **only** inside `git worktree add` — regular `git checkout`,
 `git switch`, and file checkouts are filtered by checking that the
