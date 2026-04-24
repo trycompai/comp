@@ -2,7 +2,7 @@
 
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Add, Download } from '@carbon/icons-react';
+import { Add, Download } from '@trycompai/design-system/icons';
 import type { Policy } from '@db';
 import { Button, HStack } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
