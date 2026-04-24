@@ -109,12 +109,19 @@ function generateSOAPDF(
     ? `Approved on ${new Date(metadata.approvedAt).toLocaleDateString()}`
     : metadata.declinedAt
       ? `Declined on ${new Date(metadata.declinedAt).toLocaleDateString()}`
-      : metadata.approverName
+      : metadata.status === 'needs_review'
         ? 'Pending approval'
         : 'Not approved';
+  const approvalActorLabel = metadata.approvedAt
+    ? 'Approved by'
+    : metadata.declinedAt
+      ? 'Declined by'
+      : metadata.status === 'needs_review'
+        ? 'Pending approval by'
+        : 'Approver';
   pdf.text(`Approval status: ${approvalStatusText}`, margin, y);
   y += lineHeight;
-  pdf.text(`Approved by: ${metadata.approverName || 'N/A'}`, margin, y);
+  pdf.text(`${approvalActorLabel}: ${metadata.approverName || 'N/A'}`, margin, y);
   y += lineHeight;
   pdf.text(`Exported: ${new Date().toLocaleDateString()}`, margin, y);
   y += lineHeight * 2;
