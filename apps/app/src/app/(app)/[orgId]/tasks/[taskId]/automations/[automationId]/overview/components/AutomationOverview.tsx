@@ -394,7 +394,7 @@ export function AutomationOverview({
                   <Stack gap="none">
                     <Text size="sm" weight="medium">Schedule</Text>
                     <Text size="xs" variant="muted">
-                      Current: {FREQUENCY_LABELS[automation.scheduleFrequency] ?? 'Daily'}
+                      Current: {FREQUENCY_LABELS[automation.scheduleFrequency ?? 'daily']}
                     </Text>
                   </Stack>
                   <Button

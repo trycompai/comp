@@ -10,6 +10,13 @@ jest.mock('@db', () => ({
       }
     },
   },
+  TaskFrequency: {
+    daily: 'daily',
+    weekly: 'weekly',
+    monthly: 'monthly',
+    quarterly: 'quarterly',
+    yearly: 'yearly',
+  },
 }));
 
 jest.mock('../auth/auth.server', () => ({
