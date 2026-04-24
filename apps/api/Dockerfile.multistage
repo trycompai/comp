@@ -84,8 +84,11 @@ RUN groupadd --system nestjs && useradd --system --gid nestjs --create-home nest
 WORKDIR /app
 RUN chown nestjs:nestjs /app
 
-# Install runtime dependencies + AWS RDS CA certificate bundle
-RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates \
+# Install runtime dependencies + AWS RDS CA certificate bundle.
+# fontconfig + fonts-dejavu-core are needed so sharp/librsvg can render text
+# in the browser-automation screenshot overlay (node:*-slim has no fonts).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget ca-certificates fontconfig fonts-dejavu-core \
   && wget -q -O /usr/local/share/aws-rds-ca-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
