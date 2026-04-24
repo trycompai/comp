@@ -207,6 +207,70 @@ export class PoliciesController {
     };
   }
 
+  @Get(':id/evidence-tasks')
+  @RequirePermission('policy', 'read')
+  @ApiOperation({ summary: 'Get tasks that serve as evidence for a policy, grouped by control' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async getPolicyEvidenceTasks(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const policy = await db.policy.findFirst({
+      where: { id, organizationId, archivedAt: null },
+      select: {
+        id: true,
+        controls: {
+          where: { archivedAt: null },
+          select: {
+            id: true,
+            name: true,
+            tasks: {
+              where: { archivedAt: null },
+              select: {
+                id: true,
+                title: true,
+                status: true,
+                frequency: true,
+                department: true,
+                automationStatus: true,
+                assigneeId: true,
+              },
+              orderBy: { title: 'asc' },
+            },
+          },
+          orderBy: { name: 'asc' },
+        },
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException('Policy not found');
+    }
+
+    const data = policy.controls.map((control) => ({
+      control: { id: control.id, name: control.name },
+      tasks: control.tasks,
+    }));
+
+    const uniqueTaskIds = new Set<string>();
+    for (const group of data) {
+      for (const task of group.tasks) uniqueTaskIds.add(task.id);
+    }
+
+    return {
+      data,
+      count: uniqueTaskIds.size,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
   @Post(':id/regenerate')
   @RequirePermission('policy', 'update')
   @ApiOperation({ summary: 'Regenerate policy content using AI' })

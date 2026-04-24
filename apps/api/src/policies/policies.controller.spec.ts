@@ -53,6 +53,20 @@ jest.mock('@db', () => ({
     draft: 'draft',
     published: 'published',
   },
+  FindingType: {
+    soc2: 'soc2',
+    iso27001: 'iso27001',
+    hipaa: 'hipaa',
+    gdpr: 'gdpr',
+    nist: 'nist',
+  },
+  FindingStatus: {
+    open: 'open',
+    closed: 'closed',
+  },
+  PhaseCompletionType: {},
+  TimelinePhaseStatus: {},
+  TimelineStatus: {},
 }));
 
 jest.mock('@trigger.dev/sdk', () => ({
@@ -620,6 +634,84 @@ describe('PoliciesController', () => {
         body,
       );
       expect(result.data).toEqual(mockResult);
+    });
+  });
+
+  describe('getPolicyEvidenceTasks', () => {
+    it('returns tasks grouped by control, excluding archived tasks', async () => {
+      const { db } = require('@db');
+      db.policy.findFirst.mockResolvedValue({
+        id: 'pol_1',
+        controls: [
+          {
+            id: 'ctl_1',
+            name: 'Access Controls',
+            tasks: [
+              {
+                id: 'tsk_1',
+                title: 'Enable 2FA',
+                status: 'in_progress',
+                frequency: 'monthly',
+                department: 'it',
+                automationStatus: 'MANUAL',
+                assigneeId: 'mem_1',
+              },
+            ],
+          },
+          {
+            id: 'ctl_2',
+            name: 'Monitoring',
+            tasks: [],
+          },
+        ],
+      });
+
+      const result = await controller.getPolicyEvidenceTasks(
+        'pol_1',
+        orgId,
+        mockAuthContext,
+      );
+
+      expect(db.policy.findFirst).toHaveBeenCalledWith({
+        where: { id: 'pol_1', organizationId: orgId, archivedAt: null },
+        select: expect.objectContaining({
+          id: true,
+          controls: expect.objectContaining({
+            where: { archivedAt: null },
+          }),
+        }),
+      });
+      expect(result.data).toEqual([
+        {
+          control: { id: 'ctl_1', name: 'Access Controls' },
+          tasks: [
+            {
+              id: 'tsk_1',
+              title: 'Enable 2FA',
+              status: 'in_progress',
+              frequency: 'monthly',
+              department: 'it',
+              automationStatus: 'MANUAL',
+              assigneeId: 'mem_1',
+            },
+          ],
+        },
+        {
+          control: { id: 'ctl_2', name: 'Monitoring' },
+          tasks: [],
+        },
+      ]);
+      expect(result.count).toBe(1);
+      expect(result.authType).toBe('session');
+    });
+
+    it('throws NotFoundException when policy is not in caller org', async () => {
+      const { db } = require('@db');
+      db.policy.findFirst.mockResolvedValue(null);
+
+      await expect(
+        controller.getPolicyEvidenceTasks('pol_404', orgId, mockAuthContext),
+      ).rejects.toThrow('Policy not found');
     });
   });
 });
