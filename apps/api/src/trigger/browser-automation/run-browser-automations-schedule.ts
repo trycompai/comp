@@ -69,9 +69,10 @@ export const browserAutomationsSchedule = schedules.task({
       `Found ${candidateAutomations.length} enabled browser automations`,
     );
 
-    // Filter by the automation's schedule. `lastRunAt` is only written on
-    // success inside `runBrowserAutomation`, so failures naturally retry on
-    // the next orchestrator tick (the "crude retry" behavior).
+    // Filter by the automation's schedule. `lastRunAt` is only written when
+    // the automation actually executed (including legitimate 'fail' verdicts)
+    // inside `runBrowserAutomation`, so infra-level failures naturally retry
+    // on the next orchestrator tick (the "crude retry" behavior).
     const automations = filterDueAutomations({
       automations: candidateAutomations,
       now,
