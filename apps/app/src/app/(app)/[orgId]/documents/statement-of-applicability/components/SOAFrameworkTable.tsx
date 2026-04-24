@@ -109,9 +109,12 @@ export function SOAFrameworkTable({
 
   // Update answersMap when the live document changes
   useEffect(() => {
+    if (!Array.isArray(resolvedDocument?.answers)) {
+      return;
+    }
     setAnswersMap(
       new Map(
-        (resolvedDocument?.answers || []).map((answer: { questionId: string; answer: string | null; answerVersion: number }) => [
+        resolvedDocument.answers.map((answer: { questionId: string; answer: string | null; answerVersion: number }) => [
           answer.questionId,
           { answer: answer.answer, answerVersion: answer.answerVersion },
         ])
