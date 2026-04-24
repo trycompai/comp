@@ -71,6 +71,13 @@ export default async function StatementOfApplicabilityPage({
     serverApi.get<ContextApiResponse>('/v1/context'),
   ]);
 
+  let soaData: SOAData | null = null;
+  let soaError: string | null = null;
+
+  if (frameworksResult.error) {
+    soaError = 'Failed to load frameworks. Please try again later.';
+  }
+
   const frameworks = frameworksResult.data?.data ?? [];
   const isoFrameworkInstance = frameworks.find(
     (fi) => fi.framework?.name && ISO27001_NAMES.includes(fi.framework.name),
@@ -79,10 +86,7 @@ export default async function StatementOfApplicabilityPage({
   const people = peopleResult.data?.data ?? [];
   const contextEntries = contextResult.data?.data ?? [];
 
-  let soaData: SOAData | null = null;
-  let soaError: string | null = null;
-
-  if (isoFrameworkInstance) {
+  if (!soaError && isoFrameworkInstance) {
     try {
       const { frameworkId, framework } = isoFrameworkInstance;
 
@@ -159,7 +163,7 @@ export default async function StatementOfApplicabilityPage({
       console.error('Failed to setup SOA:', error);
       soaError = 'Failed to setup SOA. Please try again later.';
     }
-  } else {
+  } else if (!soaError) {
     soaError =
       'ISO 27001 framework not found. Please add ISO 27001 framework to your organization to get started.';
   }
