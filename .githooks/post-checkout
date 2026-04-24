@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Auto-link .env* files from the main worktree into freshly created worktrees.
+#
+# post-checkout fires for every `git checkout`, `git switch`, and
+# `git worktree add`. This script uses two layered checks to run ONLY for
+# fresh worktree creation:
+#
+#   1. `<prev-HEAD>` equals the null SHA — git fills this in only when there
+#      was no previous HEAD in the current directory (fresh checkout).
+#      Normal branch or file checkouts have a real SHA here.
+#
+#   2. The current worktree is not the main worktree — filters the fresh-clone
+#      case (which also gets the null SHA on its first checkout).
+#
+# Combined, the only invocation that satisfies both is `git worktree add`.
+set -euo pipefail
+
+prev="$1"
+
+# Check 1: only proceed if this is a fresh checkout (no previous HEAD).
+[[ "$prev" == "0000000000000000000000000000000000000000" ]] || exit 0
+
+main=$(git worktree list --porcelain | awk '$1=="worktree"{print $2; exit}')
+cur=$(git rev-parse --show-toplevel)
+
+# Check 2: don't run on the main worktree (fresh clone case).
+[[ "$main" == "$cur" ]] && exit 0
+
+# Delegate to the shared linker script so the same logic is available for
+# manual backfill (scripts/link-worktree-envs.sh <path>).
+"$main/scripts/link-worktree-envs.sh" "$cur" || {
+  echo "post-checkout: failed to link envs (continuing)" >&2
+}
