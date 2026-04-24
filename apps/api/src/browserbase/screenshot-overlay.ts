@@ -115,8 +115,10 @@ function buildBannerSvg(args: BannerArgs): string {
   const { width, height, instruction, sourceUrl, timestamp } = args;
   const rowFontSize = 12;
   const labelFontSize = 9;
-  const fontFamily =
-    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  // Explicit Linux-safe font stack. The production container only ships
+  // DejaVu Sans (via fonts-dejavu-core); Apple/Segoe/Roboto aren't available
+  // so librsvg would render .notdef glyphs ("□ □ □") on servers.
+  const fontFamily = '"DejaVu Sans", sans-serif';
 
   const w = Math.floor(width);
   const h = Math.floor(height);

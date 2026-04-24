@@ -1,3 +1,4 @@
+import { normalizeFormType } from './form-type-normalize';
 import type {
   FrameworkManifest,
   ManifestControl,
@@ -67,6 +68,15 @@ function sanitizeManifestEdges(m: FrameworkManifest): FrameworkManifest {
       requirementIds: c.requirementIds.filter((id) => reqIds.has(id)),
       policyIds: c.policyIds.filter((id) => policyIds.has(id)),
       taskIds: c.taskIds.filter((id) => taskIds.has(id)),
+      // Normalize formTypes to the Prisma-client form (underscored). Backfilled
+      // v1.0.0 manifests stored DB-mapped hyphen forms; collapsing both forms
+      // to the canonical name here means the diff doesn't spuriously report
+      // an add+remove for identical types, and downstream callers never see
+      // the hyphenated shape. Preserve undefined-ness when the input didn't
+      // carry documentTypes at all (older manifest shape).
+      ...(c.documentTypes === undefined
+        ? {}
+        : { documentTypes: c.documentTypes.map(normalizeFormType) }),
     })),
   };
 }

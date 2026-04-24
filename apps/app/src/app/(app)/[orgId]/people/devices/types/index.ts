@@ -39,6 +39,8 @@ export interface DeviceWithChecks {
   complianceStatus: DeviceComplianceStatus;
   /** Whole days since last check-in, or null when never synced. */
   daysSinceLastCheckIn: number | null;
+  /** True iff the device has an agent session whose expiresAt is in the future. */
+  hasActiveAgentSession: boolean;
 }
 
 export interface FleetPolicy {

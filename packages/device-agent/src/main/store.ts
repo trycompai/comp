@@ -1,12 +1,28 @@
 import { app } from 'electron';
 import Store from 'electron-store';
 import type { CheckResult, StoredAuth } from '../shared/types';
+import type { SecureTokenBlob } from './secure-storage';
+import { secureReadToken, secureStoreToken } from './secure-storage';
 
 declare const __PORTAL_URL__: string;
 declare const __API_URL__: string;
 
+interface PersistedAuth {
+  sessionTokenBlob: SecureTokenBlob;
+  cookieName: string;
+  userId: string;
+  organizations: StoredAuth['organizations'];
+}
+
+interface LegacyPlaintextAuth {
+  sessionToken: string;
+  cookieName: string;
+  userId: string;
+  organizations: StoredAuth['organizations'];
+}
+
 interface StoreSchema {
-  auth: StoredAuth | null;
+  auth: PersistedAuth | LegacyPlaintextAuth | null;
   portalUrl: string;
   apiUrl: string;
   lastCheckResults: CheckResult[];
@@ -42,12 +58,55 @@ if (store.get('apiUrl') !== defaultApiUrl) {
   store.set('apiUrl', defaultApiUrl);
 }
 
+function isPersistedAuth(value: unknown): value is PersistedAuth {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'sessionTokenBlob' in value &&
+    typeof (value as { sessionTokenBlob: unknown }).sessionTokenBlob === 'object'
+  );
+}
+
 export function getAuth(): StoredAuth | null {
-  return store.get('auth');
+  const raw = store.get('auth');
+  if (!raw) return null;
+
+  if (isPersistedAuth(raw)) {
+    const token = secureReadToken(raw.sessionTokenBlob);
+    if (!token) return null;
+    return {
+      sessionToken: token,
+      cookieName: raw.cookieName,
+      userId: raw.userId,
+      organizations: raw.organizations,
+    };
+  }
+
+  // Migrate legacy plaintext auth on first read.
+  const legacy = raw as LegacyPlaintextAuth;
+  const migrated: PersistedAuth = {
+    sessionTokenBlob: secureStoreToken(legacy.sessionToken),
+    cookieName: legacy.cookieName,
+    userId: legacy.userId,
+    organizations: legacy.organizations,
+  };
+  store.set('auth', migrated);
+  return {
+    sessionToken: legacy.sessionToken,
+    cookieName: legacy.cookieName,
+    userId: legacy.userId,
+    organizations: legacy.organizations,
+  };
 }
 
 export function setAuth(auth: StoredAuth): void {
-  store.set('auth', auth);
+  const persisted: PersistedAuth = {
+    sessionTokenBlob: secureStoreToken(auth.sessionToken),
+    cookieName: auth.cookieName,
+    userId: auth.userId,
+    organizations: auth.organizations,
+  };
+  store.set('auth', persisted);
 }
 
 export function clearAuth(): void {
